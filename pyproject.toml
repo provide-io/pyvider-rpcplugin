@@ -1,0 +1,44 @@
+
+# pyvider-rpcplugin/pyproject.toml
+
+[tool.hatch.metadata]
+name = "pyvider-rpcplugin"
+version = "0.1.0"
+description = "Pyvider RPC Plugin"
+authors = ["Tim Perkins <code@tim.life>"]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "grpcio>=1.48",
+    "grpcio-tools>=1.48",
+    "attrs>=22.2",
+    "protobuf>=5.29",
+    "ruff>=0.0.265"
+]
+
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args:tests}"
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
+]
+
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+# [tool.ruff]
+# line-length = 88
+# target-version = ["py313"]
+# exclude = ["build", "dist", ".venv"]
+# select = ["E", "F", "I", "RUF", "C90"]
