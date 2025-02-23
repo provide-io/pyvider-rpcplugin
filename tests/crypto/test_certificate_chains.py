@@ -27,7 +27,7 @@ from pyvider.rpcplugin.crypto import (
     generate_ec_keypair,
 )
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_certificate_chain_validation(client_cert, server_cert):

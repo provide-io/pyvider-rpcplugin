@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from pyvider.rpcplugin.exception import CertificateError
 from pyvider.rpcplugin.crypto.certificate import Certificate
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 ### ✅ BASIC CERTIFICATE PROPERTY TESTS ###
 

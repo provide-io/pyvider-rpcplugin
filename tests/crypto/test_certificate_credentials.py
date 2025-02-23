@@ -7,7 +7,7 @@ import pytest_asyncio
 from dataclasses import dataclass
 from typing import Optional
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @dataclass
 class MockChannelCredentials:

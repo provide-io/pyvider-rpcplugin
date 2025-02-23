@@ -12,7 +12,7 @@ from pathlib import Path
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 ### ✅ BASIC CERTIFICATE LOADING TESTS ###
 

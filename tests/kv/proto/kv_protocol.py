@@ -11,7 +11,7 @@ from pyvider.rpcplugin.types import (
     HandlerT,
 )
 
-from pyvider.rpcplugin.tests.kv.proto import kv_pb2_grpc
+from tests.kv.proto import kv_pb2_grpc
 
 class KVProtocol(RPCPluginProtocol):
     """Protocol implementation for KV service."""
