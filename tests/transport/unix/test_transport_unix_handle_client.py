@@ -15,7 +15,7 @@ from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 from pyvider.rpcplugin.client.connection import ClientConnection
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_unix_socket_handle_client_called(unique_socket_path):

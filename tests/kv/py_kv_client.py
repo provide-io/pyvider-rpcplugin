@@ -9,7 +9,7 @@ import os
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.client import RPCPluginClient
 
-from pyvider.rpcplugin.tests.kv.proto import (
+from tests.kv.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,

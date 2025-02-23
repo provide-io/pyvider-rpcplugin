@@ -16,7 +16,7 @@ from pyvider.rpcplugin.exception import TransportError, HandshakeError, Certific
 from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
 from pyvider.rpcplugin.config import rpcplugin_config
 
-from pyvider.rpcplugin.tests.conftest import (
+from tests.conftest import (
     mock_server_transport,
     mock_server_protocol,
     mock_server_handler,
@@ -25,7 +25,7 @@ from pyvider.rpcplugin.tests.conftest import (
     DummyGRPCServer,
 )
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_success(

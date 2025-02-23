@@ -11,7 +11,7 @@ import pytest_asyncio
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_close_connection_active(mock_server_transport_tcp):

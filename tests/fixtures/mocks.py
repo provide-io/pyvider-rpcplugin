@@ -31,7 +31,7 @@ from pyvider.rpcplugin.transport import (
 
 from pyvider.rpcplugin.types import TransportT, ConfigT, HandlerT
 
-from pyvider.rpcplugin.tests.fixtures import *
+from ..fixtures import *
 
 class MockProtocol(RPCPluginProtocol):
     def get_grpc_descriptors(self):

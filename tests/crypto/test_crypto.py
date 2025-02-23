@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, ec
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 from pyvider.rpcplugin.crypto import (
     KEY_TYPE_RSA,
