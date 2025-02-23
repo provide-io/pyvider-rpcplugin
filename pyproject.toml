@@ -60,6 +60,16 @@ filterwarnings = [
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
 ]
 
+norecursedirs = [
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "**/*pb2*.py",
+    "logger/messages/*.py",
+]
+
+
 ################################################################################
 
 # [tool.ruff]
