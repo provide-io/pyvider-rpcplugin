@@ -135,21 +135,6 @@ alias rpcenv-refresh=" \
     popd;
 "
 
-# Client/Server aliases with proper directory handling
-alias go-build="(cd ${BASE_PATH}/go; ./build.sh)"
-
-alias go-client="(cd ${BASE_PATH} && source env.sh && ./go/bin/go-kv-client)"
-alias go-server="(cd ${BASE_PATH} && source env.sh && ./go/bin/go-kv-server)"
-
-alias py-client="(cd ${BASE_PATH}/examples/kv && ./py_kv_client.py)"
-alias py-server="(cd ${BASE_PATH}/examples/kv && ./py_kv_server.py)"
-
-alias rb-client="(cd ${BASE_PATH} && source env.sh && ./ruby/rb-kv-client.rb)"
-alias rb-server="(cd ${BASE_PATH} && source env.sh && ./ruby/rb-kv-server.rb)"
-
-alias cs-build="(cd ${BASE_PATH}  && source env.sh && cd ./csharp && dotnet build)"
-alias cs-client="(cd ${BASE_PATH} && source env.sh && cd ./csharp && dotnet run)"
-
 echo ""
 echo "🔐 TLS Configuration:"
 echo "   • Algorithm: ${PLUGIN_ALGO}"
