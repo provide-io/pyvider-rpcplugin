@@ -160,7 +160,7 @@ class ClientConnection:
                     extra={"error": str(e)}
                 )
 
-    def __del__(self):
+    def __del__(self) -> None:
         """
         Ensure resources are cleaned up.
 

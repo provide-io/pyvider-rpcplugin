@@ -13,6 +13,7 @@ class SerializableT(Protocol):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> 'SerializableT': ...
 
+
 # Core Type Variables
 ConfigT = TypeVar('ConfigT', bound='RPCPluginConfig')
 HandlerT = TypeVar('HandlerT', bound='RPCPluginHandler')

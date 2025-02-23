@@ -161,7 +161,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🛎️❌ Error generating server credentials", extra={"error": str(e)})
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         if self._server:
             try:
@@ -173,8 +173,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 self._server = None
         logger.debug("🛎️ Server shutdown complete.")
 
-
-    async def _setup_server(self, client_cert: str | None):
+    async def _setup_server(self, client_cert: str | None) -> None:
         """
         Sets up the gRPC server instance and registers the provider service.
         """
@@ -265,7 +264,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🛎️❌ Server setup post-check failed", extra={"error": str(e), "trace": traceback.format_exc()})
             raise
 
-    async def _negotiate_handshake(self):
+    async def _negotiate_handshake(self) -> bool | None:
         logger.debug("🤝 Starting handshake negotiation...")
         try:
             validate_magic_cookie()
@@ -295,7 +294,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🤝❌ Handshake negotiation failed", extra={"error": str(e), "trace": traceback.format_exc()})
             raise HandshakeError(f"Handshake negotiation failed: {e}") from e
 
-    def _register_signal_handlers(self):
+    def _register_signal_handlers(self) -> None:
         logger.debug("🛎️ Registering signal handlers for graceful shutdown...")
         try:
             loop = asyncio.get_event_loop()
@@ -308,7 +307,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         except Exception as e:
             logger.exception("Error registering signal handlers", extra={"error": str(e), "trace": traceback.format_exc()})
 
-    def _shutdown_requested(self, *args):
+    def _shutdown_requested(self, *args) -> None:
         logger.info("🛎️ Shutdown signal received; initiating graceful shutdown...")
         if self._server:
             asyncio.create_task(self.stop())
@@ -316,7 +315,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             self._serving_future.set_result(None)
             logger.debug("🛎️ Serving future resolved on shutdown request.")
 
-    async def serve(self):
+    async def serve(self) -> None:
         logger.debug("🛎️ Entering serve(); starting server setup...")
         try:
             self._register_signal_handlers()
@@ -357,7 +356,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 logger.error("🛎️❌ Error during stop()", extra={"error": str(stop_e), "trace": traceback.format_exc()})
             logger.debug("🛎️ Shutdown complete; exiting process.")
 
-    async def Xstop(self):
+    async def Xstop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         if self._server:
             try:
@@ -379,7 +378,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             self._shutdown_requested()
         logger.debug("🛎️ Server shutdown complete.")
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if not self._serving_event.is_set():
                 logger.warning("RPCPluginServer __del__ called but shutdown was not properly requested.")

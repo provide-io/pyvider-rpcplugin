@@ -1,6 +1,6 @@
 # pyvider/rpcplugin/__init__.py
 
-#from .handshake import HandshakeConfig
+# from .handshake import HandshakeConfig
 from .client import RPCPluginClient
 from .config import RPCPluginConfig, rpcplugin_config
 from .exception import (

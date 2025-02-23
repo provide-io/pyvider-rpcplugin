@@ -26,6 +26,7 @@ from rich.table import Table
 # Data classes for connection and certificate details
 # ------------------------------------------------------------------------------
 
+
 @dataclass
 class ConnectionTarget:
     """[🔌] Connection target details."""
@@ -57,6 +58,7 @@ class ConnectionTarget:
         else:
             raise ValueError("Invalid connection target. Use 'host:port' or 'unix:///path' or '/path'.")
 
+
 @dataclass
 class ConnectionInfo:
     """[🔌] Connection information captured from the TLS handshake."""
@@ -69,6 +71,7 @@ class ConnectionInfo:
     session_reused: bool
     server_hostname: str
     compression: str | None
+
 
 @dataclass
 class CertificateDetails:
@@ -115,11 +118,13 @@ class CertificateDetails:
         except AttributeError:
             return 0
 
+
 def format_hex_with_colons(hex_str: str) -> str:
     """[📜] Format a hex string with colons every two characters."""
     if len(hex_str) % 2 != 0:
         hex_str = '0' + hex_str
-    return ':'.join(hex_str[i:i+2] for i in range(0, len(hex_str), 2)).lower()
+    return ':'.join(hex_str[i:i + 2] for i in range(0, len(hex_str), 2)).lower()
+
 
 def truncate_content(content: str, length: int = 32) -> str:
     """[📜] Return the first and last `length` characters of content."""
@@ -132,8 +137,9 @@ def truncate_content(content: str, length: int = 32) -> str:
 # TLSChecker: Comprehensive tool to verify TLS connection and credentials.
 # ------------------------------------------------------------------------------
 
+
 class TLSChecker:
-    def __init__(self):
+    def __init__(self) -> None:
         self.console = Console()
         self.load_certificates()
 
@@ -418,13 +424,15 @@ class TLSChecker:
         """[🔍] Run the full TLS connection check process."""
         self.check_connection(target)
 
-def main():
+
+def main() -> None:
     parser = argparse.ArgumentParser(description='TLS Connection Checker')
     parser.add_argument('target', nargs='?', default='localhost:50051',
                         help='Connection target (e.g., host:port, unix:///path, or /path)')
     args = parser.parse_args()
     checker = TLSChecker()
     checker.check_all(args.target)
+
 
 if __name__ == "__main__":
     main()

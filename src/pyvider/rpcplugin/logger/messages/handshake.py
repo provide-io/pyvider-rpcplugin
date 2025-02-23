@@ -60,7 +60,7 @@ class HandshakeLogMessages(Enum):
     handshake_error_handshake_parsing_failed = "📡❌ Handshake parsing failed: {error}"
 
     @property
-    def level(self):
+    def level(self) -> str:
         """Extract log level from enum name."""
         if "debug" in self.name:
             return "debug"
@@ -72,7 +72,8 @@ class HandshakeLogMessages(Enum):
             return "error"
         return "info"  # Default level
 
+
 # Logging function using this system
-def log_handshake_message(message: HandshakeLogMessages, **kwargs):
+def log_handshake_message(message: HandshakeLogMessages, **kwargs) -> None:
     log_func = getattr(logger, message.level, logger.info)
     log_func(message.value.format(**kwargs))

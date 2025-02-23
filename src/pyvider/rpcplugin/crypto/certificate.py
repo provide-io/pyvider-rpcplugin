@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum, auto
 from functools import cached_property
 from pathlib import Path
-from typing import NotRequired, Self, TypeAlias, TypedDict
+from typing import NotRequired, Self, TypedDict
 
 import attrs
 from cryptography import x509
@@ -23,9 +23,11 @@ from pyvider.rpcplugin.logger import logger
 # Supported Key Types and Curve Types
 # ====================================================================:=========
 
+
 class KeyType(StrEnum):
     RSA = auto()
     ECDSA = auto()
+
 
 class CurveType(StrEnum):
     SECP256R1 = auto()
@@ -36,6 +38,7 @@ class CurveType(StrEnum):
 # CertificateConfig: Dictionary for certificate generation settings.
 # =============================================================================
 
+
 class CertificateConfig(TypedDict):
     common_name: str
     organization: str
@@ -45,12 +48,14 @@ class CertificateConfig(TypedDict):
     key_size: NotRequired[int]
     curve: NotRequired[CurveType]
 
-KeyPair: TypeAlias = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
-PublicKey: TypeAlias = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
+
+type KeyPair = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
+type PublicKey = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 
 # =============================================================================
 # CertificateBase: Immutable certificate base data
 # =============================================================================
+
 
 @attrs.define(slots=True, frozen=True)
 class CertificateBase:
@@ -150,6 +155,7 @@ class CertificateBase:
 # =============================================================================
 # Certificate: Backward compatibility layer for certificate management.
 # =============================================================================
+
 
 class Certificate:
     """
@@ -537,7 +543,7 @@ class Certificate:
 
             # Format serial number as hex grouped in two-character segments.
             serial_str = f"{cert.serial_number:0x}"
-            serial_number_hex = ":".join(serial_str[i:i+2] for i in range(0, len(serial_str), 2))
+            serial_number_hex = ":".join(serial_str[i:i + 2] for i in range(0, len(serial_str), 2))
             logger.debug(f"  🔢 Serial Number: {serial_number_hex}")
 
             # Log Subject and Issuer.

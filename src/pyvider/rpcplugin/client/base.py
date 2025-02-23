@@ -100,7 +100,7 @@ class RPCPluginClient:
 
         logger.info("✅ RPC plugin client started and ready.")
 
-    async def _setup_client_certificates(self):
+    async def _setup_client_certificates(self) -> None:
         """
         If PLUGIN_AUTO_MTLS is true, load or generate a client certificate and key.
         """
@@ -121,7 +121,7 @@ class RPCPluginClient:
         else:
             logger.info("🔐 mTLS not enabled; operating in insecure mode.")
 
-    async def _launch_process(self):
+    async def _launch_process(self) -> None:
         """
         Launch the plugin as a subprocess if not already running.
         """
@@ -154,13 +154,13 @@ class RPCPluginClient:
         # Optionally spawn a thread to relay stderr to local stderr
         self._relay_stderr_background()
 
-    def _relay_stderr_background(self):
+    def _relay_stderr_background(self) -> None:
         """
         Continuously read plugin's stderr in a background thread, printing it locally.
         """
         import threading
 
-        def read_stderr():
+        def read_stderr() -> None:
             while True:
                 if not self._process or self._process.stderr is None:
                     break
@@ -308,7 +308,7 @@ class RPCPluginClient:
         self._broker_stub = GRPCBrokerStub(self._channel)
         self._controller_stub = GRPCControllerStub(self._channel)
 
-    async def _read_stdio_logs(self):
+    async def _read_stdio_logs(self) -> None:
         """
         Subscribes to the plugin's stdio stream. This is an infinite loop
         that reads messages from the plugin, logs them, and prints them.
@@ -341,7 +341,7 @@ class RPCPluginClient:
             raise RuntimeError("Broker stub not initialized.")
         logger.debug(f"🔌📡 Attempting to open subchannel ID {sub_id} at {address} via Broker.")
 
-        async def _broker_coroutine():
+        async def _broker_coroutine() -> None:
             # Create a bidirectional streaming call
             call = self._broker_stub.StartStream()
             try:

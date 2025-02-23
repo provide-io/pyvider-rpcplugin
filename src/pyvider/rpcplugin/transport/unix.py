@@ -235,7 +235,7 @@ class UnixSocketTransport(RPCPluginTransport):
             raise TransportError(f"Socket {ep} does not exist")
 
         try:
-            reader, writer = await asyncio.wait_for(
+            _reader, writer = await asyncio.wait_for(
                 asyncio.open_unix_connection(ep), timeout=5.0
             )
             self._writer = writer

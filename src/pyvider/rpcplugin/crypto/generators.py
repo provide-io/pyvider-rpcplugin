@@ -22,11 +22,13 @@ def generate_rsa_keypair(key_size: int) -> KeyPairType:
         backend=default_backend()
     )
 
+
 def generate_ec_keypair(curve_name: str) -> KeyPairType:
     return ec.generate_private_key(
         curve=getattr(ec, curve_name.upper())(),
         backend=default_backend()
     )
+
 
 KEY_GENERATORS: dict[str, Callable] = {
     KEY_TYPE_RSA: generate_rsa_keypair,

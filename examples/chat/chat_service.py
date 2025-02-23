@@ -114,6 +114,7 @@ client_queues: dict[str, asyncio.Queue] = {}
 # ChatService Implementation
 # ---------------------------------------------------------------------------
 
+
 class ChatService(chat_pb2_grpc.ChatServiceServicer):
     """
     ChatService implements the methods defined in chat.proto (v1.0).
@@ -252,7 +253,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
         # -------------------------------------------------------------------
         # Helper method: consume_incoming()
         # -------------------------------------------------------------------
-        async def consume_incoming():
+        async def consume_incoming() -> None:
             """
             Background task that reads inbound ChatMessages from the client
             and processes them. This includes:
