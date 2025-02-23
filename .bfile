@@ -19,3 +19,4 @@
 -e 'tools'
 -e 'dist/'
 -e 'build/'
+-e 'uv.lock'
