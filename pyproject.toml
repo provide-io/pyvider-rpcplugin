@@ -23,6 +23,12 @@ dependencies = [
     "pytest-asyncio>=0.21.0",
 ]
 
+# Tell Hatch where to find your package.
+[tool.hatch.metadata.targets.wheel]
+packages = [
+    { include = "pyvider.rpcplugin", from = "src" }
+]
+
 [tool.hatch.envs.test.scripts]
 test = "pytest {args:tests}"
 
