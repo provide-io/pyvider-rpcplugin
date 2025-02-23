@@ -1,4 +1,4 @@
-name: CI
+name: continuous something or another
 
 on:
   push:
