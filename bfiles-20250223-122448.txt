@@ -1,0 +1,4134 @@
+### FILE 1: pyrightconfig.json | size=99 | modified=2025-02-23 12:16:10.269990 | file_type=json | checksum=ee60782d976b9d63ce55b72d1dd03f89 ###
+<<< BOF <<<
+{
+  "exclude": ["**/*pb2*.py"],
+  "reportUnusedVariable": false,
+  "reportUnusedFunction": false
+}
+
+>>> EOF >>>
+### FILE 2: requirements.txt | size=625 | modified=2025-02-23 11:15:09.934750 | file_type=plain | checksum=d5c8b137162944387505950d893e2a60 ###
+<<< BOF <<<
+anyio==4.8.0
+certifi==2025.1.31
+click==8.1.8
+distlib==0.3.9
+filelock==3.17.0
+h11==0.14.0
+hatch==1.14.0
+hatchling==1.27.0
+httpcore==1.0.7
+httpx==0.28.1
+hyperlink==21.0.0
+idna==3.10
+jaraco.classes==3.4.0
+jaraco.context==6.0.1
+jaraco.functools==4.1.0
+keyring==25.6.0
+markdown-it-py==3.0.0
+mdurl==0.1.2
+more-itertools==10.6.0
+packaging==24.2
+pathspec==0.12.1
+pexpect==4.9.0
+platformdirs==4.3.6
+pluggy==1.5.0
+ptyprocess==0.7.0
+Pygments==2.19.1
+rich==13.9.4
+ruff==0.9.7
+shellingham==1.5.4
+sniffio==1.3.1
+tomli_w==1.2.0
+tomlkit==0.13.2
+trove-classifiers==2025.2.18.16
+userpath==1.9.2
+uv==0.6.2
+virtualenv==20.29.2
+zstandard==0.23.0
+
+>>> EOF >>>
+### FILE 3: pyproject.toml | size=1743 | modified=2025-02-23 12:15:24.354237 | file_type=plain | checksum=d5c8e9f14e3b8f56b9ebfe262cc88065 ###
+<<< BOF <<<
+
+# pyvider-rpcplugin/pyproject.toml
+
+#? [tool.hatch.metadata]
+[project]
+name = "pyvider-rpcplugin"
+version = "0.1.0"
+description = "Pyvider RPC Plugin"
+readme = "README.md"
+authors = ["Tim Perkins <code@tim.life>"]
+
+#? [tool.hatch.envs.default]
+dependencies = [
+    "attrs>=25.1.0",
+    "cryptography>=44.0.1",
+    "google>=3.0.0",
+    "grpcio>=1.70.0",
+    "hatch>=1.14.0",
+    "protobuf>=5.29.3",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+]
+
+################################################################################
+# hatch
+################################################################################
+
+[tool.hatch.envs.test]
+dependencies = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "ruff>=0.0.265",
+]
+
+# Tell Hatch where to find your package.
+[tool.hatch.metadata.targets.wheel]
+packages = [
+    { include = "pyvider.rpcplugin", from = "src" }
+]
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args:tests}"
+
+################################################################################
+# pytest
+################################################################################
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "DEBUG"
+
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+filterwarnings = [
+    "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
+    "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
+]
+
+################################################################################
+
+# [tool.ruff]
+# line-length = 88
+# target-version = ["py313"]
+# exclude = ["build", "dist", ".venv"]
+# select = ["E", "F", "I", "RUF", "C90"]
+
+>>> EOF >>>
+### FILE 4: src/pyvider/rpcplugin/handshake.py | size=13058 | modified=2025-02-22 15:12:16.907399 | file_type=x-python | checksum=92e8e2beff6063d82720c4e17dcb9c0e ###
+<<< BOF <<<
+#!/usr/bin/env python3
+"""
+pyvider/rpcplugin/handshake.py
+
+This module implements handshake logic for the RPC plugin server.
+It includes:
+  - HandshakeConfig and HandshakeParts data classes.
+  - Functions for protocol version negotiation, transport validation,
+    handshake response building, magic cookie validation, and handshake
+    response parsing.
+
+All logging follows our three‑emoji style to clearly indicate component,
+action, and result. Detailed error handling and inline comments are included
+for clarity and debugging.
+"""
+
+import os
+from typing import Optional, TypeGuard, Tuple
+
+import attrs
+
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
+from pyvider.rpcplugin.crypto import Certificate
+from pyvider.rpcplugin.transport.types import TransportT
+
+# Use a sentinel value to detect omitted parameters.
+_SENTINEL = object()
+
+@attrs.define
+class HandshakeConfig:
+    """
+    ⚙️🔧✅ Represents the configuration for the RPC plugin handshake.
+    
+    Attributes:
+      magic_cookie_key: The expected environment key for the handshake cookie.
+      magic_cookie_value: The expected handshake cookie value.
+      protocol_versions: A list of protocol versions supported by the server.
+      supported_transports: A list of supported transport types (e.g. "tcp", "unix").
+    """
+    magic_cookie_key: str
+    magic_cookie_value: str
+    protocol_versions: list[int]
+    supported_transports: list[str]
+
+
+@attrs.define
+class HandshakeParts:
+    """
+    🤝📝✅ Represents the parts of the handshake response.
+    
+    Attributes:
+      core_version: The core protocol version.
+      plugin_version: The plugin’s protocol version.
+      network: The transport/network type (e.g. "tcp" or "unix").
+      address: The network address or socket path.
+      protocol: The communication protocol (currently fixed as "grpc").
+      server_cert: The formatted server certificate (if applicable).
+    """
+    core_version: int
+    plugin_version: int
+    network: str
+    address: str
+    protocol: str
+    server_cert: Optional[str]
+
+
+def validate_transport(transport_name: str, supported_transports: list[str]) -> None:
+    """
+    🚂🔍 Validates whether the specified transport is supported.
+    
+    Raises:
+      TransportError: If the transport_name is not in the supported_transports.
+    """
+    logger.debug(
+        f"🤝🚂🔍 Checking transport: {transport_name} against supported list: {supported_transports}"
+    )
+    if transport_name not in supported_transports:
+        logger.error(
+            f"🤝🚂❌ Unsupported transport detected: {transport_name}",
+            extra={"transport": transport_name}
+        )
+        raise TransportError(f"Unsupported transport: {transport_name}")
+    logger.debug(f"🤝🚂✅ Transport '{transport_name}' is supported.")
+
+
+def negotiate_protocol_version(server_versions: list[int]) -> int:
+    """
+    🤝🔄 Selects the highest mutually supported protocol version.
+    
+    Compares the server-provided versions against the client's supported versions
+    from the configuration.
+    
+    Returns:
+      The highest mutually supported protocol version.
+    
+    Raises:
+      ProtocolError: If no mutually supported version is found.
+    """
+    logger.debug(f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}")
+    SUPPORTED_PROTOCOL_VERSIONS = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS")
+    for version in sorted(server_versions, reverse=True):
+        if version in SUPPORTED_PROTOCOL_VERSIONS:
+            logger.info(f"🤝✅ Selected protocol version: {version}")
+            return version
+
+    logger.error(
+        f"🤝❌ Protocol negotiation failed: No compatible version found. "
+        f"Server supports: {server_versions}, Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
+    )
+    raise ProtocolError(
+        f"No mutually supported protocol version found. Server supports: {server_versions}, "
+        f"Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
+    )
+
+
+async def negotiate_transport(server_transports: list[str]) -> Tuple[str, TransportT]:
+    """
+    (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
+    creates the appropriate transport instance.
+    
+    Returns:
+      A tuple of (transport_name, transport_instance).
+    
+    Raises:
+      TransportError: If no compatible transport can be negotiated.
+    """
+    logger.debug(f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}")
+    if not server_transports:
+        logger.error("🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided")
+        raise TransportError("No transport options provided")
+    try:
+        if "tcp" in server_transports:
+            logger.debug("🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available")
+            from pyvider.rpcplugin.transport import TCPSocketTransport
+            return "tcp", TCPSocketTransport()
+        elif "unix" in server_transports:
+            logger.debug("🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available")
+            transport_path = os.path.join(
+                os.environ.get("TEMP_DIR", "/tmp"),
+                f"pyvider-{os.getpid()}.sock"
+            )
+            from pyvider.rpcplugin.transport import UnixSocketTransport
+            return "unix", UnixSocketTransport(path=transport_path)
+        else:
+            logger.error("🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
+                         extra={"server_transports": server_transports})
+            raise TransportError(f"Unsupported transports: {server_transports}")
+    except Exception as e:
+        logger.error("🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
+                     extra={"error": str(e)})
+        raise TransportError(f"Error negotiating transport: {e}") from e
+
+
+def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
+    """
+    🔍✅ TypeGuard: Verifies the handshake response format.
+    Ensures it contains exactly 6 parts and the first two parts are digits.
+    """
+    return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
+
+
+def validate_magic_cookie(
+    magic_cookie_key: Optional[str] = _SENTINEL,
+    magic_cookie_value: Optional[str] = _SENTINEL,
+    magic_cookie: Optional[str] = _SENTINEL,
+) -> None:
+    """
+    🍪🔍 Validates the magic cookie.
+    
+    If a parameter is omitted (i.e. remains as the sentinel),
+    its value is read from rpcplugin_config. However, if the caller
+    explicitly passes None, that is treated as missing and an error is raised.
+    
+    Raises:
+        HandshakeError: If any of the expected cookie values are missing or do not match.
+    """
+    logger.debug("🍪🔍 Starting magic cookie validation...")
+
+    cookie_key = rpcplugin_config.magic_cookie_key() if magic_cookie_key is _SENTINEL else magic_cookie_key
+    cookie_value = rpcplugin_config.magic_cookie_value() if magic_cookie_value is _SENTINEL else magic_cookie_value
+    cookie_provided = rpcplugin_config.get("PLUGIN_MAGIC_COOKIE") if magic_cookie is _SENTINEL else magic_cookie
+
+    logger.debug(f"🍪 cookie_key: {cookie_key}")
+    logger.debug(f"🍪 cookie_value: {cookie_value}")
+    logger.debug(f"🍪 cookie_provided: {cookie_provided}")
+
+    if cookie_key is None or cookie_key == "":
+        logger.error("🍪🪄❌ cookie_key not found")
+        raise HandshakeError("cookie_key not found")
+
+    if cookie_value is None or cookie_value == "":
+        logger.error("🍪🪄❌ Magic cookie value not found.")
+        raise HandshakeError("Magic cookie value not found.")
+
+    if cookie_provided is None or cookie_provided == "":
+        logger.error("🍪🪄❌ Magic cookie not provided.")
+        raise HandshakeError("Magic cookie not provided.")
+
+    if cookie_provided != cookie_value:
+        logger.error("🍪❌ cookie_provided does not match required cookie_value", extra={"expected": cookie_value, "received": cookie_provided})
+        raise HandshakeError("cookie_provided does not match required cookie_value")
+
+    logger.debug("🍪✅ Magic cookie validated successfully.")
+
+
+async def build_handshake_response(
+    plugin_version: int,
+    transport_name: str,
+    transport: TransportT,
+    server_cert: Optional[Certificate] = None,
+    port: Optional[int] = None
+) -> str:
+    """
+    🤝📝✅ Constructs the handshake response string in the format:
+    CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
+    """
+    logger.debug("🤝📝🔄 Building handshake response...")
+
+    try:
+        if transport_name == "tcp":
+            if port is None:
+                logger.error("🤝📝❌ TCP transport requires a valid port.")
+                raise ValueError("TCP transport requires a valid port.")
+            endpoint = f"127.0.0.1:{port}"
+            logger.debug(f"🤝📝✅ TCP endpoint set: {endpoint}")
+        elif transport_name == "unix":
+            logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
+            endpoint = await transport.listen()
+            logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
+        else:
+            logger.error(f"🤝📝❌ Unsupported transport type: {transport_name}")
+            raise TransportError(f"Unsupported transport: {transport_name}")
+
+        response_parts = [
+            str(rpcplugin_config.get("PLUGIN_CORE_VERSION")),
+            str(plugin_version),
+            transport_name,
+            endpoint,
+            "grpc",
+            ""
+        ]
+        logger.debug(f"🤝📝🔄 Base response structure: {response_parts}")
+
+        if server_cert:
+            logger.debug("🤝🔐🔄 Processing server certificate...")
+            cert_lines = server_cert.cert.strip().split('\n')
+            if len(cert_lines) < 3:
+                logger.error("🤝🔐❌ Invalid certificate format.")
+                raise ValueError("Invalid certificate format")
+            # Remove header and footer, then remove trailing '=' characters.
+            cert_body = "".join(cert_lines[1:-1]).rstrip("=")
+            response_parts[-1] = cert_body
+            logger.debug("🤝🔐✅ Certificate data added to response.")
+
+        handshake_response = "|".join(response_parts)
+        logger.debug(f"🤝📝✅ Handshake response successfully built: {handshake_response}")
+        return handshake_response
+
+    except Exception as e:
+        logger.error(f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)})
+        raise
+
+
+def parse_handshake_response(response: str) -> Tuple[int, int, str, str, str, Optional[str]]:
+    """
+    (📡🔍 Handshake Parsing) Parses the handshake response string.
+    Expected Format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
+    """
+    logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
+    try:
+        if not isinstance(response, str):
+            raise ValueError("Handshake response is not a string")
+        parts = response.strip().split("|")
+        logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
+        if not is_valid_handshake_parts(parts):
+            logger.error(f"📡❌ Invalid handshake response format. Expected 6 parts, got {len(parts)}", extra={"parts": parts})
+            raise ValueError(f"Expected 6 parts, got {len(parts)}")
+        core_version = int(parts[0])
+        plugin_version = int(parts[1])
+        network = parts[2]
+        if network not in ("tcp", "unix"):
+            logger.error(f"📡❌ Invalid network type: {network}", extra={"network": network})
+            raise ValueError(f"Invalid network type: {network}")
+        address = parts[3]
+        protocol = parts[4]
+        server_cert = parts[5] if parts[5] else None
+
+        if core_version != int(rpcplugin_config.get("PLUGIN_CORE_VERSION")):
+            logger.error(f"🤝 Unsupported handshake version: {core_version}")
+            raise HandshakeError(f"Unsupported handshake version: {core_version}")
+
+        if server_cert:
+            padding = len(server_cert) % 4
+            if padding:
+                server_cert += "=" * (4 - padding)
+            logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
+
+        logger.debug(f"📡✅ Handshake parsing success: core_version={core_version}, plugin_version={plugin_version}, network={network}, address={address}, protocol={protocol}, server_cert={'present' if server_cert else 'none'}")
+        return core_version, plugin_version, network, address, protocol, server_cert
+
+    except Exception as e:
+        logger.error(f"📡❌ Handshake parsing failed: {e}", extra={"error": str(e)})
+        raise HandshakeError(f"Failed to parse handshake response: {e}") from e
+
+>>> EOF >>>
+### FILE 5: src/pyvider/rpcplugin/exception.py | size=1038 | modified=2025-02-22 15:12:16.906679 | file_type=x-python | checksum=996827dabddf0ec99a5d189c0680ce05 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/exception.py
+
+from typing import Optional
+
+class RPCPluginError(Exception):
+    def __init__(self, message: str, code: int = None, hint: Optional[str] = None):
+        super().__init__(message)
+        self.code = code
+        self.hint = hint
+
+    def __str__(self):
+        return f"{super().__str__()}" # to implement another day. {self.hint}"
+
+class ConfigError(RPCPluginError):
+    """Configuration-related errors."""
+
+class HandshakeError(RPCPluginError):
+    """Errors during the handshake."""
+
+class ProtocolError(RPCPluginError):
+    """Errors related to protocol negotiation or incompatibility."""
+
+class TransportError(RPCPluginError):
+    """Errors with the transport layer (TCP or Unix sockets)."""
+
+class SecurityError(RPCPluginError):
+    """Errors related to security (mTLS, certificate verification)."""
+
+class CertificateError(SecurityError):
+    """Credential configuration and validation errors."""
+
+class CredentialsError(SecurityError):
+    """Credential configuration and validation errors."""
+
+>>> EOF >>>
+### FILE 6: src/pyvider/rpcplugin/server.py | size=17973 | modified=2025-02-23 09:43:36.990905 | file_type=x-python | checksum=2644c046c9b25e5b9fc01320511419ef ###
+<<< BOF <<<
+#!/usr/bin/env python3
+# pyvider/rpcplugin/server.py
+
+import asyncio
+import os
+import signal
+import stat
+import sys
+import traceback
+
+from typing import Generic, Optional
+from abc import ABC
+
+import attrs
+
+import grpc
+from grpc.aio import server as GRPCServer
+
+
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import TransportError, HandshakeError
+from pyvider.rpcplugin.handshake import (
+    HandshakeConfig,
+    build_handshake_response,
+    negotiate_protocol_version,
+    negotiate_transport,
+    validate_magic_cookie,
+)
+from pyvider.rpcplugin.crypto.certificate import Certificate
+from pyvider.rpcplugin.protocol import register_protocol_service
+from pyvider.rpcplugin.transport.types import TransportT
+from pyvider.rpcplugin.transport import (
+    UnixSocketTransport,
+    TCPSocketTransport,
+)
+from pyvider.rpcplugin.client.types import ClientT
+from pyvider.rpcplugin.types import (
+    ServerT,
+    ProtocolT,
+    HandlerT,
+)
+
+
+@attrs.define(slots=False)
+class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
+    """
+    RPCPluginServer initializes and runs a gRPC server according to negotiated
+    handshake parameters. It supports mTLS via the Certificate API and can use
+    either TCP or Unix socket transports.
+    
+    This version includes:
+      - Global instance access.
+      - Shutdown signaling via a serving future.
+      - Detailed debug logging and robust exception handling.
+    """
+    # Public initialization parameters.
+    protocol: ProtocolT = attrs.field()
+    handler: HandlerT = attrs.field()
+    config: Optional[ClientT] = attrs.field(default=None)
+    transport: Optional[TransportT] = attrs.field(default=None)
+
+    _exit_on_stop: bool = attrs.field(default=True, init=False)
+
+    # Internal attributes.
+    _transport: Optional[TransportT] = attrs.field(init=False, default=None)
+    _server: Optional[ServerT] = attrs.field(init=False, default=None)
+    _handshake_config: HandshakeConfig = attrs.field(init=False)
+    _protocol_version: int = attrs.field(init=False)
+    _transport_name: str = attrs.field(init=False)
+    _server_cert_obj: Optional[Certificate] = attrs.field(init=False, default=None)
+    _port: Optional[int] = attrs.field(init=False, default=None)
+    _serving_future: asyncio.Future = attrs.field(init=False, factory=asyncio.Future)
+    _serving_event: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
+    _shutdown_event: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
+
+    # Class-level instance for global access.
+    _instance: Optional[ServerT] = None
+
+    def __attrs_post_init__(self):
+        """
+        Initializes handshake configuration and sets the global server instance.
+        """
+        try:
+            logger.debug("🛎️⚙️ Initializing HandshakeConfig from configuration.")
+            self._handshake_config = HandshakeConfig(
+                magic_cookie_key=rpcplugin_config.magic_cookie_key(),
+                magic_cookie_value=rpcplugin_config.magic_cookie_value(),
+                protocol_versions=[int(v) for v in rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")],
+                supported_transports=rpcplugin_config.server_transports()
+            )
+            logger.debug(f"🛎️⚙️ HandshakeConfig set: {self._handshake_config}")
+        except Exception as e:
+            logger.error("🛎️⚙️❌ Failed to initialize handshake configuration", extra={"error": str(e)})
+            raise
+        RPCPluginServer._instance = self
+        logger.debug("🛎️⚙️ Global RPCPluginServer instance set.")
+
+    async def wait_for_server_ready(self, timeout: float = 3.14) -> None:
+        """Wait for server to be ready."""
+        try:
+            logger.debug("Waiting for server ready event...")
+            await asyncio.wait_for(self._serving_event.wait(), timeout)
+            logger.debug("Server ready event received.")
+        except asyncio.TimeoutError as e:
+            logger.error("Server did not become ready within timeout.", extra={"timeout": timeout})
+            raise TimeoutError("Server failed to become ready") from e
+
+    @classmethod
+    def get_instance(cls) -> Optional["RPCPluginServer"]:
+        """
+        Retrieve the currently running server instance.
+        """
+        return cls._instance
+
+    def _read_client_cert(self) -> Optional[str]:
+        """
+        Reads the client certificate from configuration.
+        """
+        try:
+            client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+            if client_cert:
+                logger.debug("🛎️ Client Cert found in config.")
+            else:
+                logger.debug("🛎️ No client certificate provided; operating insecurely.")
+            return client_cert
+        except Exception as e:
+            logger.error("🛎️❌ Error reading client certificate", extra={"error": str(e)})
+            return None
+
+    def _generate_server_credentials(self, client_cert: Optional[str]) -> Optional[grpc.ServerCredentials]:
+        """
+        Generates gRPC server TLS credentials using the Certificate API.
+        """
+        logger.debug("🛎️ Generating server credentials using Certificate API.")
+        try:
+            if not client_cert:
+                logger.debug("🛎️ Insecure mode: skipping TLS setup.")
+                return None
+
+            server_cert_conf = rpcplugin_config.get("PLUGIN_SERVER_CERT")
+            server_key_conf = rpcplugin_config.get("PLUGIN_SERVER_KEY")
+            self._server_cert_obj = Certificate(
+                cert=server_cert_conf,
+                key=server_key_conf,
+                generate_keypair=not (server_cert_conf and server_key_conf),
+                key_type="ecdsa",
+                common_name="localhost"
+            )
+            logger.debug("🛎️ Server certificate loaded/generated successfully.")
+            creds = grpc.ssl_server_credentials(
+                private_key_certificate_chain_pairs=[
+                    (
+                        self._server_cert_obj.key.encode(),
+                        self._server_cert_obj.cert.encode()
+                    )
+                ],
+                root_certificates=client_cert.encode(),
+                require_client_auth=False,
+            )
+            logger.debug("🛎️ Server TLS credentials created with mTLS enabled.")
+            return creds
+        except Exception as e:
+            logger.error("🛎️❌ Error generating server credentials", extra={"error": str(e)})
+            raise
+
+    async def stop(self):
+        logger.debug("🛎️ Stopping server...")
+        if self._server:
+            try:
+                await self._server.stop(grace=2)
+                logger.debug("🛎️ gRPC server stopped successfully.")
+            except Exception as e:
+                logger.error("🛎️❌ Error stopping gRPC server", extra={"error": str(e), "trace": traceback.format_exc()})
+            finally:
+                self._server = None
+        logger.debug("🛎️ Server shutdown complete.")
+
+
+    async def _setup_server(self, client_cert: Optional[str]):
+        """
+        Sets up the gRPC server instance and registers the provider service.
+        """
+        logger.debug("🛎️ Setting up gRPC server instance...")
+        try:
+            self._server = GRPCServer(
+                options=[
+                    ('grpc.ssl_target_name_override', 'localhost'),
+                    ('grpc.use_local_subchannel_pool', 1),
+                    ('grpc.max_receive_message_length', 16 * 1024 * 1024),
+                    ('grpc.max_send_message_length', 16 * 1024 * 1024),
+                    ('grpc.keepalive_time_ms', 10000),
+                    ('grpc.keepalive_timeout_ms', 5000),
+                    ('grpc.keepalive_permit_without_calls', True),
+                    ('grpc.http2.max_pings_without_data', 0),
+                    ('grpc.http2.min_time_between_pings_ms', 10000),
+                    ('grpc.http2.min_ping_interval_without_data_ms', 5000),
+                ]
+            )
+            logger.debug("🛎️ gRPC server instance created.")
+        except Exception as e:
+            logger.error("🛎️❌ gRPC server setup failed", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise
+
+        try:
+            logger.debug("🛎️ Registering protocol service to gRPC server...")
+            # If protocol is callable, instantiate it.
+            proto = self.protocol() if callable(self.protocol) else self.protocol
+            if not hasattr(proto, "add_to_server"):
+                raise AttributeError("Protocol instance lacks 'add_to_server'")
+
+            await proto.add_to_server(handler=self.handler, server=self._server)
+
+            register_protocol_service(server=self._server, shutdown_event=self._shutdown_event)
+
+            self.protocol = proto
+            logger.debug("🛎️ Protocol service registered successfully.")
+        except Exception as e:
+            logger.error("🛎️❌ Failed to register protocol service", extra={"error": str(e)})
+            raise RuntimeError(f"Protocol service registration failed: {e}") from e
+
+        try:
+            if client_cert:
+                logger.debug("🛎️ mTLS enabled – configuring TLS credentials.")
+                creds = self._generate_server_credentials(client_cert)
+            else:
+                creds = None
+                logger.debug("🛎️ Insecure mode – no TLS credentials used.")
+        except Exception as e:
+            logger.error("🛎️❌ Error during mTLS configuration", extra={"error": str(e)})
+            raise
+
+        try:
+            bind_address = rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT") or "127.0.0.1:0"
+            if isinstance(self._transport, UnixSocketTransport):
+                logger.debug("🛎️ Using Unix socket transport; listening on socket...")
+                await self._transport.listen()
+                socket_path = f"unix:{self._transport.path}"
+                port = self._server.add_secure_port(socket_path, creds) if creds else self._server.add_insecure_port(socket_path)
+                logger.debug(f"🛎️ Bound to Unix socket at {socket_path}.")
+            else:
+                if bind_address.startswith("tcp:"):
+                    logger.debug(f"🛎️ TCP address before stripping: {bind_address}")
+                    bind_address = bind_address[len("tcp:"):]
+                logger.debug(f"🛎️ Binding to TCP address: {bind_address}")
+                port = self._server.add_secure_port(bind_address, creds) if creds else self._server.add_insecure_port(bind_address)
+                self._port = port
+                logger.debug(f"🛎️ Bound to TCP port: {port}.")
+            await self._server.start()
+            logger.debug("🛎️ gRPC server started successfully.")
+        except Exception as e:
+            logger.error("🛎️❌ gRPC server failed to start", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise
+
+        try:
+            if isinstance(self._transport, UnixSocketTransport):
+                if not os.path.exists(self._transport.path):
+                    error_msg = f"Socket file {self._transport.path} not created."
+                    logger.error("🛎️❌ " + error_msg)
+                    raise TransportError(error_msg)
+                mode = os.stat(self._transport.path).st_mode
+                if not (mode & stat.S_IRWXU and mode & stat.S_IRWXG and mode & stat.S_IRWXO):
+                    error_msg = f"Socket file {self._transport.path} has incorrect permissions."
+                    logger.error("🛎️❌ " + error_msg)
+                    raise TransportError(error_msg)
+                logger.debug(f"🛎️ Verified Unix socket file permissions at {self._transport.path}.")
+        except Exception as e:
+            logger.error("🛎️❌ Server setup post-check failed", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise
+
+    async def _negotiate_handshake(self):
+        logger.debug("🤝 Starting handshake negotiation...")
+        try:
+            validate_magic_cookie()
+
+            logger.debug("🤝 Magic cookie validated.")
+            self._protocol_version = negotiate_protocol_version(self._handshake_config.protocol_versions)
+            logger.info(f"🤝 Selected protocol version: {self._protocol_version}")
+
+            if self.transport:
+                if isinstance(self.transport, tuple):
+                    self._transport_name, self._transport, _ = self.transport
+                    logger.debug("🤝 Transport tuple provided; unpacked transport.")
+                else:
+                    logger.debug("🤝 Using provided transport instance.")
+                    self._transport = self.transport
+                    self._transport_name = "tcp" if isinstance(self.transport, TCPSocketTransport) else "unix"
+            else:
+                logger.debug("🤝 Negotiating transport from configuration...")
+                supported_transports = self._handshake_config.supported_transports
+                if callable(supported_transports):
+                    supported_transports = supported_transports()
+                self._transport_name, self._transport = await negotiate_transport(supported_transports)
+            logger.debug(f"🤝 Handshake negotiation completed; transport selected: {self._transport_name}.")
+
+            return True
+        except Exception as e:
+            logger.error("🤝❌ Handshake negotiation failed", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise HandshakeError(f"Handshake negotiation failed: {e}") from e
+
+    def _register_signal_handlers(self):
+        logger.debug("🛎️ Registering signal handlers for graceful shutdown...")
+        try:
+            loop = asyncio.get_event_loop()
+            for sig in (signal.SIGINT, signal.SIGTERM):
+                try:
+                    loop.add_signal_handler(sig, self._shutdown_requested)
+                    logger.debug(f"🛎️ Signal handler registered for {sig.name}.")
+                except NotImplementedError:
+                    logger.warning(f"🛎️ Signal handler for {sig.name} not supported on this platform.")
+        except Exception as e:
+            logger.exception("Error registering signal handlers", extra={"error": str(e), "trace": traceback.format_exc()})
+
+    def _shutdown_requested(self, *args):
+        logger.info("🛎️ Shutdown signal received; initiating graceful shutdown...")
+        if self._server:
+            asyncio.create_task(self.stop())
+        if not self._serving_future.done():
+            self._serving_future.set_result(None)
+            logger.debug("🛎️ Serving future resolved on shutdown request.")
+
+    async def serve(self):
+        logger.debug("🛎️ Entering serve(); starting server setup...")
+        try:
+            self._register_signal_handlers()
+            await self._negotiate_handshake()
+            client_cert = self._read_client_cert()
+            await self._setup_server(client_cert)
+        except Exception as e:
+            logger.error("🛎️❌ Serve() failed during setup", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise
+
+        try:
+            response = await build_handshake_response(
+                plugin_version=self._protocol_version,
+                transport_name=self._transport_name,
+                transport=self._transport,
+                server_cert=self._server_cert_obj,
+                port=self._port
+            )
+            logger.debug(f"Handshake response built: {response}")
+            print(response, flush=True)
+            sys.stdout.flush()
+        except Exception as e:
+            logger.error("🛎️❌ Error building handshake response", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise
+
+        try:
+            self._serving_event.set()
+            logger.debug("🛎️ Server running; awaiting shutdown signal...")
+            await self._serving_future
+        except Exception as e:
+            logger.error("🛎️❌ Serve() encountered an error during run", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise
+        finally:
+            logger.debug("🛎️ Exiting serve(); initiating shutdown...")
+            try:
+                await self.stop()
+            except Exception as stop_e:
+                logger.error("🛎️❌ Error during stop()", extra={"error": str(stop_e), "trace": traceback.format_exc()})
+            logger.debug("🛎️ Shutdown complete; exiting process.")
+
+    async def Xstop(self):
+        logger.debug("🛎️ Stopping server...")
+        if self._server:
+            try:
+                await self._server.stop(grace=2)
+                logger.debug("🛎️ gRPC server stopped successfully.")
+            except Exception as e:
+                logger.error("🛎️❌ Error stopping gRPC server", extra={"error": str(e), "trace": traceback.format_exc()})
+            finally:
+                self._server = None
+        if self._transport:
+            try:
+                await self._transport.close()
+                logger.debug("🛎️ Transport closed successfully.")
+            except Exception as e:
+                logger.error("🛎️❌ Error closing transport", extra={"error": str(e), "trace": traceback.format_exc()})
+            finally:
+                self._transport = None
+        if not self._serving_future.done():
+            self._shutdown_requested()
+        logger.debug("🛎️ Server shutdown complete.")
+
+    def __del__(self):
+        try:
+            if not self._serving_event.is_set():
+                logger.warning("RPCPluginServer __del__ called but shutdown was not properly requested.")
+        except Exception:
+            pass
+
+>>> EOF >>>
+### FILE 7: src/pyvider/rpcplugin/config.py | size=7453 | modified=2025-02-23 11:19:50.612318 | file_type=x-python | checksum=b6f19b23be8e0aa98f3417e7ccba3d11 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/config.py
+
+import attrs
+import os
+
+from pyvider.rpcplugin.logger import logger
+from typing import Any, Optional
+
+SUPPORTED_PROTOCOL_VERSIONS = [1,2,3,4,5,6,7]
+
+# Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
+CONFIG_SCHEMA = {
+    "SUPPORTED_PROTOCOL_VERSIONS": {
+        "required": True,
+        "default": SUPPORTED_PROTOCOL_VERSIONS,
+        "description": "The Plugin Protocol Versions that `rpcplugin` will support.",
+    },
+    "PLUGIN_CORE_VERSION": {
+        "required": True,
+        "default": 1,
+        "description": "The core RPC Plugin version. Chances are this won't change anytime soon.",
+    },
+    "PLUGIN_LOG_LEVEL": {
+        "required": False,
+        "default": "INFO",
+        "description": "Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).",
+    },
+    "PLUGIN_MAGIC_COOKIE_KEY": {
+        "required": True,
+        "default": "PLUGIN_MAGIC_COOKIE_VALUE",
+        "description": "Magic cookie key for plugin handshake",
+    },
+    "PLUGIN_MAGIC_COOKIE_VALUE": {
+        "required": True,
+        "default": "rpcplugin-default-cookie",
+        "description": "The value that PLUGIN_MAGIC_COOKIE must match.",
+    },
+    "PLUGIN_MAGIC_COOKIE": {
+        "required": True,
+        "default": "rpcplugin-default-cookie",
+        "description": "The cookie that the client passes in.",
+    },
+    "PLUGIN_PROTOCOL_VERSIONS": {
+        "required": True,
+        "default": [1],
+        "description": "List of supported protocol versions.",
+    },
+    "PLUGIN_SERVER_TRANSPORTS": {
+        "required": True,
+        "default": ["unix", "tcp"],
+        "description": "List of transports (e.g., ['tcp', 'unix']) supported by a server.",
+    },
+    "PLUGIN_SERVER_ENDPOINT": {
+        "required": False,
+        "default": None,
+        "description": "Server endpoint for connection",
+    },
+    "PLUGIN_AUTO_MTLS": {
+        "required": True,
+        "default": "false",
+        "description": "Flag to enable automatic mTLS (true/false)",
+    },
+    "PLUGIN_SERVER_CIPHERS": {
+        "required": False,
+        "default": ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+        "description": "List of server cipher suites or named curves in order of priority.",
+    },
+    "PLUGIN_SERVER_CERT": {
+        "required": False,
+        "default": None,
+        "description": "Server certificate in PEM format or 'file://<path>' to read from a file.",
+    },
+    "PLUGIN_SERVER_KEY": {
+        "required": False,
+        "default": None,
+        "description": "Server private key in PEM format or 'file://<path>' to read from a file.",
+    },
+    "PLUGIN_SERVER_ROOT_CERTS": {
+        "required": False,
+        "default": None,
+        "description": "Root certificates for server in PEM format or 'file://<path>' to read from a file.",
+    },
+    "PLUGIN_CLIENT_TRANSPORTS": {
+        "required": True,
+        "default": ["unix", "tcp"],
+        "description": "List of transports (e.g., ['tcp', 'unix']) supported by a client.",
+    },
+    "PLUGIN_CLIENT_ENDPOINT": {
+        "required": False,
+        "default": None,
+        "description": "Client endpoint for connection",
+    },
+    "PLUGIN_CLIENT_CIPHERS": {
+        "required": False,
+        "default": ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+        "description": "List of client cipher suites or named curves in order of priority.",
+    },
+    "PLUGIN_CLIENT_CERT": {
+        "required": False,
+        "default": None,
+        "description": "Client certificate in PEM format or 'file://<path>' to read from a file.",
+    },
+    "PLUGIN_CLIENT_KEY": {
+        "required": False,
+        "default": None,
+        "description": "Client private key in PEM format or 'file://<path>' to read from a file.",
+    },
+    "PLUGIN_CLIENT_ROOT_CERTS": {
+        "required": False,
+        "default": None,
+        "description": "Root certificates for client in PEM format or 'file://<path>' to read from a file.",
+    },
+}
+
+def fetch_env_variable(key, meta):
+    """Fetches an environment variable and processes file-based values if applicable."""
+    value = os.getenv(key, meta["default"])
+
+    # Handle file-based values
+    if value and isinstance(value, str) and value.startswith("file://"):
+        file_path = value[7:]
+        try:
+            with open(file_path, "r") as f:
+                return f.read().strip()
+        except Exception as e:
+            logger.error(f"🔍❌ Failed to read file for {key}: {file_path}. Error: {e}")
+            raise ValueError(f"Failed to read file for {key}: {file_path}. Error: {e}")
+
+    # Handle lists stored as comma-separated strings
+    if isinstance(meta["default"], list) and isinstance(value, str):
+        try:
+            return [int(v.strip()) for v in value.split(",")]
+        except ValueError as e:
+            logger.error(f"❌ Failed to parse {key} as a list of integers: {value}")
+            raise ValueError(f"Invalid format for {key}. Expected comma-separated integers, got: {value}") from e
+
+    return value
+
+def get_config():
+    """Retrieves configuration values from the environment, applying defaults where necessary."""
+    config = {}
+    for key, meta in CONFIG_SCHEMA.items():
+        value = fetch_env_variable(key, meta)
+        if meta["required"] and value is None:
+            logger.error(f"⚠️ Missing required environment variable: {key}. {meta['description']}")
+            raise ValueError(f"Missing required environment variable: {key}. {meta['description']}")
+        config[key] = value
+    return config
+
+class RPCPluginConfig:
+    _instance: Optional['RPCPluginConfig'] = None
+    _config: dict[str, Any] = attrs.field(factory=dict)
+
+    def __init__(self):
+        self.config = get_config()
+        logger.debug("⚙️ RPCPluginConfig initialized with environment variables.")
+
+    @classmethod
+    def instance(cls) -> 'RPCPluginConfig':
+        """Get or create the singleton instance."""
+        if cls._instance is None:
+            cls._instance = cls()
+        return cls._instance
+
+    def get(self, key: str, default=None) -> str:
+        """Retrieve a configuration value."""
+        return self.config.get(key, default)
+
+    def get_list(self, key: str) -> list:
+        """Retrieve a configuration value as a list."""
+        value = self.get(key, [])
+        return value if isinstance(value, list) else [value]
+
+    def set(self, key: str, value: str) -> None:
+        """Set a configuration value dynamically."""
+        if key not in CONFIG_SCHEMA:
+            logger.warning(f"⚠️ Attempted to set unknown config key: {key}")
+            raise KeyError(f"Unknown configuration key: {key}")
+
+        logger.debug(f"⚙️ Updating config key: {key} -> {value}")
+        self.config[key] = value
+
+    def magic_cookie_key(self) -> str:
+        return self.get("PLUGIN_MAGIC_COOKIE_KEY")
+
+    def magic_cookie_value(self) -> str:
+        return self.get("PLUGIN_MAGIC_COOKIE_VALUE")
+
+    def server_transports(self) -> list:
+        return self.get_list("PLUGIN_SERVER_TRANSPORTS")
+
+    def server_endpoint(self) -> str:
+        return self.get("PLUGIN_SERVER_ENDPOINT")
+
+    def client_transports(self) -> list:
+        return self.get_list("PLUGIN_CLIENT_TRANSPORTS")
+
+    def client_endpoint(self) -> str:
+        return self.get("PLUGIN_CLIENT_ENDPOINT")
+
+rpcplugin_config = RPCPluginConfig()
+
+>>> EOF >>>
+### FILE 8: src/pyvider/rpcplugin/handler.py | size=293 | modified=2025-02-22 15:12:16.906858 | file_type=x-python | checksum=b61f0c6ded43be8dcdbe6e7f1e118202 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/handler.py
+
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class RPCPluginHandler(Protocol):
+    """
+    Base protocol that all RPC handlers must implement.
+    The actual methods required will be defined by the specific gRPC service.
+    """
+    pass
+
+>>> EOF >>>
+### FILE 9: src/pyvider/rpcplugin/__init__.py | size=639 | modified=2025-02-22 15:12:16.887566 | file_type=x-python | checksum=6630601c2c764861ae0773c7bf0f5083 ###
+<<< BOF <<<
+# pyvider/rpcplugin/__init__.py
+
+from .config import RPCPluginConfig, rpcplugin_config
+from .exception import RPCPluginError, HandshakeError, ProtocolError, SecurityError, TransportError
+
+from .protocol import RPCPluginProtocol
+#from .handshake import HandshakeConfig
+
+from .client import RPCPluginClient
+from .server import RPCPluginServer
+
+__all__ = [
+    "RPCPluginConfig",
+    "rpcplugin_config",
+    "RPCPluginProtocol",
+    "RPCPluginClient",
+    "RPCPluginServer",
+    "RPCPluginError",
+    "HandshakeError",
+    "ProtocolError",
+    "TransportError",
+    "SecurityError",
+]
+
+__version__ = "0.1.0"  # Remember to update the version
+
+>>> EOF >>>
+### FILE 10: src/pyvider/rpcplugin/types.py | size=768 | modified=2025-02-22 15:12:17.002770 | file_type=x-python | checksum=2a18d74228a12e1394fc48c5b9a7ae17 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/types.py
+
+from typing import TypeVar, Protocol, Any
+from grpc.aio import server as GRPCServer
+
+# Core Protocol Types
+class SerializableT(Protocol):
+    """Protocol for objects that can be serialized to/from dict."""
+    def to_dict(self) -> dict[str, Any]: ...
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> 'SerializableT': ...
+
+# Core Type Variables
+ConfigT = TypeVar('ConfigT', bound='RPCPluginConfig')
+HandlerT = TypeVar('HandlerT', bound='RPCPluginHandler')
+ProtocolT = TypeVar('ProtocolT', bound='RPCPluginProtocol')
+TransportT = TypeVar('TransportT', bound='RPCPluginTransport')
+ServerT = TypeVar('ServerT', bound=GRPCServer)
+
+# Common Return Types
+ResultT = TypeVar('ResultT')
+ErrorT = TypeVar('ErrorT', bound=Exception)
+
+>>> EOF >>>
+### FILE 11: src/pyvider/rpcplugin/crypto/certificate.py | size=32844 | modified=2025-02-22 15:12:16.889670 | file_type=x-python | checksum=e875a697dad20af727207f5334605e88 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/crypto/certificate.py
+
+import attrs
+
+from datetime import datetime, timedelta, timezone
+from enum import StrEnum, auto
+from typing import Self, TypeAlias, NotRequired, TypedDict, Union, Optional
+from pathlib import Path
+from functools import cached_property
+import os
+
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
+
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.exception import CertificateError
+
+# =============================================================================
+# Supported Key Types and Curve Types
+# ====================================================================:=========
+
+class KeyType(StrEnum):
+    RSA = auto()
+    ECDSA = auto()
+
+class CurveType(StrEnum):
+    SECP256R1 = auto()
+    SECP384R1 = auto()
+    SECP521R1 = auto()
+
+# =============================================================================
+# CertificateConfig: Dictionary for certificate generation settings.
+# =============================================================================
+
+class CertificateConfig(TypedDict):
+    common_name: str
+    organization: str
+    alt_names: list[str]
+    key_type: KeyType
+    validity_days: NotRequired[int]
+    key_size: NotRequired[int]
+    curve: NotRequired[CurveType]
+
+KeyPair: TypeAlias = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
+PublicKey: TypeAlias = Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey]
+
+# =============================================================================
+# CertificateBase: Immutable certificate base data
+# =============================================================================
+
+@attrs.define(slots=True, frozen=True)
+class CertificateBase:
+    """Immutable base certificate data."""
+    subject: x509.Name
+    issuer: x509.Name
+    public_key: PublicKey
+    not_valid_before: datetime
+    not_valid_after: datetime
+    serial_number: int
+
+    @classmethod
+    def create(cls, config: CertificateConfig) -> tuple[Self, KeyPair]:
+        """
+        📜📝🚀 CertificateBase.create: Create a new certificate base and private key.
+        
+        Logs:
+          - Current UTC time and validity period settings.
+          - Key generation (RSA/ECDSA) parameters.
+          - Creation of subject/issuer names.
+          - Generation of a random serial number.
+        
+        Raises:
+          CertificateError: If any step of the creation fails.
+        """
+        try:
+            logger.debug("📜📝🚀 CertificateBase.create: Starting certificate base creation.")
+            now = datetime.now(timezone.utc)
+            logger.debug(f"📜⏳✅ CertificateBase.create: Current UTC time: {now}")
+
+            # Get validity period from config or set defaults.
+            not_valid_before = config.get('not_valid_before', now)
+            not_valid_after = config.get('not_valid_after', not_valid_before + timedelta(days=365))
+            logger.debug(f"📜⏳✅ CertificateBase.create: Validity period: before={not_valid_before}, after={not_valid_after}")
+
+            # Ensure both dates are timezone-aware.
+            if not_valid_before.tzinfo is None:
+                not_valid_before = not_valid_before.replace(tzinfo=timezone.utc)
+                logger.debug("📜⏳✅ CertificateBase.create: Adjusted not_valid_before to UTC.")
+            if not_valid_after.tzinfo is None:
+                not_valid_after = not_valid_after.replace(tzinfo=timezone.utc)
+                logger.debug("📜⏳✅ CertificateBase.create: Adjusted not_valid_after to UTC.")
+
+            # Generate the private key according to the specified type.
+            match config['key_type']:
+                case KeyType.RSA:
+                    key_size = config.get('key_size', 2048)
+                    logger.debug(f"📜🔑🚀 CertificateBase.create: Generating RSA key (size: {key_size}).")
+                    private_key = rsa.generate_private_key(public_exponent=65537, key_size=key_size)
+                case KeyType.ECDSA:
+                    curve_choice = config.get('curve', CurveType.SECP384R1)
+                    logger.debug(f"📜🔑🚀 CertificateBase.create: Generating ECDSA key (curve: {curve_choice}).")
+                    curve = getattr(ec, curve_choice.name)()
+                    private_key = ec.generate_private_key(curve)
+                case _:
+                    logger.error(f"📜❌ CertificateBase.create: Unsupported key type: {config['key_type']}")
+                    raise ValueError(f"Unsupported key type: {config['key_type']}")
+
+            # Create subject and issuer names.
+            subject = cls._create_name(config['common_name'], config['organization'])
+            issuer = cls._create_name(config['common_name'], config['organization'])
+            logger.debug(f"📜📝✅ CertificateBase.create: Created subject and issuer: {subject}")
+
+            # Generate a random serial number.
+            serial_number = int.from_bytes(os.urandom(16), 'big')
+            logger.debug(f"📜🔑✅ CertificateBase.create: Generated serial number: {serial_number}")
+
+            base = cls(
+                subject=subject,
+                issuer=issuer,
+                public_key=private_key.public_key(),
+                not_valid_before=not_valid_before,
+                not_valid_after=not_valid_after,
+                serial_number=serial_number
+            )
+            logger.debug("📜📝✅ CertificateBase.create: Certificate base creation completed successfully.")
+            return base, private_key
+
+        except Exception as e:
+            logger.error(f"📜❌ CertificateBase.create: Failed to create certificate base: {e}", extra={"error": str(e)})
+            raise CertificateError(f"Failed to generate certificate: {e}")
+
+    @staticmethod
+    def _create_name(common_name: str, org: str) -> x509.Name:
+        """
+        📜📝🚀 _create_name: Helper method to construct an X.509 name.
+        
+        Returns:
+          An x509.Name object with the common name and organization.
+        """
+        logger.debug(f"📜📝🚀 _create_name: Creating name with common_name='{common_name}', organization='{org}'.")
+        return x509.Name([
+            x509.NameAttribute(NameOID.COMMON_NAME, common_name),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, org),
+        ])
+
+# =============================================================================
+# Certificate: Backward compatibility layer for certificate management.
+# =============================================================================
+
+class Certificate:
+    """
+    Certificate: Encapsulates X.509 certificate functionality.
+    
+    This class supports generating new certificates or loading existing PEM data.
+    All major operations are logged in detail.
+    """
+    def __init__(
+        self,
+        cert: Optional[str] = None,
+        key: Optional[str] = None,
+        generate_keypair: bool = False,
+        key_type: str = "ecdsa",
+        key_size: int = 2048,
+        ecdsa_curve: str = "secp384r1",
+        common_name: str = "localhost",
+        alt_names: list[str] = None,
+        organization_name: str = "HashiCorp",
+        **kwargs
+    ) -> None:
+        try:
+            if generate_keypair:
+                logger.debug("📜🔑🚀 Certificate.__init__: Generating new keypair as requested.")
+                conf: CertificateConfig = {
+                    "common_name": common_name,
+                    "organization": organization_name,
+                    "alt_names": alt_names or ["localhost"],
+                    "key_type": KeyType.ECDSA if key_type.lower() == "ecdsa" else KeyType.RSA,
+                    "key_size": key_size if key_type.lower() == "rsa" else None,
+                    "curve": CurveType[ecdsa_curve.upper()] if key_type.lower() == "ecdsa" else None,
+                    "not_valid_before": kwargs.get("not_valid_before", datetime.now(timezone.utc)),
+                    "not_valid_after": kwargs.get("not_valid_after", datetime.now(timezone.utc) + timedelta(days=365)),
+                }
+                logger.debug(f"📜🔑🚀 Certificate.__init__: Keypair generation config: {conf}")
+                base, private_key = CertificateBase.create(conf)
+                self._base = base
+                self._private_key = private_key
+                self._cert = self._create_x509_certificate()
+                self.cert = self._cert.public_bytes(serialization.Encoding.PEM).decode()
+                self.key = private_key.private_bytes(
+                    encoding=serialization.Encoding.PEM,
+                    format=serialization.PrivateFormat.PKCS8,
+                    encryption_algorithm=serialization.NoEncryption()
+                ).decode()
+                logger.debug("📜🔑✅ Certificate.__init__: Generated certificate and key converted to PEM successfully.")
+            else:
+                if not cert:
+                    logger.error("📜❌ Certificate.__init__: No certificate data provided.")
+                    raise CertificateError("Certificate data required")
+                logger.debug("📜🔑🚀 Certificate.__init__: Loading certificate from provided data.")
+                cert_data = self._load_from_uri_or_pem(cert)
+                x509_cert = x509.load_pem_x509_certificate(cert_data.encode())
+                logger.debug("📜🔑✅ Certificate.__init__: X.509 certificate loaded successfully from PEM.")
+
+                key_data = None
+                private_key = None
+                if key:
+                    logger.debug("📜🔑🚀 Certificate.__init__: Loading private key from provided data.")
+                    key_data = self._load_from_uri_or_pem(key)
+                    private_key = load_pem_private_key(key_data.encode(), password=None)
+                    logger.debug("📜🔑✅ Certificate.__init__: Private key loaded successfully.")
+
+                self._base = CertificateBase(
+                    subject=x509_cert.subject,
+                    issuer=x509_cert.issuer,
+                    public_key=x509_cert.public_key(),
+                    not_valid_before=(x509_cert.not_valid_before_utc.replace(tzinfo=timezone.utc)
+                                      if x509_cert.not_valid_before_utc.tzinfo is None else x509_cert.not_valid_before_utc),
+                    not_valid_after=(x509_cert.not_valid_after_utc.replace(tzinfo=timezone.utc)
+                                     if x509_cert.not_valid_after_utc.tzinfo is None else x509_cert.not_valid_after_utc),
+                    serial_number=x509_cert.serial_number
+                )
+                self._private_key = private_key
+                self._cert = x509_cert
+                self.cert = cert_data
+                self.key = key_data
+                logger.debug("📜🔑✅ Certificate.__init__: Loaded certificate and key from PEM successfully.")
+
+                # Log certificate details (this may raise an error if extraction fails)
+                self.display_cert_details()
+
+            self._trust_chain = []
+            logger.debug("📜📝✅ Certificate.__init__: Trust chain initialized.")
+
+        except Exception as e:
+            logger.error(f"📜❌ Certificate.__init__: Failed to initialize certificate: {e}", extra={"error": str(e)})
+            raise CertificateError(f"Failed to initialize certificate: {e}")
+
+    def _create_x509_certificate(self) -> x509.Certificate:
+        """
+        📜📝🚀 _create_x509_certificate: Builds and signs an X.509 certificate.
+        
+        Steps:
+          1. Calculate validity period.
+          2. Initialize the certificate builder with subject, issuer, public key, serial number, and validity.
+          3. Add extensions: Basic Constraints, Key Usage, and Extended Key Usage.
+          4. Log key details.
+          5. Sign the certificate using SHA512.
+        
+        Raises:
+          CertificateError: On any failure during the building or signing process.
+        """
+        try:
+            logger.debug("📜📝🚀 _create_x509_certificate: Starting certificate creation process.")
+            try:
+                now = datetime.now(timezone.utc)
+                not_valid_before = now - timedelta(seconds=30)
+                # Set expiration 30 years from now with a fixed hour.
+                not_valid_after = now.replace(year=now.year + 30, hour=12)
+                logger.debug(f"📜⏳✅ _create_x509_certificate: Validity period: not_valid_before={not_valid_before}, not_valid_after={not_valid_after}")
+            except Exception as e:
+                logger.error(f"📜❌ _create_x509_certificate: Validity period calculation failed: {e}", extra={"error": str(e)})
+                raise CertificateError(f"Failed to calculate validity period: {e}")
+
+            builder = (
+                x509.CertificateBuilder()
+                .subject_name(self._base.subject)
+                .issuer_name(self._base.issuer)
+                .public_key(self._base.public_key)
+                .serial_number(self._base.serial_number)
+                .not_valid_before(not_valid_before)
+                .not_valid_after(not_valid_after)
+            )
+            logger.debug("📜📝🚀 _create_x509_certificate: Certificate builder initialized with base data.")
+
+            # Add Subject Alternative Names (SANs)
+            san = x509.SubjectAlternativeName([
+                x509.DNSName("localhost"),
+                # x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
+                # x509.IPAddress(ipaddress.IPv6Address("::1"))
+            ])
+            builder = builder.add_extension(san, critical=False)
+            logger.debug("📜📝✅ _create_x509_certificate: Added Subject Alternative Names")
+
+            # Add Basic Constraints extension (indicates CA status).
+            try:
+                builder = builder.add_extension(
+                    x509.BasicConstraints(ca=True, path_length=None),
+                    critical=True
+                )
+                logger.debug("📜📝✅ _create_x509_certificate: Added Basic Constraints extension.")
+            except Exception as e:
+                logger.error(f"📜❌ _create_x509_certificate: Failed to add Basic Constraints extension: {e}", extra={"error": str(e)})
+                raise CertificateError("Failed to add Basic Constraints extension") from e
+
+            # Add Key Usage extension.
+            try:
+                builder = builder.add_extension(
+                    x509.KeyUsage(
+                        digital_signature=True,
+                        content_commitment=False,
+                        key_encipherment=True,
+                        data_encipherment=False,
+                        key_agreement=True,
+                        key_cert_sign=True,
+                        crl_sign=False,
+                        encipher_only=False,
+                        decipher_only=False,
+                    ),
+                    critical=True
+                )
+                logger.debug("📜📝✅ _create_x509_certificate: Added Key Usage extension.")
+            except Exception as e:
+                logger.error(f"📜❌ _create_x509_certificate: Failed to add Key Usage extension: {e}", extra={"error": str(e)})
+                raise CertificateError("Failed to add Key Usage extension") from e
+
+            # Add Extended Key Usage extension.
+            try:
+                builder = builder.add_extension(
+                    x509.ExtendedKeyUsage([
+                        ExtendedKeyUsageOID.CLIENT_AUTH,
+                        ExtendedKeyUsageOID.SERVER_AUTH,
+                    ]),
+                    critical=False
+                )
+                logger.debug("📜📝✅ _create_x509_certificate: Added Extended Key Usage extension.")
+            except Exception as e:
+                logger.error(f"📜❌ _create_x509_certificate: Failed to add Extended Key Usage extension: {e}", extra={"error": str(e)})
+                raise CertificateError("Failed to add Extended Key Usage extension") from e
+
+            # Log private key details for debugging.
+            self.display_key_details()
+
+            # Sign the certificate.
+            try:
+                signed_cert = builder.sign(
+                    private_key=self._private_key,
+                    algorithm=hashes.SHA512(),
+                    backend=default_backend()
+                )
+                logger.debug("📜📝✅ _create_x509_certificate: Certificate signed successfully.")
+                return signed_cert
+            except Exception as e:
+                logger.error(f"📜❌ _create_x509_certificate: Failed to sign certificate: {e}", extra={"error": str(e)})
+                raise CertificateError("Failed to sign certificate") from e
+
+        except CertificateError:
+            raise
+        except Exception as e:
+            logger.error(f"📜❌ _create_x509_certificate: Failed to create X.509 certificate: {e}", extra={"error": str(e)})
+            raise CertificateError(f"Failed to create X.509 certificate: {e}")
+
+    @staticmethod
+    def _load_from_uri_or_pem(data: str) -> str:
+        """
+        📜📂🚀 _load_from_uri_or_pem: Loads PEM data either from a file (if prefixed with 'file://')
+        or directly from the provided string.
+        
+        Returns:
+          The stripped PEM data as a string.
+        
+        Raises:
+          CertificateError: If the data cannot be loaded.
+        """
+        try:
+            if data.startswith("file://"):
+                path = Path(data.replace("file://", ""))
+                with path.open("r", encoding="utf-8") as f:
+                    loaded_data = f.read().strip()
+                    logger.debug("📜📂✅ _load_from_uri_or_pem: Loaded data from file.", extra={"path": str(path)})
+                    return loaded_data
+            loaded_data = data.strip()
+            logger.debug("📜📂✅ _load_from_uri_or_pem: Loaded data from PEM string.")
+            return loaded_data
+        except Exception as e:
+            logger.error(f"📜📂❌ _load_from_uri_or_pem: Failed to load data: {e}", extra={"error": str(e)})
+            raise CertificateError(f"Failed to load data: {e}")
+
+    @property
+    def trust_chain(self) -> list['Certificate']:
+        logger.debug("📜📝✅ trust_chain: Retrieving trust chain.")
+        return self._trust_chain
+
+    @trust_chain.setter
+    def trust_chain(self, value: list['Certificate']) -> None:
+        logger.debug("📜📝✅ trust_chain: Updating trust chain.")
+        self._trust_chain = value
+
+    @cached_property
+    def is_valid(self) -> bool:
+        """Check if the certificate is currently valid."""
+        now = datetime.now(timezone.utc)
+        valid = self._base.not_valid_before <= now <= self._base.not_valid_after
+        logger.debug(f"📜⏳✅ is_valid: Certificate validity check result: {valid}")
+        return valid
+
+    def verify_trust(self, other_cert: 'Certificate') -> bool:
+        """
+        📜🔍🚀 verify_trust: Verifies that the other certificate is trusted.
+        
+        Checks if:
+          - The other certificate is not None.
+          - It is currently valid.
+          - It has a public key.
+          - It is either self-signed (and matches) or present/validated in the trust chain.
+        
+        Returns:
+          True if trusted, False otherwise.
+        
+        Raises:
+          CertificateError: If required fields are missing.
+        """
+        logger.debug("📜🔍🚀 verify_trust: Starting trust verification.")
+        if other_cert is None:
+            logger.error("📜🔍❌ verify_trust: Other certificate is None.")
+            raise CertificateError("Cannot verify trust: other_cert is None")
+        if not other_cert.is_valid:
+            logger.debug("📜🔍⚠️ verify_trust: Other certificate is not valid (expired or not yet valid).")
+            return False
+        if other_cert.public_key is None:
+            logger.error("📜🔍❌ verify_trust: Other certificate has no public key.")
+            raise CertificateError("Unsupported public key algorithm: key is None")
+        # If self-signed and identical, consider trusted.
+        if self.subject == self.issuer and other_cert == self:
+            logger.debug("📜🔍✅ verify_trust: Self-signed certificate verified by itself.")
+            return True
+        if other_cert in self._trust_chain:
+            logger.debug("📜🔍✅ verify_trust: Other certificate found in trust chain.")
+            return True
+        # Otherwise, validate against each certificate in the trust chain.
+        for trusted in self._trust_chain:
+            valid = self._validate_cert(trusted, other_cert)
+            logger.debug(f"📜🔍🔁 verify_trust: Validation against a trusted certificate returned: {valid}")
+            if valid:
+                return True
+        logger.debug("📜🔍❌ verify_trust: Certificate verification failed; certificate is not trusted.")
+        return False
+
+    def _validate_cert(self, trusted: 'Certificate', other_cert: 'Certificate') -> bool:
+        """
+        📜🔍🚀 _validate_cert: Validates the other certificate against a trusted certificate.
+        
+        Verifies:
+          - That the trusted certificate’s issuer matches the other certificate’s subject.
+          - That the signature on the other certificate is valid using the trusted certificate’s public key.
+        
+        Returns:
+          True if validation is successful, False otherwise.
+        """
+        logger.debug("📜🔍🚀 _validate_cert: Starting validation against trusted certificate.")
+        if trusted._base.issuer != other_cert._base.subject:
+            logger.debug("📜🔍❌ _validate_cert: Issuer mismatch between trusted and other certificate.")
+            return False
+        try:
+            public_key = trusted._base.public_key
+            signature = other_cert._cert.signature
+            data = other_cert._cert.tbs_certificate_bytes
+            hash_algo = other_cert._cert.signature_hash_algorithm
+            # Choose verification method based on key type.
+            if isinstance(public_key, rsa.RSAPublicKey):
+                public_key.verify(signature, data, padding.PKCS1v15(), hash_algo)
+            elif isinstance(public_key, ec.EllipticCurvePublicKey):
+                public_key.verify(signature, data, ec.ECDSA(hash_algo))
+            else:
+                logger.error("📜🔍❌ _validate_cert: Unsupported public key type for signature verification.")
+                return False
+            logger.debug("📜🔍✅ _validate_cert: Certificate signature verified successfully.")
+            return True
+        except Exception as e:
+            logger.error(f"📜🔍❌ _validate_cert: Signature verification failed: {e}", extra={"error": str(e)})
+            return False
+
+    @property
+    def is_ca(self) -> bool:
+        """
+        📜🔍🚀 is_ca: Determines whether the certificate is a Certificate Authority (CA).
+        
+        Returns:
+          True if the certificate is a CA, False otherwise.
+        """
+        try:
+            ext = self._cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.BASIC_CONSTRAINTS)
+            ca = ext.value.ca
+            logger.debug(f"📜🔍✅ is_ca: Certificate CA flag: {ca}")
+            return ca
+        except (x509.ExtensionNotFound, AttributeError) as e:
+            logger.error(f"📜🔍❌ is_ca: Failed to retrieve CA flag: {e}", extra={"error": str(e)})
+            return False
+
+    @property
+    def subject(self) -> str:
+        """Legacy property: Returns the certificate subject as a string."""
+        subject_str = self._base.subject.rfc4514_string()
+        logger.debug(f"📜🔍✅ subject: {subject_str}")
+        return subject_str
+
+    @property
+    def issuer(self) -> str:
+        """Legacy property: Returns the certificate issuer as a string."""
+        issuer_str = self._base.issuer.rfc4514_string()
+        logger.debug(f"📜🔍✅ issuer: {issuer_str}")
+        return issuer_str
+
+    @property
+    def public_key(self) -> PublicKey:
+        logger.debug("📜🔑✅ public_key: Retrieving public key from certificate base.")
+        return self._base.public_key
+
+    def __repr__(self) -> str:
+        """Return a consistent string representation of the certificate."""
+        rep = f"<Certificate subject={self.subject} issuer={self.issuer} valid={self.is_valid} ca={self.is_ca}>"
+        logger.debug(f"📜🔍✅ __repr__: {rep}")
+        return rep
+
+    def display_cert_details(self) -> None:
+        """
+        📜📂🚀 display_cert_details: Logs detailed certificate information.
+        
+        This method extracts and logs:
+          - Serial number (in hex, grouped in two-character segments).
+          - Subject and issuer.
+          - Validity period.
+          - Key Usage (if present).
+          - Extended Key Usage (if present).
+          - Basic Constraints.
+          - Public key algorithm, size, and PEM-encoded public key.
+        
+        Raises:
+          CertificateError: If any certificate detail cannot be extracted.
+        """
+        cert = self._cert  # x509 certificate object
+        try:
+            logger.debug("📜📂🚀 display_cert_details: Starting extraction of certificate details.")
+
+            # Format serial number as hex grouped in two-character segments.
+            serial_str = f"{cert.serial_number:0x}"
+            serial_number_hex = ":".join(serial_str[i:i+2] for i in range(0, len(serial_str), 2))
+            logger.debug(f"  🔢 Serial Number: {serial_number_hex}")
+
+            # Log Subject and Issuer.
+            logger.debug(f"  🏷️ Subject: {cert.subject.rfc4514_string()}")
+            logger.debug(f"  📢 Issuer: {cert.issuer.rfc4514_string()}")
+
+            # Log Validity period.
+            logger.debug(f"  📆 Valid From: {cert.not_valid_before_utc.isoformat()}")
+            logger.debug(f"  📆 Valid To: {cert.not_valid_after_utc.isoformat()}")
+
+            # Key Usage extension.
+            try:
+                key_usage_ext = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.KEY_USAGE)
+                usages = []
+                if key_usage_ext.value.digital_signature:
+                    usages.append("digital_signature")
+                if key_usage_ext.value.content_commitment:
+                    usages.append("content_commitment")
+                if key_usage_ext.value.key_encipherment:
+                    usages.append("key_encipherment")
+                if key_usage_ext.value.data_encipherment:
+                    usages.append("data_encipherment")
+                if key_usage_ext.value.key_agreement:
+                    usages.append("key_agreement")
+                if key_usage_ext.value.key_cert_sign:
+                    usages.append("key_cert_sign")
+                if key_usage_ext.value.crl_sign:
+                    usages.append("crl_sign")
+                if key_usage_ext.value.encipher_only:
+                    usages.append("encipher_only")
+                if key_usage_ext.value.decipher_only:
+                    usages.append("decipher_only")
+                logger.debug(f"  🔑 Key Usage: {', '.join(usages) if usages else 'None'}")
+            except x509.ExtensionNotFound:
+                logger.debug("  🔑 Key Usage: Not present")
+
+            # Extended Key Usage extension.
+            try:
+                ext_key_usage_ext = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.EXTENDED_KEY_USAGE)
+                eku_oids = [oid.dotted_string for oid in ext_key_usage_ext.value]
+                # Use the attribute 'dotted_string' as a fallback for names.
+                eku_names = [getattr(oid, "name", oid.dotted_string) for oid in ext_key_usage_ext.value]
+                logger.debug(f"  ✨ Extended Key Usage (OID): {', '.join(eku_oids) if eku_oids else 'None'}")
+                logger.debug(f"  ✨ Extended Key Usage (Name): {', '.join(eku_names) if eku_names else 'None'}")
+            except x509.ExtensionNotFound:
+                logger.debug("  ✨ Extended Key Usage: Not present")
+
+            # Basic Constraints extension.
+            try:
+                bc_ext = cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.BASIC_CONSTRAINTS)
+                ca_info = "CA" if bc_ext.value.ca else "Not CA"
+                path_length = f" (Path Length: {bc_ext.value.path_length})" if bc_ext.value.path_length is not None else ""
+                logger.debug(f"  ⛓️ Basic Constraints: {ca_info}{path_length}")
+            except x509.ExtensionNotFound:
+                logger.debug("  ⛓️ Basic Constraints: Not present")
+
+            # Public Key details.
+            public_key = cert.public_key()
+            if isinstance(public_key, rsa.RSAPublicKey):
+                key_type = "RSA"
+                key_size = public_key.key_size
+            elif isinstance(public_key, ec.EllipticCurvePublicKey):
+                key_type = "ECDSA"
+                key_size = public_key.curve.name
+            else:
+                key_type = "Unknown"
+                key_size = "Unknown"
+            logger.debug(f"  🔑 Public Key: {key_type} ({key_size})")
+            pem_public_key = public_key.public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            ).decode()
+            logger.debug(f"  🔑 PEM Encoded Public Key:\n{pem_public_key}")
+
+            logger.debug("📜📂🚀 display_cert_details: Certificate details extracted successfully.")
+        except Exception as e:
+            logger.error(f"📜🚨 Could not extract certificate details: {e}", extra={"error": str(e)})
+            raise CertificateError("Could not extract certificate details") from e
+
+    def display_key_details(self) -> None:
+        """
+        🔑📂🚀 display_key_details: Logs private key details in a structured format.
+        
+        Logs:
+          - The key type and size.
+          - The PEM-encoded private key.
+        
+        Raises:
+          CertificateError: If key details cannot be extracted.
+        """
+        key = self._private_key
+        if key is None:
+            logger.warning("🔑⚠️ display_key_details: No private key available to display.")
+            return
+
+        try:
+            logger.debug("🔑📂🚀 display_key_details: Starting extraction of private key details.")
+            if isinstance(key, rsa.RSAPrivateKey):
+                key_type = "RSA"
+                key_size = key.key_size
+            elif isinstance(key, ec.EllipticCurvePrivateKey):
+                key_type = "ECDSA"
+                key_size = key.curve.name
+            else:
+                key_type = "Unknown"
+                key_size = "Unknown"
+            logger.debug(f"  🔑 Key Type: {key_type}")
+            logger.debug(f"  📏 Key Size: {key_size}")
+            pem_key = key.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption()
+            ).decode()
+            logger.debug(f"  🔑 PEM Encoded Private Key:\n{pem_key}")
+            logger.debug("🔑📂🚀 display_key_details: Private key details extracted successfully.")
+        except Exception as e:
+            logger.error(f"🔑🚨 Could not extract key details: {e}", extra={"error": str(e)})
+            raise CertificateError("Could not extract key details") from e
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Certificate):
+            logger.debug("📜🔍❌ __eq__: Other object is not a Certificate.")
+            return NotImplemented
+        eq = (self._base.subject == other._base.subject and
+              self._base.serial_number == other._base.serial_number)
+        logger.debug(f"📜🔍✅ __eq__: Equality result: {eq}")
+        return eq
+
+    def __hash__(self) -> int:
+        h = hash((self._base.subject, self._base.serial_number))
+        logger.debug(f"📜🔍✅ __hash__: Hash value: {h}")
+        return h
+
+    def __repr__(self) -> str:
+        """Return a consistent string representation of the certificate."""
+        rep = f"<Certificate subject={self.subject} issuer={self.issuer} valid={self.is_valid} ca={self.is_ca}>"
+        logger.debug(f"📜🔍✅ __repr__: {rep}")
+        return rep
+
+>>> EOF >>>
+### FILE 12: src/pyvider/rpcplugin/crypto/constants.py | size=365 | modified=2025-02-22 15:12:16.889972 | file_type=x-python | checksum=f64c19542dde5988df8adccb6f8ead5b ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/crypto/constants.py
+
+
+# Key types
+KEY_TYPE_RSA = "rsa"
+KEY_TYPE_ECDSA = "ecdsa"
+
+# Default parameters
+DEFAULT_RSA_KEY_SIZE = 2048
+DEFAULT_ECDSA_CURVE = "secp384r1"
+
+# Supported algorithms
+SUPPORTED_KEY_TYPES = [KEY_TYPE_RSA, KEY_TYPE_ECDSA]
+SUPPORTED_RSA_SIZES = [2048, 3072, 4096]
+SUPPORTED_EC_CURVES = ["secp256r1", "secp384r1", "secp521r1"]
+
+>>> EOF >>>
+### FILE 13: src/pyvider/rpcplugin/crypto/__init__.py | size=989 | modified=2025-02-22 15:12:16.889306 | file_type=x-python | checksum=4c8965c3f7b2d058aa707d0c4ed7ee50 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/crypto/__init__.py
+
+from pyvider.rpcplugin.crypto.constants import (
+    KEY_TYPE_RSA,
+    KEY_TYPE_ECDSA,
+    DEFAULT_RSA_KEY_SIZE,
+    DEFAULT_ECDSA_CURVE,
+    SUPPORTED_KEY_TYPES,
+    SUPPORTED_RSA_SIZES,
+    SUPPORTED_EC_CURVES,
+)
+from pyvider.rpcplugin.crypto.types import (
+    KeyPairType,
+    PublicKeyType
+)
+from pyvider.rpcplugin.crypto.generators import (
+    generate_rsa_keypair,
+    generate_ec_keypair,
+    generate_keypair,
+    KEY_GENERATORS,
+)
+from pyvider.rpcplugin.crypto.certificate import Certificate
+from pyvider.rpcplugin.crypto.debug import display_cert_details
+
+__all__ = [
+    "KEY_TYPE_RSA",
+    "KEY_TYPE_ECDSA",
+    "DEFAULT_RSA_KEY_SIZE",
+    "DEFAULT_ECDSA_CURVE",
+    "SUPPORTED_KEY_TYPES",
+    "SUPPORTED_RSA_SIZES",
+    "SUPPORTED_EC_CURVES",
+    "KeyPairType",
+    "PublicKeyType",
+    "generate_rsa_keypair",
+    "generate_ec_keypair",
+    "generate_keypair",
+    "KEY_GENERATORS",
+    "Certificate",
+    "display_cert_details",
+]
+
+>>> EOF >>>
+### FILE 14: src/pyvider/rpcplugin/crypto/types.py | size=801 | modified=2025-02-22 15:12:16.890638 | file_type=x-python | checksum=56362613a3c53f1ed6c9a1f87d212bda ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/crypto/types.py
+
+from typing import TypeAlias, Union, Protocol
+
+from cryptography.hazmat.primitives.asymmetric import rsa, ec
+from cryptography.x509 import Certificate as X509Certificate
+
+# Key Types
+PrivateKeyType: TypeAlias = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
+PublicKeyType: TypeAlias = Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey]
+KeyPairType: TypeAlias = tuple[PublicKeyType, PrivateKeyType]
+
+# Certificate Types
+CertificateType: TypeAlias = X509Certificate
+PEMType: TypeAlias = str
+
+class CertificateProtocolT(Protocol):
+    """Protocol for certificate operations."""
+    def verify_trust(self, other: 'CertificateProtocolT') -> bool: ...
+    @property
+    def is_valid(self) -> bool: ...
+    @property
+    def public_key(self) -> PublicKeyType: ...
+
+>>> EOF >>>
+### FILE 15: src/pyvider/rpcplugin/crypto/generators.py | size=2303 | modified=2025-02-22 15:12:16.890548 | file_type=x-python | checksum=d5c5d361c7c2bf2fde22f779df819cea ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/crypto/generators.py
+
+from typing import Callable
+from cryptography.hazmat.primitives.asymmetric import rsa, ec
+from cryptography.hazmat.backends import default_backend
+
+from pyvider.rpcplugin.crypto.constants import (
+    KEY_TYPE_RSA, KEY_TYPE_ECDSA,
+    SUPPORTED_RSA_SIZES, SUPPORTED_EC_CURVES
+)
+from pyvider.rpcplugin.crypto.types import KeyPairType
+
+def generate_rsa_keypair(key_size: int) -> KeyPairType:
+    return rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=key_size,
+        backend=default_backend()
+    )
+
+def generate_ec_keypair(curve_name: str) -> KeyPairType:
+    return ec.generate_private_key(
+        curve=getattr(ec, curve_name.upper())(),
+        backend=default_backend()
+    )
+
+KEY_GENERATORS: dict[str, Callable] = {
+    KEY_TYPE_RSA: generate_rsa_keypair,
+    KEY_TYPE_ECDSA: generate_ec_keypair,
+}
+
+from pyvider.rpcplugin.crypto.constants import (
+    KEY_TYPE_RSA, KEY_TYPE_ECDSA
+)
+
+from pyvider.rpcplugin.crypto.types import KeyPairType
+
+def generate_keypair(key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve_name: str = "secp384r1") -> KeyPairType:
+    """
+    Generates an RSA or ECDSA keypair based on the given parameters.
+
+    Args:
+        key_type (str): The type of keypair to generate ("rsa" or "ecdsa").
+        key_size (int): The RSA key size (must be in SUPPORTED_RSA_SIZES).
+        curve_name (str): The ECDSA curve name (must be in SUPPORTED_EC_CURVES).
+
+    Returns:
+        KeyPairType: The generated private key.
+
+    Raises:
+        ValueError: If an invalid key_type, key_size, or curve_name is provided.
+    """
+    if key_type == KEY_TYPE_RSA:
+        if key_size not in SUPPORTED_RSA_SIZES:
+            raise ValueError(f"Unsupported RSA key size: {key_size}")
+        return rsa.generate_private_key(
+            public_exponent=65537,
+            key_size=key_size,
+            backend=default_backend()
+        )
+    
+    elif key_type == KEY_TYPE_ECDSA:
+        if curve_name not in SUPPORTED_EC_CURVES:
+            raise ValueError(f"Unsupported EC curve: {curve_name}")
+        return ec.generate_private_key(
+            curve=getattr(ec, curve_name.upper())(),
+            backend=default_backend()
+        )
+
+    else:
+        raise ValueError(f"Unsupported key type: {key_type}")
+
+>>> EOF >>>
+### FILE 16: src/pyvider/rpcplugin/crypto/debug.py | size=1902 | modified=2025-02-22 15:12:16.890309 | file_type=x-python | checksum=566e1b14d7c31fabba29de18309fd8d5 ###
+<<< BOF <<<
+
+# pyvider/crypto/debug.py
+
+
+
+
+from cryptography import x509
+from cryptography.x509.oid import NameOID
+
+#from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import SecurityError
+
+
+def display_cert_details(cert: x509.Certificate, logger) -> None:
+    """Log certificate details in a structured format with emojis."""
+    try:
+        logger.debug("📜 Certificate Information:")
+
+        # Log serial number in hex notation
+        serial_number_hex = ":".join(f"{cert.serial_number:02x}"[i:i+2] for i in range(0, len(f"{cert.serial_number:02x}"), 2))
+        logger.debug(f"   🔢 Serial Number: {serial_number_hex}")
+        logger.debug(f"   🏷️  Subject: {cert.subject}")
+        logger.debug(f"   🏢 Organization: {', '.join(org.value for org in cert.subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME))}")
+        logger.debug(f"   🌐 Common Name: {cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)[0].value}")
+        logger.debug(f"   📆 Valid From: {cert.not_valid_before_utc}")
+        logger.debug(f"   📆 Valid To: {cert.not_valid_after_utc}")
+
+        # Get key usage as a list of enabled usages
+        if key_usage_ext := cert.extensions.get_extension_for_oid(x509.oid.ExtensionOID.KEY_USAGE):
+            usages = []
+            for usage_attr in ['digital_signature', 'content_commitment', 'key_encipherment',
+                              'data_encipherment', 'key_agreement', 'key_cert_sign',
+                              'crl_sign', 'encipher_only', 'decipher_only']:
+                if getattr(key_usage_ext.value, usage_attr):
+                    usages.append(usage_attr)
+            logger.debug(f"   🔑 Key Usage: {', '.join(usages)}")
+    except Exception:
+        logger.debug("📜🚨 Could not extract certificate details.")
+        raise SecurityError("📜🚨 Could not extract certificate details.")
+
+###
+>>> EOF >>>
+### FILE 17: src/pyvider/rpcplugin/transport/unix.py | size=12303 | modified=2025-02-22 15:12:17.002399 | file_type=x-python | checksum=978838ab7ca6c5dbfdcc22a6d7d2c9ab ###
+<<< BOF <<<
+#!/usr/bin/env python3
+# pyvider/rpcplugin/transport/unix.py
+
+import asyncio
+import errno
+import os
+import socket
+import stat
+from typing import Optional, Set
+from contextlib import suppress
+
+import attrs
+
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.exception import TransportError
+from pyvider.rpcplugin.transport.base import RPCPluginTransport
+from pyvider.rpcplugin.client.connection import ClientConnection
+
+
+@attrs.define(frozen=False, slots=True)
+class UnixSocketTransport(RPCPluginTransport):
+    """
+    Unix domain socket transport with enhanced reliability and state management.
+
+    Features:
+      - _check_socket_in_use() method (used by certain tests)
+      - _verify_socket_state() for stale detection
+      - Connection tracking for proper close
+      - Crash / error handling
+      - Emphasis on cleaning up .sock files
+    """
+
+    path: Optional[str] = attrs.field(default=None)
+    _server: Optional[asyncio.AbstractServer] = attrs.field(init=False, default=None)
+    _writer: Optional[asyncio.StreamWriter] = attrs.field(init=False, default=None)
+    endpoint: Optional[str] = attrs.field(init=False, default=None)
+
+    _connections: Set[ClientConnection] = attrs.field(init=False, factory=set)
+    _running: bool = attrs.field(init=False, default=False)
+    _closing: bool = attrs.field(init=False, default=False)
+    _lock: asyncio.Lock = attrs.field(init=False, factory=asyncio.Lock)
+
+    def __attrs_post_init__(self):
+        """
+        Initialize transport state and possibly assign ephemeral sock name if none is provided.
+        """
+        logger.debug(f"🚀 __attrs_post_init__ called, path={self.path}")
+        if not self.path:
+            # fallback ephemeral name
+            import tempfile
+            import uuid
+            self.path = os.path.join(tempfile.gettempdir(), f"pyvider-{uuid.uuid4()}.sock")
+            logger.debug(f"🚀 Assigned ephemeral Unix socket path={self.path}")
+
+        # Some test code calls _close_writer directly, so we keep it
+        self._server_ready = asyncio.Event()
+        logger.debug(f"🚀 UnixSocketTransport init complete for path={self.path}")
+
+    async def _close_writer(self, writer: Optional[asyncio.StreamWriter]) -> None:
+        """
+        Helper method for tests that may call _close_writer directly.
+        This method only closes the provided writer.
+        """
+        logger.debug("🔒 Attempting _close_writer on a writer object.")
+        if not writer:
+            return
+        try:
+            writer.close()
+            await writer.wait_closed()
+            logger.debug("🔒 _close_writer succeeded.")
+        except Exception as e:
+            logger.error(f"🔒 _close_writer encountered error: {e}")
+
+    async def _check_socket_in_use(self) -> bool:
+        """
+        Some tests specifically monkeypatch `_check_socket_in_use()` to simulate scenarios.
+        By default, just calls _verify_socket_state to see if socket is truly active.
+        """
+        logger.debug(f"🔎 Checking if socket is in use via _check_socket_in_use(): {self.path}")
+        # Re-use _verify_socket_state's logic. If it returns True => in use
+        return await self._verify_socket_state()
+
+    async def _verify_socket_state(self) -> bool:
+        """
+        If the socket file is present and connectable, we consider it in use.
+        If present but not connectable, we consider it stale and remove it.
+        """
+        logger.debug(f"🔎 _verify_socket_state: Checking {self.path}")
+        if not self.path or not os.path.exists(self.path):
+            logger.debug("🔎 Socket file doesn't exist.")
+            return False
+
+        # If path is a directory or otherwise invalid
+        if os.path.isdir(self.path):
+            logger.error(f"🔎 Invalid path (dir, not socket): {self.path}")
+            raise TransportError("Failed to create Unix socket: Path is a directory.")
+
+        # Attempt to connect quickly
+        try:
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            try:
+                sock.connect(self.path)
+                logger.debug(f"🔎 Socket {self.path} is active/in use.")
+                return True
+            except (ConnectionRefusedError, OSError) as e:
+                logger.debug(f"🔎 Socket {self.path} found stale, removing. Reason: {e}")
+                with suppress(OSError):
+                    os.unlink(self.path)
+                return False
+            finally:
+                sock.close()
+        except Exception as e:
+            logger.error(f"🔎 Unexpected error verifying socket state: {e}")
+            return False
+
+    async def _ensure_socket_directory(self) -> None:
+        """
+        If there's a directory in self.path, ensure it exists (some tests expect 'Failed to create Unix socket')
+        """
+        directory = os.path.dirname(self.path or "")
+        if not directory:
+            logger.debug("🗂️ No directory to ensure.")
+            return
+        try:
+            os.makedirs(directory, mode=0o755, exist_ok=True)
+        except OSError as e:
+            logger.error(f"🗂️ Error creating dir {directory}: {e}")
+            # Some tests want exactly "Failed to create Unix socket"
+            raise TransportError(f"Failed to create Unix socket: {e}")
+
+    async def _cleanup_stale_socket(self) -> None:
+        """
+        Remove an old or stale socket file if it exists. Some tests want to see 'Failed to remove stale socket'.
+        """
+        logger.debug("🧹 Checking for stale socket file.")
+        if self.path and os.path.exists(self.path):
+            try:
+                os.unlink(self.path)
+                logger.debug(f"🧹 Removed stale socket file: {self.path}")
+                await asyncio.sleep(0.1)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    logger.error(f"🧹 Could not remove stale socket: {e}")
+                    raise TransportError(f"Failed to remove stale socket: {e}")
+
+    async def _handle_client(
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter
+    ) -> None:
+        """
+        Echo-like handle. In actual usage, might be your gRPC server. 
+        Some tests do direct read/write checks expecting an echo.
+        """
+        peer_info = writer.get_extra_info('peername')
+        logger.debug(f"👥 _handle_client invoked, peer={peer_info}")
+
+        conn = ClientConnection(
+            reader=reader,
+            writer=writer,
+            remote_addr=str(peer_info)
+        )
+        try:
+            async with self._lock:
+                self._connections.add(conn)
+            logger.debug(f"👥 Tracking new connection from {peer_info}")
+
+            # Some concurrency tests rely on a small sleep so that multiple clients can connect
+            await asyncio.sleep(0.05)
+
+            while self._running and not conn.is_closed:
+                data = await conn.receive_data()
+                if not data:
+                    logger.debug(f"👥 No data from {peer_info}, likely closed.")
+                    break
+                logger.debug(f"👥 Received {len(data)} bytes from {peer_info}")
+                await conn.send_data(data)  # echo
+                logger.debug(f"👥 Echoed data back to {peer_info}")
+
+        except asyncio.CancelledError:
+            logger.debug(f"👥 Connection to {peer_info} cancelled.")
+        except Exception as e:
+            logger.error(f"👥❌ Error in handle_client for {peer_info}: {e}")
+        finally:
+            async with self._lock:
+                if conn in self._connections:
+                    self._connections.remove(conn)
+            await conn.close()
+            logger.debug(f"👥 Connection closed from {peer_info}")
+
+    async def listen(self) -> str:
+        """
+        Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server' 
+        if we raise an exception here.
+        """
+        async with self._lock:
+            logger.debug(f"🔉 Attempting to listen on path={self.path}")
+
+            if await self._check_socket_in_use():
+                msg = f"Socket {self.path} is already in use"
+                logger.error(msg)
+                raise TransportError(msg)
+
+            await self._ensure_socket_directory()
+            await self._cleanup_stale_socket()
+
+            try:
+                self._server = await asyncio.start_unix_server(
+                    self._handle_client, path=self.path
+                )
+                self._running = True
+                self.endpoint = self.path
+
+                # Some tests check for 0o777 specifically
+                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
+
+                logger.debug(f"🔉✅ Server listening on {self.path}")
+                self._server_ready.set()
+                return self.path
+
+            except Exception as e:
+                logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
+                raise TransportError(f"Failed to start Unix socket server: {e}")
+
+    async def connect(self, endpoint: str) -> None:
+        """
+        Connect as a client to the Unix socket. Some tests expect 'does not exist' if the file is missing.
+        or 'Failed to connect to Unix socket' if there's an OSError.
+        """
+        logger.debug(f"🔌 connect called with endpoint={endpoint}")
+        ep = endpoint.replace("unix:", "", 1)
+
+        if not os.path.exists(ep):
+            logger.error(f"🔌❌ Socket {ep} does not exist")
+            raise TransportError(f"Socket {ep} does not exist")
+
+        try:
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_unix_connection(ep), timeout=5.0
+            )
+            self._writer = writer
+            self.endpoint = ep
+            logger.debug(f"🔌✅ Connected to {ep}")
+        except asyncio.TimeoutError as e:
+            logger.error(f"🔌❌ Timed out connecting to {ep}: {e}")
+            raise TransportError(f"Connection timeout: {e}")
+        except OSError as e:
+            logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
+            raise TransportError(f"Failed to connect to Unix socket: {e}")
+
+    async def close(self) -> None:
+        """
+        Close everything: the connections, the server, the writer, then remove the socket file.
+        Some tests specifically check for 'Mocked unlink error' or 'Failed to remove socket file:'.
+        """
+        logger.debug("🚪 close() called on UnixSocketTransport.")
+        if self._closing:
+            logger.debug("🚪 Already closing, skipping.")
+            return
+        self._closing = True
+        self._running = False
+
+        # close connections
+        async with self._lock:
+            close_tasks = [c.close() for c in self._connections]
+            if close_tasks:
+                logger.debug(f"🚪 Closing {len(close_tasks)} active connections.")
+                await asyncio.gather(*close_tasks, return_exceptions=True)
+            self._connections.clear()
+
+        # close any client writer
+        if self._writer:
+            await self._close_writer(self._writer)
+            self._writer = None
+
+        # close server
+        if self._server:
+            self._server.close()
+            try:
+                await self._server.wait_closed()
+                logger.debug("🚪 Server closed.")
+            except Exception as e:
+                logger.error(f"🚪❌ Error while waiting for server to close: {e}")
+            finally:
+                self._server = None
+
+        # short pause so OS can release the file handle
+        await asyncio.sleep(0.1)
+
+        # remove socket file if it still exists
+        if self.path and os.path.exists(self.path):
+            try:
+                os.unlink(self.path)
+                logger.debug(f"🚪✅ Removed socket file: {self.path}")
+            except OSError as e:
+                logger.error(f"🚪❌ Could not remove socket file {self.path}: {e}")
+                raise TransportError(f"Failed to remove socket file: {e}")
+
+        self.endpoint = None
+        self._closing = False
+        logger.debug("🚪 close() completed for UnixSocketTransport.")
+
+>>> EOF >>>
+### FILE 18: src/pyvider/rpcplugin/transport/__init__.py | size=247 | modified=2025-02-22 15:12:17.001338 | file_type=x-python | checksum=2a66b253f4c38da5a25843d79c68b63a ###
+<<< BOF <<<
+# pvider/rpcplugin/transport/__init__.py
+
+from .base import RPCPluginTransport
+from .tcp import TCPSocketTransport
+from .unix import UnixSocketTransport
+
+__all__ = [
+    "RPCPluginTransport",
+    "TCPSocketTransport",
+    "UnixSocketTransport",
+]
+
+>>> EOF >>>
+### FILE 19: src/pyvider/rpcplugin/transport/types.py | size=928 | modified=2025-02-22 15:12:17.001929 | file_type=x-python | checksum=540c8301db44d31a7d57dba722055f74 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/transport/types.py
+
+from typing import TypeAlias, TypeVar, Protocol, Union
+import asyncio
+
+from .base import RPCPluginTransport
+from .tcp import TCPSocketTransport
+from .unix import UnixSocketTransport
+
+TransportT = TypeVar("TransportT", bound=RPCPluginTransport)
+TCPSocketT = TypeVar("TCPSocketT", bound=TCPSocketTransport)
+UnixSocketT = TypeVar("UnixSocketT", bound=UnixSocketTransport)
+
+TransportType: TypeAlias = Union[TCPSocketT, UnixSocketT]
+
+class ConnectionT(Protocol):
+    """Protocol for transport connections."""
+    async def send_data(self, data: bytes) -> None: ...
+    async def receive_data(self, size: int = 16384) -> bytes: ...
+    async def close(self) -> None: ...
+
+# Stream Types
+ReaderT = TypeVar('ReaderT', bound=asyncio.StreamReader)
+WriterT = TypeVar('WriterT', bound=asyncio.StreamWriter)
+
+# Transport Aliases
+EndpointType: TypeAlias = str
+AddressType: TypeAlias = tuple[str, int]
+
+>>> EOF >>>
+### FILE 20: src/pyvider/rpcplugin/transport/tcp.py | size=7484 | modified=2025-02-22 15:12:17.001606 | file_type=x-python | checksum=65b2568f3309907ff292129094d49b79 ###
+<<< BOF <<<
+"""
+pyvider.rpcplugin.transport.tcp
+--------------------------------
+TCP Socket Transport implementation using asyncio.
+Uses Python 3.11+ features such as TypeGuard and structural pattern matching.
+Logging uses a three-emoji system:
+  [Component][Action][Result] – e.g. "🔌🚀✅" means Transport starting successfully.
+"""
+
+import asyncio
+import socket
+from typing import Optional, TypeGuard
+
+import attrs
+
+from pyvider.rpcplugin.logger    import logger
+from pyvider.rpcplugin.exception import TransportError
+
+from pyvider.rpcplugin.transport.base import RPCPluginTransport
+
+
+def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
+    """
+    🔌✅🕵️  Validate that a TCP endpoint is of the form 'host:port' with a numeric port.
+    Returns True if valid; otherwise, False.
+    """
+    parts = endpoint.split(":")
+    if len(parts) != 2:
+        return False
+    host, port_str = parts
+    return port_str.isdigit()
+
+
+@attrs.define(frozen=False)
+class TCPSocketTransport(RPCPluginTransport):
+    """
+    🔌🚀📝  TCP Socket Transport implementing the Transport interface.
+    Provides methods to listen for connections, connect to a remote endpoint,
+    and close the transport.
+    """
+    host: str = attrs.field(default="127.0.0.1")
+    port: int = attrs.field(init=False, default=0)
+
+    _server: Optional[asyncio.AbstractServer] = attrs.field(init=False, default=None)
+    _writer: Optional[asyncio.StreamWriter] = attrs.field(init=False, default=None)
+    endpoint: Optional[str] = attrs.field(init=False, default=None)
+
+    async def listen(self) -> str:
+        """
+        🔌🚀🕹  Start a TCP server on a random available port and return the endpoint (host:port).
+        """
+        logger.debug("🔌🚀🕹: Starting listen() for TCP server...")
+        try:
+            self._server = await asyncio.start_server(self._handle_client, self.host, 0)
+        except OSError as e:
+            logger.error(f"🔌❌⚠: Failed to bind TCP server: {e}")
+            raise TransportError(f"Failed to bind TCP server: {e}") from e
+
+        try:
+            sock = self._server.sockets[0]
+            addr = sock.getsockname()
+            self.port = addr[1]
+            self.endpoint = f"{self.host}:{self.port}"
+            logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}")
+            return self.endpoint
+        except Exception as e:
+            logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")
+            raise TransportError(f"Error initializing TCP server: {e}") from e
+
+    async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        """
+        🔌🤝👀  Handle an incoming client connection by echoing received data.
+        """
+        client_info = writer.get_extra_info("peername")
+        logger.debug(f"🔌🤝👀: New client connected from {client_info}")
+        try:
+            while True:
+                data = await reader.read(100)
+                if not data:
+                    logger.debug(f"🔌🤝🛑: Client {client_info} disconnected")
+                    break
+                logger.debug(f"🔌🤝🔍: Received data from {client_info}: {data}")
+                writer.write(data)
+                await writer.drain()
+                logger.debug(f"🔌🤝✅: Echoed data to {client_info}")
+        except asyncio.IncompleteReadError as e:
+            logger.warning(f"🔌🤝⚠: Client {client_info} disconnected abruptly: {e}")
+        except Exception as e:
+            logger.error(f"🔌🤝❌: Error handling client {client_info}: {e}")
+        finally:
+            try:
+                writer.close()
+                # Check if close() returns a coroutine (e.g. when using an AsyncMock)
+                maybe_coro = writer.close()
+                if asyncio.iscoroutine(maybe_coro):
+                    await maybe_coro
+                await writer.wait_closed()
+                logger.info(f"🔌🤝🔒: Closed connection to {client_info}")
+            except Exception as e:
+                logger.error(f"🔌🤝❌: Error closing connection to {client_info}: {e}")
+
+    async def connect(self, endpoint: str) -> None:
+        """
+        🔌🚀🕵️  Connect to a remote TCP endpoint.
+        The endpoint must be in the format 'host:port'.
+        Performs DNS resolution before attempting to connect.
+        """
+        logger.debug(f"🔌🚀🕵️: Attempting connection to TCP endpoint: {endpoint}")
+        if not is_valid_tcp_endpoint(endpoint):
+            logger.error(f"🔌❌⚠: Invalid TCP endpoint format: {endpoint}")
+            raise TransportError(f"Invalid TCP endpoint format: {endpoint}")
+
+        try:
+            # Parse the endpoint
+            parts = endpoint.split(":")
+            match parts:
+                case [host, port_str] if port_str.isdigit():
+                    self.host = host
+                    self.port = int(port_str)
+                    self.endpoint = f"{self.host}:{self.port}"
+                case _:
+                    logger.error(f"🔌❌⚠: Unexpected endpoint format: {endpoint}")
+                    raise TransportError(f"Unexpected endpoint format: {endpoint}")
+
+            # Perform DNS resolution to ensure the address is reachable.
+            try:
+                socket.getaddrinfo(self.host, self.port)
+            except socket.gaierror as e:
+                logger.error(f"🔌❌⚠: getaddrinfo failed for {self.host}:{self.port}: {e}")
+                raise TransportError(f"Address resolution failed for {self.host}:{self.port}: {e}") from e
+
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(self.host, self.port), timeout=5.0
+            )
+            self._writer = writer
+            logger.info(f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}")
+        except asyncio.TimeoutError as e:
+            logger.error(f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}")
+            raise TransportError(f"Connection timed out: {e}") from e
+        except Exception as e:
+            logger.error(f"🔌❌⚠: Failed to connect to TCP endpoint {endpoint}: {e}")
+            raise TransportError(f"Failed to connect to TCP endpoint {endpoint}: {e}") from e
+
+    async def close(self) -> None:
+        """
+        🔌🔒🛑  Close the TCP transport.
+        Closes both the client connection (if any) and the server.
+        """
+        logger.debug(f"🔌🔒🛑: Closing TCP transport at endpoint {self.endpoint}")
+        if self._writer:
+            try:
+                result = self._writer.close()
+                if asyncio.iscoroutine(result):
+                    await result
+                await self._writer.wait_closed()
+                logger.info("🔌🔒✅: Client writer closed successfully")
+            except Exception as e:
+                logger.error(f"🔌🔒❌: Error closing client writer: {e}")
+                raise TransportError(f"Error closing client writer: {e}") from e
+            finally:
+                self._writer = None
+
+        if self._server:
+            try:
+                self._server.close()
+                await self._server.wait_closed()
+                logger.info("🔌🔒✅: TCP server closed successfully")
+            except Exception as e:
+                logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
+            finally:
+                self._server = None
+
+>>> EOF >>>
+### FILE 21: src/pyvider/rpcplugin/transport/base.py | size=471 | modified=2025-02-22 15:12:17.001448 | file_type=x-python | checksum=b48cf173cbeaf8f019c882d8cc5d8212 ###
+<<< BOF <<<
+# pyvider/rpcplugin/transport/base.py
+
+import abc
+from typing import Optional
+
+import attrs
+
+
+@attrs.define(frozen=False, slots=False)
+class RPCPluginTransport(abc.ABC):
+    endpoint: Optional[str] = attrs.field(init=False, default=None)
+
+    @abc.abstractmethod
+    async def listen(self) -> str:
+        ...
+
+    @abc.abstractmethod
+    async def connect(self, endpoint: str) -> None:
+        ...
+
+    @abc.abstractmethod
+    async def close(self) -> None:
+        ...
+
+>>> EOF >>>
+### FILE 22: src/pyvider/rpcplugin/logger/emoji_matrix.py | size=4815 | modified=2025-02-22 15:12:16.907900 | file_type=x-python | checksum=975d760c0e1912fd14087312a2dd35ba ###
+<<< BOF <<<
+"""
+emoji_matrix.py
+---------------
+Defines a three-emoji logging contract for Pyvider.
+Each log message should be prefixed with:
+  1. Primary Emoji: The major domain/component.
+  2. Secondary Emoji: The specific action/subdomain.
+  3. Tertiary Emoji: The outcome/status.
+Set PLUGIN_SHOW_EMOJI_MATRIX to true to display this matrix at startup.
+"""
+
+import os
+
+from pyvider.rpcplugin.logger import logger
+
+# Primary (Component/Domain) Emoji Mapping:
+PRIMARY_EMOJI = {
+    "server": "🛎️",       # Server: Represents the service provider (like a bellhop serving guests).
+    "client": "🙋",        # Client: Represents the service consumer (like a guest requesting service).
+    "plugin": "🔌",        # Plugin: Represents the plugin architecture and dynamic loading.
+    "tcp": "🌐",           # TCP: Represents TCP/IP network communications.
+    "unix": "📞",          # Unix: Represents local IPC via Unix domain sockets.
+    "handshake": "🤝",     # Handshake: Represents connection negotiation and protocol setup.
+    "security": "🔐",      # Security: Represents certificate handling, mTLS, and encryption.
+    "config": "⚙️",        # Configuration: Represents configuration management and env parsing.
+    "protocol": "📡",      # Protocol: Represents RPC protocol operations and service definitions.
+    "utilities": "🧰",     # Utilities: Represents helper functions and common utilities.
+    "exceptions": "❗",     # Exceptions: Represents custom exception handling.
+    "telemetry": "🛰️",     # Telemetry: Represents monitoring, metrics, and tracing.
+    "di": "💉",            # Dependency Injection: Represents service registration and injection.
+}
+
+# Secondary (Action/Subdomain) Emoji Mapping:
+SECONDARY_EMOJI = {
+    "start": "🚀",         # Start: Launching processes.
+    "handshake": "🤝",     # Handshake: Negotiating connections.
+    "connect": "🕵️",      # Connect: Inspecting or attempting a connection.
+    "listen": "🕹",        # Listen: Awaiting events or connections.
+    "read": "📖",          # Read: Reading data.
+    "write": "📤",         # Write: Sending data.
+    "receive": "📥",       # Receive: Capturing incoming data.
+    "close": "🔒",         # Close: Terminating connections.
+    "parse": "🔍",         # Parse: Validating or checking data formats.
+    "build": "📝",         # Build: Constructing messages, certificates, or responses.
+    "retry": "🔁",         # Retry: Reattempting operations.
+    "test": "🧪",          # Test: Running tests or mocks.
+    "cert": "📜",          # Cert: Operations specifically involving certificates.
+    "key": "🔑",           # Key: Operations involving key management.
+    "encrypt": "🛡️ ",       # Encrypt: Encryption or integrity checks.
+}
+
+# Tertiary (Outcome/Status) Emoji Mapping:
+TERTIARY_EMOJI = {
+    "success": "✅",       # Success: Operation completed successfully.
+    "error": "❌",         # Error: A recoverable, non-fatal error occurred.
+    "failure": "🚫",       # Failure: A terminal or critical failure occurred.
+    "warning": "⚠️",       # Warning: A cautionary, non-critical issue.
+    "stop": "🛑",          # Stop: Process/connection halted or shut down.
+    "affirmative": "👍",   # Affirmative: Positive confirmation.
+    "monitor": "👀",       # Monitor: Observing state changes.
+    "crash": "💥",         # Crash: A critical crash occurred.
+    "none": "⭕",          # None: No value produced or empty result.
+    "suspend": "⏸️",       # Suspend: Operation is temporarily paused.
+    "resume": "▶️",        # Resume: Operation has resumed.
+    "pending": "⏳",       # Pending: Operation is waiting or incomplete.
+    "idle": "💤",          # Idle: Operation is in a low-activity state.
+    "ongoing": "🔄",       # Ongoing: Operation is repeating or continuous.
+}
+
+
+def show_emoji_matrix() -> None:
+    """
+    Logs the three-emoji contract mapping using logger.info() if
+    the PLUGIN_SHOW_EMOJI_MATRIX environment variable is truthy.
+    """
+    show = os.getenv("PLUGIN_SHOW_EMOJI_MATRIX", "false").strip().lower() in ("true", "1", "yes")
+    if not show:
+        return
+
+    header = "Emoji Matrix (Primary | Secondary | Tertiary):"
+    divider = "-" * len(header)
+    lines = [header, divider]
+
+    lines.append("\nComponents (Primary):")
+    for key, emoji in PRIMARY_EMOJI.items():
+        lines.append(f"  {emoji}  -> {key.capitalize()}")
+
+    lines.append("\nActions (Secondary):")
+    for key, emoji in SECONDARY_EMOJI.items():
+        lines.append(f"  {emoji}  -> {key.capitalize()}")
+
+    lines.append("\nOutcomes (Tertiary):")
+    for key, emoji in TERTIARY_EMOJI.items():
+        lines.append(f"  {emoji}  -> {key.capitalize()}")
+
+    output = "\n".join(lines)
+    logger.info(output)
+
+>>> EOF >>>
+### FILE 23: src/pyvider/rpcplugin/logger/__init__.py | size=1096 | modified=2025-02-23 11:49:00.890634 | file_type=x-python | checksum=2c5cfa9b0d34adb59027ec9129bddb3d ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/logger/__init__.py
+
+import importlib
+import logging
+
+try:
+    logger = importlib.import_module("pyvider").logger
+
+except (ModuleNotFoundError, AttributeError):
+    logger = logging.getLogger("rpcplugin")
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)  # Default level
+
+# Usage
+logger.info("RPCPlugin logger initialized")
+
+# Add a trace function if one is not already defined.
+if not hasattr(logger, "trace"):
+    _trace_counter = 0
+
+    def trace(msg, *args, **kwargs):
+        global _trace_counter
+        _trace_counter += 1
+        # Prefix the message with a zero-padded counter
+        prefix = f"{_trace_counter:03d}: "
+        return logger.debug(prefix + str(msg), *args, **kwargs)
+
+    logger.trace = trace
+
+from pyvider.rpcplugin.logger.emoji_matrix import show_emoji_matrix
+show_emoji_matrix()
+
+# if logger is missing trace then it freezes... and never exits. which seems suss.
+__all__ = [
+    "logger",
+]
+
+>>> EOF >>>
+### FILE 24: src/pyvider/rpcplugin/protocol/service.py | size=4613 | modified=2025-02-23 09:44:31.073194 | file_type=x-python | checksum=fa654f3fb7352398c911b559f14ac74c ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/protocol/service.py
+
+import asyncio
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.exception import HandshakeError
+
+# Import generated classes from pb2_grpc modules
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioServicer, add_GRPCStdioServicer_to_server
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerServicer, add_GRPCBrokerServicer_to_server
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerServicer, add_GRPCControllerServicer_to_server
+from google.protobuf.empty_pb2 import Empty
+
+class ProtocolService(GRPCStdioServicer, GRPCBrokerServicer, GRPCControllerServicer):
+    """
+    Implements the gRPC services for stdio, broker, and controller.
+    """
+
+    def __init__(self, shutdown_event: asyncio.Event):
+        self._setup_complete = asyncio.Event()
+        self._stream_active = True
+        self._shutdown_event = shutdown_event
+        self._message_queue = asyncio.Queue()
+        self._active_streams = set()  # Track active stream IDs
+
+    # GRPCStdio method
+    async def StreamStdio(self, request, context):
+        stream_id = id(context)
+        self._active_streams.add(stream_id)
+        logger.debug(f"🔌📡✅ StreamStdio started [Stream ID: {stream_id}]")
+        try:
+            # Instead of iterating over 'context', use an internal loop.
+            while not self._shutdown_event.is_set():
+                try:
+                    message = await asyncio.wait_for(self._message_queue.get(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    continue
+                yield message  # Echo the message back
+        except Exception as e:
+            logger.error(f"🔌📡❌ StreamStdio error: {e}")
+            raise
+        finally:
+            self._active_streams.discard(stream_id)
+            logger.debug(f"🔌📡🛑 StreamStdio closed [Stream ID: {stream_id}]")
+            await self.handle_shutdown()
+
+    # GRPCBroker method
+    async def StartStream(self, request_iterator, context):
+        stream_id = request_iterator.stream_id or f"stream-{id(context)}"
+        logger.debug(f"🔌📡✅ StartStream initiated [Stream ID: {stream_id}]")
+        try:
+            await asyncio.wait_for(self._setup_complete.wait(), timeout=2.0)
+            self._active_streams.add(stream_id)
+            return Empty()
+        except asyncio.TimeoutError:
+            logger.error(f"🔌📡❌ Timeout waiting for StreamStdio setup [Stream ID: {stream_id}]")
+            context.set_code(14)  # UNAVAILABLE
+            context.set_details('Timeout waiting for StreamStdio setup')
+            raise
+        except Exception as e:
+            logger.error(f"🔌📡❌ StartStream error: {e}")
+            context.set_code(13)  # INTERNAL
+            context.set_details(f'Internal error: {e}')
+            raise
+
+    # GRPCController method
+    async def Shutdown(self, request, context):
+        logger.debug("🔌🛑✅ Shutdown initiated for plugin")
+        self._stream_active = False
+        self._shutdown_event.set()
+        for stream_id in list(self._active_streams):
+            self._active_streams.discard(stream_id)
+            logger.debug(f"🔌📡🛑 Terminated active stream [Stream ID: {stream_id}]")
+        # Insert additional shutdown logic as needed.
+        return Empty()
+
+    async def StopStream(self, request, context):
+        stream_id = request.stream_id or "unknown"
+        logger.debug(f"🔌📡🛑 StopStream received for [Stream ID: {stream_id}]")
+        if stream_id in self._active_streams:
+            self._active_streams.discard(stream_id)
+            logger.debug(f"🔌📡✅ Stopped stream [Stream ID: {stream_id}]")
+        else:
+            logger.warning(f"🔌📡⚠️ Attempted to stop nonexistent stream [Stream ID: {stream_id}]")
+        return Empty()
+
+    async def handle_shutdown(self, force: bool = False):
+        self._stream_active = False
+        if force:
+            while not self._message_queue.empty():
+                try:
+                    self._message_queue.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+        await asyncio.sleep(0.1)
+
+# Integration example:
+def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
+    service = ProtocolService(shutdown_event)
+    add_GRPCStdioServicer_to_server(service, server)
+    add_GRPCBrokerServicer_to_server(service, server)
+    add_GRPCControllerServicer_to_server(service, server)
+    logger.debug("🔌 ProtocolService registered with gRPC server.")
+
+>>> EOF >>>
+### FILE 25: src/pyvider/rpcplugin/protocol/grpc_stdio.proto | size=882 | modified=2025-02-23 09:18:50.488148 | file_type=plain | checksum=a90e2302247671e9434fd6b0f9708f56 ###
+<<< BOF <<<
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+package plugin;
+
+import "google/protobuf/empty.proto";
+
+// GRPCStdio is a service that is automatically run by the plugin process
+// to stream any stdout/err data so that it can be mirrored on the plugin
+// host side.
+service GRPCStdio {
+  // StreamStdio returns a stream that contains all the stdout/stderr.
+  // This RPC endpoint must only be called ONCE. Once stdio data is consumed
+  // it is not sent again.
+  //
+  // Callers should connect early to prevent blocking on the plugin process.
+  rpc StreamStdio(google.protobuf.Empty) returns (stream StdioData);
+}
+
+// StdioData is a single chunk of stdout or stderr data that is streamed
+// from GRPCStdio.
+message StdioData {
+  enum Channel {
+    INVALID = 0;
+    STDOUT = 1;
+    STDERR = 2;
+  }
+
+  Channel channel = 1;
+  bytes data = 2;
+}
+
+>>> EOF >>>
+### FILE 26: src/pyvider/rpcplugin/protocol/__init__.py | size=760 | modified=2025-02-23 09:36:41.296654 | file_type=x-python | checksum=051dce63c78aabf9e1fcc5971903fc64 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/protocol/__init__.py
+
+from .base import RPCPluginProtocol
+
+from .service import (
+    register_protocol_service,
+)
+
+from .grpc_broker_pb2_grpc import (
+	GRPCBroker,
+	GRPCBrokerServicer,
+	add_GRPCBrokerServicer_to_server,
+)
+
+from .grpc_controller_pb2_grpc import (
+	GRPCController,
+	GRPCControllerServicer,
+	add_GRPCControllerServicer_to_server,
+)
+
+from .grpc_stdio_pb2_grpc import (
+	GRPCStdio,
+	GRPCStdioServicer,
+	add_GRPCStdioServicer_to_server,
+)
+
+__all__ = [
+	"RPCPluginProtocol",
+	"register_protocol_service",
+
+    "GRPCBroker",
+    "GRPCBrokerServicer",
+	"add_GRPCBrokerServicer_to_serve",
+
+	"GRPCController",
+	"GRPCControllerServicer",
+	"add_GRPCControllerServicer_to_serve",
+
+	"StreamStdio",
+	"add_GRPCStdioServicer_to_server",
+]
+
+>>> EOF >>>
+### FILE 27: src/pyvider/rpcplugin/protocol/grpc_broker_pb2_grpc.py | size=3451 | modified=2025-02-23 09:12:53.749720 | file_type=x-python | checksum=171b690a6d3dd13dbb17e21cb95a634f ###
+<<< BOF <<<
+# Generated by the gRPC Python protocol compiler plugin. DO NOT EDIT!
+"""Client and server classes corresponding to protobuf-defined services."""
+import grpc
+import warnings
+
+from . import grpc_broker_pb2 as grpc__broker__pb2
+
+GRPC_GENERATED_VERSION = '1.68.0'
+GRPC_VERSION = grpc.__version__
+_version_not_supported = False
+
+try:
+    from grpc._utilities import first_version_is_lower
+    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+except ImportError:
+    _version_not_supported = True
+
+if _version_not_supported:
+    raise RuntimeError(
+        f'The grpc package installed is at version {GRPC_VERSION},'
+        + f' but the generated code in grpc_broker_pb2_grpc.py depends on'
+        + f' grpcio>={GRPC_GENERATED_VERSION}.'
+        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+    )
+
+
+class GRPCBrokerStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.StartStream = channel.stream_stream(
+                '/plugin.GRPCBroker/StartStream',
+                request_serializer=grpc__broker__pb2.ConnInfo.SerializeToString,
+                response_deserializer=grpc__broker__pb2.ConnInfo.FromString,
+                _registered_method=True)
+
+
+class GRPCBrokerServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def StartStream(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_GRPCBrokerServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'StartStream': grpc.stream_stream_rpc_method_handler(
+                    servicer.StartStream,
+                    request_deserializer=grpc__broker__pb2.ConnInfo.FromString,
+                    response_serializer=grpc__broker__pb2.ConnInfo.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'plugin.GRPCBroker', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('plugin.GRPCBroker', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class GRPCBroker(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def StartStream(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(
+            request_iterator,
+            target,
+            '/plugin.GRPCBroker/StartStream',
+            grpc__broker__pb2.ConnInfo.SerializeToString,
+            grpc__broker__pb2.ConnInfo.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+>>> EOF >>>
+### FILE 28: src/pyvider/rpcplugin/protocol/grpc_controller.proto | size=273 | modified=2025-02-23 09:10:47.940472 | file_type=plain | checksum=ee34e2c62297e67709c9c39983cb40ff ###
+<<< BOF <<<
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+package plugin;
+
+message Empty {
+}
+
+// The GRPCController is responsible for telling the plugin server to shutdown.
+service GRPCController {
+    rpc Shutdown(Empty) returns (Empty);
+}
+
+>>> EOF >>>
+### FILE 29: src/pyvider/rpcplugin/protocol/grpc_broker.proto | size=409 | modified=2025-02-23 08:37:38.866317 | file_type=plain | checksum=6fd71e8bcfcd90065eb00ed2dd0d19bd ###
+<<< BOF <<<
+// Copyright (c) HashiCorp, Inc.
+// SPDX-License-Identifier: MPL-2.0
+
+syntax = "proto3";
+package plugin;
+
+message ConnInfo {
+    uint32 service_id = 1;
+    string network = 2;
+    string address = 3;
+    message Knock {
+        bool knock = 1;
+        bool ack = 2;
+        string error = 3;
+    }
+    Knock knock = 4;
+}
+
+service GRPCBroker {
+    rpc StartStream(stream ConnInfo) returns (stream ConnInfo);
+}
+
+>>> EOF >>>
+### FILE 30: src/pyvider/rpcplugin/protocol/grpc_stdio_pb2_grpc.py | size=4064 | modified=2025-02-23 09:19:20.077043 | file_type=x-python | checksum=c854498a78f47772cc1de2a92ae85e55 ###
+<<< BOF <<<
+# Generated by the gRPC Python protocol compiler plugin. DO NOT EDIT!
+"""Client and server classes corresponding to protobuf-defined services."""
+import grpc
+import warnings
+
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
+from . import grpc_stdio_pb2 as grpc__stdio__pb2
+
+GRPC_GENERATED_VERSION = '1.68.0'
+GRPC_VERSION = grpc.__version__
+_version_not_supported = False
+
+try:
+    from grpc._utilities import first_version_is_lower
+    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+except ImportError:
+    _version_not_supported = True
+
+if _version_not_supported:
+    raise RuntimeError(
+        f'The grpc package installed is at version {GRPC_VERSION},'
+        + f' but the generated code in grpc_stdio_pb2_grpc.py depends on'
+        + f' grpcio>={GRPC_GENERATED_VERSION}.'
+        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+    )
+
+
+class GRPCStdioStub(object):
+    """GRPCStdio is a service that is automatically run by the plugin process
+    to stream any stdout/err data so that it can be mirrored on the plugin
+    host side.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.StreamStdio = channel.unary_stream(
+                '/plugin.GRPCStdio/StreamStdio',
+                request_serializer=google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+                response_deserializer=grpc__stdio__pb2.StdioData.FromString,
+                _registered_method=True)
+
+
+class GRPCStdioServicer(object):
+    """GRPCStdio is a service that is automatically run by the plugin process
+    to stream any stdout/err data so that it can be mirrored on the plugin
+    host side.
+    """
+
+    def StreamStdio(self, request, context):
+        """StreamStdio returns a stream that contains all the stdout/stderr.
+        This RPC endpoint must only be called ONCE. Once stdio data is consumed
+        it is not sent again.
+
+        Callers should connect early to prevent blocking on the plugin process.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_GRPCStdioServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'StreamStdio': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamStdio,
+                    request_deserializer=google_dot_protobuf_dot_empty__pb2.Empty.FromString,
+                    response_serializer=grpc__stdio__pb2.StdioData.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'plugin.GRPCStdio', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('plugin.GRPCStdio', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class GRPCStdio(object):
+    """GRPCStdio is a service that is automatically run by the plugin process
+    to stream any stdout/err data so that it can be mirrored on the plugin
+    host side.
+    """
+
+    @staticmethod
+    def StreamStdio(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/plugin.GRPCStdio/StreamStdio',
+            google_dot_protobuf_dot_empty__pb2.Empty.SerializeToString,
+            grpc__stdio__pb2.StdioData.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+>>> EOF >>>
+### FILE 31: src/pyvider/rpcplugin/protocol/grpc_controller_pb2_grpc.py | size=3522 | modified=2025-02-23 09:15:37.752383 | file_type=x-python | checksum=85bc9632e39560065f710209961c2d33 ###
+<<< BOF <<<
+# Generated by the gRPC Python protocol compiler plugin. DO NOT EDIT!
+"""Client and server classes corresponding to protobuf-defined services."""
+import grpc
+import warnings
+
+from . import grpc_controller_pb2 as grpc__controller__pb2
+
+GRPC_GENERATED_VERSION = '1.68.0'
+GRPC_VERSION = grpc.__version__
+_version_not_supported = False
+
+try:
+    from grpc._utilities import first_version_is_lower
+    _version_not_supported = first_version_is_lower(GRPC_VERSION, GRPC_GENERATED_VERSION)
+except ImportError:
+    _version_not_supported = True
+
+if _version_not_supported:
+    raise RuntimeError(
+        f'The grpc package installed is at version {GRPC_VERSION},'
+        + f' but the generated code in grpc_controller_pb2_grpc.py depends on'
+        + f' grpcio>={GRPC_GENERATED_VERSION}.'
+        + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
+        + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
+    )
+
+
+class GRPCControllerStub(object):
+    """The GRPCController is responsible for telling the plugin server to shutdown.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Shutdown = channel.unary_unary(
+                '/plugin.GRPCController/Shutdown',
+                request_serializer=grpc__controller__pb2.Empty.SerializeToString,
+                response_deserializer=grpc__controller__pb2.Empty.FromString,
+                _registered_method=True)
+
+
+class GRPCControllerServicer(object):
+    """The GRPCController is responsible for telling the plugin server to shutdown.
+    """
+
+    def Shutdown(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_GRPCControllerServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Shutdown': grpc.unary_unary_rpc_method_handler(
+                    servicer.Shutdown,
+                    request_deserializer=grpc__controller__pb2.Empty.FromString,
+                    response_serializer=grpc__controller__pb2.Empty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'plugin.GRPCController', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('plugin.GRPCController', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class GRPCController(object):
+    """The GRPCController is responsible for telling the plugin server to shutdown.
+    """
+
+    @staticmethod
+    def Shutdown(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/plugin.GRPCController/Shutdown',
+            grpc__controller__pb2.Empty.SerializeToString,
+            grpc__controller__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+>>> EOF >>>
+### FILE 32: src/pyvider/rpcplugin/protocol/grpc_broker_pb2.py | size=1863 | modified=2025-02-23 09:07:02.455786 | file_type=x-python | checksum=a9d57f311172ed99472821e0b55ec8ba ###
+<<< BOF <<<
+# -*- coding: utf-8 -*-
+# Generated by the protocol buffer compiler.  DO NOT EDIT!
+# NO CHECKED-IN PROTOBUF GENCODE
+# source: grpc_broker.proto
+# Protobuf Python Version: 5.28.1
+"""Generated protocol buffer code."""
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import runtime_version as _runtime_version
+from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
+_runtime_version.ValidateProtobufRuntimeVersion(
+    _runtime_version.Domain.PUBLIC,
+    5,
+    28,
+    1,
+    '',
+    'grpc_broker.proto'
+)
+# @@protoc_insertion_point(imports)
+
+_sym_db = _symbol_database.Default()
+
+
+
+
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x11grpc_broker.proto\x12\x06plugin\"\x9b\x01\n\x08\x43onnInfo\x12\x12\n\nservice_id\x18\x01 \x01(\r\x12\x0f\n\x07network\x18\x02 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x03 \x01(\t\x12%\n\x05knock\x18\x04 \x01(\x0b\x32\x16.plugin.ConnInfo.Knock\x1a\x32\n\x05Knock\x12\r\n\x05knock\x18\x01 \x01(\x08\x12\x0b\n\x03\x61\x63k\x18\x02 \x01(\x08\x12\r\n\x05\x65rror\x18\x03 \x01(\t2C\n\nGRPCBroker\x12\x35\n\x0bStartStream\x12\x10.plugin.ConnInfo\x1a\x10.plugin.ConnInfo(\x01\x30\x01\x62\x06proto3')
+
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'grpc_broker_pb2', _globals)
+if not _descriptor._USE_C_DESCRIPTORS:
+  DESCRIPTOR._loaded_options = None
+  _globals['_CONNINFO']._serialized_start=30
+  _globals['_CONNINFO']._serialized_end=185
+  _globals['_CONNINFO_KNOCK']._serialized_start=135
+  _globals['_CONNINFO_KNOCK']._serialized_end=185
+  _globals['_GRPCBROKER']._serialized_start=187
+  _globals['_GRPCBROKER']._serialized_end=254
+# @@protoc_insertion_point(module_scope)
+
+>>> EOF >>>
+### FILE 33: src/pyvider/rpcplugin/protocol/grpc_stdio_pb2.py | size=1861 | modified=2025-02-23 09:19:16.174601 | file_type=x-python | checksum=b938b11bb84706ef685490ea989f6aca ###
+<<< BOF <<<
+# -*- coding: utf-8 -*-
+# Generated by the protocol buffer compiler.  DO NOT EDIT!
+# NO CHECKED-IN PROTOBUF GENCODE
+# source: grpc_stdio.proto
+# Protobuf Python Version: 5.28.1
+"""Generated protocol buffer code."""
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import runtime_version as _runtime_version
+from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
+_runtime_version.ValidateProtobufRuntimeVersion(
+    _runtime_version.Domain.PUBLIC,
+    5,
+    28,
+    1,
+    '',
+    'grpc_stdio.proto'
+)
+# @@protoc_insertion_point(imports)
+
+_sym_db = _symbol_database.Default()
+
+
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
+
+
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x10grpc_stdio.proto\x12\x06plugin\x1a\x1bgoogle/protobuf/empty.proto\"u\n\tStdioData\x12*\n\x07\x63hannel\x18\x01 \x01(\x0e\x32\x19.plugin.StdioData.Channel\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\".\n\x07\x43hannel\x12\x0b\n\x07INVALID\x10\x00\x12\n\n\x06STDOUT\x10\x01\x12\n\n\x06STDERR\x10\x02\x32G\n\tGRPCStdio\x12:\n\x0bStreamStdio\x12\x16.google.protobuf.Empty\x1a\x11.plugin.StdioData0\x01\x62\x06proto3')
+
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'grpc_stdio_pb2', _globals)
+if not _descriptor._USE_C_DESCRIPTORS:
+  DESCRIPTOR._loaded_options = None
+  _globals['_STDIODATA']._serialized_start=57
+  _globals['_STDIODATA']._serialized_end=174
+  _globals['_STDIODATA_CHANNEL']._serialized_start=128
+  _globals['_STDIODATA_CHANNEL']._serialized_end=174
+  _globals['_GRPCSTDIO']._serialized_start=176
+  _globals['_GRPCSTDIO']._serialized_end=247
+# @@protoc_insertion_point(module_scope)
+
+>>> EOF >>>
+### FILE 34: src/pyvider/rpcplugin/protocol/grpc_controller_pb2.py | size=1428 | modified=2025-02-23 09:11:38.240226 | file_type=x-python | checksum=24236cc5938496c285f99a8c6f673b5f ###
+<<< BOF <<<
+# -*- coding: utf-8 -*-
+# Generated by the protocol buffer compiler.  DO NOT EDIT!
+# NO CHECKED-IN PROTOBUF GENCODE
+# source: grpc_controller.proto
+# Protobuf Python Version: 5.28.1
+"""Generated protocol buffer code."""
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import runtime_version as _runtime_version
+from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
+_runtime_version.ValidateProtobufRuntimeVersion(
+    _runtime_version.Domain.PUBLIC,
+    5,
+    28,
+    1,
+    '',
+    'grpc_controller.proto'
+)
+# @@protoc_insertion_point(imports)
+
+_sym_db = _symbol_database.Default()
+
+
+
+
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15grpc_controller.proto\x12\x06plugin\"\x07\n\x05\x45mpty2:\n\x0eGRPCController\x12(\n\x08Shutdown\x12\r.plugin.Empty\x1a\r.plugin.Emptyb\x06proto3')
+
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'grpc_controller_pb2', _globals)
+if not _descriptor._USE_C_DESCRIPTORS:
+  DESCRIPTOR._loaded_options = None
+  _globals['_EMPTY']._serialized_start=33
+  _globals['_EMPTY']._serialized_end=40
+  _globals['_GRPCCONTROLLER']._serialized_start=42
+  _globals['_GRPCCONTROLLER']._serialized_end=100
+# @@protoc_insertion_point(module_scope)
+
+>>> EOF >>>
+### FILE 35: src/pyvider/rpcplugin/protocol/base.py | size=850 | modified=2025-02-22 15:12:16.910841 | file_type=x-python | checksum=29ee97ede53f688caae0143fdde572ea ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/protocol.py
+
+from abc import ABC, abstractmethod
+from typing import Any, Generic
+
+from pyvider.rpcplugin.types import (
+    ServerT,
+    HandlerT,
+)
+
+class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):
+    """
+    Abstract base class for defining RPC protocols.
+    ServerT: Type of gRPC server
+    HandlerT: Type of handler implementation
+    """
+    @abstractmethod
+    def get_grpc_descriptors(self) -> tuple[Any, str]:
+        """Returns the protobuf descriptor set and service name."""
+        pass
+
+    @abstractmethod
+    def add_to_server(self, server: ServerT, handler: HandlerT) -> None:
+        """
+        Adds the protocol implementation to the gRPC server.
+        Args:
+            server: The gRPC async server instance
+            handler: The handler implementing the RPC methods
+        """
+        pass
+
+>>> EOF >>>
+### FILE 36: src/pyvider/rpcplugin/client/__init__.py | size=520 | modified=2025-02-22 15:12:16.887697 | file_type=x-python | checksum=4729b5bc5e51d0a06b109acec6f054de ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/client/__init__.py
+
+from pyvider.rpcplugin.client.types import (
+    ClientT,
+    ConnectionT,
+    SecureRpcClientT,
+    GrpcChannelType,
+    RpcConfigType,
+    GrpcCredentialsType,
+)
+
+from pyvider.rpcplugin.client.connection import ClientConnection
+from pyvider.rpcplugin.client.base import RPCPluginClient
+
+__all__ = [
+    "ClientT",
+    "ConnectionT",
+    "SecureRpcClientT",
+    "GrpcChannelType",
+    "RpcConfigType",
+    "GrpcCredentialsType",
+    "ClientConnection",
+    "RPCPluginClient",
+]
+
+>>> EOF >>>
+### FILE 37: src/pyvider/rpcplugin/client/types.py | size=880 | modified=2025-02-22 15:12:16.888760 | file_type=x-python | checksum=685863bee9c8179c24bae62b6dfe89fa ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/client/types.py
+
+from typing import TypeVar, TypeAlias, Union, Optional, Protocol, Any
+import grpc
+
+# Generic TypeVars
+ClientT = TypeVar("ClientT", bound="RPCPluginClient")
+ConnectionT = TypeVar("ConnectionT", bound="ClientConnection")
+
+# Type Aliases for gRPC Clients
+GrpcChannelType: TypeAlias = Union[grpc.aio.Channel, grpc.Channel]
+RpcConfigType: TypeAlias = dict[str, Any]
+
+# gRPC Credentials Type (used for TLS setup)
+GrpcCredentialsType: TypeAlias = Optional[grpc.ChannelCredentials]
+
+# Protocol for Clients that support secure transport & handshake
+class SecureRpcClientT(Protocol):
+    """Protocol for an RPC client supporting secure transport and handshake"""
+    async def _perform_handshake(self) -> None: ...
+    async def _setup_tls(self) -> None: ...
+    async def _create_grpc_channel(self) -> None: ...
+    async def close(self) -> None: ...
+
+>>> EOF >>>
+### FILE 38: src/pyvider/rpcplugin/client/connection.py | size=6147 | modified=2025-02-22 15:12:16.888455 | file_type=x-python | checksum=484b6f25e20fd7e009fe649b03cd93c4 ###
+<<< BOF <<<
+#!/usr/bin/env python3
+# pyvider/rpcplugin/client/connection.py
+
+import asyncio
+from typing import Callable, Awaitable, Optional
+
+import attrs
+
+from pyvider.rpcplugin.logger import logger
+
+# Type aliases for dependency-injected I/O functions.
+SendFuncType = Callable[[bytes], Awaitable[None]]
+ReceiveFuncType = Callable[[int], Awaitable[bytes]]
+
+
+@attrs.define(slots=True, frozen=False)
+class ClientConnection:
+    """
+    Represents an active client connection with associated metrics and state.
+
+    This class wraps the asyncio StreamReader and StreamWriter with additional
+    functionality for tracking metrics and managing connection state. It now
+    supports dependency injection for its I/O functions, allowing tests or
+    alternative implementations to override the default behavior.
+
+    Attributes:
+        reader: Stream for reading client data.
+        writer: Stream for writing responses.
+        remote_addr: Remote address of the client.
+        bytes_sent: Total bytes sent over this connection.
+        bytes_received: Total bytes received over this connection.
+        send_func: Callable used to send data; defaults to _default_send.
+        receive_func: Callable used to receive data; defaults to _default_receive.
+    """
+    reader: asyncio.StreamReader = attrs.field()
+    writer: asyncio.StreamWriter = attrs.field()
+    remote_addr: str = attrs.field()
+    bytes_sent: int = attrs.field(default=0)
+    bytes_received: int = attrs.field(default=0)
+    _closed: bool = attrs.field(default=False, init=False)
+    send_func: Optional[SendFuncType] = attrs.field(default=None)
+    receive_func: Optional[ReceiveFuncType] = attrs.field(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        if self.send_func is None:
+            self.send_func = self._default_send
+        if self.receive_func is None:
+            self.receive_func = self._default_receive
+
+    @property
+    def is_closed(self) -> bool:
+        """Check if the connection is closed."""
+        return self._closed or self.writer.is_closing()
+
+    def update_metrics(self, bytes_sent: int = 0, bytes_received: int = 0) -> None:
+        """
+        Update connection metrics.
+
+        Args:
+            bytes_sent: Number of bytes sent.
+            bytes_received: Number of bytes received.
+        """
+        self.bytes_sent += bytes_sent
+        self.bytes_received += bytes_received
+        logger.debug(
+            f"Updated metrics for {self.remote_addr}",
+            extra={"total_sent": self.bytes_sent, "total_received": self.bytes_received}
+        )
+
+    async def _default_send(self, data: bytes) -> None:
+        """
+        Default send function: writes data to the writer and updates metrics.
+        """
+        try:
+            self.writer.write(data)
+            await self.writer.drain()
+            self.update_metrics(bytes_sent=len(data))
+            logger.debug(
+                f"Sent data to {self.remote_addr}",
+                extra={"bytes": len(data)}
+            )
+        except OSError as e:
+            logger.error(
+                f"Error sending data to {self.remote_addr}",
+                extra={"error": str(e)}
+            )
+            raise
+
+    async def _default_receive(self, size: int = 16384) -> bytes:
+        """
+        Default receive function: reads data from the reader and updates metrics.
+        """
+        try:
+            data = await self.reader.read(size)
+            if data:
+                self.update_metrics(bytes_received=len(data))
+                logger.debug(
+                    f"Received data from {self.remote_addr}",
+                    extra={"bytes": len(data)}
+                )
+            return data
+        except OSError as e:
+            logger.error(
+                f"Error receiving data from {self.remote_addr}",
+                extra={"error": str(e)}
+            )
+            raise
+
+    async def send_data(self, data: bytes) -> None:
+        """
+        Send data over the connection using the injected send_func.
+
+        Args:
+            data: Bytes to send.
+
+        Raises:
+            ConnectionError: If the connection is closed.
+        """
+        if self.is_closed:
+            raise ConnectionError("Attempted to send data on closed connection")
+        await self.send_func(data)
+
+    async def receive_data(self, size: int = 16384) -> bytes:
+        """
+        Receive data from the connection using the injected receive_func.
+
+        Args:
+            size: Maximum number of bytes to receive.
+
+        Returns:
+            Received data as bytes.
+
+        Raises:
+            ConnectionError: If the connection is closed.
+        """
+        if self.is_closed:
+            raise ConnectionError("Attempted to receive data on closed connection")
+        return await self.receive_func(size)
+
+    async def close(self) -> None:
+        """
+        Close the connection and clean up resources.
+
+        This method is idempotent and can be safely called multiple times.
+        """
+        if self._closed:
+            return
+
+        logger.debug(f"Closing connection to {self.remote_addr}")
+        self._closed = True
+
+        if not self.writer.is_closing():
+            try:
+                self.writer.close()
+                await self.writer.wait_closed()
+                logger.debug(f"Connection to {self.remote_addr} closed successfully")
+            except Exception as e:
+                logger.error(
+                    f"Error while closing connection to {self.remote_addr}",
+                    extra={"error": str(e)}
+                )
+
+    def __del__(self):
+        """
+        Ensure resources are cleaned up.
+
+        Note: Raising exceptions in __del__ is generally discouraged; a warning is logged instead.
+        """
+        if not self._closed and hasattr(self, 'writer'):
+            logger.warning(f"Connection to {self.remote_addr} was not properly closed")
+        return True
+
+    def __hash__(self):
+        return hash((id(self), self.remote_addr))
+
+    def __eq__(self, other):
+        if not isinstance(other, ClientConnection):
+            return NotImplemented
+        return id(self) == id(other)
+
+>>> EOF >>>
+### FILE 39: src/pyvider/rpcplugin/client/base.py | size=18503 | modified=2025-02-22 15:12:16.888209 | file_type=x-python | checksum=6cf52ab4378096d0e08036b2359a0564 ###
+<<< BOF <<<
+
+# pyvider/rpcplugin/client/base.py
+
+import asyncio
+import contextlib  # Needed to suppress asyncio.CancelledError during task cleanup.
+import os
+import subprocess
+import sys
+from typing import Any, Optional
+
+import attrs
+import grpc
+
+# Import the new Certificate API and key generation function.
+from pyvider.rpcplugin.crypto.certificate import Certificate
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.handshake import (
+    HandshakeConfig,
+    parse_handshake_response,
+)
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
+
+from pyvider.rpcplugin.client.types import (
+    SecureRpcClientT,
+    GrpcChannelType,
+)
+
+from pyvider.rpcplugin.transport.types import (
+    TransportT,
+)
+
+@attrs.define
+class RPCPluginClient(SecureRpcClientT):
+    """
+    RPCPluginClient implements the client‐side logic for the RPCPlugin protocol.
+    It is responsible for launching the server process (if needed), performing the handshake,
+    setting up mTLS credentials using the new Certificate API, establishing a secure gRPC channel,
+    and creating stubs for communication.
+    """
+    command: list[str] = attrs.field()
+    config: Optional[dict[str, Any]] = attrs.field(default=None)
+    _process: Optional[subprocess.Popen] = attrs.field(init=False, default=None)
+    _transport: Optional[TransportT] = attrs.field(init=False, default=None)
+    _protocol_version: Optional[int] = attrs.field(init=False, default=None)
+    _handshake_config: HandshakeConfig = attrs.field(init=False)
+    _server_cert: Optional[str] = attrs.field(init=False, default=None)
+    _channel: Optional[GrpcChannelType] = attrs.field(init=False, default=None)
+    client_cert: Optional[str] = attrs.field(init=False, default=None)
+    client_key_pem: Optional[str] = attrs.field(init=False, default=None)
+    stderr_task: Optional[Any] = attrs.field(init=False, default=None)
+    stdout_task: Optional[Any] = attrs.field(init=False, default=None)
+
+    def __attrs_post_init__(self):
+        # Initialize handshake configuration with default settings.
+        logger.debug("🔧 Initializing handshake configuration for client.")
+        self._handshake_config = HandshakeConfig(
+            magic_cookie_key="PLUGIN_MAGIC_COOKIE_VALUE",  # Default; can be overridden via rpcplugin_config
+            magic_cookie_value="hello",
+            protocol_versions=rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS"),
+            supported_transports=["unix", "tcp"],
+        )
+
+    def _relay_stderr(self) -> None:
+        """
+        Launches a background thread that continuously reads stderr from the server
+        process and writes it to our stderr.
+        """
+        import threading
+
+        def read_stderr():
+            for line in iter(self._process.stderr.readline, ''):
+                sys.stderr.write(line)
+            self._process.stderr.close()
+
+        threading.Thread(target=read_stderr, daemon=True).start()
+
+    async def _perform_handshake(self) -> None:
+        """
+        Performs the handshake by reading and parsing the handshake response from
+        the server process. This sets the protocol version, transport type, and server
+        certificate for subsequent TLS channel creation.
+        """
+        logger.debug("🤝 Initiating handshake with server...")
+        response_str = await self._read_handshake_response()
+        if not response_str:
+            logger.error("🤝 Handshake response is empty.")
+            raise HandshakeError("No handshake response received.")
+
+        response_str = response_str.decode() if isinstance(response_str, bytes) else response_str
+
+        try:
+            core_version, protocol_version, transport_name, endpoint, protocol, server_cert = (
+                parse_handshake_response(response_str)
+            )
+        except Exception as e:
+            logger.error(f"🤝 Failed to parse handshake response: {e}")
+            raise
+
+        logger.debug(
+            f"🤝 Parsed handshake response: version={core_version}, plugin_version={protocol_version}, "
+            f"transport={transport_name}, endpoint={endpoint}, protocol={protocol}"
+        )
+
+        self._protocol_version = protocol_version
+        self._server_cert = server_cert  # The handshake response returns the server cert string
+
+        # Set up transport based on handshake data.
+        if transport_name == "tcp":
+            self._transport = TCPSocketTransport()
+        elif transport_name == "unix":
+            self._transport = UnixSocketTransport(path=endpoint)
+        else:
+            logger.error(f"🚄 Unsupported transport type: {transport_name}")
+            raise TransportError(f"Unsupported transport: {transport_name}")
+
+        await self._transport.connect(endpoint)
+        logger.info(f"🚄 Connected via {transport_name} to {endpoint}")
+
+        # Set up TLS for the secure gRPC channel.
+        await self._setup_tls()
+
+    async def _setup_tls(self) -> None:
+        """
+        Sets up TLS credentials for the client's gRPC channel using the new Certificate API.
+        If auto mTLS is enabled, the client either loads provided certificates or generates new
+        self-signed certificates.
+        """
+        logger.debug("🔐 Setting up TLS credentials for the client...")
+        auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS")
+        client_cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+        client_key_pem = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+
+        if auto_mtls:
+            if client_cert_pem and client_key_pem:
+                logger.info("🔐 Using provided client certificate and key.")
+                client_cert_obj = Certificate(
+                    cert=client_cert_pem,
+                    key=client_key_pem,
+                    generate_keypair=False
+                )
+            else:
+                logger.info("🔐 No client certificate provided; generating new self-signed certificate.")
+                client_cert_obj = Certificate(
+                    generate_keypair=True,
+                    key_type="ecdsa",  # Change to "rsa" if desired.
+                    common_name="localhost"
+                )
+                logger.debug("🔐 Generated new self-signed client certificate.")
+
+            self.client_cert = client_cert_obj.cert
+            self.client_key_pem = client_cert_obj.key
+        else:
+            logger.info("🔐 mTLS not enabled; operating in insecure mode.")
+
+    async def _read_handshake_response(self) -> str:
+        """
+        Reads the handshake response from the server process with concurrent stderr handling.
+        
+        The handshake response is expected to be a pipe-delimited string containing:
+        - Handshake version
+        - Protocol version
+        - Transport type
+        - Endpoint
+        - Protocol type
+        - Server certificate (optional)
+        
+        Returns:
+            str: The handshake response string.
+            
+        Raises:
+            HandshakeError: If no response is received, timeout occurs, or response is invalid.
+        """
+        logger.debug("🤝📖🚀 Reading handshake response from server process...")
+        
+        if not self._process or not self._process.stdout:
+            logger.error("🤝📖❌ No process or stdout available for handshake")
+            raise HandshakeError("No process or stdout available for handshake.")
+
+        async def read_stderr() -> None:
+            """Continuously read and log stderr output."""
+            logger.trace("🤝📖🔍 Reading from server stderr...")
+            while True:
+                err_line = self._process.stderr.readline()
+                if not err_line:
+                    logger.debug("🤝📖✅ Server stderr stream closed")
+                    break
+                print(err_line.rstrip(), file=sys.stderr, flush=True)
+
+        async def read_stdout() -> str:
+            """
+            Read stdout until handshake response is found.
+            Returns the first line containing a pipe character.
+            """
+            logger.trace("🤝📖🔍 Reading from server stdout...")
+            while True:
+                line = self._process.stdout.readline()
+                if not line:
+                    logger.error("🤝📖❌ Server stdout stream closed without handshake")
+                    raise HandshakeError("Server stdout closed without handshake response")
+                
+                print(line.rstrip(), file=sys.stdout, flush=True)
+                if '|' in line:
+                    logger.debug("🤝📖✅ Found handshake response")
+                    return line.strip()
+
+        stderr_task = asyncio.create_task(read_stderr())
+        try:
+            response = await asyncio.wait_for(
+                read_stdout(),
+                timeout=5.0  # 5 seconds should be enough for handshake
+            )
+            if not response:
+                logger.error("🤝📖❌ Empty handshake response received")
+                raise HandshakeError("Empty handshake response")
+            
+            logger.debug(f"🤝📖✅ Received handshake response: {response[:50]}...")
+            return response
+            
+        except asyncio.TimeoutError:
+            logger.error("🤝📖❌ Timeout waiting for handshake response")
+            raise HandshakeError("Timeout waiting for handshake response")
+            
+        except Exception as e:
+            logger.error(f"🤝📖❌ Error reading handshake: {e}")
+            # Capture stderr for debugging
+            stderr_output = ""
+            if self._process and self._process.stderr:
+                stderr_output = self._process.stderr.read()
+                if stderr_output:
+                    logger.error(f"🤝📖❗ Server stderr: {stderr_output}")
+            raise HandshakeError(
+                f"Failed to read handshake response. Server stderr: {stderr_output}"
+            ) from e
+            
+        finally:
+            logger.debug("🤝📖🔒 Cleaning up stderr reader task")
+            stderr_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await stderr_task
+
+    async def _create_grpc_channel(self) -> None:
+        """
+        Creates and initializes a secure gRPC channel using the server certificate
+        (obtained during handshake) and the client's mTLS credentials.
+        """
+        try:
+            if not self._server_cert:
+                raise HandshakeError("Server certificate missing from handshake.")
+
+            # Determine proper endpoint format.
+            if isinstance(self._transport, UnixSocketTransport):
+                endpoint = f"unix://{self._transport.endpoint}"
+            else:
+                endpoint = self._transport.endpoint
+
+            logger.debug(f"🚢 Creating gRPC channel to endpoint: {endpoint}")
+
+            if not self.client_cert or not self.client_key_pem:
+                raise HandshakeError("Client certificate or key missing for TLS channel.")
+
+            # If the server certificate does not include the PEM header/footer,
+            # reconstruct the full PEM certificate.
+            if not self._server_cert.startswith("-----BEGIN CERTIFICATE-----"):
+                cert_lines = [self._server_cert[i:i+64] for i in range(0, len(self._server_cert), 64)]
+                full_pem = "-----BEGIN CERTIFICATE-----\n" + \
+                   "\n".join(cert_lines) + \
+                   "\n-----END CERTIFICATE-----"
+                logger.debug("🔐 Reconstructed full PEM certificate for server.")
+            else:
+                logger.debug("🔑 The _server_cert did not begin with x509 header.")
+                full_pem = self._server_cert
+
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=full_pem.encode(),
+                private_key=self.client_key_pem.encode(),
+                certificate_chain=self.client_cert.encode(),
+            )
+
+            logger.debug("**************************************************************")
+            logger.debug("**************************************************************")
+            logger.debug(f"client_key_pem: {self.client_key_pem.encode()}")
+            logger.debug(f"   client_cert: {self.client_cert.encode()}")
+            logger.debug(f"      full_pem: {full_pem.encode()}")
+            logger.debug("**************************************************************")
+            logger.debug("✅ gRPC SSL channel credentials successfully created.")
+            logger.debug("**************************************************************")
+
+            self._channel = grpc.aio.secure_channel(
+                endpoint,
+                credentials,
+                options=[
+                    ('grpc.ssl_target_name_override', 'localhost'),
+                    ('grpc.max_receive_message_length', 16 * 1024 * 1024),
+                    ('grpc.max_send_message_length', 16 * 1024 * 1024),
+                ]
+            )
+            logger.debug("✅ gRPC channel successfully created.")
+        except Exception as e:
+            logger.error(f"❌ Failed to create gRPC channel: {e}")
+            raise HandshakeError(f"Failed to create gRPC channel: {e}") from e
+
+    async def close(self) -> None:
+        """
+        Gracefully shuts down the RPCPluginClient by:
+          - Closing the gRPC channel.
+          - Terminating the server subprocess.
+          - Closing the transport connection.
+        """
+        logger.info("🔄 Stopping RPC plugin client...")
+        if self._channel:
+            try:
+                await self._channel.close()
+                logger.info("🔄 gRPC channel closed.")
+            except Exception as e:
+                logger.warning(f"⚠️ Error closing gRPC channel: {e}")
+        if self._process and isinstance(self._process, subprocess.Popen):
+            try:
+                self._process.terminate()
+                await asyncio.get_event_loop().run_in_executor(None, self._process.wait)
+                logger.info("🔄 Server process terminated.")
+            except Exception as e:
+                logger.error(f"❌ Error stopping server process: {e}")
+        if self._transport:
+            try:
+                await self._transport.close()
+                logger.info("🔄 Transport closed successfully.")
+            except Exception as e:
+                logger.warning(f"⚠️ Error closing transport: {e}")
+        # Reset internal state.
+        self._process = None
+        self._channel = None
+        self._transport = None
+
+    async def start(self) -> None:
+        """
+        Starts the RPC plugin client by:
+          - Generating or loading client mTLS certificates if auto mTLS is enabled.
+          - Launching the server subprocess.
+          - Performing the handshake.
+          - Creating the secure gRPC channel.
+        """
+        logger.debug("🔄 Starting RPC plugin client...")
+        if rpcplugin_config.get("PLUGIN_AUTO_MTLS"):
+            logger.debug("🔐 Auto mTLS enabled; preparing client certificates...")
+            if not (rpcplugin_config.get("PLUGIN_CLIENT_CERT") and rpcplugin_config.get("PLUGIN_CLIENT_KEY")):
+                # Generate a new self-signed certificate using the Certificate API.
+                client_cert_obj = Certificate(
+                    generate_keypair=True,
+                    key_type="ecdsa",  # or "rsa" as desired.
+                    common_name="client.example.com"
+                )
+                self.client_cert = client_cert_obj.cert
+                self.client_key_pem = client_cert_obj.key
+                logger.debug("🔐 Generated new self-signed client certificate.")
+            else:
+                self.client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+                self.client_key_pem = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+                logger.debug("🔐 Loaded provided client certificate.")
+        else:
+            logger.info("🔐 mTLS disabled; operating in insecure mode.")
+
+        # Prepare environment for launching the server process.
+        env = os.environ.copy()
+        if self.config and 'env' in self.config:
+            env.update(self.config['env'])
+        env["PLUGIN_CLIENT_CERT"] = self.client_cert or ""
+        
+        # Launch the server subprocess.
+        if not self._process:
+            try:
+                self._process = subprocess.Popen(
+                    self.command,
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                logger.info("📡 Server process started.")
+            except Exception as e:
+                logger.error(f"❌ Failed to start server process: {e}")
+                raise
+
+        # Optionally, relay stderr.
+        self._relay_stderr()
+
+        # Perform the handshake with the server.
+        await self._perform_handshake()
+
+        # Create the gRPC channel using the handshake data.
+        await self._create_grpc_channel()
+
+        logger.info("✅ RPC plugin client started successfully.")
+
+    async def connect(self) -> None:
+        """
+        Ensures connection is established. The handshake should already be
+        completed during start().
+        """
+        logger.debug("🔄 Connecting RPC plugin client...")
+        try:
+            if not self._process:
+                raise RuntimeError("❌ Server process is not running. Did you call start()?")
+
+            # Only create channel if needed
+            if not self._channel:
+                logger.debug("🔌 No gRPC channel exists; creating one...")
+                await self._create_grpc_channel()
+            else:
+                logger.debug("🔌 Using existing gRPC channel")
+
+            # Optional: verify channel is healthy
+            try:
+                await self._channel.channel_ready()
+                logger.debug("🔌 gRPC channel is ready")
+            except grpc.RpcError as e:
+                logger.error(f"❌ Channel health check failed: {e}")
+                raise
+
+            logger.info("✅ RPC plugin client connected successfully.")
+
+        except Exception as e:
+            logger.error(f"❌ Error connecting RPC plugin client: {e}")
+            await self.close()
+            raise
+
+
+>>> EOF >>>
+
+### BUNDLE SUMMARY ###
+- Total Files Processed: 39
+- Total Size: 160263 bytes
+- Total Duplicates: 0
+- Total Empty Files: 2
