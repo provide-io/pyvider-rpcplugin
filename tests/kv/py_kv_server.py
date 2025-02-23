@@ -81,7 +81,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             value_str = request.value.decode("utf-8", errors="replace")
             summary = summarize_text(value_str)
             logger.debug(f"🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}")
-            filename = f"kv-data-{key}"
+            filename = f"/tmp/kv-data-{key}"
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(value_str)
             logger.debug(f"🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'.")
