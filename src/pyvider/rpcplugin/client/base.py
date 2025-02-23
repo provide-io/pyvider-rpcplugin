@@ -43,6 +43,7 @@ class RPCPluginClient:
          => manage broker subchannels (BrokerStub.StartStream)
          => send shutdown signals (ControllerStub.Shutdown).
     """
+
     command: list[str] = attrs.field()
     config: dict[str, Any] | None = attrs.field(default=None)
 
@@ -148,7 +149,10 @@ class RPCPluginClient:
             )
             logger.info("🖥️ Plugin subprocess started successfully.")
         except Exception as e:
-            logger.error(f"🖥️❌ Failed to launch plugin subprocess: {e}", extra={"trace": traceback.format_exc()})
+            logger.error(
+                f"🖥️❌ Failed to launch plugin subprocess: {e}",
+                extra={"trace": traceback.format_exc()},
+            )
             raise
 
         # Optionally spawn a thread to relay stderr to local stderr
@@ -188,7 +192,9 @@ class RPCPluginClient:
                 # Read line from the plugin's stdout (blocking)
                 line = await loop.run_in_executor(None, self._process.stdout.readline)
                 if not line:
-                    raise HandshakeError("Plugin closed stdout without handshake response.")
+                    raise HandshakeError(
+                        "Plugin closed stdout without handshake response."
+                    )
                 if "|" in line:
                     return line.strip()
 
@@ -199,12 +205,17 @@ class RPCPluginClient:
             logger.error("🤝 Handshake timed out; no response from plugin.")
             raise HandshakeError("Handshake timed out.")
         except Exception:
-            logger.error("🤝❌ Error reading handshake line.", extra={"trace": traceback.format_exc()})
+            logger.error(
+                "🤝❌ Error reading handshake line.",
+                extra={"trace": traceback.format_exc()},
+            )
             raise
 
         # Parse handshake
         try:
-            core_version, protocol_version, network, address, protocol, server_cert = parse_handshake_response(line)
+            core_version, protocol_version, network, address, protocol, server_cert = (
+                parse_handshake_response(line)
+            )
             logger.debug(
                 f"🤝 Handshake parse => core_version={core_version}, "
                 f"protocol_version={protocol_version}, network={network}, "
@@ -224,7 +235,10 @@ class RPCPluginClient:
             await self._transport.connect(address)
             logger.info(f"🚄 Transport connected via {network} -> {address}")
         except Exception as e:
-            logger.error("🤝❌ Error parsing handshake response or connecting transport.", extra={"trace": traceback.format_exc()})
+            logger.error(
+                "🤝❌ Error parsing handshake response or connecting transport.",
+                extra={"trace": traceback.format_exc()},
+            )
             raise HandshakeError(f"Handshake parse/connect error: {e}")
 
     async def _create_grpc_channel(self) -> None:
@@ -256,8 +270,12 @@ class RPCPluginClient:
                 certificate_chain=self.client_cert.encode(),
             )
         else:
-            logger.debug("🔐 Creating TLS channel with server cert only (no client auth).")
-            credentials = grpc.ssl_channel_credentials(root_certificates=full_pem.encode())
+            logger.debug(
+                "🔐 Creating TLS channel with server cert only (no client auth)."
+            )
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=full_pem.encode()
+            )
 
         endpoint = self._transport.endpoint
         self._channel = grpc.aio.secure_channel(
@@ -303,7 +321,9 @@ class RPCPluginClient:
         if not self._channel:
             raise RuntimeError("Cannot init stubs; no gRPC channel available.")
 
-        logger.debug("🔌 Creating GRPCStdioStub, GRPCBrokerStub, GRPCControllerStub from channel.")
+        logger.debug(
+            "🔌 Creating GRPCStdioStub, GRPCBrokerStub, GRPCControllerStub from channel."
+        )
         self._stdio_stub = GRPCStdioStub(self._channel)
         self._broker_stub = GRPCBrokerStub(self._channel)
         self._controller_stub = GRPCControllerStub(self._channel)
@@ -326,9 +346,14 @@ class RPCPluginClient:
                 else:
                     logger.debug(f"🔌📝📥 Plugin STDOUT: {chunk.data!r}")
         except asyncio.CancelledError:
-            logger.debug("🔌📝 read_stdio_logs task cancelled. Shutting down stdio read.")
+            logger.debug(
+                "🔌📝 read_stdio_logs task cancelled. Shutting down stdio read."
+            )
         except Exception as e:
-            logger.error(f"🔌📝❌ Error reading plugin stdio stream: {e}", extra={"trace": traceback.format_exc()})
+            logger.error(
+                f"🔌📝❌ Error reading plugin stdio stream: {e}",
+                extra={"trace": traceback.format_exc()},
+            )
 
         logger.debug("🔌📝 Plugin stdio reading loop ended.")
 
@@ -339,7 +364,9 @@ class RPCPluginClient:
         """
         if not self._broker_stub:
             raise RuntimeError("Broker stub not initialized.")
-        logger.debug(f"🔌📡 Attempting to open subchannel ID {sub_id} at {address} via Broker.")
+        logger.debug(
+            f"🔌📡 Attempting to open subchannel ID {sub_id} at {address} via Broker."
+        )
 
         async def _broker_coroutine() -> None:
             # Create a bidirectional streaming call
@@ -362,7 +389,9 @@ class RPCPluginClient:
                         f"knock.ack={reply.knock.ack}, error={reply.knock.error}"
                     )
                     if not reply.knock.ack:
-                        logger.error(f"🔌📡❌ Subchannel open failed: {reply.knock.error}")
+                        logger.error(
+                            f"🔌📡❌ Subchannel open failed: {reply.knock.error}"
+                        )
                     else:
                         logger.info(f"🔌📡✅ Subchannel {sub_id} opened successfully!")
             finally:
@@ -384,7 +413,10 @@ class RPCPluginClient:
             await self._controller_stub.Shutdown(ControllerEmpty())
             logger.info("🔌🛑 Plugin acknowledged shutdown request.")
         except Exception as e:
-            logger.error(f"🔌🛑❌ Error calling Shutdown(): {e}", extra={"trace": traceback.format_exc()})
+            logger.error(
+                f"🔌🛑❌ Error calling Shutdown(): {e}",
+                extra={"trace": traceback.format_exc()},
+            )
 
     async def close(self) -> None:
         """
@@ -423,7 +455,10 @@ class RPCPluginClient:
                 self._process.wait(timeout=3)
                 logger.debug("🔄 Plugin subprocess terminated.")
             except Exception as e:
-                logger.error(f"🔄❌ Error terminating plugin process: {e}", extra={"trace": traceback.format_exc()})
+                logger.error(
+                    f"🔄❌ Error terminating plugin process: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
             self._process = None
 
         # Close underlying transport

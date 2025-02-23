@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/crypto/generators.py
 
 from collections.abc import Callable
@@ -17,16 +16,13 @@ from pyvider.rpcplugin.crypto.types import KeyPairType
 
 def generate_rsa_keypair(key_size: int) -> KeyPairType:
     return rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=key_size,
-        backend=default_backend()
+        public_exponent=65537, key_size=key_size, backend=default_backend()
     )
 
 
 def generate_ec_keypair(curve_name: str) -> KeyPairType:
     return ec.generate_private_key(
-        curve=getattr(ec, curve_name.upper())(),
-        backend=default_backend()
+        curve=getattr(ec, curve_name.upper())(), backend=default_backend()
     )
 
 
@@ -39,7 +35,9 @@ from pyvider.rpcplugin.crypto.constants import KEY_TYPE_ECDSA, KEY_TYPE_RSA
 from pyvider.rpcplugin.crypto.types import KeyPairType
 
 
-def generate_keypair(key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve_name: str = "secp384r1") -> KeyPairType:
+def generate_keypair(
+    key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve_name: str = "secp384r1"
+) -> KeyPairType:
     """
     Generates an RSA or ECDSA keypair based on the given parameters.
 
@@ -58,17 +56,14 @@ def generate_keypair(key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve
         if key_size not in SUPPORTED_RSA_SIZES:
             raise ValueError(f"Unsupported RSA key size: {key_size}")
         return rsa.generate_private_key(
-            public_exponent=65537,
-            key_size=key_size,
-            backend=default_backend()
+            public_exponent=65537, key_size=key_size, backend=default_backend()
         )
-    
+
     elif key_type == KEY_TYPE_ECDSA:
         if curve_name not in SUPPORTED_EC_CURVES:
             raise ValueError(f"Unsupported EC curve: {curve_name}")
         return ec.generate_private_key(
-            curve=getattr(ec, curve_name.upper())(),
-            backend=default_backend()
+            curve=getattr(ec, curve_name.upper())(), backend=default_backend()
         )
 
     else:
