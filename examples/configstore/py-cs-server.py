@@ -12,6 +12,7 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class WatchSubscription:
     """Tracks a watch subscription for configuration changes."""
@@ -19,6 +20,7 @@ class WatchSubscription:
     keys: set[str]
     queue: asyncio.Queue
     last_seen: datetime = field(default_factory=datetime.now)
+
 
 class ConfigStoreProtocol(RPCPluginProtocol):
     """Protocol implementation for configuration store service."""
@@ -34,10 +36,11 @@ class ConfigStoreProtocol(RPCPluginProtocol):
         servicer = ConfigStoreServicer()
         configstore_pb2_grpc.add_ConfigStoreServicer_to_server(servicer, server)
 
+
 class ConfigStoreServicer:
     """Implementation of ConfigStore service."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # Store config entries: {namespace: {key: ConfigEntry}}
         self._store: dict[str, dict[str, Any]] = {}
         
@@ -181,7 +184,7 @@ class ConfigStoreServicer:
             logger.error(f"Error in BatchGet: {e}")
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
     
-    async def _notify_watchers(self, entry):
+    async def _notify_watchers(self, entry) -> None:
         """Notify all relevant watchers of a configuration change."""
         dead_watchers = set()
         

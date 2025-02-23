@@ -23,6 +23,7 @@ class KVRPCPlugin:
     def add_to_server(self, instance: Any, server: Any) -> None:
         pass  # Client only in this test
 
+
 @pytest_asyncio.fixture(scope="session")
 def kv_server_bin():
     """Build the Go KV client and server binaries."""
@@ -31,6 +32,7 @@ def kv_server_bin():
     server_path = str(parent_dir / "bin/kv-go-server")
 
     yield server_path
+
 
 @pytest_asyncio.fixture(scope="function")
 async def PLUGIN_CLIENT_PATH(kv_server_bin):
@@ -61,8 +63,9 @@ async def PLUGIN_CLIENT_PATH(kv_server_bin):
     finally:
         await client.stop()
 
+
 @pytest.mark.asyncio
-async def test_kv_basic_operations(PLUGIN_CLIENT_PATH):
+async def test_kv_basic_operations(PLUGIN_CLIENT_PATH) -> None:
     """Test basic KV operations."""
     # Get the actual client instance
     client = await anext(PLUGIN_CLIENT_PATH)
@@ -85,8 +88,9 @@ async def test_kv_basic_operations(PLUGIN_CLIENT_PATH):
     result = await kv_service.get(key)
     assert result == value, f"Expected {value}, got {result}"
 
+
 @pytest.mark.asyncio
-async def test_kv_multiple_operations(PLUGIN_CLIENT_PATH):
+async def test_kv_multiple_operations(PLUGIN_CLIENT_PATH) -> None:
     """Test multiple KV operations in sequence."""
     # Get the actual client instance
     client = await anext(PLUGIN_CLIENT_PATH)
@@ -110,8 +114,9 @@ async def test_kv_multiple_operations(PLUGIN_CLIENT_PATH):
         value = await kv_service.get(key)
         assert value == expected_value, f"Key {key}: expected {expected_value}, got {value}"
 
+
 @pytest.mark.asyncio
-async def test_kv_overwrite(PLUGIN_CLIENT_PATH):
+async def test_kv_overwrite(PLUGIN_CLIENT_PATH) -> None:
     """Test overwriting an existing key."""
     # Get the actual client instance
     client = await anext(PLUGIN_CLIENT_PATH)
@@ -137,8 +142,9 @@ async def test_kv_overwrite(PLUGIN_CLIENT_PATH):
     result = await kv_service.get(key)
     assert result == value2
 
+
 @pytest.mark.asyncio
-async def test_kv_empty_values(PLUGIN_CLIENT_PATH):
+async def test_kv_empty_values(PLUGIN_CLIENT_PATH) -> None:
     """Test handling of empty values."""
     # Get the actual client instance
     client = await anext(PLUGIN_CLIENT_PATH)
@@ -155,6 +161,7 @@ async def test_kv_empty_values(PLUGIN_CLIENT_PATH):
     await kv_service.put("", b"test_value")
     result = await kv_service.get("")
     assert result is None, "Empty key should be ignored"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

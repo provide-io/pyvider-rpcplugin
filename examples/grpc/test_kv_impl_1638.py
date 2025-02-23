@@ -37,6 +37,7 @@ async def kv_test_env():
         else:
             os.environ[key] = value
 
+
 class KVRPCPlugin(RPCPluginProtocol):
     """Plugin for KV service that matches the Go server implementation."""
 
@@ -49,9 +50,10 @@ class KVRPCPlugin(RPCPluginProtocol):
         """Client only implementation."""
         pass
 
+
 class KVClient:
     """Wrapper for KV operations."""
-    def __init__(self, stub):
+    def __init__(self, stub) -> None:
         self.stub = stub
 
     async def get(self, key: str) -> bytes | None:
@@ -74,6 +76,7 @@ class KVClient:
             logger.error(f"Error in put operation: {e}")
             return False
 
+
 @pytest_asyncio.fixture(scope="session")
 def kv_server_bin():
     """Get path to the Go KV server binary."""
@@ -85,6 +88,7 @@ def kv_server_bin():
         pytest.fail(f"KV server binary not found at {server_path}")
 
     return server_path
+
 
 @pytest_asyncio.fixture(scope="function")
 async def PLUGIN_CLIENT_PATH(kv_server_bin):
@@ -124,8 +128,9 @@ async def PLUGIN_CLIENT_PATH(kv_server_bin):
         # Cleanup
         await client.stop()
 
+
 @pytest.mark.asyncio
-async def test_kv_basic_operations(PLUGIN_CLIENT_PATH):
+async def test_kv_basic_operations(PLUGIN_CLIENT_PATH) -> None:
     """Test basic KV operations."""
     # Test data
     key = "test_key"

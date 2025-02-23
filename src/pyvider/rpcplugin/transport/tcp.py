@@ -26,7 +26,7 @@ def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
     parts = endpoint.split(":")
     if len(parts) != 2:
         return False
-    host, port_str = parts
+    _host, port_str = parts
     return port_str.isdigit()
 
 
@@ -128,7 +128,7 @@ class TCPSocketTransport(RPCPluginTransport):
                 logger.error(f"🔌❌⚠: getaddrinfo failed for {self.host}:{self.port}: {e}")
                 raise TransportError(f"Address resolution failed for {self.host}:{self.port}: {e}") from e
 
-            reader, writer = await asyncio.wait_for(
+            _reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port), timeout=5.0
             )
             self._writer = writer

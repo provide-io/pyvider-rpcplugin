@@ -28,6 +28,7 @@ from pyvider.rpcplugin.transport.types import TransportT
 # Use a sentinel value to detect omitted parameters.
 _SENTINEL = object()
 
+
 @attrs.define
 class HandshakeConfig:
     """

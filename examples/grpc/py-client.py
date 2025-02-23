@@ -21,10 +21,11 @@ class KVRPCProtocol(RPCPluginProtocol):
         """Client-only implementation."""
         pass
 
+
 class KVClient:
     """Client for Go KV server using pyvider-rpcplugin."""
 
-    def __init__(self, server_path: str):
+    def __init__(self, server_path: str) -> None:
         """Initialize KV client.
 
         Args:
@@ -43,7 +44,7 @@ class KVClient:
             "PLUGIN_AUTO_MTLS": "true"
         })
 
-    async def connect(self):
+    async def connect(self) -> None:
         """Connect to the KV server."""
         try:
             # Create plugin client
@@ -71,7 +72,7 @@ class KVClient:
             await self.close()
             raise
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the connection."""
         if self._client:
             await self._client.stop()
@@ -124,8 +125,9 @@ class KVClient:
             logger.error(f"❌ Get failed: key={key}, error={e}")
             raise
 
+
 # Example usage:
-async def main():
+async def main() -> None:
     # Create client
     server_path = os.environ.get("PLUGIN_SERVER_PATH")
     if not server_path:
@@ -146,6 +148,7 @@ async def main():
 
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     import asyncio

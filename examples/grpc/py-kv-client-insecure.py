@@ -24,6 +24,7 @@ def test_socket_connection(sock_path: str) -> bool:
     finally:
         sock.close()
 
+
 def get_channel(endpoint: str) -> grpc.Channel:
     """Create and verify gRPC channel connection"""
     # Strip unix: prefix if present
@@ -68,7 +69,8 @@ def get_channel(endpoint: str) -> grpc.Channel:
             channel.close()
         raise
 
-def test_operations(stub: kv_pb2_grpc.KVStub):
+
+def test_operations(stub: kv_pb2_grpc.KVStub) -> bool | None:
     """Test basic KV operations with detailed logging"""
     test_key = "test"
     test_value = b"test_value"
@@ -103,7 +105,8 @@ def test_operations(stub: kv_pb2_grpc.KVStub):
         logger.error(f"Operation error: {str(e)}")
         raise
 
-def main():
+
+def main() -> None:
     logger.debug("Starting KV client test")
     
     try:
@@ -140,6 +143,7 @@ def main():
     except Exception as e:
         logger.error(f"Fatal error: {e}")
         exit(1)
+
 
 if __name__ == "__main__":
     main()

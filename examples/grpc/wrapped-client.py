@@ -8,7 +8,8 @@ from proto import kv_pb2, kv_pb2_grpc
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def main():
+
+def main() -> None:
     try:
         # Get and validate certs
         client_cert = os.getenv('PLUGIN_CLIENT_CERT')
@@ -72,6 +73,7 @@ def main():
 
     except Exception:
         logger.error("Fatal error", exc_info=True)
+
 
 if __name__ == "__main__":
     main()

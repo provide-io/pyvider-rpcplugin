@@ -35,5 +35,5 @@ __all__ = [
 	"add_GRPCControllerServicer_to_serve",
 
 	"StreamStdio",
-	"add_GRPCStdioServicer_to_server",
+	"add_GRPCStdioServicer_to_server", "add_GRPCBrokerServicer_to_server", "add_GRPCControllerServicer_to_server", "GRPCStdio", "GRPCStdioServicer", "GRPCBrokerService",
 ]

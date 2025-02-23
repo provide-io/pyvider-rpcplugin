@@ -47,6 +47,7 @@ import grpc
 # Data classes / Config
 # ------------------------------------------------------------------------------------
 
+
 @attrs.define
 class ClientConfig:
     """
@@ -77,6 +78,7 @@ def format_timestamp(ts: int) -> str:
     dt = datetime.fromtimestamp(ts)
     return dt.strftime("%H:%M:%S")
 
+
 def format_chat_message(msg: chat_pb2.ChatMessage) -> str:
     """
     Format a ChatMessage as "HH:MM:SS | user: message" with some extra emojis.
@@ -89,6 +91,7 @@ def format_chat_message(msg: chat_pb2.ChatMessage) -> str:
     """
     ts_str = format_timestamp(msg.timestamp)
     return f"{ts_str} | {msg.user}: {msg.message}"
+
 
 async def read_multiline_input(prompt: str) -> str:
     """
@@ -121,6 +124,7 @@ async def read_multiline_input(prompt: str) -> str:
 # ------------------------------------------------------------------------------------
 # Main interactive loop - reading commands/messages from user
 # ------------------------------------------------------------------------------------
+
 
 async def interactive_chat_loop(
     cfg: ClientConfig,
@@ -211,6 +215,7 @@ async def interactive_chat_loop(
         )
         await outbound_queue.put(msg)
 
+
 async def fetch_and_display_history(stub: chat_pb2_grpc.ChatServiceStub) -> None:
     """
     Calls the unary GetMessageHistory RPC, then displays each message 
@@ -225,6 +230,7 @@ async def fetch_and_display_history(stub: chat_pb2_grpc.ChatServiceStub) -> None
         print("\n🕰️ End of History.\n")
     except grpc.RpcError as e:
         print(f"❌ Error fetching history: {e.code()} {e.details()}")
+
 
 async def send_side_chat_message(username: str, side_chat_content: str, stub: chat_pb2_grpc.ChatServiceStub) -> None:
     """
@@ -250,6 +256,7 @@ async def send_side_chat_message(username: str, side_chat_content: str, stub: ch
 # Streaming / concurrency
 # ------------------------------------------------------------------------------------
 
+
 async def outbound_message_generator(
     cfg: ClientConfig,
     outbound_queue: asyncio.Queue[chat_pb2.ChatMessage],
@@ -274,6 +281,7 @@ async def outbound_message_generator(
     except asyncio.CancelledError:
         logging.debug("Outbound generator was cancelled. Exiting.")
         raise
+
 
 async def receive_inbound_messages(
     inbound_stream: AsyncIterator[chat_pb2.ChatMessage],
@@ -304,6 +312,7 @@ async def receive_inbound_messages(
 # ------------------------------------------------------------------------------------
 # Main client entry point
 # ------------------------------------------------------------------------------------
+
 
 async def main_client(cfg: ClientConfig) -> None:
     """
@@ -359,6 +368,7 @@ async def main_client(cfg: ClientConfig) -> None:
 
         logging.info("Shutting down client gracefully...")
 
+
 def parse_cli_args() -> ClientConfig:
     """
     Parse sys.argv for:
@@ -390,7 +400,8 @@ def parse_cli_args() -> ClientConfig:
 
     return ClientConfig(username=username, server=server_val)
 
-def main():
+
+def main() -> None:
     """
     Main entrypoint. Parses CLI arguments, sets up logging,
     and runs the main_client in asyncio event loop.
@@ -405,6 +416,7 @@ def main():
         asyncio.run(main_client(cfg))
     except KeyboardInterrupt:
         logging.info("👋 KeyboardInterrupt: Exiting chat client.")
+
 
 if __name__ == "__main__":
     main()

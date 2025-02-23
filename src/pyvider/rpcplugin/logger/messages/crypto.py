@@ -85,7 +85,7 @@ class CryptoLogMessages(Enum):
     crypto_error_certificate_invalid_extension = "📜❌ Certificate extension retrieval failed: {error}"
 
     @property
-    def level(self): # pragma: no cover
+    def level(self) -> str:  # pragma: no cover
         """Extract log level from enum name."""
         if "debug" in self.name:
             return "debug"
@@ -97,7 +97,8 @@ class CryptoLogMessages(Enum):
             return "error"
         return "info"
 
-def log_crypto_message(message: CryptoLogMessages, **kwargs): # pragma: no cover
+
+def log_crypto_message(message: CryptoLogMessages, **kwargs) -> None:  # pragma: no cover
     log_func = getattr(logger, message.level, logger.info)
     log_func(message.value.format(**kwargs))
 
