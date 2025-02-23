@@ -102,7 +102,12 @@ norecursedirs = [
 
 [tool.ruff]
 select = ["E", "F", "I", "UP", "ANN", "B"]
-ignore = ["ANN101", "ANN401", "B008"]
+ignore = [
+    "ANN101",
+    "ANN401",
+    "B008",
+    "E501",     # Line too long
+]
 exclude = ["tests/*", "**/*pb2*.py"]
 line-length = 88
 
