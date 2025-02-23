@@ -4,7 +4,7 @@
 from .base import RPCPluginProtocol
 
 from .service import (
-	ProtcolService,
+	GRPCBrokerService,
     register_protocol_service,
 )
 
