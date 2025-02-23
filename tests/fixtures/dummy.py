@@ -6,8 +6,6 @@ import pytest
 import asyncio
 import os
 
-from pyvider.rpcplugin.logger import logger
-
 class DummyReader:
     def __init__(self, data: bytes = b""):
         self._data = data
