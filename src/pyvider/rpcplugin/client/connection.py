@@ -32,6 +32,7 @@ class ClientConnection:
         send_func: Callable used to send data; defaults to _default_send.
         receive_func: Callable used to receive data; defaults to _default_receive.
     """
+
     reader: asyncio.StreamReader = attrs.field()
     writer: asyncio.StreamWriter = attrs.field()
     remote_addr: str = attrs.field()
@@ -64,7 +65,10 @@ class ClientConnection:
         self.bytes_received += bytes_received
         logger.debug(
             f"Updated metrics for {self.remote_addr}",
-            extra={"total_sent": self.bytes_sent, "total_received": self.bytes_received}
+            extra={
+                "total_sent": self.bytes_sent,
+                "total_received": self.bytes_received,
+            },
         )
 
     async def _default_send(self, data: bytes) -> None:
@@ -75,14 +79,10 @@ class ClientConnection:
             self.writer.write(data)
             await self.writer.drain()
             self.update_metrics(bytes_sent=len(data))
-            logger.debug(
-                f"Sent data to {self.remote_addr}",
-                extra={"bytes": len(data)}
-            )
+            logger.debug(f"Sent data to {self.remote_addr}", extra={"bytes": len(data)})
         except OSError as e:
             logger.error(
-                f"Error sending data to {self.remote_addr}",
-                extra={"error": str(e)}
+                f"Error sending data to {self.remote_addr}", extra={"error": str(e)}
             )
             raise
 
@@ -95,14 +95,12 @@ class ClientConnection:
             if data:
                 self.update_metrics(bytes_received=len(data))
                 logger.debug(
-                    f"Received data from {self.remote_addr}",
-                    extra={"bytes": len(data)}
+                    f"Received data from {self.remote_addr}", extra={"bytes": len(data)}
                 )
             return data
         except OSError as e:
             logger.error(
-                f"Error receiving data from {self.remote_addr}",
-                extra={"error": str(e)}
+                f"Error receiving data from {self.remote_addr}", extra={"error": str(e)}
             )
             raise
 
@@ -157,7 +155,7 @@ class ClientConnection:
             except Exception as e:
                 logger.error(
                     f"Error while closing connection to {self.remote_addr}",
-                    extra={"error": str(e)}
+                    extra={"error": str(e)},
                 )
 
     def __del__(self) -> None:
@@ -166,7 +164,7 @@ class ClientConnection:
 
         Note: Raising exceptions in __del__ is generally discouraged; a warning is logged instead.
         """
-        if not self._closed and hasattr(self, 'writer'):
+        if not self._closed and hasattr(self, "writer"):
             logger.warning(f"Connection to {self.remote_addr} was not properly closed")
         return True
 

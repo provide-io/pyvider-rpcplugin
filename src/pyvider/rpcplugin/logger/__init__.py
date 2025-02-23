@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/logger/__init__.py
 
 import importlib

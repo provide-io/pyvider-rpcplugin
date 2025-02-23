@@ -45,12 +45,13 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     RPCPluginServer initializes and runs a gRPC server according to negotiated
     handshake parameters. It supports mTLS via the Certificate API and can use
     either TCP or Unix socket transports.
-    
+
     This version includes:
       - Global instance access.
       - Shutdown signaling via a serving future.
       - Detailed debug logging and robust exception handling.
     """
+
     # Public initialization parameters.
     protocol: ProtocolT = attrs.field()
     handler: HandlerT = attrs.field()
@@ -83,12 +84,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             self._handshake_config = HandshakeConfig(
                 magic_cookie_key=rpcplugin_config.magic_cookie_key(),
                 magic_cookie_value=rpcplugin_config.magic_cookie_value(),
-                protocol_versions=[int(v) for v in rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")],
-                supported_transports=rpcplugin_config.server_transports()
+                protocol_versions=[
+                    int(v)
+                    for v in rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")
+                ],
+                supported_transports=rpcplugin_config.server_transports(),
             )
             logger.debug(f"🛎️⚙️ HandshakeConfig set: {self._handshake_config}")
         except Exception as e:
-            logger.error("🛎️⚙️❌ Failed to initialize handshake configuration", extra={"error": str(e)})
+            logger.error(
+                "🛎️⚙️❌ Failed to initialize handshake configuration",
+                extra={"error": str(e)},
+            )
             raise
         RPCPluginServer._instance = self
         logger.debug("🛎️⚙️ Global RPCPluginServer instance set.")
@@ -100,7 +107,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             await asyncio.wait_for(self._serving_event.wait(), timeout)
             logger.debug("Server ready event received.")
         except TimeoutError as e:
-            logger.error("Server did not become ready within timeout.", extra={"timeout": timeout})
+            logger.error(
+                "Server did not become ready within timeout.",
+                extra={"timeout": timeout},
+            )
             raise TimeoutError("Server failed to become ready") from e
 
     @classmethod
@@ -122,10 +132,14 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 logger.debug("🛎️ No client certificate provided; operating insecurely.")
             return client_cert
         except Exception as e:
-            logger.error("🛎️❌ Error reading client certificate", extra={"error": str(e)})
+            logger.error(
+                "🛎️❌ Error reading client certificate", extra={"error": str(e)}
+            )
             return None
 
-    def _generate_server_credentials(self, client_cert: str | None) -> grpc.ServerCredentials | None:
+    def _generate_server_credentials(
+        self, client_cert: str | None
+    ) -> grpc.ServerCredentials | None:
         """
         Generates gRPC server TLS credentials using the Certificate API.
         """
@@ -142,14 +156,14 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 key=server_key_conf,
                 generate_keypair=not (server_cert_conf and server_key_conf),
                 key_type="ecdsa",
-                common_name="localhost"
+                common_name="localhost",
             )
             logger.debug("🛎️ Server certificate loaded/generated successfully.")
             creds = grpc.ssl_server_credentials(
                 private_key_certificate_chain_pairs=[
                     (
                         self._server_cert_obj.key.encode(),
-                        self._server_cert_obj.cert.encode()
+                        self._server_cert_obj.cert.encode(),
                     )
                 ],
                 root_certificates=client_cert.encode(),
@@ -158,7 +172,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug("🛎️ Server TLS credentials created with mTLS enabled.")
             return creds
         except Exception as e:
-            logger.error("🛎️❌ Error generating server credentials", extra={"error": str(e)})
+            logger.error(
+                "🛎️❌ Error generating server credentials", extra={"error": str(e)}
+            )
             raise
 
     async def stop(self) -> None:
@@ -168,7 +184,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 await self._server.stop(grace=2)
                 logger.debug("🛎️ gRPC server stopped successfully.")
             except Exception as e:
-                logger.error("🛎️❌ Error stopping gRPC server", extra={"error": str(e), "trace": traceback.format_exc()})
+                logger.error(
+                    "🛎️❌ Error stopping gRPC server",
+                    extra={"error": str(e), "trace": traceback.format_exc()},
+                )
             finally:
                 self._server = None
         logger.debug("🛎️ Server shutdown complete.")
@@ -181,21 +200,24 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         try:
             self._server = GRPCServer(
                 options=[
-                    ('grpc.ssl_target_name_override', 'localhost'),
-                    ('grpc.use_local_subchannel_pool', 1),
-                    ('grpc.max_receive_message_length', 16 * 1024 * 1024),
-                    ('grpc.max_send_message_length', 16 * 1024 * 1024),
-                    ('grpc.keepalive_time_ms', 10000),
-                    ('grpc.keepalive_timeout_ms', 5000),
-                    ('grpc.keepalive_permit_without_calls', True),
-                    ('grpc.http2.max_pings_without_data', 0),
-                    ('grpc.http2.min_time_between_pings_ms', 10000),
-                    ('grpc.http2.min_ping_interval_without_data_ms', 5000),
+                    ("grpc.ssl_target_name_override", "localhost"),
+                    ("grpc.use_local_subchannel_pool", 1),
+                    ("grpc.max_receive_message_length", 16 * 1024 * 1024),
+                    ("grpc.max_send_message_length", 16 * 1024 * 1024),
+                    ("grpc.keepalive_time_ms", 10000),
+                    ("grpc.keepalive_timeout_ms", 5000),
+                    ("grpc.keepalive_permit_without_calls", True),
+                    ("grpc.http2.max_pings_without_data", 0),
+                    ("grpc.http2.min_time_between_pings_ms", 10000),
+                    ("grpc.http2.min_ping_interval_without_data_ms", 5000),
                 ]
             )
             logger.debug("🛎️ gRPC server instance created.")
         except Exception as e:
-            logger.error("🛎️❌ gRPC server setup failed", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🛎️❌ gRPC server setup failed",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
 
         try:
@@ -207,12 +229,16 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
             await proto.add_to_server(handler=self.handler, server=self._server)
 
-            register_protocol_service(server=self._server, shutdown_event=self._shutdown_event)
+            register_protocol_service(
+                server=self._server, shutdown_event=self._shutdown_event
+            )
 
             self.protocol = proto
             logger.debug("🛎️ Protocol service registered successfully.")
         except Exception as e:
-            logger.error("🛎️❌ Failed to register protocol service", extra={"error": str(e)})
+            logger.error(
+                "🛎️❌ Failed to register protocol service", extra={"error": str(e)}
+            )
             raise RuntimeError(f"Protocol service registration failed: {e}") from e
 
         try:
@@ -227,25 +253,38 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise
 
         try:
-            bind_address = rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT") or "127.0.0.1:0"
+            bind_address = (
+                rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT") or "127.0.0.1:0"
+            )
             if isinstance(self._transport, UnixSocketTransport):
                 logger.debug("🛎️ Using Unix socket transport; listening on socket...")
                 await self._transport.listen()
                 socket_path = f"unix:{self._transport.path}"
-                port = self._server.add_secure_port(socket_path, creds) if creds else self._server.add_insecure_port(socket_path)
+                port = (
+                    self._server.add_secure_port(socket_path, creds)
+                    if creds
+                    else self._server.add_insecure_port(socket_path)
+                )
                 logger.debug(f"🛎️ Bound to Unix socket at {socket_path}.")
             else:
                 if bind_address.startswith("tcp:"):
                     logger.debug(f"🛎️ TCP address before stripping: {bind_address}")
-                    bind_address = bind_address[len("tcp:"):]
+                    bind_address = bind_address[len("tcp:") :]
                 logger.debug(f"🛎️ Binding to TCP address: {bind_address}")
-                port = self._server.add_secure_port(bind_address, creds) if creds else self._server.add_insecure_port(bind_address)
+                port = (
+                    self._server.add_secure_port(bind_address, creds)
+                    if creds
+                    else self._server.add_insecure_port(bind_address)
+                )
                 self._port = port
                 logger.debug(f"🛎️ Bound to TCP port: {port}.")
             await self._server.start()
             logger.debug("🛎️ gRPC server started successfully.")
         except Exception as e:
-            logger.error("🛎️❌ gRPC server failed to start", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🛎️❌ gRPC server failed to start",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
 
         try:
@@ -255,13 +294,22 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     logger.error("🛎️❌ " + error_msg)
                     raise TransportError(error_msg)
                 mode = os.stat(self._transport.path).st_mode
-                if not (mode & stat.S_IRWXU and mode & stat.S_IRWXG and mode & stat.S_IRWXO):
-                    error_msg = f"Socket file {self._transport.path} has incorrect permissions."
+                if not (
+                    mode & stat.S_IRWXU and mode & stat.S_IRWXG and mode & stat.S_IRWXO
+                ):
+                    error_msg = (
+                        f"Socket file {self._transport.path} has incorrect permissions."
+                    )
                     logger.error("🛎️❌ " + error_msg)
                     raise TransportError(error_msg)
-                logger.debug(f"🛎️ Verified Unix socket file permissions at {self._transport.path}.")
+                logger.debug(
+                    f"🛎️ Verified Unix socket file permissions at {self._transport.path}."
+                )
         except Exception as e:
-            logger.error("🛎️❌ Server setup post-check failed", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🛎️❌ Server setup post-check failed",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
 
     async def _negotiate_handshake(self) -> bool | None:
@@ -270,7 +318,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             validate_magic_cookie()
 
             logger.debug("🤝 Magic cookie validated.")
-            self._protocol_version = negotiate_protocol_version(self._handshake_config.protocol_versions)
+            self._protocol_version = negotiate_protocol_version(
+                self._handshake_config.protocol_versions
+            )
             logger.info(f"🤝 Selected protocol version: {self._protocol_version}")
 
             if self.transport:
@@ -280,18 +330,29 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 else:
                     logger.debug("🤝 Using provided transport instance.")
                     self._transport = self.transport
-                    self._transport_name = "tcp" if isinstance(self.transport, TCPSocketTransport) else "unix"
+                    self._transport_name = (
+                        "tcp"
+                        if isinstance(self.transport, TCPSocketTransport)
+                        else "unix"
+                    )
             else:
                 logger.debug("🤝 Negotiating transport from configuration...")
                 supported_transports = self._handshake_config.supported_transports
                 if callable(supported_transports):
                     supported_transports = supported_transports()
-                self._transport_name, self._transport = await negotiate_transport(supported_transports)
-            logger.debug(f"🤝 Handshake negotiation completed; transport selected: {self._transport_name}.")
+                self._transport_name, self._transport = await negotiate_transport(
+                    supported_transports
+                )
+            logger.debug(
+                f"🤝 Handshake negotiation completed; transport selected: {self._transport_name}."
+            )
 
             return True
         except Exception as e:
-            logger.error("🤝❌ Handshake negotiation failed", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🤝❌ Handshake negotiation failed",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise HandshakeError(f"Handshake negotiation failed: {e}") from e
 
     def _register_signal_handlers(self) -> None:
@@ -303,9 +364,14 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     loop.add_signal_handler(sig, self._shutdown_requested)
                     logger.debug(f"🛎️ Signal handler registered for {sig.name}.")
                 except NotImplementedError:
-                    logger.warning(f"🛎️ Signal handler for {sig.name} not supported on this platform.")
+                    logger.warning(
+                        f"🛎️ Signal handler for {sig.name} not supported on this platform."
+                    )
         except Exception as e:
-            logger.exception("Error registering signal handlers", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.exception(
+                "Error registering signal handlers",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
 
     def _shutdown_requested(self, *args) -> None:
         logger.info("🛎️ Shutdown signal received; initiating graceful shutdown...")
@@ -323,7 +389,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             client_cert = self._read_client_cert()
             await self._setup_server(client_cert)
         except Exception as e:
-            logger.error("🛎️❌ Serve() failed during setup", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🛎️❌ Serve() failed during setup",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
 
         try:
@@ -332,13 +401,16 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 transport_name=self._transport_name,
                 transport=self._transport,
                 server_cert=self._server_cert_obj,
-                port=self._port
+                port=self._port,
             )
             logger.debug(f"Handshake response built: {response}")
             print(response, flush=True)
             sys.stdout.flush()
         except Exception as e:
-            logger.error("🛎️❌ Error building handshake response", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🛎️❌ Error building handshake response",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
 
         try:
@@ -346,14 +418,20 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug("🛎️ Server running; awaiting shutdown signal...")
             await self._serving_future
         except Exception as e:
-            logger.error("🛎️❌ Serve() encountered an error during run", extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                "🛎️❌ Serve() encountered an error during run",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
         finally:
             logger.debug("🛎️ Exiting serve(); initiating shutdown...")
             try:
                 await self.stop()
             except Exception as stop_e:
-                logger.error("🛎️❌ Error during stop()", extra={"error": str(stop_e), "trace": traceback.format_exc()})
+                logger.error(
+                    "🛎️❌ Error during stop()",
+                    extra={"error": str(stop_e), "trace": traceback.format_exc()},
+                )
             logger.debug("🛎️ Shutdown complete; exiting process.")
 
     async def Xstop(self) -> None:
@@ -363,7 +441,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 await self._server.stop(grace=2)
                 logger.debug("🛎️ gRPC server stopped successfully.")
             except Exception as e:
-                logger.error("🛎️❌ Error stopping gRPC server", extra={"error": str(e), "trace": traceback.format_exc()})
+                logger.error(
+                    "🛎️❌ Error stopping gRPC server",
+                    extra={"error": str(e), "trace": traceback.format_exc()},
+                )
             finally:
                 self._server = None
         if self._transport:
@@ -371,7 +452,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 await self._transport.close()
                 logger.debug("🛎️ Transport closed successfully.")
             except Exception as e:
-                logger.error("🛎️❌ Error closing transport", extra={"error": str(e), "trace": traceback.format_exc()})
+                logger.error(
+                    "🛎️❌ Error closing transport",
+                    extra={"error": str(e), "trace": traceback.format_exc()},
+                )
             finally:
                 self._transport = None
         if not self._serving_future.done():
@@ -381,6 +465,8 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     def __del__(self) -> None:
         try:
             if not self._serving_event.is_set():
-                logger.warning("RPCPluginServer __del__ called but shutdown was not properly requested.")
+                logger.warning(
+                    "RPCPluginServer __del__ called but shutdown was not properly requested."
+                )
         except Exception:
             pass

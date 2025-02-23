@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/client/__init__.py
 
 from pyvider.rpcplugin.client.base import RPCPluginClient

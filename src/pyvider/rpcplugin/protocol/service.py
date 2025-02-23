@@ -31,18 +31,23 @@ class SubchannelConnection:
     Represents a single 'brokered' subchannel. The go-plugin host
     can request to open or dial it. We store an ID, connection state, etc.
     """
+
     def __init__(self, conn_id: int, address: str) -> None:
         self.conn_id = conn_id
         self.address = address
         self.is_open = False
 
     async def open(self) -> None:
-        logger.debug(f"🔌🔍✅ SubchannelConnection.open() => Opening subchannel {self.conn_id} at {self.address}")
+        logger.debug(
+            f"🔌🔍✅ SubchannelConnection.open() => Opening subchannel {self.conn_id} at {self.address}"
+        )
         await asyncio.sleep(0.05)  # simulate
         self.is_open = True
 
     async def close(self) -> None:
-        logger.debug(f"🔌🔒✅ SubchannelConnection.close() => Closing subchannel {self.conn_id}")
+        logger.debug(
+            f"🔌🔒✅ SubchannelConnection.close() => Closing subchannel {self.conn_id}"
+        )
         await asyncio.sleep(0.05)
         self.is_open = False
 
@@ -69,12 +74,16 @@ class GRPCBrokerService(GRPCBrokerServicer):
         # and optionally yield responses. Some advanced use-cases might do a real
         # 'broker mux' with synchronous channels. Here, we do a simplified approach.
 
-        logger.debug("🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream (bidirectional).")
+        logger.debug(
+            "🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream (bidirectional)."
+        )
 
         # We'll produce responses as we handle each incoming message.
         async for incoming in request_iterator:
             try:
-                logger.debug(f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'")
+                logger.debug(
+                    f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'"
+                )
 
                 # If we see 'knock.knock==True' then the host is requesting a subchannel open.
                 if incoming.knock.knock:
@@ -82,7 +91,9 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     sub_id = incoming.service_id
                     if sub_id in self._subchannels:
                         # Already exists, maybe just re-open or error out
-                        logger.debug(f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels.")
+                        logger.debug(
+                            f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels."
+                        )
                     else:
                         # Create a new subchannel
                         subchan = SubchannelConnection(sub_id, incoming.address)
@@ -97,10 +108,12 @@ class GRPCBrokerService(GRPCBrokerServicer):
                         knock=ConnInfo.Knock(
                             knock=False,  # we are responding
                             ack=True,
-                            error=""
-                        )
+                            error="",
+                        ),
                     )
-                    logger.debug(f"🔌📡✅ Opening subchannel {sub_id}, returning ack. {outgoing}")
+                    logger.debug(
+                        f"🔌📡✅ Opening subchannel {sub_id}, returning ack. {outgoing}"
+                    )
                     yield outgoing
 
                 else:
@@ -113,20 +126,18 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     # Return ack again
                     outgoing = ConnInfo(
                         service_id=sub_id,
-                        knock=ConnInfo.Knock(
-                            knock=False,
-                            ack=True,
-                            error=""
-                        )
+                        knock=ConnInfo.Knock(knock=False, ack=True, error=""),
                     )
                     yield outgoing
 
             except Exception as ex:
                 err_str = f"Broker error: {ex}"
-                logger.error(f"🔌📡❌ {err_str}", extra={"trace": traceback.format_exc()})
+                logger.error(
+                    f"🔌📡❌ {err_str}", extra={"trace": traceback.format_exc()}
+                )
                 yield ConnInfo(
                     service_id=0,
-                    knock=ConnInfo.Knock(knock=False, ack=False, error=err_str)
+                    knock=ConnInfo.Knock(knock=False, ack=False, error=err_str),
                 )
 
         logger.debug("🔌📡🛑 GRPCBrokerService.StartStream => stream closed by client.")
@@ -151,29 +162,37 @@ class GRPCStdioService(GRPCStdioServicer):
         or from a logging handler that writes to the queue.
         """
         data = StdioData(
-            channel=StdioData.STDERR if is_stderr else StdioData.STDOUT,
-            data=line
+            channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
         )
         await self._message_queue.put(data)
 
     async def StreamStdio(self, request, context):
         """
-        Streams STDOUT/STDERR lines to the caller. 
+        Streams STDOUT/STDERR lines to the caller.
         The host (go-plugin) typically calls this once at startup, then reads forever.
         """
-        logger.debug("🔌📝✅ GRPCStdioService.StreamStdio => started.  Streaming lines to host.")
+        logger.debug(
+            "🔌📝✅ GRPCStdioService.StreamStdio => started.  Streaming lines to host."
+        )
         while not self._shutdown and not context.is_active():
             try:
                 # Wait up to 2s for a new line; if none, we yield a short idle.
-                data_item = await asyncio.wait_for(self._message_queue.get(), timeout=2.0)
+                data_item = await asyncio.wait_for(
+                    self._message_queue.get(), timeout=2.0
+                )
                 yield data_item
             except TimeoutError:
                 continue
             except Exception as e:
-                logger.error(f"🔌📝❌ Error streaming lines: {e}", extra={"trace": traceback.format_exc()})
+                logger.error(
+                    f"🔌📝❌ Error streaming lines: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
                 break
 
-        logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done.")
+        logger.debug(
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+        )
         return
 
     def shutdown(self) -> None:
@@ -187,7 +206,9 @@ class GRPCControllerService(GRPCControllerServicer):
     You can add additional calls to replicate go-plugin’s “Ping” or “Health” checks.
     """
 
-    def __init__(self, shutdown_event: asyncio.Event, stdio_service: GRPCStdioService) -> None:
+    def __init__(
+        self, shutdown_event: asyncio.Event, stdio_service: GRPCStdioService
+    ) -> None:
         self._shutdown_event = shutdown_event
         self._stdio_service = stdio_service
 
@@ -195,7 +216,9 @@ class GRPCControllerService(GRPCControllerServicer):
         """
         In go-plugin’s approach, calling 'Shutdown()' on the plugin triggers the plugin to exit.
         """
-        logger.debug("🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested.")
+        logger.debug(
+            "🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested."
+        )
         self._stdio_service.shutdown()
         self._shutdown_event.set()
         # Return an empty object
@@ -221,7 +244,9 @@ def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
     add_GRPCBrokerServicer_to_server(broker_service, server)
     add_GRPCControllerServicer_to_server(controller_service, server)
 
-    logger.debug("🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController with gRPC server.")
+    logger.debug(
+        "🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController with gRPC server."
+    )
 
     # You might want to return references to the services for feeding data etc.
     # e.g. return (stdio_service, broker_service, controller_service)
