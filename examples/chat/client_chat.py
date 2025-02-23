@@ -31,18 +31,17 @@ Doctest (purely illustrative):
 >>> asyncio.run(asyncio.sleep(0))
 """
 
-import sys
 import asyncio
 import logging
+import sys
 import time
+from collections.abc import AsyncIterator
 from datetime import datetime
-from typing import AsyncIterator, Optional
 
-import grpc
-
+import attrs
 import chat_pb2
 import chat_pb2_grpc
-import attrs
+import grpc
 
 # ------------------------------------------------------------------------------------
 # Data classes / Config
@@ -265,7 +264,7 @@ async def outbound_message_generator(
             # Wait for a new message
             try:
                 msg = await asyncio.wait_for(outbound_queue.get(), timeout=0.1)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
 
             yield msg
@@ -369,7 +368,7 @@ def parse_cli_args() -> ClientConfig:
     """
     default_server = "localhost:50051"
     args = sys.argv[1:]
-    username: Optional[str] = None
+    username: str | None = None
     server_val = default_server
 
     # Extract username from the first positional arg if present

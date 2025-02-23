@@ -7,8 +7,8 @@ from typing import Any
 import pytest
 import pytest_asyncio
 
-from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.logger import logger
 
 
 # Define the KV Protocol class

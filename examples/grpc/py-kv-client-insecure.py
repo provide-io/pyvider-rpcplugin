@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 import os
-import grpc
 import socket
+
+import grpc
 from proto import kv_pb2, kv_pb2_grpc
+
 from pyvider.rpcplugin.logger import logger
+
 
 def test_socket_connection(sock_path: str) -> bool:
     """Test raw socket connection"""
@@ -92,7 +95,7 @@ def test_operations(stub: kv_pb2_grpc.KVStub):
         return True
 
     except grpc.RpcError as e:
-        logger.error(f"RPC operation failed:")
+        logger.error("RPC operation failed:")
         logger.error(f"  Status code: {e.code()}")
         logger.error(f"  Details: {e.details()}")
         raise RuntimeError(f"RPC failed: {e.code()} - {e.details()}")

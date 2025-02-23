@@ -671,6 +671,19 @@ wheels = [
 ]
 
 [[package]]
+name = "pyre"
+version = "1.12.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/4e/ec/410c6afd6756cade8be132ae032cf286aae0ec478c80773b4490f5f08c42/pyre-1.12.5.tar.gz", hash = "sha256:9be1e0b75e0fe5a8259b4a0a7d445745c3f3a0dd93bef4f99687e000e92293d6", size = 2791592 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/bc/11f40a780a9c709c7ffc8d0afa764fb3650b49edbf54d0748314461e62c3/pyre-1.12.5-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:727f2823c8124275956a0e5a39dc11306a3bf9f7ec29c2c93386896b10bbbe5b", size = 5828524 },
+    { url = "https://files.pythonhosted.org/packages/c1/86/8eb16c219b42c3f504f348315ede2c9935dde518cb4586f24eb56fb818ad/pyre-1.12.5-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c514ea180e44061f118f2b6172452e8cf36d9de8cca48dd229c62a2228232e24", size = 3101608 },
+]
+
+[[package]]
 name = "pyre-check"
 version = "0.9.23"
 source = { registry = "https://pypi.org/simple" }
@@ -761,9 +774,7 @@ dev = [
     { name = "bandit" },
     { name = "hatch" },
     { name = "hypothesis" },
-    { name = "pyre-check" },
     { name = "pytest" },
-    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "uv" },
@@ -771,7 +782,18 @@ dev = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "bandit" },
+    { name = "hatch" },
+    { name = "hypothesis" },
     { name = "mypy" },
+    { name = "pyre" },
+    { name = "pyre-check" },
+    { name = "pyre-extensions" },
+    { name = "pytest-asyncio" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+    { name = "tabulate" },
+    { name = "uv" },
 ]
 
 [package.metadata]
@@ -784,9 +806,7 @@ requires-dist = [
     { name = "hatch", marker = "extra == 'dev'", specifier = ">=1.14.0" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.100.0" },
     { name = "protobuf", specifier = ">=5.29.3" },
-    { name = "pyre-check", marker = "extra == 'dev'", specifier = ">=0.9.19" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.25.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.0.265" },
     { name = "uv", marker = "extra == 'dev'", specifier = ">=0.6.2" },
@@ -794,7 +814,20 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "mypy", specifier = ">=1.15.0" }]
+dev = [
+    { name = "bandit", specifier = ">=1.8.3" },
+    { name = "hatch", specifier = ">=1.14.0" },
+    { name = "hypothesis", specifier = ">=6.127.1" },
+    { name = "mypy", specifier = ">=1.15.0" },
+    { name = "pyre", specifier = ">=1.12.5" },
+    { name = "pyre-check", specifier = ">=0.9.23" },
+    { name = "pyre-extensions", specifier = ">=0.0.32" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "ruff", specifier = ">=0.9.7" },
+    { name = "tabulate", specifier = ">=0.9.0" },
+    { name = "uv", specifier = ">=0.6.2" },
+]
 
 [[package]]
 name = "pywin32-ctypes"

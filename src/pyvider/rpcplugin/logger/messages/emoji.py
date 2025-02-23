@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Context(Enum):
     debug =        ("***\U0001F41E***", "::: Debugging information",                  "---🐞---")
     audit =        ("***\U0001F4DC***", "::: Compliance and audit logs",              "---📜---")

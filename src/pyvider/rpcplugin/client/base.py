@@ -7,27 +7,28 @@ import os
 import subprocess
 import sys
 import traceback
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import grpc
+from google.protobuf import empty_pb2
 
-from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.handshake import parse_handshake_response
-from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.transport.types import TransportT
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
+from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 
 # Generated stubs from your .proto files:
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
-from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
-from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
-from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from google.protobuf import empty_pb2
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
+from pyvider.rpcplugin.transport.types import TransportT
+
 
 @attrs.define
 class RPCPluginClient:
@@ -43,27 +44,27 @@ class RPCPluginClient:
          => send shutdown signals (ControllerStub.Shutdown).
     """
     command: list[str] = attrs.field()
-    config: Optional[dict[str, Any]] = attrs.field(default=None)
+    config: dict[str, Any] | None = attrs.field(default=None)
 
     # Internal fields
-    _process: Optional[subprocess.Popen] = attrs.field(init=False, default=None)
-    _transport: Optional[TransportT] = attrs.field(init=False, default=None)
-    _protocol_version: Optional[int] = attrs.field(init=False, default=None)
-    _server_cert: Optional[str] = attrs.field(init=False, default=None)
-    _channel: Optional[grpc.aio.Channel] = attrs.field(init=False, default=None)
+    _process: subprocess.Popen | None = attrs.field(init=False, default=None)
+    _transport: TransportT | None = attrs.field(init=False, default=None)
+    _protocol_version: int | None = attrs.field(init=False, default=None)
+    _server_cert: str | None = attrs.field(init=False, default=None)
+    _channel: grpc.aio.Channel | None = attrs.field(init=False, default=None)
 
     # Generated or loaded client certificate
-    client_cert: Optional[str] = attrs.field(init=False, default=None)
-    client_key_pem: Optional[str] = attrs.field(init=False, default=None)
+    client_cert: str | None = attrs.field(init=False, default=None)
+    client_key_pem: str | None = attrs.field(init=False, default=None)
 
     # gRPC stubs for the new services
-    _stdio_stub: Optional[GRPCStdioStub] = attrs.field(init=False, default=None)
-    _broker_stub: Optional[GRPCBrokerStub] = attrs.field(init=False, default=None)
-    _controller_stub: Optional[GRPCControllerStub] = attrs.field(init=False, default=None)
+    _stdio_stub: GRPCStdioStub | None = attrs.field(init=False, default=None)
+    _broker_stub: GRPCBrokerStub | None = attrs.field(init=False, default=None)
+    _controller_stub: GRPCControllerStub | None = attrs.field(init=False, default=None)
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: Optional[asyncio.Task] = attrs.field(init=False, default=None)
-    _broker_task: Optional[asyncio.Task] = attrs.field(init=False, default=None)
+    _stdio_task: asyncio.Task | None = attrs.field(init=False, default=None)
+    _broker_task: asyncio.Task | None = attrs.field(init=False, default=None)
 
     def __attrs_post_init__(self):
         """
@@ -194,10 +195,10 @@ class RPCPluginClient:
         try:
             line = await asyncio.wait_for(read_stdout_line(), timeout=8.0)
             logger.debug(f"🤝 Received handshake response: {line[:60]}...")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("🤝 Handshake timed out; no response from plugin.")
             raise HandshakeError("Handshake timed out.")
-        except Exception as e:
+        except Exception:
             logger.error("🤝❌ Error reading handshake line.", extra={"trace": traceback.format_exc()})
             raise
 

@@ -22,13 +22,11 @@ dependencies = [
 dev = [
     "hatch>=1.14.0",
     "pytest>=8.3.4",
-    "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
     "ruff>=0.0.265",
     "uv>=0.6.2",
-    "pyre-check>=0.9.19",
     "hypothesis>=6.100.0",
-    "bandit>=1.7.8"
+    "bandit>=1.7.8",
 ]
 
 ################################################################################
@@ -130,5 +128,16 @@ strict = true
 
 [dependency-groups]
 dev = [
+    "bandit>=1.8.3",
+    "hatch>=1.14.0",
+    "hypothesis>=6.127.1",
     "mypy>=1.15.0",
+    "pyre>=1.12.5",
+    "pyre-check>=0.9.23",
+    "pyre-extensions>=0.0.32",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.9.7",
+    "tabulate>=0.9.0",
+    "uv>=0.6.2",
 ]

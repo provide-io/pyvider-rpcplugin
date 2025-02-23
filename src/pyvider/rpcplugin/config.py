@@ -1,11 +1,12 @@
 
 # pyvider/rpcplugin/config.py
 
-import attrs
 import os
+from typing import Any, Optional
+
+import attrs
 
 from pyvider.rpcplugin.logger import logger
-from typing import Any, Optional
 
 SUPPORTED_PROTOCOL_VERSIONS = [1,2,3,4,5,6,7]
 
@@ -121,7 +122,7 @@ def fetch_env_variable(key, meta):
     if value and isinstance(value, str) and value.startswith("file://"):
         file_path = value[7:]
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 return f.read().strip()
         except Exception as e:
             logger.error(f"🔍❌ Failed to read file for {key}: {file_path}. Error: {e}")

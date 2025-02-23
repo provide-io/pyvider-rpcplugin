@@ -1,24 +1,23 @@
 
 # pyvider/rpcplugin/crypto/certificate.py
 
-import attrs
-
-from datetime import datetime, timedelta, timezone
-from enum import StrEnum, auto
-from typing import Self, TypeAlias, NotRequired, TypedDict, Union, Optional
-from pathlib import Path
-from functools import cached_property
 import os
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum, auto
+from functools import cached_property
+from pathlib import Path
+from typing import NotRequired, Self, TypeAlias, TypedDict
 
+import attrs
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, rsa, padding
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
-from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.exception import CertificateError
+from pyvider.rpcplugin.logger import logger
 
 # =============================================================================
 # Supported Key Types and Curve Types
@@ -46,8 +45,8 @@ class CertificateConfig(TypedDict):
     key_size: NotRequired[int]
     curve: NotRequired[CurveType]
 
-KeyPair: TypeAlias = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
-PublicKey: TypeAlias = Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey]
+KeyPair: TypeAlias = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
+PublicKey: TypeAlias = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 
 # =============================================================================
 # CertificateBase: Immutable certificate base data
@@ -79,7 +78,7 @@ class CertificateBase:
         """
         try:
             logger.debug("📜📝🚀 CertificateBase.create: Starting certificate base creation.")
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             logger.debug(f"📜⏳✅ CertificateBase.create: Current UTC time: {now}")
 
             # Get validity period from config or set defaults.
@@ -89,10 +88,10 @@ class CertificateBase:
 
             # Ensure both dates are timezone-aware.
             if not_valid_before.tzinfo is None:
-                not_valid_before = not_valid_before.replace(tzinfo=timezone.utc)
+                not_valid_before = not_valid_before.replace(tzinfo=UTC)
                 logger.debug("📜⏳✅ CertificateBase.create: Adjusted not_valid_before to UTC.")
             if not_valid_after.tzinfo is None:
-                not_valid_after = not_valid_after.replace(tzinfo=timezone.utc)
+                not_valid_after = not_valid_after.replace(tzinfo=UTC)
                 logger.debug("📜⏳✅ CertificateBase.create: Adjusted not_valid_after to UTC.")
 
             # Generate the private key according to the specified type.
@@ -161,8 +160,8 @@ class Certificate:
     """
     def __init__(
         self,
-        cert: Optional[str] = None,
-        key: Optional[str] = None,
+        cert: str | None = None,
+        key: str | None = None,
         generate_keypair: bool = False,
         key_type: str = "ecdsa",
         key_size: int = 2048,
@@ -182,8 +181,8 @@ class Certificate:
                     "key_type": KeyType.ECDSA if key_type.lower() == "ecdsa" else KeyType.RSA,
                     "key_size": key_size if key_type.lower() == "rsa" else None,
                     "curve": CurveType[ecdsa_curve.upper()] if key_type.lower() == "ecdsa" else None,
-                    "not_valid_before": kwargs.get("not_valid_before", datetime.now(timezone.utc)),
-                    "not_valid_after": kwargs.get("not_valid_after", datetime.now(timezone.utc) + timedelta(days=365)),
+                    "not_valid_before": kwargs.get("not_valid_before", datetime.now(UTC)),
+                    "not_valid_after": kwargs.get("not_valid_after", datetime.now(UTC) + timedelta(days=365)),
                 }
                 logger.debug(f"📜🔑🚀 Certificate.__init__: Keypair generation config: {conf}")
                 base, private_key = CertificateBase.create(conf)
@@ -218,9 +217,9 @@ class Certificate:
                     subject=x509_cert.subject,
                     issuer=x509_cert.issuer,
                     public_key=x509_cert.public_key(),
-                    not_valid_before=(x509_cert.not_valid_before_utc.replace(tzinfo=timezone.utc)
+                    not_valid_before=(x509_cert.not_valid_before_utc.replace(tzinfo=UTC)
                                       if x509_cert.not_valid_before_utc.tzinfo is None else x509_cert.not_valid_before_utc),
-                    not_valid_after=(x509_cert.not_valid_after_utc.replace(tzinfo=timezone.utc)
+                    not_valid_after=(x509_cert.not_valid_after_utc.replace(tzinfo=UTC)
                                      if x509_cert.not_valid_after_utc.tzinfo is None else x509_cert.not_valid_after_utc),
                     serial_number=x509_cert.serial_number
                 )
@@ -257,7 +256,7 @@ class Certificate:
         try:
             logger.debug("📜📝🚀 _create_x509_certificate: Starting certificate creation process.")
             try:
-                now = datetime.now(timezone.utc)
+                now = datetime.now(UTC)
                 not_valid_before = now - timedelta(seconds=30)
                 # Set expiration 30 years from now with a fixed hour.
                 not_valid_after = now.replace(year=now.year + 30, hour=12)
@@ -393,7 +392,7 @@ class Certificate:
     @cached_property
     def is_valid(self) -> bool:
         """Check if the certificate is currently valid."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         valid = self._base.not_valid_before <= now <= self._base.not_valid_after
         logger.debug(f"📜⏳✅ is_valid: Certificate validity check result: {valid}")
         return valid

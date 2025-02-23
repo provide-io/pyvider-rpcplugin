@@ -2,7 +2,7 @@
 # pyvider/rpcplugin/client/connection.py
 
 import asyncio
-from typing import Callable, Awaitable, Optional
+from collections.abc import Awaitable, Callable
 
 import attrs
 
@@ -38,8 +38,8 @@ class ClientConnection:
     bytes_sent: int = attrs.field(default=0)
     bytes_received: int = attrs.field(default=0)
     _closed: bool = attrs.field(default=False, init=False)
-    send_func: Optional[SendFuncType] = attrs.field(default=None)
-    receive_func: Optional[ReceiveFuncType] = attrs.field(default=None)
+    send_func: SendFuncType | None = attrs.field(default=None)
+    receive_func: ReceiveFuncType | None = attrs.field(default=None)
 
     def __attrs_post_init__(self) -> None:
         if self.send_func is None:

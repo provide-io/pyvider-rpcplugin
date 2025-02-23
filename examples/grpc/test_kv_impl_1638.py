@@ -1,14 +1,13 @@
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import pytest_asyncio
-from proto import kv_pb2, kv_pb2_grpc  # Import the generated protobuf code
-
-from pyvider.rpcplugin.logger import logger
+from proto import kv_pb2_grpc  # Import the generated protobuf code
 
 from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
 
@@ -43,7 +42,6 @@ class KVRPCPlugin(RPCPluginProtocol):
 
     def get_grpc_descriptors(self):
         """Get the gRPC service descriptors from the generated protobuf."""
-        from proto import kv_pb2, kv_pb2_grpc
         # Return grpc module and service descriptor
         return kv_pb2_grpc, "KV"
 
@@ -56,7 +54,7 @@ class KVClient:
     def __init__(self, stub):
         self.stub = stub
 
-    async def get(self, key: str) -> Optional[bytes]:
+    async def get(self, key: str) -> bytes | None:
         """Get value for key."""
         try:
             from proto import kv_pb2
@@ -91,7 +89,6 @@ def kv_server_bin():
 @pytest_asyncio.fixture(scope="function")
 async def PLUGIN_CLIENT_PATH(kv_server_bin):
     """Create a KV client connected to the plugin server."""
-    from proto import kv_pb2_grpc
 
     # Setup plugin environment
     env = {

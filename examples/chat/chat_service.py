@@ -87,14 +87,12 @@ True
 import asyncio
 import logging
 import time
-from typing import AsyncIterator, Optional, List, Dict
-
-import grpc
-from grpc.aio import ServicerContext
+from collections.abc import AsyncIterator
 
 # Protobuf-generated modules (from your compiled chat.proto)
 import chat_pb2
 import chat_pb2_grpc
+from grpc.aio import ServicerContext
 
 # ---------------------------------------------------------------------------
 # Global In-Memory State (e.g. chat history, client queues)
@@ -103,14 +101,14 @@ import chat_pb2_grpc
 # chat_history:
 #   A list storing all ChatMessage objects that have been sent in the system.
 #   The order of insertion is the chronological order (based on arrival).
-chat_history: List[chat_pb2.ChatMessage] = []
+chat_history: list[chat_pb2.ChatMessage] = []
 
 # client_queues:
 #   A mapping from username -> asyncio.Queue, where each queue will hold
 #   ChatMessages that this user needs to receive. In a broadcast scenario,
 #   each new ChatMessage is placed into every queue so that each user can
 #   read it from the server's stream.
-client_queues: Dict[str, asyncio.Queue] = {}
+client_queues: dict[str, asyncio.Queue] = {}
 
 # ---------------------------------------------------------------------------
 # ChatService Implementation
@@ -248,7 +246,7 @@ class ChatService(chat_pb2_grpc.ChatServiceServicer):
 
         # Each client is identified by a user name, which we discover from the
         # first inbound ChatMessage (it might be the 'user' field).
-        user: Optional[str] = None
+        user: str | None = None
         personal_queue = asyncio.Queue()
 
         # -------------------------------------------------------------------

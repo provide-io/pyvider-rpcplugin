@@ -1,8 +1,10 @@
 
 # pyvider/rpcplugin/types.py
 
-from typing import TypeVar, Protocol, Any
+from typing import Any, Protocol, TypeVar
+
 from grpc.aio import server as GRPCServer
+
 
 # Core Protocol Types
 class SerializableT(Protocol):

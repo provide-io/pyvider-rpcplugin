@@ -2,7 +2,9 @@
 # pyvider/rpcplugin/logger/crypto.py
 
 from enum import Enum
+
 from pyvider.rpcplugin.logger import logger
+
 
 class CryptoLogMessages(Enum):
     # CertificateBase Logs

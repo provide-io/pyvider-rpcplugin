@@ -32,6 +32,7 @@ if not hasattr(logger, "trace"):
     logger.trace = trace
 
 from pyvider.rpcplugin.logger.emoji_matrix import show_emoji_matrix
+
 show_emoji_matrix()
 
 # if logger is missing trace then it freezes... and never exits. which seems suss.

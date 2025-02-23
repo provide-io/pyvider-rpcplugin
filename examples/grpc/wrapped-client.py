@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import grpc
 import logging
 import os
+
+import grpc
 from proto import kv_pb2, kv_pb2_grpc
 
 logging.basicConfig(level=logging.DEBUG)
@@ -69,7 +70,7 @@ def main():
         finally:
             channel.close()
 
-    except Exception as e:
+    except Exception:
         logger.error("Fatal error", exc_info=True)
 
 if __name__ == "__main__":
