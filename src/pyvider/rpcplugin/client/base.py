@@ -1,427 +1,435 @@
-
+#!/usr/bin/env python3
 # pyvider/rpcplugin/client/base.py
 
 import asyncio
-import contextlib  # Needed to suppress asyncio.CancelledError during task cleanup.
+import contextlib
 import os
 import subprocess
 import sys
+import traceback
 from typing import Any, Optional
 
 import attrs
 import grpc
 
-# Import the new Certificate API and key generation function.
-from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
-from pyvider.rpcplugin.handshake import (
-    HandshakeConfig,
-    parse_handshake_response,
-)
+from pyvider.rpcplugin.handshake import parse_handshake_response
+from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
+from pyvider.rpcplugin.transport.types import TransportT
 
-from pyvider.rpcplugin.client.types import (
-    SecureRpcClientT,
-    GrpcChannelType,
-)
-
-from pyvider.rpcplugin.transport.types import (
-    TransportT,
-)
+# Generated stubs from your .proto files:
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
+from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+from google.protobuf import empty_pb2
 
 @attrs.define
-class RPCPluginClient(SecureRpcClientT):
+class RPCPluginClient:
     """
-    RPCPluginClient implements the client‐side logic for the RPCPlugin protocol.
-    It is responsible for launching the server process (if needed), performing the handshake,
-    setting up mTLS credentials using the new Certificate API, establishing a secure gRPC channel,
-    and creating stubs for communication.
+    RPCPluginClient updated to interact with the new broker, stdio, and controller services.
+    This version:
+      • Launches or attaches to a plugin server subprocess.
+      • Performs handshake, sets up TLS.
+      • Creates a secure gRPC channel.
+      • Exposes methods to:
+         => read plugin logs (StdioStub.StreamStdio)
+         => manage broker subchannels (BrokerStub.StartStream)
+         => send shutdown signals (ControllerStub.Shutdown).
     """
     command: list[str] = attrs.field()
     config: Optional[dict[str, Any]] = attrs.field(default=None)
+
+    # Internal fields
     _process: Optional[subprocess.Popen] = attrs.field(init=False, default=None)
     _transport: Optional[TransportT] = attrs.field(init=False, default=None)
     _protocol_version: Optional[int] = attrs.field(init=False, default=None)
-    _handshake_config: HandshakeConfig = attrs.field(init=False)
     _server_cert: Optional[str] = attrs.field(init=False, default=None)
-    _channel: Optional[GrpcChannelType] = attrs.field(init=False, default=None)
+    _channel: Optional[grpc.aio.Channel] = attrs.field(init=False, default=None)
+
+    # Generated or loaded client certificate
     client_cert: Optional[str] = attrs.field(init=False, default=None)
     client_key_pem: Optional[str] = attrs.field(init=False, default=None)
-    stderr_task: Optional[Any] = attrs.field(init=False, default=None)
-    stdout_task: Optional[Any] = attrs.field(init=False, default=None)
+
+    # gRPC stubs for the new services
+    _stdio_stub: Optional[GRPCStdioStub] = attrs.field(init=False, default=None)
+    _broker_stub: Optional[GRPCBrokerStub] = attrs.field(init=False, default=None)
+    _controller_stub: Optional[GRPCControllerStub] = attrs.field(init=False, default=None)
+
+    # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
+    _stdio_task: Optional[asyncio.Task] = attrs.field(init=False, default=None)
+    _broker_task: Optional[asyncio.Task] = attrs.field(init=False, default=None)
 
     def __attrs_post_init__(self):
-        # Initialize handshake configuration with default settings.
-        logger.debug("🔧 Initializing handshake configuration for client.")
-        self._handshake_config = HandshakeConfig(
-            magic_cookie_key="PLUGIN_MAGIC_COOKIE_VALUE",  # Default; can be overridden via rpcplugin_config
-            magic_cookie_value="hello",
-            protocol_versions=rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS"),
-            supported_transports=["unix", "tcp"],
-        )
-
-    def _relay_stderr(self) -> None:
         """
-        Launches a background thread that continuously reads stderr from the server
-        process and writes it to our stderr.
+        Optionally configure or read environment variables. A place to put
+        handshake defaults, but the actual handshake is done in start().
+        """
+        logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
+
+    async def start(self) -> None:
+        """
+        Launch the plugin subprocess, do the handshake, create a secure channel,
+        init stubs, and optionally begin streaming logs.
+        """
+        logger.debug("🔄 Starting RPC plugin client...")
+
+        # 1) Possibly set up auto mTLS: generate or load client cert/key
+        await self._setup_client_certificates()
+
+        # 2) Launch the server process if not already started
+        await self._launch_process()
+
+        # 3) Perform handshake + parse handshake response
+        await self._perform_handshake()
+
+        # 4) Create the gRPC channel (with TLS)
+        await self._create_grpc_channel()
+
+        # 5) Initialize stubs for Stdio / Broker / Controller
+        self._init_stubs()
+
+        # 6) Optionally start a background task to read plugin logs from stdio
+        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+
+        logger.info("✅ RPC plugin client started and ready.")
+
+    async def _setup_client_certificates(self):
+        """
+        If PLUGIN_AUTO_MTLS is true, load or generate a client certificate and key.
+        """
+        logger.debug("🔐 Checking if auto-mTLS is enabled for client.")
+        auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS", "").lower()
+        if auto_mtls in ("true", "1", "yes"):
+            cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
+            key_pem = rpcplugin_config.get("PLUGIN_CLIENT_KEY", "")
+            if cert_pem and key_pem:
+                logger.info("🔐 Using existing client cert/key from config.")
+                self.client_cert = cert_pem
+                self.client_key_pem = key_pem
+            else:
+                logger.info("🔐 Generating ephemeral self-signed client certificate.")
+                client_cert_obj = Certificate(generate_keypair=True, key_type="ecdsa")
+                self.client_cert = client_cert_obj.cert
+                self.client_key_pem = client_cert_obj.key
+        else:
+            logger.info("🔐 mTLS not enabled; operating in insecure mode.")
+
+    async def _launch_process(self):
+        """
+        Launch the plugin as a subprocess if not already running.
+        """
+        if self._process:
+            logger.debug("🖥️ Plugin subprocess is already running; skipping launch.")
+            return
+
+        env = os.environ.copy()
+        if self.config and "env" in self.config:
+            env.update(self.config["env"])
+
+        # Pass the client cert to the server if needed (auto mTLS handshake)
+        if self.client_cert:
+            env["PLUGIN_CLIENT_CERT"] = self.client_cert
+
+        logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
+        try:
+            self._process = subprocess.Popen(
+                self.command,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+            )
+            logger.info("🖥️ Plugin subprocess started successfully.")
+        except Exception as e:
+            logger.error(f"🖥️❌ Failed to launch plugin subprocess: {e}", extra={"trace": traceback.format_exc()})
+            raise
+
+        # Optionally spawn a thread to relay stderr to local stderr
+        self._relay_stderr_background()
+
+    def _relay_stderr_background(self):
+        """
+        Continuously read plugin's stderr in a background thread, printing it locally.
         """
         import threading
 
         def read_stderr():
-            for line in iter(self._process.stderr.readline, ''):
+            while True:
+                if not self._process or self._process.stderr is None:
+                    break
+                line = self._process.stderr.readline()
+                if not line:
+                    break
                 sys.stderr.write(line)
-            self._process.stderr.close()
 
-        threading.Thread(target=read_stderr, daemon=True).start()
+        t = threading.Thread(target=read_stderr, daemon=True)
+        t.start()
 
     async def _perform_handshake(self) -> None:
         """
-        Performs the handshake by reading and parsing the handshake response from
-        the server process. This sets the protocol version, transport type, and server
-        certificate for subsequent TLS channel creation.
+        Reads a single line from the plugin stdout for handshake:
+          => Format: CORE_VERSION|PLUGIN_VERSION|network|address|protocol|serverCert
         """
-        logger.debug("🤝 Initiating handshake with server...")
-        response_str = await self._read_handshake_response()
-        if not response_str:
-            logger.error("🤝 Handshake response is empty.")
-            raise HandshakeError("No handshake response received.")
+        logger.debug("🤝 Initiating handshake with plugin server...")
 
-        response_str = response_str.decode() if isinstance(response_str, bytes) else response_str
-
-        try:
-            core_version, protocol_version, transport_name, endpoint, protocol, server_cert = (
-                parse_handshake_response(response_str)
-            )
-        except Exception as e:
-            logger.error(f"🤝 Failed to parse handshake response: {e}")
-            raise
-
-        logger.debug(
-            f"🤝 Parsed handshake response: version={core_version}, plugin_version={protocol_version}, "
-            f"transport={transport_name}, endpoint={endpoint}, protocol={protocol}"
-        )
-
-        self._protocol_version = protocol_version
-        self._server_cert = server_cert  # The handshake response returns the server cert string
-
-        # Set up transport based on handshake data.
-        if transport_name == "tcp":
-            self._transport = TCPSocketTransport()
-        elif transport_name == "unix":
-            self._transport = UnixSocketTransport(path=endpoint)
-        else:
-            logger.error(f"🚄 Unsupported transport type: {transport_name}")
-            raise TransportError(f"Unsupported transport: {transport_name}")
-
-        await self._transport.connect(endpoint)
-        logger.info(f"🚄 Connected via {transport_name} to {endpoint}")
-
-        # Set up TLS for the secure gRPC channel.
-        await self._setup_tls()
-
-    async def _setup_tls(self) -> None:
-        """
-        Sets up TLS credentials for the client's gRPC channel using the new Certificate API.
-        If auto mTLS is enabled, the client either loads provided certificates or generates new
-        self-signed certificates.
-        """
-        logger.debug("🔐 Setting up TLS credentials for the client...")
-        auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS")
-        client_cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-        client_key_pem = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
-
-        if auto_mtls:
-            if client_cert_pem and client_key_pem:
-                logger.info("🔐 Using provided client certificate and key.")
-                client_cert_obj = Certificate(
-                    cert=client_cert_pem,
-                    key=client_key_pem,
-                    generate_keypair=False
-                )
-            else:
-                logger.info("🔐 No client certificate provided; generating new self-signed certificate.")
-                client_cert_obj = Certificate(
-                    generate_keypair=True,
-                    key_type="ecdsa",  # Change to "rsa" if desired.
-                    common_name="localhost"
-                )
-                logger.debug("🔐 Generated new self-signed client certificate.")
-
-            self.client_cert = client_cert_obj.cert
-            self.client_key_pem = client_cert_obj.key
-        else:
-            logger.info("🔐 mTLS not enabled; operating in insecure mode.")
-
-    async def _read_handshake_response(self) -> str:
-        """
-        Reads the handshake response from the server process with concurrent stderr handling.
-        
-        The handshake response is expected to be a pipe-delimited string containing:
-        - Handshake version
-        - Protocol version
-        - Transport type
-        - Endpoint
-        - Protocol type
-        - Server certificate (optional)
-        
-        Returns:
-            str: The handshake response string.
-            
-        Raises:
-            HandshakeError: If no response is received, timeout occurs, or response is invalid.
-        """
-        logger.debug("🤝📖🚀 Reading handshake response from server process...")
-        
         if not self._process or not self._process.stdout:
-            logger.error("🤝📖❌ No process or stdout available for handshake")
-            raise HandshakeError("No process or stdout available for handshake.")
+            raise HandshakeError("No server process or no stdout available.")
 
-        async def read_stderr() -> None:
-            """Continuously read and log stderr output."""
-            logger.trace("🤝📖🔍 Reading from server stderr...")
+        async def read_stdout_line() -> str:
+            loop = asyncio.get_event_loop()
             while True:
-                err_line = self._process.stderr.readline()
-                if not err_line:
-                    logger.debug("🤝📖✅ Server stderr stream closed")
-                    break
-                print(err_line.rstrip(), file=sys.stderr, flush=True)
-
-        async def read_stdout() -> str:
-            """
-            Read stdout until handshake response is found.
-            Returns the first line containing a pipe character.
-            """
-            logger.trace("🤝📖🔍 Reading from server stdout...")
-            while True:
-                line = self._process.stdout.readline()
+                # Read line from the plugin's stdout (blocking)
+                line = await loop.run_in_executor(None, self._process.stdout.readline)
                 if not line:
-                    logger.error("🤝📖❌ Server stdout stream closed without handshake")
-                    raise HandshakeError("Server stdout closed without handshake response")
-                
-                print(line.rstrip(), file=sys.stdout, flush=True)
-                if '|' in line:
-                    logger.debug("🤝📖✅ Found handshake response")
+                    raise HandshakeError("Plugin closed stdout without handshake response.")
+                if "|" in line:
                     return line.strip()
 
-        stderr_task = asyncio.create_task(read_stderr())
         try:
-            response = await asyncio.wait_for(
-                read_stdout(),
-                timeout=5.0  # 5 seconds should be enough for handshake
-            )
-            if not response:
-                logger.error("🤝📖❌ Empty handshake response received")
-                raise HandshakeError("Empty handshake response")
-            
-            logger.debug(f"🤝📖✅ Received handshake response: {response[:50]}...")
-            return response
-            
+            line = await asyncio.wait_for(read_stdout_line(), timeout=8.0)
+            logger.debug(f"🤝 Received handshake response: {line[:60]}...")
         except asyncio.TimeoutError:
-            logger.error("🤝📖❌ Timeout waiting for handshake response")
-            raise HandshakeError("Timeout waiting for handshake response")
-            
+            logger.error("🤝 Handshake timed out; no response from plugin.")
+            raise HandshakeError("Handshake timed out.")
         except Exception as e:
-            logger.error(f"🤝📖❌ Error reading handshake: {e}")
-            # Capture stderr for debugging
-            stderr_output = ""
-            if self._process and self._process.stderr:
-                stderr_output = self._process.stderr.read()
-                if stderr_output:
-                    logger.error(f"🤝📖❗ Server stderr: {stderr_output}")
-            raise HandshakeError(
-                f"Failed to read handshake response. Server stderr: {stderr_output}"
-            ) from e
-            
-        finally:
-            logger.debug("🤝📖🔒 Cleaning up stderr reader task")
-            stderr_task.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await stderr_task
+            logger.error("🤝❌ Error reading handshake line.", extra={"trace": traceback.format_exc()})
+            raise
+
+        # Parse handshake
+        try:
+            core_version, protocol_version, network, address, protocol, server_cert = parse_handshake_response(line)
+            logger.debug(
+                f"🤝 Handshake parse => core_version={core_version}, "
+                f"protocol_version={protocol_version}, network={network}, "
+                f"address={address}, protocol={protocol}, cert={bool(server_cert)}"
+            )
+            self._protocol_version = protocol_version
+            self._server_cert = server_cert
+            # Set up the correct transport instance
+            if network == "tcp":
+                self._transport = TCPSocketTransport()
+            elif network == "unix":
+                self._transport = UnixSocketTransport(path=address)
+            else:
+                raise TransportError(f"Unsupported transport: {network}")
+
+            # Connect the chosen transport
+            await self._transport.connect(address)
+            logger.info(f"🚄 Transport connected via {network} -> {address}")
+        except Exception as e:
+            logger.error("🤝❌ Error parsing handshake response or connecting transport.", extra={"trace": traceback.format_exc()})
+            raise HandshakeError(f"Handshake parse/connect error: {e}")
 
     async def _create_grpc_channel(self) -> None:
         """
-        Creates and initializes a secure gRPC channel using the server certificate
-        (obtained during handshake) and the client's mTLS credentials.
+        Creates a secure gRPC channel using the server cert from handshake,
+        plus client cert if mTLS is enabled.
         """
-        try:
-            if not self._server_cert:
-                raise HandshakeError("Server certificate missing from handshake.")
+        logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
-            # Determine proper endpoint format.
-            if isinstance(self._transport, UnixSocketTransport):
-                endpoint = f"unix://{self._transport.endpoint}"
-            else:
-                endpoint = self._transport.endpoint
+        # If we only have an insecure scenario, just do an insecure channel
+        if not self._server_cert:
+            logger.info("🚢 No server certificate. Using insecure channel.")
+            endpoint = self._transport.endpoint
+            self._channel = grpc.aio.insecure_channel(
+                endpoint,
+                options=[("grpc.enable_http_proxy", 0)],
+            )
+            return
 
-            logger.debug(f"🚢 Creating gRPC channel to endpoint: {endpoint}")
+        # Rebuild server cert into PEM if needed
+        full_pem = self._rebuild_x509_pem(self._server_cert)
 
-            if not self.client_cert or not self.client_key_pem:
-                raise HandshakeError("Client certificate or key missing for TLS channel.")
-
-            # If the server certificate does not include the PEM header/footer,
-            # reconstruct the full PEM certificate.
-            if not self._server_cert.startswith("-----BEGIN CERTIFICATE-----"):
-                cert_lines = [self._server_cert[i:i+64] for i in range(0, len(self._server_cert), 64)]
-                full_pem = "-----BEGIN CERTIFICATE-----\n" + \
-                   "\n".join(cert_lines) + \
-                   "\n-----END CERTIFICATE-----"
-                logger.debug("🔐 Reconstructed full PEM certificate for server.")
-            else:
-                logger.debug("🔑 The _server_cert did not begin with x509 header.")
-                full_pem = self._server_cert
-
+        # Also see if we have client cert
+        if self.client_cert and self.client_key_pem:
+            logger.debug("🔐 Creating mTLS channel with client certs + server root.")
             credentials = grpc.ssl_channel_credentials(
                 root_certificates=full_pem.encode(),
                 private_key=self.client_key_pem.encode(),
                 certificate_chain=self.client_cert.encode(),
             )
+        else:
+            logger.debug("🔐 Creating TLS channel with server cert only (no client auth).")
+            credentials = grpc.ssl_channel_credentials(root_certificates=full_pem.encode())
 
-            logger.debug("**************************************************************")
-            logger.debug("**************************************************************")
-            logger.debug(f"client_key_pem: {self.client_key_pem.encode()}")
-            logger.debug(f"   client_cert: {self.client_cert.encode()}")
-            logger.debug(f"      full_pem: {full_pem.encode()}")
-            logger.debug("**************************************************************")
-            logger.debug("✅ gRPC SSL channel credentials successfully created.")
-            logger.debug("**************************************************************")
+        endpoint = self._transport.endpoint
+        self._channel = grpc.aio.secure_channel(
+            endpoint,
+            credentials,
+            options=[
+                ("grpc.ssl_target_name_override", "localhost"),
+                ("grpc.max_receive_message_length", 32 * 1024 * 1024),
+                ("grpc.max_send_message_length", 32 * 1024 * 1024),
+            ],
+        )
+        logger.debug("🚢 gRPC secure channel created successfully.")
 
-            self._channel = grpc.aio.secure_channel(
-                endpoint,
-                credentials,
-                options=[
-                    ('grpc.ssl_target_name_override', 'localhost'),
-                    ('grpc.max_receive_message_length', 16 * 1024 * 1024),
-                    ('grpc.max_send_message_length', 16 * 1024 * 1024),
-                ]
-            )
-            logger.debug("✅ gRPC channel successfully created.")
+        # Optional: verify channel readiness
+        try:
+            await self._channel.channel_ready()
+            logger.debug("🚢 gRPC channel is ready for calls.")
+        except grpc.RpcError as e:
+            logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
+            raise
+
+    def _rebuild_x509_pem(self, maybe_cert: str) -> str:
+        """
+        Rebuilds a single base64 string of the server's certificate into a PEM block if missing headers.
+        """
+        if maybe_cert.startswith("-----BEGIN CERTIFICATE-----"):
+            logger.debug("🔐 Server cert already has PEM headers.")
+            return maybe_cert
+        # Reconstruct lines
+        cert_lines = [maybe_cert[i : i + 64] for i in range(0, len(maybe_cert), 64)]
+        full_pem = (
+            "-----BEGIN CERTIFICATE-----\n"
+            + "\n".join(cert_lines)
+            + "\n-----END CERTIFICATE-----\n"
+        )
+        logger.debug("🔐 Rebuilt server certificate into PEM format.")
+        return full_pem
+
+    def _init_stubs(self) -> None:
+        """
+        Once the channel is established, create stubs for Stdio, Broker, and Controller.
+        """
+        if not self._channel:
+            raise RuntimeError("Cannot init stubs; no gRPC channel available.")
+
+        logger.debug("🔌 Creating GRPCStdioStub, GRPCBrokerStub, GRPCControllerStub from channel.")
+        self._stdio_stub = GRPCStdioStub(self._channel)
+        self._broker_stub = GRPCBrokerStub(self._channel)
+        self._controller_stub = GRPCControllerStub(self._channel)
+
+    async def _read_stdio_logs(self):
+        """
+        Subscribes to the plugin's stdio stream. This is an infinite loop
+        that reads messages from the plugin, logs them, and prints them.
+        """
+        if not self._stdio_stub:
+            logger.debug("🔌📝 _read_stdio_logs called, but no _stdio_stub. Exiting.")
+            return
+        logger.debug("🔌📝 Starting to read plugin's stdio stream...")
+
+        try:
+            # We call StreamStdio once. The plugin sends us lines until it shuts down.
+            async for chunk in self._stdio_stub.StreamStdio(empty_pb2.Empty()):
+                if chunk.channel == StdioData.STDERR:
+                    logger.debug(f"🔌📝📥 Plugin STDERR: {chunk.data!r}")
+                else:
+                    logger.debug(f"🔌📝📥 Plugin STDOUT: {chunk.data!r}")
+        except asyncio.CancelledError:
+            logger.debug("🔌📝 read_stdio_logs task cancelled. Shutting down stdio read.")
         except Exception as e:
-            logger.error(f"❌ Failed to create gRPC channel: {e}")
-            raise HandshakeError(f"Failed to create gRPC channel: {e}") from e
+            logger.error(f"🔌📝❌ Error reading plugin stdio stream: {e}", extra={"trace": traceback.format_exc()})
+
+        logger.debug("🔌📝 Plugin stdio reading loop ended.")
+
+    async def open_broker_subchannel(self, sub_id: int, address: str) -> None:
+        """
+        Demonstrates how to dial a subchannel with the broker stub.
+        We do so by calling 'StartStream' in a streaming manner and sending a 'knock' message.
+        """
+        if not self._broker_stub:
+            raise RuntimeError("Broker stub not initialized.")
+        logger.debug(f"🔌📡 Attempting to open subchannel ID {sub_id} at {address} via Broker.")
+
+        async def _broker_coroutine():
+            # Create a bidirectional streaming call
+            call = self._broker_stub.StartStream()
+            try:
+                # 1) Send a ConnInfo with knock=True
+                knock_info = ConnInfo(
+                    service_id=sub_id,
+                    network="tcp",  # or "unix"
+                    address=address,
+                    knock=ConnInfo.Knock(knock=True, ack=False, error=""),
+                )
+                await call.write(knock_info)
+                await call.done_writing()  # we won't send more messages in this example
+
+                async for reply in call:
+                    # The plugin should respond with ack = True
+                    logger.debug(
+                        f"🔌📡 Broker response => service_id={reply.service_id}, "
+                        f"knock.ack={reply.knock.ack}, error={reply.knock.error}"
+                    )
+                    if not reply.knock.ack:
+                        logger.error(f"🔌📡❌ Subchannel open failed: {reply.knock.error}")
+                    else:
+                        logger.info(f"🔌📡✅ Subchannel {sub_id} opened successfully!")
+            finally:
+                logger.debug("🔌📡 Broker subchannel open() streaming call complete.")
+                await call.aclose()
+
+        self._broker_task = asyncio.create_task(_broker_coroutine())
+
+    async def shutdown_plugin(self) -> None:
+        """
+        Call the plugin's controller to request a graceful shutdown.
+        """
+        if not self._controller_stub:
+            logger.debug("🔌🛑 No controller stub found; cannot call Shutdown().")
+            return
+
+        logger.debug("🔌🛑 Requesting plugin shutdown via GRPCController.Shutdown()...")
+        try:
+            await self._controller_stub.Shutdown(ControllerEmpty())
+            logger.info("🔌🛑 Plugin acknowledged shutdown request.")
+        except Exception as e:
+            logger.error(f"🔌🛑❌ Error calling Shutdown(): {e}", extra={"trace": traceback.format_exc()})
 
     async def close(self) -> None:
         """
-        Gracefully shuts down the RPCPluginClient by:
-          - Closing the gRPC channel.
-          - Terminating the server subprocess.
-          - Closing the transport connection.
+        Gracefully shut down the client:
+         • Cancel tasks (e.g. reading stdio logs).
+         • Close gRPC channel.
+         • Terminate the plugin subprocess.
+         • Close transport sockets.
         """
-        logger.info("🔄 Stopping RPC plugin client...")
+        logger.debug("🔄 Closing RPCPluginClient...")
+
+        # Cancel reading tasks
+        tasks_to_cancel = []
+        if self._stdio_task and not self._stdio_task.done():
+            tasks_to_cancel.append(self._stdio_task)
+        if self._broker_task and not self._broker_task.done():
+            tasks_to_cancel.append(self._broker_task)
+
+        for t in tasks_to_cancel:
+            t.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await t
+
+        # Close gRPC channel
         if self._channel:
-            try:
-                await self._channel.close()
-                logger.info("🔄 gRPC channel closed.")
-            except Exception as e:
-                logger.warning(f"⚠️ Error closing gRPC channel: {e}")
-        if self._process and isinstance(self._process, subprocess.Popen):
+            logger.debug("🔄 Closing gRPC channel...")
+            await self._channel.close()
+            logger.debug("🔄 gRPC channel closed.")
+            self._channel = None
+
+        # Terminate plugin process
+        if self._process:
+            logger.debug("🔄 Terminating plugin subprocess...")
             try:
                 self._process.terminate()
-                await asyncio.get_event_loop().run_in_executor(None, self._process.wait)
-                logger.info("🔄 Server process terminated.")
+                self._process.wait(timeout=3)
+                logger.debug("🔄 Plugin subprocess terminated.")
             except Exception as e:
-                logger.error(f"❌ Error stopping server process: {e}")
+                logger.error(f"🔄❌ Error terminating plugin process: {e}", extra={"trace": traceback.format_exc()})
+            self._process = None
+
+        # Close underlying transport
         if self._transport:
-            try:
-                await self._transport.close()
-                logger.info("🔄 Transport closed successfully.")
-            except Exception as e:
-                logger.warning(f"⚠️ Error closing transport: {e}")
-        # Reset internal state.
-        self._process = None
-        self._channel = None
-        self._transport = None
+            logger.debug("🔄 Closing transport socket...")
+            await self._transport.close()
+            logger.debug("🔄 Transport socket closed.")
+            self._transport = None
 
-    async def start(self) -> None:
-        """
-        Starts the RPC plugin client by:
-          - Generating or loading client mTLS certificates if auto mTLS is enabled.
-          - Launching the server subprocess.
-          - Performing the handshake.
-          - Creating the secure gRPC channel.
-        """
-        logger.debug("🔄 Starting RPC plugin client...")
-        if rpcplugin_config.get("PLUGIN_AUTO_MTLS"):
-            logger.debug("🔐 Auto mTLS enabled; preparing client certificates...")
-            if not (rpcplugin_config.get("PLUGIN_CLIENT_CERT") and rpcplugin_config.get("PLUGIN_CLIENT_KEY")):
-                # Generate a new self-signed certificate using the Certificate API.
-                client_cert_obj = Certificate(
-                    generate_keypair=True,
-                    key_type="ecdsa",  # or "rsa" as desired.
-                    common_name="client.example.com"
-                )
-                self.client_cert = client_cert_obj.cert
-                self.client_key_pem = client_cert_obj.key
-                logger.debug("🔐 Generated new self-signed client certificate.")
-            else:
-                self.client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-                self.client_key_pem = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
-                logger.debug("🔐 Loaded provided client certificate.")
-        else:
-            logger.info("🔐 mTLS disabled; operating in insecure mode.")
-
-        # Prepare environment for launching the server process.
-        env = os.environ.copy()
-        if self.config and 'env' in self.config:
-            env.update(self.config['env'])
-        env["PLUGIN_CLIENT_CERT"] = self.client_cert or ""
-        
-        # Launch the server subprocess.
-        if not self._process:
-            try:
-                self._process = subprocess.Popen(
-                    self.command,
-                    env=env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                logger.info("📡 Server process started.")
-            except Exception as e:
-                logger.error(f"❌ Failed to start server process: {e}")
-                raise
-
-        # Optionally, relay stderr.
-        self._relay_stderr()
-
-        # Perform the handshake with the server.
-        await self._perform_handshake()
-
-        # Create the gRPC channel using the handshake data.
-        await self._create_grpc_channel()
-
-        logger.info("✅ RPC plugin client started successfully.")
-
-    async def connect(self) -> None:
-        """
-        Ensures connection is established. The handshake should already be
-        completed during start().
-        """
-        logger.debug("🔄 Connecting RPC plugin client...")
-        try:
-            if not self._process:
-                raise RuntimeError("❌ Server process is not running. Did you call start()?")
-
-            # Only create channel if needed
-            if not self._channel:
-                logger.debug("🔌 No gRPC channel exists; creating one...")
-                await self._create_grpc_channel()
-            else:
-                logger.debug("🔌 Using existing gRPC channel")
-
-            # Optional: verify channel is healthy
-            try:
-                await self._channel.channel_ready()
-                logger.debug("🔌 gRPC channel is ready")
-            except grpc.RpcError as e:
-                logger.error(f"❌ Channel health check failed: {e}")
-                raise
-
-            logger.info("✅ RPC plugin client connected successfully.")
-
-        except Exception as e:
-            logger.error(f"❌ Error connecting RPC plugin client: {e}")
-            await self.close()
-            raise
-
+        logger.info("🔄 RPCPluginClient fully closed.")
