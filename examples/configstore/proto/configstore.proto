@@ -1,0 +1,102 @@
+syntax = "proto3";
+package configstore;
+
+// Common empty response message
+message Empty {}
+
+// Value types supported by the config store
+enum ValueType {
+    UNKNOWN = 0;
+    STRING = 1;
+    INT64 = 2;
+    DOUBLE = 3;
+    BOOL = 4;
+    BYTES = 5;
+}
+
+// A single configuration entry
+message ConfigEntry {
+    // Namespace and key form unique identifier
+    string namespace = 1;
+    string key = 2;
+
+    // Value with type checking
+    oneof value {
+        string string_value = 3;
+        int64 int_value = 4;
+        double double_value = 5;
+        bool bool_value = 6;
+        bytes bytes_value = 7;
+    }
+
+    // Metadata
+    uint64 version = 8;
+    string description = 9;
+    map<string, string> tags = 10;
+}
+
+// Request to get a config value
+message GetRequest {
+    string namespace = 1;
+    string key = 2;
+}
+
+// Request to watch for config changes
+message WatchRequest {
+    string namespace = 1;
+    repeated string keys = 2;  // Empty means watch all keys in namespace
+}
+
+// Request to set a config value
+message SetRequest {
+    ConfigEntry entry = 1;
+}
+
+// Request to delete a config value
+message DeleteRequest {
+    string namespace = 1;
+    string key = 2;
+}
+
+// Request to list configs
+message ListRequest {
+    string namespace = 1;
+    string prefix = 2;  // Optional key prefix filter
+    map<string, string> tags = 3;  // Optional tag filters
+}
+
+// Response for list operation
+message ListResponse {
+    repeated ConfigEntry entries = 1;
+}
+
+// Request to get multiple configs
+message BatchGetRequest {
+    message Item {
+        string namespace = 1;
+        string key = 2;
+    }
+    repeated Item items = 1;
+}
+
+// Response for batch get
+message BatchGetResponse {
+    repeated ConfigEntry entries = 1;
+}
+
+// Service definition
+service ConfigStore {
+    // Single key operations
+    rpc Get(GetRequest) returns (ConfigEntry);
+    rpc Set(SetRequest) returns (Empty);
+    rpc Delete(DeleteRequest) returns (Empty);
+
+    // Batch operations
+    rpc BatchGet(BatchGetRequest) returns (BatchGetResponse);
+
+    // Query operations
+    rpc List(ListRequest) returns (ListResponse);
+
+    // Watch for changes
+    rpc Watch(WatchRequest) returns (stream ConfigEntry);
+}
