@@ -20,3 +20,4 @@
 -e 'dist/'
 -e 'build/'
 -e 'uv.lock'
+-e '*.egg-info/'
