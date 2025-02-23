@@ -18,4 +18,4 @@ from contextlib import suppress
 import pytest
 import pytest_asyncio
 
-from .fixtures import *
+from tests.fixtures import *
