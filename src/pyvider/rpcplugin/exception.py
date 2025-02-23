@@ -1,10 +1,10 @@
 
 # pyvider/rpcplugin/exception.py
 
-from typing import Optional
+
 
 class RPCPluginError(Exception):
-    def __init__(self, message: str, code: int = None, hint: Optional[str] = None):
+    def __init__(self, message: str, code: int = None, hint: str | None = None):
         super().__init__(message)
         self.code = code
         self.hint = hint

@@ -22,11 +22,9 @@ Example (Bidi streaming flow):
 import asyncio
 import logging
 
-import grpc
-from grpc.aio import server
-
 import chat_pb2_grpc
 from chat_service import ChatService
+from grpc.aio import server
 
 
 async def serve() -> None:

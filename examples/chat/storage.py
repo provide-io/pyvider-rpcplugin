@@ -1,7 +1,6 @@
 
 # chatapp/storage.py
 
-from collections import defaultdict
 import asyncio
 
 from chatapp.proto.chat_pb2 import ChatMessage

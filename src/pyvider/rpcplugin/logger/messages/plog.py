@@ -6,6 +6,7 @@ import unicodedata
 from functools import partial
 from typing import Any
 
+
 # Ensure NFC-normalized emoji for consistent formatting
 def normalize_emoji(emoji: str) -> str:
     return unicodedata.normalize("NFC", emoji)

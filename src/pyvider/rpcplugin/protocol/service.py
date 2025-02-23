@@ -4,20 +4,21 @@
 import asyncio
 import traceback
 
-from google.protobuf.empty_pb2 import Empty
 from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.exception import HandshakeError, ProtocolError
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
-    GRPCStdioServicer, add_GRPCStdioServicer_to_server
-)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
-    GRPCBrokerServicer, add_GRPCBrokerServicer_to_server
+    GRPCBrokerServicer,
+    add_GRPCBrokerServicer_to_server,
 )
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as CEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
-    GRPCControllerServicer, add_GRPCControllerServicer_to_server
+    GRPCControllerServicer,
+    add_GRPCControllerServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
+    GRPCStdioServicer,
+    add_GRPCStdioServicer_to_server,
 )
 
 
@@ -166,7 +167,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 # Wait up to 2s for a new line; if none, we yield a short idle.
                 data_item = await asyncio.wait_for(self._message_queue.get(), timeout=2.0)
                 yield data_item
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.error(f"🔌📝❌ Error streaming lines: {e}", extra={"trace": traceback.format_exc()})

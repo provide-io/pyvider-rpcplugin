@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import os
-from typing import Optional
 
-import grpc
-from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
+
 
 class KVRPCProtocol(RPCPluginProtocol):
     """Protocol implementation for Go KV server."""
@@ -32,7 +31,7 @@ class KVClient:
             server_path: Path to Go KV server executable
         """
         self.server_path = server_path
-        self._client: Optional[RPCPluginClient] = None
+        self._client: RPCPluginClient | None = None
         self._stub = None
 
         # Configure environment for plugin
@@ -102,7 +101,7 @@ class KVClient:
             logger.error(f"❌ Put failed: key={key}, error={e}")
             raise
 
-    async def get(self, key: str) -> Optional[bytes]:
+    async def get(self, key: str) -> bytes | None:
         """Get a value from the KV store.
 
         Args:

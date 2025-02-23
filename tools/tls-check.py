@@ -9,20 +9,18 @@ string, it displays the first 32 and last 32 characters so you can verify that t
 correct data is being used.
 """
 
-import ssl
-import socket
-import os
-import binascii
-import traceback
 import argparse
+import binascii
+import os
+import socket
+import ssl
+import traceback
 from dataclasses import dataclass
-from typing import Optional
-
-from rich.console import Console
-from rich.table import Table
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
+from rich.console import Console
+from rich.table import Table
 
 # ------------------------------------------------------------------------------
 # Data classes for connection and certificate details
@@ -67,10 +65,10 @@ class ConnectionInfo:
     cipher_bits: int
     target: ConnectionTarget
     client_auth_status: str
-    alpn_protocol: Optional[str]
+    alpn_protocol: str | None
     session_reused: bool
     server_hostname: str
-    compression: Optional[str]
+    compression: str | None
 
 @dataclass
 class CertificateDetails:

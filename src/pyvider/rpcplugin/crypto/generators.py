@@ -1,15 +1,19 @@
 
 # pyvider/rpcplugin/crypto/generators.py
 
-from typing import Callable
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
+from collections.abc import Callable
+
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from pyvider.rpcplugin.crypto.constants import (
-    KEY_TYPE_RSA, KEY_TYPE_ECDSA,
-    SUPPORTED_RSA_SIZES, SUPPORTED_EC_CURVES
+    KEY_TYPE_ECDSA,
+    KEY_TYPE_RSA,
+    SUPPORTED_EC_CURVES,
+    SUPPORTED_RSA_SIZES,
 )
 from pyvider.rpcplugin.crypto.types import KeyPairType
+
 
 def generate_rsa_keypair(key_size: int) -> KeyPairType:
     return rsa.generate_private_key(
@@ -29,11 +33,9 @@ KEY_GENERATORS: dict[str, Callable] = {
     KEY_TYPE_ECDSA: generate_ec_keypair,
 }
 
-from pyvider.rpcplugin.crypto.constants import (
-    KEY_TYPE_RSA, KEY_TYPE_ECDSA
-)
-
+from pyvider.rpcplugin.crypto.constants import KEY_TYPE_ECDSA, KEY_TYPE_RSA
 from pyvider.rpcplugin.crypto.types import KeyPairType
+
 
 def generate_keypair(key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve_name: str = "secp384r1") -> KeyPairType:
     """

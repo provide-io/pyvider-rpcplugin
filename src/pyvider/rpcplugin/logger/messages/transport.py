@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class TransportLogMessages(Enum):
     # TCP Transport Logs
     transport_debug_tcp_listen_start = "🔌🚀🕹 Starting listen() for TCP server..."

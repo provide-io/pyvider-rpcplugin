@@ -1,5 +1,7 @@
 from enum import Enum
+
 from pyvider.rpcplugin.logger import logger
+
 
 class HandshakeLogMessages(Enum):
     # Transport Validation

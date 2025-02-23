@@ -6,15 +6,14 @@ import errno
 import os
 import socket
 import stat
-from typing import Optional, Set
 from contextlib import suppress
 
 import attrs
 
-from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.exception import TransportError
-from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.client.connection import ClientConnection
+from pyvider.rpcplugin.exception import TransportError
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 
 @attrs.define(frozen=False, slots=True)
@@ -30,12 +29,12 @@ class UnixSocketTransport(RPCPluginTransport):
       - Emphasis on cleaning up .sock files
     """
 
-    path: Optional[str] = attrs.field(default=None)
-    _server: Optional[asyncio.AbstractServer] = attrs.field(init=False, default=None)
-    _writer: Optional[asyncio.StreamWriter] = attrs.field(init=False, default=None)
-    endpoint: Optional[str] = attrs.field(init=False, default=None)
+    path: str | None = attrs.field(default=None)
+    _server: asyncio.AbstractServer | None = attrs.field(init=False, default=None)
+    _writer: asyncio.StreamWriter | None = attrs.field(init=False, default=None)
+    endpoint: str | None = attrs.field(init=False, default=None)
 
-    _connections: Set[ClientConnection] = attrs.field(init=False, factory=set)
+    _connections: set[ClientConnection] = attrs.field(init=False, factory=set)
     _running: bool = attrs.field(init=False, default=False)
     _closing: bool = attrs.field(init=False, default=False)
     _lock: asyncio.Lock = attrs.field(init=False, factory=asyncio.Lock)
@@ -56,7 +55,7 @@ class UnixSocketTransport(RPCPluginTransport):
         self._server_ready = asyncio.Event()
         logger.debug(f"🚀 UnixSocketTransport init complete for path={self.path}")
 
-    async def _close_writer(self, writer: Optional[asyncio.StreamWriter]) -> None:
+    async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:
         """
         Helper method for tests that may call _close_writer directly.
         This method only closes the provided writer.
@@ -242,7 +241,7 @@ class UnixSocketTransport(RPCPluginTransport):
             self._writer = writer
             self.endpoint = ep
             logger.debug(f"🔌✅ Connected to {ep}")
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             logger.error(f"🔌❌ Timed out connecting to {ep}: {e}")
             raise TransportError(f"Connection timeout: {e}")
         except OSError as e:

@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
 
-from typing import Any, Dict, Set, Tuple, Optional
-
 import asyncio
 import logging
-
 from dataclasses import dataclass, field
 from datetime import datetime
-
-from pyvider.rpcplugin.protocol import RPCPluginProtocol
+from typing import Any
 
 import grpc
+
+from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +16,14 @@ logger = logging.getLogger(__name__)
 class WatchSubscription:
     """Tracks a watch subscription for configuration changes."""
     namespace: str
-    keys: Set[str]
+    keys: set[str]
     queue: asyncio.Queue
     last_seen: datetime = field(default_factory=datetime.now)
 
 class ConfigStoreProtocol(RPCPluginProtocol):
     """Protocol implementation for configuration store service."""
     
-    def get_grpc_descriptors(self) -> Tuple[Any, str]:
+    def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Get the gRPC service descriptors."""
         from proto import configstore_pb2_grpc
         return configstore_pb2_grpc, "ConfigStore"
@@ -41,20 +39,19 @@ class ConfigStoreServicer:
     
     def __init__(self):
         # Store config entries: {namespace: {key: ConfigEntry}}
-        self._store: Dict[str, Dict[str, Any]] = {}
+        self._store: dict[str, dict[str, Any]] = {}
         
         # Track version numbers per namespace
-        self._versions: Dict[str, int] = {}
+        self._versions: dict[str, int] = {}
         
         # Active watch subscriptions
-        self._watchers: Set[WatchSubscription] = set()
+        self._watchers: set[WatchSubscription] = set()
         
         # Lock for store modifications
         self._lock = asyncio.Lock()
     
     async def Get(self, request, context):
         """Handle Get requests with error checking."""
-        from proto import configstore_pb2
         
         try:
             if request.namespace not in self._store:

@@ -1,8 +1,8 @@
 
 # pyvider/rpcplugin/transport/types.py
 
-from typing import TypeAlias, TypeVar, Protocol, Union
 import asyncio
+from typing import Protocol, TypeAlias, TypeVar
 
 from .base import RPCPluginTransport
 from .tcp import TCPSocketTransport
@@ -12,7 +12,7 @@ TransportT = TypeVar("TransportT", bound=RPCPluginTransport)
 TCPSocketT = TypeVar("TCPSocketT", bound=TCPSocketTransport)
 UnixSocketT = TypeVar("UnixSocketT", bound=UnixSocketTransport)
 
-TransportType: TypeAlias = Union[TCPSocketT, UnixSocketT]
+TransportType: TypeAlias = TCPSocketT | UnixSocketT
 
 class ConnectionT(Protocol):
     """Protocol for transport connections."""
