@@ -6,7 +6,7 @@ import pytest
 
 from google.protobuf import empty_pb2
 
-from pyvider.rpcplugin.protocol.service import ProtocolService
+from pyvider.rpcplugin.protocol import ProtocolService
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioServicer
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerServicer
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerServicer
