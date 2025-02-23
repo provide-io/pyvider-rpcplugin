@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # TODO: Make sure to notify if what is set is what's different than the default.
 
@@ -41,7 +41,7 @@ if [ ! -f "${PLUGIN_CLIENT_KEY_FILE}" ]; then
 fi
 
 PLUGIN_CLIENT_CERT="$(cat ${PLUGIN_CLIENT_CERT_FILE})"
-PLUGIN_CLIENT_KEY="$(cat  ${PLUGIN_CLIENT_KEY_FILE})"
+PLUGIN_CLIENT_KEY="$(cat ${PLUGIN_CLIENT_KEY_FILE})"
 
 PLUGIN_SERVER_CERT_FILE="${BASE_PATH}/tests/certs/${PLUGIN_SERVER_ALGO}-mtls-server.crt"
 PLUGIN_SERVER_KEY_FILE="${BASE_PATH}/tests/certs/${PLUGIN_SERVER_ALGO}-mtls-server.key"
@@ -58,13 +58,12 @@ if [ ! -f "${PLUGIN_SERVER_KEY_FILE}" ]; then
 fi
 
 PLUGIN_SERVER_CERT="$(cat ${PLUGIN_SERVER_CERT_FILE})"
-PLUGIN_SERVER_KEY="$(cat  ${PLUGIN_SERVER_KEY_FILE})"
+PLUGIN_SERVER_KEY="$(cat ${PLUGIN_SERVER_KEY_FILE})"
 
 # Endpoint configuration
 PLUGIN_SERVER_ENDPOINT="tcp:${PLUGIN_HOST}:${PLUGIN_PORT}"
 PLUGIN_PYTHON_SERVER_ENDPOINT="${PLUGIN_HOST}:${PLUGIN_PORT}"
 PLUGIN_CS_SERVER_ENDPOINT="https://${PLUGIN_HOST}:${PLUGIN_PORT}"
-
 
 function get_key_size() {
     openssl req -new \
@@ -72,11 +71,10 @@ function get_key_size() {
         -x509 \
         -nodes \
         -days 365 \
-        -subj "/CN=test.com" \
-    \
-    | openssl x509 -noout -text \
-    | grep Public-Key \
-    | sed -E 's/[^0-9]+//g'
+        -subj "/CN=test.com" |
+        openssl x509 -noout -text |
+        grep Public-Key |
+        sed -E 's/[^0-9]+//g'
 }
 
 PLUGIN_CLIENT_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_CLIENT_KEY_FILE}"))
@@ -92,7 +90,6 @@ export PLUGIN_HOST \
     PLUGIN_SERVER_ENDPOINT \
     PLUGIN_PYTHON_SERVER_ENDPOINT \
     PLUGIN_CS_SERVER_ENDPOINT
-
 
 # Path configuration
 export PYTHONPATH="${BASE_PATH}/python:${PYTHONPATH}"
