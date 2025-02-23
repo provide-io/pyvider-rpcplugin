@@ -386,3 +386,5 @@ vendor
 certs
 
 kv-data-*
+
+bin/
