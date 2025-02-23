@@ -140,6 +140,7 @@ dev = [
     "pyre>=1.12.5",
     "pyre-check>=0.9.23",
     "pyre-extensions>=0.0.32",
+    "pyright>=1.1.394",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
     "ruff>=0.9.7",
