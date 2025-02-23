@@ -564,6 +564,30 @@ wheels = [
 ]
 
 [[package]]
+name = "opentelemetry-exporter-otlp-proto-common"
+version = "1.30.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-proto" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/d7/44098bf1ef89fc5810cdbda05faa2ae9322a0dbda4921cdc965dc68a9856/opentelemetry_exporter_otlp_proto_common-1.30.0.tar.gz", hash = "sha256:ddbfbf797e518411857d0ca062c957080279320d6235a279f7b64ced73c13897", size = 19640 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ee/54/f4b3de49f8d7d3a78fd6e6e1a6fd27dd342eb4d82c088b9078c6a32c3808/opentelemetry_exporter_otlp_proto_common-1.30.0-py3-none-any.whl", hash = "sha256:5468007c81aa9c44dc961ab2cf368a29d3475977df83b4e30aeed42aa7bc3b38", size = 18747 },
+]
+
+[[package]]
+name = "opentelemetry-proto"
+version = "1.30.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/31/6e/c1ff2e3b0cd3a189a6be03fd4d63441d73d7addd9117ab5454e667b9b6c7/opentelemetry_proto-1.30.0.tar.gz", hash = "sha256:afe5c9c15e8b68d7c469596e5b32e8fc085eb9febdd6fb4e20924a93a0389179", size = 34362 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/d7/85de6501f7216995295f7ec11e470142e6a6e080baacec1753bbf272e007/opentelemetry_proto-1.30.0-py3-none-any.whl", hash = "sha256:c6290958ff3ddacc826ca5abbeb377a31c2334387352a259ba0df37c243adc11", size = 55854 },
+]
+
+[[package]]
 name = "packaging"
 version = "24.2"
 source = { registry = "https://pypi.org/simple" }
@@ -801,6 +825,9 @@ dev = [
     { name = "ruff" },
     { name = "uv" },
 ]
+telemetry = [
+    { name = "opentelemetry-exporter-otlp-proto-common" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -828,13 +855,14 @@ requires-dist = [
     { name = "grpcio", specifier = ">=1.70.0" },
     { name = "hatch", marker = "extra == 'dev'", specifier = ">=1.14.0" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.100.0" },
+    { name = "opentelemetry-exporter-otlp-proto-common", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "protobuf", specifier = ">=5.29.3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.0.265" },
     { name = "uv", marker = "extra == 'dev'", specifier = ">=0.6.2" },
 ]
-provides-extras = ["dev"]
+provides-extras = ["dev", "telemetry"]
 
 [package.metadata.requires-dev]
 dev = [
