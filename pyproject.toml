@@ -1,45 +1,73 @@
-
 # pyvider-rpcplugin/pyproject.toml
 
-#? [tool.hatch.metadata]
 [project]
 name = "pyvider-rpcplugin"
 version = "0.1.0"
 description = "Pyvider RPC Plugin"
 readme = "README.md"
-authors = ["Tim Perkins <code@tim.life>"]
+requires-python = ">=3.12"
+authors = [
+    {name = "Tim Perkins", email = "code@tim.life"}
+]
 
-#? [tool.hatch.envs.default]
 dependencies = [
     "attrs>=25.1.0",
     "cryptography>=44.0.1",
     "google>=3.0.0",
     "grpcio>=1.70.0",
-    "hatch>=1.14.0",
     "protobuf>=5.29.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "hatch>=1.14.0",
+    "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
+    "ruff>=0.0.265",
+    "uv>=0.6.2",
+    "pyre-check>=0.9.19",
+    "hypothesis>=6.100.0",
+    "bandit>=1.7.8"
 ]
 
 ################################################################################
 # hatch
 ################################################################################
 
+[tool.hatch.envs.default]
+dependencies = []
+
 [tool.hatch.envs.test]
 dependencies = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
     "ruff>=0.0.265",
-]
-
-# Tell Hatch where to find your package.
-[tool.hatch.metadata.targets.wheel]
-packages = [
-    { include = "pyvider.rpcplugin", from = "src" }
+    "pyre-check>=0.9.19",
+    "hypothesis>=6.100.0",
+    "bandit>=1.7.8"
 ]
 
 [tool.hatch.envs.test.scripts]
 test = "pytest {args:tests}"
+coverage = "pytest --cov=src --cov-report=term-missing"
+lint = "ruff check src tests"
+format = "ruff format src tests"
+typecheck = "pyre check"
+security = "bandit -r src"
+
+[tool.hatch.envs.default.scripts]
+run = "python -m pyvider.rpcplugin"
+
+[tool.hatch.envs.docs]
+dependencies = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
+scripts = {build = "mkdocs build", serve = "mkdocs serve"}
+
+[tool.hatch.metadata.targets.wheel]
+packages = [
+    { include = "pyvider.rpcplugin", from = "src" }
+]
 
 ################################################################################
 # pytest
@@ -69,11 +97,32 @@ norecursedirs = [
     "*/logger/messages/*",
 ]
 
-
+################################################################################
+# ruff
 ################################################################################
 
-# [tool.ruff]
-# line-length = 88
-# target-version = ["py313"]
-# exclude = ["build", "dist", ".venv"]
-# select = ["E", "F", "I", "RUF", "C90"]
+[tool.ruff]
+select = ["E", "F", "I", "UP", "ANN", "B"]
+ignore = ["ANN101", "ANN401", "B008"]
+exclude = ["tests/*", "**/*pb2*.py"]
+line-length = 88
+
+################################################################################
+# coverage
+################################################################################
+
+[tool.coverage.run]
+omit = [
+    "tests/*",
+    "logger/*",
+    "crypto/debug.py"
+]
+
+################################################################################
+# pyre
+################################################################################
+
+[tool.pyre]
+source_directories = ["src"]
+exclude = ["tests/*", "**/*pb2*.py"]
+strict = true
