@@ -57,7 +57,7 @@ python_files = ["test_*.py"]
 
 filterwarnings = [
     "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
-    "ignore:selector_events.py: .* KqueueSelector",
+    "selector_events.py: .* KqueueSelector",
 ]
 
 ################################################################################
