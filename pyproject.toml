@@ -30,6 +30,8 @@ dev = [
 ]
 telemetry = [
     "opentelemetry-exporter-otlp-proto-common>=1.30.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.30.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.30.0",
 ]
 
 ################################################################################
