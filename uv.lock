@@ -973,6 +973,7 @@ dev = [
     { name = "uv" },
 ]
 telemetry = [
+    { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-common" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
@@ -1004,6 +1005,7 @@ requires-dist = [
     { name = "grpcio", specifier = ">=1.70.0" },
     { name = "hatch", marker = "extra == 'dev'", specifier = ">=1.14.0" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.100.0" },
+    { name = "opentelemetry-api", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "opentelemetry-exporter-otlp-proto-common", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
