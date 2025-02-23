@@ -2,7 +2,7 @@
 # pyvider-rpcplugin/pyproject.toml
 
 [tool.hatch.metadata]
-name = "pyvider-rpcplugin"
+name = "pyvider.rpcplugin"
 version = "0.1.0"
 description = "Pyvider RPC Plugin"
 authors = ["Tim Perkins <code@tim.life>"]
