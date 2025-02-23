@@ -85,7 +85,7 @@ python_files = ["test_*.py"]
 
 filterwarnings = [
     "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
-    "ignore:Using selector: KqueueSelector",
+    "ignore:.*Using selector: KqueueSelector.*:UserWarning",
 ]
 
 norecursedirs = [
