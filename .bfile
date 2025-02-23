@@ -17,3 +17,5 @@
 -e 'logger/messages'
 -e 'env.sh'
 -e 'tools'
+-e 'dist/'
+-e 'build/'
