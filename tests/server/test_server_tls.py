@@ -82,7 +82,10 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport):
 #@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_read_client_cert_absent(
-    mock_server_protocol, mock_server_handler, mock_server_transport, server_with_mocks
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
 ):
     from pyvider.rpcplugin.config import rpcplugin_config
 
@@ -92,6 +95,7 @@ async def test_read_client_cert_absent(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
+        config=mock_server_config,
         transport=mock_server_transport,
     )
     endpoint = await server.serve()
