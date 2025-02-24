@@ -44,7 +44,7 @@ class KVClient:
             "PLUGIN_AUTO_MTLS": "true"
         })
 
-    async def connect(self):
+    async def start(self):
         """Connect to the KV server."""
         try:
             # Create plugin client
@@ -62,7 +62,7 @@ class KVClient:
             if hasattr(self._client, '_client_cert'):
                 logger.info("🔐 Client certificate generated")
 
-            await self._client.connect()
+            await self._client.start()
             logger.debug("🤝✅ RPCPluginClient connected to server successfully.")
 
             # Create gRPC stub
@@ -137,7 +137,7 @@ async def main():
 
     try:
         # Connect to server
-        await client.connect()
+        await client.start()
 
         # Store a value
         await client.put("hello", b"world")
