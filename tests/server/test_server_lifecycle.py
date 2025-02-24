@@ -268,13 +268,24 @@ async def test_stop_handles_exceptions(
 # (Optional) Test for graceful shutdown cleanup in serve()
 # -----------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_serve_success(monkeypatch, client_cert, mock_server_protocol):
+async def test_serve_success(
+    monkeypatch,
+    client_cert,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+
+    transport_name, transport, endpoint = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
+
     fut = asyncio.Future()
     fut.set_result(None)
     server._serving_future = fut
