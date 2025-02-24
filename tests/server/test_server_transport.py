@@ -136,7 +136,6 @@ async def test_setup_server_exception(
 
     # with pytest.raises(Exception, match="Server creation failed"):
     with pytest.raises(Exception, match="Failed to "):
-        await transport.listen()
         await server._setup_server("client_cert")
         await transport.close()
 
