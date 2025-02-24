@@ -324,7 +324,12 @@ async def test_serve_success(
 # this test currently just sits there and freezes, it awaits but never shuts
 # down.
 @pytest.mark.asyncio
-async def test_server_stop_clean_destructor():
+async def test_server_stop_clean_destructor(
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     """
     Create an RPCPluginServer with a dummy gRPC server, then call stop() and delete the server.
     This test covers the cleanup paths that trigger __del__ in the underlying gRPC server.
