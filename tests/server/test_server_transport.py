@@ -138,17 +138,21 @@ async def test_setup_server_exception(
 @pytest.mark.asyncio
 async def test_setup_server_tcp_success(
     mock_server_protocol,
+    mock_server_handler,
     mock_server_config,
     mock_server_handler,
 ):
+
     transport = TCPSocketTransport()
 
     dummy_server = DummyGRPCServer()
     # monkeypatch.setattr(rpcplugin_config, "get",
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
 
+    # TODO: man this stuff fails really poorly if any if this stuff is missing.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
+        handler=mock_server_handler,
         handler=mock_server_config,
         transport=transport,
     )
