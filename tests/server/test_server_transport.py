@@ -92,7 +92,7 @@ async def test_setup_server_unix_bad_permissions(
     mock_server_config,
     mock_server_transport_unix,
 ):
-    sock_path = str(unique_socket_path)
+    sock_path = str(unique_socket_path())
 
     print(f"unique_socket_path: {sock_path}")
     with open(sock_path, "w") as f:
