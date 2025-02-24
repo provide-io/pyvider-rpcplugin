@@ -167,7 +167,7 @@ async def test_setup_server_tcp_success(
     await transport.listen()
     #await server._setup_server("client_cert")
     await server.serve()
-    await transport.close()
+    #await transport.close()
 
     # TODO: actually check this shit.
 
