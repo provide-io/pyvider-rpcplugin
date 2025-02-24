@@ -547,6 +547,57 @@ class Certificate:
         if other_cert.public_key is None:
             logger.error("📜🔍❌ verify_trust: Other certificate has no public key.")
             raise CertificateError("Unsupported public key algorithm: key is None")
+        
+        # Fix: Check if certificates are the same object for self-signed case
+        if self.subject == self.issuer and self == other_cert:
+            logger.debug(
+                "📜🔍✅ verify_trust: Self-signed certificate verified by identity."
+            )
+            return True
+            
+        # Check trust chain
+        if other_cert in self._trust_chain:
+            logger.debug("📜🔍✅ verify_trust: Other certificate found in trust chain.")
+            return True
+            
+        # Validate against trust chain
+        for trusted in self._trust_chain:
+            if self._validate_cert(trusted, other_cert):
+                return True
+                
+        logger.debug(
+            "📜🔍❌ verify_trust: Certificate verification failed; certificate is not trusted."
+        )
+        return False
+
+    def Xverify_trust(self, other_cert: "Certificate") -> bool:
+        """
+        📜🔍🚀 verify_trust: Verifies that the other certificate is trusted.
+
+        Checks if:
+          - The other certificate is not None.
+          - It is currently valid.
+          - It has a public key.
+          - It is either self-signed (and matches) or present/validated in the trust chain.
+
+        Returns:
+          True if trusted, False otherwise.
+
+        Raises:
+          CertificateError: If required fields are missing.
+        """
+        logger.debug("📜🔍🚀 verify_trust: Starting trust verification.")
+        if other_cert is None:
+            logger.error("📜🔍❌ verify_trust: Other certificate is None.")
+            raise CertificateError("Cannot verify trust: other_cert is None")
+        if not other_cert.is_valid:
+            logger.debug(
+                "📜🔍⚠️ verify_trust: Other certificate is not valid (expired or not yet valid)."
+            )
+            return False
+        if other_cert.public_key is None:
+            logger.error("📜🔍❌ verify_trust: Other certificate has no public key.")
+            raise CertificateError("Unsupported public key algorithm: key is None")
         # If self-signed and identical, consider trusted.
         if self.subject == self.issuer and other_cert == self:
             logger.debug(
