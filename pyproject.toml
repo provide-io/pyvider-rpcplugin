@@ -128,8 +128,8 @@ line-length = 88
 [tool.coverage.run]
 omit = [
     "tests/*",
-    "logger/messages/*",
-    "crypto/debug.py"
+    "*/logger/messages/*",
+    "*/crypto/debug.py"
 ]
 
 ################################################################################
