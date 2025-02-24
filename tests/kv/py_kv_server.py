@@ -100,7 +100,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         try:
             key = request.key
             logger.info(f"🛎️📡🚀 Get: Received request for key: '{key}'")
-            filename = f"kv-data-{key}"
+            filename = f"/tmp/kv-data-{key}"
             logger.debug(f"🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'.")
             if not os.path.exists(filename):
                 logger.error(f"🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist).")
