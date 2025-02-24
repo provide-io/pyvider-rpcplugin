@@ -73,8 +73,8 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
-    #transport_name, transport, endpoint = mock_server_transport
-    transport = mock_server_transport ### hmm.
+    transport_name, transport, endpoint = mock_server_transport
+    #transport = mock_server_transport ### hmm.
     endpoint = await transport.listen()
 
     class ProtocolWithError(RPCPluginProtocol):
@@ -92,7 +92,7 @@ async def test_server_serve_runtime_error(
 
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
-        await transport.close()
+        #await transport.close()
 
 
 @pytest.mark.asyncio
