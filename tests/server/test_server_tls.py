@@ -75,11 +75,6 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport):
     assert cert == "client_cert"
 
 
-# TODO: fix this. But `hatch test -p` might be doing something.
-# or maybe it's fixed.
-# this test currently just sits there and freezes, it awaits but never shuts
-# down.
-#@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_read_client_cert_absent(
     mock_server_protocol,
