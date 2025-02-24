@@ -64,7 +64,6 @@ async def test_setup_server_unix_success(
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(
-    monkeypatch,
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
@@ -115,7 +114,7 @@ async def test_setup_server_unix_bad_permissions(
             os.unlink(sock_path)
 
 
-@pytest.mark.skip  # this causes a segfault.
+@pytest.mark.asyncio
 async def test_setup_server_exception(
     monkeypatch,
     mock_server_protocol,
@@ -123,13 +122,14 @@ async def test_setup_server_exception(
     mock_server_config,
     mock_server_transport,
 ):
-    # monkeypatch.setattr("pyvider.rpcplugin.server.grpc.aio.server", lambda options: (_ for _ in ()).throw(Exception("Server creation failed")))
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=None,
     )
+
     # with pytest.raises(Exception, match="Server creation failed"):
     with pytest.raises(Exception, match="Failed to "):
         await server._setup_server("client_cert")
@@ -162,7 +162,7 @@ async def test_setup_server_tcp_success(
     )
 
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_setup_server_unix_success(
     tmp_path,
     mock_server_protocol,
