@@ -75,7 +75,7 @@ async def test_server_serve_runtime_error(
 ):
     transport = mock_server_transport
     #transport = mock_server_transport ### hmm.
-    endpoint = await transport.listen()
+    #endpoint = await transport.listen()
 
     class ProtocolWithError(RPCPluginProtocol):
         async def add_to_server(self, handler, server):
