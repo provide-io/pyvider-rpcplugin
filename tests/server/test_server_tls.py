@@ -43,12 +43,12 @@ async def test_server_starts_insecurely(valid_server_env, mock_server_transport)
     )
     # Capture print calls directly
     printed_messages = []
+    endpoint = await transport.listen()
 
     def mock_print(message, *args, **kwargs):
         printed_messages.append(str(message))
 
     with patch("builtins.print", mock_print):
-        endpoint = await transport.listen()
         server_task = asyncio.create_task(server.serve())
         await server.wait_for_server_ready()
 
