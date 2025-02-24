@@ -74,7 +74,7 @@ class MockServicer:
 
 
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
-async def mock_server_transport(request, unused_tcp_port: int) -> TransportT:
+async def mock_server_transport(request) -> TransportT:
     transport_name = request.param
 
     with tempfile.NamedTemporaryFile(delete=True) as tmp:
@@ -82,7 +82,7 @@ async def mock_server_transport(request, unused_tcp_port: int) -> TransportT:
 
     logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
     logger.debug(
-        f"🧪🔌🐛 socket_path: {socket_path}, unused_tcp_port: {unused_tcp_port}"
+        f"🧪🔌🐛 socket_path: {socket_path}"
     )
 
     match transport_name:
@@ -97,9 +97,9 @@ async def mock_server_transport(request, unused_tcp_port: int) -> TransportT:
 
 
 @pytest_asyncio.fixture
-async def mock_server_transport_tcp(unused_tcp_port: int) -> TransportT:
+async def mock_server_transport_tcp() -> TransportT:
     try:
-        transport = TCPSocketTransport(host="127.0.0.1")
+        transport = TCPSocketTransport()
     except Exception as e:
         raise ValueError(f"Could not open a TCP Socket Transport: {transport}")
 
