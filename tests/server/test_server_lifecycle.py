@@ -122,6 +122,7 @@ async def test_serve_success(
     server._serving_event = asyncio.Event()
 
     async def dummy_negotiate(self):
+    transport_name = request.param
         self._protocol_version = 1
         self._transport_name = "tcp"
 
@@ -156,7 +157,7 @@ async def test_serve_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
