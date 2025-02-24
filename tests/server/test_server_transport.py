@@ -152,7 +152,7 @@ async def test_setup_server_tcp_success(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        handler=mock_server_config,
+        config=mock_server_config,
         transport=transport,
     )
     server._server = dummy_server
