@@ -30,7 +30,7 @@ from tests.fixtures import *
 # this is somehow causing a segfault. i need to figure out wtf is up with the segfaults.
 @pytest.mark.asyncio
 async def test_server_starts_insecurely(
-    mock_server_protocol
+    mock_server_protocol,
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
