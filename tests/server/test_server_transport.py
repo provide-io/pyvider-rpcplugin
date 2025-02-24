@@ -110,7 +110,7 @@ async def test_setup_server_unix_bad_permissions(
             transport=transport,
         )
 
-        await transport.listen()
+        #await transport.listen()
 
         with pytest.raises(TransportError, match="has incorrect permissions"):
             await server.serve()
