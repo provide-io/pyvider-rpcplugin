@@ -184,14 +184,12 @@ async def test_setup_server_unix_success(
 ):
     transport = UnixSocketTransport()
 
-    dummy_server = DummyGRPCServer()
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport,
     )
-    server._server = dummy_server
 
     await transport.listen()
     await server._setup_server("client_cert")
