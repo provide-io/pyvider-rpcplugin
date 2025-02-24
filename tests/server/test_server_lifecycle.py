@@ -91,7 +91,6 @@ async def test_server_serve_runtime_error(
     )
 
     with pytest.raises(RuntimeError, match="Protocol service registration"):
-        await transport.listen()
         await server.serve()
         await transport.close()
 
