@@ -293,7 +293,8 @@ async def test_server_stop_clean_destructor():
 
 # this is segfaulting when run with "tests" but not individual directories.
 # huh
-@pytest.mark.skip
+#@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_serve_and_stop_no_unawaited_warning(
     monkeypatch,
     mock_server_protocol,
