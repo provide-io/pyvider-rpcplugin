@@ -11,7 +11,7 @@ rm -f ${PLUGIN_CLIENT_PATH} ${PLUGIN_SERVER_PATH}
 # Initialize module if needed
 if [ ! -f go.mod ]; then
 	echo "Initializing Go module..."
-	go mod init github.com/provide-io/pyvider-rpcplugin/examples/grpc
+	go mod init github.com/provide-io/pyvider-rpcplugin/tests/kv/go-plugin
 
 	echo "Installing buf dependencies..."
 	go install github.com/bufbuild/buf/cmd/buf@latest
