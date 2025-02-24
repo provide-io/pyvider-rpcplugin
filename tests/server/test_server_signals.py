@@ -73,53 +73,33 @@ async def test_register_signal_handlers_success(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_register_signal_handlers_not_supported(monkeypatch, caplog):
+async def test_register_signal_handlers_not_supported(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    caplog
+):
     """Test behavior when signal handlers are not supported."""
     loop = asyncio.new_event_loop()
-    
+
     def mock_add_signal_handler(*args):
         raise NotImplementedError("Signal handler not supported")
-        
+
     monkeypatch.setattr(loop, "add_signal_handler", mock_add_signal_handler)
     monkeypatch.setattr(asyncio, "get_event_loop", lambda: loop)
-    
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=None,
         transport=None,
     )
-    
+
     import logging
     with caplog.at_level(logging.WARNING):
         server._register_signal_handlers()
-        
+
     assert "Signal handler not supported" in caplog.text
-
-#@pytest.mark.asyncio
-async def Xtest_register_signal_handlers_not_supported(monkeypatch, caplog):
-    import logging
-
-    caplog.set_level(logging.WARNING)
-
-    loop = asyncio.new_event_loop()
-
-    def mock_add_signal_handler(*args):
-        raise NotImplementedError("Signal handler not supported")
-
-    monkeypatch.setattr(loop, "add_signal_handler", mock_add_signal_handler)
-    monkeypatch.setattr(asyncio, "get_event_loop", lambda: loop)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=None,
-        transport=None,
-    )
-
-    server._register_signal_handlers()
-    assert "Signal handler not supported" in caplog.text
-
 
 # -------------------------------------------------------------------
 # Test for _shutdown_requested
