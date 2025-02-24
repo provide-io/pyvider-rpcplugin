@@ -122,9 +122,8 @@ async def test_serve_success(
     server._serving_event = asyncio.Event()
 
     async def dummy_negotiate(self):
-    transport_name = request.param
         self._protocol_version = 1
-        self._transport_name = "tcp"
+        #self._transport_name = "tcp"
 
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
