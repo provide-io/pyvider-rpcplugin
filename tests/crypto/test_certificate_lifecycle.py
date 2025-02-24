@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from pyvider.rpcplugin.exception import CertificateError
 from pyvider.rpcplugin.crypto.certificate import Certificate
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_cleanup_after_failed_generation():

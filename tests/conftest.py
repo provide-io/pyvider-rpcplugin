@@ -1,10 +1,12 @@
 
 # tests/conftest.py
 
+import sys
+from pathlib import Path
+
 import asyncio
 import os
 import socket
-import sys
 
 from typing import TypeVar
 
@@ -16,4 +18,4 @@ from contextlib import suppress
 import pytest
 import pytest_asyncio
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *

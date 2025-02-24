@@ -4,7 +4,7 @@
 import attrs
 import os
 
-from pyvider import logger
+from pyvider.rpcplugin.logger import logger
 from typing import Any, Optional
 
 SUPPORTED_PROTOCOL_VERSIONS = [1,2,3,4,5,6,7]

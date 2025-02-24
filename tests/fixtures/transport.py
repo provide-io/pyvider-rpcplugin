@@ -18,7 +18,7 @@ from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
 
-from pyvider.rpcplugin.tests.fixtures import *
+from ..fixtures import *
 
 # is being used
 @pytest_asyncio.fixture

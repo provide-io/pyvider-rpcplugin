@@ -17,3 +17,7 @@
 -e 'logger/messages'
 -e 'env.sh'
 -e 'tools'
+-e 'dist/'
+-e 'build/'
+-e 'uv.lock'
+-e '*.egg-info/'

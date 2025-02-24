@@ -12,7 +12,7 @@ from pyvider.rpcplugin.handshake import (
 )
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 # Test for Protocol Version Negotiation
 @pytest.mark.asyncio

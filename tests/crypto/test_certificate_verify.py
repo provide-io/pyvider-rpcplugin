@@ -18,7 +18,7 @@ from pyvider.rpcplugin.crypto.certificate import (
     KeyType,
 )
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 def test_verify_single_certificate_in_trust_chain(client_cert, server_cert):
     """Test basic trust chain verification with a single certificate."""
