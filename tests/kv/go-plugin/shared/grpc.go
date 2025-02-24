@@ -12,7 +12,7 @@ import (
     "google.golang.org/grpc"
     //"google.golang.org/grpc/credentials"
 
-    "github.com/provide-io/pyvider-rpcplugin/examples/grpc/proto"
+    "github.com/provide-io/pyvider-rpcplugin/tests/kv/go-plugin/proto"
 )
 
 // GRPCClient is an implementation of KV that talks over RPC.
