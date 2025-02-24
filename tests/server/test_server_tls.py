@@ -141,35 +141,44 @@ async def test_generate_server_credentials_secure(monkeypatch):
 # Tests for _generate_server_credentials (lines 127-136)
 # -----------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_generate_server_credentials_success(client_cert):
-    # Set up configuration with dummy server certificate and client certificate.
-    from pyvider.rpcplugin.config import rpcplugin_config
+async def test_generate_server_credentials_success(
+    client_cert,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
 
-    rpcplugin_config.set(
+    mock_server_config.set(
         "PLUGIN_SERVER_CERT",
         "-----BEGIN CERTIFICATE-----\ndummy_cert\n-----END CERTIFICATE-----",
     )
-    rpcplugin_config.set(
+    mock_server_config.set(
         "PLUGIN_SERVER_KEY",
         "-----BEGIN PRIVATE KEY-----\ndummy_key\n-----END PRIVATE KEY-----",
     )
-    rpcplugin_config.set("PLUGIN_CLIENT_CERT", client_cert)
-    rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", "1")
-    rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp")
+    mock_server_config.set("PLUGIN_CLIENT_CERT", client_cert)
+    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "1")
+    mock_server_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp")
+
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=transport,
     )
+
     creds = server._generate_server_credentials(client_cert.cert.encode())
     # Expect creds to be not None (dummy creds generated successfully)
     assert creds is not None
 
 
 @pytest.mark.asyncio
-async def test_generate_server_credentials_failure(monkeypatch):
+async def test_generate_server_credentials_failure(
+    monkeypatch,
+):
     # Force Certificate creation to raise an exception.
     from pyvider.rpcplugin.crypto.certificate import Certificate
 
