@@ -342,6 +342,7 @@ async def test_server_stop_clean_destructor(
         config=mock_server_config,
         transport=transport,
     )
+
     # Inject a dummy gRPC server instance.
     server._server = DummyAioServer()
     # Set a dummy serving future (simulate that the server is running).
@@ -371,9 +372,8 @@ async def test_serve_and_stop_no_unawaited_warning(
     Test that calling serve() and then stop() does not leave unawaited coroutines,
     even if the event loop is later closed.
     """
-    transport_name, transport, endpoint = mock_server_transport
-
     # Create a server instance with a dummy protocol.
+    transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -381,10 +381,9 @@ async def test_serve_and_stop_no_unawaited_warning(
         transport=transport,
     )
 
-
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport = mock_server_transport_tcp
+        self._transport = transport
         self._transport_name = transport_name
 
     # Prepare dummy implementations for required methods.
