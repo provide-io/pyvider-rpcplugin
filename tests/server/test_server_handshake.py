@@ -75,7 +75,7 @@ async def test_server_handshake_missing_env(
 
     with pytest.raises(HandshakeError):
         endpoint = await transport.listen()
-        await server.serve()
+        #await server.serve()
 
 
 # -------------------------------------------------------------------
