@@ -49,7 +49,7 @@ async def kv_server(
     mock_server_transport,
 ):
 
-    transport = mock_server_transport
+    transport_name, transport, endpoint = mock_server_transport
 
     server = RPCPluginServer(
         protocol=KVProtocol(),
@@ -59,11 +59,9 @@ async def kv_server(
     )
 
     # Create task for serve() instead of awaiting directly
-    endpoint = await transport.listen()
-    await server._setup_server("client_cert")
-    await transport.close()
+    await transport.listen()
 
-    #serve_task = asyncio.create_task(server.serve())
+    serve_task = asyncio.create_task(server.serve())
 
     # Wait for server to be ready
     await server.wait_for_server_ready()
