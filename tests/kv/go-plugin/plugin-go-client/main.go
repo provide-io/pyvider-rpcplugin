@@ -13,7 +13,7 @@ import (
 
     "github.com/hashicorp/go-hclog"
     "github.com/hashicorp/go-plugin"
-    "github.com/provide-io/pyvider-rpcplugin/examples/grpc/shared"
+    "github.com/provide-io/pyvider-rpcplugin/tests/kv/go-plugin/shared"
 )
 
 // DisplayCertificate logs the certificate details.
