@@ -96,7 +96,7 @@ class DummyAioServer:
 # -------------------------------------------------------------------
 # Dummy stream implementations for testing.
 # -------------------------------------------------------------------
-class DummyWriter:
+class CCDummyWriter:
     def __init__(self):
         self.closed = False
         self.data = bytearray()
@@ -118,7 +118,7 @@ class DummyWriter:
         return self.closed
 
 
-class DummyReader:
+class CCDummyReader:
     def __init__(self, data: bytes = b""):
         self.data = data
         self.called = False
