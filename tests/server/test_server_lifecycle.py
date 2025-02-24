@@ -82,7 +82,7 @@ async def test_server_serve_runtime_error(
 
     # when this is set to mock_server_protocol it segfaults stuff.
     server = RPCPluginServer(
-        protocol=ProtocolWithError(),
+        protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport, # if you pass the mock_server_transport in here directly
