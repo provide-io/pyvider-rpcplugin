@@ -90,6 +90,7 @@ async def test_register_signal_handlers_not_supported(monkeypatch, caplog):
         transport=None,
     )
     
+    import logging
     with caplog.at_level(logging.WARNING):
         server._register_signal_handlers()
         
