@@ -38,16 +38,17 @@ async def test_server_handshake_invalid_cookie(
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
     # mock_server_config.set("PLUGIN_TRANSPORTS", "tcp")
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=transport,
     )
 
     with pytest.raises(HandshakeError):
+        await transport.listen()
         await server.serve()
 
 
