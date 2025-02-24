@@ -754,7 +754,7 @@ async def test_unix_socket_cleanup_handling(socket_monitor, mock_server_transpor
         assert os.path.exists(path)
 
         # New transport should handle stale socket
-        new_transport = UnixSocketTransport(path=path)
+        new_transport = transport.copy() #UnixSocketTransport(path=path)
         await new_transport.listen()
 
         assert await monitor.check_state()
