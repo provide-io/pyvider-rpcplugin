@@ -397,7 +397,7 @@ async def test_serve_and_stop_no_unawaited_warning(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
     await server._negotiate_handshake()
-    assert server._transport_name == transport_name
+    assert server._transport_name == transport._transport_name
 
     async def dummy_setup(_):
         pass
