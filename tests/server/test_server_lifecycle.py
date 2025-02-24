@@ -31,7 +31,12 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_serve_success(mock_server_protocol):
+async def test_serve_success(
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     """Test server lifecycle with extra coverage."""
     transport_name, transport, endpoint = mock_server_transport
 
