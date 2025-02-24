@@ -90,3 +90,64 @@ class DummyAioServer:
             asyncio.get_event_loop()
         except RuntimeError:
             pass
+
+################################################################################
+# This is from test_connecion.py
+# -------------------------------------------------------------------
+# Dummy stream implementations for testing.
+# -------------------------------------------------------------------
+class DummyWriter:
+    def __init__(self):
+        self.closed = False
+        self.data = bytearray()
+
+    def write(self, data: bytes):
+        self.data.extend(data)
+
+    async def drain(self):
+        # Simulate an immediate drain.
+        await asyncio.sleep(0)
+
+    def close(self):
+        self.closed = True
+
+    async def wait_closed(self):
+        await asyncio.sleep(0)
+
+    def is_closing(self) -> bool:
+        return self.closed
+
+
+class DummyReader:
+    def __init__(self, data: bytes = b""):
+        self.data = data
+        self.called = False
+
+    async def read(self, size: int):
+        self.called = True
+        return self.data
+
+
+# -------------------------------------------------------------------
+# Fixtures for DummyReader and DummyWriter.
+# -------------------------------------------------------------------
+@pytest.fixture
+def dummy_writer():
+    return DummyWriter()
+
+
+@pytest.fixture
+def dummy_reader():
+    # Default dummy reader returns "test data".
+    return DummyReader(b"test data")
+
+
+@pytest.fixture
+def connection(dummy_reader, dummy_writer):
+    # Create a ClientConnection with dummy streams.
+    return ClientConnection(
+        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
+    )
+
+
+################################################################################
