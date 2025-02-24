@@ -161,6 +161,8 @@ async def test_setup_server_tcp_success(
     await transport.listen()
     await server._setup_server("client_cert")
 
+    # TODO: actually check this shit.
+
     #assert any(
     #    "127.0.0.1" in port and not port.startswith("unix:")
     #    for port in server.ports
