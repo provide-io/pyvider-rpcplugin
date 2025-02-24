@@ -86,6 +86,7 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport):
 
 @pytest.mark.asyncio
 async def test_read_client_cert_absent(
+    client_cert,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
