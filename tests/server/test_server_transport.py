@@ -155,20 +155,19 @@ async def test_setup_server_tcp_success(
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
 
     # TODO: man this stuff fails really poorly if any if this stuff is missing.
-    #dummy_server = DummyGRPCServer()
+    dummy_server = DummyGRPCServer()
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport,
     )
-    #server._server = dummy_server
+    server._server = dummy_server
 
     await transport.listen()
-    #await server.serve()
     #await server._setup_server("client_cert")
 
-    #await transport.close()
+    await transport.close()
 
     # TODO: actually check this shit.
 
