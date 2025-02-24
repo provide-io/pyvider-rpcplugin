@@ -144,7 +144,6 @@ async def test_setup_server_tcp_success(
 
     transport = TCPSocketTransport()
 
-    dummy_server = DummyGRPCServer()
     # monkeypatch.setattr(rpcplugin_config, "get",
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
 
@@ -155,14 +154,13 @@ async def test_setup_server_tcp_success(
         config=mock_server_config,
         transport=transport,
     )
-    server._server = dummy_server
 
     await transport.listen()
     await server._setup_server("client_cert")
 
     assert any(
         "127.0.0.1" in port and not port.startswith("unix:")
-        for port in dummy_server.ports
+        for port in server.ports
     )
 
 
