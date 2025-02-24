@@ -178,6 +178,10 @@ async def test_generate_server_credentials_success(
 @pytest.mark.asyncio
 async def test_generate_server_credentials_failure(
     monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
 ):
     # Force Certificate creation to raise an exception.
     from pyvider.rpcplugin.crypto.certificate import Certificate
