@@ -4,20 +4,21 @@
 import asyncio
 import traceback
 
-from google.protobuf.empty_pb2 import Empty
 from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.exception import HandshakeError, ProtocolError
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
-    GRPCStdioServicer, add_GRPCStdioServicer_to_server
-)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
-    GRPCBrokerServicer, add_GRPCBrokerServicer_to_server
+    GRPCBrokerServicer,
+    add_GRPCBrokerServicer_to_server,
 )
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as CEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
-    GRPCControllerServicer, add_GRPCControllerServicer_to_server
+    GRPCControllerServicer,
+    add_GRPCControllerServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
+    GRPCStdioServicer,
+    add_GRPCStdioServicer_to_server,
 )
 
 
@@ -30,17 +31,17 @@ class SubchannelConnection:
     Represents a single 'brokered' subchannel. The go-plugin host
     can request to open or dial it. We store an ID, connection state, etc.
     """
-    def __init__(self, conn_id: int, address: str):
+    def __init__(self, conn_id: int, address: str) -> None:
         self.conn_id = conn_id
         self.address = address
         self.is_open = False
 
-    async def open(self):
+    async def open(self) -> None:
         logger.debug(f"🔌🔍✅ SubchannelConnection.open() => Opening subchannel {self.conn_id} at {self.address}")
         await asyncio.sleep(0.05)  # simulate
         self.is_open = True
 
-    async def close(self):
+    async def close(self) -> None:
         logger.debug(f"🔌🔒✅ SubchannelConnection.close() => Closing subchannel {self.conn_id}")
         await asyncio.sleep(0.05)
         self.is_open = False
@@ -55,7 +56,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
     to set up a subchannel for callbacks or bridging. We'll do a simplified version here.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # We hold subchannel references here.
         self._subchannels = {}
 
@@ -139,12 +140,12 @@ class GRPCStdioService(GRPCStdioServicer):
     approach. In real usage, you might run a background task collecting logs.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         # We keep an internal queue for all outgoing lines.
         self._message_queue = asyncio.Queue()
         self._shutdown = False
 
-    async def put_line(self, line: bytes, is_stderr=False):
+    async def put_line(self, line: bytes, is_stderr=False) -> None:
         """
         Public method: feed lines to the queue from somewhere else in your code,
         or from a logging handler that writes to the queue.
@@ -166,7 +167,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 # Wait up to 2s for a new line; if none, we yield a short idle.
                 data_item = await asyncio.wait_for(self._message_queue.get(), timeout=2.0)
                 yield data_item
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
             except Exception as e:
                 logger.error(f"🔌📝❌ Error streaming lines: {e}", extra={"trace": traceback.format_exc()})
@@ -175,7 +176,7 @@ class GRPCStdioService(GRPCStdioServicer):
         logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done.")
         return
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         logger.debug("🔌📝⚠️ GRPCStdioService => marking service as shutdown")
         self._shutdown = True
 
@@ -186,7 +187,7 @@ class GRPCControllerService(GRPCControllerServicer):
     You can add additional calls to replicate go-plugin’s “Ping” or “Health” checks.
     """
 
-    def __init__(self, shutdown_event: asyncio.Event, stdio_service: GRPCStdioService):
+    def __init__(self, shutdown_event: asyncio.Event, stdio_service: GRPCStdioService) -> None:
         self._shutdown_event = shutdown_event
         self._stdio_service = stdio_service
 

@@ -1,42 +1,44 @@
 from enum import Enum
 
+
 class Context(Enum):
-    debug =        ("***\U0001F41E***", "::: Debugging information",                  "---🐞---")
-    audit =        ("***\U0001F4DC***", "::: Compliance and audit logs",              "---📜---")
-    telemetry =    ("***\U0001F4F1***", "::: Performance and monitoring logs",        "---📱---")
-    user_action =  ("***\U0001F464***", "::: User-initiated actions",                 "---👤---")
-    system_event = ("***\U0001F5A5 ***", "::: Automated system events",                "---🖥---")
-    config =       ("***\U00002699 ***", "::: Configuration changes",                  "---⚙---")
-    external =     ("***\U0001F30D***", "::: External API/service interactions",      "---🌍---")
-    background =   ("***\U000023F3***", "::: Background tasks",                       "---⏳---")
-    cache =        ("***\U0001F5C4***", "::: Caching operations",                     "---🗄---")
-    automation =   ("***\U0001F916***", "::: Automated process execution",            "---🤖---")
-    security =     ("***\U0001F510***", "::: Security-related events",                "---🔐---")
-    maintenance =  ("***\U0001F527***", "::: Scheduled maintenance operations",       "---🔧---")
+    debug = ("***\U0001F41E***", "::: Debugging information", "---🐞---")
+    audit = ("***\U0001F4DC***", "::: Compliance and audit logs", "---📜---")
+    telemetry = ("***\U0001F4F1***", "::: Performance and monitoring logs", "---📱---")
+    user_action = ("***\U0001F464***", "::: User-initiated actions", "---👤---")
+    system_event = ("***\U0001F5A5 ***", "::: Automated system events", "---🖥---")
+    config = ("***\U00002699 ***", "::: Configuration changes", "---⚙---")
+    external = ("***\U0001F30D***", "::: External API/service interactions", "---🌍---")
+    background = ("***\U000023F3***", "::: Background tasks", "---⏳---")
+    cache = ("***\U0001F5C4***", "::: Caching operations", "---🗄---")
+    automation = ("***\U0001F916***", "::: Automated process execution", "---🤖---")
+    security = ("***\U0001F510***", "::: Security-related events", "---🔐---")
+    maintenance = ("***\U0001F527***", "::: Scheduled maintenance operations", "---🔧---")
     error_report = ("***\U0001F4DD***", "::: User or system-generated error reports", "---📝---")
-    incident =     ("***\U0001F6A8***", "::: Incident response logs",                 "---🚨---")
-    analytics =    ("***\U0001F4CA***", "::: Data analytics and insights",            "---📊---")
+    incident = ("***\U0001F6A8***", "::: Incident response logs", "---🚨---")
+    analytics = ("***\U0001F4CA***", "::: Data analytics and insights", "---📊---")
+
 
 class Domain(Enum):
-    server =        ("***\U0001F3E0***", "::: Server-related logs",                    "---🏠---")
-    client =        ("***\U0001F64B***", "::: Client-side operations",                 "---🙋---")
-    plugin =        ("***\U0001F50C***", "::: Plugin behavior",                        "---🔌---")
-    network =       ("***\U0001F310***", "::: Network operations",                     "---🌐---")
-    api =           ("***\U0001F4F6***", "::: API interactions",                       "---📶---")
-    task =          ("***\U00002699***", "::: Task processing",                        "---⚙---")
-    security =      ("***\U0001F6A8***", "::: Security alerts",                        "---🚨---")
-    database =      ("***\U0001F5C4***", "::: Database queries",                       "---🗄---")
-    file =          ("***\U0001F4C2***", "::: File system actions",                    "---📂---")
-    telemetry =     ("***\U0001F6F0***", "::: Performance and monitoring logs",        "---🛰---")
-    message_queue = ("***\U0001F4EC***", "::: Message queue and broker activity",      "---📬---")
-    hardware =      ("***\U0001F4BE***", "::: Hardware-related events",                "---💾---")
-    cloud =         ("***\U00002601***", "::: Cloud-based operations",                 "---☁---")
-    storage =       ("***\U0001F4E6***", "::: Storage-related events",                 "---📦---")
-    auth =          ("***\U0001F511***", "::: Authentication and authorization",       "---🔑---")
-    logging =       ("***\U0001F4DD***", "::: Logging subsystem events",               "---📝---")
-    middleware =    ("***\U0001F9F0***", "::: Middleware event processing",            "---🧰---")
-    blockchain =    ("***\U0001F5FA***", "::: Blockchain transactions and validation", "---🕚---")
-    machine_learning = ("***\U0001F9E0***", "Machine learning and AI processing",      "---🧠---")
+    server = ("***\U0001F3E0***", "::: Server-related logs", "---🏠---")
+    client = ("***\U0001F64B***", "::: Client-side operations", "---🙋---")
+    plugin = ("***\U0001F50C***", "::: Plugin behavior", "---🔌---")
+    network = ("***\U0001F310***", "::: Network operations", "---🌐---")
+    api = ("***\U0001F4F6***", "::: API interactions", "---📶---")
+    task = ("***\U00002699***", "::: Task processing", "---⚙---")
+    security = ("***\U0001F6A8***", "::: Security alerts", "---🚨---")
+    database = ("***\U0001F5C4***", "::: Database queries", "---🗄---")
+    file = ("***\U0001F4C2***", "::: File system actions", "---📂---")
+    telemetry = ("***\U0001F6F0***", "::: Performance and monitoring logs", "---🛰---")
+    message_queue = ("***\U0001F4EC***", "::: Message queue and broker activity", "---📬---")
+    hardware = ("***\U0001F4BE***", "::: Hardware-related events", "---💾---")
+    cloud = ("***\U00002601***", "::: Cloud-based operations", "---☁---")
+    storage = ("***\U0001F4E6***", "::: Storage-related events", "---📦---")
+    auth = ("***\U0001F511***", "::: Authentication and authorization", "---🔑---")
+    logging = ("***\U0001F4DD***", "::: Logging subsystem events", "---📝---")
+    middleware = ("***\U0001F9F0***", "::: Middleware event processing", "---🧰---")
+    blockchain = ("***\U0001F5FA***", "::: Blockchain transactions and validation", "---🕚---")
+    machine_learning = ("***\U0001F9E0***", "Machine learning and AI processing", "---🧠---")
 
 
 import wcwidth
@@ -44,9 +46,11 @@ import wcwidth
 # Force uniform emoji width for better alignment
 EMOJI_PADDING = 3  # Adjust this if needed based on terminal behavior
 
+
 def visible_width(text):
     """Calculate the displayed width of a string considering emoji width."""
     return sum(wcwidth.wcwidth(char) if wcwidth.wcwidth(char) > 0 else 1 for char in text)
+
 
 def pad_text(text, width):
     """Pad text with spaces to match the expected display width."""
@@ -54,11 +58,13 @@ def pad_text(text, width):
     extra_padding = width - display_width
     return text + " " * extra_padding
 
-def fix_emoji_spacing(text):
+
+def fix_emoji_spacing(text) -> str:
     """Wrap emojis with spaces to ensure uniform width."""
     return f" {' ' * EMOJI_PADDING}{text}{' ' * EMOJI_PADDING} "
 
-def generate_table():
+
+def generate_table() -> None:
     """Generate a formatted table with enforced emoji spacing."""
     headers = ["Category", "Key", "C", "Description", "E"]
     table = [headers]
@@ -84,6 +90,7 @@ def generate_table():
 
     formatted_table = "\n".join(formatted_table_lines)
     print(formatted_table)
+
 
 if __name__ == "__main__":
     generate_table()

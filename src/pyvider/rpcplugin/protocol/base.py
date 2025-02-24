@@ -5,9 +5,10 @@ from abc import ABC, abstractmethod
 from typing import Any, Generic
 
 from pyvider.rpcplugin.types import (
-    ServerT,
     HandlerT,
+    ServerT,
 )
+
 
 class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):
     """

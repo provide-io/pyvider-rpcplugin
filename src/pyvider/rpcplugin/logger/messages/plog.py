@@ -6,9 +6,11 @@ import unicodedata
 from functools import partial
 from typing import Any
 
+
 # Ensure NFC-normalized emoji for consistent formatting
 def normalize_emoji(emoji: str) -> str:
     return unicodedata.normalize("NFC", emoji)
+
 
 # 🔥 Define Logging Levels
 LOG_LEVELS = {
@@ -52,10 +54,11 @@ LOGGING_MATRIX = {
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
 logger = logging.getLogger("plog")
 
+
 class LogNamespace:
     """Dynamically generates logging functions from predefined levels and actions."""
 
-    def __init__(self, log_level: str, namespace: dict):
+    def __init__(self, log_level: str, namespace: dict) -> None:
         self.log_level = log_level
         self.namespace = namespace
 
@@ -70,7 +73,7 @@ class LogNamespace:
 
         raise AttributeError(f"Invalid log path: {self.log_level}.{key}")
 
-    def _log(self, key: str, **kwargs: Any):
+    def _log(self, key: str, **kwargs: Any) -> None:
         """Perform logging with optional parameters."""
         message = self.namespace.get(key, "Unknown log event")
         formatted_message = normalize_emoji(message)
@@ -78,12 +81,14 @@ class LogNamespace:
         log_function = getattr(logger, self.log_level, logger.info)
         log_function(f"{formatted_message} {kwargs if kwargs else ''}")
 
+
 class PLog:
     """Primary logging interface for hierarchical, structured logging."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         for level, namespace in LOGGING_MATRIX.items():
             setattr(self, level, LogNamespace(level, namespace))
+
 
 plog = PLog()
 

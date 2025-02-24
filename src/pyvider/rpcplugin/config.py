@@ -1,13 +1,14 @@
 
 # pyvider/rpcplugin/config.py
 
-import attrs
 import os
-
-from pyvider.rpcplugin.logger import logger
 from typing import Any, Optional
 
-SUPPORTED_PROTOCOL_VERSIONS = [1,2,3,4,5,6,7]
+import attrs
+
+from pyvider.rpcplugin.logger import logger
+
+SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
 CONFIG_SCHEMA = {
@@ -113,6 +114,7 @@ CONFIG_SCHEMA = {
     },
 }
 
+
 def fetch_env_variable(key, meta):
     """Fetches an environment variable and processes file-based values if applicable."""
     value = os.getenv(key, meta["default"])
@@ -121,7 +123,7 @@ def fetch_env_variable(key, meta):
     if value and isinstance(value, str) and value.startswith("file://"):
         file_path = value[7:]
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 return f.read().strip()
         except Exception as e:
             logger.error(f"🔍❌ Failed to read file for {key}: {file_path}. Error: {e}")
@@ -137,6 +139,7 @@ def fetch_env_variable(key, meta):
 
     return value
 
+
 def get_config():
     """Retrieves configuration values from the environment, applying defaults where necessary."""
     config = {}
@@ -148,11 +151,12 @@ def get_config():
         config[key] = value
     return config
 
+
 class RPCPluginConfig:
     _instance: Optional['RPCPluginConfig'] = None
     _config: dict[str, Any] = attrs.field(factory=dict)
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.config = get_config()
         logger.debug("⚙️ RPCPluginConfig initialized with environment variables.")
 
@@ -198,5 +202,6 @@ class RPCPluginConfig:
 
     def client_endpoint(self) -> str:
         return self.get("PLUGIN_CLIENT_ENDPOINT")
+
 
 rpcplugin_config = RPCPluginConfig()
