@@ -58,7 +58,7 @@ dependencies = [
 
 [tool.hatch.envs.test.scripts]
 test = "pytest {args:tests}"
-coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing"
+coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing --cov-config=pyproject.toml"
 lint = "ruff check src tests"
 format = "ruff format src tests"
 typecheck = "pyre check"
