@@ -108,7 +108,6 @@ async def test_generate_server_credentials_insecure(server_with_mocks):
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
 
-
 @pytest.mark.asyncio
 async def test_generate_server_credentials_secure(monkeypatch):
     dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
