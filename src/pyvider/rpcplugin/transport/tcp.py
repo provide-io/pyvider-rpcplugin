@@ -45,6 +45,8 @@ class TCPSocketTransport(RPCPluginTransport):
     _writer: asyncio.StreamWriter | None = attrs.field(init=False, default=None)
     endpoint: str | None = attrs.field(init=False, default=None)
 
+    _transport_name: str "tcp"
+
     async def listen(self) -> str:
         """
         🔌🚀🕹  Start a TCP server on a random available port and return the endpoint (host:port).
