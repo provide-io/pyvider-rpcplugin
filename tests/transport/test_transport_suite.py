@@ -689,7 +689,8 @@ async def test_unix_socket_error_handling():
         await transport.connect("/nonexistent/path")
 
 
-@pytest.mark.skip
+#@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_server_integration(socket_monitor):
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
