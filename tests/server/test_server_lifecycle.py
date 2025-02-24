@@ -157,7 +157,7 @@ async def test_serve_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    transport= mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -297,7 +297,7 @@ async def test_serve_success(
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport_name = "tcp"
+        #self._transport_name = "tcp"
 
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
