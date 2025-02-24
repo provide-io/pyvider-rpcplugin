@@ -123,11 +123,13 @@ async def test_setup_server_exception(
     mock_server_transport,
 ):
 
+    transport_name, transport, endpoint = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
 
     # with pytest.raises(Exception, match="Server creation failed"):
