@@ -1,3 +1,6 @@
+
+// pyvider-rpcplugin/tests/kv/go-plugin/plugin-go-server/main.go
+
 package main
 
 import (
