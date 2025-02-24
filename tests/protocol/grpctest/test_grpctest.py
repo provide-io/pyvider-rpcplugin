@@ -28,6 +28,7 @@ from proto.grpctest_pb2_grpc import (
     PingPongStub,
 )
 
+
 # Dummy implementation for the Test service.
 class DummyTestServicer(TestServicer):
     async def Double(self, request, context):
@@ -50,10 +51,12 @@ class DummyTestServicer(TestServicer):
     async def PrintStdio(self, request, context):
         return empty_pb2.Empty()
 
+
 # Dummy implementation for the PingPong service.
 class DummyPingPongServicer(PingPongServicer):
     async def Ping(self, request, context):
         return PongResponse(msg="pong")
+
 
 # Fixture that starts a grpc.aio server with our dummy servicers.
 @pytest_asyncio.fixture
@@ -67,6 +70,7 @@ async def grpc_server() -> str:
     yield f"localhost:{port}"
     await server.stop(0)
 
+
 # Fixture that creates a channel connected to the server.
 @pytest_asyncio.fixture
 async def grpc_channel(grpc_server: str) -> grpc.aio.Channel:
@@ -75,14 +79,17 @@ async def grpc_channel(grpc_server: str) -> grpc.aio.Channel:
     yield channel
     await channel.close()
 
+
 # Fixtures for the client stubs.
 @pytest_asyncio.fixture
 async def test_stub(grpc_channel: grpc.aio.Channel) -> TestStub:
     return TestStub(grpc_channel)
 
+
 @pytest_asyncio.fixture
 async def pingpong_stub(grpc_channel: grpc.aio.Channel) -> PingPongStub:
     return PingPongStub(grpc_channel)
+
 
 @pytest.mark.asyncio
 async def test_double_rpc(test_stub: TestStub):
@@ -90,11 +97,13 @@ async def test_double_rpc(test_stub: TestStub):
     resp = await test_stub.Double(req)
     assert resp.Output == 20
 
+
 @pytest.mark.asyncio
 async def test_printkv_rpc(test_stub: TestStub):
     req = PrintKVRequest(Key="test", ValueString="hello")
     resp = await test_stub.PrintKV(req)
     assert isinstance(resp, PrintKVResponse)
+
 
 @pytest.mark.asyncio
 async def test_bidirectional_rpc(test_stub: TestStub):
@@ -102,21 +111,25 @@ async def test_bidirectional_rpc(test_stub: TestStub):
     resp = await test_stub.Bidirectional(req)
     assert resp.id == 123
 
+
 @pytest.mark.asyncio
 async def test_stream_rpc(test_stub: TestStub):
     async def request_gen():
         for i in range(5):
             yield TestRequest(Input=i)
             await asyncio.sleep(0.01)
+
     responses = [resp async for resp in test_stub.Stream(request_gen())]
     expected = [i * 2 for i in range(5)]
     assert [r.Output for r in responses] == expected
+
 
 @pytest.mark.asyncio
 async def test_printstdio_rpc(test_stub: TestStub):
     req = PrintStdioRequest(stdout=b"abc", stderr=b"def")
     resp = await test_stub.PrintStdio(req)
     assert isinstance(resp, empty_pb2.Empty)
+
 
 @pytest.mark.asyncio
 async def test_pingpong_rpc(pingpong_stub: PingPongStub):

@@ -63,7 +63,6 @@ lint = "ruff check src tests"
 format = "ruff format src tests"
 typecheck = "pyre check"
 security = "bandit -r src"
-# gobuild = "(cd tests/kv/go-plugin; ./build.sh)"
 
 [tool.hatch.envs.default.scripts]
 run = "python -m pyvider.rpcplugin"
@@ -96,7 +95,6 @@ python_files = ["test_*.py"]
 
 filterwarnings = [
     "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
-    #"ignore:.*Using selector: KqueueSelector.*",
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
 ]
 
@@ -110,13 +108,12 @@ norecursedirs = [
 ]
 
 ################################################################################
-# ruff
+# lint
 ################################################################################
 
-[tool.ruff]
+[tool.lint]
 select = ["E", "F", "I", "UP", "ANN", "B"]
 ignore = [
-    "ANN101",
     "ANN401",
     "B008",
     "E501",     # Line too long

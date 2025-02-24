@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_connect.py
 
 import asyncio
@@ -13,6 +12,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_unreachable_address():
     unreachable = "192.0.2.254:80"
@@ -21,11 +21,13 @@ async def test_tcp_socket_transport_connect_unreachable_address():
     with pytest.raises(TransportError):
         await asyncio.wait_for(transport.listen(), timeout=3.0)
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_invalid_endpoint():
     transport = TCPSocketTransport()
     with pytest.raises(TransportError):
         await asyncio.wait_for(transport.connect("127.0.0.1:65530"), timeout=5.0)
+
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_invalid_endpoint():
@@ -40,6 +42,7 @@ async def test_tcp_socket_transport_connect_invalid_endpoint():
         # Include a timeout to prevent indefinite hanging
         await asyncio.wait_for(transport.connect("127.0.0.1:65530"), timeout=6.0)
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_default_host():
     """
@@ -47,6 +50,7 @@ async def test_tcp_socket_transport_default_host():
     """
     transport = TCPSocketTransport()
     assert transport.host == "127.0.0.1"
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

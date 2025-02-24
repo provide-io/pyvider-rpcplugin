@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/server/test_server_transport.py
 
 import asyncio
@@ -27,14 +26,15 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_setup_server_unix_success(
-        monkeypatch,
-        tmp_path,
-        mock_server_preotocol,
-        mock_server_handler,
-        mock_server_config
-    ):
+    monkeypatch,
+    tmp_path,
+    mock_server_preotocol,
+    mock_server_handler,
+    mock_server_config,
+):
     sock_path = str(tmp_path / "test.sock")
     # TODO: Figure out sock_path length.
 
@@ -42,12 +42,12 @@ async def test_setup_server_unix_success(
         sock_path = "/tmp/test.sock"
     transport = UnixSocketTransport(path=sock_path)
 
-    #dummy_server = DummyGRPCServer()
+    # dummy_server = DummyGRPCServer()
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport
+        transport=transport,
     )
 
     try:
@@ -62,6 +62,7 @@ async def test_setup_server_unix_success(
         if os.path.exists(sock_path):
             os.unlink(sock_path)
 
+
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(monkeypatch, tmp_path):
     sock_path = str(tmp_path / "nosock.sock")
@@ -71,14 +72,17 @@ async def test_setup_server_unix_no_socket(monkeypatch, tmp_path):
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport
+        transport=transport,
     )
 
     with pytest.raises(TransportError, match="Socket file .* not created"):
         await server._setup_server("client_cert")
 
+
 @pytest.mark.asyncio
-async def test_setup_server_unix_bad_permissions(tmp_path, mock_server_protocol, mock_server_handler, mock_server_config):
+async def test_setup_server_unix_bad_permissions(
+    tmp_path, mock_server_protocol, mock_server_handler, mock_server_config
+):
     sock_path = str(tmp_path / "badperm.sock")
     transport = UnixSocketTransport(path=sock_path)
 
@@ -100,21 +104,31 @@ async def test_setup_server_unix_bad_permissions(tmp_path, mock_server_protocol,
         if os.path.exists(sock_path):
             os.unlink(sock_path)
 
-@pytest.mark.skip # this causes a segfault.
-async def test_setup_server_exception(monkeypatch, mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport):
+
+@pytest.mark.skip  # this causes a segfault.
+async def test_setup_server_exception(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     # monkeypatch.setattr("pyvider.rpcplugin.server.grpc.aio.server", lambda options: (_ for _ in ()).throw(Exception("Server creation failed")))
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None
+        transport=None,
     )
-    #with pytest.raises(Exception, match="Server creation failed"):
+    # with pytest.raises(Exception, match="Server creation failed"):
     with pytest.raises(Exception, match="Failed to "):
         await server._setup_server("client_cert")
 
+
 @pytest.mark.asyncio
-async def test_setup_server_tcp_success(monkeypatch, mock_server_protocol, mock_server_handler):
+async def test_setup_server_tcp_success(
+    monkeypatch, mock_server_protocol, mock_server_handler
+):
     transport = TCPSocketTransport()
 
     dummy_server = DummyGRPCServer()
@@ -129,8 +143,11 @@ async def test_setup_server_tcp_success(monkeypatch, mock_server_protocol, mock_
     server._server = dummy_server
 
     await server._setup_server("client_cert")
-    assert any("127.0.0.1" in port and not port.startswith("unix:")
-              for port in dummy_server.ports)
+    assert any(
+        "127.0.0.1" in port and not port.startswith("unix:")
+        for port in dummy_server.ports
+    )
+
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_success(monkeypatch, tmp_path):
@@ -142,7 +159,7 @@ async def test_setup_server_unix_success(monkeypatch, tmp_path):
         protocol=mock_server_protocol,
         handler=mock_server_handler(),
         config=mock_server_config,
-        transport=transport
+        transport=transport,
     )
     server._server = dummy_server
 
@@ -153,6 +170,7 @@ async def test_setup_server_unix_success(monkeypatch, tmp_path):
     assert any(expected in port for port in dummy_server.ports)
     await transport.close()
 
+
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(monkeypatch, tmp_path, mock_server_protocol):
     sock_path = str(tmp_path / "nosock.sock")
@@ -162,7 +180,7 @@ async def test_setup_server_unix_no_socket(monkeypatch, tmp_path, mock_server_pr
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport
+        transport=transport,
     )
 
     with pytest.raises(TransportError, match="Socket file .* not created"):

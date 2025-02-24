@@ -1,4 +1,3 @@
-
 # tests/fixtures/server.py
 
 import pytest
@@ -30,8 +29,15 @@ def valid_server_env(monkeypatch):
     monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "1,2,3,4,5,6,7")
     monkeypatch.setenv("PLUGIN_TRANSPORTS", "tcp")
 
+
 @pytest_asyncio.fixture(scope="module")
-async def server_instance(mock_server_config, mock_server_protocol, mock_server_handler, mock_server_transport, client_cert):
+async def server_instance(
+    mock_server_config,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_transport,
+    client_cert,
+):
     from pyvider.rpcplugin.config import rpcplugin_config
 
     transport = mock_server_transport
@@ -39,7 +45,10 @@ async def server_instance(mock_server_config, mock_server_protocol, mock_server_
     try:
         # Set environment variables
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
-        rpcplugin_config.set("PLUGIN_MAGIC_COOKIE", "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2")
+        rpcplugin_config.set(
+            "PLUGIN_MAGIC_COOKIE",
+            "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2",
+        )
         rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", "6")
         rpcplugin_config.set("PLUGIN_TRANSPORTS", "unix")
         client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
@@ -53,7 +62,7 @@ async def server_instance(mock_server_config, mock_server_protocol, mock_server_
             protocol=mock_server_protocol,
             handler=mock_server_handler,
             config=mock_server_config,
-            transport=mock_server_transport
+            transport=mock_server_transport,
         )
         server_task = asyncio.create_task(server.serve())
 
@@ -89,5 +98,6 @@ async def mock_async_tcp_server(mock_server_transport_tcp):
 
     # Test transport close
     await transport.close()
+
 
 ################################################################################

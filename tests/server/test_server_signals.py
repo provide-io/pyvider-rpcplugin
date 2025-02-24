@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/server/test_server_signals.py
 
 import asyncio
@@ -27,8 +26,9 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
-#@pytest.mark.skip
+# @pytest.mark.skip
 async def test_server_signal_handling(mock_server_transport, mock_server_protocol):
     transport = mock_server_transport
 
@@ -36,18 +36,19 @@ async def test_server_signal_handling(mock_server_transport, mock_server_protoco
         protocol=mock_server_protocol,  # Use fixture correctly
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport
+        transport=transport,
     )
     server._exit_on_stop = False
 
     def trigger_shutdown():
         server._shutdown_requested()
-    
+
     loop = asyncio.get_event_loop()
     loop.call_later(0.1, trigger_shutdown)
-    
+
     await server.serve()
     assert server._serving_future.done()
+
 
 # -------------------------------------------------------------------
 # Tests for _register_signal_handlers (lines ~319–320 and 325–326)
@@ -56,8 +57,10 @@ async def test_server_signal_handling(mock_server_transport, mock_server_protoco
 async def test_register_signal_handlers_success(monkeypatch):
     loop = asyncio.new_event_loop()
     monkeypatch.setattr(asyncio, "get_event_loop", lambda: loop)
+
     def fake_add_signal_handler(sig, handler):
         return
+
     monkeypatch.setattr(loop, "add_signal_handler", fake_add_signal_handler)
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -68,15 +71,18 @@ async def test_register_signal_handlers_success(monkeypatch):
 
     server._register_signal_handlers()
 
+
 @pytest.mark.asyncio
 async def test_register_signal_handlers_not_supported(monkeypatch, caplog):
     import logging
+
     caplog.set_level(logging.WARNING)
 
     loop = asyncio.new_event_loop()
+
     def mock_add_signal_handler(*args):
         raise NotImplementedError("Signal handler not supported")
-    
+
     monkeypatch.setattr(loop, "add_signal_handler", mock_add_signal_handler)
     monkeypatch.setattr(asyncio, "get_event_loop", lambda: loop)
 
@@ -89,6 +95,8 @@ async def test_register_signal_handlers_not_supported(monkeypatch, caplog):
 
     server._register_signal_handlers()
     assert "Signal handler not supported" in caplog.text
+
+
 # -------------------------------------------------------------------
 # Test for _shutdown_requested
 # -------------------------------------------------------------------
@@ -104,6 +112,7 @@ def test_shutdown_requested():
     server._serving_future = fut
     server._shutdown_requested()
     assert fut.done()
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

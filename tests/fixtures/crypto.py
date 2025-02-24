@@ -1,4 +1,3 @@
-
 # tests/fixtures/crypto.py
 
 import pytest
@@ -7,6 +6,7 @@ import os
 
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.crypto.certificate import Certificate
+
 
 @pytest.fixture(scope="module")
 def client_cert():
@@ -46,6 +46,7 @@ zvpvL+mfy1c5oHQhh6KPnxpoo1WyDJGYplwPTGS68DvvWmolrPAtC7I7r7spgyJS
 
     return Certificate(cert=cert, key=key)
 
+
 @pytest.fixture(scope="module")
 def server_cert():
     """Loads the server certificate from the environment variable."""
@@ -84,35 +85,42 @@ VXHTAdc/bLFFy9kybQqo300Rv6ViW2I=
 
     return Certificate(cert=cert, key=key)
 
+
 @pytest.fixture(scope="module")
 def valid_key_pem(client_cert):
     """Get a valid key PEM from the client cert fixture."""
     return client_cert.key
+
 
 @pytest.fixture
 def valid_cert_pem(client_cert):
     """Get a valid certificate PEM from the client cert fixture."""
     return client_cert.cert
 
+
 @pytest.fixture
 def invalid_key_pem():
     """Returns an invalid PEM certificate."""
     return "INVALID KEY DATA"
+
 
 @pytest.fixture
 def invalid_cert_pem():
     """Returns an invalid PEM certificate."""
     return "INVALID CERTIFICATE DATA"
 
+
 @pytest.fixture
 def malformed_cert_pem():
     """Returns a PEM certificate with incorrect headers."""
     return "-----BEGIN CERT-----\nMALFORMED DATA\n-----END CERT-----"
 
+
 @pytest.fixture
 def empty_cert():
     """Returns an empty certificate string."""
     return ""
+
 
 @pytest.fixture
 def temporary_cert_file(tmp_path, client_cert):
@@ -121,10 +129,10 @@ def temporary_cert_file(tmp_path, client_cert):
     cert_file.write_text(client_cert.cert)
     return f"file://{cert_file}"
 
+
 @pytest.fixture
 def temporary_key_file(tmp_path, client_cert):
     """Creates a temporary file containing the client private key."""
     key_file = tmp_path / "client_key.pem"
     key_file.write_text(client_cert.key)  # Write valid PEM key
     return f"file://{key_file}"
-

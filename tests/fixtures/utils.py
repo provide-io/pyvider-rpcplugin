@@ -1,4 +1,3 @@
-
 # tests/fixtures/utils.py
 
 import pytest
@@ -14,10 +13,10 @@ import pytest_asyncio
 
 from cryptography.hazmat.primitives import serialization
 
-#rom pyvider.rpcplugin.logger import logger
+# rom pyvider.rpcplugin.logger import logger
 # from pyvider.rpcplugin.client import RPCPluginClient
 # from pyvider.rpcplugin.protocol import RPCPluginProtocol
-# 
+#
 # # from pyvider.rpcplugin.security import (
 # #     create_self_signed_x509_certificate,
 # #     generate_keypair,
@@ -30,15 +29,17 @@ from cryptography.hazmat.primitives import serialization
 #     TCPSocketTransport,
 #     UnixSocketTransport,
 # )
-# 
+#
 # from pyvider.rpcplugin.types import ConfigT
-# 
+#
 # from tests.fixtures import *
-# 
+#
+
 
 @pytest_asyncio.fixture(scope="function")
 def cleanup_temp_files():
     import shutil
+
     temp_dir = tempfile.mkdtemp()
     os.environ["TEMP_DIR"] = temp_dir  # Use as a base path for socket files
     logger.debug(f"Temporary directory is: {temp_dir}")
@@ -49,13 +50,19 @@ def cleanup_temp_files():
     os.environ.pop("TEMP_DIR", None)  # Remove the environment variable
     logger.debug(f"Removed temporary directory at: {temp_dir}")
 
+
 pytest_asyncio.fixture(scope="function", autouse=True)
+
+
 async def cleanup_asyncio():
     """Ensure proper cleanup of asyncio resources after each test."""
     yield
     # Clean up any remaining tasks
-    tasks = [t for t in asyncio.all_tasks()
-             if t is not asyncio.current_task() and not t.done()]
+    tasks = [
+        t
+        for t in asyncio.all_tasks()
+        if t is not asyncio.current_task() and not t.done()
+    ]
 
     if tasks:
         for task in tasks:
@@ -69,13 +76,16 @@ async def cleanup_asyncio():
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def ensure_asyncio_cleanup():
     yield
-    pending_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+    pending_tasks = [
+        task for task in asyncio.all_tasks() if task is not asyncio.current_task()
+    ]
     for task in pending_tasks:
         task.cancel()
         try:
             await task
         except asyncio.CancelledError:
             pass
+
 
 ################################################################################
 
@@ -90,6 +100,7 @@ async def dummy_server(mock_server_protocol, mock_server_handler):
     yield server
     # No async cleanup needed for dummy server
 
+
 @pytest.fixture(scope="function")
 async def clean_socket_dir(tmp_path):
     """Provides a clean temporary directory for socket files"""
@@ -102,4 +113,3 @@ async def clean_socket_dir(tmp_path):
             os.unlink(sock_file)
         except OSError:
             pass
-

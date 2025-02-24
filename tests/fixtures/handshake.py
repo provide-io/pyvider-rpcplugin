@@ -1,4 +1,3 @@
-
 # tests/fixtures/handshake.py
 
 import pytest
@@ -12,6 +11,7 @@ from pyvider.rpcplugin.handshake import HandshakeConfig
 def mock_core_version() -> int:
     return 1
 
+
 @pytest.fixture(scope="module")
 def handshake_config() -> HandshakeConfig:
     """Fixture for the default handshake configuration."""
@@ -21,6 +21,7 @@ def handshake_config() -> HandshakeConfig:
         protocol_versions=[1, 2, 3, 4, 5, 6, 7],
         supported_transports=["tcp", "unix"],
     )
+
 
 @pytest.fixture(scope="module")
 def invalid_handshake_config() -> HandshakeConfig:

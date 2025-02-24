@@ -1,4 +1,3 @@
-
 # tests/fixtures/client.py
 
 import pytest
@@ -7,6 +6,7 @@ import pytest_asyncio
 import sys
 
 from pyvider.rpcplugin.client import RPCPluginClient
+
 
 @pytest_asyncio.fixture(scope="module")
 async def client_command() -> list[str]:
@@ -17,6 +17,7 @@ async def client_command() -> list[str]:
         "-m",
         "pyvider.rpcplugin.server",
     ]
+
 
 @pytest_asyncio.fixture(scope="module")
 async def client_instance(client_command, server_instance, handshake_config):
