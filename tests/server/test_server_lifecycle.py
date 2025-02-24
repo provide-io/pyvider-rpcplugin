@@ -85,7 +85,8 @@ async def test_server_serve_runtime_error(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,  # Use directly, no unpacking
+        transport=transport, # if you pass the mock_server_transport in here directly
+                             # it throws up. this needs to be excepted.
     )
 
     with pytest.raises(RuntimeError, match="Protocol service registration"):
