@@ -993,6 +993,7 @@ telemetry = [
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
     { name = "opentelemetry-exporter-otlp-proto-http" },
     { name = "opentelemetry-instrumentation" },
+    { name = "opentelemetry-proto" },
 ]
 
 [package.dev-dependencies]
@@ -1026,6 +1027,7 @@ requires-dist = [
     { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "opentelemetry-instrumentation", marker = "extra == 'telemetry'", specifier = ">=0.51b0" },
+    { name = "opentelemetry-proto", marker = "extra == 'telemetry'", specifier = ">=1.30.0" },
     { name = "protobuf", specifier = ">=5.29.3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.4" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
