@@ -60,12 +60,11 @@ async def kv_server(
 
     # Create task for serve() instead of awaiting directly
     endpoint = await transport.listen()
-    await server.stop()
 
     serve_task = asyncio.create_task(server.serve())
 
     # Wait for server to be ready
-    #await server.wait_for_server_ready()
+    await server.wait_for_server_ready()
 
     #try:
         #yield server
