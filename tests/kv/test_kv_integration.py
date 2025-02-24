@@ -43,13 +43,17 @@ async def kv_handler():
 
 @pytest_asyncio.fixture
 async def kv_server(
-    server_with_mocks, kv_handler, mock_server_config, mock_server_transport
+    server_with_mocks,
+    kv_handler,
+    mock_server_config,
+    mock_server_transport,
 ):
+
     server = RPCPluginServer(
         protocol=KVProtocol(),
         handler=kv_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=transport,
     )
 
     # Create task for serve() instead of awaiting directly
