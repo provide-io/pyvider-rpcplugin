@@ -137,7 +137,8 @@ async def test_setup_server_exception(
 
 @pytest.mark.asyncio
 async def test_setup_server_tcp_success(
-    monkeypatch, mock_server_protocol, mock_server_handler
+    mock_server_protocol,
+    mock_server_handler,
 ):
     transport = TCPSocketTransport()
 
@@ -152,7 +153,9 @@ async def test_setup_server_tcp_success(
     )
     server._server = dummy_server
 
+    await transport.listen()
     await server._setup_server("client_cert")
+
     assert any(
         "127.0.0.1" in port and not port.startswith("unix:")
         for port in dummy_server.ports
