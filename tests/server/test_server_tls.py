@@ -30,11 +30,15 @@ from tests.fixtures import *
 # this is somehow causing a segfault. i need to figure out wtf is up with the segfaults.
 @pytest.mark.asyncio
 async def test_server_starts_insecurely(valid_server_env, mock_server_transport):
+
+    transport_name, transport, endpoint = mock_server_transport
+
+    # TODO: errors are being swallowed here when the transport is not what's expected.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=transport,
     )
     # Capture print calls directly
     printed_messages = []
