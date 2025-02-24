@@ -102,8 +102,8 @@ async def test_read_client_cert_absent(
     rpcplugin_config.config = original_config
 
 
-# @pytest.mark.asyncio
-def test_generate_server_credentials_insecure(server_with_mocks):
+@pytest.mark.asyncio
+async def test_generate_server_credentials_insecure(server_with_mocks):
     """Test generating server credentials in insecure mode."""
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
