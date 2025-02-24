@@ -64,7 +64,13 @@ async def test_setup_server_unix_success(
 
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_no_socket(monkeypatch, tmp_path):
+async def test_setup_server_unix_no_socket(
+    monkeypatch,
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+):
     sock_path = str(tmp_path / "nosock.sock")
     transport = UnixSocketTransport(path=sock_path)
 
