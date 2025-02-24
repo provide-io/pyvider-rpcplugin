@@ -45,7 +45,7 @@ class TCPSocketTransport(RPCPluginTransport):
     _writer: asyncio.StreamWriter | None = attrs.field(init=False, default=None)
     endpoint: str | None = attrs.field(init=False, default=None)
 
-    _transport_name: "tcp"
+    _transport_name: str = "tcp"
 
     async def listen(self) -> str:
         """
