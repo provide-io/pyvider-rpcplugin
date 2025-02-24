@@ -73,7 +73,7 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport()
+    transport = mock_server_transport
     #transport = mock_server_transport ### hmm.
     endpoint = await transport.listen()
 
