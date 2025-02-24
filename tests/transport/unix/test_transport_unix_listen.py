@@ -13,7 +13,7 @@ from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_unix_socket_listen_and_connect(unique_socket_path):

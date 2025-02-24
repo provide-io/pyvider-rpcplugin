@@ -12,9 +12,9 @@ import contextlib
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.server import RPCPluginServer
 
-from pyvider.rpcplugin.tests.fixtures import *
+from tests.fixtures import *
 
-from pyvider.rpcplugin.tests.kv.proto import (
+from tests.kv.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,
@@ -67,7 +67,7 @@ async def kv_server(server_with_mocks, kv_handler, mock_server_config, mock_serv
 async def kv_client(kv_server):
     """Provides connected KV client"""
     client = RPCPluginClient(
-        command=[sys.executable, "-m", "pyvider.rpcplugin.tests.kv.py_kv_server"], 
+        command=[sys.executable, "-m", "tests.kv.py_kv_server"], 
         config={"env": {
             "PLUGIN_MAGIC_COOKIE": "hello",
             "PLUGIN_PROTOCOL_VERSIONS": "1",

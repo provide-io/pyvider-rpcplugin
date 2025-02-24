@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.handshake import build_handshake_response, parse_handshake_response
 
-from pyvider.rpcplugin.tests.fixtures.transport import mock_server_transport
+from tests.fixtures.transport import mock_server_transport
 
 class StubCertificate:
     def __init__(self, pem_str):

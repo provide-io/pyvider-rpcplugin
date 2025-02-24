@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import pyvider.rpcplugin.tests.kv.proto.kv_pb2 as kv__pb2
+import tests.kv.proto.kv_pb2 as kv__pb2
 
 GRPC_GENERATED_VERSION = '1.68.0'
 GRPC_VERSION = grpc.__version__

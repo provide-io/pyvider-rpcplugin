@@ -33,7 +33,7 @@ from cryptography.hazmat.primitives import serialization
 # 
 # from pyvider.rpcplugin.types import ConfigT
 # 
-# from pyvider.rpcplugin.tests.fixtures import *
+# from tests.fixtures import *
 # 
 
 @pytest_asyncio.fixture(scope="function")
