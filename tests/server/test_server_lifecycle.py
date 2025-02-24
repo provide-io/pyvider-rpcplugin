@@ -74,9 +74,7 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
-    name, transport, endpoint = mock_server_transport
-    transport = mock_server_transport ### hmm.
-    #endpoint = await transport.listen()
+    transport = mock_server_transport
 
     class ProtocolWithError(RPCPluginProtocol):
         async def add_to_server(self, handler, server):
@@ -84,7 +82,7 @@ async def test_server_serve_runtime_error(
 
     # when this is set to mock_server_protocol it segfaults stuff.
     server = RPCPluginServer(
-        protocol=mock_server_protocol,
+        protocol=ProtocolWithError(),
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport, # if you pass the mock_server_transport in here directly
