@@ -125,7 +125,6 @@ async def test_setup_server_exception(
 ):
 
     transport = mock_server_transport
-    endpoint = await transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -136,6 +135,8 @@ async def test_setup_server_exception(
 
     # with pytest.raises(Exception, match="Server creation failed"):
     with pytest.raises(Exception, match="Failed to "):
+        endpoint = await transport.listen()
+
         await server._setup_server("client_cert")
         await transport.close()
 
@@ -145,9 +146,10 @@ async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
+    mock_server_transport_tcp,
 ):
 
-    transport_name, transport, endpoint = TCPSocketTransport()
+    transport = mock_server_transport_tcp
 
     # monkeypatch.setattr(rpcplugin_config, "get",
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
