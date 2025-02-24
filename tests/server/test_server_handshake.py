@@ -59,32 +59,25 @@ async def test_server_handshake_invalid_cookie(
 # TODO: fix this
 # this test currently just sits there and freezes, it awaits but never shuts
 # down.
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_server_handshake_missing_env(
-    monkeypatch,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
 ):
-    """
-    Ensures the server raises HandshakeError if magic cookie key/value is not set at all.
-    """
-    # monkeypatch.delenv("PLUGIN_MAGIC_COOKIE_KEY", raising=False)
-    # monkeypatch.delenv("PLUGIN_MAGIC_COOKIE", raising=False)
-    # monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "5,6")
-    # monkeypatch.setenv("PLUGIN_TRANSPORTS", "tcp")
 
     mock_server_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
 
     transport_name, transport, endpoint = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=transport,
     )
 
     with pytest.raises(HandshakeError):
