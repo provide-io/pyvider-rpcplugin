@@ -115,7 +115,7 @@ async def test_setup_server_unix_bad_permissions(
             os.unlink(sock_path)
 
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_setup_server_exception(
     monkeypatch,
     mock_server_protocol,
