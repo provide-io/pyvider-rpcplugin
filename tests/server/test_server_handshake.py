@@ -26,11 +26,6 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-
-# TODO: fix this
-# this test currently just sits there and freezes, it awaits but never shuts
-# down.
-#@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_server_handshake_invalid_cookie(
     mock_server_protocol,
@@ -56,9 +51,6 @@ async def test_server_handshake_invalid_cookie(
         await server.serve()
 
 
-# TODO: fix this
-# this test currently just sits there and freezes, it awaits but never shuts
-# down.
 @pytest.mark.asyncio
 async def test_server_handshake_missing_env(
     mock_server_protocol,
