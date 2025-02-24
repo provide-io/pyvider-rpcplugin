@@ -736,7 +736,8 @@ async def test_unix_socket_server_integration(socket_monitor):
                 await server_task
 
 
-@pytest.mark.skip
+#@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_cleanup_handling(socket_monitor):
     """Test proper cleanup of Unix socket resources."""
     path = None
