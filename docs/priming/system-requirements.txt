@@ -1,0 +1,13 @@
+---
+timestamp: 2025-01-31 14:10
+iteration: 01
+topic: System Requirements
+---
+
+Python 3.11+
+
+1st LOC in py with __main__: `#!/usr/bin/env python3`
+2nd LOC in py: `# the/directory/file.py`
+
+"I'll analyze the structure of your emoji matrix and generate a compact, LLM-optimized non-code version for efficient tokenization and retrieval."
+
