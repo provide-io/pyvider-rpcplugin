@@ -32,7 +32,7 @@ from tests.fixtures import *
 async def test_server_starts_insecurely(valid_server_env, mock_server_transport):
 
     transport = mock_server_transport
-    endpoint = await transport.listen()
+    #endpoint = await transport.listen()
 
     # TODO: errors are being swallowed here when the transport is not what's expected.
     server = RPCPluginServer(
@@ -48,6 +48,7 @@ async def test_server_starts_insecurely(valid_server_env, mock_server_transport)
         printed_messages.append(str(message))
 
     with patch("builtins.print", mock_print):
+        endpoint = await transport.listen()
         server_task = asyncio.create_task(server.serve())
         await server.wait_for_server_ready()
 
