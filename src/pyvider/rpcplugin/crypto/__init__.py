@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/crypto/__init__.py
 
 from pyvider.rpcplugin.crypto.certificate import Certificate

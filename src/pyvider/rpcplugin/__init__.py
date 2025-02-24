@@ -13,6 +13,10 @@ from .exception import (
 from .protocol import RPCPluginProtocol
 from .server import RPCPluginServer
 
+from pyvider.rpcplugin.logger.emoji_matrix import show_emoji_matrix
+
+show_emoji_matrix()
+
 __all__ = [
     "RPCPluginConfig",
     "rpcplugin_config",
