@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/protocol.py
 
 from abc import ABC, abstractmethod
@@ -16,6 +15,7 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):
     ServerT: Type of gRPC server
     HandlerT: Type of handler implementation
     """
+
     @abstractmethod
     def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Returns the protobuf descriptor set and service name."""

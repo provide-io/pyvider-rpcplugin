@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/crypto/types.py
 
 from typing import Protocol
@@ -18,7 +17,8 @@ type PEMType = str
 
 class CertificateProtocolT(Protocol):
     """Protocol for certificate operations."""
-    def verify_trust(self, other: 'CertificateProtocolT') -> bool: ...
+
+    def verify_trust(self, other: "CertificateProtocolT") -> bool: ...
     @property
     def is_valid(self) -> bool: ...
     @property

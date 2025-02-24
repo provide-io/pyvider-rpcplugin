@@ -48,7 +48,10 @@ class UnixSocketTransport(RPCPluginTransport):
             # fallback ephemeral name
             import tempfile
             import uuid
-            self.path = os.path.join(tempfile.gettempdir(), f"pyvider-{uuid.uuid4()}.sock")
+
+            self.path = os.path.join(
+                tempfile.gettempdir(), f"pyvider-{uuid.uuid4()}.sock"
+            )
             logger.debug(f"🚀 Assigned ephemeral Unix socket path={self.path}")
 
         # Some test code calls _close_writer directly, so we keep it
@@ -75,7 +78,9 @@ class UnixSocketTransport(RPCPluginTransport):
         Some tests specifically monkeypatch `_check_socket_in_use()` to simulate scenarios.
         By default, just calls _verify_socket_state to see if socket is truly active.
         """
-        logger.debug(f"🔎 Checking if socket is in use via _check_socket_in_use(): {self.path}")
+        logger.debug(
+            f"🔎 Checking if socket is in use via _check_socket_in_use(): {self.path}"
+        )
         # Re-use _verify_socket_state's logic. If it returns True => in use
         return await self._verify_socket_state()
 
@@ -103,7 +108,9 @@ class UnixSocketTransport(RPCPluginTransport):
                 logger.debug(f"🔎 Socket {self.path} is active/in use.")
                 return True
             except (ConnectionRefusedError, OSError) as e:
-                logger.debug(f"🔎 Socket {self.path} found stale, removing. Reason: {e}")
+                logger.debug(
+                    f"🔎 Socket {self.path} found stale, removing. Reason: {e}"
+                )
                 with suppress(OSError):
                     os.unlink(self.path)
                 return False
@@ -144,21 +151,17 @@ class UnixSocketTransport(RPCPluginTransport):
                     raise TransportError(f"Failed to remove stale socket: {e}")
 
     async def _handle_client(
-        self,
-        reader: asyncio.StreamReader,
-        writer: asyncio.StreamWriter
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         """
-        Echo-like handle. In actual usage, might be your gRPC server. 
+        Echo-like handle. In actual usage, might be your gRPC server.
         Some tests do direct read/write checks expecting an echo.
         """
-        peer_info = writer.get_extra_info('peername')
+        peer_info = writer.get_extra_info("peername")
         logger.debug(f"👥 _handle_client invoked, peer={peer_info}")
 
         conn = ClientConnection(
-            reader=reader,
-            writer=writer,
-            remote_addr=str(peer_info)
+            reader=reader, writer=writer, remote_addr=str(peer_info)
         )
         try:
             async with self._lock:
@@ -190,7 +193,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def listen(self) -> str:
         """
-        Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server' 
+        Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server'
         if we raise an exception here.
         """
         async with self._lock:

@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/config.py
 
 import os
@@ -64,7 +63,11 @@ CONFIG_SCHEMA = {
     },
     "PLUGIN_SERVER_CIPHERS": {
         "required": False,
-        "default": ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+        "default": [
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_CHACHA20_POLY1305_SHA256",
+        ],
         "description": "List of server cipher suites or named curves in order of priority.",
     },
     "PLUGIN_SERVER_CERT": {
@@ -94,7 +97,11 @@ CONFIG_SCHEMA = {
     },
     "PLUGIN_CLIENT_CIPHERS": {
         "required": False,
-        "default": ["TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256"],
+        "default": [
+            "TLS_AES_128_GCM_SHA256",
+            "TLS_AES_256_GCM_SHA384",
+            "TLS_CHACHA20_POLY1305_SHA256",
+        ],
         "description": "List of client cipher suites or named curves in order of priority.",
     },
     "PLUGIN_CLIENT_CERT": {
@@ -135,7 +142,9 @@ def fetch_env_variable(key, meta):
             return [int(v.strip()) for v in value.split(",")]
         except ValueError as e:
             logger.error(f"❌ Failed to parse {key} as a list of integers: {value}")
-            raise ValueError(f"Invalid format for {key}. Expected comma-separated integers, got: {value}") from e
+            raise ValueError(
+                f"Invalid format for {key}. Expected comma-separated integers, got: {value}"
+            ) from e
 
     return value
 
@@ -146,14 +155,18 @@ def get_config():
     for key, meta in CONFIG_SCHEMA.items():
         value = fetch_env_variable(key, meta)
         if meta["required"] and value is None:
-            logger.error(f"⚠️ Missing required environment variable: {key}. {meta['description']}")
-            raise ValueError(f"Missing required environment variable: {key}. {meta['description']}")
+            logger.error(
+                f"⚠️ Missing required environment variable: {key}. {meta['description']}"
+            )
+            raise ValueError(
+                f"Missing required environment variable: {key}. {meta['description']}"
+            )
         config[key] = value
     return config
 
 
 class RPCPluginConfig:
-    _instance: Optional['RPCPluginConfig'] = None
+    _instance: Optional["RPCPluginConfig"] = None
     _config: dict[str, Any] = attrs.field(factory=dict)
 
     def __init__(self) -> None:
@@ -161,7 +174,7 @@ class RPCPluginConfig:
         logger.debug("⚙️ RPCPluginConfig initialized with environment variables.")
 
     @classmethod
-    def instance(cls) -> 'RPCPluginConfig':
+    def instance(cls) -> "RPCPluginConfig":
         """Get or create the singleton instance."""
         if cls._instance is None:
             cls._instance = cls()

@@ -77,7 +77,7 @@ class LogNamespace:
         """Perform logging with optional parameters."""
         message = self.namespace.get(key, "Unknown log event")
         formatted_message = normalize_emoji(message)
-        
+
         log_function = getattr(logger, self.log_level, logger.info)
         log_function(f"{formatted_message} {kwargs if kwargs else ''}")
 

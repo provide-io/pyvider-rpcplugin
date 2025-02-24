@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/client/types.py
 
 from typing import Any, Protocol, TypeVar
@@ -20,6 +19,7 @@ type GrpcCredentialsType = grpc.ChannelCredentials | None
 # Protocol for Clients that support secure transport & handshake
 class SecureRpcClientT(Protocol):
     """Protocol for an RPC client supporting secure transport and handshake"""
+
     async def _perform_handshake(self) -> None: ...
     async def _setup_tls(self) -> None: ...
     async def _create_grpc_channel(self) -> None: ...

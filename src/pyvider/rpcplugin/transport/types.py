@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/transport/types.py
 
 import asyncio
@@ -12,19 +11,22 @@ TransportT = TypeVar("TransportT", bound=RPCPluginTransport)
 TCPSocketT = TypeVar("TCPSocketT", bound=TCPSocketTransport)
 UnixSocketT = TypeVar("UnixSocketT", bound=UnixSocketTransport)
 
-type TransportType[TCPSocketT: TCPSocketTransport, UnixSocketT: UnixSocketTransport] = TCPSocketT | UnixSocketT
+type TransportType[TCPSocketT: TCPSocketTransport, UnixSocketT: UnixSocketTransport] = (
+    TCPSocketT | UnixSocketT
+)
 
 
 class ConnectionT(Protocol):
     """Protocol for transport connections."""
+
     async def send_data(self, data: bytes) -> None: ...
     async def receive_data(self, size: int = 16384) -> bytes: ...
     async def close(self) -> None: ...
 
 
 # Stream Types
-ReaderT = TypeVar('ReaderT', bound=asyncio.StreamReader)
-WriterT = TypeVar('WriterT', bound=asyncio.StreamWriter)
+ReaderT = TypeVar("ReaderT", bound=asyncio.StreamReader)
+WriterT = TypeVar("WriterT", bound=asyncio.StreamWriter)
 
 # Transport Aliases
 type EndpointType = str

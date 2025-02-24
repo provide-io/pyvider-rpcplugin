@@ -33,13 +33,14 @@ _SENTINEL = object()
 class HandshakeConfig:
     """
     ⚙️🔧✅ Represents the configuration for the RPC plugin handshake.
-    
+
     Attributes:
       magic_cookie_key: The expected environment key for the handshake cookie.
       magic_cookie_value: The expected handshake cookie value.
       protocol_versions: A list of protocol versions supported by the server.
       supported_transports: A list of supported transport types (e.g. "tcp", "unix").
     """
+
     magic_cookie_key: str
     magic_cookie_value: str
     protocol_versions: list[int]
@@ -50,7 +51,7 @@ class HandshakeConfig:
 class HandshakeParts:
     """
     🤝📝✅ Represents the parts of the handshake response.
-    
+
     Attributes:
       core_version: The core protocol version.
       plugin_version: The plugin’s protocol version.
@@ -59,6 +60,7 @@ class HandshakeParts:
       protocol: The communication protocol (currently fixed as "grpc").
       server_cert: The formatted server certificate (if applicable).
     """
+
     core_version: int
     plugin_version: int
     network: str
@@ -70,7 +72,7 @@ class HandshakeParts:
 def validate_transport(transport_name: str, supported_transports: list[str]) -> None:
     """
     🚂🔍 Validates whether the specified transport is supported.
-    
+
     Raises:
       TransportError: If the transport_name is not in the supported_transports.
     """
@@ -80,7 +82,7 @@ def validate_transport(transport_name: str, supported_transports: list[str]) -> 
     if transport_name not in supported_transports:
         logger.error(
             f"🤝🚂❌ Unsupported transport detected: {transport_name}",
-            extra={"transport": transport_name}
+            extra={"transport": transport_name},
         )
         raise TransportError(f"Unsupported transport: {transport_name}")
     logger.debug(f"🤝🚂✅ Transport '{transport_name}' is supported.")
@@ -89,17 +91,19 @@ def validate_transport(transport_name: str, supported_transports: list[str]) -> 
 def negotiate_protocol_version(server_versions: list[int]) -> int:
     """
     🤝🔄 Selects the highest mutually supported protocol version.
-    
+
     Compares the server-provided versions against the client's supported versions
     from the configuration.
-    
+
     Returns:
       The highest mutually supported protocol version.
-    
+
     Raises:
       ProtocolError: If no mutually supported version is found.
     """
-    logger.debug(f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}")
+    logger.debug(
+        f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}"
+    )
     SUPPORTED_PROTOCOL_VERSIONS = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS")
     for version in sorted(server_versions, reverse=True):
         if version in SUPPORTED_PROTOCOL_VERSIONS:
@@ -120,37 +124,50 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
     """
     (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
     creates the appropriate transport instance.
-    
+
     Returns:
       A tuple of (transport_name, transport_instance).
-    
+
     Raises:
       TransportError: If no compatible transport can be negotiated.
     """
-    logger.debug(f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}")
+    logger.debug(
+        f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
+    )
     if not server_transports:
-        logger.error("🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided")
+        logger.error(
+            "🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided"
+        )
         raise TransportError("No transport options provided")
     try:
         if "tcp" in server_transports:
-            logger.debug("🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available")
+            logger.debug(
+                "🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available"
+            )
             from pyvider.rpcplugin.transport import TCPSocketTransport
+
             return "tcp", TCPSocketTransport()
         elif "unix" in server_transports:
-            logger.debug("🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available")
+            logger.debug(
+                "🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available"
+            )
             transport_path = os.path.join(
-                os.environ.get("TEMP_DIR", "/tmp"),
-                f"pyvider-{os.getpid()}.sock"
+                os.environ.get("TEMP_DIR", "/tmp"), f"pyvider-{os.getpid()}.sock"
             )
             from pyvider.rpcplugin.transport import UnixSocketTransport
+
             return "unix", UnixSocketTransport(path=transport_path)
         else:
-            logger.error("🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
-                         extra={"server_transports": server_transports})
+            logger.error(
+                "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
+                extra={"server_transports": server_transports},
+            )
             raise TransportError(f"Unsupported transports: {server_transports}")
     except Exception as e:
-        logger.error("🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
-                     extra={"error": str(e)})
+        logger.error(
+            "🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
+            extra={"error": str(e)},
+        )
         raise TransportError(f"Error negotiating transport: {e}") from e
 
 
@@ -169,19 +186,31 @@ def validate_magic_cookie(
 ) -> None:
     """
     🍪🔍 Validates the magic cookie.
-    
+
     If a parameter is omitted (i.e. remains as the sentinel),
     its value is read from rpcplugin_config. However, if the caller
     explicitly passes None, that is treated as missing and an error is raised.
-    
+
     Raises:
         HandshakeError: If any of the expected cookie values are missing or do not match.
     """
     logger.debug("🍪🔍 Starting magic cookie validation...")
 
-    cookie_key = rpcplugin_config.magic_cookie_key() if magic_cookie_key is _SENTINEL else magic_cookie_key
-    cookie_value = rpcplugin_config.magic_cookie_value() if magic_cookie_value is _SENTINEL else magic_cookie_value
-    cookie_provided = rpcplugin_config.get("PLUGIN_MAGIC_COOKIE") if magic_cookie is _SENTINEL else magic_cookie
+    cookie_key = (
+        rpcplugin_config.magic_cookie_key()
+        if magic_cookie_key is _SENTINEL
+        else magic_cookie_key
+    )
+    cookie_value = (
+        rpcplugin_config.magic_cookie_value()
+        if magic_cookie_value is _SENTINEL
+        else magic_cookie_value
+    )
+    cookie_provided = (
+        rpcplugin_config.get("PLUGIN_MAGIC_COOKIE")
+        if magic_cookie is _SENTINEL
+        else magic_cookie
+    )
 
     logger.debug(f"🍪 cookie_key: {cookie_key}")
     logger.debug(f"🍪 cookie_value: {cookie_value}")
@@ -200,7 +229,10 @@ def validate_magic_cookie(
         raise HandshakeError("Magic cookie not provided.")
 
     if cookie_provided != cookie_value:
-        logger.error("🍪❌ cookie_provided does not match required cookie_value", extra={"expected": cookie_value, "received": cookie_provided})
+        logger.error(
+            "🍪❌ cookie_provided does not match required cookie_value",
+            extra={"expected": cookie_value, "received": cookie_provided},
+        )
         raise HandshakeError("cookie_provided does not match required cookie_value")
 
     logger.debug("🍪✅ Magic cookie validated successfully.")
@@ -211,7 +243,7 @@ async def build_handshake_response(
     transport_name: str,
     transport: TransportT,
     server_cert: Certificate | None = None,
-    port: int | None = None
+    port: int | None = None,
 ) -> str:
     """
     🤝📝✅ Constructs the handshake response string in the format:
@@ -240,13 +272,13 @@ async def build_handshake_response(
             transport_name,
             endpoint,
             "grpc",
-            ""
+            "",
         ]
         logger.debug(f"🤝📝🔄 Base response structure: {response_parts}")
 
         if server_cert:
             logger.debug("🤝🔐🔄 Processing server certificate...")
-            cert_lines = server_cert.cert.strip().split('\n')
+            cert_lines = server_cert.cert.strip().split("\n")
             if len(cert_lines) < 3:
                 logger.error("🤝🔐❌ Invalid certificate format.")
                 raise ValueError("Invalid certificate format")
@@ -256,15 +288,21 @@ async def build_handshake_response(
             logger.debug("🤝🔐✅ Certificate data added to response.")
 
         handshake_response = "|".join(response_parts)
-        logger.debug(f"🤝📝✅ Handshake response successfully built: {handshake_response}")
+        logger.debug(
+            f"🤝📝✅ Handshake response successfully built: {handshake_response}"
+        )
         return handshake_response
 
     except Exception as e:
-        logger.error(f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)})
+        logger.error(
+            f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)}
+        )
         raise
 
 
-def parse_handshake_response(response: str) -> tuple[int, int, str, str, str, str | None]:
+def parse_handshake_response(
+    response: str,
+) -> tuple[int, int, str, str, str, str | None]:
     """
     (📡🔍 Handshake Parsing) Parses the handshake response string.
     Expected Format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
@@ -276,13 +314,18 @@ def parse_handshake_response(response: str) -> tuple[int, int, str, str, str, st
         parts = response.strip().split("|")
         logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
         if not is_valid_handshake_parts(parts):
-            logger.error(f"📡❌ Invalid handshake response format. Expected 6 parts, got {len(parts)}", extra={"parts": parts})
+            logger.error(
+                f"📡❌ Invalid handshake response format. Expected 6 parts, got {len(parts)}",
+                extra={"parts": parts},
+            )
             raise ValueError(f"Expected 6 parts, got {len(parts)}")
         core_version = int(parts[0])
         plugin_version = int(parts[1])
         network = parts[2]
         if network not in ("tcp", "unix"):
-            logger.error(f"📡❌ Invalid network type: {network}", extra={"network": network})
+            logger.error(
+                f"📡❌ Invalid network type: {network}", extra={"network": network}
+            )
             raise ValueError(f"Invalid network type: {network}")
         address = parts[3]
         protocol = parts[4]
@@ -298,7 +341,9 @@ def parse_handshake_response(response: str) -> tuple[int, int, str, str, str, st
                 server_cert += "=" * (4 - padding)
             logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
 
-        logger.debug(f"📡✅ Handshake parsing success: core_version={core_version}, plugin_version={plugin_version}, network={network}, address={address}, protocol={protocol}, server_cert={'present' if server_cert else 'none'}")
+        logger.debug(
+            f"📡✅ Handshake parsing success: core_version={core_version}, plugin_version={plugin_version}, network={network}, address={address}, protocol={protocol}, server_cert={'present' if server_cert else 'none'}"
+        )
         return core_version, plugin_version, network, address, protocol, server_cert
 
     except Exception as e:

@@ -37,6 +37,7 @@ class TCPSocketTransport(RPCPluginTransport):
     Provides methods to listen for connections, connect to a remote endpoint,
     and close the transport.
     """
+
     host: str = attrs.field(default="127.0.0.1")
     port: int = attrs.field(init=False, default=0)
 
@@ -66,7 +67,9 @@ class TCPSocketTransport(RPCPluginTransport):
             logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")
             raise TransportError(f"Error initializing TCP server: {e}") from e
 
-    async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+    async def _handle_client(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
         """
         🔌🤝👀  Handle an incoming client connection by echoing received data.
         """
@@ -125,20 +128,28 @@ class TCPSocketTransport(RPCPluginTransport):
             try:
                 socket.getaddrinfo(self.host, self.port)
             except socket.gaierror as e:
-                logger.error(f"🔌❌⚠: getaddrinfo failed for {self.host}:{self.port}: {e}")
-                raise TransportError(f"Address resolution failed for {self.host}:{self.port}: {e}") from e
+                logger.error(
+                    f"🔌❌⚠: getaddrinfo failed for {self.host}:{self.port}: {e}"
+                )
+                raise TransportError(
+                    f"Address resolution failed for {self.host}:{self.port}: {e}"
+                ) from e
 
             _reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port), timeout=5.0
             )
             self._writer = writer
-            logger.info(f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}")
+            logger.info(
+                f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}"
+            )
         except TimeoutError as e:
             logger.error(f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}")
             raise TransportError(f"Connection timed out: {e}") from e
         except Exception as e:
             logger.error(f"🔌❌⚠: Failed to connect to TCP endpoint {endpoint}: {e}")
-            raise TransportError(f"Failed to connect to TCP endpoint {endpoint}: {e}") from e
+            raise TransportError(
+                f"Failed to connect to TCP endpoint {endpoint}: {e}"
+            ) from e
 
     async def close(self) -> None:
         """

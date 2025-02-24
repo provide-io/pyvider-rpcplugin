@@ -19,7 +19,7 @@
 * Allow `file://` in the env vars.
 * Ensure that when both a cert/key get set in a Certificate that it verifies them
   upon setting - either durning or during runtime. i.e. a cert is already added, then someone tries to add a key - which would normally be passed in when creating the Certificate()
-* Possibly leverage `uvloop`?
+* Possibly leverage `uvloop`? `trio`?
 
 
 ### Error Handling
