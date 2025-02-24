@@ -7,7 +7,15 @@ import pytest
 from pyvider.rpcplugin.client.connection import ClientConnection
 
 from tests.fixtures import *
-from tests.fixtures.dummy import connection, dummy_reader, dummy_writer
+
+from tests.fixtures.dummy import dummy_reader, dummy_writer
+
+@pytest.fixture
+def connection(dummy_reader, dummy_writer):
+    # Create a ClientConnection with dummy streams.
+    return ClientConnection(
+        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
+    )
 
 # -------------------------------------------------------------------
 # Test is_closed property.
