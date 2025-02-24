@@ -91,10 +91,11 @@ async def test_server_serve_runtime_error(
                              # it throws up. this needs to be excepted.
     )
 
+    endpoint = await transport.listen()
     with pytest.raises(RuntimeError, match="Protocol service registration"):
-        await transport.listen()
         await server.serve()
-        #await transport.close()
+
+    await transport.close()
 
 
 @pytest.mark.asyncio
