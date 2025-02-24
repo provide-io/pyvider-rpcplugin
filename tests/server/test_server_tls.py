@@ -31,7 +31,8 @@ from tests.fixtures import *
 @pytest.mark.asyncio
 async def test_server_starts_insecurely(valid_server_env, mock_server_transport):
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
+    endpoint = await transport.listen()
 
     # TODO: errors are being swallowed here when the transport is not what's expected.
     server = RPCPluginServer(
