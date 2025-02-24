@@ -63,7 +63,6 @@ async def test_serve_success(
     assert server._serving_future.done()
 
 
-#@pytest.mark.skip
 @pytest.mark.asyncio
 # FAILED x_test_server_lifecycle.py::test_server_serve_runtime_error[tcp] - Failed: DID NOT RAISE <class 'RuntimeError'>
 # FAILED x_test_server_lifecycle.py::test_server_serve_runtime_error[unix] - pyvider.rpcplugin.exception.TransportError: Socket /var/folders/k6/jdp9qg890l553n47r3khszmc8t5ps6/T/tmpwt4uhtn3 is already in use
@@ -94,12 +93,21 @@ async def test_server_serve_runtime_error(
 
 
 @pytest.mark.asyncio
-async def test_serve_success(monkeypatch):
+async def test_serve_success(
+    monkeypatch,
+    mock_server_handler,
+    mock_server_protocol,
+    mock_server_config,
+    mock_server_transport,
+    ):
+
+    transport_name, transport, endpoint = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=None,
-        transport=None,
+        config=mock_server_config,
+        transport=transport,
     )
 
     fut = asyncio.Future()
@@ -305,7 +313,6 @@ async def test_server_stop_clean_destructor():
 
 # this is segfaulting when run with "tests" but not individual directories.
 # huh
-#@pytest.mark.skip
 @pytest.mark.asyncio
 async def test_serve_and_stop_no_unawaited_warning(
     monkeypatch,
