@@ -91,6 +91,7 @@ async def test_setup_server_unix_bad_permissions(
     mock_server_handler,
     mock_server_config,
     mock_server_transport_unix,
+    unique_socket_path,
 ):
     sock_path = unique_socket_path
 
