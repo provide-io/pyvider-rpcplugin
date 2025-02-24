@@ -734,14 +734,15 @@ async def test_unix_socket_server_integration(socket_monitor):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_cleanup_handling(socket_monitor):
+async def test_unix_socket_cleanup_handling(socket_monitor, mock_server_transport_unix):
     """Test proper cleanup of Unix socket resources."""
     path = None
     with tempfile.NamedTemporaryFile(delete=False) as tf:
         path = tf.name
 
     monitor = socket_monitor(path)
-    transport = UnixSocketTransport(path=path)
+    #transport = UnixSocketTransport(path=path)
+    transport = mock_server_transport_unix
 
     try:
         # Create socket
@@ -755,6 +756,7 @@ async def test_unix_socket_cleanup_handling(socket_monitor):
         # New transport should handle stale socket
         new_transport = UnixSocketTransport(path=path)
         await new_transport.listen()
+
         assert await monitor.check_state()
 
         await new_transport.close()
