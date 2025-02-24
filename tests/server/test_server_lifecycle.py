@@ -144,7 +144,7 @@ async def test_serve_success(
 
 @pytest.mark.asyncio
 async def test_serve_error(
-    monkeypatch
+    monkeypatch,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
