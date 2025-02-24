@@ -140,7 +140,7 @@ async def test_setup_server_exception(
         await transport.close()
 
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
