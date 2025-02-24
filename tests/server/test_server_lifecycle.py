@@ -74,6 +74,8 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
+    #name, transport, endpoint = mock_server_transport
+
     transport = mock_server_transport ### hmm.
     #endpoint = await transport.listen()
 
@@ -90,7 +92,7 @@ async def test_server_serve_runtime_error(
                              # it throws up. this needs to be excepted.
     )
 
-    endpoint = await transport.listen()
+    #endpoint = await transport.listen()
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
 
