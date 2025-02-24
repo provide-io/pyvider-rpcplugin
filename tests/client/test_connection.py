@@ -7,7 +7,7 @@ import pytest
 from pyvider.rpcplugin.client.connection import ClientConnection
 
 from tests.fixtures import *
-from tests.fixtures.dummy import *
+from tests.fixtures.dummy import connection, dummy_reader, dummy_writer
 
 # -------------------------------------------------------------------
 # Test is_closed property.
