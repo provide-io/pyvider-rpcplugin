@@ -281,7 +281,7 @@ async def test_serve_success(
     mock_server_transport,
 ):
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
