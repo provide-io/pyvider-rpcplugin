@@ -2,12 +2,10 @@
 # pyvider/crypto/debug.py
 
 
-
-
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 
-#from pyvider.rpcplugin.config import rpcplugin_config
+# from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import SecurityError
 
 
@@ -17,7 +15,7 @@ def display_cert_details(cert: x509.Certificate, logger) -> None:
         logger.debug("📜 Certificate Information:")
 
         # Log serial number in hex notation
-        serial_number_hex = ":".join(f"{cert.serial_number:02x}"[i:i+2] for i in range(0, len(f"{cert.serial_number:02x}"), 2))
+        serial_number_hex = ":".join(f"{cert.serial_number:02x}"[i:i + 2] for i in range(0, len(f"{cert.serial_number:02x}"), 2))
         logger.debug(f"   🔢 Serial Number: {serial_number_hex}")
         logger.debug(f"   🏷️  Subject: {cert.subject}")
         logger.debug(f"   🏢 Organization: {', '.join(org.value for org in cert.subject.get_attributes_for_oid(NameOID.ORGANIZATION_NAME))}")

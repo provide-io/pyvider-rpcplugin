@@ -7,19 +7,17 @@ import signal
 import stat
 import sys
 import traceback
-
-from typing import Generic, Optional
 from abc import ABC
+from typing import Generic, Optional
 
 import attrs
-
 import grpc
 from grpc.aio import server as GRPCServer
 
-
-from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.client.types import ClientT
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.exception import TransportError, HandshakeError
+from pyvider.rpcplugin.crypto.certificate import Certificate
+from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     build_handshake_response,
@@ -27,18 +25,17 @@ from pyvider.rpcplugin.handshake import (
     negotiate_transport,
     validate_magic_cookie,
 )
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.protocol import register_protocol_service
-from pyvider.rpcplugin.transport.types import TransportT
 from pyvider.rpcplugin.transport import (
-    UnixSocketTransport,
     TCPSocketTransport,
+    UnixSocketTransport,
 )
-from pyvider.rpcplugin.client.types import ClientT
+from pyvider.rpcplugin.transport.types import TransportT
 from pyvider.rpcplugin.types import (
-    ServerT,
-    ProtocolT,
     HandlerT,
+    ProtocolT,
+    ServerT,
 )
 
 
@@ -57,25 +54,25 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     # Public initialization parameters.
     protocol: ProtocolT = attrs.field()
     handler: HandlerT = attrs.field()
-    config: Optional[ClientT] = attrs.field(default=None)
-    transport: Optional[TransportT] = attrs.field(default=None)
+    config: ClientT | None = attrs.field(default=None)
+    transport: TransportT | None = attrs.field(default=None)
 
     _exit_on_stop: bool = attrs.field(default=True, init=False)
 
     # Internal attributes.
-    _transport: Optional[TransportT] = attrs.field(init=False, default=None)
-    _server: Optional[ServerT] = attrs.field(init=False, default=None)
+    _transport: TransportT | None = attrs.field(init=False, default=None)
+    _server: ServerT | None = attrs.field(init=False, default=None)
     _handshake_config: HandshakeConfig = attrs.field(init=False)
     _protocol_version: int = attrs.field(init=False)
     _transport_name: str = attrs.field(init=False)
-    _server_cert_obj: Optional[Certificate] = attrs.field(init=False, default=None)
-    _port: Optional[int] = attrs.field(init=False, default=None)
+    _server_cert_obj: Certificate | None = attrs.field(init=False, default=None)
+    _port: int | None = attrs.field(init=False, default=None)
     _serving_future: asyncio.Future = attrs.field(init=False, factory=asyncio.Future)
     _serving_event: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
 
     # Class-level instance for global access.
-    _instance: Optional[ServerT] = None
+    _instance: ServerT | None = None
 
     def __attrs_post_init__(self):
         """
@@ -102,7 +99,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug("Waiting for server ready event...")
             await asyncio.wait_for(self._serving_event.wait(), timeout)
             logger.debug("Server ready event received.")
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             logger.error("Server did not become ready within timeout.", extra={"timeout": timeout})
             raise TimeoutError("Server failed to become ready") from e
 
@@ -113,7 +110,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         """
         return cls._instance
 
-    def _read_client_cert(self) -> Optional[str]:
+    def _read_client_cert(self) -> str | None:
         """
         Reads the client certificate from configuration.
         """
@@ -128,7 +125,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🛎️❌ Error reading client certificate", extra={"error": str(e)})
             return None
 
-    def _generate_server_credentials(self, client_cert: Optional[str]) -> Optional[grpc.ServerCredentials]:
+    def _generate_server_credentials(self, client_cert: str | None) -> grpc.ServerCredentials | None:
         """
         Generates gRPC server TLS credentials using the Certificate API.
         """
@@ -164,7 +161,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🛎️❌ Error generating server credentials", extra={"error": str(e)})
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         if self._server:
             try:
@@ -176,8 +173,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 self._server = None
         logger.debug("🛎️ Server shutdown complete.")
 
-
-    async def _setup_server(self, client_cert: Optional[str]):
+    async def _setup_server(self, client_cert: str | None) -> None:
         """
         Sets up the gRPC server instance and registers the provider service.
         """
@@ -268,7 +264,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🛎️❌ Server setup post-check failed", extra={"error": str(e), "trace": traceback.format_exc()})
             raise
 
-    async def _negotiate_handshake(self):
+    async def _negotiate_handshake(self) -> bool | None:
         logger.debug("🤝 Starting handshake negotiation...")
         try:
             validate_magic_cookie()
@@ -298,7 +294,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error("🤝❌ Handshake negotiation failed", extra={"error": str(e), "trace": traceback.format_exc()})
             raise HandshakeError(f"Handshake negotiation failed: {e}") from e
 
-    def _register_signal_handlers(self):
+    def _register_signal_handlers(self) -> None:
         logger.debug("🛎️ Registering signal handlers for graceful shutdown...")
         try:
             loop = asyncio.get_event_loop()
@@ -311,7 +307,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         except Exception as e:
             logger.exception("Error registering signal handlers", extra={"error": str(e), "trace": traceback.format_exc()})
 
-    def _shutdown_requested(self, *args):
+    def _shutdown_requested(self, *args) -> None:
         logger.info("🛎️ Shutdown signal received; initiating graceful shutdown...")
         if self._server:
             asyncio.create_task(self.stop())
@@ -319,7 +315,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             self._serving_future.set_result(None)
             logger.debug("🛎️ Serving future resolved on shutdown request.")
 
-    async def serve(self):
+    async def serve(self) -> None:
         logger.debug("🛎️ Entering serve(); starting server setup...")
         try:
             self._register_signal_handlers()
@@ -360,7 +356,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 logger.error("🛎️❌ Error during stop()", extra={"error": str(stop_e), "trace": traceback.format_exc()})
             logger.debug("🛎️ Shutdown complete; exiting process.")
 
-    async def Xstop(self):
+    async def Xstop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         if self._server:
             try:
@@ -382,7 +378,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             self._shutdown_requested()
         logger.debug("🛎️ Server shutdown complete.")
 
-    def __del__(self):
+    def __del__(self) -> None:
         try:
             if not self._serving_event.is_set():
                 logger.warning("RPCPluginServer __del__ called but shutdown was not properly requested.")

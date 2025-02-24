@@ -9,13 +9,12 @@ Logging uses a three-emoji system:
 
 import asyncio
 import socket
-from typing import Optional, TypeGuard
+from typing import TypeGuard
 
 import attrs
 
-from pyvider.rpcplugin.logger    import logger
 from pyvider.rpcplugin.exception import TransportError
-
+from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 
@@ -27,7 +26,7 @@ def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
     parts = endpoint.split(":")
     if len(parts) != 2:
         return False
-    host, port_str = parts
+    _host, port_str = parts
     return port_str.isdigit()
 
 
@@ -41,9 +40,9 @@ class TCPSocketTransport(RPCPluginTransport):
     host: str = attrs.field(default="127.0.0.1")
     port: int = attrs.field(init=False, default=0)
 
-    _server: Optional[asyncio.AbstractServer] = attrs.field(init=False, default=None)
-    _writer: Optional[asyncio.StreamWriter] = attrs.field(init=False, default=None)
-    endpoint: Optional[str] = attrs.field(init=False, default=None)
+    _server: asyncio.AbstractServer | None = attrs.field(init=False, default=None)
+    _writer: asyncio.StreamWriter | None = attrs.field(init=False, default=None)
+    endpoint: str | None = attrs.field(init=False, default=None)
 
     async def listen(self) -> str:
         """
@@ -129,12 +128,12 @@ class TCPSocketTransport(RPCPluginTransport):
                 logger.error(f"🔌❌⚠: getaddrinfo failed for {self.host}:{self.port}: {e}")
                 raise TransportError(f"Address resolution failed for {self.host}:{self.port}: {e}") from e
 
-            reader, writer = await asyncio.wait_for(
+            _reader, writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port), timeout=5.0
             )
             self._writer = writer
             logger.info(f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}")
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             logger.error(f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}")
             raise TransportError(f"Connection timed out: {e}") from e
         except Exception as e:

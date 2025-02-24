@@ -15,18 +15,19 @@ for clarity and debugging.
 """
 
 import os
-from typing import Optional, TypeGuard, Tuple
+from typing import TypeGuard
 
 import attrs
 
-from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
 from pyvider.rpcplugin.crypto import Certificate
+from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
+from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.transport.types import TransportT
 
 # Use a sentinel value to detect omitted parameters.
 _SENTINEL = object()
+
 
 @attrs.define
 class HandshakeConfig:
@@ -63,7 +64,7 @@ class HandshakeParts:
     network: str
     address: str
     protocol: str
-    server_cert: Optional[str]
+    server_cert: str | None
 
 
 def validate_transport(transport_name: str, supported_transports: list[str]) -> None:
@@ -115,7 +116,7 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     )
 
 
-async def negotiate_transport(server_transports: list[str]) -> Tuple[str, TransportT]:
+async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
     (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
     creates the appropriate transport instance.
@@ -162,9 +163,9 @@ def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
 
 
 def validate_magic_cookie(
-    magic_cookie_key: Optional[str] = _SENTINEL,
-    magic_cookie_value: Optional[str] = _SENTINEL,
-    magic_cookie: Optional[str] = _SENTINEL,
+    magic_cookie_key: str | None = _SENTINEL,
+    magic_cookie_value: str | None = _SENTINEL,
+    magic_cookie: str | None = _SENTINEL,
 ) -> None:
     """
     🍪🔍 Validates the magic cookie.
@@ -209,8 +210,8 @@ async def build_handshake_response(
     plugin_version: int,
     transport_name: str,
     transport: TransportT,
-    server_cert: Optional[Certificate] = None,
-    port: Optional[int] = None
+    server_cert: Certificate | None = None,
+    port: int | None = None
 ) -> str:
     """
     🤝📝✅ Constructs the handshake response string in the format:
@@ -263,7 +264,7 @@ async def build_handshake_response(
         raise
 
 
-def parse_handshake_response(response: str) -> Tuple[int, int, str, str, str, Optional[str]]:
+def parse_handshake_response(response: str) -> tuple[int, int, str, str, str, str | None]:
     """
     (📡🔍 Handshake Parsing) Parses the handshake response string.
     Expected Format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
