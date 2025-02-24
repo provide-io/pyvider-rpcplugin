@@ -344,7 +344,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport_tcp,
+    mock_server_transport,
 ):
     """
     Test that calling serve() and then stop() does not leave unawaited coroutines,
