@@ -87,9 +87,9 @@ async def mock_server_transport(request) -> TransportT:
 
     match transport_name:
         case "tcp":
-            transport = TCPSocketTransport(host="127.0.0.1")
+            transport = TCPSocketTransport()
         case "unix":
-            transport = UnixSocketTransport(path=socket_path)
+            transport = UnixSocketTransport()
         case _:
             raise ValueError(f"Unknown transport: {transport_name}")
 
