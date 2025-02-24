@@ -129,7 +129,7 @@ line-length = 88
 omit = [
     "tests/*",
     "*/logger/messages/*",
-    "*/crypto/debug.py"
+    "*/crypto/debug.py",
 ]
 
 ################################################################################
