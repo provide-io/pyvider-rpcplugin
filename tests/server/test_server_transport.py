@@ -96,7 +96,7 @@ async def test_setup_server_unix_bad_permissions(
 
     with open(sock_path, "w") as f:
         f.write("")
-    os.chmod(sock_path, 0o700)
+    os.chmod(sock_path, 0o100)
 
     try:
         server = RPCPluginServer(
@@ -111,6 +111,7 @@ async def test_setup_server_unix_bad_permissions(
             await server._setup_server("client_cert")
     finally:
         if os.path.exists(sock_path):
+            os.chmod(sock_path, 0o700)
             os.unlink(sock_path)
 
 
