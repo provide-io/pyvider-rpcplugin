@@ -179,7 +179,64 @@ def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
 
 
+# src/pyvider/rpcplugin/handshake.py - validate_magic_cookie
+
 def validate_magic_cookie(
+    magic_cookie_key: str | None = _SENTINEL,
+    magic_cookie_value: str | None = _SENTINEL,
+    magic_cookie: str | None = _SENTINEL,
+) -> None:
+    """
+    🍪🔍 Validates the magic cookie.
+
+    If a parameter is omitted (i.e. remains as the sentinel),
+    its value is read from rpcplugin_config. However, if the caller
+    explicitly passes None, that is treated as missing and an error is raised.
+    """
+    logger.debug("🍪🔍 Starting magic cookie validation...")
+
+    cookie_key = (
+        rpcplugin_config.magic_cookie_key()
+        if magic_cookie_key is _SENTINEL
+        else magic_cookie_key
+    )
+    cookie_value = (
+        rpcplugin_config.magic_cookie_value()
+        if magic_cookie_value is _SENTINEL
+        else magic_cookie_value
+    )
+    cookie_provided = (
+        rpcplugin_config.get("PLUGIN_MAGIC_COOKIE")
+        if magic_cookie is _SENTINEL
+        else magic_cookie
+    )
+
+    logger.debug(f"🍪 cookie_key: {cookie_key}")
+    logger.debug(f"🍪 cookie_value: {cookie_value}")
+    logger.debug(f"🍪 cookie_provided: {cookie_provided}")
+
+    if cookie_key is None or cookie_key == "":
+        logger.error("🍪🪄❌ cookie_key not found")
+        raise HandshakeError("cookie_key not found")
+
+    if cookie_value is None or cookie_value == "":
+        logger.error("🍪🪄❌ Magic cookie value not found.")
+        raise HandshakeError("Magic cookie value not found.")
+
+    if cookie_provided is None or cookie_provided == "":
+        logger.error("🍪🪄❌ Magic cookie not provided.")
+        raise HandshakeError("Magic cookie not provided.")
+
+    if cookie_provided != cookie_value:
+        logger.error(
+            "🍪❌ cookie_provided does not match required cookie_value",
+            extra={"expected": cookie_value, "received": cookie_provided},
+        )
+        raise HandshakeError("cookie_provided does not match required cookie_value")
+
+    logger.debug("🍪✅ Magic cookie validated successfully.")
+
+def Xvalidate_magic_cookie(
     magic_cookie_key: str | None = _SENTINEL,
     magic_cookie_value: str | None = _SENTINEL,
     magic_cookie: str | None = _SENTINEL,
