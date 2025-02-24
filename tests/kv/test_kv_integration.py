@@ -70,12 +70,12 @@ async def kv_server(
     try:
         #yield server
 
-    finally:
-        # Proper cleanup
-        await server.stop()
-        serve_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await serve_task
+    #finally:
+    # Proper cleanup
+    await server.stop()
+    serve_task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await serve_task
 
 
 @pytest_asyncio.fixture
