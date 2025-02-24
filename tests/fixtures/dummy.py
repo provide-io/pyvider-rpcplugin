@@ -142,12 +142,6 @@ def dummy_reader():
     return DummyReader(b"test data")
 
 
-@pytest.fixture
-def connection(dummy_reader, dummy_writer):
-    # Create a ClientConnection with dummy streams.
-    return ClientConnection(
-        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
-    )
 
 
 ################################################################################
