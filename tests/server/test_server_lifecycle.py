@@ -143,12 +143,20 @@ async def test_serve_success(
 
 
 @pytest.mark.asyncio
-async def test_serve_error(monkeypatch):
+async def test_serve_error(
+    monkeypatch
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+    transport_name, transport, endpoint = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
 
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
@@ -164,12 +172,19 @@ async def test_serve_error(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_wait_for_server_ready():
+async def test_wait_for_server_ready(
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+    transport_name, transport, endpoint = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
 
     server._serving_event = asyncio.Event()
@@ -212,9 +227,16 @@ async def Xtest_stop_success(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_stop_handles_exceptions(monkeypatch):
+async def test_stop_handles_exceptions(
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     # Test that exceptions during _server.stop() and _transport.close() are caught.
     dummy_server = DummyGRPCServer()
+
+    transport_name, transport, endpoint = mock_server_transport
 
     async def failing_stop(grace):
         raise Exception("Server stop failed")
@@ -330,10 +352,9 @@ async def test_serve_and_stop_no_unawaited_warning(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport_tcp,
+        transport=mock_server_transport,
     )
 
-    transport_name = "tcp"
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
