@@ -76,6 +76,7 @@ async def test_server_serve_runtime_error(
 ):
     #name, transport, endpoint = mock_server_transport
 
+    transport = ""
     transport = mock_server_transport ### hmm.
     #endpoint = await transport.listen()
 
