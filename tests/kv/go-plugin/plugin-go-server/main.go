@@ -17,7 +17,7 @@ import (
 
     "github.com/hashicorp/go-hclog"
     "github.com/hashicorp/go-plugin"
-    "github.com/provide-io/pyvider-rpcplugin/examples/grpc/shared"
+    "github.com/provide-io/pyvider-rpcplugin/tests/kv/go-plugin/shared"
 )
 
 type KV struct {
@@ -37,7 +37,7 @@ func (k *KV) Put(key string, value []byte) error {
         "key", key,
         "value_length", len(value))
 
-    return os.WriteFile("kv-data-"+key, value, 0644)
+    return os.WriteFile("/tmp/kv-data-"+key, value, 0644)
 }
 
 func (k *KV) Get(key string) ([]byte, error) {
@@ -49,7 +49,7 @@ func (k *KV) Get(key string) ([]byte, error) {
     }
 
     k.logger.Debug("🗄️📥 getting value", "key", key)
-    return os.ReadFile("kv-data-" + key)
+    return os.ReadFile("/tmp/kv-data-" + key)
 }
 
 func main() {
