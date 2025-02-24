@@ -67,7 +67,7 @@ async def kv_server(
     # Wait for server to be ready
     #await server.wait_for_server_ready()
 
-    try:
+    #try:
         #yield server
 
     #finally:
