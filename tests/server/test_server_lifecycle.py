@@ -156,7 +156,7 @@ async def test_serve_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport= mock_server_transport
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -174,6 +174,7 @@ async def test_serve_error(
         server, "_negotiate_handshake", failing_negotiate.__get__(server, type(server))
     )
     with pytest.raises(Exception, match="Handshake failed"):
+        await transport.listen()
         await server.serve()
 
 
