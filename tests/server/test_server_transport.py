@@ -163,14 +163,19 @@ async def test_setup_server_tcp_success(
 
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_success(monkeypatch, tmp_path):
+async def test_setup_server_unix_success(
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+):
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
 
     dummy_server = DummyGRPCServer()
     server = RPCPluginServer(
         protocol=mock_server_protocol,
-        handler=mock_server_handler(),
+        handler=mock_server_handler,
         config=mock_server_config,
         transport=transport,
     )
