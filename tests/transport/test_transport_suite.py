@@ -673,7 +673,8 @@ async def test_unix_socket_concurrent_connections(socket_monitor):
         assert not await monitor.check_state()
 
 
-@pytest.mark.skip
+#@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_error_handling():
     """Test error handling in Unix socket transport."""
     with tempfile.NamedTemporaryFile() as tf:
