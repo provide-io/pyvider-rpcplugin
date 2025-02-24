@@ -1,4 +1,5 @@
 #!/bin/sh
+# pyvider-rpcplugin/tests/kv/go-plugin/build.sh
 
 set -e # Exit on any error
 
