@@ -94,9 +94,10 @@ async def test_setup_server_unix_bad_permissions(
 ):
     sock_path = str(unique_socket_path)
 
+    print(f"unique_socket_path: {sock_path}")
     with open(sock_path, "w") as f:
         f.write("")
-    os.chmod(sock_path, 0o100)
+    os.chmod(sock_path, 0o000)
 
     transport = UnixSocketTransport(path=sock_path)
 
