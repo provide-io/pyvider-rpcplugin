@@ -642,7 +642,8 @@ async def test_concurrent_connections(connected_pair_factory):
         await client._writer.drain()
 
 
-@pytest.mark.skip
+#@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
