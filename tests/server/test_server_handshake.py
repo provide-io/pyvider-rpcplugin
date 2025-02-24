@@ -111,7 +111,7 @@ async def test_negotiate_handshake_with_provided_transport(
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
-    await server.serve()
+
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
 
