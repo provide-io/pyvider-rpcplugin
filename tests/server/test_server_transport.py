@@ -125,6 +125,7 @@ async def test_setup_server_exception(
 ):
 
     transport = mock_server_transport
+    endpoint = await transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
