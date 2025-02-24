@@ -30,7 +30,8 @@ from tests.fixtures import *
 # TODO: fix this
 # this test currently just sits there and freezes, it awaits but never shuts
 # down.
-@pytest.mark.skip
+#@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_server_handshake_invalid_cookie(
     monkeypatch,
     mock_server_protocol,
