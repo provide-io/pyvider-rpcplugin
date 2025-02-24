@@ -113,6 +113,8 @@ async def test_serve_success(
         transport=transport,
     )
 
+    endpoint = await transport.listen()
+
     fut = asyncio.Future()
     fut.set_result(None)
     server._serving_future = fut
