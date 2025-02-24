@@ -32,7 +32,6 @@ from tests.fixtures import *
 async def test_server_starts_insecurely(valid_server_env, mock_server_transport):
 
     transport = mock_server_transport
-    #endpoint = await transport.listen()
 
     # TODO: errors are being swallowed here when the transport is not what's expected.
     server = RPCPluginServer(
@@ -43,7 +42,6 @@ async def test_server_starts_insecurely(valid_server_env, mock_server_transport)
     )
     # Capture print calls directly
     printed_messages = []
-    endpoint = await transport.listen()
 
     def mock_print(message, *args, **kwargs):
         printed_messages.append(str(message))
