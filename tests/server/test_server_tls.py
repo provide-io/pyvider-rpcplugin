@@ -98,7 +98,7 @@ async def test_read_client_cert_absent(
 
     #original_config = rpcplugin_config.config.copy()
 
-    mock_server_config.set("PLUGIN_CLIENT_CERT", "")
+    mock_server_config.set("PLUGIN_CLIENT_CERT", None)
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
