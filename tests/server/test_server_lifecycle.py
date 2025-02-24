@@ -248,7 +248,7 @@ async def test_stop_handles_exceptions(
     dummy_server = DummyGRPCServer()
 
     transport = mock_server_transport
-    endpoint = transport.listen())
+    endpoint = await transport.listen()
 
     async def failing_stop(grace):
         raise Exception("Server stop failed")
