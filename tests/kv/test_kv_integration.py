@@ -49,7 +49,7 @@ async def kv_server(
     mock_server_transport,
 ):
 
-    transportt = mock_server_transport
+    transport_name, transport, endpoint = mock_server_transport
 
     server = RPCPluginServer(
         protocol=KVProtocol(),
