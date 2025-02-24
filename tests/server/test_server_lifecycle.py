@@ -59,6 +59,7 @@ async def test_serve_success(
     loop = asyncio.get_event_loop()
     loop.call_later(0.1, trigger_shutdown)
 
+    await transport.listen()
     await server.serve()
     assert server._serving_future.done()
 
