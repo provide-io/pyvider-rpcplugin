@@ -108,8 +108,8 @@ async def test_setup_server_unix_bad_permissions(
         )
 
         with pytest.raises(TransportError, match="has incorrect permissions"):
-            #await server._setup_server("client_cert")
             await transport.listen()
+            await server._setup_server("client_cert")
     finally:
         if os.path.exists(sock_path):
             os.unlink(sock_path)
