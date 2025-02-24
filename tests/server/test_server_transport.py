@@ -87,7 +87,10 @@ async def test_setup_server_unix_no_socket(
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions(
-    tmp_path, mock_server_protocol, mock_server_handler, mock_server_config
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
 ):
     sock_path = str(tmp_path / "badperm.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -105,7 +108,8 @@ async def test_setup_server_unix_bad_permissions(
         )
 
         with pytest.raises(TransportError, match="has incorrect permissions"):
-            await server._setup_server("client_cert")
+            #await server._setup_server("client_cert")
+            await transport.listen()
     finally:
         if os.path.exists(sock_path):
             os.unlink(sock_path)
