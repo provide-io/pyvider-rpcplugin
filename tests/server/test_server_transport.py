@@ -124,7 +124,7 @@ async def test_setup_server_exception(
     mock_server_transport,
 ):
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -133,6 +133,7 @@ async def test_setup_server_exception(
         transport=transport,
     )
 
+    endpoint = await transport.listen()
     # with pytest.raises(Exception, match="Server creation failed"):
     with pytest.raises(Exception, match="Failed to "):
         await transport.listen()
