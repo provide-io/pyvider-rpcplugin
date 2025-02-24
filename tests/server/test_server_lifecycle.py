@@ -187,7 +187,9 @@ async def test_wait_for_server_ready(
     mock_server_config,
     mock_server_transport,
 ):
-    transport_name, transport, endpoint = mock_server_transport
+    transport_name = mock_server_transport
+
+    endpoint = await transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
