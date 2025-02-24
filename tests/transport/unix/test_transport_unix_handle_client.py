@@ -1,4 +1,3 @@
-
 # tests/transport/unix/test_transport_unix_handle_client.py
 
 import asyncio
@@ -16,6 +15,7 @@ from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 from pyvider.rpcplugin.client.connection import ClientConnection
 
 from tests.fixtures import *
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_handle_client_called(unique_socket_path):
@@ -39,7 +39,10 @@ async def test_unix_socket_handle_client_called(unique_socket_path):
         await writer.wait_closed()
     finally:
         await transport.close()
-        assert not os.path.exists(endpoint), "Socket file was not removed after transport closed."
+        assert not os.path.exists(endpoint), (
+            "Socket file was not removed after transport closed."
+        )
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_handle_client_direct(unique_socket_path):
@@ -54,13 +57,18 @@ async def test_unix_socket_handle_client_direct(unique_socket_path):
 
         # Check that data is echoed back correctly
         response = await reader.read(100)
-        assert response == b"direct test data", "Direct data was not echoed back correctly."
+        assert response == b"direct test data", (
+            "Direct data was not echoed back correctly."
+        )
 
         writer.close()
         await writer.wait_closed()
     finally:
         await transport.close()
-        assert not os.path.exists(endpoint), "Socket file was not removed after transport closed."
+        assert not os.path.exists(endpoint), (
+            "Socket file was not removed after transport closed."
+        )
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_handle_client_error(unique_socket_path):

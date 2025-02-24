@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_close.py
 
 import asyncio
@@ -13,6 +12,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_close_connection_active(mock_server_transport_tcp):
     transport = TCPSocketTransport()
@@ -21,6 +21,7 @@ async def test_tcp_socket_transport_close_connection_active(mock_server_transpor
         await asyncio.wait_for(transport.listen(), timeout=5)
     finally:
         await transport.close()
+
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_close_no_connection():
@@ -34,6 +35,7 @@ async def test_tcp_socket_transport_close_no_connection():
     # Check if the server is no longer serving
     if transport._server:
         assert not transport._server.is_serving()
+
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_close_writer_oserror():
@@ -51,6 +53,7 @@ async def test_tcp_socket_transport_close_writer_oserror():
         await client_transport.close()
 
     await transport.close()
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

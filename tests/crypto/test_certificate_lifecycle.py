@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/test_certificate_verify.py
 
 import pytest
@@ -14,22 +13,23 @@ from pyvider.rpcplugin.crypto.certificate import Certificate
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_cleanup_after_failed_generation():
     """Test proper cleanup after failed certificate generation."""
     with pytest.raises(CertificateError):
-        cert = Certificate(
-            generate_keypair=True,
-            key_type="invalid_type"
-        )
+        cert = Certificate(generate_keypair=True, key_type="invalid_type")
+
 
 #
 # There shall be no certificate renewal/expiration handling tests yet.
 #
 
+
 async def test_certificate_is_valid(client_cert):
     """Ensure validity check works correctly."""
     assert isinstance(client_cert.is_valid, bool), "Validity should return True/False"
+
 
 async def test_expired_certificate():
     """Ensure expired certificates fail validation."""
@@ -37,10 +37,14 @@ async def test_expired_certificate():
         generate_keypair=True,
         key_type="rsa",
         not_valid_before=datetime.now(timezone.utc) - timedelta(days=365),
-        not_valid_after=datetime.now(timezone.utc) - timedelta(days=1),  # Expired yesterday
+        not_valid_after=datetime.now(timezone.utc)
+        - timedelta(days=1),  # Expired yesterday
     )
-    assert expired_cert._base.not_valid_after < datetime.now(timezone.utc), "Certificate should be expired"
+    assert expired_cert._base.not_valid_after < datetime.now(timezone.utc), (
+        "Certificate should be expired"
+    )
     assert not expired_cert.is_valid, "Expired certificates should be invalid"
+
 
 async def test_certificate_validity_period(client_cert):
     """Test certificate validity period checking."""
@@ -48,6 +52,7 @@ async def test_certificate_validity_period(client_cert):
     assert client_cert._base.not_valid_before <= now
     assert now <= client_cert._base.not_valid_after
     assert client_cert.is_valid  # ✅ No function call () since it's @cached_property
+
 
 async def test_verify_expired_certificate():
     """Ensure verification fails when certificate is expired."""
@@ -58,21 +63,32 @@ async def test_verify_expired_certificate():
         not_valid_after=datetime.now(timezone.utc) - timedelta(days=1),
     )
     assert not expired_cert.is_valid, "Expired certificate should be invalid"
-    assert not expired_cert.verify_trust(expired_cert), "Expired certificates should not verify"
+    assert not expired_cert.verify_trust(expired_cert), (
+        "Expired certificates should not verify"
+    )
+
 
 async def test_certificate_validity_period_error():
     """Ensure validity period calculation failures raise CertificateError."""
-    with mock.patch("pyvider.rpcplugin.crypto.certificate.datetime", side_effect=Exception("Time error")):
+    with mock.patch(
+        "pyvider.rpcplugin.crypto.certificate.datetime",
+        side_effect=Exception("Time error"),
+    ):
         with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(generate_keypair=True)
+
 
 async def test_certificate_extension_addition_failure():
     """Ensure failures in adding extensions raise CertificateError."""
     cert = Certificate(generate_keypair=True)
 
-    with mock.patch("cryptography.x509.CertificateBuilder.add_extension", side_effect=Exception("Mock failure")):
+    with mock.patch(
+        "cryptography.x509.CertificateBuilder.add_extension",
+        side_effect=Exception("Mock failure"),
+    ):
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
+
 
 async def test_certificate_trust_chain_validation():
     """Ensure trust chain verification enforces correct issuer-subject matching."""
@@ -82,7 +98,9 @@ async def test_certificate_trust_chain_validation():
     cert1.trust_chain.append(cert2)
 
     # Ensure invalid trust chain fails verification
-    #with mock.patch.object(cert2._base.public_key, "verify", side_effect=Exception("Signature mismatch")):
-    with mock.patch("cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify", ...):
+    # with mock.patch.object(cert2._base.public_key, "verify", side_effect=Exception("Signature mismatch")):
+    with mock.patch(
+        "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
+        ...,
+    ):
         assert not cert1.verify_trust(cert2), "Trust chain validation should fail"
-

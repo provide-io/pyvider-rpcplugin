@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/crypto/test_certificate_verify.py
 
 import pytest
@@ -20,11 +19,13 @@ from pyvider.rpcplugin.crypto.certificate import (
 
 from tests.fixtures import *
 
+
 def test_verify_single_certificate_in_trust_chain(client_cert, server_cert):
     """Test basic trust chain verification with a single certificate."""
     # Add server cert to client's trust chain
     client_cert.trust_chain = [server_cert]
     assert client_cert.verify_trust(server_cert)
+
 
 def test_verify_certificate_not_in_trust_chain(client_cert, server_cert):
     """Test verification fails when certificate is not in trust chain."""
@@ -32,9 +33,11 @@ def test_verify_certificate_not_in_trust_chain(client_cert, server_cert):
     client_cert.trust_chain = []
     assert not client_cert.verify_trust(server_cert)
 
+
 def test_verify_certificate_chain_error(client_cert, server_cert):
     """Ensure verification fails for an untrusted certificate."""
     assert not client_cert.verify_trust(server_cert), "Expected verification to fail"
+
 
 def test_verify_trust_chain_ordering(client_cert, server_cert):
     """Test trust chain verification is directional - A trusting B doesn't mean B trusts A."""
@@ -43,10 +46,15 @@ def test_verify_trust_chain_ordering(client_cert, server_cert):
     server_cert.trust_chain = []
 
     # Client should be able to verify server
-    assert client_cert.verify_trust(server_cert), "Client should verify server when server is in client's trust chain"
+    assert client_cert.verify_trust(server_cert), (
+        "Client should verify server when server is in client's trust chain"
+    )
 
     # But server should not verify client
-    assert not server_cert.verify_trust(client_cert), "Server should not verify client when client is not in server's trust chain"
+    assert not server_cert.verify_trust(client_cert), (
+        "Server should not verify client when client is not in server's trust chain"
+    )
+
 
 def test_verify_bidirectional_trust_chain(client_cert, server_cert):
     """Test certificates can be configured to trust each other."""
@@ -58,6 +66,7 @@ def test_verify_bidirectional_trust_chain(client_cert, server_cert):
     assert client_cert.verify_trust(server_cert), "Client should verify server"
     assert server_cert.verify_trust(client_cert), "Server should verify client"
 
+
 def test_verify_empty_trust_chain(client_cert, server_cert):
     """Test verification with empty trust chain."""
     client_cert.trust_chain = []
@@ -65,11 +74,13 @@ def test_verify_empty_trust_chain(client_cert, server_cert):
     assert not client_cert.verify_trust(server_cert)
     assert not server_cert.verify_trust(client_cert)
 
+
 def test_verify_self_trust_chain(client_cert):
     """Test certificate can verify itself if in its own trust chain."""
     # Add cert to its own trust chain
     client_cert.trust_chain = [client_cert]
     assert client_cert.verify_trust(client_cert)
+
 
 def test_verify_mutual_trust_chain(client_cert, server_cert):
     """Test mutual trust chain verification."""
@@ -80,6 +91,7 @@ def test_verify_mutual_trust_chain(client_cert, server_cert):
     # Both should verify against each other
     assert client_cert.verify_trust(server_cert)
     assert server_cert.verify_trust(client_cert)
+
 
 def test_verify_trust_chain_after_modification(client_cert, server_cert):
     """Test trust chain verification after modifying the chain."""
@@ -95,6 +107,7 @@ def test_verify_trust_chain_after_modification(client_cert, server_cert):
     client_cert.trust_chain.clear()
     assert not client_cert.verify_trust(server_cert)
 
+
 def test_verify_multiple_certificates_in_trust_chain(client_cert, server_cert):
     """Test verification with multiple certificates in trust chain."""
     # Create a trust chain with both certs
@@ -103,6 +116,7 @@ def test_verify_multiple_certificates_in_trust_chain(client_cert, server_cert):
     # Should verify against any cert in the chain
     assert client_cert.verify_trust(client_cert)
     assert client_cert.verify_trust(server_cert)
+
 
 def test_verify_subject_issuer_relationship(client_cert, server_cert):
     """Test verification considers subject/issuer relationship."""
@@ -116,6 +130,7 @@ def test_verify_subject_issuer_relationship(client_cert, server_cert):
     # Verify behavior matches self-signed status
     result = client_cert.verify_trust(server_cert)
     assert result == (is_self_signed_server and server_cert in client_cert.trust_chain)
+
 
 def test_verify_public_key_types(client_cert, server_cert):
     """Test verification with different public key types."""
@@ -132,7 +147,10 @@ def test_verify_public_key_types(client_cert, server_cert):
     print(f"Server key type: {server_key_type}")
 
     # Key type shouldn't prevent verification if in trust chain
-    assert result, "Verification should succeed regardless of key type if in trust chain"
+    assert result, (
+        "Verification should succeed regardless of key type if in trust chain"
+    )
+
 
 def test_verify_self_signed_rsa():
     """Test verification of RSA self-signed certificate."""
@@ -140,11 +158,13 @@ def test_verify_self_signed_rsa():
     cert.trust_chain = [cert]
     assert cert.verify_trust(cert)
 
+
 def test_verify_self_signed_ec():
     """Test verification of EC self-signed certificate."""
     cert = Certificate(generate_keypair=True, key_type="ecdsa")
     cert.trust_chain = [cert]
     assert cert.verify_trust(cert)
+
 
 def test_verify_unsupported_key_type():
     """Test verification with unsupported key type."""
@@ -158,19 +178,26 @@ def test_verify_unsupported_key_type():
     with pytest.raises(CertificateError, match="Unsupported public key algorithm"):
         cert.verify_trust(mock_cert)
 
+
 def test_self_signed_certificate_verification():
     """Ensure self-signed certificates are properly recognized and verify themselves."""
     cert = Certificate(generate_keypair=True, key_type="rsa")
-    
+
     assert cert.subject == cert.issuer, "Certificate should be self-signed"
-    
+
     cert.trust_chain.append(cert)  # Explicitly add to trust chain
-    assert cert.verify_trust(cert), "Self-signed cert should verify itself when in its own trust chain"
+    assert cert.verify_trust(cert), (
+        "Self-signed cert should verify itself when in its own trust chain"
+    )
+
 
 def test_corrupt_certificate():
     """Ensure corrupted certificates raise errors."""
     with pytest.raises(CertificateError):
-        Certificate(cert="-----BEGIN CERTIFICATE-----\nINVALID DATA\n-----END CERTIFICATE-----")
+        Certificate(
+            cert="-----BEGIN CERTIFICATE-----\nINVALID DATA\n-----END CERTIFICATE-----"
+        )
+
 
 def test_verify_invalid_public_key():
     """Ensure verification fails when public key is None."""
@@ -188,17 +215,21 @@ def test_certificate_naive_datetime():
         alt_names=["localhost"],
         key_type=KeyType.RSA,
         not_valid_before=naive_time,
-        not_valid_after=naive_time + timedelta(days=365)
+        not_valid_after=naive_time + timedelta(days=365),
     )
     base, _ = CertificateBase.create(config)
     assert base.not_valid_before.tzinfo is timezone.utc
     assert base.not_valid_after.tzinfo is timezone.utc
 
+
 def test_certificate_mismatched_issuer():
     cert1 = Certificate(generate_keypair=True, key_type="rsa", common_name="Cert1")
     cert2 = Certificate(generate_keypair=True, key_type="rsa", common_name="Cert2")
     cert1.trust_chain = []
-    assert not cert1.verify_trust(cert2), "Expected verification to fail due to mismatched issuer"
+    assert not cert1.verify_trust(cert2), (
+        "Expected verification to fail due to mismatched issuer"
+    )
+
 
 def test_certificate_invalid_signature():
     """Ensure invalid signatures fail verification."""
@@ -207,25 +238,36 @@ def test_certificate_invalid_signature():
     with mock.patch(
         "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
         side_effect=Exception("Signature failure"),
-        create=True
+        create=True,
     ):
-        assert not cert._validate_cert(cert, cert), "Invalid signature should fail validation"
+        assert not cert._validate_cert(cert, cert), (
+            "Invalid signature should fail validation"
+        )
+
 
 def test_certificate_extension_failure():
     """Ensure extension addition failures raise CertificateError."""
     cert = Certificate(generate_keypair=True)
 
-    with mock.patch("cryptography.x509.CertificateBuilder.add_extension", side_effect=Exception("Mock failure")):
+    with mock.patch(
+        "cryptography.x509.CertificateBuilder.add_extension",
+        side_effect=Exception("Mock failure"),
+    ):
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
+
 
 def test_certificate_key_usage_extension_failure():
     """Ensure Key Usage extension failure raises CertificateError."""
     cert = Certificate(generate_keypair=True)
 
-    with mock.patch("cryptography.x509.CertificateBuilder.add_extension", side_effect=Exception("Mock failure")):
+    with mock.patch(
+        "cryptography.x509.CertificateBuilder.add_extension",
+        side_effect=Exception("Mock failure"),
+    ):
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
+
 
 def test_certificate_invalid_signature():
     """Ensure invalid signatures fail verification."""
@@ -234,9 +276,12 @@ def test_certificate_invalid_signature():
     with mock.patch(
         "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
         side_effect=Exception("Signature failure"),
-        create=True
+        create=True,
     ):
-        assert not cert._validate_cert(cert, cert), "Invalid signature should fail validation"
+        assert not cert._validate_cert(cert, cert), (
+            "Invalid signature should fail validation"
+        )
+
 
 def test_certificate_equality():
     """Ensure certificates are equal only if subject and serial number match."""
@@ -247,4 +292,6 @@ def test_certificate_equality():
 
     # Force serial number and subject to be identical
     cert2._base = cert1._base
-    assert cert1 == cert2, "Certificates with identical serial and subject should be equal"
+    assert cert1 == cert2, (
+        "Certificates with identical serial and subject should be equal"
+    )

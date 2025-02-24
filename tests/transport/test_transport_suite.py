@@ -20,8 +20,10 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.types import TransportT, HandlerT
 
+
 class SocketStateMonitor:
     """Utility for monitoring socket state."""
+
     def __init__(self, path: str):
         self._path = path
         self._active = False
@@ -49,6 +51,7 @@ class SocketStateMonitor:
                     return False
 
                 import socket
+
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(0.5)
                 try:
@@ -84,8 +87,11 @@ class SocketStateMonitor:
             await asyncio.sleep(0.1)
         return False
 
+
 @asynccontextmanager
-async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[TransportT, None]:
+async def managed_transport(
+    transport_type: str, **kwargs
+) -> AsyncGenerator[TransportT, None]:
     """Context manager for transport lifecycle."""
     transport = None
     try:
@@ -106,6 +112,7 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
                 except OSError:
                     pass
 
+
 @pytest_asyncio.fixture
 async def socket_monitor():
     """Fixture providing socket state monitoring."""
@@ -124,7 +131,9 @@ async def socket_monitor():
         if os.path.exists(monitor.path):
             os.unlink(monitor.path)
 
+
 ################################################################################
+
 
 # Base Dummy Classes
 class DummyReader:
@@ -137,6 +146,7 @@ class DummyReader:
             self._called = True
             return self._data
         return b""
+
 
 class DummyWriter:
     def __init__(self):
@@ -161,6 +171,7 @@ class DummyWriter:
     def get_extra_info(self, key: str, default: any = None) -> any:
         return "dummy_peer" if key == "peername" else default
 
+
 # Protocol & Handler Mocks
 class MockProtocol(RPCPluginProtocol):
     def get_grpc_descriptors(self):
@@ -170,19 +181,23 @@ class MockProtocol(RPCPluginProtocol):
     async def add_to_server(self, handler, server):
         logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
 
+
 class MockHandler:
     async def handle_request(self, request, context):
         logger.debug("🔌🚀✅ MockHandler.handle_request called.")
         return None
+
 
 # Core Fixtures
 @pytest.fixture
 def unused_tcp_port() -> int:
     """Find an unused TCP port."""
     import socket
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('127.0.0.1', 0))
+        s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
+
 
 @pytest.fixture
 def temp_sock_dir():
@@ -199,6 +214,7 @@ async def transport_factory(temp_sock_dir):
     async def create(transport_type: str, **kwargs) -> TransportT:
         if transport_type == "unix":
             import uuid
+
             unique_name = f"test_{uuid.uuid4()}.sock"
             path = os.path.join(temp_sock_dir, unique_name)
 
@@ -238,6 +254,7 @@ async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
         if transport_type == "unix":
             # Generate unique path using uuid
             import uuid
+
             unique_name = f"test_{uuid.uuid4()}.sock"
             path = os.path.join(temp_sock_dir, unique_name)
 
@@ -293,6 +310,7 @@ async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
     for transport in reversed(created):
         await cleanup_transport(transport)
 
+
 @pytest_asyncio.fixture
 async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
     """Factory fixture for creating transport instances."""
@@ -323,7 +341,9 @@ async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
     for transport in created:
         try:
             await transport.close()
-            if isinstance(transport, UnixSocketTransport) and os.path.exists(transport.path):
+            if isinstance(transport, UnixSocketTransport) and os.path.exists(
+                transport.path
+            ):
                 await asyncio.sleep(0.1)  # Wait for socket to be fully closed
                 os.unlink(transport.path)
         except Exception as e:
@@ -331,21 +351,24 @@ async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
 
     # Final cleanup of any remaining sockets
     for file in os.listdir(temp_sock_dir):
-        if file.endswith('.sock'):
+        if file.endswith(".sock"):
             try:
                 os.unlink(os.path.join(temp_sock_dir, file))
             except OSError:
                 pass
+
 
 @pytest_asyncio.fixture
 async def mock_protocol():
     """Create a mock protocol instance."""
     return MockProtocol()
 
+
 @pytest_asyncio.fixture
 async def mock_handler():
     """Create a mock handler instance."""
     return MockHandler()
+
 
 @pytest_asyncio.fixture
 async def server_factory(mock_protocol, mock_handler):
@@ -354,10 +377,7 @@ async def server_factory(mock_protocol, mock_handler):
 
     async def create(transport: TransportT, **kwargs) -> RPCPluginServer:
         server = RPCPluginServer(
-            protocol=mock_protocol,
-            handler=mock_handler,
-            transport=transport,
-            **kwargs
+            protocol=mock_protocol, handler=mock_handler, transport=transport, **kwargs
         )
         servers.append(server)
         return server
@@ -370,6 +390,7 @@ async def server_factory(mock_protocol, mock_handler):
             await server.stop()
         except Exception as e:
             logger.error(f"Error stopping server: {e}")
+
 
 @pytest_asyncio.fixture
 async def connected_pair_factory(transport_factory):
@@ -394,6 +415,7 @@ async def connected_pair_factory(transport_factory):
         await client.close()
         await server.close()
 
+
 # Test Suite
 @pytest.mark.asyncio
 async def test_tcp_transport_basic(transport_factory):
@@ -405,6 +427,7 @@ async def test_tcp_transport_basic(transport_factory):
     assert transport.endpoint == endpoint
 
     await transport.close()
+
 
 @pytest.mark.asyncio
 async def test_unix_transport_basic(transport_factory):
@@ -418,8 +441,9 @@ async def test_unix_transport_basic(transport_factory):
     await transport.close()
     assert not os.path.exists(endpoint)
 
+
 @pytest.mark.asyncio
-#@pytest.mark.parametrize("transport_type", ["tcp", "unix"])
+# @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_transport_connection(transport_type, connected_pair_factory):
     """Test transport connection for both TCP and Unix."""
@@ -435,11 +459,14 @@ async def test_transport_connection(transport_type, connected_pair_factory):
 
     # Cleanup happens via fixture
 
+
 @pytest.mark.asyncio
 # @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 # FAILED transport/test_transport_suite.py::test_server_with_transport[unix] - pyvider.rpcplugin.exception.TransportError: Failed to verify socket cleanup: /var/folders/k6/jdp9qg890l553n47r3khszmc8t5ps6/T/tmpctdfrfqg/test_bfc942f1-865b-4...
 @pytest.mark.parametrize("transport_type", ["tcp"])
-async def test_server_with_transport(transport_type, transport_factory, server_factory, temp_sock_dir):
+async def test_server_with_transport(
+    transport_type, transport_factory, server_factory, temp_sock_dir
+):
     """Test server creation and basic operation with different transports."""
     transport = await transport_factory(transport_type)
     server = await server_factory(transport)
@@ -467,8 +494,10 @@ async def test_server_with_transport(transport_type, transport_factory, server_f
         # Ensure cleanup
         server_task.cancel()
         import contextlib
+
         with contextlib.suppress(asyncio.CancelledError):
             await server_task
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_error_handling():
@@ -486,6 +515,7 @@ async def test_unix_socket_error_handling():
     with pytest.raises(TransportError, match="does not exist"):
         await transport.connect("unix:/nonexistent/path/sock")
 
+
 @pytest.mark.asyncio
 async def Xtest_transport_error_handling(transport_factory):
     """Test transport error handling."""
@@ -496,6 +526,7 @@ async def Xtest_transport_error_handling(transport_factory):
         await transport.connect("127.0.0.1:1")
 
     await transport.close()
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_lifecycle(socket_monitor):
@@ -508,7 +539,9 @@ async def test_unix_socket_lifecycle(socket_monitor):
 
         # Listen
         endpoint = await transport.listen()
-        assert await monitor.wait_for_active(timeout=1.0), "Socket failed to become active"
+        assert await monitor.wait_for_active(timeout=1.0), (
+            "Socket failed to become active"
+        )
         assert os.path.exists(endpoint), "Socket file missing"
         assert os.stat(endpoint).st_mode & 0o777 == 0o777, "Invalid permissions"
 
@@ -524,7 +557,10 @@ async def test_unix_socket_lifecycle(socket_monitor):
         # Cleanup
         await client.close()
         await transport.close()
-        assert await monitor.wait_for_inactive(timeout=1.0), "Socket failed to become inactive"
+        assert await monitor.wait_for_inactive(timeout=1.0), (
+            "Socket failed to become inactive"
+        )
+
 
 @pytest.mark.asyncio
 async def Xtest_unix_socket_lifecycle(socket_monitor):
@@ -565,6 +601,7 @@ async def Xtest_unix_socket_lifecycle(socket_monitor):
         assert not state, "Socket still active after close"
         assert not os.path.exists(endpoint), "Socket file remains"
 
+
 @pytest.mark.asyncio
 async def Xtest_unix_socket_lifecycle(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
@@ -587,12 +624,12 @@ async def Xtest_unix_socket_lifecycle(socket_monitor):
         await client.connect(endpoint)
         assert await monitor.check_state()
 
+
 @pytest.mark.asyncio
 async def test_concurrent_connections(connected_pair_factory):
     """Test multiple concurrent connections."""
     pairs = await asyncio.gather(
-        connected_pair_factory("tcp"),
-        connected_pair_factory("tcp")
+        connected_pair_factory("tcp"), connected_pair_factory("tcp")
     )
 
     for server, client in pairs:
@@ -603,6 +640,7 @@ async def test_concurrent_connections(connected_pair_factory):
         test_data = b"test"
         client._writer.write(test_data)
         await client._writer.drain()
+
 
 @pytest.mark.skip
 async def test_unix_socket_concurrent_connections(socket_monitor):
@@ -624,18 +662,15 @@ async def test_unix_socket_concurrent_connections(socket_monitor):
 
         # Test concurrent data transfer
         test_data = b"concurrent test"
-        await asyncio.gather(*(
-            client._writer.write(test_data) for client in clients
-        ))
-        await asyncio.gather(*(
-            client._writer.drain() for client in clients
-        ))
+        await asyncio.gather(*(client._writer.write(test_data) for client in clients))
+        await asyncio.gather(*(client._writer.drain() for client in clients))
 
         # Cleanup
         for client in clients:
             await client.close()
 
         assert not await monitor.check_state()
+
 
 @pytest.mark.skip
 async def test_unix_socket_error_handling():
@@ -651,6 +686,7 @@ async def test_unix_socket_error_handling():
     with pytest.raises(TransportError, match="does not exist"):
         await transport.connect("/nonexistent/path")
 
+
 @pytest.mark.skip
 async def test_unix_socket_server_integration(socket_monitor):
     """Test Unix socket transport with server integration."""
@@ -659,9 +695,7 @@ async def test_unix_socket_server_integration(socket_monitor):
 
         # Create and start server
         server = RPCPluginServer(
-            protocol=MockProtocol(),
-            handler=MockHandler(),
-            transport=transport
+            protocol=MockProtocol(), handler=MockHandler(), transport=transport
         )
 
         server._serving_future = asyncio.Future()
@@ -672,10 +706,7 @@ async def test_unix_socket_server_integration(socket_monitor):
 
         try:
             # Wait for server ready
-            await asyncio.wait_for(
-                server.wait_for_server_ready(),
-                timeout=5.0
-            )
+            await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
 
             assert server._serving_event.is_set()
             assert await monitor.check_state()
@@ -697,8 +728,10 @@ async def test_unix_socket_server_integration(socket_monitor):
             await server.stop()
             server_task.cancel()
             import contextlib
+
             with contextlib.suppress(asyncio.CancelledError):
                 await server_task
+
 
 @pytest.mark.skip
 async def test_unix_socket_cleanup_handling(socket_monitor):
@@ -731,5 +764,6 @@ async def test_unix_socket_cleanup_handling(socket_monitor):
         await transport.close()
         if os.path.exists(path):
             os.unlink(path)
+
 
 ################################################################################

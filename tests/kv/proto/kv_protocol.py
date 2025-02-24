@@ -1,4 +1,3 @@
-
 # tests/kv/kv_protocol.py
 
 from typing import Any
@@ -12,6 +11,7 @@ from pyvider.rpcplugin.types import (
 )
 
 from tests.kv.proto import kv_pb2_grpc
+
 
 class KVProtocol(RPCPluginProtocol):
     """Protocol implementation for KV service."""

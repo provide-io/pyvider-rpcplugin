@@ -1,4 +1,3 @@
-
 # tests/transport/unix/test_transport_unix_close.py
 
 import asyncio
@@ -16,6 +15,7 @@ from pyvider.rpcplugin.client.connection import ClientConnection
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_transport_close_no_path(unix_transport):
     """
@@ -27,6 +27,7 @@ async def test_unix_socket_transport_close_no_path(unix_transport):
     # Check that no error is raised
     assert True
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_transport_close_oserror(unique_socket_path):
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
@@ -35,8 +36,10 @@ async def test_unix_socket_transport_close_oserror(unique_socket_path):
     await transport.listen()
 
     # Create patches for both unlink and stat
-    with patch("os.unlink", side_effect=OSError("Mocked unlink error")), \
-         patch("os.path.exists", return_value=True):  # Ensure path exists check returns True
+    with (
+        patch("os.unlink", side_effect=OSError("Mocked unlink error")),
+        patch("os.path.exists", return_value=True),
+    ):  # Ensure path exists check returns True
         with pytest.raises(TransportError, match="Mocked unlink error"):
             await transport.close()
 
@@ -47,6 +50,7 @@ async def test_unix_socket_transport_close_oserror(unique_socket_path):
     except:
         pass
 
+
 @pytest.mark.asyncio
 async def test_unix_close_unlink_error(monkeypatch, tmp_path):
     sock_path = str(tmp_path / "unlink_error.sock")
@@ -55,8 +59,14 @@ async def test_unix_close_unlink_error(monkeypatch, tmp_path):
     transport = UnixSocketTransport(path=sock_path)
     transport._writer = None
     transport._server = None
-    monkeypatch.setattr(os.path, "exists", lambda path: True if path == sock_path else os.path.exists(path))
-    monkeypatch.setattr(os, "unlink", lambda path: (_ for _ in ()).throw(OSError("unlink error")))
+    monkeypatch.setattr(
+        os.path,
+        "exists",
+        lambda path: True if path == sock_path else os.path.exists(path),
+    )
+    monkeypatch.setattr(
+        os, "unlink", lambda path: (_ for _ in ()).throw(OSError("unlink error"))
+    )
     with pytest.raises(TransportError, match="Failed to remove socket file:"):
         await transport.close()
 
@@ -70,6 +80,7 @@ async def test_unix_socket_close_connection_active(unix_transport):
     await unix_transport.close()
     assert not os.path.exists(endpoint)
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_close_no_server(unix_transport):
     """
@@ -80,6 +91,7 @@ async def test_unix_socket_close_no_server(unix_transport):
 
     # Check that no error is raised and the path attribute is still accessible
     assert unix_transport.path is not None
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_close_no_path(unix_transport):
@@ -92,6 +104,7 @@ async def test_unix_socket_close_no_path(unix_transport):
     # Check that no error is raised
     assert True
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_close_oserror(unique_socket_path):
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
@@ -100,8 +113,10 @@ async def test_unix_socket_close_oserror(unique_socket_path):
     await transport.listen()
 
     # Create patches for both unlink and stat
-    with patch("os.unlink", side_effect=OSError("Mocked unlink error")), \
-         patch("os.path.exists", return_value=True):  # Ensure path exists check returns True
+    with (
+        patch("os.unlink", side_effect=OSError("Mocked unlink error")),
+        patch("os.path.exists", return_value=True),
+    ):  # Ensure path exists check returns True
         with pytest.raises(TransportError, match="Mocked unlink error"):
             await transport.close()
 
@@ -112,17 +127,21 @@ async def test_unix_socket_close_oserror(unique_socket_path):
     except:
         pass
 
+
 ################################################################################
 
 
 @pytest.mark.asyncio
 async def test_close_writer_exception(monkeypatch):
     transport = UnixSocketTransport(path="/tmp/dummy.sock")
+
     class FakeWriter:
         def close(self):
             pass
+
         async def wait_closed(self):
             raise Exception("Fake wait_closed error")
+
     fake_writer = FakeWriter()
     # _close_writer should catch the exception and log an error.
     await transport._close_writer(fake_writer)

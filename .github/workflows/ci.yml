@@ -15,8 +15,11 @@ jobs:
         with:
           python-version: '3.13'
 
-      - run: pip install uv
+      - run: pip install uv hatch ruff pyre-check
+      - run: uv venv
+      - run: source .venv/bin/activate
       - run: uv pip install -r requirements.txt
+      - run: uv sync --all-extras
       - run: ruff check .
       - run: pyre check
 
@@ -27,6 +30,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: pip install uv
+      - run: pip install uv hatch
+      - run: uv venv
+      - run: source .venv/bin/activate
       - run: uv pip install -r requirements.txt
-      - run: pytest tests
+      - run: uv sync --all-extras
+      - run: hatch test -p
