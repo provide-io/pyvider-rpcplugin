@@ -386,7 +386,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     async def dummy_negotiate(self):
         self._protocol_version = 1
         self._transport = transport
-        #self._transport_name = transport_name
+        self._transport_name = transport_name
 
     # Prepare dummy implementations for required methods.
     # Set _negotiate_handshake to simply set a protocol version.
@@ -394,7 +394,7 @@ async def test_serve_and_stop_no_unawaited_warning(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
     await server._negotiate_handshake()
-    #assert server._transport_name == transport_name
+    assert server._transport_name == transport_name
 
     async def dummy_setup(_):
         pass
