@@ -50,7 +50,8 @@ async def test_server_handshake_invalid_cookie(
     endpoint = await transport.listen()
 
     with pytest.raises(HandshakeError):
-        await server.serve()
+        endpoint = await transport.listen()
+        #await server.serve()
 
 
 @pytest.mark.asyncio
