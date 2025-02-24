@@ -90,8 +90,9 @@ async def test_setup_server_unix_bad_permissions(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
+    unique_socket_path,
 ):
-    sock_path = str(tmp_path / "badperm.sock")
+    sock_path = str(unique_socket_path)
     transport = UnixSocketTransport(path=sock_path)
 
     with open(sock_path, "w") as f:
