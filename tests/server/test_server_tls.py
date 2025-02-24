@@ -107,10 +107,8 @@ async def test_read_client_cert_absent(
     )
 
     endpoint = await transport.listen()
-    await server.serve()
     cert = server._read_client_cert()
     assert cert is None
-    rpcplugin_config.config = original_config
 
 
 @pytest.mark.asyncio
