@@ -140,7 +140,6 @@ async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_handler,
 ):
 
     transport = TCPSocketTransport()
