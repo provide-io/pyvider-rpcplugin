@@ -4,14 +4,7 @@ import os
 import sys
 from typing import Optional
 
-from opentelemetry._logs import set_logger_provider
-from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
-from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
-from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-from opentelemetry.sdk.resources import Resource
-
 from .formatters import AlignedFormatter
-
 
 def initialize_logger_provider():
     current_provider = logging.getLogger()
@@ -40,7 +33,6 @@ class PyviderLoggerBase(logging.Logger):
 
     def __init__(self, name: str = "default", level=logging.NOTSET):
         super().__init__(name, level)
-        self._otel_handler = None
 
     def _determine_caller(self) -> str:
         frame = inspect.currentframe()
@@ -99,24 +91,6 @@ class PyviderLoggerBase(logging.Logger):
             # Handle invalid usage
             raise ValueError("Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)")
 
-    def configure_otel_handler(self, service_name: str, endpoint: str, insecure: bool = True):
-        if self._otel_handler is None:
-            resource = Resource.create({"service.name": service_name})
-            provider = LoggerProvider(resource=resource)
-
-            uptrace_dsn = os.getenv("UPTRACE_DSN", "http://PyviderSecret-456@localhost:14318?grpc=14317")
-            exporter = OTLPLogExporter(
-                endpoint=endpoint,
-                headers={'uptrace-dsn': uptrace_dsn},
-                insecure=insecure
-            )
-            provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
-            set_logger_provider(provider)
-
-            self._otel_handler = LoggingHandler(logger_provider=provider)
-            self.addHandler(self._otel_handler)
-
-
 # Step 2: Set PyviderLoggerBase as the default logger class
 logging.setLoggerClass(PyviderLoggerBase)
 
@@ -125,8 +99,6 @@ class PyviderLogger:
     def __init__(
         self,
         default_level: int = logging.DEBUG,
-        otlp_enabled: bool = True,
-        otlp_endpoint: Optional[str] = None,
         insecure: bool = True,
         service_name: str = "pyvider-service",
         instance_id: str = "default-instance",
@@ -137,12 +109,8 @@ class PyviderLogger:
 
         self.service_name = service_name
         self.instance_id = instance_id
-        self.otlp_endpoint = otlp_endpoint
         self.insecure = insecure
 
-        # Initialize OpenTelemetry logging and tracing
-        self._otel_initialized = False  # Class-level flag to prevent reinitialization
-        self._setup_opentelemetry()
 
     def get_logger(self, name: str = "default") -> PyviderLoggerBase:
 
@@ -162,9 +130,6 @@ class PyviderLogger:
                 stream_handler.setFormatter(stream_formatter)
                 logger.addHandler(stream_handler)
 
-
-            if self.otlp_endpoint:
-                logger.configure_otel_handler(self.service_name, self.otlp_endpoint, self.insecure)
 
             self.loggers[name] = logger
         return self.loggers[name]
@@ -217,38 +182,6 @@ class PyviderLogger:
         else:
             # Handle invalid usage
             raise ValueError("Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)")
-
-    def _setup_opentelemetry(self):
-        """Configure OpenTelemetry tracing and logging with resources."""
-        if self._otel_initialized:
-            return  # Skip reinitialization
-
-        try:
-            # Validate essential attributes
-            if not self.service_name or not self.instance_id:
-                raise ValueError("service_name and instance_id must be provided.")
-
-            # Configure resources
-            resource = Resource.create(
-                {
-                    "service.name": self.service_name,
-                    "service.instance.id": self.instance_id,
-                }
-            )
-
-            # Set up logging
-            logger_provider = LoggerProvider(resource=resource)
-            if self.otlp_endpoint:
-                exporter = OTLPLogExporter(endpoint=self.otlp_endpoint, insecure=self.insecure)
-                logger_provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
-            set_logger_provider(logger_provider)
-
-            self._otel_initialized = True  # Mark as initialized
-            logging.getLogger(__name__).debug("OpenTelemetry successfully configured.")
-
-        except Exception as e:
-            logging.getLogger(__name__).error(f"Error during OpenTelemetry setup: {e}")
-            raise
 
     def set_logger_level(self, logger: logging.Logger, level_name: str) -> None:
         """
