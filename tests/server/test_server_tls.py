@@ -93,7 +93,7 @@ async def test_read_client_cert_absent(
 ):
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
 
     original_config = rpcplugin_config.config.copy()
 
@@ -104,8 +104,9 @@ async def test_read_client_cert_absent(
         config=mock_server_config,
         transport=transport,
     )
-    endpoint = await server.serve()
 
+    endpoint = await transport.listen()
+    await server.serve()
     cert = server._read_client_cert()
     assert cert is None
     rpcplugin_config.config = original_config
