@@ -73,9 +73,8 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport()
-    #transport = mock_server_transport ### hmm.
-    endpoint = await transport.listen()
+    #transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport ### hmm.
 
     class ProtocolWithError(RPCPluginProtocol):
         async def add_to_server(self, handler, server):
@@ -91,8 +90,9 @@ async def test_server_serve_runtime_error(
     )
 
     with pytest.raises(RuntimeError, match="Protocol service registration"):
+        await transport.listen()
         await server.serve()
-        #await transport.close()
+        await transport.close()
 
 
 @pytest.mark.asyncio
@@ -361,14 +361,12 @@ async def test_serve_and_stop_no_unawaited_warning(
     Test that calling serve() and then stop() does not leave unawaited coroutines,
     even if the event loop is later closed.
     """
-    transport_name, transport, endpoint = mock_server_transport
-
     # Create a server instance with a dummy protocol.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=mock_server_transport,
     )
 
 
@@ -401,8 +399,6 @@ async def test_serve_and_stop_no_unawaited_warning(
 
     # Patch _register_signal_handlers to do nothing.
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
-
-    endpoint = await transport.listen()
 
     # Create a task for serve(); then, after a short delay, call stop().
     serve_task = asyncio.create_task(server.serve())
