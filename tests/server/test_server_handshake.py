@@ -102,6 +102,8 @@ async def test_negotiate_handshake_with_provided_transport(
         transport=transport,
     )
 
+    endpoint = await transport.listen()
+
     async def dummy_negotiate(self):
         self._protocol_version = 1
         self._transport = transport
