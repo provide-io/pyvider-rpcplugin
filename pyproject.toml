@@ -63,7 +63,7 @@ lint = "ruff check src tests"
 format = "ruff format src tests"
 typecheck = "pyre check"
 security = "bandit -r src"
-go:build = "(cd tests/kv/go-plugin; ./build.sh)"
+gobuild = "(cd tests/kv/go-plugin; ./build.sh)"
 
 [tool.hatch.envs.default.scripts]
 run = "python -m pyvider.rpcplugin"
