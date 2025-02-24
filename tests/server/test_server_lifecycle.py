@@ -248,7 +248,7 @@ async def test_stop_handles_exceptions(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
     server._server = dummy_server
     server._transport = dummy_transport
