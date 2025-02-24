@@ -178,8 +178,7 @@ async def test_setup_server_unix_success(
     mock_server_handler,
     mock_server_config,
 ):
-    sock_path = str(tmp_path / "test.sock")
-    transport = UnixSocketTransport(path=sock_path)
+    transport_name, transport, endpoint = UnixSocketTransport()
 
     dummy_server = DummyGRPCServer()
     server = RPCPluginServer(
@@ -191,9 +190,9 @@ async def test_setup_server_unix_success(
     server._server = dummy_server
 
     await transport.listen()
-    #await server._setup_server("client_cert")
+    await server._setup_server("client_cert")
 
-    expected = f"unix:{sock_path}"
+    expected = f"unix:{endpoint}"
     assert any(expected in port for port in dummy_server.ports)
     await transport.close()
 
