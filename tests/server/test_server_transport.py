@@ -145,7 +145,7 @@ async def test_setup_server_tcp_success(
     mock_server_config,
 ):
 
-    transport = TCPSocketTransport()
+    transport_name, transport, endpoint = TCPSocketTransport()
 
     # monkeypatch.setattr(rpcplugin_config, "get",
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
