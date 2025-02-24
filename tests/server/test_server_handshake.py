@@ -93,7 +93,6 @@ async def test_negotiate_handshake_with_provided_transport(
     mock_server_transport,
 ):
     transport = mock_server_transport
-    #tcp_transport = TCPSocketTransport(host="127.0.0.1")
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -112,6 +111,7 @@ async def test_negotiate_handshake_with_provided_transport(
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
+    await server.serve()
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
 
