@@ -93,12 +93,12 @@ async def test_setup_server_unix_bad_permissions(
     mock_server_transport_unix,
 ):
     sock_path = str(unique_socket_path)
-    #transport = UnixSocketTransport(path=sock_path)
-    transport = mock_server_transport(path=sock_path)
 
     with open(sock_path, "w") as f:
         f.write("")
     os.chmod(sock_path, 0o100)
+
+    transport = UnixSocketTransport(path=sock_path)
 
     try:
         server = RPCPluginServer(
