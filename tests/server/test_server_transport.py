@@ -182,7 +182,7 @@ async def test_setup_server_unix_success(
     mock_server_handler,
     mock_server_config,
 ):
-    transport_name, transport, endpoint = UnixSocketTransport()
+    transport = UnixSocketTransport()
 
     dummy_server = DummyGRPCServer()
     server = RPCPluginServer(
