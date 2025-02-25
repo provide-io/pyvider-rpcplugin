@@ -291,7 +291,7 @@ class SLogger:
         # Use the trace method we added to the standard Logger
         if message is None and isinstance(level_or_message, str):
             # Case: logger.trace("message")
-            self.logger.trace(level_or_message)  # type: ignore
+            self._logger.trace(level_or_message)  # type: ignore
         else:
             # Case: logger.trace(42, "message")
             level = cast(int, level_or_message)
