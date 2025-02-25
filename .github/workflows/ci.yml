@@ -8,7 +8,8 @@ on:
 
 jobs:
   lint:
-    runs-on: pane-pyvider-rpcplugin
+    runs-on: self-hosted
+    #runs-on: pane-pyvider-rpcplugin
     #runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,7 +26,8 @@ jobs:
       - run: pyre check
 
   tests:
-    runs-on: pane-pyvider-rpcplugin
+    runs-on: self-hosted
+    #runs-on: pane-pyvider-rpcplugin
     #runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
