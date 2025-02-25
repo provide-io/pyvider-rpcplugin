@@ -172,6 +172,7 @@ class SLogger:
     """
     
     _logger: Any = attrs.field()
+    _stdlib_logger: logging.Logger = attrs.field()
     
     @classmethod
     def configure(
@@ -192,6 +193,13 @@ class SLogger:
             log_file: Path to log file (if any)
             extra_processors: Additional structlog processors to use
         """
+        # Register all standard log levels with structlog
+        # This is necessary to ensure structlog's level mapping is correct
+        from structlog.stdlib import _LEVEL_TO_NAME
+        
+        # Add our TRACE level to structlog's internal mapping
+        _LEVEL_TO_NAME[BASE_TRACE_LEVEL] = "trace"
+        
         # Set up processors
         processors: List[Processor] = [
             structlog.contextvars.merge_contextvars,
@@ -253,9 +261,11 @@ class SLogger:
         # Ensure the base TRACE level is registered
         trace_registry.register_level(TraceLevel.create())
         
-        # Get the structlog logger
-        logger = structlog.get_logger(name)
-        return cls(logger)
+        # Get both the structlog logger and the underlying stdlib logger
+        stdlib_logger = logging.getLogger(name)
+        structlog_logger = structlog.get_logger(name)
+        
+        return cls(structlog_logger, stdlib_logger)
         
     def trace(self, level_or_message: Union[int, str], message: Optional[str] = None, **kwargs: Any) -> None:
         """
@@ -279,8 +289,16 @@ class SLogger:
         # Register the level
         trace_registry.register_level(trace_level)
         
-        # Log at the trace level
-        self._logger.log(trace_level.value, message, **kwargs)
+        # Log directly to the stdlib logger, bypassing structlog's level mapping
+        # This approach works because structlog's processors will still be applied
+        if kwargs:
+            # Create a bound logger with the kwargs
+            bound_logger = self._logger.bind(**kwargs)
+            # Use _proxy_to_logger which accesses the standard library logger directly
+            bound_logger._logger.log(trace_level.value, message)
+        else:
+            # No kwargs, use the stdlib logger directly
+            self._stdlib_logger.log(trace_level.value, message)
     
     # Forward standard logging methods to the wrapped logger
     def debug(self, message: str, **kwargs: Any) -> None:
@@ -309,7 +327,12 @@ class SLogger:
         
     def log(self, level: int, message: str, **kwargs: Any) -> None:
         """Log a message at the specified level."""
-        self._logger.log(level, message, **kwargs)
+        # Use the same approach as trace() for consistency
+        if kwargs:
+            bound_logger = self._logger.bind(**kwargs)
+            bound_logger._logger.log(level, message)
+        else:
+            self._stdlib_logger.log(level, message)
         
     def bind(self, **kwargs: Any) -> "SLogger":
         """
@@ -321,7 +344,7 @@ class SLogger:
         Returns:
             A new SLogger with bound context
         """
-        return SLogger(self._logger.bind(**kwargs))
+        return SLogger(self._logger.bind(**kwargs), self._stdlib_logger)
 
 # Create a default logger for convenience
 logger = SLogger.get_logger()
