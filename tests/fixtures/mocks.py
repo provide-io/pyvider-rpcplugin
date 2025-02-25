@@ -1,4 +1,3 @@
-
 # tests/fixtures/mocks.py
 
 import asyncio
@@ -33,6 +32,7 @@ from pyvider.rpcplugin.types import TransportT, ConfigT, HandlerT
 
 from ..fixtures import *
 
+
 class MockProtocol(RPCPluginProtocol):
     def get_grpc_descriptors(self):
         # Mock descriptors for testing
@@ -48,8 +48,10 @@ class MockProtocol(RPCPluginProtocol):
         logger.debug("🔌🚀✅ MockProtocol.get_method_type called.")
         return "unary_unary"  # Mock implementation
 
+
 class MockHandler:
     """Mock handler for testing the RPCPluginServer."""
+
     async def GetRequest(self, request, context):
         logger.debug("🔌🚀✅ MockHandler.GetRequest called.")
         return None
@@ -66,24 +68,28 @@ class MockHandler:
         logger.debug("🔌🚀✅ MockHandler.Empty called.")
         return None
 
+
 class MockServicer:
     pass
 
+
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
-async def mock_server_transport(request, unused_tcp_port: int) -> TransportT:
+async def mock_server_transport(request) -> TransportT:
     transport_name = request.param
 
     with tempfile.NamedTemporaryFile(delete=True) as tmp:
         socket_path = tmp.name
 
     logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
-    logger.debug(f"🧪🔌🐛 socket_path: {socket_path}, unused_tcp_port: {unused_tcp_port}")
+    logger.debug(
+        f"🧪🔌🐛 socket_path: {socket_path}"
+    )
 
     match transport_name:
         case "tcp":
-            transport = TCPSocketTransport(host="127.0.0.1")
+            transport = TCPSocketTransport()
         case "unix":
-            transport = UnixSocketTransport(path=socket_path)
+            transport = UnixSocketTransport()
         case _:
             raise ValueError(f"Unknown transport: {transport_name}")
 
@@ -91,17 +97,17 @@ async def mock_server_transport(request, unused_tcp_port: int) -> TransportT:
 
 
 @pytest_asyncio.fixture
-async def mock_server_transport_tcp(unused_tcp_port: int) -> TransportT:
+async def mock_server_transport_tcp() -> TransportT:
     try:
-        transport = TCPSocketTransport(host="127.0.0.1")
+        transport = TCPSocketTransport()
     except Exception as e:
         raise ValueError(f"Could not open a TCP Socket Transport: {transport}")
 
     return transport
 
+
 @pytest_asyncio.fixture
 async def mock_server_transport_unix() -> TransportT:
-
     with tempfile.NamedTemporaryFile(delete=True) as tmp:
         socket_path = tmp.name
     try:
@@ -113,7 +119,7 @@ async def mock_server_transport_unix() -> TransportT:
     return transport
 
 
-#@pytest_asyncio.fixture(scope="module", autouse=True)
+# @pytest_asyncio.fixture(scope="module", autouse=True)
 @pytest.fixture(scope="function")
 def mock_server_handler() -> HandlerT:
     """Fixture to provide a mock hadler instance."""
@@ -125,6 +131,7 @@ async def mock_server_protocol():
     """Fixture to provide a mock protocol class."""
     proto = MockProtocol()
     return proto
+
 
 @pytest.fixture(scope="function")
 def mock_server_config():
@@ -138,13 +145,16 @@ def mock_server_config():
     config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     config.set("PLUGIN_MAGIC_COOKIE_VALUE", "hello")
     config.set("PLUGIN_MAGIC_COOKIE", "hello")
-    config.set("PLUGIN_PROTOCOL_VERSIONS", [1,2,3,4,5,6,7])
+    config.set("PLUGIN_PROTOCOL_VERSIONS", [1, 2, 3, 4, 5, 6, 7])
     config.set("PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
 
     return config
 
+
 @pytest_asyncio.fixture
-async def server_with_mocks(mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport):
+async def server_with_mocks(
+    mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
+):
     """Fixture to provide a server instance with mocks."""
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -157,4 +167,3 @@ async def server_with_mocks(mock_server_protocol, mock_server_handler, mock_serv
     finally:
         with suppress(Exception):
             await server.stop()
-

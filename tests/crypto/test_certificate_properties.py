@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/crypto/test_certificate_properties.py
 
 import pytest
@@ -17,12 +16,14 @@ from tests.fixtures import *
 
 ### ✅ BASIC CERTIFICATE PROPERTY TESTS ###
 
+
 @pytest.mark.asyncio
 async def test_certificate_subject(client_cert):
     """Ensure the subject is correctly extracted."""
     assert client_cert.subject, "Certificate subject should not be empty"
     assert isinstance(client_cert.subject, str), "Subject should be a string"
     assert "CN=" in client_cert.subject, "Subject should contain Common Name (CN)"
+
 
 @pytest.mark.asyncio
 async def test_certificate_issuer(client_cert):
@@ -31,43 +32,56 @@ async def test_certificate_issuer(client_cert):
     assert isinstance(client_cert.issuer, str), "Issuer should be a string"
     assert "CN=" in client_cert.issuer, "Issuer should contain Common Name (CN)"
 
+
 @pytest.mark.asyncio
 async def test_certificate_subject_not_equal_to_issuer_for_non_self_signed(client_cert):
     """Ensure subject and issuer are different for non-self-signed certificates."""
     if client_cert.subject == client_cert.issuer:
         pytest.skip("Skipping test: Certificate is self-signed.")
 
-    assert client_cert.subject != client_cert.issuer, "Non-self-signed certificate should have a different issuer"
+    assert client_cert.subject != client_cert.issuer, (
+        "Non-self-signed certificate should have a different issuer"
+    )
+
 
 ### ✅ CA STATUS CHECK ###
+
 
 @pytest.mark.asyncio
 async def test_certificate_is_ca(client_cert):
     """Ensure the certificate correctly reports its CA status."""
     assert isinstance(client_cert.is_ca, bool), "CA status should be a boolean"
 
+
 ### ✅ PUBLIC KEY HANDLING TESTS ###
+
 
 @pytest.mark.asyncio
 async def test_certificate_public_key(client_cert):
     """Ensure the public key is correctly loaded."""
     assert client_cert.public_key, "Certificate public key should not be empty"
-    assert isinstance(client_cert.public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)), (
-        "Public key should be RSA or EC"
-    )
+    assert isinstance(
+        client_cert.public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
+    ), "Public key should be RSA or EC"
+
 
 @pytest.mark.asyncio
 async def test_server_certificate_public_key(server_cert):
     """Ensure the server certificate's public key is correctly loaded."""
     assert server_cert.public_key, "Server certificate public key should not be empty"
 
+
 ### ✅ SERIAL NUMBER & HASHING TESTS ###
+
 
 @pytest.mark.asyncio
 async def test_certificate_serial_number(client_cert):
     """Ensure the certificate serial number is valid."""
-    assert isinstance(client_cert._cert.serial_number, int), "Serial number should be an integer"
+    assert isinstance(client_cert._cert.serial_number, int), (
+        "Serial number should be an integer"
+    )
     assert client_cert._cert.serial_number > 0, "Serial number should be positive"
+
 
 @pytest.mark.asyncio
 async def test_certificate_fingerprint(client_cert):
@@ -76,58 +90,90 @@ async def test_certificate_fingerprint(client_cert):
     assert isinstance(fingerprint, bytes), "Fingerprint should be in bytes format"
     assert len(fingerprint) == 32, "SHA-256 fingerprint should be 32 bytes long"
 
+
 ### ✅ CERTIFICATE EXTENSIONS TESTS ###
+
 
 @pytest.mark.asyncio
 async def test_certificate_has_extensions(client_cert):
     """Ensure certificate has extensions (basic constraints, key usage, etc.)."""
-    assert len(client_cert._cert.extensions) >= 1, "Certificate should have at least one extension"
+    assert len(client_cert._cert.extensions) >= 1, (
+        "Certificate should have at least one extension"
+    )
+
 
 @pytest.mark.asyncio
 async def test_certificate_basic_constraints(client_cert):
     """Ensure Basic Constraints extension is correctly set."""
     from cryptography.x509.oid import ExtensionOID
+
     try:
-        ext = client_cert._cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
-        assert ext.value.ca in [True, False], "Basic Constraints CA flag should be boolean"
+        ext = client_cert._cert.extensions.get_extension_for_oid(
+            ExtensionOID.BASIC_CONSTRAINTS
+        )
+        assert ext.value.ca in [True, False], (
+            "Basic Constraints CA flag should be boolean"
+        )
     except Exception:
         pytest.skip("Skipping test: Basic Constraints extension not found")
+
 
 @pytest.mark.asyncio
 async def test_certificate_key_usage(client_cert):
     """Ensure Key Usage extension is correctly set."""
     from cryptography.x509.oid import ExtensionOID
+
     try:
         ext = client_cert._cert.extensions.get_extension_for_oid(ExtensionOID.KEY_USAGE)
-        assert isinstance(ext.value.digital_signature, bool), "Key usage should be boolean"
+        assert isinstance(ext.value.digital_signature, bool), (
+            "Key usage should be boolean"
+        )
     except Exception:
         pytest.skip("Skipping test: Key Usage extension not found")
+
 
 @pytest.mark.asyncio
 async def test_certificate_extended_key_usage(client_cert):
     """Ensure Extended Key Usage extension is correctly set."""
     from cryptography.x509.oid import ExtensionOID
+
     try:
-        ext = client_cert._cert.extensions.get_extension_for_oid(ExtensionOID.EXTENDED_KEY_USAGE)
+        ext = client_cert._cert.extensions.get_extension_for_oid(
+            ExtensionOID.EXTENDED_KEY_USAGE
+        )
         assert len(ext.value) >= 1, "Extended Key Usage should have at least one value"
     except Exception:
         pytest.skip("Skipping test: Extended Key Usage extension not found")
 
+
 ### ✅ EDGE CASES ###
+
 
 @pytest.mark.asyncio
 async def test_certificate_subject_empty_fallback():
     """Ensure the certificate subject fallback for invalid certificates."""
     with pytest.raises(CertificateError):
-        invalid_cert = Certificate(cert="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----", key=None)
-        assert invalid_cert.subject == "<Invalid Certificate>", "Subject should fallback to <Invalid Certificate>"
+        invalid_cert = Certificate(
+            cert="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----",
+            key=None,
+        )
+        assert invalid_cert.subject == "<Invalid Certificate>", (
+            "Subject should fallback to <Invalid Certificate>"
+        )
+
 
 @pytest.mark.asyncio
 async def test_certificate_issuer_empty_fallback():
     """Ensure the certificate issuer fallback for invalid certificates."""
     with pytest.raises(CertificateError):
-        invalid_cert = Certificate(cert="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----", key=None)
-        assert invalid_cert.issuer == "<Invalid Certificate>", "Issuer should fallback to <Invalid Certificate>"
+        invalid_cert = Certificate(
+            cert="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----",
+            key=None,
+        )
+        assert invalid_cert.issuer == "<Invalid Certificate>", (
+            "Issuer should fallback to <Invalid Certificate>"
+        )
+
 
 @pytest.mark.asyncio
 async def test_is_ca_extension_not_found():
@@ -146,15 +192,22 @@ async def test_is_ca_extension_not_found():
     # Should return False when extension is not found
     assert cert.is_ca is False
 
+
 @pytest.mark.asyncio
 async def test_unique_serial_numbers(client_cert, server_cert):
     """Ensure unique serial numbers for different certificates."""
-    assert client_cert._cert.serial_number != server_cert._cert.serial_number, "Serial numbers should be unique"
+    assert client_cert._cert.serial_number != server_cert._cert.serial_number, (
+        "Serial numbers should be unique"
+    )
+
 
 @pytest.mark.asyncio
 async def test_certificate_hash_uniqueness(client_cert, server_cert):
     """Ensure different certificates have unique hashes."""
-    assert hash(client_cert) != hash(server_cert), "Different certs should not hash the same"
+    assert hash(client_cert) != hash(server_cert), (
+        "Different certs should not hash the same"
+    )
+
 
 @pytest.mark.asyncio
 async def test_certificate_hash_collision():

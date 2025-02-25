@@ -16,7 +16,7 @@ class LoggerProxy:
         context = {
             "trace_id": span_context.trace_id,
             "span_id": span_context.span_id,
-            **kwargs
+            **kwargs,
         }
 
         self._logger.log(level, message, extra=context)

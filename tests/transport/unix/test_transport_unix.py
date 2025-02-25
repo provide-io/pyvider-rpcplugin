@@ -1,4 +1,3 @@
-
 # tests/transport/test_transport_unix.py
 
 import asyncio
@@ -16,14 +15,18 @@ from tests.fixtures import *
 
 ################################################################################
 
+
 @pytest.mark.asyncio
 async def test_unix_transport_server_initialization(unix_transport):
     print(f"DEBUG: unix_transport type: {type(unix_transport)}")
 
     # Ensure _server attribute exists and is initialized
-    assert hasattr(unix_transport, "_server"), "UnixSocketTransport instance is missing '_server' attribute"
+    assert hasattr(unix_transport, "_server"), (
+        "UnixSocketTransport instance is missing '_server' attribute"
+    )
     assert unix_transport._server is not None, "_server is not initialized"
     print(f"DEBUG: _server attribute initialized: {unix_transport._server}")
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_connection_metrics(unique_socket_path):
@@ -69,8 +72,8 @@ async def test_unix_socket_connection_metrics(unique_socket_path):
         await transport.close()
         await asyncio.sleep(0.1)  # Allow time for cleanup
 
-
         assert not os.path.exists(socket_path), "Socket file wasn't cleaned up"
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

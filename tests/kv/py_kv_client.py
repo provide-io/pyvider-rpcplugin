@@ -18,9 +18,10 @@ from tests.kv.proto import (
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s.%(msecs)03d %(levelname)s %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s.%(msecs)03d %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
+
 
 class KVClient:
     """Client for KV plugin server."""
@@ -36,21 +37,22 @@ class KVClient:
         self._stub = None
 
         # Configure environment for plugin
-        os.environ.update({
-            "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-            "PLUGIN_MAGIC_COOKIE": "hello",
-            "PLUGIN_PROTOCOL_VERSIONS": "1",
-            "PLUGIN_TRANSPORTS": "unix",
-            "PLUGIN_AUTO_MTLS": "true"
-        })
+        os.environ.update(
+            {
+                "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
+                "PLUGIN_MAGIC_COOKIE": "hello",
+                "PLUGIN_PROTOCOL_VERSIONS": "1",
+                "PLUGIN_TRANSPORTS": "unix",
+                "PLUGIN_AUTO_MTLS": "true",
+            }
+        )
 
     async def start(self):
         """Connect to the KV server."""
         try:
             # Create plugin client
             self._client = RPCPluginClient(
-                command=[self.server_path],
-                config={"plugins": {"kv": KVProtocol()}}
+                command=[self.server_path], config={"plugins": {"kv": KVProtocol()}}
             )
             logger.debug("🤝 Created an RPCPluginClient.")
 
@@ -59,7 +61,7 @@ class KVClient:
             await self._client.start()
 
             # Add diagnostic logging
-            if hasattr(self._client, '_client_cert'):
+            if hasattr(self._client, "_client_cert"):
                 logger.info("🔐 Client certificate generated")
 
             await self._client.start()
@@ -93,10 +95,7 @@ class KVClient:
 
         try:
             logger.debug(f"Put request - key={key}, value_size={len(value)}")
-            await self._stub.Put(kv_pb2.PutRequest(
-                key=key,
-                value=value
-            ))
+            await self._stub.Put(kv_pb2.PutRequest(key=key, value=value))
             logger.debug(f"Put successful: key={key}")
 
         except Exception as e:
@@ -125,6 +124,7 @@ class KVClient:
             logger.error(f"Get failed: key={key}, error={e}")
             raise
 
+
 async def main():
     """Example usage of KVClient."""
     # Get server path from environment
@@ -151,6 +151,7 @@ async def main():
         raise Exception
     finally:
         await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

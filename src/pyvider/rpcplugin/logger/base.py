@@ -6,6 +6,7 @@ from typing import Optional
 
 from .formatters import AlignedFormatter
 
+
 def initialize_logger_provider():
     current_provider = logging.getLogger()
     if not isinstance(current_provider, LoggerProvider):
@@ -17,9 +18,11 @@ def initialize_logger_provider():
         logger.debug("LoggerProvider already initialized.")
         return current_provider
 
+
 class SuppressKqueueFilter(logging.Filter):
     def filter(self, record):
         return "KqueueSelector" not in record.getMessage()
+
 
 class UTF8StreamHandler(logging.StreamHandler):
     def __init__(self, stream=None):
@@ -27,6 +30,7 @@ class UTF8StreamHandler(logging.StreamHandler):
         if stream is None:
             stream = sys.stderr
         super().__init__(codecs.getwriter("utf-8")(stream))
+
 
 class PyviderLoggerBase(logging.Logger):
     """Custom logger class with OTEL integration and dynamic caller detection."""
@@ -47,7 +51,16 @@ class PyviderLoggerBase(logging.Logger):
     def _inject_caller(self, record: logging.LogRecord) -> None:
         record.name = self._determine_caller() or "unknown_function"
 
-    def _log(self, level, msg, args, exc_info=None, extra=None, stack_info=False, stacklevel=1):
+    def _log(
+        self,
+        level,
+        msg,
+        args,
+        exc_info=None,
+        extra=None,
+        stack_info=False,
+        stacklevel=1,
+    ):
         # Inject the correct caller module into the record
         record = logging.LogRecord(
             name=self._determine_caller(),  # Dynamically resolve the caller module
@@ -60,7 +73,6 @@ class PyviderLoggerBase(logging.Logger):
         )
         self.handle(record)  # Directly handle the modified record
 
-
     def trace(self, *args, **kwargs):
         """
         A custom trace method for logging.
@@ -68,28 +80,33 @@ class PyviderLoggerBase(logging.Logger):
         if len(args) == 1 and isinstance(args[0], str):
             # Handle case where only a message is passed
             trace_level_value = 15
-            if not hasattr(logging, 'TRACE'):
-                logging.addLevelName(trace_level_value, 'TRACE')
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
             self.log(trace_level_value, args[0], **kwargs)
         elif len(args) == 2 and isinstance(args[0], int):
             # Handle case where trace level and message are both passed
             trace_depth = args[0]
             message = args[1]
-            trace_level_name = f'TRACE{trace_depth}'
-            trace_level_value = 15 + trace_depth  # Setting TRACE levels above standard levels to avoid conflicts
+            trace_level_name = f"TRACE{trace_depth}"
+            trace_level_value = (
+                15 + trace_depth
+            )  # Setting TRACE levels above standard levels to avoid conflicts
             if not hasattr(logging, trace_level_name):
                 logging.addLevelName(trace_level_value, trace_level_name)
             self.log(trace_level_value, message, **kwargs)
         elif len(args) > 1 and isinstance(args[0], str):
             # Handle message with formatting arguments
             trace_level_value = 15
-            if not hasattr(logging, 'TRACE'):
-                logging.addLevelName(trace_level_value, 'TRACE')
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
             formatted_message = args[0] % args[1:]
             self.log(trace_level_value, formatted_message, **kwargs)
         else:
             # Handle invalid usage
-            raise ValueError("Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)")
+            raise ValueError(
+                "Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)"
+            )
+
 
 # Step 2: Set PyviderLoggerBase as the default logger class
 logging.setLoggerClass(PyviderLoggerBase)
@@ -111,9 +128,7 @@ class PyviderLogger:
         self.instance_id = instance_id
         self.insecure = insecure
 
-
     def get_logger(self, name: str = "default") -> PyviderLoggerBase:
-
         if name not in self.loggers:
             logger = PyviderLoggerBase(name=name)
             logger.setLevel(self.default_level)
@@ -125,11 +140,12 @@ class PyviderLogger:
                 )
 
                 stream_handler = logging.StreamHandler(sys.stderr)
-                #stream_handler = UTF8StreamHandler(sys.stderr)
-                stream_formatter = AlignedFormatter(fmt="%(asctime)s", datefmt="%Y-%m-%d %H:%M:%S")
+                # stream_handler = UTF8StreamHandler(sys.stderr)
+                stream_formatter = AlignedFormatter(
+                    fmt="%(asctime)s", datefmt="%Y-%m-%d %H:%M:%S"
+                )
                 stream_handler.setFormatter(stream_formatter)
                 logger.addHandler(stream_handler)
-
 
             self.loggers[name] = logger
         return self.loggers[name]
@@ -160,28 +176,32 @@ class PyviderLogger:
         if len(args) == 1 and isinstance(args[0], str):
             # Handle case where only a message is passed
             trace_level_value = 15
-            if not hasattr(logging, 'TRACE'):
-                logging.addLevelName(trace_level_value, 'TRACE')
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
             logger_self.log(trace_level_value, args[0], **kwargs)
         elif len(args) == 2 and isinstance(args[0], int):
             # Handle case where trace level and message are both passed
             trace_depth = args[0]
             message = args[1]
-            trace_level_name = f'TRACE{trace_depth}'
-            trace_level_value = 15 + trace_depth  # Setting TRACE levels above standard levels to avoid conflicts
+            trace_level_name = f"TRACE{trace_depth}"
+            trace_level_value = (
+                15 + trace_depth
+            )  # Setting TRACE levels above standard levels to avoid conflicts
             if not hasattr(logging, trace_level_name):
                 logging.addLevelName(trace_level_value, trace_level_name)
             logger_self.log(trace_level_value, message, **kwargs)
         elif len(args) > 1 and isinstance(args[0], str):
             # Handle message with formatting arguments
             trace_level_value = 15
-            if not hasattr(logging, 'TRACE'):
-                logging.addLevelName(trace_level_value, 'TRACE')
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
             formatted_message = args[0] % args[1:]
             logger_self.log(trace_level_value, formatted_message, **kwargs)
         else:
             # Handle invalid usage
-            raise ValueError("Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)")
+            raise ValueError(
+                "Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)"
+            )
 
     def set_logger_level(self, logger: logging.Logger, level_name: str) -> None:
         """
@@ -190,9 +210,9 @@ class PyviderLogger:
         :param level_name: The desired logging level (e.g., 'DEBUG', 'TRACE10').
         """
         level_name = level_name.upper()
-        if level_name.startswith('TRACE') and level_name != 'TRACE':
+        if level_name.startswith("TRACE") and level_name != "TRACE":
             try:
-                trace_depth = int(level_name.replace('TRACE', ''))
+                trace_depth = int(level_name.replace("TRACE", ""))
                 level_value = 15 + trace_depth
                 logging.addLevelName(level_value, level_name)
                 logger.setLevel(level_value)
@@ -223,9 +243,9 @@ class PyviderLogger:
         :param level_name: The desired logging level (e.g., 'DEBUG', 'TRACE10').
         """
         level_name = level_name.upper()
-        if level_name.startswith('TRACE') and level_name != 'TRACE':
+        if level_name.startswith("TRACE") and level_name != "TRACE":
             try:
-                trace_depth = int(level_name.replace('TRACE', ''))
+                trace_depth = int(level_name.replace("TRACE", ""))
                 level_value = 15 + trace_depth
                 logging.addLevelName(level_value, level_name)
                 for logger in self.loggers.values():
@@ -253,7 +273,7 @@ class PyviderLogger:
             max_level = 15 + max_trace
 
             def trace_filter(record: logging.LogRecord) -> bool:
-                if record.levelname.startswith('TRACE'):
+                if record.levelname.startswith("TRACE"):
                     return min_level <= record.levelno <= max_level
                 return True  # Allow standard logging levels to pass through
 
@@ -263,6 +283,7 @@ class PyviderLogger:
             handler.addFilter(SuppressKqueueFilter())
         else:
             raise ValueError(f"Logger '{name}' does not exist.")
+
 
 # Create an instance of PyviderLogger
 pyvider_logger = PyviderLogger()
