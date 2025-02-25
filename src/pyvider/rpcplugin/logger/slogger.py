@@ -1,3 +1,6 @@
+
+# slogger.py
+
 import logging
 import structlog
 
