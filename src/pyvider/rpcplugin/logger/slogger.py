@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Any, Dict, List, Optional, Union, cast, TypeVar, Protocol
+from typing import Any, Dict, List, Optional, Union, cast, TypeVar, Protocol, Callable
 
 import attrs
 import structlog
@@ -22,40 +22,6 @@ BASE_TRACE_LEVEL = 33
 Message = str
 LogLevel = int
 LevelName = str
-
-class TracingLogger(Protocol):
-    """Protocol defining the interface for a logger with trace capabilities."""
-    
-    def trace(self, level_or_message: Union[int, str], message: Optional[str] = None, **kwargs: Any) -> None:
-        """
-        Log a message at a custom TRACE level.
-        
-        Args:
-            level_or_message: Either the trace level (int) or the message if no level is provided
-            message: The message to log (if level is provided)
-            **kwargs: Additional context variables for the log
-        """
-        ...
-
-    def debug(self, message: str, **kwargs: Any) -> None:
-        """Log a message at DEBUG level."""
-        ...
-
-    def info(self, message: str, **kwargs: Any) -> None:
-        """Log a message at INFO level."""
-        ...
-
-    def warning(self, message: str, **kwargs: Any) -> None:
-        """Log a message at WARNING level."""
-        ...
-
-    def error(self, message: str, **kwargs: Any) -> None:
-        """Log a message at ERROR level."""
-        ...
-
-    def critical(self, message: str, **kwargs: Any) -> None:
-        """Log a message at CRITICAL level."""
-        ...
 
 @attrs.define(frozen=True, slots=True)
 class TraceLevel:
@@ -140,15 +106,46 @@ trace_registry = TraceLevelRegistry()
 # Register the base TRACE level
 trace_registry.register_level(TraceLevel.create())
 
-def trace_level_processor(
-    _: WrappedLogger, method_name: str, event_dict: EventDict
+# Add trace method to standard Logger class
+def trace_method(self, level_or_message: Union[int, str], message: Optional[str] = None, *args, **kwargs):
+    """
+    Log a message at a custom TRACE level.
+    
+    Args:
+        level_or_message: Either the trace level (int) or the message if no level is provided
+        message: The message to log (if level is provided)
+        *args: Format string arguments
+        **kwargs: Additional context variables for the log
+    """
+    if message is None and isinstance(level_or_message, str):
+        # Case: logger.trace("message")
+        trace_level = TraceLevel.create()
+        message = level_or_message
+    else:
+        # Case: logger.trace(42, "message")
+        level = cast(int, level_or_message)
+        trace_level = TraceLevel.create(level)
+        message = cast(str, message)
+    
+    # Register the level
+    trace_registry.register_level(trace_level)
+    
+    # Log at the trace level
+    if self.isEnabledFor(trace_level.value):
+        self._log(trace_level.value, message, args, **kwargs)
+
+# Attach trace method to Logger class
+logging.Logger.trace = trace_method  # type: ignore
+
+def trace_level_name_processor(
+    _: WrappedLogger, __: str, event_dict: EventDict
 ) -> EventDict:
     """
     Structlog processor that formats log level names correctly for TRACE levels.
     
     Args:
         _: The wrapped logger (unused)
-        method_name: The name of the logging method
+        __: The method name (unused)
         event_dict: The event dictionary
         
     Returns:
@@ -157,7 +154,7 @@ def trace_level_processor(
     # Get the level number from the event dictionary
     level_number = event_dict.get("level_number")
     if level_number is not None:
-        # Update the level name if it's a TRACE level
+        # Use our registry to get the correct level name
         level_name = trace_registry.get_level_name(level_number)
         event_dict["level"] = level_name
     return event_dict
@@ -171,8 +168,10 @@ class SLogger:
     custom trace levels through the trace() method.
     """
     
-    _logger: Any = attrs.field()
-    _stdlib_logger: logging.Logger = attrs.field()
+    name: str = attrs.field()
+    _logger: logging.Logger = attrs.field()
+    _structlog: Any = attrs.field()
+    _processors: List[Processor] = attrs.field(factory=list)
     
     @classmethod
     def configure(
@@ -184,7 +183,7 @@ class SLogger:
         extra_processors: Optional[List[Processor]] = None,
     ) -> None:
         """
-        Configure structlog with appropriate settings for trace levels.
+        Configure logging with appropriate settings for trace levels.
         
         Args:
             min_level: Minimum log level to record
@@ -193,20 +192,41 @@ class SLogger:
             log_file: Path to log file (if any)
             extra_processors: Additional structlog processors to use
         """
-        # Register all standard log levels with structlog
-        # This is necessary to ensure structlog's level mapping is correct
-        from structlog.stdlib import _LEVEL_TO_NAME
+        # Configure basic logging first
+        logging.basicConfig(
+            level=min_level,
+            format="%(message)s",
+            handlers=[],  # We'll add handlers manually
+        )
         
-        # Add our TRACE level to structlog's internal mapping
-        _LEVEL_TO_NAME[BASE_TRACE_LEVEL] = "trace"
+        # Set up handlers
+        handlers: List[logging.Handler] = []
         
-        # Set up processors
+        if console:
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(min_level)
+            handlers.append(console_handler)
+            
+        if log_file:
+            file_handler = logging.FileHandler(log_file)
+            file_handler.setLevel(min_level)
+            handlers.append(file_handler)
+        
+        # Set up root logger
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            root_logger.removeHandler(handler)
+        
+        for handler in handlers:
+            root_logger.addHandler(handler)
+        
+        # Configure structlog processors
         processors: List[Processor] = [
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
             structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-            trace_level_processor,  # Add our custom processor
+            trace_level_name_processor,
         ]
         
         if extra_processors:
@@ -219,26 +239,6 @@ class SLogger:
         else:
             processors.append(structlog.dev.ConsoleRenderer())
         
-        # Configure logging
-        if console or log_file:
-            handlers: List[logging.Handler] = []
-            
-            if console:
-                console_handler = logging.StreamHandler(sys.stdout)
-                console_handler.setLevel(min_level)
-                handlers.append(console_handler)
-                
-            if log_file:
-                file_handler = logging.FileHandler(log_file)
-                file_handler.setLevel(min_level)
-                handlers.append(file_handler)
-                
-            logging.basicConfig(
-                format="%(message)s",
-                level=min_level,
-                handlers=handlers,
-            )
-        
         # Configure structlog
         structlog.configure(
             processors=processors,
@@ -246,6 +246,9 @@ class SLogger:
             wrapper_class=structlog.stdlib.BoundLogger,
             cache_logger_on_first_use=True,
         )
+        
+        # Store processors for later use
+        cls._common_processors = processors
     
     @classmethod
     def get_logger(cls, name: str = "") -> "SLogger":
@@ -258,81 +261,77 @@ class SLogger:
         Returns:
             An SLogger instance
         """
-        # Ensure the base TRACE level is registered
-        trace_registry.register_level(TraceLevel.create())
+        # Get the standard library logger with trace capability
+        logger = logging.getLogger(name)
         
-        # Get both the structlog logger and the underlying stdlib logger
-        stdlib_logger = logging.getLogger(name)
+        # Get structlog logger
         structlog_logger = structlog.get_logger(name)
         
-        return cls(structlog_logger, stdlib_logger)
+        # Return our logger instance
+        try:
+            processors = cls._common_processors  # type: ignore
+        except AttributeError:
+            # No configuration was done, use default processors
+            processors = []
+            
+        return cls(name=name, _logger=logger, _structlog=structlog_logger, _processors=processors)
         
     def trace(self, level_or_message: Union[int, str], message: Optional[str] = None, **kwargs: Any) -> None:
         """
-        Log a message at a custom TRACE level.
+        Log a message at a custom TRACE level with structured context.
         
         Args:
             level_or_message: Either the trace level (int) or the message if no level is provided
             message: The message to log (if level is provided)
             **kwargs: Additional context variables for the log
         """
+        # Create a bound logger with the kwargs
+        bound_logger = self._structlog.bind(**kwargs) if kwargs else self._structlog
+        
+        # Use the trace method we added to the standard Logger
         if message is None and isinstance(level_or_message, str):
             # Case: logger.trace("message")
-            trace_level = TraceLevel.create()
-            message = level_or_message
+            self._logger.trace(level_or_message)  # type: ignore
         else:
             # Case: logger.trace(42, "message")
             level = cast(int, level_or_message)
-            trace_level = TraceLevel.create(level)
-            message = cast(str, message)
-        
-        # Register the level
-        trace_registry.register_level(trace_level)
-        
-        # Log directly to the stdlib logger, bypassing structlog's level mapping
-        # This approach works because structlog's processors will still be applied
-        if kwargs:
-            # Create a bound logger with the kwargs
-            bound_logger = self._logger.bind(**kwargs)
-            # Use _proxy_to_logger which accesses the standard library logger directly
-            bound_logger._logger.log(trace_level.value, message)
-        else:
-            # No kwargs, use the stdlib logger directly
-            self._stdlib_logger.log(trace_level.value, message)
+            msg = cast(str, message)
+            self._logger.trace(level, msg)  # type: ignore
     
-    # Forward standard logging methods to the wrapped logger
+    # Forward standard logging methods to the structlog logger
     def debug(self, message: str, **kwargs: Any) -> None:
         """Log a message at DEBUG level."""
-        self._logger.debug(message, **kwargs)
+        self._structlog.debug(message, **kwargs)
         
     def info(self, message: str, **kwargs: Any) -> None:
         """Log a message at INFO level."""
-        self._logger.info(message, **kwargs)
+        self._structlog.info(message, **kwargs)
         
     def warning(self, message: str, **kwargs: Any) -> None:
         """Log a message at WARNING level."""
-        self._logger.warning(message, **kwargs)
+        self._structlog.warning(message, **kwargs)
         
     def error(self, message: str, **kwargs: Any) -> None:
         """Log a message at ERROR level."""
-        self._logger.error(message, **kwargs)
+        self._structlog.error(message, **kwargs)
         
     def critical(self, message: str, **kwargs: Any) -> None:
         """Log a message at CRITICAL level."""
-        self._logger.critical(message, **kwargs)
+        self._structlog.critical(message, **kwargs)
         
     def exception(self, message: str, **kwargs: Any) -> None:
         """Log a message at ERROR level with exception information."""
-        self._logger.exception(message, **kwargs)
+        self._structlog.exception(message, **kwargs)
         
     def log(self, level: int, message: str, **kwargs: Any) -> None:
         """Log a message at the specified level."""
-        # Use the same approach as trace() for consistency
-        if kwargs:
-            bound_logger = self._logger.bind(**kwargs)
-            bound_logger._logger.log(level, message)
-        else:
-            self._stdlib_logger.log(level, message)
+        # Register level if it's a custom level
+        if level >= BASE_TRACE_LEVEL:
+            trace_level = TraceLevel(level, logging.getLevelName(level))
+            trace_registry.register_level(trace_level)
+        
+        # Use structlog's log method
+        self._structlog.log(level, message, **kwargs)
         
     def bind(self, **kwargs: Any) -> "SLogger":
         """
@@ -344,7 +343,18 @@ class SLogger:
         Returns:
             A new SLogger with bound context
         """
-        return SLogger(self._logger.bind(**kwargs), self._stdlib_logger)
+        return SLogger(
+            name=self.name,
+            _logger=self._logger,
+            _structlog=self._structlog.bind(**kwargs),
+            _processors=self._processors
+        )
+
+# Initialize trace level registry
+trace_registry.register_level(TraceLevel.create())
+
+# Storage for common processors
+SLogger._common_processors = []  # type: ignore
 
 # Create a default logger for convenience
 logger = SLogger.get_logger()
@@ -355,7 +365,7 @@ if __name__ == "__main__":
     SLogger.configure(
         min_level=logging.DEBUG,  # Set to DEBUG or lower to capture trace messages
         console=True,
-        json_format=True,
+        json_format=False,
     )
     
     # Get a logger
@@ -363,7 +373,7 @@ if __name__ == "__main__":
     
     # Log at various levels
     example_logger.trace("This is a base trace log")
-    example_logger.trace(57, "This is a TRACE57 log")
+    example_logger.trace(57, "This is a TRACE57 log") 
     example_logger.debug("This is a debug log")
     example_logger.info("This is an info log", extra_field="test")
     
