@@ -642,8 +642,40 @@ async def test_concurrent_connections(connected_pair_factory):
         await client._writer.drain()
 
 
+# In tests/transport/test_transport_suite.py
 @pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections(socket_monitor):
+    """Test multiple concurrent connections to Unix socket."""
+    async with managed_transport("unix") as transport:
+        monitor = socket_monitor(transport.path)
+        endpoint = await transport.listen()
+
+        # Create multiple clients
+        clients = []
+        for i in range(5):
+            client = UnixSocketTransport()
+            await client.connect(endpoint)
+            clients.append(client)
+            # Check state for each connection to increment counter
+            await monitor.check_state()  # Add this line
+
+        # Verify all connections
+        assert monitor.connections == 5
+        assert len(transport._connections) == 5
+        
+        test_data = b"concurrent test"
+        await asyncio.gather(*(client._writer.write(test_data) for client in clients))
+        await asyncio.gather(*(client._writer.drain() for client in clients))
+
+        # Cleanup
+        for client in clients:
+            await client.close()
+
+        assert not await monitor.check_state()
+
+
+@pytest.mark.asyncio
+async def Xtest_unix_socket_concurrent_connections(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
