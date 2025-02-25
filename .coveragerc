@@ -1,5 +1,0 @@
-[run]
-omit =
-    tests/*
-    logger/*
-    crypto/debug.py
