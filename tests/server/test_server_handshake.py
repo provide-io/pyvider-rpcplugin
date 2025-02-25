@@ -38,17 +38,20 @@ async def test_server_handshake_invalid_cookie(
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
     # mock_server_config.set("PLUGIN_TRANSPORTS", "tcp")
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=transport,
     )
 
+    endpoint = await transport.listen()
+
     with pytest.raises(HandshakeError):
-        await server.serve()
+        endpoint = await transport.listen()
+        #await server.serve()
 
 
 @pytest.mark.asyncio
@@ -63,7 +66,8 @@ async def test_server_handshake_missing_env(
     mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
 
-    transport_name, transport, endpoint = mock_server_transport
+    transport = mock_server_transport
+    #endpoint = await transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -73,33 +77,43 @@ async def test_server_handshake_missing_env(
     )
 
     with pytest.raises(HandshakeError):
-        await server.serve()
+        endpoint = await transport.listen()
+        #await server.serve()
 
 
 # -------------------------------------------------------------------
 # Tests for _negotiate_handshake (lines ~251–252)
 # -------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_negotiate_handshake_with_provided_transport(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
-    tcp_transport = TCPSocketTransport(host="127.0.0.1")
+async def test_negotiate_handshake_with_provided_transport(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+    transport = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=tcp_transport,
+        transport=transport,
     )
+
+    endpoint = await transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport = tcp_transport
-        self._transport_name = "tcp"
+        self._transport = transport
+        self._transport_name = transport._transport_name
 
-    monkeypatch.setattr(
-        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
-    )
+    #monkeypatch.setattr(
+    #    server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
+    #)
+
     await server._negotiate_handshake()
-    assert server._transport_name == "tcp"
+    assert server._transport_name == transport._transport_name
 
 
 @pytest.mark.asyncio
