@@ -6,7 +6,7 @@ TRACE_LEVEL = 5
 logging.addLevelName(TRACE_LEVEL, "TRACE")
 
 # Extend logger to support `trace` method
-def trace(self, level: num, message, *args, **kwargs):
+def trace(self, level: int, message, *args, **kwargs):
     if self.isEnabledFor(TRACE_LEVEL):
         self._log(TRACE_LEVEL, message, args, **kwargs)
 
