@@ -20,8 +20,8 @@ jobs:
       - run: pip install uv hatch ruff pyre-check
       - run: uv venv
       - run: source .venv/bin/activate
-      - run: uv pip install -r requirements.txt
-      - run: uv sync --all-extras
+      - run: uv sync --all-extras --active
+      #- run: uv pip install -r requirements.txt
       - run: ruff check . || true
       - run: pyre check || true
 
@@ -37,6 +37,6 @@ jobs:
       - run: pip install uv hatch
       - run: uv venv
       - run: source .venv/bin/activate
-      - run: uv pip install -r requirements.txt
-      - run: uv sync --all-extras
+      - run: uv sync --all-extras --active
+      #- run: uv pip install -r requirements.txt
       - run: hatch test -p
