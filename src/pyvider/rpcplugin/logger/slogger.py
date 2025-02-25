@@ -347,7 +347,7 @@ class SLogger:
             name=self.name,
             logger=self._logger,
             structlog=self._structlog.bind(**kwargs),
-            _processors=self._processors
+            processors=self._processors
         )
 
 # Initialize trace level registry
