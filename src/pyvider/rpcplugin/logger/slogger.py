@@ -345,7 +345,7 @@ class SLogger:
         """
         return SLogger(
             name=self.name,
-            _logger=self._logger,
+            logger=self._logger,
             _structlog=self._structlog.bind(**kwargs),
             _processors=self._processors
         )
