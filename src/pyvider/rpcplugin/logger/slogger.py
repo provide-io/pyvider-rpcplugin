@@ -1,8 +1,11 @@
+
+# slogger.py
+
 import logging
 import structlog
 
 # Define a custom TRACE level (lower than DEBUG)
-TRACE_LEVEL = 5
+TRACE_LEVEL = 33
 logging.addLevelName(TRACE_LEVEL, "TRACE")
 
 # Extend logger to support `trace` method
