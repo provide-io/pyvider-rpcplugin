@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/handshake/test_handshake_negotiate.py
 
 from unittest.mock import AsyncMock
@@ -14,6 +13,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 from tests.fixtures import *
 
+
 # Test for Protocol Version Negotiation
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_valid():
@@ -26,18 +26,24 @@ async def test_negotiate_protocol_version_valid():
         v for v in server_versions if v in SUPPORTED_PROTOCOL_VERSIONS
     )
 
+
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_no_common_version():
     """Test protocol version negotiation when no common version exists."""
     server_versions = [99, 100]  # Versions not supported by the client
-    with pytest.raises(ProtocolError, match="No mutually supported protocol version found"):
+    with pytest.raises(
+        ProtocolError, match="No mutually supported protocol version found"
+    ):
         negotiate_protocol_version(server_versions)
+
 
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_empty_list():
     """Test protocol version negotiation when the server provides no versions."""
     server_versions = []  # Server provides no versions
-    with pytest.raises(ProtocolError, match="No mutually supported protocol version found"):
+    with pytest.raises(
+        ProtocolError, match="No mutually supported protocol version found"
+    ):
         negotiate_protocol_version(server_versions)
 
 
@@ -48,6 +54,7 @@ async def test_negotiate_transport_valid_tcp():
     assert transport_name == "tcp"
     assert isinstance(transport, TCPSocketTransport)
 
+
 @pytest.mark.asyncio
 async def test_negotiate_transport_valid_unix():
     """Test successful Unix transport negotiation."""
@@ -55,17 +62,20 @@ async def test_negotiate_transport_valid_unix():
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
+
 @pytest.mark.asyncio
 async def test_negotiate_transport_no_common_transport():
     """Test transport negotiation when no common transport exists."""
     with pytest.raises(TransportError, match="Unsupported transports"):
         await negotiate_transport(["invalid_transport"])
 
+
 @pytest.mark.asyncio
 async def test_negotiate_transport_empty_list():
     """Test transport negotiation when no transports are provided."""
     with pytest.raises(TransportError, match="No transport options provided"):
         await negotiate_transport([])
+
 
 @pytest.mark.asyncio
 async def test_negotiate_transport_prefers_tcp():

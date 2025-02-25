@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/server/test_server_tls.py
 
 import asyncio
@@ -27,22 +26,29 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
+
 # this is somehow causing a segfault. i need to figure out wtf is up with the segfaults.
 @pytest.mark.asyncio
 async def test_server_starts_insecurely(valid_server_env, mock_server_transport):
+
+    transport = mock_server_transport
+    #endpoint = await transport.listen()
+
+    # TODO: errors are being swallowed here when the transport is not what's expected.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
-
+        transport=transport,
     )
     # Capture print calls directly
     printed_messages = []
+
     def mock_print(message, *args, **kwargs):
         printed_messages.append(str(message))
 
-    with patch('builtins.print', mock_print):
+    with patch("builtins.print", mock_print):
+        endpoint = await transport.listen()
         server_task = asyncio.create_task(server.serve())
         await server.wait_for_server_ready()
 
@@ -59,9 +65,11 @@ async def test_server_starts_insecurely(valid_server_env, mock_server_transport)
     handshake = printed_messages[0]
     assert handshake.startswith("1|"), f"Invalid handshake format: {handshake}"
 
+
 @pytest.mark.asyncio
 async def test_read_client_cert_present(monkeypatch, mock_server_transport):
     from pyvider.rpcplugin.config import rpcplugin_config
+
     rpcplugin_config.set("PLUGIN_CLIENT_CERT", "client_cert")
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -72,19 +80,26 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport):
     cert = server._read_client_cert()
     assert cert == "client_cert"
 
-# TODO: fix this.
-# this test currently just sits there and freezes, it awaits but never shuts
-# down.
-@pytest.mark.skip
-async def test_read_client_cert_absent(mock_server_protocol, mock_server_handler, mock_server_transport, server_with_mocks):
+
+@pytest.mark.asyncio
+async def test_read_client_cert_absent(
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     from pyvider.rpcplugin.config import rpcplugin_config
+
+    transport_name, transport, endpoint = mock_server_transport
+
     original_config = rpcplugin_config.config.copy()
 
     rpcplugin_config.set("PLUGIN_CLIENT_CERT", "")
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        transport=mock_server_transport,
+        config=mock_server_config,
+        transport=transport,
     )
     endpoint = await server.serve()
 
@@ -92,8 +107,9 @@ async def test_read_client_cert_absent(mock_server_protocol, mock_server_handler
     assert cert is None
     rpcplugin_config.config = original_config
 
-#@pytest.mark.asyncio
-def test_generate_server_credentials_insecure(server_with_mocks):
+
+@pytest.mark.asyncio
+async def test_generate_server_credentials_insecure(server_with_mocks):
     """Test generating server credentials in insecure mode."""
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
@@ -117,6 +133,7 @@ async def test_generate_server_credentials_secure(monkeypatch):
     assert creds is not None
     rpcplugin_config.config = original
 
+
 # -----------------------------------------------------------------------------
 # Tests for _generate_server_credentials (lines 127-136)
 # -----------------------------------------------------------------------------
@@ -125,8 +142,14 @@ async def test_generate_server_credentials_success(client_cert):
     # Set up configuration with dummy server certificate and client certificate.
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    rpcplugin_config.set("PLUGIN_SERVER_CERT", "-----BEGIN CERTIFICATE-----\ndummy_cert\n-----END CERTIFICATE-----")
-    rpcplugin_config.set("PLUGIN_SERVER_KEY", "-----BEGIN PRIVATE KEY-----\ndummy_key\n-----END PRIVATE KEY-----")
+    rpcplugin_config.set(
+        "PLUGIN_SERVER_CERT",
+        "-----BEGIN CERTIFICATE-----\ndummy_cert\n-----END CERTIFICATE-----",
+    )
+    rpcplugin_config.set(
+        "PLUGIN_SERVER_KEY",
+        "-----BEGIN PRIVATE KEY-----\ndummy_key\n-----END PRIVATE KEY-----",
+    )
     rpcplugin_config.set("PLUGIN_CLIENT_CERT", client_cert)
     rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", "1")
     rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp")
@@ -141,11 +164,17 @@ async def test_generate_server_credentials_success(client_cert):
     # Expect creds to be not None (dummy creds generated successfully)
     assert creds is not None
 
+
 @pytest.mark.asyncio
 async def test_generate_server_credentials_failure(monkeypatch):
     # Force Certificate creation to raise an exception.
     from pyvider.rpcplugin.crypto.certificate import Certificate
-    monkeypatch.setattr(Certificate, "__init__", lambda self, **kwargs: (_ for _ in ()).throw(Exception("Forced failure")))
+
+    monkeypatch.setattr(
+        Certificate,
+        "__init__",
+        lambda self, **kwargs: (_ for _ in ()).throw(Exception("Forced failure")),
+    )
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -154,6 +183,7 @@ async def test_generate_server_credentials_failure(monkeypatch):
     )
     with pytest.raises(Exception, match="has no attribute"):
         server._generate_server_credentials(client_cert.cert.encode())
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

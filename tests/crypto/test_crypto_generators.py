@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/crypto/test_crypto_generators.py
 
 import pytest
@@ -24,14 +23,16 @@ from pyvider.rpcplugin.crypto import (
     generate_keypair,
 )
 
+
 def test_generate_keypair_returns_keypair():
     """Ensure generate_keypair() returns correct type"""
     rsa_key = generate_keypair(KEY_TYPE_RSA)
     ec_key = generate_keypair(KEY_TYPE_ECDSA)
-    
+
     # Check concrete types instead of generics
     assert isinstance(rsa_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
     assert isinstance(ec_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
+
 
 def Xtest_generate_keypair_returns_keypair():
     """Ensure generate_keypair() always returns a KeyPairType instance."""
@@ -40,60 +41,71 @@ def Xtest_generate_keypair_returns_keypair():
     assert isinstance(rsa_key, KeyPairType), "RSA key should be a KeyPairType instance"
     assert isinstance(ec_key, KeyPairType), "EC key should be a KeyPairType instance"
 
+
 def test_generate_keypair_invalid_type():
     """Ensure an error is raised when an invalid key type is provided."""
     with pytest.raises(ValueError, match="Unsupported key type"):
         generate_keypair("invalid_type")
+
 
 def test_generate_rsa_keypair():
     """Test RSA keypair generation with a valid size."""
     key = generate_rsa_keypair(2048)
     assert key.key_size == 2048
 
+
 def test_generate_rsa_keypair_backend_failure():
     """Ensure RSA key generation fails if the cryptography backend encounters an issue."""
-    with mock.patch("cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key", side_effect=Exception("Backend failure")):
+    with mock.patch(
+        "cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key",
+        side_effect=Exception("Backend failure"),
+    ):
         with pytest.raises(Exception, match="Backend failure"):
             generate_rsa_keypair(2048)
+
 
 def test_generate_invalid_rsa_key_size():
     """Test RSA key generation fails with an invalid key size."""
     with pytest.raises(ValueError, match="Unsupported RSA key size"):
         generate_keypair(key_type=KEY_TYPE_RSA, key_size=1024)
 
+
 def test_generate_ec_keypair():
     """Test ECDSA keypair generation with a valid curve."""
     key = generate_keypair(key_type=KEY_TYPE_ECDSA, curve_name="secp256r1")
     assert key.curve.name == "secp256r1"
+
 
 def test_generate_ec_keypair_invalid_curve():
     """Cover error path in generate_ec_keypair"""
     with pytest.raises(AttributeError):
         generate_ec_keypair("invalid_curve")
 
+
 def test_generate_ec_keypair_backend_failure():
     """Ensure EC key generation fails if the cryptography backend encounters an issue."""
-    with mock.patch("cryptography.hazmat.primitives.asymmetric.ec.generate_private_key", side_effect=Exception("Backend failure")):
+    with mock.patch(
+        "cryptography.hazmat.primitives.asymmetric.ec.generate_private_key",
+        side_effect=Exception("Backend failure"),
+    ):
         with pytest.raises(Exception, match="Backend failure"):
             generate_ec_keypair("secp256r1")
+
 
 def test_generate_invalid_ec_curve():
     """Test ECDSA key generation fails with an invalid curve name."""
     with pytest.raises(ValueError, match="Unsupported EC curve"):
         generate_keypair(key_type=KEY_TYPE_ECDSA, curve_name="invalid_curve")
 
+
 def test_generate_unsupported_key_type():
     """Test unsupported key type raises an error."""
     with pytest.raises(ValueError, match="Unsupported key type"):
         generate_keypair(key_type="unsupported_type")
 
+
 def test_key_generation_performance():
     start_time = time.time()
-    cert = Certificate(
-        generate_keypair=True,
-        key_type=KEY_TYPE_RSA,
-        key_size=2048
-    )
+    cert = Certificate(generate_keypair=True, key_type=KEY_TYPE_RSA, key_size=2048)
     generation_time = time.time() - start_time
     assert generation_time < 1.0  # Should complete within 1 second
-

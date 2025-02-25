@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_listen.py
 
 import asyncio
@@ -13,11 +12,13 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_and_connect():
     transport = TCPSocketTransport()
     endpoint = await transport.listen()
     # do your checks, e.g. open a connection
+
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
@@ -26,6 +27,7 @@ async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
         s.bind(("127.0.0.1", unused_tcp_port))
         with pytest.raises(TransportError, match="Port already in use"):
             await transport.listen()
+
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_and_connect():
@@ -58,6 +60,7 @@ async def test_tcp_socket_transport_listen_and_connect():
     # Verify the server is no longer running
     assert transport._server is None or not transport._server.is_serving()
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
     """
@@ -74,6 +77,7 @@ async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
                 await transport.listen()
 
             assert "Port already in use" in str(excinfo.value)
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

@@ -39,6 +39,8 @@ class UnixSocketTransport(RPCPluginTransport):
     _closing: bool = attrs.field(init=False, default=False)
     _lock: asyncio.Lock = attrs.field(init=False, factory=asyncio.Lock)
 
+    _transport_name: str = "unix"
+
     def __attrs_post_init__(self):
         """
         Initialize transport state and possibly assign ephemeral sock name if none is provided.

@@ -24,6 +24,7 @@ from tests.kv.proto import (
     kv_pb2_grpc,
 )
 
+
 # ------------------------------------------------------------------------------
 # Dummy context for self‑testing (to satisfy the context parameter)
 # ------------------------------------------------------------------------------
@@ -59,14 +60,16 @@ class KVHandler(kv_pb2_grpc.KVServicer):
 
     def __init__(self):
         logger.debug("🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
-                # Add explicit logging of certificate parameters
-        if hasattr(self, '_server_cert_obj'):
+        # Add explicit logging of certificate parameters
+        if hasattr(self, "_server_cert_obj"):
             cert = self._server_cert_obj._cert
             public_key = cert.public_key()
             if isinstance(public_key, ec.EllipticCurvePublicKey):
                 logger.info(f"🔐 Server using curve: {public_key.curve.name}")
 
-    async def Put(self, request: kv_pb2.PutRequest, context: grpc.aio.ServicerContext) -> kv_pb2.Empty:
+    async def Put(
+        self, request: kv_pb2.PutRequest, context: grpc.aio.ServicerContext
+    ) -> kv_pb2.Empty:
         """
         🛎️📡🚀 Put:
           - Receives a key/value pair.
@@ -80,17 +83,26 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             logger.info(f"🛎️📡🚀 Put: Received request for key: '{key}'")
             value_str = request.value.decode("utf-8", errors="replace")
             summary = summarize_text(value_str)
-            logger.debug(f"🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}")
+            logger.debug(
+                f"🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}"
+            )
             filename = f"/tmp/kv-data-{key}"
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(value_str)
-            logger.debug(f"🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'.")
+            logger.debug(
+                f"🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'."
+            )
             return kv_pb2.Empty()
         except Exception as e:
-            logger.error(f"🛎️📡❌ Put: Error storing key '{request.key}': {e}", extra={"error": str(e)})
+            logger.error(
+                f"🛎️📡❌ Put: Error storing key '{request.key}': {e}",
+                extra={"error": str(e)},
+            )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
 
-    async def Get(self, request: kv_pb2.GetRequest, context: grpc.aio.ServicerContext) -> kv_pb2.GetResponse:
+    async def Get(
+        self, request: kv_pb2.GetRequest, context: grpc.aio.ServicerContext
+    ) -> kv_pb2.GetResponse:
         """
         🛎️📡🚀 Get:
           - Retrieves the value for the given key by reading the file "kv-data-<key>".
@@ -103,15 +115,22 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             filename = f"/tmp/kv-data-{key}"
             logger.debug(f"🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'.")
             if not os.path.exists(filename):
-                logger.error(f"🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist).")
+                logger.error(
+                    f"🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
+                )
                 await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
             with open(filename, "r", encoding="utf-8") as f:
                 value_str = f.read()
             summary = summarize_text(value_str)
-            logger.debug(f"🛎️📡✅ Get: Successfully retrieved key '{key}' with value (summary): {summary}")
+            logger.debug(
+                f"🛎️📡✅ Get: Successfully retrieved key '{key}' with value (summary): {summary}"
+            )
             return kv_pb2.GetResponse(value=value_str.encode("utf-8"))
         except Exception as e:
-            logger.error(f"🛎️📡❌ Get: Error retrieving key '{request.key}': {e}", extra={"error": str(e)})
+            logger.error(
+                f"🛎️📡❌ Get: Error retrieving key '{request.key}': {e}",
+                extra={"error": str(e)},
+            )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
 
     async def _log_request_details(self, context: grpc.aio.ServicerContext):
@@ -121,7 +140,10 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             for k, v in context.auth_context().items():
                 logger.debug(f"🛎️🧰🔍 Utils: Auth Context {k}: {v}")
         except Exception as e:
-            logger.error(f"🛎️🧰❌ Utils: Error logging request details: {e}", extra={"error": str(e)})
+            logger.error(
+                f"🛎️🧰❌ Utils: Error logging request details: {e}",
+                extra={"error": str(e)},
+            )
 
 
 # ------------------------------------------------------------------------------
@@ -138,9 +160,14 @@ async def serve():
     try:
         test_key = "status"
         test_value = "pyvider server listening"
-        logger.info(f"🛎️🧪 Self-Test: Executing Put for key '{test_key}' with value '{test_value}'")
+        logger.info(
+            f"🛎️🧪 Self-Test: Executing Put for key '{test_key}' with value '{test_value}'"
+        )
 
-        await kv_handler.Put(kv_pb2.PutRequest(key=test_key, value=test_value.encode("utf-8")), dummy_context)
+        await kv_handler.Put(
+            kv_pb2.PutRequest(key=test_key, value=test_value.encode("utf-8")),
+            dummy_context,
+        )
 
         logger.info("🛎️🧪 Self-Test: Put executed successfully.")
         logger.info(f"🛎️🧪 Self-Test: Executing Get for key '{test_key}'")
@@ -152,7 +179,9 @@ async def serve():
         logger.info(f"🛎️🧪 Self-Test: Get returned: {retrieved}")
 
     except Exception as e:
-        logger.error(f"🛎️🧪 Self-Test: Error during self-test: {e}", extra={"error": str(e)})
+        logger.error(
+            f"🛎️🧪 Self-Test: Error during self-test: {e}", extra={"error": str(e)}
+        )
 
     try:
         # Create and configure the RPCPluginServer with KVProtocol.
@@ -163,7 +192,7 @@ async def serve():
             config={
                 "max_workers": 10,
                 "max_message_length": 16 * 1024 * 1024,  # 16 MB
-            }
+            },
         )
 
         await server.serve()
@@ -180,6 +209,7 @@ async def serve():
     except Exception as e:
         logger.error(f"🛎️❗ Fatal error: {e}", extra={"error": str(e)})
         raise
+
 
 if __name__ == "__main__":
     logger.info("-------------------------------------------------")

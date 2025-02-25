@@ -1,4 +1,3 @@
-
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_handle_client.py
 
 import asyncio
@@ -12,6 +11,7 @@ from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
+
 
 @pytest.mark.asyncio
 async def test_tcp_handle_client_called():
@@ -28,6 +28,7 @@ async def test_tcp_handle_client_called():
         await writer.wait_closed()
     finally:
         await transport.close()
+
 
 @pytest.mark.asyncio
 async def test_tcp_handle_client_direct():
@@ -50,6 +51,7 @@ async def test_tcp_handle_client_direct():
         await writer.wait_closed()
     finally:
         await transport.close()
+
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _
