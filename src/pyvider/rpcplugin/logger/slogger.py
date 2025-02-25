@@ -274,7 +274,7 @@ class SLogger:
             # No configuration was done, use default processors
             processors = []
             
-        return cls(name=name, _logger=root_logger, _structlog=structlog_logger, _processors=processors)
+        return cls(name=name, _structlog=structlog_logger, _processors=processors)
         
     def trace(self, level_or_message: Union[int, str], message: Optional[str] = None, **kwargs: Any) -> None:
         """
