@@ -41,4 +41,4 @@ jobs:
       - run: uv pip install -r requirements.txt
       - run: uv sync --all-extras --active
       - run: uv pip list
-      - run: uv run hatch test -p --cov-report=term-missing --cov=pyvider.rpcplugin tests
+      - run: uv run --active hatch test -p --cov-report=term-missing --cov=pyvider.rpcplugin tests
