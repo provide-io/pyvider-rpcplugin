@@ -73,11 +73,13 @@ async def test_register_signal_handlers_success(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_register_signal_handlers_not_supported(monkeypatch, caplog):
-    import logging
-
-    caplog.set_level(logging.WARNING)
-
+async def test_register_signal_handlers_not_supported(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    caplog
+):
+    """Test behavior when signal handlers are not supported."""
     loop = asyncio.new_event_loop()
 
     def mock_add_signal_handler(*args):
@@ -93,9 +95,11 @@ async def test_register_signal_handlers_not_supported(monkeypatch, caplog):
         transport=None,
     )
 
-    server._register_signal_handlers()
-    assert "Signal handler not supported" in caplog.text
+    import logging
+    with caplog.at_level(logging.WARNING):
+        server._register_signal_handlers()
 
+    assert "Signal handler not supported" in caplog.text
 
 # -------------------------------------------------------------------
 # Test for _shutdown_requested

@@ -159,16 +159,26 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 common_name="localhost",
             )
             logger.debug("🛎️ Server certificate loaded/generated successfully.")
+
+            key_bytes = self._server_cert_obj.key.encode() if isinstance(self._server_cert_obj.key, str) else self._server_cert_obj.key
+            cert_bytes = self._server_cert_obj.cert.encode() if isinstance(self._server_cert_obj.cert, str) else self._server_cert_obj.cert
+            client_cert_bytes = client_cert.encode() if isinstance(client_cert, str) else client_cert
+
             creds = grpc.ssl_server_credentials(
-                private_key_certificate_chain_pairs=[
-                    (
-                        self._server_cert_obj.key.encode(),
-                        self._server_cert_obj.cert.encode(),
-                    )
-                ],
-                root_certificates=client_cert.encode(),
+                private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
+                root_certificates=client_cert_bytes,
                 require_client_auth=False,
             )
+            # creds = grpc.ssl_server_credentials(
+            #     private_key_certificate_chain_pairs=[
+            #         (
+            #             self._server_cert_obj.key.encode(),
+            #             self._server_cert_obj.cert.encode(),
+            #         )
+            #     ],
+            #     root_certificates=client_cert.encode(),
+            #     require_client_auth=False,
+            # )
             logger.debug("🛎️ Server TLS credentials created with mTLS enabled.")
             return creds
         except Exception as e:
@@ -324,8 +334,8 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.info(f"🤝 Selected protocol version: {self._protocol_version}")
 
             if self.transport:
-                if isinstance(self.transport, tuple):
-                    self._transport_name, self._transport, _ = self.transport
+                if isinstance(self.transport, tuple) and len(self.transport) >= 2:
+                    self._transport_name, self._transport = self.transport[0], self.transport[1]
                     logger.debug("🤝 Transport tuple provided; unpacked transport.")
                 else:
                     logger.debug("🤝 Using provided transport instance.")
@@ -335,6 +345,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                         if isinstance(self.transport, TCPSocketTransport)
                         else "unix"
                     )
+            # if self.transport:
+            #     if isinstance(self.transport, tuple):
+            #         self._transport_name, self._transport, _ = self.transport
+            #         logger.debug("🤝 Transport tuple provided; unpacked transport.")
+            #     else:
+            #         logger.debug("🤝 Using provided transport instance.")
+            #         self._transport = self.transport
+            #         self._transport_name = (
+            #             "tcp"
+            #             if isinstance(self.transport, TCPSocketTransport)
+            #             else "unix"
+            #         )
             else:
                 logger.debug("🤝 Negotiating transport from configuration...")
                 supported_transports = self._handshake_config.supported_transports
