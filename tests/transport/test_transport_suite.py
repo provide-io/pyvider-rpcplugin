@@ -781,39 +781,52 @@ async def test_unix_socket_server_integration(socket_monitor):
                 await server_task
 
 
+# tests/transport/test_transport_suite.py - in test_unix_socket_cleanup_handling
+
 @pytest.mark.asyncio
-async def test_unix_socket_cleanup_handling(socket_monitor, mock_server_transport_unix):
+async def test_unix_socket_cleanup_handling(socket_monitor):
     """Test proper cleanup of Unix socket resources."""
-    path = None
+    # Create a temporary path for testing
     with tempfile.NamedTemporaryFile(delete=False) as tf:
         path = tf.name
-
+    
+    # Create file with non-socket content
+    with open(path, "w") as f:
+        f.write("not a socket")
+    
+    # Create the monitor
     monitor = socket_monitor(path)
-    #transport = UnixSocketTransport(path=path)
-    transport = mock_server_transport_unix
-
+    
     try:
-        # Create socket
-        endpoint = await transport.listen()
-        assert await monitor.check_state()
-
-        # Force unclean shutdown
-        transport._server.close()
-        assert os.path.exists(path)
-
-        # New transport should handle stale socket
-        new_transport = transport.copy() #UnixSocketTransport(path=path)
-        await new_transport.listen()
-
-        assert await monitor.check_state()
-
-        await new_transport.close()
-        assert not await monitor.check_state()
-
+        # First transport should handle stale file
+        transport1 = UnixSocketTransport(path=path)
+        await transport1.listen()
+        
+        # Verify socket is active
+        assert await monitor.check_state(), "Socket should be active after listen"
+        
+        # Close first transport
+        await transport1.close()
+        
+        # Verify socket is inactive
+        assert not await monitor.check_state(), "Socket should be inactive after close"
+        assert not os.path.exists(path), "Socket file should be removed after close"
+        
+        # New transport should work on same path
+        transport2 = UnixSocketTransport(path=path)
+        await transport2.listen()
+        
+        # Verify new socket is active
+        assert await monitor.check_state(), "New socket should be active after listen"
+        
+        await transport2.close()
+        
+        # Final verification
+        assert not await monitor.check_state(), "Socket should be inactive after final close"
+        
     finally:
-        await transport.close()
+        # Cleanup if anything remains
         if os.path.exists(path):
             os.unlink(path)
-
 
 ################################################################################
