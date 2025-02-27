@@ -529,6 +529,28 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         logger.debug("🛎️ Server shutdown complete.")
 
     def __del__(self) -> None:
+        """Safe cleanup in garbage collection."""
+        try:
+            # Check if event loop exists and is running
+            try:
+                loop = asyncio.get_running_loop()
+                if not loop.is_closed():
+                    # Create non-coroutine cleanup
+                    if hasattr(self, '_server') and self._server:
+                        if hasattr(self._server, 'close'):
+                            self._server.close()
+                    
+                    # Signal shutdown without awaiting
+                    if hasattr(self, '_serving_future') and not self._serving_future.done():
+                        self._shutdown_requested()
+            except RuntimeError:
+                # No running event loop, just pass
+                pass
+        except Exception:
+            # Suppress all exceptions in __del__
+            pass
+
+    def X__del__(self) -> None:
         try:
             if not self._serving_event.is_set():
                 logger.warning(
