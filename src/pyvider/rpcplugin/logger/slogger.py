@@ -357,7 +357,7 @@ trace_registry.register_level(TraceLevel.create())
 SLogger._common_processors = []  # type: ignore
 
 # Create a default logger for convenience
-logger = SLogger.get_logger()
+slogger = SLogger.get_logger()
 
 # Example usage
 if __name__ == "__main__":
