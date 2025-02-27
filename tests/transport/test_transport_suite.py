@@ -810,7 +810,7 @@ async def test_unix_socket_concurrent_connections_769(socket_monitor):
         assert not await monitor.check_state()
 
 @pytest.mark.asyncio
-async def Xtest_unix_socket_concurrent_connections_799(socket_monitor):
+async def test_unix_socket_concurrent_connections_813(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -838,9 +838,8 @@ async def Xtest_unix_socket_concurrent_connections_799(socket_monitor):
 
         assert not await monitor.check_state()
 
-
 @pytest.mark.asyncio
-async def test_unix_socket_server_integration_1():
+async def test_unix_socket_server_integration_842():
     """Test Unix socket transport with server integration."""
     with tempfile.NamedTemporaryFile() as tf:
         socket_path = tf.name
@@ -906,7 +905,7 @@ async def test_unix_socket_server_integration_1():
             os.unlink(socket_path)
 
 @pytest.mark.asyncio
-async def test_unix_socket_server_integration_2(socket_monitor):
+async def test_unix_socket_server_integration_908(socket_monitor):
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -951,7 +950,7 @@ async def test_unix_socket_server_integration_2(socket_monitor):
                 await server_task
 
 @pytest.mark.asyncio
-async def test_unix_socket_cleanup_handling(socket_monitor):
+async def test_unix_socket_cleanup_handling_953(socket_monitor):
     """Test proper cleanup of Unix socket resources."""
     # Create a temporary path for testing
     with tempfile.NamedTemporaryFile(delete=False) as tf:
