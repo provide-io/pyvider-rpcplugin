@@ -625,22 +625,38 @@ async def Xtest_unix_socket_lifecycle(socket_monitor):
         assert await monitor.check_state()
 
 
+# tests/transport/test_transport_suite.py - in test_unix_socket_concurrent_connections
+
 @pytest.mark.asyncio
-async def test_concurrent_connections(connected_pair_factory):
-    """Test multiple concurrent connections."""
-    pairs = await asyncio.gather(
-        connected_pair_factory("tcp"), connected_pair_factory("tcp")
-    )
+async def test_unix_socket_concurrent_connections(socket_monitor):
+    """Test multiple concurrent connections to Unix socket."""
+    async with managed_transport("unix") as transport:
+        monitor = socket_monitor(transport.path)
+        endpoint = await transport.listen()
 
-    for server, client in pairs:
-        assert client._writer is not None
-        assert not client._writer.is_closing()
+        # Create multiple clients
+        clients = []
+        for i in range(5):
+            client = UnixSocketTransport()
+            await client.connect(endpoint)
+            clients.append(client)
 
-        # Test data transfer
-        test_data = b"test"
-        client._writer.write(test_data)
-        await client._writer.drain()
+        # Fixed: Correctly check monitor connections
+        assert await monitor.check_state(), "Socket should be active"
+        
+        # Test concurrent data transfer
+        test_data = b"concurrent test"
+        for client in clients:
+            client._writer.write(test_data)
+            await client._writer.drain()
 
+        # Cleanup - must await each close() call
+        for client in clients:
+            await client.close()
+
+        # Wait briefly for cleanup to complete
+        await asyncio.sleep(0.1)
+        assert not await monitor.check_state()
 
 # In tests/transport/test_transport_suite.py
 @pytest.mark.asyncio
