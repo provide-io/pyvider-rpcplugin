@@ -377,59 +377,6 @@ class UnixSocketTransport(RPCPluginTransport):
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
     async def close(self) -> None:
-        """Ensure proper socket cleanup with multiple safety mechanisms."""
-        logger.debug("🚪 close() called on UnixSocketTransport.")
-        if self._closing:
-            logger.debug("🚪 Already closing, skipping.")
-            return
-        self._closing = True
-        self._running = False
-
-        # Close connections with timeout protection
-        async with self._lock:
-            if self._connections:
-                logger.debug(f"🚪 Closing {len(self._connections)} active connections.")
-                close_tasks = [c.close() for c in self._connections]
-                try:
-                    # Add timeout to prevent hanging
-                    await asyncio.wait_for(asyncio.gather(*close_tasks, return_exceptions=True), timeout=2.0)
-                except asyncio.TimeoutError:
-                    logger.error("🚪 Timed out waiting for connections to close")
-                self._connections.clear()
-
-        # Close server with timeout
-        if self._server:
-            self._server.close()
-            try:
-                await asyncio.wait_for(self._server.wait_closed(), timeout=1.0)
-                logger.debug("🚪 Server closed.")
-            except (asyncio.TimeoutError, Exception) as e:
-                logger.error(f"🚪❌ Error waiting for server close: {e}")
-            finally:
-                self._server = None
-
-        # Critical: Ensure socket file cleanup with multiple attempts and forced mode changes
-        if self.path and os.path.exists(self.path):
-            for attempt in range(3):
-                try:
-                    # Force permissions to ensure we can delete
-                    os.chmod(self.path, 0o777)
-                    os.unlink(self.path)
-                    logger.debug(f"🚪✅ Removed socket file: {self.path}")
-                    break
-                except OSError as e:
-                    if attempt == 2:
-                        logger.error(f"🚪❌ Failed to remove socket file {self.path}: {e}")
-                        # Don't raise - continue cleanup
-                    else:
-                        # Wait before retry
-                        await asyncio.sleep(0.1 * (attempt + 1))
-
-        self.endpoint = None
-        self._closing = False
-        logger.debug("🚪 close() completed for UnixSocketTransport.")
-
-    async def Xclose(self) -> None:
         logger.debug("🚪 close() called on UnixSocketTransport.")
         if self._closing:
             logger.debug("🚪 Already closing, skipping.")
