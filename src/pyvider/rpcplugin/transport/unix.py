@@ -376,8 +376,6 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
-# src/pyvider/rpcplugin/transport/unix.py - in UnixSocketTransport.close()
-
     async def close(self) -> None:
         logger.debug("🚪 close() called on UnixSocketTransport.")
         if self._closing:
@@ -448,7 +446,7 @@ class UnixSocketTransport(RPCPluginTransport):
         logger.debug("🚪 close() completed for UnixSocketTransport.")
 
 ###
-    async def close(self) -> None:
+    async def Xclose(self) -> None:
         """
         Close everything: the connections, the server, the writer, then remove the socket file.
         Some tests specifically check for 'Mocked unlink error' or 'Failed to remove socket file:'.
