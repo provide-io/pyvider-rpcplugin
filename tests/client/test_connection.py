@@ -90,7 +90,7 @@ async def test_send_data_oserror(monkeypatch, connection):
 @pytest.mark.asyncio
 async def test_receive_data_normal(connection, dummy_reader):
     # Test normal reception: dummy_reader returns preset data.
-    test_bytes = b"response"
+    test_bytes = b"test data"
     dummy_reader.data = test_bytes
     result = await connection.receive_data()
     assert result == test_bytes
