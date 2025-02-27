@@ -214,8 +214,46 @@ def temp_sock_dir():
         yield tmpdir
 
 
+# tests/conftest.py or tests/fixtures/transport.py
+
+@pytest_asyncio.fixture(scope="function")
+async def transport_factory(request):
+    """Factory fixture for creating isolated transport instances."""
+    created = []
+    
+    async def create(transport_type: str, **kwargs) -> TransportT:
+        # Create unique paths for Unix sockets
+        if transport_type == "unix":
+            import uuid
+            socket_path = f"/tmp/pyv_test_{uuid.uuid4().hex[:8]}.sock"
+            # Clean any existing file
+            if os.path.exists(socket_path):
+                try:
+                    os.unlink(socket_path)
+                except OSError:
+                    pass
+            transport = UnixSocketTransport(path=socket_path, **kwargs)
+        else:
+            transport = TCPSocketTransport(**kwargs)
+            
+        created.append(transport)
+        return transport
+        
+    yield create
+    
+    # Thorough cleanup
+    for transport in created:
+        try:
+            await transport.close()
+            # For Unix sockets, ensure file is gone
+            if isinstance(transport, UnixSocketTransport) and hasattr(transport, 'path'):
+                if os.path.exists(transport.path):
+                    os.unlink(transport.path)
+        except Exception as e:
+            logger.error(f"Error during transport cleanup: {e}")
+
 @pytest_asyncio.fixture
-async def transport_factory(temp_sock_dir):
+async def Xtransport_factory(temp_sock_dir):
     """Factory fixture for creating transport instances."""
     created = []
 
