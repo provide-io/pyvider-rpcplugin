@@ -872,6 +872,74 @@ async def test_unix_socket_error_handling():
         await transport.connect("/nonexistent/path")
 
 
+# tests/transport/test_transport_suite.py
+
+@pytest.mark.asyncio
+async def test_unix_socket_server_integration():
+    """Test Unix socket transport with server integration."""
+    with tempfile.NamedTemporaryFile() as tf:
+        socket_path = tf.name
+    
+    # Remove the file so we can create a socket
+    os.unlink(socket_path)
+    
+    # Create transport with unique path
+    transport = UnixSocketTransport(path=socket_path)
+    
+    # Create server
+    protocol = MockProtocol()
+    handler = MockHandler()
+    
+    server = RPCPluginServer(
+        protocol=protocol, 
+        handler=handler, 
+        transport=transport
+    )
+    
+    server._serving_future = asyncio.Future()
+    server._serving_event = asyncio.Event()
+    
+    try:
+        # Start server
+        server_task = asyncio.create_task(server.serve())
+        
+        # Wait for server to be ready (with longer timeout)
+        try:
+            await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
+        except asyncio.TimeoutError:
+            pytest.fail("Server failed to become ready in time")
+        
+        assert server._serving_event.is_set(), "Server should be ready"
+        assert os.path.exists(socket_path), f"Socket file {socket_path} does not exist"
+        
+        # Create client connection
+        client = UnixSocketTransport()
+        await client.connect(socket_path)
+        
+        # Test data transfer
+        test_data = b"server test"
+        client._writer.write(test_data)
+        await client._writer.drain()
+        
+        await client.close()
+        
+    finally:
+        # Cleanup
+        server._shutdown_requested()
+        await server.stop()
+        
+        # Cancel server task
+        if 'server_task' in locals():
+            server_task.cancel()
+            try:
+                await server_task
+            except asyncio.CancelledError:
+                pass
+        
+        # Ensure socket is cleaned up
+        if os.path.exists(socket_path):
+            os.unlink(socket_path)
+
 @pytest.mark.asyncio
 async def test_unix_socket_server_integration(socket_monitor):
     """Test Unix socket transport with server integration."""
