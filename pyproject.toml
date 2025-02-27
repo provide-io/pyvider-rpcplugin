@@ -17,6 +17,7 @@ dependencies = [
     "google>=3.0.0",
     "grpcio>=1.70.0",
     "protobuf>=5.29.3",
+    "pytest-asyncio>=0.25.3",
 ]
 
 [project.optional-dependencies]

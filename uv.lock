@@ -975,6 +975,7 @@ dependencies = [
     { name = "google" },
     { name = "grpcio" },
     { name = "protobuf" },
+    { name = "pytest-asyncio" },
 ]
 
 [package.optional-dependencies]
@@ -1023,6 +1024,7 @@ requires-dist = [
     { name = "pyre-check", marker = "extra == 'dev'", specifier = ">=0.9.23" },
     { name = "pyre-extensions", marker = "extra == 'dev'", specifier = ">=0.0.32" },
     { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.394" },
+    { name = "pytest-asyncio", specifier = ">=0.25.3" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.25.3" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.9.7" },
