@@ -188,50 +188,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise
 
     async def stop(self) -> None:
-        """Ensure proper server shutdown with timeouts."""
-        logger.debug("🛎️ Stopping server...")
-        
-        # Cancel any pending tasks first
-        all_tasks = [task for task in asyncio.all_tasks() 
-                    if task is not asyncio.current_task() and 
-                       not task.done() and 
-                       task.get_name().startswith('RPCPlugin')]
-        
-        for task in all_tasks:
-            task.cancel()
-            
-        try:
-            await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
-        except asyncio.TimeoutError:
-            logger.warning("🛎️ Timed out waiting for tasks to cancel")
-        
-        # Stop gRPC server with timeout
-        if self._server:
-            try:
-                await asyncio.wait_for(self._server.stop(grace=1.0), timeout=2.0)
-                logger.debug("🛎️ gRPC server stopped successfully.")
-            except Exception as e:
-                logger.error(f"🛎️❌ Error stopping gRPC server: {e}")
-            finally:
-                self._server = None
-        
-        # Close transport with timeout
-        if self._transport:
-            try:
-                await asyncio.wait_for(self._transport.close(), timeout=3.0)
-                logger.debug("🛎️ Transport closed successfully.")
-            except Exception as e:
-                logger.error(f"🛎️❌ Error closing transport: {e}")
-            finally:
-                self._transport = None
-        
-        # Ensure serving future completion
-        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
-            self._shutdown_requested()
-            
-        logger.debug("🛎️ Server shutdown complete.")
-
-    async def Xstop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         if self._server:
             try:
@@ -529,28 +485,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         logger.debug("🛎️ Server shutdown complete.")
 
     def __del__(self) -> None:
-        """Safe cleanup in garbage collection."""
-        try:
-            # Check if event loop exists and is running
-            try:
-                loop = asyncio.get_running_loop()
-                if not loop.is_closed():
-                    # Create non-coroutine cleanup
-                    if hasattr(self, '_server') and self._server:
-                        if hasattr(self._server, 'close'):
-                            self._server.close()
-
-                    # Signal shutdown without awaiting
-                    if hasattr(self, '_serving_future') and not self._serving_future.done():
-                        self._shutdown_requested()
-            except RuntimeError:
-                # No running event loop, just pass
-                pass
-        except Exception:
-            # Suppress all exceptions in __del__
-            pass
-
-    def X__del__(self) -> None:
         try:
             if not self._serving_event.is_set():
                 logger.warning(
