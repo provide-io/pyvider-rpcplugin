@@ -64,17 +64,17 @@ async def kv_server(
     serve_task = asyncio.create_task(server.serve())
 
     # Wait for server to be ready
-    #await server.wait_for_server_ready()
+    await asyncio.sleep(0.5)  # Give server time to start
 
-    #try:
-        #yield server
+    try:
+        yield server
 
-    #finally:
-    # Proper cleanup
-    await server.stop()
-    serve_task.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await serve_task
+    finally:
+        # Proper cleanup
+        await server.stop()
+        serve_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await serve_task
 
 
 @pytest_asyncio.fixture
