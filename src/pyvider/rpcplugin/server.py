@@ -188,6 +188,50 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise
 
     async def stop(self) -> None:
+        """Ensure proper server shutdown with timeouts."""
+        logger.debug("🛎️ Stopping server...")
+        
+        # Cancel any pending tasks first
+        all_tasks = [task for task in asyncio.all_tasks() 
+                    if task is not asyncio.current_task() and 
+                       not task.done() and 
+                       task.get_name().startswith('RPCPlugin')]
+        
+        for task in all_tasks:
+            task.cancel()
+            
+        try:
+            await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
+        except asyncio.TimeoutError:
+            logger.warning("🛎️ Timed out waiting for tasks to cancel")
+        
+        # Stop gRPC server with timeout
+        if self._server:
+            try:
+                await asyncio.wait_for(self._server.stop(grace=1.0), timeout=2.0)
+                logger.debug("🛎️ gRPC server stopped successfully.")
+            except Exception as e:
+                logger.error(f"🛎️❌ Error stopping gRPC server: {e}")
+            finally:
+                self._server = None
+        
+        # Close transport with timeout
+        if self._transport:
+            try:
+                await asyncio.wait_for(self._transport.close(), timeout=3.0)
+                logger.debug("🛎️ Transport closed successfully.")
+            except Exception as e:
+                logger.error(f"🛎️❌ Error closing transport: {e}")
+            finally:
+                self._transport = None
+        
+        # Ensure serving future completion
+        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
+            self._shutdown_requested()
+            
+        logger.debug("🛎️ Server shutdown complete.")
+
+    async def Xstop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         if self._server:
             try:
