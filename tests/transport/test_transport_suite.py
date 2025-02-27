@@ -42,6 +42,7 @@ class SocketStateMonitor:
     def connections(self) -> int:
         return self._connections
 
+
 # tests/transport/test_transport_suite.py - in SocketStateMonitor.check_state
 
     async def check_state(self) -> bool:
