@@ -42,28 +42,36 @@ class SocketStateMonitor:
     def connections(self) -> int:
         return self._connections
 
+# tests/transport/test_transport_suite.py - in SocketStateMonitor.check_state
+
     async def check_state(self) -> bool:
         """Check current socket state."""
         async with self._lock:
             try:
+                # First check if path exists
                 if not os.path.exists(self._path):
                     self._active = False
                     return False
 
-                import socket
-
+                # Try to connect to verify it's an active socket
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 sock.settimeout(0.5)
                 try:
                     sock.connect(self._path)
                     self._active = True
                     self._connections += 1
-                    return True
-                except (ConnectionRefusedError, OSError):
-                    self._active = False
-                    return False
-                finally:
                     sock.close()
+                    return True
+                except (ConnectionRefusedError, FileNotFoundError):
+                    # Socket exists but nothing listening
+                    self._active = False
+                    sock.close()
+                    return False
+                except OSError:
+                    # Not a valid socket
+                    self._active = False
+                    sock.close()
+                    return False
             except Exception as e:
                 logger.error(f"Socket state check error: {e}")
                 self._active = False
