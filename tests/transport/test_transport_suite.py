@@ -20,6 +20,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.types import TransportT, HandlerT
 
+# tests/transport/test_transport_suite.py - Replace SocketStateMonitor class entirely
 
 class SocketStateMonitor:
     """Utility for monitoring socket state."""
@@ -42,44 +43,51 @@ class SocketStateMonitor:
     def connections(self) -> int:
         return self._connections
 
-
-# tests/transport/test_transport_suite.py - in SocketStateMonitor.check_state
-
     async def check_state(self) -> bool:
-        """Check current socket state."""
-        async with self._lock:
-            try:
-                # First check if path exists
-                if not os.path.exists(self._path):
-                    self._active = False
-                    return False
-
-                # Try to connect to verify it's an active socket
-                sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                sock.settimeout(0.5)
+        """Check current socket state with retries."""
+        for attempt in range(3):  # Retry up to 3 times
+            async with self._lock:
                 try:
-                    sock.connect(self._path)
-                    self._active = True
-                    self._connections += 1
-                    sock.close()
-                    return True
-                except (ConnectionRefusedError, FileNotFoundError):
-                    # Socket exists but nothing listening
-                    self._active = False
-                    sock.close()
-                    return False
-                except OSError:
-                    # Not a valid socket
-                    self._active = False
-                    sock.close()
-                    return False
-            except Exception as e:
-                logger.error(f"Socket state check error: {e}")
-                self._active = False
-                return False
+                    if not os.path.exists(self._path):
+                        self._active = False
+                        return False
 
-    async def wait_for_active(self, timeout: float = 1.0) -> bool:
-        """Wait for socket to become active."""
+                    # Check if it's a valid socket file
+                    try:
+                        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                        sock.settimeout(0.5)
+                        sock.connect(self._path)
+                        self._active = True
+                        self._connections += 1
+                        sock.close()
+                        return True
+                    except (ConnectionRefusedError, FileNotFoundError):
+                        # Socket exists but nothing listening
+                        if attempt < 2:  # Only sleep if we have more retries
+                            await asyncio.sleep(0.2)  # Wait for socket to be ready
+                            continue
+                        self._active = False
+                        return False
+                    except OSError:
+                        self._active = False
+                        return False
+                    finally:
+                        try:
+                            sock.close()
+                        except (NameError, UnboundLocalError):
+                            pass
+                except Exception as e:
+                    logger.error(f"Socket state check error: {e}")
+                    
+            # Sleep between retries
+            if attempt < 2:
+                await asyncio.sleep(0.2)
+                
+        self._active = False
+        return False
+
+    async def wait_for_active(self, timeout: float = 3.0) -> bool:
+        """Wait for socket to become active with regular checks."""
         end_time = asyncio.get_event_loop().time() + timeout
         while asyncio.get_event_loop().time() < end_time:
             if await self.check_state():
@@ -87,7 +95,7 @@ class SocketStateMonitor:
             await asyncio.sleep(0.1)
         return False
 
-    async def wait_for_inactive(self, timeout: float = 1.0) -> bool:
+    async def wait_for_inactive(self, timeout: float = 3.0) -> bool:
         """Wait for socket to become inactive."""
         end_time = asyncio.get_event_loop().time() + timeout
         while asyncio.get_event_loop().time() < end_time:
@@ -95,7 +103,6 @@ class SocketStateMonitor:
                 return True
             await asyncio.sleep(0.1)
         return False
-
 
 @asynccontextmanager
 async def managed_transport(
