@@ -203,7 +203,7 @@ class SLogger:
         handlers: List[logging.Handler] = []
         
         if console:
-            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler = logging.StreamHandler(sys.stderr)
             console_handler.setLevel(min_level)
             handlers.append(console_handler)
             
