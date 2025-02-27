@@ -147,9 +147,7 @@ async def socket_monitor():
         if os.path.exists(monitor.path):
             os.unlink(monitor.path)
 
-
 ################################################################################
-
 
 # Base Dummy Classes
 class DummyReader:
@@ -162,7 +160,6 @@ class DummyReader:
             self._called = True
             return self._data
         return b""
-
 
 class DummyWriter:
     def __init__(self):
@@ -187,7 +184,6 @@ class DummyWriter:
     def get_extra_info(self, key: str, default: any = None) -> any:
         return "dummy_peer" if key == "peername" else default
 
-
 # Protocol & Handler Mocks
 class MockProtocol(RPCPluginProtocol):
     def get_grpc_descriptors(self):
@@ -197,12 +193,10 @@ class MockProtocol(RPCPluginProtocol):
     async def add_to_server(self, handler, server):
         logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
 
-
 class MockHandler:
     async def handle_request(self, request, context):
         logger.debug("🔌🚀✅ MockHandler.handle_request called.")
         return None
-
 
 # Core Fixtures
 @pytest.fixture
@@ -214,15 +208,12 @@ def unused_tcp_port() -> int:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
-
 @pytest.fixture
 def temp_sock_dir():
     """Create a temporary directory for Unix sockets."""
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
 
-
-# tests/conftest.py or tests/fixtures/transport.py
 
 @pytest_asyncio.fixture(scope="function")
 async def transport_factory(request):
@@ -298,7 +289,6 @@ async def Xtransport_factory(temp_sock_dir):
         except Exception as e:
             logger.error(f"Transport cleanup error: {e}")
 
-
 @pytest_asyncio.fixture
 async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
     """Factory fixture for creating transport instances."""
@@ -364,7 +354,6 @@ async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
     for transport in reversed(created):
         await cleanup_transport(transport)
 
-
 @pytest_asyncio.fixture
 async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
     """Factory fixture for creating transport instances."""
@@ -423,7 +412,6 @@ async def mock_handler():
     """Create a mock handler instance."""
     return MockHandler()
 
-
 @pytest_asyncio.fixture
 async def server_factory(mock_protocol, mock_handler):
     """Factory fixture for creating server instances."""
@@ -444,7 +432,6 @@ async def server_factory(mock_protocol, mock_handler):
             await server.stop()
         except Exception as e:
             logger.error(f"Error stopping server: {e}")
-
 
 @pytest_asyncio.fixture
 async def connected_pair_factory(transport_factory):
@@ -469,10 +456,8 @@ async def connected_pair_factory(transport_factory):
         await client.close()
         await server.close()
 
-
-# Test Suite
 @pytest.mark.asyncio
-async def test_tcp_transport_basic(transport_factory):
+async def test_tcp_transport_basic_1(transport_factory):
     """Test basic TCP transport creation and listening."""
     transport = await transport_factory("tcp")
     endpoint = await transport.listen()
@@ -482,9 +467,8 @@ async def test_tcp_transport_basic(transport_factory):
 
     await transport.close()
 
-
 @pytest.mark.asyncio
-async def test_unix_transport_basic(transport_factory):
+async def test_unix_transport_basic_2(transport_factory):
     """Test basic Unix transport creation and listening."""
     transport = await transport_factory("unix")
     endpoint = await transport.listen()
@@ -494,7 +478,6 @@ async def test_unix_transport_basic(transport_factory):
 
     await transport.close()
     assert not os.path.exists(endpoint)
-
 
 @pytest.mark.asyncio
 # @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
@@ -512,7 +495,6 @@ async def test_transport_connection(transport_type, connected_pair_factory):
     await writer.drain()
 
     # Cleanup happens via fixture
-
 
 @pytest.mark.asyncio
 # @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
@@ -552,11 +534,8 @@ async def test_server_with_transport(
         with contextlib.suppress(asyncio.CancelledError):
             await server_task
 
-
-# tests/transport/test_transport_suite.py
-
 @pytest.mark.asyncio
-async def test_unix_socket_error_handling():
+async def test_unix_socket_error_handling_538():
     """Test error handling in Unix socket transport."""
     with tempfile.NamedTemporaryFile() as tf:
         # Create a file with non-socket content
@@ -578,7 +557,7 @@ async def test_unix_socket_error_handling():
         await transport.connect(nonexistent_path)
 
 @pytest.mark.asyncio
-async def Xtest_unix_socket_error_handling():
+async def test_unix_socket_error_handling_560():
     """Test Unix socket error handling."""
     # Test invalid file
     with tempfile.NamedTemporaryFile() as tf:
@@ -593,9 +572,22 @@ async def Xtest_unix_socket_error_handling():
     with pytest.raises(TransportError, match="does not exist"):
         await transport.connect("unix:/nonexistent/path/sock")
 
+@pytest.mark.asyncio
+async def test_unix_socket_error_handling_576():
+    """Test error handling in Unix socket transport."""
+    with tempfile.NamedTemporaryFile() as tf:
+        # Try to use file that exists but isn't a socket
+        transport = UnixSocketTransport(path=tf.name)
+        with pytest.raises(TransportError, match="Failed to start Unix socket server"):
+            await transport.listen()
+
+    # Try to connect to nonexistent socket
+    transport = UnixSocketTransport(path="/nonexistent/path")
+    with pytest.raises(TransportError, match="does not exist"):
+        await transport.connect("/nonexistent/path")
 
 @pytest.mark.asyncio
-async def Xtest_transport_error_handling(transport_factory):
+async def test_transport_error_handling_576(transport_factory):
     """Test transport error handling."""
     transport = await transport_factory("tcp")
 
@@ -605,9 +597,8 @@ async def Xtest_transport_error_handling(transport_factory):
 
     await transport.close()
 
-
 @pytest.mark.asyncio
-async def test_unix_socket_lifecycle(socket_monitor):
+async def test_unix_socket_lifecycle_587(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -639,9 +630,8 @@ async def test_unix_socket_lifecycle(socket_monitor):
             "Socket failed to become inactive"
         )
 
-
 @pytest.mark.asyncio
-async def Xtest_unix_socket_lifecycle(socket_monitor):
+async def test_unix_socket_lifecycle_620(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -679,9 +669,8 @@ async def Xtest_unix_socket_lifecycle(socket_monitor):
         assert not state, "Socket still active after close"
         assert not os.path.exists(endpoint), "Socket file remains"
 
-
 @pytest.mark.asyncio
-async def Xtest_unix_socket_lifecycle(socket_monitor):
+async def test_unix_socket_lifecycle_659(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -702,13 +691,8 @@ async def Xtest_unix_socket_lifecycle(socket_monitor):
         await client.connect(endpoint)
         assert await monitor.check_state()
 
-
-# tests/transport/test_transport_suite.py - in test_unix_socket_concurrent_connections
-
-# tests/transport/test_transport_suite.py
-
 @pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections():
+async def test_unix_socket_concurrent_connections_681():
     """Test multiple concurrent connections to Unix socket."""
     with tempfile.NamedTemporaryFile() as tf:
         socket_path = tf.name
@@ -765,7 +749,7 @@ async def test_unix_socket_concurrent_connections():
         assert not os.path.exists(socket_path), f"Socket file {socket_path} still exists"
 
 @pytest.mark.asyncio
-async def Xtest_unix_socket_concurrent_connections(socket_monitor):
+async def test_unix_socket_concurrent_connections_738(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -795,9 +779,8 @@ async def Xtest_unix_socket_concurrent_connections(socket_monitor):
         await asyncio.sleep(0.1)
         assert not await monitor.check_state()
 
-# In tests/transport/test_transport_suite.py
 @pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections(socket_monitor):
+async def test_unix_socket_concurrent_connections_769(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -826,9 +809,8 @@ async def test_unix_socket_concurrent_connections(socket_monitor):
 
         assert not await monitor.check_state()
 
-
 @pytest.mark.asyncio
-async def Xtest_unix_socket_concurrent_connections(socket_monitor):
+async def Xtest_unix_socket_concurrent_connections_799(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -858,24 +840,7 @@ async def Xtest_unix_socket_concurrent_connections(socket_monitor):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_error_handling():
-    """Test error handling in Unix socket transport."""
-    with tempfile.NamedTemporaryFile() as tf:
-        # Try to use file that exists but isn't a socket
-        transport = UnixSocketTransport(path=tf.name)
-        with pytest.raises(TransportError, match="Failed to start Unix socket server"):
-            await transport.listen()
-
-    # Try to connect to nonexistent socket
-    transport = UnixSocketTransport(path="/nonexistent/path")
-    with pytest.raises(TransportError, match="does not exist"):
-        await transport.connect("/nonexistent/path")
-
-
-# tests/transport/test_transport_suite.py
-
-@pytest.mark.asyncio
-async def test_unix_socket_server_integration():
+async def test_unix_socket_server_integration_1():
     """Test Unix socket transport with server integration."""
     with tempfile.NamedTemporaryFile() as tf:
         socket_path = tf.name
@@ -941,7 +906,7 @@ async def test_unix_socket_server_integration():
             os.unlink(socket_path)
 
 @pytest.mark.asyncio
-async def test_unix_socket_server_integration(socket_monitor):
+async def test_unix_socket_server_integration_2(socket_monitor):
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -984,9 +949,6 @@ async def test_unix_socket_server_integration(socket_monitor):
 
             with contextlib.suppress(asyncio.CancelledError):
                 await server_task
-
-
-# tests/transport/test_transport_suite.py - in test_unix_socket_cleanup_handling
 
 @pytest.mark.asyncio
 async def test_unix_socket_cleanup_handling(socket_monitor):
