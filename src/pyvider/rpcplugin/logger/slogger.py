@@ -1,19 +1,13 @@
-"""
-Structured logging with custom trace levels for Python 3.12+.
 
-This module provides a structlog-based logger with support for custom trace levels.
-It allows logging at arbitrary TRACE levels by calling logger.trace(level, message).
-"""
-
-from __future__ import annotations
+# pyvider/rpcplugin/__init__.py
 
 import logging
 import sys
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Any, Optional, Union, cast, TypeVar, Protocol, Callable
 
 import attrs
 import structlog
-from structlog.types import EventDict, Processor, WrappedLogger
+from structlog.types import Eventdict, Processor, WrappedLogger
 
 # Base TRACE level - 33 is between DEBUG (10) and WARNING (30)
 BASE_TRACE_LEVEL = 33
@@ -57,7 +51,7 @@ class TraceLevel:
 class TraceLevelRegistry:
     """Registry for managing trace levels."""
     
-    _registered_levels: Dict[int, str] = attrs.field(factory=dict)
+    _registered_levels: dict[int, str] = attrs.field(factory=dict)
     
     def register_level(self, level: TraceLevel) -> None:
         """
@@ -138,8 +132,8 @@ def trace_method(self, level_or_message: Union[int, str], message: Optional[str]
 logging.Logger.trace = trace_method  # type: ignore
 
 def trace_level_name_processor(
-    _: WrappedLogger, __: str, event_dict: EventDict
-) -> EventDict:
+    _: WrappedLogger, __: str, event_dict: Eventdict
+) -> Eventdict:
     """
     Structlog processor that formats log level names correctly for TRACE levels.
     
@@ -171,8 +165,8 @@ class SLogger:
     name: str = attrs.field()
     _logger: logging.Logger = attrs.field()
     _structlog: Any = attrs.field()
-    _processors: List[Processor] = attrs.field(factory=list)
-    
+    _processors: list[Processor] = attrs.field(factory=list)
+
     @classmethod
     def configure(
         cls,
@@ -180,17 +174,10 @@ class SLogger:
         console: bool = True,
         json_format: bool = False,
         log_file: Optional[str] = None,
-        extra_processors: Optional[List[Processor]] = None,
+        extra_processors: Optional[list[Processor]] = None,
     ) -> None:
         """
         Configure logging with appropriate settings for trace levels.
-        
-        Args:
-            min_level: Minimum log level to record
-            console: Whether to log to console
-            json_format: Whether to format logs as JSON
-            log_file: Path to log file (if any)
-            extra_processors: Additional structlog processors to use
         """
         # Configure basic logging first
         logging.basicConfig(
@@ -200,10 +187,16 @@ class SLogger:
         )
         
         # Set up handlers
-        handlers: List[logging.Handler] = []
+        handlers: list[logging.Handler] = []
         
         if console:
-            console_handler = logging.StreamHandler(sys.stdout)
+            # CRITICAL FIX: Use sys.stderr instead of sys.stdout
+            console_handler = logging.StreamHandler(sys.stdout)  # Changed from sys.stdout
+            console_handler.setLevel(min_level)
+            handlers.append(console_handler)
+
+        if console:
+            console_handler = logging.StreamHandler(sys.stderr)
             console_handler.setLevel(min_level)
             handlers.append(console_handler)
             
@@ -221,7 +214,7 @@ class SLogger:
             root_logger.addHandler(handler)
         
         # Configure structlog processors
-        processors: List[Processor] = [
+        processors: list[Processor] = [
             structlog.contextvars.merge_contextvars,
             structlog.stdlib.add_log_level,
             structlog.stdlib.add_logger_name,
@@ -357,7 +350,7 @@ trace_registry.register_level(TraceLevel.create())
 SLogger._common_processors = []  # type: ignore
 
 # Create a default logger for convenience
-# logger = SLogger.get_logger()
+logger = SLogger.get_logger()
 
 # Example usage
 if __name__ == "__main__":
