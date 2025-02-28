@@ -86,7 +86,7 @@ async def test_setup_server_unix_no_socket(
         await server._setup_server(None)
 
 @pytest.mark.asyncio
-async def Xtest_setup_server_unix_no_socket_1(
+async def test_setup_server_unix_no_socket_1(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
