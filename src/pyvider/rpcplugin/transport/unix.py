@@ -565,5 +565,5 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = False
         logger.debug("🚪 close() completed for UnixSocketTransport.")
 
-
 ### 🐍🏗️🔌
+
