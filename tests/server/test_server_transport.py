@@ -55,6 +55,7 @@ async def test_setup_server_unix_success_3(
 async def test_setup_server_unix_success_1(
     tmp_path,
     client_cert,
+    unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
