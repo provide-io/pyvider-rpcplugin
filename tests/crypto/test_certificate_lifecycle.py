@@ -13,7 +13,6 @@ from pyvider.rpcplugin.crypto.certificate import Certificate
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_cleanup_after_failed_generation():
     """Test proper cleanup after failed certificate generation."""
