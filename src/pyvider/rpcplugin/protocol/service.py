@@ -345,19 +345,42 @@ class GRPCControllerService(GRPCControllerServicer):
 
     async def Shutdown(self, request, context):
         """
-        In go-plugin’s approach, calling 'Shutdown()' on the plugin triggers the plugin to exit.
+        In go-plugin's approach, calling 'Shutdown()' on the plugin triggers the plugin to exit.
         """
         logger.debug(
             "🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested."
         )
+        # First shut down stdio service
         self._stdio_service.shutdown()
+        
+        # Then signal the shutdown event
         self._shutdown_event.set()
+        
+        # Schedule the server to stop rather than stopping immediately
+        # This allows the response to be sent before shutdown
+        asyncio.create_task(self._delayed_shutdown())
+        
         # Return an empty object
         return CEmpty()
 
-#
-# Combine them: a convenience function that registers all services with the gRPC server.
-#
+    async def _delayed_shutdown(self):
+        """Allow RPC response to complete before shutting down"""
+        await asyncio.sleep(0.1)
+        # Now trigger actual process exit
+        if hasattr(os, "kill") and hasattr(os, "getpid"):
+            # On Unix systems, we can use a signal
+            try:
+                import signal
+                os.kill(os.getpid(), signal.SIGTERM)
+            except:
+                # Fallback to sys.exit
+                import sys
+                sys.exit(0)
+        else:
+            # Windows or other systems
+            import sys
+            sys.exit(0)
+
 def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
     """
     This function is called by your `server.py` to attach all the needed gRPC services.
@@ -380,3 +403,6 @@ def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
 
     # You might want to return references to the services for feeding data etc.
     # e.g. return (stdio_service, broker_service, controller_service)
+
+
+# 🐍🏗️🔌
