@@ -14,7 +14,6 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_unix_socket_listen_and_connect(unique_socket_path):
     transport = UnixSocketTransport(path=unique_socket_path)
@@ -40,7 +39,6 @@ async def test_unix_socket_listen_and_connect(unique_socket_path):
         "Socket file was not removed after transport closed."
     )
 
-
 @pytest.mark.asyncio
 async def test_unix_socket_listen_path_creation_failure():
     """Test that UnixSocketTransport.listen raises TransportError when the socket path cannot be created."""
@@ -50,7 +48,6 @@ async def test_unix_socket_listen_path_creation_failure():
         await transport.listen()
 
     assert "Failed to create Unix socket" in str(excinfo.value)
-
 
 @pytest.mark.asyncio
 async def test_unix_socket_listen_socket_in_use(unique_socket_path):
@@ -151,8 +148,6 @@ async def test_unix_listen_success_1(monkeypatch, tmp_path):
     monkeypatch.setattr(os, "chmod", lambda path, mode: None)
     endpoint = await transport.listen()
     assert endpoint == sock_path
-
-
 
 @pytest.mark.asyncio
 async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
