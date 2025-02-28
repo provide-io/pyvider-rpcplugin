@@ -81,7 +81,7 @@ function get_key_size() {
 PLUGIN_CLIENT_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_CLIENT_KEY_FILE}"))
 PLUGIN_SERVER_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_SERVER_KEY_FILE}"))
 
-PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}}
+PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}
 
 # Export all necessary environment variables
 export PLUGIN_HOST \
