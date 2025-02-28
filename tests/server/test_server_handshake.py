@@ -85,7 +85,6 @@ async def test_server_handshake_invalid_cookie_62(
         endpoint = await transport.listen()
         #await server.serve()
 
-
 @pytest.mark.asyncio
 async def test_server_handshake_missing_env(
     mock_server_protocol,
@@ -112,10 +111,6 @@ async def test_server_handshake_missing_env(
         endpoint = await transport.listen()
         #await server.serve()
 
-
-# -------------------------------------------------------------------
-# Tests for _negotiate_handshake (lines ~251–252)
-# -------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_negotiate_handshake_with_provided_transport(
     monkeypatch,
@@ -146,7 +141,6 @@ async def test_negotiate_handshake_with_provided_transport(
 
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
-
 
 @pytest.mark.asyncio
 async def test_negotiate_handshake_via_negotiation(
@@ -208,7 +202,6 @@ async def test_negotiate_handshake_provided_transport(
     await server._negotiate_handshake()
     assert server._transport_name == "tcp"
 
-
 @pytest.mark.asyncio
 async def test_negotiate_handshake_from_config(
     monkeypatch,
@@ -236,7 +229,6 @@ async def test_negotiate_handshake_from_config(
     )
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
-
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _
