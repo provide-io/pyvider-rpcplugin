@@ -286,7 +286,7 @@ class SLogger:
             **kwargs: Additional context variables for the log
         """
         # Create a bound logger with the kwargs
-        bound_logger = self._structlog.bind(**kwargs) if kwargs else self._structlog
+        self._structlog.bind(**kwargs) if kwargs else self._structlog
         
         # Use the trace method we added to the standard Logger
         if message is None and isinstance(level_or_message, str):

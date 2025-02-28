@@ -132,7 +132,7 @@ class PyviderLogger:
             logger.setLevel(self.default_level)
 
             if not logger.hasHandlers():
-                formatter = logging.Formatter(
+                logging.Formatter(
                     fmt="%(asctime)s - [%(levelname)s] - %(name)s - %(message)s",
                     datefmt="%Y-%m-%d %H:%M:%S",
                 )
