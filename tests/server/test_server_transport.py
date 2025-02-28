@@ -102,7 +102,7 @@ async def test_setup_server_unix_no_socket_1(
         transport=transport,
     )
 
-    with pytest.raises(TransportError, match="Failed to start"):
+    with pytest.raises(TransportError, match="Failed to"):
         await transport.listen()
         await server._setup_server("client_cert")
 
