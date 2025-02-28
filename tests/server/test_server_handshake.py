@@ -161,21 +161,21 @@ async def test_negotiate_handshake_via_negotiation_152(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
-        transport=None,  # Force negotiation
+        config=None,
+        transport=None,
     )
 
     # Mock the negotiate_transport function to return unix
     async def fake_negotiate_transport(supported_transports):
-        return "unix", UnixSocketTransport(path="/tmp/fake.sock")
+        return transport._transport_name, transport
 
     # Apply the mock to the correct module path
     monkeypatch.setattr(
         "pyvider.rpcplugin.handshake.negotiate_transport", fake_negotiate_transport
     )
-    
+
     await server._negotiate_handshake()
-    assert server._transport_name == "unix"
+    assert server._transport_name == transport._transport_name
 
 @pytest.mark.asyncio
 async def test_negotiate_handshake_via_negotiation_181(
