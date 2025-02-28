@@ -189,12 +189,30 @@ class RPCPluginClient:
         async def read_stdout_line() -> str:
             loop = asyncio.get_event_loop()
             while True:
+                # Check if process is still alive
+                if self._process.poll() is not None:
+                    stderr_output = ""
+                    if self._process.stderr:
+                        stderr_output = self._process.stderr.read()
+                    logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
+                    raise HandshakeError(
+                        f"Plugin process exited with code {self._process.returncode} before handshake. Stderr: {stderr_output}"
+                    )
+                
                 # Read line from the plugin's stdout (blocking)
                 line = await loop.run_in_executor(None, self._process.stdout.readline)
                 if not line:
-                    raise HandshakeError(
-                        "Plugin closed stdout without handshake response."
-                    )
+                    if self._process.poll() is not None:
+                        stderr_output = ""
+                        if self._process.stderr:
+                            stderr_output = self._process.stderr.read()
+                        raise HandshakeError(
+                            f"Plugin closed stdout without handshake response. Exit code: {self._process.returncode}. Stderr: {stderr_output}"
+                        )
+                    else:
+                        raise HandshakeError(
+                            "Plugin closed stdout without handshake response."
+                        )
                 if "|" in line:
                     return line.strip()
 
