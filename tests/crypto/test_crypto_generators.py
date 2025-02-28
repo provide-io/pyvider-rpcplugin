@@ -35,14 +35,6 @@ async def test_generate_keypair_returns_keypair():
     assert isinstance(ec_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
 
 @pytest.mark.asyncio
-async def test_generate_keypair_returns_keypair_1():
-    """Ensure generate_keypair() always returns a KeyPairType instance."""
-    rsa_key = generate_keypair(KEY_TYPE_RSA)
-    ec_key = generate_keypair(KEY_TYPE_ECDSA)
-    assert isinstance(rsa_key, KeyPairType), "RSA key should be a KeyPairType instance"
-    assert isinstance(ec_key, KeyPairType), "EC key should be a KeyPairType instance"
-
-@pytest.mark.asyncio
 async def test_generate_keypair_invalid_type():
     """Ensure an error is raised when an invalid key type is provided."""
     with pytest.raises(ValueError, match="Unsupported key type"):
