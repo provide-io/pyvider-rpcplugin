@@ -20,17 +20,12 @@ async def test_cleanup_after_failed_generation():
     with pytest.raises(CertificateError):
         cert = Certificate(generate_keypair=True, key_type="invalid_type")
 
-
-#
-# There shall be no certificate renewal/expiration handling tests yet.
-#
-
-
+@pytest.mark.asyncio
 async def test_certificate_is_valid(client_cert):
     """Ensure validity check works correctly."""
     assert isinstance(client_cert.is_valid, bool), "Validity should return True/False"
 
-
+@pytest.mark.asyncio
 async def test_expired_certificate():
     """Ensure expired certificates fail validation."""
     expired_cert = Certificate(
@@ -45,7 +40,7 @@ async def test_expired_certificate():
     )
     assert not expired_cert.is_valid, "Expired certificates should be invalid"
 
-
+@pytest.mark.asyncio
 async def test_certificate_validity_period(client_cert):
     """Test certificate validity period checking."""
     now = datetime.now(timezone.utc)  # ✅ Ensure timezone-aware datetime
@@ -53,7 +48,7 @@ async def test_certificate_validity_period(client_cert):
     assert now <= client_cert._base.not_valid_after
     assert client_cert.is_valid  # ✅ No function call () since it's @cached_property
 
-
+@pytest.mark.asyncio
 async def test_verify_expired_certificate():
     """Ensure verification fails when certificate is expired."""
     expired_cert = Certificate(
@@ -67,7 +62,7 @@ async def test_verify_expired_certificate():
         "Expired certificates should not verify"
     )
 
-
+@pytest.mark.asyncio
 async def test_certificate_validity_period_error():
     """Ensure validity period calculation failures raise CertificateError."""
     with mock.patch(
@@ -77,7 +72,7 @@ async def test_certificate_validity_period_error():
         with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(generate_keypair=True)
 
-
+@pytest.mark.asyncio
 async def test_certificate_extension_addition_failure():
     """Ensure failures in adding extensions raise CertificateError."""
     cert = Certificate(generate_keypair=True)
@@ -89,7 +84,7 @@ async def test_certificate_extension_addition_failure():
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
 
-
+@pytest.mark.asyncio
 async def test_certificate_trust_chain_validation():
     """Ensure trust chain verification enforces correct issuer-subject matching."""
     cert1 = Certificate(generate_keypair=True)
@@ -104,3 +99,6 @@ async def test_certificate_trust_chain_validation():
         ...,
     ):
         assert not cert1.verify_trust(cert2), "Trust chain validation should fail"
+
+
+### 🐍🏗🧪️
