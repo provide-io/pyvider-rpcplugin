@@ -14,7 +14,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_listen_and_connect_1():
+async def test_tcp_socket_transport_listen_and_connect():
     transport = TCPSocketTransport()
 
     # Start the TCP server
