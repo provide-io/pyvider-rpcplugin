@@ -17,30 +17,25 @@ def connection(dummy_reader, dummy_writer):
         reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
     )
 
-# -------------------------------------------------------------------
-# Test is_closed property.
-# -------------------------------------------------------------------
-def test_is_closed_initial(connection, dummy_writer):
+@pytest.mark.asyncio
+async def test_is_closed_initial(connection, dummy_writer):
     # Initially, _closed is False and writer.is_closing() returns False.
     assert connection.is_closed is False
 
-
-def test_is_closed_when_closed_flag(connection):
+@pytest.mark.asyncio
+async def test_is_closed_when_closed_flag(connection):
     # When _closed flag is True, is_closed should return True.
     connection._closed = True
     assert connection.is_closed is True
 
-
-def test_is_closed_when_writer_closing(connection, dummy_writer):
+@pytest.mark.asyncio
+async def test_is_closed_when_writer_closing(connection, dummy_writer):
     # When writer.is_closing() returns True, is_closed should return True.
     dummy_writer.closed = True
     assert connection.is_closed is True
 
-
-# -------------------------------------------------------------------
-# Test update_metrics method.
-# -------------------------------------------------------------------
-def test_update_metrics(connection):
+@pytest.mark.asyncio
+async def test_update_metrics(connection):
     # Start with zero metrics.
     connection.bytes_sent = 0
     connection.bytes_received = 0
@@ -48,10 +43,6 @@ def test_update_metrics(connection):
     assert connection.bytes_sent == 10
     assert connection.bytes_received == 20
 
-
-# -------------------------------------------------------------------
-# Test send_data method.
-# -------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_send_data_normal(connection, dummy_writer):
     # Test that send_data writes data and updates metrics.
@@ -62,7 +53,6 @@ async def test_send_data_normal(connection, dummy_writer):
     # Metrics should be updated.
     assert connection.bytes_sent == len(data)
 
-
 @pytest.mark.asyncio
 async def test_send_data_when_closed(connection):
     # Mark connection as closed so that send_data should raise ConnectionError.
@@ -71,7 +61,6 @@ async def test_send_data_when_closed(connection):
         ConnectionError, match="Attempted to send data on closed connection"
     ):
         await connection.send_data(b"data")
-
 
 @pytest.mark.asyncio
 async def test_send_data_oserror(monkeypatch, connection):
@@ -83,10 +72,6 @@ async def test_send_data_oserror(monkeypatch, connection):
     with pytest.raises(OSError, match="Fake drain error"):
         await connection.send_data(b"data")
 
-
-# -------------------------------------------------------------------
-# Test receive_data method.
-# -------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_receive_data_normal(connection, dummy_reader):
     # Test normal reception: dummy_reader returns preset data.
@@ -96,7 +81,6 @@ async def test_receive_data_normal(connection, dummy_reader):
     assert result == test_bytes
     # Metrics for bytes_received should be updated.
     assert connection.bytes_received == len(test_bytes)
-
 
 @pytest.mark.asyncio
 async def test_receive_data_when_closed(connection):
@@ -118,10 +102,6 @@ async def test_receive_data_oserror(monkeypatch, connection):
     with pytest.raises(OSError, match="Fake read error"):
         await connection.receive_data()
 
-
-# -------------------------------------------------------------------
-# Test close method.
-# -------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_close_normal(connection, dummy_writer):
     # Ensure close() properly marks connection as closed and calls writer.close().
@@ -130,7 +110,6 @@ async def test_close_normal(connection, dummy_writer):
     assert connection._closed is True
     # Calling close() again should return immediately (idempotence).
     await connection.close()
-
 
 @pytest.mark.asyncio
 async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog):
@@ -143,11 +122,8 @@ async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog)
     await connection.close()
     assert connection._closed is True
 
-
-# -------------------------------------------------------------------
-# Test __del__ to ensure warning is logged if not properly closed.
-# -------------------------------------------------------------------
-def test_del_warning(caplog, capsys):
+@pytest.mark.asyncio
+async def test_del_warning(caplog, capsys):
     # Create a ClientConnection without calling close.
     dummy_writer = DummyWriter()
     # For the reader, use a minimal dummy (can be an already created StreamReader).
@@ -166,3 +142,6 @@ def test_del_warning(caplog, capsys):
     in_stdout = "was not properly closed" in captured.out
     
     assert in_logs or in_stdout, "No warning about unclosed connection was found"
+
+
+### 🐍🏗🧪️
