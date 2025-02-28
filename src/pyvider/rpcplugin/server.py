@@ -187,7 +187,39 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             )
             raise
 
+    # src/pyvider/rpcplugin/server.py - Enhance shutdown sequence
     async def stop(self) -> None:
+        logger.debug("🛎️ Stopping server...")
+        
+        # First set shutdown event to signal all services to stop
+        self._shutdown_event.set()
+        
+        # Allow services a grace period to clean up
+        await asyncio.sleep(0.5)
+        
+        # Then stop gRPC server with timeout
+        if self._server:
+            try:
+                await asyncio.wait_for(self._server.stop(grace=1.0), timeout=2.0)
+                logger.debug("🛎️ gRPC server stopped successfully.")
+            except Exception as e:
+                logger.error(f"🛎️❌ Error stopping gRPC server: {e}")
+            finally:
+                self._server = None
+        
+        # Finally close transport with timeout
+        if self._transport:
+            try:
+                await asyncio.wait_for(self._transport.close(), timeout=3.0)
+                logger.debug("🛎️ Transport closed successfully.")
+            except Exception as e:
+                logger.error(f"🛎️❌ Error closing transport: {e}")
+            finally:
+                self._transport = None
+        
+        logger.debug("🛎️ Server shutdown complete.")
+
+    async def Xstop(self) -> None:
         """Ensure proper server shutdown with timeouts."""
         logger.debug("🛎️ Stopping server...")
         
@@ -472,6 +504,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug(f"Handshake response built: {response}")
             print(response, file=sys.stdout, flush=True)
             sys.stdout.flush()
+
         except Exception as e:
             logger.error(
                 "🛎️❌ Error building handshake response",
