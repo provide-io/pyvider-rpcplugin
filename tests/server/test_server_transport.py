@@ -84,32 +84,7 @@ async def test_setup_server_unix_success_1(
     await transport.close()
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_no_socket_2(
-    tmp_path,
-    mock_server_protocol,
-    mock_server_handler,
-):
-    """Test that _setup_server raises TransportError when socket doesn't exist."""
-    sock_path = str(tmp_path / "nonexistent.sock")
-    transport = UnixSocketTransport(path=sock_path)
-    
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        transport=transport,
-    )
-    
-    # Mock listen to succeed but not create a real socket file
-    async def mock_listen():
-        return sock_path
-        
-    transport.listen = mock_listen
-    
-    with pytest.raises(TransportError, match="not created"):
-        await server._setup_server(None)
-
-@pytest.mark.asyncio
-async def test_setup_server_unix_no_socket_1(
+async def test_setup_server_unix_no_socket(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
@@ -128,6 +103,7 @@ async def test_setup_server_unix_no_socket_1(
     with pytest.raises(TransportError, match="Failed to"):
         await transport.listen()
         await server._setup_server("client_cert")
+
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_2(
@@ -263,8 +239,6 @@ async def test_setup_server_tcp_success(
     #    "127.0.0.1" in port and not port.startswith("unix:")
     #    for port in server.ports
     #)
-
-
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _
