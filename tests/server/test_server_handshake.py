@@ -259,14 +259,11 @@ async def test_negotiate_handshake_from_config(
     async def fake_negotiate_transport(supported_transports):
         return transport._transport_name, transport
 
-    fake_transport = fake_negotiate_transport
-
     monkeypatch.setattr(
-        "pyvider.rpcplugin.server.negotiate_transport", fake_transport
+        "pyvider.rpcplugin.server.negotiate_transport", fake_negotiate_transport
     )
     await server._negotiate_handshake()
-    #assert server._transport_name == transport._transport_name
-    assert server._transport_name == "dumb"
+    assert server._transport_name == transport._transport_name
 
 
 ################################################################################
