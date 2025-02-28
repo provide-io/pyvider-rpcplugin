@@ -63,7 +63,7 @@ async def test_server_serve_runtime_error(
     await transport.close()
 
 @pytest.mark.asyncio
-async def test_serve_success_1(
+async def test_serve_success(
     monkeypatch,
     client_cert,
     mock_server_protocol,
@@ -232,7 +232,6 @@ async def test_stop_handles_exceptions(
     await server.stop()
     # Even though exceptions occurred, _shutdown_requested() should have been called.
     assert server._serving_future.done()
-
 
 @pytest.mark.asyncio
 async def test_server_stop_clean_destructor(
