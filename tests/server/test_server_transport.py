@@ -27,7 +27,7 @@ from tests.conftest import (
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_success_3(
+async def test_setup_server_unix_success_insecure(
     unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
