@@ -56,65 +56,6 @@ async def test_server_handshake_invalid_cookie(
         await server._negotiate_handshake()
 
 @pytest.mark.asyncio
-async def Xtest_server_handshake_invalid_cookie_2(
-    monkeypatch,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-):
-    # Set invalid cookie values
-    monkeypatch.setitem(
-        mock_server_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE"
-    )
-    monkeypatch.setitem(
-        mock_server_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "valid_cookie" 
-    )
-    monkeypatch.setitem(
-        mock_server_config.config, "PLUGIN_MAGIC_COOKIE", "invalid_cookie"
-    )
-    
-    transport = mock_server_transport
-    
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    # Don't call listen() on the transport, just check the handshake directly
-    with pytest.raises(HandshakeError):
-        await server._negotiate_handshake()
-
-@pytest.mark.asyncio
-async def Xtest_server_handshake_invalid_cookie_1(
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-):
-    mock_server_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
-    mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
-    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
-    # mock_server_config.set("PLUGIN_TRANSPORTS", "tcp")
-
-    transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    endpoint = await transport.listen()
-
-    with pytest.raises(HandshakeError):
-        endpoint = await transport.listen()
-        #await server.serve()
-
-@pytest.mark.asyncio
 async def test_server_handshake_missing_env(
     mock_server_protocol,
     mock_server_handler,
