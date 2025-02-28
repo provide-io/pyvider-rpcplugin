@@ -149,7 +149,7 @@ async def test_negotiate_handshake_with_provided_transport(
 
 
 @pytest.mark.asyncio
-async def test_negotiate_handshake_via_negotiation_152(
+async def test_negotiate_handshake_via_negotiation(
     monkeypatch,
     mock_server_protocol,
     mock_server_handler,
