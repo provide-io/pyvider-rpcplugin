@@ -84,7 +84,7 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport):
     assert cert == "client_cert"
 
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_read_client_cert_absent(
     client_cert,
     mock_server_protocol,
@@ -109,7 +109,6 @@ async def test_read_client_cert_absent(
     endpoint = await transport.listen()
     cert = server._read_client_cert()
     assert cert is None
-
 
 @pytest.mark.asyncio
 async def test_generate_server_credentials_insecure(server_with_mocks):
@@ -136,10 +135,6 @@ async def test_generate_server_credentials_secure(monkeypatch):
     assert creds is not None
     rpcplugin_config.config = original
 
-
-# -----------------------------------------------------------------------------
-# Tests for _generate_server_credentials (lines 127-136)
-# -----------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_generate_server_credentials_success(
     client_cert,
@@ -174,7 +169,6 @@ async def test_generate_server_credentials_success(
     # Expect creds to be not None (dummy creds generated successfully)
     assert creds is not None
 
-
 @pytest.mark.asyncio
 async def test_generate_server_credentials_failure(
     monkeypatch,
@@ -200,8 +194,4 @@ async def test_generate_server_credentials_failure(
     with pytest.raises(Exception, match="has no attribute"):
         server._generate_server_credentials(client_cert.cert.encode())
 
-
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️

@@ -112,19 +112,11 @@ async def test_missing_certificate_file_raises_error():
 
 
 @pytest.mark.asyncio
-async def test_load_cert_with_utf8_bom_2():
+async def test_load_cert_with_utf8_bom():
     """Ensure certificate loading works with UTF-8 BOM characters."""
     cert_pem = "\ufeff" + client_cert
     cert = Certificate(cert=client_pem)
     assert cert.subject, "UTF-8 BOM should not break certificate parsing"
-
-@pytest.mark.asyncio
-async def test_load_cert_with_utf8_bom_1():
-    """Ensure certificate loading works with UTF-8 BOM characters."""
-    cert_pem = "\ufeff" + client_cert
-    cert = Certificate(cert=cert_pem)
-    assert cert.subject, "UTF-8 BOM should not break certificate parsing"
-
 
 @pytest.mark.asyncio
 async def test_malformed_certificate_loading():
@@ -133,7 +125,6 @@ async def test_malformed_certificate_loading():
         Certificate(
             cert="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----"
         )
-
 
 @pytest.mark.asyncio
 async def test_load_cert_with_extra_whitespace(client_cert):

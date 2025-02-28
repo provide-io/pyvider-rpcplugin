@@ -26,9 +26,7 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
-# @pytest.mark.skip
 async def test_server_signal_handling(mock_server_transport, mock_server_protocol):
     transport = mock_server_transport
 
@@ -49,10 +47,6 @@ async def test_server_signal_handling(mock_server_transport, mock_server_protoco
     await server.serve()
     assert server._serving_future.done()
 
-
-# -------------------------------------------------------------------
-# Tests for _register_signal_handlers (lines ~319–320 and 325–326)
-# -------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_register_signal_handlers_success(monkeypatch):
     loop = asyncio.new_event_loop()
@@ -70,7 +64,6 @@ async def test_register_signal_handlers_success(monkeypatch):
     )
 
     server._register_signal_handlers()
-
 
 @pytest.mark.asyncio
 async def test_register_signal_handlers_not_supported(
@@ -101,10 +94,8 @@ async def test_register_signal_handlers_not_supported(
 
     assert "Signal handler not supported" in caplog.text
 
-# -------------------------------------------------------------------
-# Test for _shutdown_requested
-# -------------------------------------------------------------------
-def test_shutdown_requested():
+@pytest.mark.asyncio
+async def test_shutdown_requested():
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -117,8 +108,4 @@ def test_shutdown_requested():
     server._shutdown_requested()
     assert fut.done()
 
-
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️
