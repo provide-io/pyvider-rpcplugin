@@ -20,26 +20,26 @@ from pyvider.rpcplugin.crypto.certificate import (
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async async def test_verify_single_certificate_in_trust_chain(client_cert, server_cert):
+async def test_verify_single_certificate_in_trust_chain(client_cert, server_cert):
     """Test basic trust chain verification with a single certificate."""
     # Add server cert to client's trust chain
     client_cert.trust_chain = [server_cert]
     assert client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async async def test_verify_certificate_not_in_trust_chain(client_cert, server_cert):
+async def test_verify_certificate_not_in_trust_chain(client_cert, server_cert):
     """Test verification fails when certificate is not in trust chain."""
     # Ensure empty trust chain
     client_cert.trust_chain = []
     assert not client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async async def test_verify_certificate_chain_error(client_cert, server_cert):
+async def test_verify_certificate_chain_error(client_cert, server_cert):
     """Ensure verification fails for an untrusted certificate."""
     assert not client_cert.verify_trust(server_cert), "Expected verification to fail"
 
 @pytest.mark.asyncio
-async async def test_verify_trust_chain_ordering(client_cert, server_cert):
+async def test_verify_trust_chain_ordering(client_cert, server_cert):
     """Test trust chain verification is directional - A trusting B doesn't mean B trusts A."""
     # Set up one-way trust: client trusts server
     client_cert.trust_chain = [server_cert]
