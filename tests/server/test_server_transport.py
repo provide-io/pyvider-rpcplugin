@@ -27,6 +27,26 @@ from tests.conftest import (
 from tests.fixtures import *
 
 @pytest.mark.asyncio
+async def test_setup_server_unix_success_3(
+    unique_socket_path, mock_server_protocol, mock_server_handler
+):
+    sock_path = unique_socket_path
+
+    transport = UnixSocketTransport(path=sock_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol, handler=mock_server_handler, transport=transport
+    )
+
+    try:
+        await transport.listen()
+        await server._setup_server(None)  # Test insecure mode first
+        assert server._server is not None
+        assert os.path.exists(sock_path)
+    finally:
+        await server.stop()
+
+@pytest.mark.asyncio
 async def test_setup_server_unix_success_2(
     tmp_path,
     mock_server_preotocol,
