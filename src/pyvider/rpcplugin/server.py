@@ -585,3 +585,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         except Exception:
             # Suppress all exceptions in __del__
             pass
+
+
+# 🐍🏗️🔌
