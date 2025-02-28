@@ -122,19 +122,26 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
     def _read_client_cert(self) -> str | None:
         """
-        Reads the client certificate from configuration.
+        Reads the client certificate from configuration with better error handling.
         """
         try:
+            # First check the config provided to the server
+            if self.config and hasattr(self.config, "get"):
+                client_cert = self.config.get("PLUGIN_CLIENT_CERT")
+                if client_cert:
+                    logger.debug("🛎️🔐✅ Client cert found in server config.")
+                    return client_cert
+                    
+            # Then check the global config
             client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
             if client_cert:
-                logger.debug("🛎️ Client Cert found in config.")
+                logger.debug("🛎️🔐✅ Client cert found in global config.")
             else:
-                logger.debug("🛎️ No client certificate provided; operating insecurely.")
+                logger.debug("🛎️🔐⚠️ No client certificate provided; operating insecurely.")
+                
             return client_cert
         except Exception as e:
-            logger.error(
-                "🛎️❌ Error reading client certificate", extra={"error": str(e)}
-            )
+            logger.error(f"🛎️🔐❌ Error reading client certificate: {e}")
             return None
 
     def _generate_server_credentials(
@@ -511,5 +518,4 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             # Suppress all exceptions in __del__
             pass
 
-
-# 🐍🏗️🔌
+### 🐍🏗️🔌
