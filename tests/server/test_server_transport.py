@@ -47,42 +47,9 @@ async def test_setup_server_unix_success_3(
         await server.stop()
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_success_2(
-    unique_sock_path,
-    mock_server_preotocol,
-    mock_server_handler,
-    mock_server_config,
-):
-    sock_path = unique_socket_path
-    # TODO: Figure out sock_path length.
-
-    if len(sock_path) > 104:  # Unix socket path length limit
-        sock_path = "/tmp/test.sock"
-    transport = UnixSocketTransport(path=sock_path)
-
-    # dummy_server = DummyGRPCServer()
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    try:
-        if isinstance(transport, UnixSocketTransport):
-            await transport.listen()
-        await server._setup_server("client_cert")
-
-        expected = f"unix:{sock_path}"
-        assert any(expected in port for port in server.ports)
-    finally:
-        await transport.close()
-        if os.path.exists(sock_path):
-            os.unlink(sock_path)
-
-@pytest.mark.asyncio
 async def test_setup_server_unix_success_1(
     tmp_path,
+    client_cert,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -96,12 +63,15 @@ async def test_setup_server_unix_success_1(
         transport=transport,
     )
 
-    await transport.listen()
-    await server.serve()
-    # await server._setup_server("client_cert")
-    expected = f"unix:{endpoint}"
-    #assert any(expected in port for port in dummy_server.ports)
-    await transport.close()
+    try:
+        await transport.listen()
+        await server.serve()
+        # await server._setup_server("client_cert")
+        expected = f"unix:{endpoint}"
+        #assert any(expected in port for port in dummy_server.ports)
+    finally:
+        await transport.close()
+        await server.stop()
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket_2(
