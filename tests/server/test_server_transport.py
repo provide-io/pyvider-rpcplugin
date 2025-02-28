@@ -71,9 +71,8 @@ async def test_setup_server_unix_success_secure(
     )
 
     try:
-        #await transport.listen()
-        await server.serve()
-        # await server._setup_server("client_cert")
+        await transport.listen()
+        await server._setup_server("client_cert")
         # expected = f"unix:{endpoint}"
         #assert any(expected in port for port in dummy_server.ports)
     finally:
