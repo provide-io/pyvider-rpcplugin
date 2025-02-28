@@ -171,5 +171,4 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
     with pytest.raises(TransportError, match="Failed to remove"):
         await transport.listen()
 
-
-# =============================================================================
+### 🐍🏗🧪️

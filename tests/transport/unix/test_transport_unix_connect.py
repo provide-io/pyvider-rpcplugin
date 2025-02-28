@@ -118,4 +118,4 @@ async def test_unix_socket_connect_nonexistent_path():
     with pytest.raises(TransportError):
         await transport.connect("/nonexistent/path/pyvider.sock")
 
-################################################################################
+### 🐍🏗🧪️
