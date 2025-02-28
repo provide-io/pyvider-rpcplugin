@@ -149,3 +149,8 @@ omit = [
 source_directories = ["src"]
 exclude = ["tests/*", "**/*pb2*.py"]
 strict = true
+
+[dependency-groups]
+dev = [
+    "pytest-cov>=6.0.0",
+]

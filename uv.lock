@@ -1004,6 +1004,11 @@ telemetry = [
     { name = "opentelemetry-proto" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest-cov" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "attrs", specifier = ">=25.1.0" },
@@ -1034,6 +1039,9 @@ requires-dist = [
     { name = "uv", marker = "extra == 'dev'", specifier = ">=0.6.2" },
 ]
 provides-extras = ["dev", "telemetry"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest-cov", specifier = ">=6.0.0" }]
 
 [[package]]
 name = "pywin32-ctypes"
