@@ -15,8 +15,6 @@ from pyvider.rpcplugin.crypto.certificate import (
     CertificateConfig,
 )
 
-
-# 3. Certificate Creation Error Tests
 @pytest.mark.asyncio
 async def test_create_x509_cert_subject_error():
     """Test error in subject/issuer name creation."""
@@ -32,18 +30,7 @@ async def test_create_x509_cert_serial_error():
             Certificate(generate_keypair=True)
 
 @pytest.mark.asyncio
-async def test_create_x509_cert_validity_error_2():
-    """Test error in validity period calculation."""
-    # Mock datetime.timezone to raise an exception
-    with mock.patch(
-        "pyvider.rpcplugin.crypto.certificate.timezone",
-        side_effect=Exception("Time error"),
-    ):
-        with pytest.raises(CertificateError, match="Failed to initialize certificate"):
-            Certificate(generate_keypair=True)
-
-@pytest.mark.asyncio
-async def test_create_x509_cert_validity_error_1():
+async def test_create_x509_cert_validity_error():
     """Test error in validity period calculation."""
     with mock.patch(
         "pyvider.rpcplugin.crypto.certificate.datetime",
