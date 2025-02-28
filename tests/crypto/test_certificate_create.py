@@ -23,13 +23,11 @@ def test_create_x509_cert_subject_error():
         with pytest.raises(CertificateError, match="Failed to generate"):
             Certificate(generate_keypair=True)
 
-
 def test_create_x509_cert_serial_error():
     """Test error in serial number generation."""
     with mock.patch("os.urandom", side_effect=Exception("urandom failed")):
         with pytest.raises(CertificateError, match="Failed to generate"):
             Certificate(generate_keypair=True)
-
 
 def test_create_x509_cert_validity_error():
     """Test error in validity period calculation."""
@@ -40,7 +38,6 @@ def test_create_x509_cert_validity_error():
     ):
         with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(generate_keypair=True)
-
 
 def test_create_x509_cert_builder_error():
     """Test error in certificate builder."""
@@ -53,7 +50,6 @@ def test_create_x509_cert_builder_error():
         ):
             Certificate(generate_keypair=True)
 
-
 def test_create_x509_cert_extension_error():
     """Test error in adding certificate extensions."""
     with mock.patch(
@@ -62,7 +58,6 @@ def test_create_x509_cert_extension_error():
     ):
         with pytest.raises(CertificateError, match="Failed to"):
             Certificate(generate_keypair=True)
-
 
 def test_create_invalid_key_type():
     """Ensure unsupported key types raise ValueError."""
@@ -73,7 +68,6 @@ def test_create_invalid_key_type():
     )
     with pytest.raises(CertificateError, match="Unsupported key type"):
         CertificateBase.create(config)
-
 
 def test_certificate_extension_failure():
     """Ensure extension addition failures raise CertificateError."""
@@ -86,7 +80,6 @@ def test_certificate_extension_failure():
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
 
-
 def test_create_x509_cert_validity_error():
     """Test error in validity period calculation."""
     with mock.patch(
@@ -95,7 +88,6 @@ def test_create_x509_cert_validity_error():
     ):
         with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(generate_keypair=True)
-
 
 def test_create_x509_cert_extension_error():
     """Test error in adding certificate extensions."""
@@ -107,3 +99,5 @@ def test_create_x509_cert_extension_error():
     ):
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
+
+### 🐍🏗🧪️
