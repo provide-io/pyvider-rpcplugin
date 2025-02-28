@@ -81,7 +81,7 @@ function get_key_size() {
 PLUGIN_CLIENT_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_CLIENT_KEY_FILE}"))
 PLUGIN_SERVER_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_SERVER_KEY_FILE}"))
 
-PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}
+PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}}
 
 # Export all necessary environment variables
 export PLUGIN_HOST \
@@ -145,6 +145,7 @@ echo ""
 echo "📊 Environment Status:"
 echo "   • Client Cert Size: $(echo "$PLUGIN_CLIENT_CERT" | wc -c | tr -d ' ') bytes"
 echo "   • Client  Key Size: $(echo "$PLUGIN_CLIENT_KEY" | wc -c | tr -d ' ') bytes"
+echo "   • Server Plugin Path: ${PLUGIN_SERVER_PATH}"
 echo "   • Server Cert Size: $(echo "$PLUGIN_SERVER_CERT" | wc -c | tr -d ' ') bytes"
 echo "   • Server  Key Size: $(echo "$PLUGIN_SERVER_KEY" | wc -c | tr -d ' ') bytes"
 echo ""
