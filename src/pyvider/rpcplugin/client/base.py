@@ -188,7 +188,13 @@ class RPCPluginClient:
 
         async def read_stdout_line() -> str:
             loop = asyncio.get_event_loop()
-            while True:
+            start_time = loop.time()
+            timeout = 5.0  # Set a reasonable timeout for handshake
+            
+            # Buffer for incomplete handshake lines
+            buffer = ""
+            
+            while (loop.time() - start_time) < timeout:
                 # Check if process is still alive
                 if self._process.poll() is not None:
                     stderr_output = ""
@@ -199,25 +205,34 @@ class RPCPluginClient:
                         f"Plugin process exited with code {self._process.returncode} before handshake. Stderr: {stderr_output}"
                     )
                 
-                # Read line from the plugin's stdout (blocking)
-                line = await loop.run_in_executor(None, self._process.stdout.readline)
-                if not line:
-                    if self._process.poll() is not None:
-                        stderr_output = ""
-                        if self._process.stderr:
-                            stderr_output = self._process.stderr.read()
-                        raise HandshakeError(
-                            f"Plugin closed stdout without handshake response. Exit code: {self._process.returncode}. Stderr: {stderr_output}"
-                        )
-                    else:
-                        raise HandshakeError(
-                            "Plugin closed stdout without handshake response."
-                        )
-                if "|" in line:
-                    return line.strip()
+                # Read line from the plugin's stdout (with shorter timeout)
+                try:
+                    line_bytes = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: self._process.stdout.readline()), 
+                        timeout=1.0
+                    )
+                    
+                    if not line_bytes:
+                        await asyncio.sleep(0.1)  # Avoid busy waiting
+                        continue
+                        
+                    line = line_bytes.decode().strip()
+                    buffer += line
+                    
+                    # Check if we have a valid handshake line
+                    if "|" in buffer and buffer.count("|") >= 5:
+                        logger.debug(f"🤝 Received handshake line: {buffer}")
+                        return buffer
+                    
+                except asyncio.TimeoutError:
+                    # Just continue and retry
+                    await asyncio.sleep(0.1)
+                    continue
+                    
+            raise TimeoutError("Timed out waiting for handshake line")
 
         try:
-            line = await asyncio.wait_for(read_stdout_line(), timeout=8.0)
+            line = await read_stdout_line()
             logger.debug(f"🤝 Received handshake response: {line[:60]}...")
         except TimeoutError:
             logger.error("🤝 Handshake timed out; no response from plugin.")
