@@ -12,7 +12,6 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_unreachable_address():
     unreachable = "192.0.2.254:80"
