@@ -107,7 +107,7 @@ async def test_setup_server_unix_no_socket_1(
         await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_bad_permissions(
+async def test_setup_server_unix_bad_permissions_2(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
