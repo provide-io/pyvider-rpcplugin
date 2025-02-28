@@ -492,6 +492,9 @@ async def connected_pair_factory(transport_factory):
         await client.close()
         await server.close()
 
+################################################################################
+# TCP
+######
 @pytest.mark.asyncio
 async def test_tcp_transport_basic(transport_factory):
     """Test basic TCP transport creation and listening."""
