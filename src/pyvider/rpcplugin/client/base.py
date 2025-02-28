@@ -487,3 +487,6 @@ class RPCPluginClient:
             self._transport = None
 
         logger.info("🔄 RPCPluginClient fully closed.")
+
+
+# 🐍🏗️🔌
