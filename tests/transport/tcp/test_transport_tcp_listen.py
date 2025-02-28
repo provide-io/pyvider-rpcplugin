@@ -12,7 +12,6 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_and_connect():
     transport = TCPSocketTransport()
@@ -61,7 +60,4 @@ async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
 
             assert "Port already in use" in str(excinfo.value)
 
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️
