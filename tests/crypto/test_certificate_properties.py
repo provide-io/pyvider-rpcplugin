@@ -16,7 +16,6 @@ from tests.fixtures import *
 
 ### ✅ BASIC CERTIFICATE PROPERTY TESTS ###
 
-
 @pytest.mark.asyncio
 async def test_certificate_subject(client_cert):
     """Ensure the subject is correctly extracted."""
@@ -219,3 +218,5 @@ async def test_certificate_hash_collision():
     cert2._base = cert1._base
 
     assert hash(cert1) == hash(cert2), "Identical serials should hash the same"
+
+### 🐍🏗🧪️

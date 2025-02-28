@@ -99,5 +99,4 @@ async def test_certificate_trust_chain_validation():
     ):
         assert not cert1.verify_trust(cert2), "Trust chain validation should fail"
 
-
 ### 🐍🏗🧪️
