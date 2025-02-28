@@ -19,7 +19,6 @@ async def test_tcp_socket_transport_listen_and_connect_2():
     endpoint = await transport.listen()
     # do your checks, e.g. open a connection
 
-
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_and_connect_1():
     transport = TCPSocketTransport()
