@@ -28,6 +28,38 @@ from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_server_handshake_invalid_cookie(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+    # Set invalid cookie values
+    monkeypatch.setitem(
+        mock_server_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE"
+    )
+    monkeypatch.setitem(
+        mock_server_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "valid_cookie" 
+    )
+    monkeypatch.setitem(
+        mock_server_config.config, "PLUGIN_MAGIC_COOKIE", "invalid_cookie"
+    )
+    
+    transport = mock_server_transport
+    
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Don't call listen() on the transport, just check the handshake directly
+    with pytest.raises(HandshakeError):
+        await server._negotiate_handshake()
+
+@pytest.mark.asyncio
+async def test_server_handshake_invalid_cookie_62(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
