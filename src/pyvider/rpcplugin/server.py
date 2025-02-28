@@ -470,7 +470,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 port=self._port,
             )
             logger.debug(f"Handshake response built: {response}")
-            print(response, flush=True)
+            print(response, file=sys.stdout, flush=True)
             sys.stdout.flush()
         except Exception as e:
             logger.error(
