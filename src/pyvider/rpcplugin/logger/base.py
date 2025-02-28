@@ -1,8 +1,6 @@
 import inspect
 import logging
-import os
 import sys
-from typing import Optional
 
 from .formatters import AlignedFormatter
 

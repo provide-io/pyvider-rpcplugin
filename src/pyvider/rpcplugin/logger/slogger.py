@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import Any, Dict, List, Optional, Union, cast, TypeVar, Protocol, Callable
+from typing import Any, Dict, List, Optional, Union, cast
 
 import attrs
 import structlog
