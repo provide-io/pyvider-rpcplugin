@@ -14,12 +14,6 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_listen_and_connect_2():
-    transport = TCPSocketTransport()
-    endpoint = await transport.listen()
-    # do your checks, e.g. open a connection
-
-@pytest.mark.asyncio
 async def test_tcp_socket_transport_listen_and_connect_1():
     transport = TCPSocketTransport()
 
@@ -51,15 +45,7 @@ async def test_tcp_socket_transport_listen_and_connect_1():
     assert transport._server is None or not transport._server.is_serving()
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_listen_port_in_use_2(unused_tcp_port):
-    transport = TCPSocketTransport(host="127.0.0.1")
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", unused_tcp_port))
-        with pytest.raises(TransportError, match="Port already in use"):
-            await transport.listen()
-
-@pytest.mark.asyncio
-async def test_tcp_socket_transport_listen_port_in_use_1(unused_tcp_port):
+async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
     """
     Test that TCPSocketTransport.listen raises TransportError when the port is in use.
     """
