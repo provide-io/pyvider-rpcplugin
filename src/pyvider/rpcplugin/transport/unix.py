@@ -208,6 +208,7 @@ class UnixSocketTransport(RPCPluginTransport):
             await conn.close()
             logger.debug(f"👥 Connection closed from {peer_info}")
 
+    ############################################################################
     async def listen(self) -> str:
         async with self._lock:
             logger.debug(f"🔉 Attempting to listen on path={self.path}")
@@ -272,6 +273,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
                 raise TransportError(f"Failed to create Unix socket: {e}")
 
+    ###
     async def Xlisten(self) -> str:
         """
         Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server'
@@ -316,6 +318,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
                 raise TransportError(f"Failed to create Unix socket: {e}")
 
+    ###
     async def Xlisten(self) -> str:
         """
         Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server'
@@ -349,6 +352,7 @@ class UnixSocketTransport(RPCPluginTransport):
             except Exception as e:
                 logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
                 raise TransportError(f"Failed to start Unix socket server: {e}")
+
 
     async def connect(self, endpoint: str) -> None:
         """
