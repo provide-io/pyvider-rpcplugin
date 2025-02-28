@@ -192,7 +192,7 @@ async def test_negotiate_handshake_from_config(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=None,
     )
 
     async def fake_negotiate_transport(supported_transports):
