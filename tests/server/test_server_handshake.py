@@ -117,13 +117,20 @@ async def test_negotiate_handshake_with_provided_transport(
 
 
 @pytest.mark.asyncio
-async def test_negotiate_handshake_via_negotiation(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
+async def test_negotiate_handshake_via_negotiation(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+    transport = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
 
     async def fake_negotiate_transport(supported_transports):
@@ -140,8 +147,13 @@ async def test_negotiate_handshake_via_negotiation(monkeypatch):
 # Test for _negotiate_handshake (lines 230-238)
 # -----------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_negotiate_handshake_provided_transport(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
+async def test_negotiate_handshake_provided_transport(
+    monkeypatch
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     # When self.transport is provided, it should use that transport.
     tcp_transport = TCPSocketTransport(host="127.0.0.1")
     server = RPCPluginServer(
@@ -165,8 +177,16 @@ async def test_negotiate_handshake_provided_transport(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_negotiate_handshake_from_config(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
+async def test_negotiate_handshake_from_config(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+
+    transport = mock_server_transport
+
     # When self.transport is None, simulate negotiation via configuration.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
