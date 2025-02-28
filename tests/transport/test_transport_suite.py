@@ -253,7 +253,6 @@ def temp_sock_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
         yield tmpdir
 
-
 @pytest_asyncio.fixture(scope="function")
 async def transport_factory(request):
     """Factory fixture for creating isolated transport instances."""
@@ -439,12 +438,10 @@ async def Xtransport_factory(temp_sock_dir, unused_tcp_port):
             except OSError:
                 pass
 
-
 @pytest_asyncio.fixture
 async def mock_protocol():
     """Create a mock protocol instance."""
     return MockProtocol()
-
 
 @pytest_asyncio.fixture
 async def mock_handler():
@@ -496,7 +493,7 @@ async def connected_pair_factory(transport_factory):
         await server.close()
 
 @pytest.mark.asyncio
-async def test_tcp_transport_basic_1(transport_factory):
+async def test_tcp_transport_basic(transport_factory):
     """Test basic TCP transport creation and listening."""
     transport = await transport_factory("tcp")
     endpoint = await transport.listen()
@@ -507,7 +504,7 @@ async def test_tcp_transport_basic_1(transport_factory):
     await transport.close()
 
 @pytest.mark.asyncio
-async def test_unix_transport_basic_2(transport_factory):
+async def test_unix_transport_basic(transport_factory):
     """Test basic Unix transport creation and listening."""
     transport = await transport_factory("unix")
     endpoint = await transport.listen()
@@ -519,7 +516,6 @@ async def test_unix_transport_basic_2(transport_factory):
     assert not os.path.exists(endpoint)
 
 @pytest.mark.asyncio
-# @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_transport_connection(transport_type, connected_pair_factory):
     """Test transport connection for both TCP and Unix."""
