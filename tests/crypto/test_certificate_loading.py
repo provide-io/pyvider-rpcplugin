@@ -21,26 +21,22 @@ async def test_load_invalid_pem():
     with pytest.raises(CertificateError):
         Certificate(cert="INVALID DATA", key="INVALID DATA")
 
-
 @pytest.mark.asyncio
 async def test_load_pem_certificate(client_cert):
     """Ensure a valid PEM certificate loads correctly."""
     assert client_cert.subject, "Certificate subject should not be empty"
     assert client_cert.issuer, "Certificate issuer should not be empty"
 
-
 @pytest.mark.asyncio
 async def test_load_pem_private_key(client_cert):
     """Ensure a valid PEM private key loads correctly."""
     assert client_cert.public_key, "Certificate should have a valid public key"
-
 
 @pytest.mark.asyncio
 async def test_load_certificate_from_file(temporary_cert_file):
     """Ensure a certificate loads correctly from a file:// path."""
     cert = Certificate(cert=temporary_cert_file)
     assert cert.subject, "Certificate subject should not be empty"
-
 
 @pytest.mark.asyncio
 async def test_load_key_value_error(valid_cert_pem):
@@ -55,7 +51,6 @@ async def test_load_key_value_error(valid_cert_pem):
                 key="-----BEGIN PRIVATE KEY-----\nINVALID\n-----END PRIVATE KEY-----",
             )
 
-
 @pytest.mark.asyncio
 async def test_load_key_type_error():
     """Test TypeError in private key loading."""
@@ -66,9 +61,6 @@ async def test_load_key_type_error():
         with pytest.raises(CertificateError, match="Failed to load data"):
             Certificate(cert=valid_cert_pem, key="SOME_KEY")
 
-
-
-
 @pytest.mark.asyncio
 async def test_load_cert_with_windows_line_endings(client_cert):
     """Ensure certificate loading works with Windows-style line endings."""
@@ -78,7 +70,7 @@ async def test_load_cert_with_windows_line_endings(client_cert):
     assert cert.subject, "Windows line endings should not break parsing"
 
 @pytest.mark.asyncio
-async def test_load_private_key_from_file(temporary_key_file, client_cert):
+async def test_load_private_key_from_file_2(temporary_key_file, client_cert):
     """Ensure a private key loads correctly from a file:// path."""
     # Create cert from the fixture's actual certificate
     cert = Certificate(cert=client_cert.cert, key=temporary_key_file)
@@ -89,7 +81,6 @@ async def test_load_private_key_from_file_1(temporary_key_file):
     """Ensure a private key loads correctly from a file:// path."""
     cert = Certificate(cert=client_cert, key=temporary_key_file)
     assert cert.public_key, "Certificate should have a valid private key"
-
 
 ### ✅ ERROR HANDLING TESTS ###
 
@@ -160,3 +151,5 @@ async def test_load_cert_with_extra_whitespace(client_cert):
     cert_pem = f"\n\n{client_cert.cert}\n\n"
     cert = Certificate(cert=cert_pem)
     assert cert.subject, "Whitespace should not affect certificate loading"
+
+### 🐍🏗🧪️
