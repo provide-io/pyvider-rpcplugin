@@ -196,7 +196,7 @@ async def test_negotiate_handshake_from_config(
     )
 
     async def fake_negotiate_transport(supported_transports):
-        return "unix", UnixSocketTransport(path="/tmp/fake.sock")
+        return transport._transport_name, UnixSocketTransport(path="/tmp/fake.sock")
 
     monkeypatch.setattr(
         "pyvider.rpcplugin.server.negotiate_transport", fake_negotiate_transport
