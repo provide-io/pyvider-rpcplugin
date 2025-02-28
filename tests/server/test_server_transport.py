@@ -61,7 +61,6 @@ async def test_setup_server_unix_success(
         if os.path.exists(sock_path):
             os.unlink(sock_path)
 
-
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(
     tmp_path,
