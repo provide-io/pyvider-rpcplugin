@@ -71,15 +71,7 @@ async def test_unix_socket_listen_socket_in_use(unique_socket_path):
         await asyncio.sleep(0.1)
 
 @pytest.mark.asyncio
-async def test_unix_listen_socket_in_use_2(monkeypatch):
-    # Simulate _check_socket_in_use returning True.
-    transport = UnixSocketTransport(path="/tmp/test.sock")
-    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
-    with pytest.raises(TransportError, match="already in use"):
-        await transport.listen()
-
-@pytest.mark.asyncio
-async def test_unix_listen_socket_in_use_1(monkeypatch):
+async def test_unix_listen_socket_in_use(monkeypatch):
     # Simulate _check_socket_in_use returning True.
     transport = UnixSocketTransport(path="/tmp/test.sock")
     monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
@@ -124,7 +116,6 @@ async def test_unix_listen_success(monkeypatch, tmp_path):
     monkeypatch.setattr(os, "chmod", lambda path, mode: None)
     endpoint = await transport.listen()
     assert endpoint == sock_path
-
 
 @pytest.mark.asyncio
 async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
