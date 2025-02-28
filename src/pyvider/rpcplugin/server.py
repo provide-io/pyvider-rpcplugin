@@ -187,7 +187,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             )
             raise
 
-    # src/pyvider/rpcplugin/server.py - Enhance shutdown sequence
     async def stop(self) -> None:
         logger.debug("🛎️ Stopping server...")
         
@@ -595,3 +594,5 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 )
         except Exception:
             pass
+
+
