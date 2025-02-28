@@ -42,8 +42,4 @@ async def test_tcp_socket_transport_default_host():
     transport = TCPSocketTransport()
     assert transport.host == "127.0.0.1"
 
-
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️
