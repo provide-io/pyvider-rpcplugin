@@ -204,7 +204,6 @@ async def test_negotiate_handshake_from_config(
     mock_server_config,
     mock_server_transport,
 ):
-
     transport = mock_server_transport
 
     # When self.transport is None, simulate negotiation via configuration.
@@ -224,7 +223,4 @@ async def test_negotiate_handshake_from_config(
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
 
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️
