@@ -48,12 +48,12 @@ async def test_setup_server_unix_success_3(
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_success_2(
-    tmp_path,
+    unique_sock_path,
     mock_server_preotocol,
     mock_server_handler,
     mock_server_config,
 ):
-    sock_path = str(tmp_path / "test.sock")
+    sock_path = unique_socket_path
     # TODO: Figure out sock_path length.
 
     if len(sock_path) > 104:  # Unix socket path length limit
