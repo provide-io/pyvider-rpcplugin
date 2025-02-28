@@ -585,14 +585,3 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         except Exception:
             # Suppress all exceptions in __del__
             pass
-
-    def uuuuuuu__del__(self) -> None:
-        try:
-            if not self._serving_event.is_set():
-                logger.warning(
-                    "RPCPluginServer __del__ called but shutdown was not properly requested."
-                )
-        except Exception:
-            pass
-
-
