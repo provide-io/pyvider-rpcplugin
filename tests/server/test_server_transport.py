@@ -203,7 +203,6 @@ async def test_setup_server_exception(
         await server._setup_server("client_cert")
         await transport.close()
 
-
 @pytest.mark.asyncio
 async def test_setup_server_tcp_success(
     mock_server_protocol,
