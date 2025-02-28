@@ -26,7 +26,6 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_setup_server_unix_success(
     tmp_path,
