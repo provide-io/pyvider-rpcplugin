@@ -495,7 +495,7 @@ async def connected_pair_factory(transport_factory):
 ################################################################################
 # TCP
 ######
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_tcp_transport_basic(transport_factory):
     """Test basic TCP transport creation and listening."""
     transport = await transport_factory("tcp")
@@ -506,7 +506,7 @@ async def test_tcp_transport_basic(transport_factory):
 
     await transport.close()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_transport_basic(transport_factory):
     """Test basic Unix transport creation and listening."""
     transport = await transport_factory("unix")
@@ -518,7 +518,7 @@ async def test_unix_transport_basic(transport_factory):
     await transport.close()
     assert not os.path.exists(endpoint)
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_transport_connection(transport_type, connected_pair_factory):
     """Test transport connection for both TCP and Unix."""
@@ -534,7 +534,7 @@ async def test_transport_connection(transport_type, connected_pair_factory):
 
     # Cleanup happens via fixture
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp"])
 async def test_server_with_transport(
     transport_type, transport_factory, server_factory, temp_sock_dir
@@ -570,7 +570,7 @@ async def test_server_with_transport(
         with contextlib.suppress(asyncio.CancelledError):
             await server_task
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_error_handling():
     """Test error handling in Unix socket transport."""
     with tempfile.NamedTemporaryFile() as tf:
@@ -592,7 +592,7 @@ async def test_unix_socket_error_handling():
     with pytest.raises(TransportError, match="does not exist"):
         await transport.connect(nonexistent_path)
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_transport_error_handling(transport_factory):
     """Test transport error handling."""
     transport = await transport_factory("tcp")
