@@ -28,7 +28,6 @@ from pyvider.rpcplugin.crypto import (
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_certificate_chain_validation(client_cert, server_cert):
     """Test validation of a certificate chain."""
@@ -37,7 +36,6 @@ async def test_certificate_chain_validation(client_cert, server_cert):
 
     # Should validate against the certificate in its trust chain
     assert client_cert.verify_trust(server_cert)
-
 
 @pytest.mark.asyncio
 async def test_certificate_chain_validation_no_trust(client_cert, server_cert):
@@ -51,7 +49,6 @@ async def test_certificate_chain_validation_no_trust(client_cert, server_cert):
     result = client_cert.verify_trust(server_cert)
     assert not result, "Certificates without trust chain should not validate"
 
-
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cert_fixture", ["client_cert", "server_cert"])
 async def test_certificate_basic_properties(cert_fixture, request):
@@ -64,7 +61,6 @@ async def test_certificate_basic_properties(cert_fixture, request):
     assert isinstance(cert.is_ca, bool)
     assert cert.public_key
     assert isinstance(cert.public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
-
 
 @pytest.mark.asyncio
 async def test_certificate_self_signed_validation(client_cert):
@@ -80,7 +76,6 @@ async def test_certificate_self_signed_validation(client_cert):
         )
     else:
         pytest.skip("Certificate is not self-signed")
-
 
 @pytest.mark.asyncio
 async def test_certificate_extensions(client_cert):
@@ -111,7 +106,6 @@ async def test_certificate_extensions(client_cert):
     except x509.ExtensionNotFound:
         pytest.skip("SAN extension not present")
 
-
 @pytest.mark.asyncio
 async def test_certificate_validity_period(client_cert):
     """Test certificate validity period checking."""
@@ -120,19 +114,16 @@ async def test_certificate_validity_period(client_cert):
     assert now <= client_cert._cert.not_valid_after_utc
     assert client_cert.is_valid
 
-
 @pytest.mark.asyncio
 async def test_certificate_unique_serial(client_cert, server_cert):
     """Test certificates have unique serial numbers."""
     assert client_cert._cert.serial_number != server_cert._cert.serial_number
-
 
 @pytest.mark.asyncio
 async def test_generate_certificate_invalid_type():
     """Test error handling for invalid key type."""
     with pytest.raises(CertificateError):
         Certificate(generate_keypair=True, key_type="invalid_type")
-
 
 @pytest.mark.asyncio
 async def test_certificate_repr():
@@ -144,7 +135,6 @@ async def test_certificate_repr():
     assert "valid=" in cert_repr
     assert "ca=" in cert_repr
 
-
 @pytest.mark.asyncio
 async def test_certificate_hash(client_cert):
     """Test certificate hash generation."""
@@ -152,7 +142,6 @@ async def test_certificate_hash(client_cert):
     assert isinstance(cert_hash, int)
     # Same certificate should generate same hash
     assert hash(client_cert) == cert_hash
-
 
 @pytest.mark.asyncio
 async def test_certificate_invalid_trust_chain_signature():
@@ -175,3 +164,5 @@ async def test_certificate_invalid_trust_chain_signature():
 #        cert2._cert, "signature", new=cert1._cert.signature + b"corrupt"
 #    ):
 #        assert not cert1.verify_trust(cert2), "Verification should fail due to invalid signature"
+
+### 🐍🏗🧪️
