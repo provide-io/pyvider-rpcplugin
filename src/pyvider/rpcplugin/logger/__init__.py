@@ -1,385 +1,290 @@
-"""
-Structured logging with custom trace levels for Python 3.12+.
-
-This module provides a structlog-based logger with support for custom trace levels.
-It allows logging at arbitrary TRACE levels by calling logger.trace(level, message).
-"""
-
-from __future__ import annotations
-
+import inspect
 import logging
 import sys
-from typing import Any, Dict, List, Optional, Union, cast, TypeVar, Protocol, Callable
 
-import attrs
-import structlog
-from structlog.types import EventDict, Processor, WrappedLogger
+from .formatters import AlignedFormatter
 
-# Base TRACE level - 33 is between DEBUG (10) and WARNING (30)
-BASE_TRACE_LEVEL = 33
 
-# Type definitions
-Message = str
-LogLevel = int
-LevelName = str
-
-@attrs.define(frozen=True, slots=True)
-class TraceLevel:
-    """
-    Represents a custom trace level.
-    
-    Attributes:
-        value: The numeric value of the trace level
-        name: The name of the trace level (e.g., "TRACE57")
-    """
-    value: int
-    name: str
-
-    @classmethod
-    def create(cls, level: Optional[int] = None) -> TraceLevel:
-        """
-        Create a TraceLevel from an optional level number.
-        
-        Args:
-            level: The trace level, None for base TRACE level
-            
-        Returns:
-            A TraceLevel instance with appropriate name and value
-        """
-        if level is None:
-            return cls(BASE_TRACE_LEVEL, "TRACE")
-        
-        level_value = BASE_TRACE_LEVEL + level
-        level_name = f"TRACE{level}"
-        return cls(level_value, level_name)
-
-@attrs.define
-class TraceLevelRegistry:
-    """Registry for managing trace levels."""
-    
-    _registered_levels: Dict[int, str] = attrs.field(factory=dict)
-    
-    def register_level(self, level: TraceLevel) -> None:
-        """
-        Register a trace level with the logging system.
-        
-        Args:
-            level: The TraceLevel to register
-        """
-        if level.value not in self._registered_levels:
-            logging.addLevelName(level.value, level.name)
-            self._registered_levels[level.value] = level.name
-    
-    def get_level_name(self, level_value: int) -> str:
-        """
-        Get the name for a numeric log level, handling TRACE levels.
-        
-        Args:
-            level_value: The numeric log level
-            
-        Returns:
-            The name of the log level
-        """
-        # First check if it's a registered level
-        if level_value in self._registered_levels:
-            return self._registered_levels[level_value]
-        
-        # Check if it's a standard level
-        name = logging.getLevelName(level_value)
-        if isinstance(name, str) and not name.startswith('Level '):
-            return name
-            
-        # Handle unknown TRACE levels
-        if level_value >= BASE_TRACE_LEVEL:
-            trace_num = level_value - BASE_TRACE_LEVEL
-            level_name = "TRACE" if trace_num == 0 else f"TRACE{trace_num}"
-            # Register this level for future use
-            self.register_level(TraceLevel(level_value, level_name))
-            return level_name
-            
-        # Fall back to the standard level name or a generic name
-        return name
-
-# Singleton instance of the registry
-trace_registry = TraceLevelRegistry()
-
-# Register the base TRACE level
-trace_registry.register_level(TraceLevel.create())
-
-# Add trace method to standard Logger class
-def trace_method(self, level_or_message: Union[int, str], message: Optional[str] = None, *args, **kwargs):
-    """
-    Log a message at a custom TRACE level.
-    
-    Args:
-        level_or_message: Either the trace level (int) or the message if no level is provided
-        message: The message to log (if level is provided)
-        *args: Format string arguments
-        **kwargs: Additional context variables for the log
-    """
-    if message is None and isinstance(level_or_message, str):
-        # Case: logger.trace("message")
-        trace_level = TraceLevel.create()
-        message = level_or_message
+def initialize_logger_provider():
+    current_provider = logging.getLogger()
+    if not isinstance(current_provider, LoggerProvider):
+        provider = LoggerProvider()
+        set_logger_provider(provider)
+        logger.debug("Initializing LoggerProvider.")
+        return provider
     else:
-        # Case: logger.trace(42, "message")
-        level = cast(int, level_or_message)
-        trace_level = TraceLevel.create(level)
-        message = cast(str, message)
-    
-    # Register the level
-    trace_registry.register_level(trace_level)
-    
-    # Log at the trace level
-    if self.isEnabledFor(trace_level.value):
-        self._log(trace_level.value, message, args, **kwargs)
+        logger.debug("LoggerProvider already initialized.")
+        return current_provider
 
-# Attach trace method to Logger class
-logging.Logger.trace = trace_method  # type: ignore
 
-def trace_level_name_processor(
-    _: WrappedLogger, __: str, event_dict: EventDict
-) -> EventDict:
-    """
-    Structlog processor that formats log level names correctly for TRACE levels.
-    
-    Args:
-        _: The wrapped logger (unused)
-        __: The method name (unused)
-        event_dict: The event dictionary
-        
-    Returns:
-        The modified event dictionary
-    """
-    # Get the level number from the event dictionary
-    level_number = event_dict.get("level_number")
-    if level_number is not None:
-        # Use our registry to get the correct level name
-        level_name = trace_registry.get_level_name(level_number)
-        event_dict["level"] = level_name
-    return event_dict
+class SuppressKqueueFilter(logging.Filter):
+    def filter(self, record):
+        return "KqueueSelector" not in record.getMessage()
 
-@attrs.define
-class SLogger:
-    """
-    Structured logger with trace level support.
-    
-    This class provides a wrapper around structlog that adds support for
-    custom trace levels through the trace() method.
-    """
-    
-    name: str = attrs.field()
-    _logger: logging.Logger = attrs.field()
-    _structlog: Any = attrs.field()
-    _processors: List[Processor] = attrs.field(factory=list)
-    
-    @classmethod
-    def configure(
-        cls,
-        min_level: int = logging.INFO,
-        console: bool = True,
-        json_format: bool = False,
-        log_file: Optional[str] = None,
-        extra_processors: Optional[List[Processor]] = None,
-    ) -> None:
-        """
-        Configure logging with appropriate settings for trace levels.
-        
-        Args:
-            min_level: Minimum log level to record
-            console: Whether to log to console
-            json_format: Whether to format logs as JSON
-            log_file: Path to log file (if any)
-            extra_processors: Additional structlog processors to use
-        """
-        # Configure basic logging first
-        logging.basicConfig(
-            level=min_level,
-            format="%(message)s",
-            handlers=[],  # We'll add handlers manually
+
+class UTF8StreamHandler(logging.StreamHandler):
+    def __init__(self, stream=None):
+        # Force UTF-8 encoding for the stream
+        if stream is None:
+            stream = sys.stderr
+        super().__init__(codecs.getwriter("utf-8")(stream))
+
+
+class PyviderLoggerBase(logging.Logger):
+    """Custom logger class with OTEL integration and dynamic caller detection."""
+
+    def __init__(self, name: str = "default", level=logging.NOTSET):
+        super().__init__(name, level)
+
+    def _determine_caller(self) -> str:
+        frame = inspect.currentframe()
+        while frame:
+            frame = frame.f_back
+            if frame:
+                module = frame.f_globals.get("__name__", "unknown")
+                if module != __name__ and not module.startswith("logging"):
+                    return module
+        return "unknown"
+
+    def _inject_caller(self, record: logging.LogRecord) -> None:
+        record.name = self._determine_caller() or "unknown_function"
+
+    def _log(
+        self,
+        level,
+        msg,
+        args,
+        exc_info=None,
+        extra=None,
+        stack_info=False,
+        stacklevel=1,
+    ):
+        # Inject the correct caller module into the record
+        record = logging.LogRecord(
+            name=self._determine_caller(),  # Dynamically resolve the caller module
+            level=level,
+            pathname="",
+            lineno=0,
+            msg=msg,
+            args=args,
+            exc_info=exc_info,
         )
-        
-        # Set up handlers
-        handlers: List[logging.Handler] = []
-        
-        if console:
-            console_handler = logging.StreamHandler(sys.stdout)
-            console_handler.setLevel(min_level)
-            handlers.append(console_handler)
-            
-        if log_file:
-            file_handler = logging.FileHandler(log_file)
-            file_handler.setLevel(min_level)
-            handlers.append(file_handler)
-        
-        # Set up root logger
-        root_logger = logging.getLogger()
-        for handler in root_logger.handlers:
-            root_logger.removeHandler(handler)
-        
-        for handler in handlers:
-            root_logger.addHandler(handler)
-        
-        # Configure structlog processors
-        processors: List[Processor] = [
-            structlog.contextvars.merge_contextvars,
-            structlog.stdlib.add_log_level,
-            structlog.stdlib.add_logger_name,
-            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-            trace_level_name_processor,
-        ]
-        
-        if extra_processors:
-            processors.extend(extra_processors)
-            
-        # Add formatters based on configuration
-        if json_format:
-            processors.append(structlog.processors.format_exc_info)
-            processors.append(structlog.processors.JSONRenderer())
+        self.handle(record)  # Directly handle the modified record
+
+    def trace(self, *args, **kwargs):
+        """
+        A custom trace method for logging.
+        """
+        if len(args) == 1 and isinstance(args[0], str):
+            # Handle case where only a message is passed
+            trace_level_value = 15
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
+            self.log(trace_level_value, args[0], **kwargs)
+        elif len(args) == 2 and isinstance(args[0], int):
+            # Handle case where trace level and message are both passed
+            trace_depth = args[0]
+            message = args[1]
+            trace_level_name = f"TRACE{trace_depth}"
+            trace_level_value = (
+                15 + trace_depth
+            )  # Setting TRACE levels above standard levels to avoid conflicts
+            if not hasattr(logging, trace_level_name):
+                logging.addLevelName(trace_level_value, trace_level_name)
+            self.log(trace_level_value, message, **kwargs)
+        elif len(args) > 1 and isinstance(args[0], str):
+            # Handle message with formatting arguments
+            trace_level_value = 15
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
+            formatted_message = args[0] % args[1:]
+            self.log(trace_level_value, formatted_message, **kwargs)
         else:
-            processors.append(structlog.dev.ConsoleRenderer())
-        
-        # Configure structlog
-        structlog.configure(
-            processors=processors,
-            logger_factory=structlog.stdlib.LoggerFactory(),
-            wrapper_class=structlog.stdlib.BoundLogger,
-            cache_logger_on_first_use=True,
-        )
-        
-        # Store processors for later use
-        cls._common_processors = processors
-    
-    @classmethod
-    def get_logger(cls, name: str = "") -> "SLogger":
+            # Handle invalid usage
+            raise ValueError(
+                "Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)"
+            )
+
+
+# Step 2: Set PyviderLoggerBase as the default logger class
+logging.setLoggerClass(PyviderLoggerBase)
+
+
+class PyviderLogger:
+    def __init__(
+        self,
+        default_level: int = logging.DEBUG,
+        insecure: bool = True,
+        service_name: str = "pyvider-service",
+        instance_id: str = "default-instance",
+    ):
+        self.default_level: int = default_level
+        self.loggers: dict[str, PyviderLoggerBase] = {}
+        self.console = sys.stderr
+
+        self.service_name = service_name
+        self.instance_id = instance_id
+        self.insecure = insecure
+
+    def get_logger(self, name: str = "default") -> PyviderLoggerBase:
+        if name not in self.loggers:
+            logger = PyviderLoggerBase(name=name)
+            logger.setLevel(self.default_level)
+
+            if not logger.hasHandlers():
+                logging.Formatter(
+                    fmt="%(asctime)s - [%(levelname)s] - %(name)s - %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S",
+                )
+
+                stream_handler = logging.StreamHandler(sys.stderr)
+                # stream_handler = UTF8StreamHandler(sys.stderr)
+                stream_formatter = AlignedFormatter(
+                    fmt="%(asctime)s", datefmt="%Y-%m-%d %H:%M:%S"
+                )
+                stream_handler.setFormatter(stream_formatter)
+                logger.addHandler(stream_handler)
+
+            self.loggers[name] = logger
+        return self.loggers[name]
+
+    def _determine_caller(self) -> str:
+        """Dynamically get the caller's module/class name."""
+        frame = inspect.currentframe()
+        while frame:
+            frame = frame.f_back
+            if frame:
+                module = frame.f_globals.get("__name__", "unknown")
+                function = frame.f_code.co_name
+                if function == "<module>":
+                    return module
+                return f"{module}.{function}"
+        return "unknown"
+
+    def __getattr__(self, name):
+        # Pass any attributes not explicitly defined here to a default logger
+        if "_default_logger" in self.__dict__:
+            return getattr(self._default_logger, name)
+        raise AttributeError(f"module 'logger' has no attribute '{name}'")
+
+    def _trace(self, logger_self, *args, **kwargs):
         """
-        Get a structured logger with trace capabilities.
-        
-        Args:
-            name: Name of the logger
-            
-        Returns:
-            An SLogger instance
+        A custom trace method for logging.
         """
-        # Get the standard library logger with trace capability
-        logger = logging.getLogger(name)
-        
-        # Get structlog logger
-        structlog_logger = structlog.get_logger(name)
-        
-        # Return our logger instance
-        try:
-            processors = cls._common_processors  # type: ignore
-        except AttributeError:
-            # No configuration was done, use default processors
-            processors = []
-            
-        return cls(name=name, logger=logger, structlog=structlog_logger, processors=processors)
-        
-    def trace(self, level_or_message: Union[int, str], message: Optional[str] = None, **kwargs: Any) -> None:
-        """
-        Log a message at a custom TRACE level with structured context.
-        
-        Args:
-            level_or_message: Either the trace level (int) or the message if no level is provided
-            message: The message to log (if level is provided)
-            **kwargs: Additional context variables for the log
-        """
-        # Create a bound logger with the kwargs
-        self._structlog.bind(**kwargs) if kwargs else self._structlog
-        
-        # Use the trace method we added to the standard Logger
-        if message is None and isinstance(level_or_message, str):
-            # Case: logger.trace("message")
-            self._logger.trace(level_or_message)  # type: ignore
+        if len(args) == 1 and isinstance(args[0], str):
+            # Handle case where only a message is passed
+            trace_level_value = 15
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
+            logger_self.log(trace_level_value, args[0], **kwargs)
+        elif len(args) == 2 and isinstance(args[0], int):
+            # Handle case where trace level and message are both passed
+            trace_depth = args[0]
+            message = args[1]
+            trace_level_name = f"TRACE{trace_depth}"
+            trace_level_value = (
+                15 + trace_depth
+            )  # Setting TRACE levels above standard levels to avoid conflicts
+            if not hasattr(logging, trace_level_name):
+                logging.addLevelName(trace_level_value, trace_level_name)
+            logger_self.log(trace_level_value, message, **kwargs)
+        elif len(args) > 1 and isinstance(args[0], str):
+            # Handle message with formatting arguments
+            trace_level_value = 15
+            if not hasattr(logging, "TRACE"):
+                logging.addLevelName(trace_level_value, "TRACE")
+            formatted_message = args[0] % args[1:]
+            logger_self.log(trace_level_value, formatted_message, **kwargs)
         else:
-            # Case: logger.trace(42, "message")
-            level = cast(int, level_or_message)
-            msg = cast(str, message)
-            self._logger.trace(level, msg)  # type: ignore
-    
-    # Forward standard logging methods to the structlog logger
-    def debug(self, message: str, **kwargs: Any) -> None:
-        """Log a message at DEBUG level."""
-        self._structlog.debug(message, **kwargs)
-        
-    def info(self, message: str, **kwargs: Any) -> None:
-        """Log a message at INFO level."""
-        self._structlog.info(message, **kwargs)
-        
-    def warning(self, message: str, **kwargs: Any) -> None:
-        """Log a message at WARNING level."""
-        self._structlog.warning(message, **kwargs)
-        
-    def error(self, message: str, **kwargs: Any) -> None:
-        """Log a message at ERROR level."""
-        self._structlog.error(message, **kwargs)
-        
-    def critical(self, message: str, **kwargs: Any) -> None:
-        """Log a message at CRITICAL level."""
-        self._structlog.critical(message, **kwargs)
-        
-    def exception(self, message: str, **kwargs: Any) -> None:
-        """Log a message at ERROR level with exception information."""
-        self._structlog.exception(message, **kwargs)
-        
-    def log(self, level: int, message: str, **kwargs: Any) -> None:
-        """Log a message at the specified level."""
-        # Register level if it's a custom level
-        if level >= BASE_TRACE_LEVEL:
-            trace_level = TraceLevel(level, logging.getLevelName(level))
-            trace_registry.register_level(trace_level)
-        
-        # Use structlog's log method
-        self._structlog.log(level, message, **kwargs)
-        
-    def bind(self, **kwargs: Any) -> "SLogger":
+            # Handle invalid usage
+            raise ValueError(
+                "Invalid arguments for trace method. Use either trace(message), trace(level, message), or trace(message, *args)"
+            )
+
+    def set_logger_level(self, logger: logging.Logger, level_name: str) -> None:
         """
-        Bind context variables to the logger.
-        
-        Args:
-            **kwargs: Context variables to bind
-            
-        Returns:
-            A new SLogger with bound context
+        Set the logging level for a given logger.
+        :param logger: The logger instance.
+        :param level_name: The desired logging level (e.g., 'DEBUG', 'TRACE10').
         """
-        return SLogger(
-            name=self.name,
-            logger=self._logger,
-            structlog=self._structlog.bind(**kwargs),
-            processors=self._processors
-        )
+        level_name = level_name.upper()
+        if level_name.startswith("TRACE") and level_name != "TRACE":
+            try:
+                trace_depth = int(level_name.replace("TRACE", ""))
+                level_value = 15 + trace_depth
+                logging.addLevelName(level_value, level_name)
+                logger.setLevel(level_value)
+            except ValueError:
+                raise ValueError(f"Invalid TRACE level: {level_name}")
+        elif hasattr(logging, level_name):
+            # Standard logging levels
+            level_value = getattr(logging, level_name)
+            logger.setLevel(level_value)
+        else:
+            raise ValueError(f"Invalid level name: {level_name}")
 
-# Initialize trace level registry
-trace_registry.register_level(TraceLevel.create())
+    def set_level(self, name: str, level_name: str) -> None:
+        """
+        Set the logging level for a given logger by name.
+        :param name: The name of the logger.
+        :param level_name: The desired logging level (e.g., 'DEBUG', 'TRACE10').
+        """
+        if name in self.loggers:
+            logger = self.loggers[name]
+            self.set_logger_level(logger, level_name)
+        else:
+            raise ValueError(f"Logger '{name}' does not exist.")
 
-# Storage for common processors
-SLogger._common_processors = []  # type: ignore
+    def set_global_level(self, level_name: str) -> None:
+        """
+        Set the logging level for all loggers managed by PyviderLogger.
+        :param level_name: The desired logging level (e.g., 'DEBUG', 'TRACE10').
+        """
+        level_name = level_name.upper()
+        if level_name.startswith("TRACE") and level_name != "TRACE":
+            try:
+                trace_depth = int(level_name.replace("TRACE", ""))
+                level_value = 15 + trace_depth
+                logging.addLevelName(level_value, level_name)
+                for logger in self.loggers.values():
+                    logger.setLevel(level_value)
+            except ValueError:
+                raise ValueError(f"Invalid TRACE level: {level_name}")
+        elif hasattr(logging, level_name):
+            # Standard logging levels
+            level_value = getattr(logging, level_name)
+            for logger in self.loggers.values():
+                logger.setLevel(level_value)
+        else:
+            raise ValueError(f"Invalid level name: {level_name}")
 
-# Create a default logger for convenience
-logger = SLogger.get_logger()
+    def set_trace_level_range(self, name: str, min_trace: int, max_trace: int) -> None:
+        """
+        Set the logging level for a given logger to show TRACE levels within a given range.
+        :param name: The name of the logger.
+        :param min_trace: The minimum TRACE level to show.
+        :param max_trace: The maximum TRACE level to show.
+        """
+        if name in self.loggers:
+            logger = self.loggers[name]
+            min_level = 15 + min_trace
+            max_level = 15 + max_trace
 
-# Example usage
-if __name__ == "__main__":
-    # Configure logging
-    SLogger.configure(
-        min_level=logging.DEBUG,  # Set to DEBUG or lower to capture trace messages
-        console=True,
-        json_format=False,
-    )
-    
-    # Get a logger
-    example_logger = SLogger.get_logger("example")
-    
-    # Log at various levels
-    example_logger.trace("This is a base trace log")
-    example_logger.trace(57, "This is a TRACE57 log") 
-    example_logger.debug("This is a debug log")
-    example_logger.info("This is an info log", extra_field="test")
-    
-    # Bind some context
-    ctx_logger = example_logger.bind(user_id=123)
-    ctx_logger.warning("This is a warning with context")
-    
-    # Log at a high trace level
-    example_logger.trace(432, "This is a high-detail trace log with context", operation="query_db")
+            def trace_filter(record: logging.LogRecord) -> bool:
+                if record.levelname.startswith("TRACE"):
+                    return min_level <= record.levelno <= max_level
+                return True  # Allow standard logging levels to pass through
+
+            # Clear existing filters and add the new trace range filter
+            logger.filters.clear()
+            logger.addFilter(trace_filter)
+            handler.addFilter(SuppressKqueueFilter())
+        else:
+            raise ValueError(f"Logger '{name}' does not exist.")
+
+
+# Create an instance of PyviderLogger
+pyvider_logger = PyviderLogger()
+
+# Use the instance to get a logger
+logger = pyvider_logger.get_logger(__name__)

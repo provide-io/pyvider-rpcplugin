@@ -105,7 +105,46 @@ class SocketStateMonitor:
         return False
 
 @asynccontextmanager
-async def managed_transport(
+async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[TransportT, None]:
+    """Context manager for transport lifecycle."""
+    transport = None
+    path = None
+    try:
+        if transport_type == "unix":
+            # Generate unique path
+            import uuid, time
+            path = f"/tmp/pyvider_test_{time.time()}_{uuid.uuid4().hex[:8]}.sock"
+            
+            # Ensure clean state
+            if os.path.exists(path):
+                os.unlink(path)
+                
+            transport = UnixSocketTransport(path=path, **kwargs)
+        else:
+            transport = TCPSocketTransport(host="127.0.0.1", **kwargs)
+            
+        yield transport
+        
+    finally:
+        # Robust cleanup with timeouts
+        if transport:
+            try:
+                await asyncio.wait_for(transport.close(), timeout=2.0)
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout during transport close")
+            except Exception as e:
+                logger.error(f"Error during transport close: {e}")
+                
+        # Additional socket file cleanup
+        if path and os.path.exists(path):
+            try:
+                os.chmod(path, 0o777)  # Force permissions
+                os.unlink(path)
+            except OSError:
+                pass
+
+@asynccontextmanager
+async def Xmanaged_transport(
     transport_type: str, **kwargs
 ) -> AsyncGenerator[TransportT, None]:
     """Context manager for transport lifecycle."""
@@ -604,13 +643,17 @@ async def test_unix_socket_lifecycle_587(socket_monitor):
         monitor = socket_monitor(transport.path)
 
         # Pre-listen state
-        assert not await monitor.check_state()
+        assert not await asyncio.wait_for(monitor.check_state(), timeout=1.0)
 
-        # Listen
-        endpoint = await transport.listen()
-        assert await monitor.wait_for_active(timeout=1.0), (
-            "Socket failed to become active"
-        )
+        # Listen with timeout
+        endpoint = await asyncio.wait_for(transport.listen(), timeout=2.0)
+        
+        # Wait with timeout
+        assert await asyncio.wait_for(
+            monitor.wait_for_active(timeout=1.0), 
+            timeout=2.0
+        ), "Socket failed to become active"
+        
         assert os.path.exists(endpoint), "Socket file missing"
         assert os.stat(endpoint).st_mode & 0o777 == 0o777, "Invalid permissions"
 
