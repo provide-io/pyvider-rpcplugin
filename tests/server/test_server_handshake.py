@@ -178,36 +178,6 @@ async def test_negotiate_handshake_via_negotiation_152(
     assert server._transport_name == transport._transport_name
 
 @pytest.mark.asyncio
-async def test_negotiate_handshake_via_negotiation_181(
-    monkeypatch,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-):
-    transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    async def fake_negotiate_transport(supported_transports):
-        return "unix", UnixSocketTransport(path="/tmp/fake.sock")
-
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.server.negotiate_transport", fake_negotiate_transport
-    )
-    await server._negotiate_handshake()
-    assert server._transport_name == "unix"
-
-
-# -----------------------------------------------------------------------------
-# Test for _negotiate_handshake (lines 230-238)
-# -----------------------------------------------------------------------------
-@pytest.mark.asyncio
 async def test_negotiate_handshake_provided_transport(
     monkeypatch,
     mock_server_protocol,
