@@ -172,6 +172,36 @@ class GRPCStdioService(GRPCStdioServicer):
         The host (go-plugin) typically calls this once at startup, then reads forever.
         """
         logger.debug(
+            "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
+        )
+        # Use context.cancelled() instead of context.is_active() which doesn't exist
+        while not self._shutdown and not context.cancelled():
+            try:
+                # Wait up to 2s for a new line; if none, we yield a short idle.
+                data_item = await asyncio.wait_for(
+                    self._message_queue.get(), timeout=2.0
+                )
+                yield data_item
+            except TimeoutError:
+                continue
+            except Exception as e:
+                logger.error(
+                    f"🔌📝❌ Error streaming lines: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
+                break
+
+        logger.debug(
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+        )
+        return
+
+    async def XStreamStdio(self, request, context):
+        """
+        Streams STDOUT/STDERR lines to the caller.
+        The host (go-plugin) typically calls this once at startup, then reads forever.
+        """
+        logger.debug(
             "🔌📝✅ GRPCStdioService.StreamStdio => started.  Streaming lines to host."
         )
         while not self._shutdown and not context.is_active():
@@ -223,7 +253,6 @@ class GRPCControllerService(GRPCControllerServicer):
         self._shutdown_event.set()
         # Return an empty object
         return CEmpty()
-
 
 #
 # Combine them: a convenience function that registers all services with the gRPC server.
