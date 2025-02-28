@@ -91,7 +91,7 @@ async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path):
 
 
 @pytest.mark.asyncio
-async def test_unix_listen_success(monkeypatch, tmp_path):
+async def test_unix_listen_success_2(monkeypatch, tmp_path):
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -114,23 +114,8 @@ async def test_unix_listen_success(monkeypatch, tmp_path):
     endpoint = await transport.listen()
     assert endpoint == sock_path
 
-
 @pytest.mark.asyncio
-async def test_unix_listen_socket_in_use(monkeypatch):
-    # Simulate _check_socket_in_use returning True.
-    transport = UnixSocketTransport(path="/tmp/test.sock")
-    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
-    with pytest.raises(TransportError, match="already in use"):
-        await transport.listen()
-
-
-################################################################################
-
-# =============================================================================
-
-
-@pytest.mark.asyncio
-async def test_unix_listen_success(monkeypatch, tmp_path):
+async def test_unix_listen_success_1(monkeypatch, tmp_path):
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -152,6 +137,17 @@ async def test_unix_listen_success(monkeypatch, tmp_path):
     endpoint = await transport.listen()
     assert endpoint == sock_path
 
+
+@pytest.mark.asyncio
+async def test_unix_listen_socket_in_use(monkeypatch):
+    # Simulate _check_socket_in_use returning True.
+    transport = UnixSocketTransport(path="/tmp/test.sock")
+    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
+    with pytest.raises(TransportError, match="already in use"):
+        await transport.listen()
+
+
+################################################################################
 
 @pytest.mark.asyncio
 async def test_unix_listen_socket_in_use(monkeypatch):
