@@ -152,5 +152,6 @@ strict = true
 
 [dependency-groups]
 dev = [
+    "hatch>=1.14.0",
     "pytest-cov>=6.0.0",
 ]
