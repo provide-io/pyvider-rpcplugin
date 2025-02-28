@@ -78,7 +78,7 @@ async def test_load_cert_with_windows_line_endings(client_cert):
     assert cert.subject, "Windows line endings should not break parsing"
 
 @pytest.mark.asyncio
-async def test_load_private_key_from_file_2(temporary_key_file, client_cert):
+async def test_load_private_key_from_file(temporary_key_file, client_cert):
     """Ensure a private key loads correctly from a file:// path."""
     # Create cert from the fixture's actual certificate
     cert = Certificate(cert=client_cert.cert, key=temporary_key_file)
