@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
-# src/pyvider/rpcplugin/protocol/service.py
 
+# pyvider/rpcplugin/protocol/service.py
+
+import os
 import asyncio
 import traceback
 
