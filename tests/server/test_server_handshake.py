@@ -75,10 +75,10 @@ async def test_server_handshake_missing_env(
     )
 
     await transport.listen()  # This should be outside the pytest.raises context
-    
+
     with pytest.raises(HandshakeError):
         await server._negotiate_handshake()  # This will trigger the handshake validation
-        
+
 @pytest.mark.asyncio
 async def test_server_handshake_missing_env_1(
     mock_server_protocol,
