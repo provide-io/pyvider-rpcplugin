@@ -376,7 +376,70 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
+    ####
     async def close(self) -> None:
+        """Fix UnixSocketTransport close method to ensure proper cleanup."""
+        logger.debug("🚪 close() called on UnixSocketTransport.")
+        if self._closing:
+            logger.debug("🚪 Already closing, skipping.")
+            return
+        self._closing = True
+        self._running = False
+
+        # Close connections with proper exception handling
+        async with self._lock:
+            close_tasks = [c.close() for c in self._connections]
+            if close_tasks:
+                logger.debug(f"🚪 Closing {len(close_tasks)} active connections.")
+                await asyncio.gather(*close_tasks, return_exceptions=True)
+            self._connections.clear()
+
+        # Close client writer
+        if self._writer:
+            try:
+                self._writer.close()
+                await self._writer.wait_closed()
+                logger.debug("🚪 Client writer closed.")
+            except Exception as e:
+                logger.error(f"🚪❌ Error closing writer: {e}")
+            finally:
+                self._writer = None
+
+        # Close server
+        if self._server:
+            try:
+                self._server.close()
+                await self._server.wait_closed()
+                logger.debug("🚪 Server closed.")
+            except Exception as e:
+                logger.error(f"🚪❌ Error closing server: {e}")
+            finally:
+                self._server = None
+
+        # Add critical delay to ensure OS releases resources
+        await asyncio.sleep(0.3)
+
+        # Remove socket file with proper checks
+        if self.path and os.path.exists(self.path):
+            try:
+                os.unlink(self.path)
+                logger.debug(f"🚪✅ Removed socket file: {self.path}")
+                
+                # Verify file is actually gone
+                if os.path.exists(self.path):
+                    logger.error(f"🚪❌ Socket file still exists: {self.path}")
+                    os.chmod(self.path, 0o777)  # Try changing permissions
+                    os.unlink(self.path)
+            except OSError as e:
+                logger.error(f"🚪❌ Failed to remove socket file: {e}")
+                raise TransportError(f"Failed to remove socket file: {e}")
+
+        self.endpoint = None
+        self._closing = False
+        logger.debug("🚪 close() completed.")
+
+    ###
+    async def X1close(self) -> None:
         logger.debug("🚪 close() called on UnixSocketTransport.")
         if self._closing:
             logger.debug("🚪 Already closing, skipping.")
@@ -445,8 +508,8 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = False
         logger.debug("🚪 close() completed for UnixSocketTransport.")
 
-###
-    async def Xclose(self) -> None:
+    ###
+    async def X2close(self) -> None:
         """
         Close everything: the connections, the server, the writer, then remove the socket file.
         Some tests specifically check for 'Mocked unlink error' or 'Failed to remove socket file:'.
@@ -499,6 +562,4 @@ class UnixSocketTransport(RPCPluginTransport):
         logger.debug("🚪 close() completed for UnixSocketTransport.")
 
 
-###
-
-################################################################################
+### 🐍🏗️🔌
