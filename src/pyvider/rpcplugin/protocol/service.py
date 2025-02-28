@@ -170,7 +170,104 @@ class GRPCStdioService(GRPCStdioServicer):
             # Log but don't propagate to prevent crashing the service
             logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
+# src/pyvider/rpcplugin/protocol/service.py - Fix StreamStdio method
+async def StreamStdio(self, request, context):
+    """
+    Streams STDOUT/STDERR lines to the caller.
+    This RPC endpoint must only be called ONCE. Once stdio data is consumed
+    it is not sent again.
+    
+    Callers should connect early to prevent blocking on the plugin process.
+    """
+    logger.debug(
+        "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
+    )
+    
+    # Create a done event for proper cancellation
+    done = asyncio.Event()
+    
+    def on_rpc_done():
+        # This callback is called when the RPC is cancelled
+        done.set()
+    
+    # Register cancellation callback
+    context.add_done_callback(on_rpc_done)
+    
+    while not self._shutdown and not done.is_set():
+        try:
+            # Wait up to 2s for a new line; if none, we yield a short idle
+            try:
+                data_item = await asyncio.wait_for(
+                    self._message_queue.get(), timeout=2.0
+                )
+                yield data_item
+            except asyncio.TimeoutError:
+                # Just continue the loop on timeout
+                continue
+            except asyncio.CancelledError:
+                # Break the loop on cancellation
+                logger.debug("🔌📝🛑 StreamStdio cancelled")
+                break
+        except Exception as e:
+            logger.error(
+                f"🔌📝❌ Error streaming lines: {e}",
+                extra={"trace": traceback.format_exc()},
+            )
+            break
+
+    logger.debug(
+        "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+    )
+
     async def StreamStdio(self, request, context):
+        """
+        Streams STDOUT/STDERR lines to the caller.
+        This RPC endpoint must only be called ONCE. Once stdio data is consumed
+        it is not sent again.
+        
+        Callers should connect early to prevent blocking on the plugin process.
+        """
+        logger.debug(
+            "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
+        )
+        
+        # Create a done event for proper cancellation
+        done = asyncio.Event()
+        
+        def on_rpc_done():
+            # This callback is called when the RPC is cancelled
+            done.set()
+        
+        # Register cancellation callback
+        context.add_done_callback(on_rpc_done)
+        
+        while not self._shutdown and not done.is_set():
+            try:
+                # Wait up to 2s for a new line; if none, we yield a short idle
+                try:
+                    data_item = await asyncio.wait_for(
+                        self._message_queue.get(), timeout=2.0
+                    )
+                    yield data_item
+                except asyncio.TimeoutError:
+                    # Just continue the loop on timeout
+                    continue
+                except asyncio.CancelledError:
+                    # Break the loop on cancellation
+                    logger.debug("🔌📝🛑 StreamStdio cancelled")
+                    break
+            except Exception as e:
+                logger.error(
+                    f"🔌📝❌ Error streaming lines: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
+                break
+
+        logger.debug(
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+        )
+
+    async def XStreamStdio(self, request, context):
         """
         Streams STDOUT/STDERR lines to the caller.
         The host (go-plugin) typically calls this once at startup, then reads forever.
