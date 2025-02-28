@@ -161,10 +161,14 @@ class GRPCStdioService(GRPCStdioServicer):
         Public method: feed lines to the queue from somewhere else in your code,
         or from a logging handler that writes to the queue.
         """
-        data = StdioData(
-            channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
-        )
-        await self._message_queue.put(data)
+        try:
+            data = StdioData(
+                channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
+            )
+            await self._message_queue.put(data)
+        except Exception as e:
+            # Log but don't propagate to prevent crashing the service
+            logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
     async def StreamStdio(self, request, context):
         """
