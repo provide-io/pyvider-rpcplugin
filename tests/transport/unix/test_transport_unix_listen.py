@@ -103,31 +103,7 @@ async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path):
         await asyncio.sleep(0)
 
 @pytest.mark.asyncio
-async def test_unix_listen_success_2(monkeypatch, tmp_path):
-    # Test that listen() cleans up a stale file and creates a server.
-    sock_path = str(tmp_path / "test.sock")
-    transport = UnixSocketTransport(path=sock_path)
-    # Patch _check_socket_in_use to return False.
-    monkeypatch.setattr(
-        transport, "_check_socket_in_use", AsyncMock(return_value=False)
-    )
-    # Create a stale file.
-    with open(sock_path, "w") as f:
-        f.write("stale")
-    # Patch asyncio.start_unix_server to return a dummy server.
-    dummy_server = AsyncMock()
-    dummy_server.wait_closed = AsyncMock()
-    monkeypatch.setattr(
-        asyncio, "start_unix_server", AsyncMock(return_value=dummy_server)
-    )
-    # Patch os.chmod to do nothing.
-    monkeypatch.setattr(os, "chmod", lambda path, mode: None)
-
-    endpoint = await transport.listen()
-    assert endpoint == sock_path
-
-@pytest.mark.asyncio
-async def test_unix_listen_success_1(monkeypatch, tmp_path):
+async def test_unix_listen_success(monkeypatch, tmp_path):
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -148,6 +124,7 @@ async def test_unix_listen_success_1(monkeypatch, tmp_path):
     monkeypatch.setattr(os, "chmod", lambda path, mode: None)
     endpoint = await transport.listen()
     assert endpoint == sock_path
+
 
 @pytest.mark.asyncio
 async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
