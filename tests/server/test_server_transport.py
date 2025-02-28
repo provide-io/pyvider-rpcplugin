@@ -74,21 +74,7 @@ async def test_setup_server_unix_success_1(
         await server.stop()
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_no_socket_2(
-    tmp_path, mock_server_protocol, mock_server_handler
-):
-    sock_path = str(tmp_path / "nosock.sock")
-    transport = UnixSocketTransport(path=sock_path)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol, handler=mock_server_handler, transport=transport
-    )
-
-    with pytest.raises(TransportError):
-        await server._setup_server(None)
-
-@pytest.mark.asyncio
-async def test_setup_server_unix_no_socket_1(
+async def test_setup_server_unix_no_socket(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
