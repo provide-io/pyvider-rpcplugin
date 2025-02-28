@@ -265,7 +265,7 @@ async def test_negotiate_handshake_from_config(
         "pyvider.rpcplugin.server.negotiate_transport", fake_transport
     )
     await server._negotiate_handshake()
-     assert server._transport_name == transport._transport_name
+    assert server._transport_name == transport._transport_name
 
 
 ################################################################################
