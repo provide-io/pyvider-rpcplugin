@@ -502,9 +502,13 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 port=self._port,
             )
             logger.debug(f"Handshake response built: {response}")
+            
+            # Critical fix: Write to stdout with proper flush
+            # This ensures the response is immediately sent to the client
             print(response, file=sys.stdout, flush=True)
+            
+            # Explicitly flush stdout again to ensure the message is sent
             sys.stdout.flush()
-
         except Exception as e:
             logger.error(
                 "🛎️❌ Error building handshake response",
