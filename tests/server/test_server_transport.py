@@ -28,14 +28,19 @@ from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_success_3(
-    unique_socket_path, mock_server_protocol, mock_server_handler
+    unique_socket_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
 ):
     sock_path = unique_socket_path
-
     transport = UnixSocketTransport(path=sock_path)
 
     server = RPCPluginServer(
-        protocol=mock_server_protocol, handler=mock_server_handler, transport=transport
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
     )
 
     try:
