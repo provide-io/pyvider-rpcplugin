@@ -230,65 +230,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             
         logger.debug("🛎️ Server shutdown complete.")
 
-    async def Xstop(self) -> None:
-        """Ensure proper server shutdown with timeouts."""
-        logger.debug("🛎️ Stopping server...")
-        
-        # Cancel any pending tasks first
-        all_tasks = [task for task in asyncio.all_tasks() 
-                    if task is not asyncio.current_task() and 
-                       not task.done() and 
-                       task.get_name().startswith('RPCPlugin')]
-        
-        for task in all_tasks:
-            task.cancel()
-            
-        try:
-            await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
-        except asyncio.TimeoutError:
-            logger.warning("🛎️ Timed out waiting for tasks to cancel")
-        
-        # Stop gRPC server with timeout
-        if self._server:
-            try:
-                await asyncio.wait_for(self._server.stop(grace=1.0), timeout=2.0)
-                logger.debug("🛎️ gRPC server stopped successfully.")
-            except Exception as e:
-                logger.error(f"🛎️❌ Error stopping gRPC server: {e}")
-            finally:
-                self._server = None
-        
-        # Close transport with timeout
-        if self._transport:
-            try:
-                await asyncio.wait_for(self._transport.close(), timeout=3.0)
-                logger.debug("🛎️ Transport closed successfully.")
-            except Exception as e:
-                logger.error(f"🛎️❌ Error closing transport: {e}")
-            finally:
-                self._transport = None
-        
-        # Ensure serving future completion
-        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
-            self._shutdown_requested()
-            
-        logger.debug("🛎️ Server shutdown complete.")
-
-    async def Xstop(self) -> None:
-        logger.debug("🛎️ Stopping server...")
-        if self._server:
-            try:
-                await self._server.stop(grace=2)
-                logger.debug("🛎️ gRPC server stopped successfully.")
-            except Exception as e:
-                logger.error(
-                    "🛎️❌ Error stopping gRPC server",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-            finally:
-                self._server = None
-        logger.debug("🛎️ Server shutdown complete.")
-
     async def _setup_server(self, client_cert: str | None) -> None:
         """
         Sets up the gRPC server instance and registers the provider service.
@@ -547,34 +488,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     extra={"error": str(stop_e), "trace": traceback.format_exc()},
                 )
             logger.debug("🛎️ Shutdown complete; exiting process.")
-
-    async def Xstop(self) -> None:
-        logger.debug("🛎️ Stopping server...")
-        if self._server:
-            try:
-                await self._server.stop(grace=2)
-                logger.debug("🛎️ gRPC server stopped successfully.")
-            except Exception as e:
-                logger.error(
-                    "🛎️❌ Error stopping gRPC server",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-            finally:
-                self._server = None
-        if self._transport:
-            try:
-                await self._transport.close()
-                logger.debug("🛎️ Transport closed successfully.")
-            except Exception as e:
-                logger.error(
-                    "🛎️❌ Error closing transport",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-            finally:
-                self._transport = None
-        if not self._serving_future.done():
-            self._shutdown_requested()
-        logger.debug("🛎️ Server shutdown complete.")
 
     def __del__(self) -> None:
         """Safe cleanup in garbage collection."""
