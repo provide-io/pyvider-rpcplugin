@@ -104,7 +104,6 @@ async def test_setup_server_unix_no_socket(
         await transport.listen()
         await server._setup_server("client_cert")
 
-
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_2(
     tmp_path,
@@ -239,7 +238,4 @@ async def test_setup_server_tcp_success(
     #    for port in server.ports
     #)
 
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️
