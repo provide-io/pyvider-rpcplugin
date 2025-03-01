@@ -17,7 +17,6 @@ class MockChannelCredentials:
     private_key: Optional[bytes]
     certificate_chain: Optional[bytes]
 
-
 @dataclass
 class MockServerCredentials:
     """Mock implementation of SSL server credentials."""
@@ -26,8 +25,8 @@ class MockServerCredentials:
     root_certificates: Optional[bytes]
     require_client_auth: bool
 
-
-def mock_ssl_channel_credentials(
+@pytest.mark.asyncio
+async def mock_ssl_channel_credentials(
     root_certificates: Optional[bytes] = None,
     private_key: Optional[bytes] = None,
     certificate_chain: Optional[bytes] = None,
@@ -39,8 +38,8 @@ def mock_ssl_channel_credentials(
         certificate_chain=certificate_chain,
     )
 
-
-def mock_ssl_server_credentials(
+@pytest.mark.asyncio
+async def mock_ssl_server_credentials(
     private_key_certificate_chain_pairs: list[tuple[bytes, bytes]],
     root_certificates: Optional[bytes] = None,
     require_client_auth: bool = False,
@@ -67,8 +66,8 @@ def mock_ssl_server_credentials(
         require_client_auth=require_client_auth,
     )
 
-
 # Tests using conftest fixtures
+@pytest.mark.asyncio
 async def test_mock_channel_credentials_with_client_cert(client_cert):
     """Test creating channel credentials using client certificate fixture."""
     creds = mock_ssl_channel_credentials(
@@ -83,7 +82,7 @@ async def test_mock_channel_credentials_with_client_cert(client_cert):
     assert creds.private_key == client_cert.key.encode()
     assert creds.certificate_chain == client_cert.cert.encode()
 
-
+@pytest.mark.asyncio
 async def test_mock_server_credentials_with_server_cert(server_cert, client_cert):
     """Test creating server credentials using server certificate fixture."""
     pairs = [(server_cert.key.encode(), server_cert.cert.encode())]
@@ -99,8 +98,8 @@ async def test_mock_server_credentials_with_server_cert(server_cert, client_cert
     assert creds.root_certificates == client_cert.cert.encode()
     assert creds.require_client_auth is True
 
-
-def test_mock_server_credentials_multiple_certs(server_cert, client_cert):
+@pytest.mark.asyncio
+async def test_mock_server_credentials_multiple_certs(server_cert, client_cert):
     """Test creating server credentials with multiple certificate pairs."""
     # Using both server and client certs as pairs for testing
     pairs = [
@@ -115,8 +114,8 @@ def test_mock_server_credentials_multiple_certs(server_cert, client_cert):
     assert len(creds.private_key_certificate_chain_pairs) == 2
     assert creds.private_key_certificate_chain_pairs == pairs
 
-
-def test_mock_server_credentials_validation_with_certs(server_cert, client_cert):
+@pytest.mark.asyncio
+async def test_mock_server_credentials_validation_with_certs(server_cert, client_cert):
     """Test validation rules with real certificates."""
     # Test requiring client auth without root certs
     with pytest.raises(ValueError):
@@ -135,8 +134,8 @@ def test_mock_server_credentials_validation_with_certs(server_cert, client_cert)
             ]
         )
 
-
-def test_mock_channel_credentials_none_values(client_cert):
+@pytest.mark.asyncio
+async def test_mock_channel_credentials_none_values(client_cert):
     """Test channel credentials with optional parameters as None."""
     creds = mock_ssl_channel_credentials(
         root_certificates=client_cert.cert.encode()
@@ -145,3 +144,5 @@ def test_mock_channel_credentials_none_values(client_cert):
     assert isinstance(creds.root_certificates, bytes)
     assert creds.private_key is None
     assert creds.certificate_chain is None
+
+### 🐍🏗🧪️

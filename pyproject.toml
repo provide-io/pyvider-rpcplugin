@@ -79,10 +79,6 @@ run = "python -m pyvider.rpcplugin"
 [tool.hatch.envs.build.scripts]
 go = "(cd tests/kv/go-plugin; ./build.sh)"
 
-[tool.hatch.envs.docs]
-dependencies = ["mkdocs", "mkdocs-material", "mkdocstrings[python]"]
-scripts = {build = "mkdocs build", serve = "mkdocs serve"}
-
 [tool.hatch.metadata.targets.wheel]
 packages = [
     { include = "pyvider.rpcplugin", from = "src" }
@@ -94,7 +90,7 @@ packages = [
 
 [tool.pytest.ini_options]
 log_cli = true
-log_cli_level = "DEBUG"
+# log_cli_level = "DEBUG"
 
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
