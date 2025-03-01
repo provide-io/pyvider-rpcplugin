@@ -138,14 +138,14 @@ omit = [
     "tests/*",
 ]
 
-[tool.coverage.report]
-exclude_lines = [
-    "logger\\.debug",
-    "logger\\.info",
-    "logger\\.warning",
-    "logger\\.error",
-    "logger\\.critical",
-]
+# [tool.coverage.report]
+# exclude_lines = [
+#     "logger\\.debug",
+#     "logger\\.info",
+#     "logger\\.warning",
+#     "logger\\.error",
+#     "logger\\.critical",
+# ]
 
 ################################################################################
 # pyre
