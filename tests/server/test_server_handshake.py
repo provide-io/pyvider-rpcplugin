@@ -92,7 +92,6 @@ async def test_server_handshake_missing_env_1(
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
 
     transport = mock_server_transport
-    #endpoint = await transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -103,7 +102,7 @@ async def test_server_handshake_missing_env_1(
 
     with pytest.raises(HandshakeError):
         endpoint = await transport.listen()
-        #await server.serve()
+        await server.serve()
 
 @pytest.mark.asyncio
 async def test_negotiate_handshake_with_provided_transport(
