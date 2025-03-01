@@ -121,7 +121,7 @@ select = ["E", "F", "I", "UP", "ANN", "B"]
 ignore = [
     "ANN401",
     "B008",
-    "E501",     # Line too long
+    "E501",
 ]
 exclude = ["tests/*", "**/*pb2*.py"]
 line-length = 88
@@ -140,11 +140,11 @@ omit = [
 
 [tool.coverage.report]
 exclude_lines = [
-    "logger.debug",
-    "logger.info",
-    "logger.warning",
-    "logger.error",
-    "logger.critical",
+    "logger\\.debug",
+    "logger\\.info",
+    "logger\\.warning",
+    "logger\\.error",
+    "logger\\.critical",
 ]
 
 ################################################################################
