@@ -358,3 +358,20 @@ async def test_controller_delayed_shutdown_fallback(controller_service):
             with patch('sys.exit'):
                 await controller_service._delayed_shutdown()
                 # If we get here without error, the test passes
+
+@pytest.mark.asyncio
+async def test_register_protocol_service(shutdown_event):
+    """Test registering all protocol services with a server."""
+    # Create a mock server
+    mock_server = MagicMock()
+    
+    # Call register_protocol_service
+    register_protocol_service(mock_server, shutdown_event)
+    
+    # Verify the appropriate add_*_to_server methods were called
+    from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import add_GRPCStdioServicer_to_server
+    from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import add_GRPCBrokerServicer_to_server
+    from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import add_GRPCControllerServicer_to_server
+    
+    # Check if the right number of add_*_to_server calls were made
+    assert mock_server.add_generic_rpc_handlers.call_count == 3
