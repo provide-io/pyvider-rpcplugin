@@ -122,7 +122,46 @@ class RPCPluginClient:
         else:
             logger.info("🔐 mTLS not enabled; operating in insecure mode.")
 
+    ###
     async def _launch_process(self) -> None:
+        """Launch the plugin as a subprocess if not already running."""
+        if self._process:
+            logger.debug("🖥️ Plugin subprocess is already running; skipping launch.")
+            return
+
+        env = os.environ.copy()
+        if self.config and "env" in self.config:
+            env.update(self.config["env"])
+        
+        # Force unbuffered output in Python subprocesses
+        env["PYTHONUNBUFFERED"] = "1"
+        
+        # Pass client cert if needed
+        if self.client_cert:
+            env["PLUGIN_CLIENT_CERT"] = self.client_cert
+
+        logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
+        try:
+            self._process = subprocess.Popen(
+                self.command,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=False,
+                bufsize=0,  # Disable buffering
+                universal_newlines=False,
+            )
+            logger.info("🖥️ Plugin subprocess started successfully.")
+        except Exception as e:
+            logger.error(f"🖥️❌ Failed to launch plugin subprocess: {e}",
+                        extra={"trace": traceback.format_exc()})
+            raise
+
+        # Hold off on stderr relay until afte
+
+###
+
+    async def X1_launch_process(self) -> None:
         """
         Launch the plugin as a subprocess if not already running.
         """
