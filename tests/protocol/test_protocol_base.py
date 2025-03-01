@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 # tests/protocol/test_protocol_base.py
 
 import pytest
