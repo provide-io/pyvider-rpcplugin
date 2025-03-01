@@ -388,3 +388,6 @@ certs
 kv-data-*
 
 bin/
+
+# stupid code coverage result.
+result.json
