@@ -163,7 +163,6 @@ class RPCPluginClient:
         Continuously read plugin's stderr in a background thread, printing it locally.
         """
         import threading
-
         def read_stderr() -> None:
             while True:
                 if not self._process or self._process.stderr is None:
@@ -171,7 +170,7 @@ class RPCPluginClient:
                 line = self._process.stderr.readline()
                 if not line:
                     break
-                sys.stderr.write(line)
+                sys.stderr.write(line.decode('utf-8', errors='replace'))  # Decode bytes to str
 
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
