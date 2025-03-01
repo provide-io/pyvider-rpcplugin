@@ -145,7 +145,7 @@ class RPCPluginClient:
                 env=env,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
+                text=False,
             )
             logger.info("🖥️ Plugin subprocess started successfully.")
         except Exception as e:
