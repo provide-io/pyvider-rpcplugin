@@ -209,10 +209,10 @@ class GRPCStdioService(GRPCStdioServicer):
                     logger.debug("🔌📝🛑 StreamStdio cancelled")
                     break
             except Exception as e:
-                logger.error(
-                    f"🔌📝❌ Error streaming lines: {e}",
-                    extra={"trace": traceback.format_exc()},
-                )
+                #logger.error(
+                #    f"🔌📝❌ Error streaming lines: {e}",
+                #    extra={"trace": traceback.format_exc()},
+                #)
                 break
 
         logger.debug(
