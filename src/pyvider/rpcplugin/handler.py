@@ -1,9 +1,12 @@
+
 # pyvider/rpcplugin/handler.py
+
+# pragma: no cover
 
 from typing import Protocol, runtime_checkable
 
 
-@runtime_checkable # pragma: no cover
+@runtime_checkable
 class RPCPluginHandler(Protocol): # pragma: no cover
     """
     Base protocol that all RPC handlers must implement.
