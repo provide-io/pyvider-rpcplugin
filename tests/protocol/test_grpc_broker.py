@@ -12,7 +12,7 @@ from pyvider.rpcplugin.protocol import (
 )
 
 @pytest.mark.asyncio
-def test_grpc_broker_pb2_imports():
+async def test_grpc_broker_pb2_imports():
     """Test importing grpc_broker_pb2 and accessing its components."""
     # Access message descriptors
     assert hasattr(grpc_broker_pb2, 'DESCRIPTOR')
@@ -49,7 +49,7 @@ def test_grpc_broker_pb2_imports():
     assert deserialized.address == conn_info.address
 
 @pytest.mark.asyncio
-def test_grpc_broker_pb2_grpc_stub_creation():
+async def test_grpc_broker_pb2_grpc_stub_creation():
     """Test creating a GRPCBrokerStub."""
     # Mock a channel
     mock_channel = MagicMock()
@@ -61,7 +61,7 @@ def test_grpc_broker_pb2_grpc_stub_creation():
     assert hasattr(stub, 'StartStream')
 
 @pytest.mark.asyncio
-def test_grpc_broker_servicer_methods():
+async def test_grpc_broker_servicer_methods():
     """Test GRPCBrokerServicer methods."""
     # Create a servicer
     servicer = grpc_broker_pb2_grpc.GRPCBrokerServicer()
@@ -79,7 +79,7 @@ def test_grpc_broker_servicer_methods():
     context.set_details.assert_called_once_with("Method not implemented!")
 
 @pytest.mark.asyncio
-def test_broker_pb2_descriptor():
+async def test_broker_pb2_descriptor():
     """Direct test for grpc_broker_pb2 descriptor options (lines 30-36)."""
     # Direct access to specific global symbols
     # These will exercise the if not _descriptor._USE_C_DESCRIPTORS block
@@ -94,7 +94,7 @@ def test_broker_pb2_descriptor():
     assert "ConnInfo" in descriptor.message_types_by_name
 
 @pytest.mark.asyncio
-def test_broker_grpc_version_mismatch():
+async def test_broker_grpc_version_mismatch():
     """Direct test for grpc_broker_pb2_grpc version check (lines 18-19)."""
     with patch('grpc._utilities.first_version_is_lower', return_value=True):
         with pytest.raises(RuntimeError) as excinfo:
@@ -102,7 +102,7 @@ def test_broker_grpc_version_mismatch():
         assert "grpc package installed is at version" in str(excinfo.value)
 
 @pytest.mark.asyncio
-def test_broker_experimental_api():
+async def test_broker_experimental_api():
     """Direct test for grpc_broker_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_broker_pb2_grpc, "GRPCBroker")
     assert hasattr(grpc_broker_pb2_grpc.GRPCBroker, "StartStream")
