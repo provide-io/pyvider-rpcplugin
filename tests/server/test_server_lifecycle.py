@@ -29,40 +29,6 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-
-@pytest.mark.asyncio
-async def test_serve_success_3(
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-):
-    """Test server lifecycle with extra coverage."""
-    transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-    server._exit_on_stop = False  # Prevent sys.exit in test
-
-    async def mock_handshake():
-        pass
-
-    server._negotiate_handshake = mock_handshake
-
-    def trigger_shutdown():
-        server._shutdown_requested()
-
-    loop = asyncio.get_event_loop()
-    loop.call_later(0.1, trigger_shutdown)
-
-    await transport.listen()
-    await server.serve()
-    assert server._serving_future.done()
-
 @pytest.mark.skip
 # FAILED x_test_server_lifecycle.py::test_server_serve_runtime_error[tcp] - Failed: DID NOT RAISE <class 'RuntimeError'>
 # FAILED x_test_server_lifecycle.py::test_server_serve_runtime_error[unix] - pyvider.rpcplugin.exception.TransportError: Socket /REDACTED_TMP is already in use
@@ -96,18 +62,16 @@ async def test_server_serve_runtime_error(
 
     await transport.close()
 
-
 @pytest.mark.asyncio
-async def test_serve_success_2(
+async def test_serve_success(
     monkeypatch,
-    mock_server_handler,
+    client_cert,
     mock_server_protocol,
+    mock_server_handler,
     mock_server_config,
     mock_server_transport,
-    ):
+):
 
-    #transport_name, transport, endpoint = mock_server_transport
-    #transport_name, transport, endpoint = mock_server_transport
     transport = mock_server_transport
 
     server = RPCPluginServer(
@@ -121,6 +85,8 @@ async def test_serve_success_2(
     fut.set_result(None)
     server._serving_future = fut
     server._serving_event = asyncio.Event()
+
+    endpoint = await transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
@@ -143,11 +109,10 @@ async def test_serve_success_2(
     )
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
     fake_stdout = StringIO()
-    monkeypatch.setattr(sys, "stdout", fake_stdout)
+    monkeyatch_stdout = monkeypatch.setattr(sys, "stdout", fake_stdout)
     await server.serve()
     output = fake_stdout.getvalue().strip()
     assert output == "handshake_response"
-
 
 @pytest.mark.asyncio
 async def test_serve_error(
@@ -267,59 +232,6 @@ async def test_stop_handles_exceptions(
     await server.stop()
     # Even though exceptions occurred, _shutdown_requested() should have been called.
     assert server._serving_future.done()
-
-
-@pytest.mark.asyncio
-async def test_serve_success_1(
-    monkeypatch,
-    client_cert,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-):
-
-    transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    fut = asyncio.Future()
-    fut.set_result(None)
-    server._serving_future = fut
-    server._serving_event = asyncio.Event()
-
-    endpoint = await transport.listen()
-
-    async def dummy_negotiate(self):
-        self._protocol_version = 1
-        self._transport_name = transport._transport_name
-
-    monkeypatch.setattr(
-        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
-    )
-
-    async def dummy_setup(client_cert):
-        return
-
-    monkeypatch.setattr(server, "_setup_server", dummy_setup)
-
-    async def dummy_build_handshake(*args, **kwargs):
-        return "handshake_response"
-
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.server.build_handshake_response", dummy_build_handshake
-    )
-    monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
-    fake_stdout = StringIO()
-    monkeyatch_stdout = monkeypatch.setattr(sys, "stdout", fake_stdout)
-    await server.serve()
-    output = fake_stdout.getvalue().strip()
-    assert output == "handshake_response"
 
 @pytest.mark.asyncio
 async def test_server_stop_clean_destructor(
