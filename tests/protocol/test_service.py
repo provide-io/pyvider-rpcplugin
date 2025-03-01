@@ -375,3 +375,5 @@ async def test_register_protocol_service(shutdown_event):
     
     # Check if the right number of add_*_to_server calls were made
     assert mock_server.add_generic_rpc_handlers.call_count == 3
+
+### 🐍🏗🧪️
