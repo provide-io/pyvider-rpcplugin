@@ -67,7 +67,7 @@ async def mock_ssl_server_credentials(
     )
 
 # Tests using conftest fixtures
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_mock_channel_credentials_with_client_cert(client_cert):
     """Test creating channel credentials using client certificate fixture."""
     creds = mock_ssl_channel_credentials(
@@ -82,7 +82,7 @@ async def test_mock_channel_credentials_with_client_cert(client_cert):
     assert creds.private_key == client_cert.key.encode()
     assert creds.certificate_chain == client_cert.cert.encode()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_mock_server_credentials_with_server_cert(server_cert, client_cert):
     """Test creating server credentials using server certificate fixture."""
     pairs = [(server_cert.key.encode(), server_cert.cert.encode())]
