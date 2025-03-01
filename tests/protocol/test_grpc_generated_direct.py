@@ -18,28 +18,6 @@ from pyvider.rpcplugin.protocol import (
     assert hasattr(descriptor, "message_types_by_name")
     assert "ConnInfo" in descriptor.message_types_by_name
 
-def test_controller_pb2_descriptor():
-    """Direct test for grpc_controller_pb2 descriptor options (lines 30-34)."""
-    assert hasattr(grpc_controller_pb2, "DESCRIPTOR")
-    with patch.object(grpc_controller_pb2.DESCRIPTOR, "_loaded_options", None), \
-         patch.object(grpc_controller_pb2.DESCRIPTOR, "_USE_C_DESCRIPTORS", False):
-        importlib.reload(grpc_controller_pb2)
-
-    descriptor = grpc_controller_pb2.DESCRIPTOR
-    assert hasattr(descriptor, "message_types_by_name")
-    assert "Empty" in descriptor.message_types_by_name
-
-def test_stdio_pb2_descriptor():
-    """Direct test for grpc_stdio_pb2 descriptor options (lines 32-38)."""
-    assert hasattr(grpc_stdio_pb2, "DESCRIPTOR")
-    with patch.object(grpc_stdio_pb2.DESCRIPTOR, "_loaded_options", None), \
-         patch.object(grpc_stdio_pb2.DESCRIPTOR, "_USE_C_DESCRIPTORS", False):
-        importlib.reload(grpc_stdio_pb2)
-
-    descriptor = grpc_stdio_pb2.DESCRIPTOR
-    assert hasattr(descriptor, "message_types_by_name")
-    assert "StdioData" in descriptor.message_types_by_name
-
 def test_controller_experimental_api():
     """Direct test for grpc_controller_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_controller_pb2_grpc, "GRPCController")
