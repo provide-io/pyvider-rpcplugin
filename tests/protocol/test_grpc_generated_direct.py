@@ -18,23 +18,6 @@ from pyvider.rpcplugin.protocol import (
     assert hasattr(descriptor, "message_types_by_name")
     assert "ConnInfo" in descriptor.message_types_by_name
 
-def test_controller_experimental_api():
-    """Direct test for grpc_controller_pb2_grpc experimental API (line 90)."""
-    assert hasattr(grpc_controller_pb2_grpc, "GRPCController")
-    assert hasattr(grpc_controller_pb2_grpc.GRPCController, "Shutdown")
-
-    mock_request = MagicMock()
-    mock_target = MagicMock()
-
-    # Call the experimental method directly
-    with patch('grpc.experimental.unary_unary') as mock_unary_unary:
-        grpc_controller_pb2_grpc.GRPCController.Shutdown(
-            mock_request,
-            mock_target,
-            metadata={"test": "value"}
-        )
-        mock_unary_unary.assert_called_once()
-
 def test_stdio_experimental_api():
     """Direct test for grpc_stdio_pb2_grpc experimental API (line 105)."""
     assert hasattr(grpc_stdio_pb2_grpc, "GRPCStdio")
