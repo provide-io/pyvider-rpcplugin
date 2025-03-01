@@ -79,7 +79,7 @@ async def kv_server(
     
     # Generate unique socket path
     unique_path = f"/tmp/pyvider_test_{uuid.uuid4().hex}.sock"
-    
+
     transport = UnixSocketTransport(path=unique_path)
 
     server = RPCPluginServer(
