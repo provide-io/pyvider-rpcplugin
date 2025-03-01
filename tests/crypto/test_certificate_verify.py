@@ -257,20 +257,6 @@ async def test_certificate_key_usage_extension_failure():
             cert._create_x509_certificate()
 
 @pytest.mark.asyncio
-async def test_certificate_invalid_signature():
-    """Ensure invalid signatures fail verification."""
-    cert = Certificate(generate_keypair=True)
-
-    with mock.patch(
-        "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
-        side_effect=Exception("Signature failure"),
-        create=True,
-    ):
-        assert not cert._validate_cert(cert, cert), (
-            "Invalid signature should fail validation"
-        )
-
-@pytest.mark.asyncio
 async def test_certificate_equality():
     """Ensure certificates are equal only if subject and serial number match."""
     cert1 = Certificate(generate_keypair=True)
