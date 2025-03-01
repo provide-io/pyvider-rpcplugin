@@ -11,6 +11,7 @@ from pyvider.rpcplugin.protocol import (
     grpc_controller_pb2_grpc,
 )
 
+@pytest.mark.asyncio
 async def test_grpc_controller_pb2_imports():
     """Test importing grpc_controller_pb2 and accessing its components."""
     # Access message descriptors
@@ -27,6 +28,7 @@ async def test_grpc_controller_pb2_imports():
     deserialized = grpc_controller_pb2.Empty()
     deserialized.ParseFromString(serialized)
 
+@pytest.mark.asyncio
 async def test_grpc_controller_pb2_grpc_stub_creation():
     """Test creating a GRPCControllerStub."""
     # Mock a channel
@@ -38,6 +40,7 @@ async def test_grpc_controller_pb2_grpc_stub_creation():
     # Verify methods
     assert hasattr(stub, 'Shutdown')
 
+@pytest.mark.asyncio
 async def test_grpc_controller_servicer_methods():
     """Test GRPCControllerServicer methods."""
     # Create a servicer
@@ -55,6 +58,7 @@ async def test_grpc_controller_servicer_methods():
     context.set_code.assert_called_once_with(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details.assert_called_once_with("Method not implemented!")
 
+@pytest.mark.asyncio
 async def test_controller_pb2_descriptor():
     """Direct test for grpc_controller_pb2 descriptor options (lines 30-34)."""
     assert hasattr(grpc_controller_pb2, "DESCRIPTOR")
@@ -66,6 +70,7 @@ async def test_controller_pb2_descriptor():
     assert hasattr(descriptor, "message_types_by_name")
     assert "Empty" in descriptor.message_types_by_name
 
+@pytest.mark.asyncio
 async def test_controller_grpc_version_mismatch():
     """Direct test for grpc_controller_pb2_grpc version check (lines 18-19, 22)."""
     with patch('grpc._utilities.first_version_is_lower', return_value=True):
@@ -73,6 +78,7 @@ async def test_controller_grpc_version_mismatch():
             importlib.reload(grpc_controller_pb2_grpc)
         assert "grpc package installed is at version" in str(excinfo.value)
 
+@pytest.mark.asyncio
 async def test_controller_experimental_api():
     """Direct test for grpc_controller_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_controller_pb2_grpc, "GRPCController")
