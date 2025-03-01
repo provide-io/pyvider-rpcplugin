@@ -40,7 +40,7 @@ async def kv_handler():
             return kv_pb2.GetResponse(value=value)
 
         ###
-        async def put(self, request, context):
+        async def Put(self, request, context):
             try:
                 key = request.key
                 # properly handle both bytes and string values
