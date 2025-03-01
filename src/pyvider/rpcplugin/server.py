@@ -131,7 +131,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 if client_cert:
                     logger.debug("🛎️🔐✅ Client cert found in server config.")
                     return client_cert
-                    
+
             # Then check the global config
             client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
             if client_cert:
@@ -139,7 +139,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             else:
                 logger.debug("🛎️🔐⚠️ No client certificate provided; operating insecurely.")
                 return None
-                
+
             return client_cert
         except Exception as e:
             logger.error(f"🛎️🔐❌ Error reading client certificate: {e}")
@@ -197,21 +197,21 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
     async def stop(self) -> None:
         logger.debug("🛎️ Stopping server...")
-        
+
         # Cancel any pending tasks first
-        all_tasks = [task for task in asyncio.all_tasks() 
-                    if task is not asyncio.current_task() and 
-                       not task.done() and 
+        all_tasks = [task for task in asyncio.all_tasks()
+                    if task is not asyncio.current_task() and
+                       not task.done() and
                        task.get_name().startswith('RPCPlugin')]
-        
+
         for task in all_tasks:
             task.cancel()
-            
+
         try:
             await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
         except asyncio.TimeoutError:
             logger.warning("🛎️ Timed out waiting for tasks to cancel")
-        
+
         # Stop gRPC server with timeout
         if self._server:
             try:
@@ -221,7 +221,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 logger.error(f"🛎️❌ Error stopping gRPC server: {e}")
             finally:
                 self._server = None
-        
+
         # Close transport with timeout
         if self._transport:
             try:
@@ -231,11 +231,11 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 logger.error(f"🛎️❌ Error closing transport: {e}")
             finally:
                 self._transport = None
-        
+
         # Ensure serving future completion
         if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
             self._shutdown_requested()
-            
+
         logger.debug("🛎️ Server shutdown complete.")
 
     async def _setup_server(self, client_cert: str | None) -> None:
@@ -461,22 +461,24 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 server_cert=self._server_cert_obj,
                 port=self._port,
             )
-            logger.debug(f"Handshake response built: {response}")
-            
-            # Critical fix: Write to stdout with proper flush
-            # This ensures the response is immediately sent to the client
-            #print(response, file=sys.stdout, flush=True)
-            response_bytes = (response + "\n").encode('utf-8')
+            logger.debug(f"🤝📝 Handshake response built: {response}")
+
+            # Write directly to stdout in the most unambiguous way
+            response_with_newline = response + "\n"
+            response_bytes = response_with_newline.encode('utf-8')
+
+            # Try both methods to maximize compatibility
             sys.stdout.buffer.write(response_bytes)
             sys.stdout.buffer.flush()
-            
-            # Explicitly flush stdout again to ensure the message is sent
             sys.stdout.flush()
+
+            # Also try direct print for good measure
+            print(response, flush=True)
+
+            logger.debug("🤝📝✅ Handshake response sent to stdout")
         except Exception as e:
-            logger.error(
-                "🛎️❌ Error building handshake response",
-                extra={"error": str(e), "trace": traceback.format_exc()},
-            )
+            logger.error(f"🛎️❌ Error building handshake response: {e}",
+                        extra={"error": str(e), "trace": traceback.format_exc()})
             raise
 
         try:
@@ -511,7 +513,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     if hasattr(self, '_server') and self._server:
                         if hasattr(self._server, 'close'):
                             self._server.close()
-                    
+
                     # Signal shutdown without awaiting
                     if hasattr(self, '_serving_future') and not self._serving_future.done():
                         self._shutdown_requested()
