@@ -73,3 +73,5 @@ def test_transport_type():
     # This shouldn't type check, but will work at runtime
     # Just test it doesn't raise an exception
     accepts_transport(RPCPluginTransport())  # type: ignore
+
+### 🐍🏗🧪️
