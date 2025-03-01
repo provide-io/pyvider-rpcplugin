@@ -5,7 +5,7 @@ import asyncio
 import pytest
 import pytest_asyncio
 import grpc
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch, ANY
 
 from pyvider.rpcplugin.protocol.service import (
     GRPCBrokerService,
