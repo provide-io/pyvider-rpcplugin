@@ -83,7 +83,53 @@ async def kv_handler():
     return TestKVHandler()
 
 @pytest_asyncio.fixture
-async def kv_server(
+async def kv_server(mock_server_config, mock_server_transport):
+    import uuid
+    import time
+    
+    # Generate more unique path with timestamp
+    unique_path = f"/tmp/pyvider_test_{time.time()}_{uuid.uuid4().hex}.sock"
+    
+    # Ensure path doesn't exist before starting
+    if os.path.exists(unique_path):
+        os.unlink(unique_path)
+        
+    transport = UnixSocketTransport(path=unique_path)
+    
+    server = RPCPluginServer(
+        protocol=KVProtocol(),
+        handler=kv_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+    
+    endpoint = await transport.listen()
+    serve_task = asyncio.create_task(server.serve())
+    
+    # Wait for server to be ready
+    await asyncio.sleep(0.5)
+    
+    try:
+        yield server
+    finally:
+        # More robust cleanup
+        await server.stop()
+        serve_task.cancel()
+        
+        # Ensure task is fully cancelled
+        with contextlib.suppress(asyncio.CancelledError):
+            await serve_task
+            
+        # Extra cleanup of socket file
+        if os.path.exists(unique_path):
+            try:
+                os.chmod(unique_path, 0o777)  # Ensure we have permission
+                os.unlink(unique_path)
+            except OSError:
+                pass
+
+@pytest_asyncio.fixture
+async def Xkv_server(
     server_with_mocks,
     kv_handler,
     mock_server_config,
