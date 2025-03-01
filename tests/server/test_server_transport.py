@@ -33,8 +33,7 @@ async def test_setup_server_unix_success_insecure(
     mock_server_handler,
     mock_server_config,
 ):
-    sock_path = unique_socket_path
-    transport = UnixSocketTransport(path=sock_path)
+    transport = UnixSocketTransport()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -60,8 +59,8 @@ async def test_setup_server_unix_success_secure(
     mock_server_handler,
     mock_server_config,
 ):
-    sock_path = unique_socket_path
-    transport = UnixSocketTransport(path=sock_path)
+    #sock_path = unique_socket_path
+    transport = UnixSocketTransport()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -71,7 +70,7 @@ async def test_setup_server_unix_success_secure(
     )
 
     try:
-        await transport.listen()
+        endpoint = await transport.listen()
         await server.serve()
         # await server._setup_server("client_cert")
         # expected = f"unix:{endpoint}"
