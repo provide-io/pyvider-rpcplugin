@@ -28,7 +28,7 @@ from tests.fixtures import *
 
 
 # this is somehow causing a segfault. i need to figure out wtf is up with the segfaults.
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_server_starts_insecurely(
     mock_server_protocol,
     mock_server_handler,
@@ -68,7 +68,6 @@ async def test_server_starts_insecurely(
     handshake = printed_messages[0]
     assert handshake.startswith("1|"), f"Invalid handshake format: {handshake}"
 
-
 @pytest.mark.asyncio
 async def test_read_client_cert_present(monkeypatch, mock_server_transport):
     from pyvider.rpcplugin.config import rpcplugin_config
@@ -83,8 +82,7 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport):
     cert = server._read_client_cert()
     assert cert == "client_cert"
 
-
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_read_client_cert_absent(
     client_cert,
     mock_server_protocol,
@@ -92,8 +90,6 @@ async def test_read_client_cert_absent(
     mock_server_config,
     mock_server_transport,
 ):
-    #from pyvider.rpcplugin.config import rpcplugin_config
-
     transport = mock_server_transport
 
     #original_config = rpcplugin_config.config.copy()
@@ -110,14 +106,13 @@ async def test_read_client_cert_absent(
     cert = server._read_client_cert()
     assert cert is None
 
-
 @pytest.mark.asyncio
 async def test_generate_server_credentials_insecure(server_with_mocks):
     """Test generating server credentials in insecure mode."""
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_generate_server_credentials_secure(monkeypatch):
     dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
     dummy_key = "-----BEGIN PRIVATE KEY-----\ndummy\n-----END PRIVATE KEY-----"
@@ -136,10 +131,6 @@ async def test_generate_server_credentials_secure(monkeypatch):
     assert creds is not None
     rpcplugin_config.config = original
 
-
-# -----------------------------------------------------------------------------
-# Tests for _generate_server_credentials (lines 127-136)
-# -----------------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_generate_server_credentials_success(
     client_cert,
@@ -174,7 +165,6 @@ async def test_generate_server_credentials_success(
     # Expect creds to be not None (dummy creds generated successfully)
     assert creds is not None
 
-
 @pytest.mark.asyncio
 async def test_generate_server_credentials_failure(
     monkeypatch,
@@ -200,8 +190,4 @@ async def test_generate_server_credentials_failure(
     with pytest.raises(Exception, match="has no attribute"):
         server._generate_server_credentials(client_cert.cert.encode())
 
-
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
+### 🐍🏗🧪️

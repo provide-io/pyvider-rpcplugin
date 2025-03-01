@@ -40,7 +40,6 @@ async def kv_handler():
 
     return TestKVHandler()
 
-
 @pytest_asyncio.fixture
 async def kv_server(
     server_with_mocks,
@@ -76,7 +75,6 @@ async def kv_server(
         with contextlib.suppress(asyncio.CancelledError):
             await serve_task
 
-
 @pytest_asyncio.fixture
 async def kv_client(kv_server):
     """Provides connected KV client"""
@@ -94,7 +92,6 @@ async def kv_client(kv_server):
     yield client
     await client.close()
 
-
 @pytest.mark.asyncio
 async def test_kv_put_get_flow(kv_client, mock_server_config):
     """Test basic Put/Get operations"""
@@ -109,7 +106,6 @@ async def test_kv_put_get_flow(kv_client, mock_server_config):
     response = await stub.Get(kv_pb2.GetRequest(key=key))
     assert response.value == value
 
-
 @pytest.mark.asyncio
 async def test_kv_missing_key(kv_client):
     """Test Get with nonexistent key"""
@@ -118,7 +114,6 @@ async def test_kv_missing_key(kv_client):
     with pytest.raises(grpc.RpcError) as exc:
         await stub.Get(kv_pb2.GetRequest(key="nonexistent"))
     assert exc.value.code() == grpc.StatusCode.NOT_FOUND
-
 
 @pytest.mark.asyncio
 async def test_kv_concurrent_operations(kv_client):
@@ -136,3 +131,6 @@ async def test_kv_concurrent_operations(kv_client):
     # Run concurrent operations
     tasks = [put_get(i) for i in range(10)]
     await asyncio.gather(*tasks)
+
+
+### 🐍🏗🧪️
