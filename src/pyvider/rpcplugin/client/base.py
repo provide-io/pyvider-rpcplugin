@@ -224,7 +224,64 @@ class RPCPluginClient:
         if not self._process or not self._process.stdout:
             raise HandshakeError("No server process or no stdout available.")
 
+        ###
         async def read_stdout_line() -> str:
+            loop = asyncio.get_event_loop()
+            start_time = loop.time()
+            timeout = 10.0  # Increase timeout for handshake
+            
+            # Buffer for incomplete handshake lines
+            buffer = ""
+            
+            # Log the command being used
+            logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
+            
+            while (loop.time() - start_time) < timeout:
+                # Check process state
+                if self._process.poll() is not None:
+                    stderr_output = ""
+                    if self._process.stderr:
+                        stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
+                    logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
+                    raise HandshakeError(f"Plugin process exited with code {self._process.returncode} before handshake.")
+                
+                # Try to read a complete line with increased timeout
+                try:
+                    # First try: direct read with longer timeout
+                    line_bytes = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: self._process.stdout.readline()), 
+                        timeout=2.0  # Longer per-read timeout
+                    )
+                    
+                    if line_bytes:
+                        line = line_bytes.decode('utf-8', errors='replace').strip()
+                        buffer += line
+                        logger.debug(f"🤝 Read partial handshake data: '{line}', buffer: '{buffer}'")
+                        
+                        # Check for complete handshake
+                        if "|" in buffer and buffer.count("|") >= 5:
+                            return buffer
+                    else:
+                        # Empty read but process still running - wait and retry
+                        await asyncio.sleep(0.25)  # Longer sleep to allow buffering
+                
+                except asyncio.TimeoutError:
+                    logger.debug("🤝 Timeout on read attempt, retrying...")
+                    await asyncio.sleep(0.5)  # Longer backoff
+            
+            # Start stderr relay now to capture any error messages
+            self._relay_stderr_background()
+            
+            # If we get here, we've timed out
+            stderr_output = ""
+            if self._process.stderr:
+                stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
+            logger.error(f"🤝 Handshake timed out. Stderr output: {stderr_output}")
+            raise TimeoutError("Timed out waiting for handshake line. Check if the server is writing to stdout correctly.")
+
+        ###
+
+        async def X1_read_stdout_line() -> str:
             loop = asyncio.get_event_loop()
             start_time = loop.time()
             timeout = 5.0  # Set a reasonable timeout for handshake
