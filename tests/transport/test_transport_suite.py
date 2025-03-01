@@ -527,7 +527,7 @@ async def test_unix_socket_lifecycle_1(socket_monitor):
         await client.connect(endpoint)
         assert await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_4():
     """Test multiple concurrent connections to Unix socket."""
     with tempfile.NamedTemporaryFile() as tf:
@@ -584,7 +584,7 @@ async def test_unix_socket_concurrent_connections_4():
         # Verify socket is gone
         assert not os.path.exists(socket_path), f"Socket file {socket_path} still exists"
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_3(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
@@ -615,7 +615,7 @@ async def test_unix_socket_concurrent_connections_3(socket_monitor):
         await asyncio.sleep(0.1)
         assert not await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_2(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
@@ -645,7 +645,7 @@ async def test_unix_socket_concurrent_connections_2(socket_monitor):
 
         assert not await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_1(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
