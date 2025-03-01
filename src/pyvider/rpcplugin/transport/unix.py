@@ -293,12 +293,12 @@ class UnixSocketTransport(RPCPluginTransport):
         self._running = False
 
         # Close connections with proper exception handling
-        # async with self._lock:
-        #     close_tasks = [c.close() for c in self._connections]
-        #     if close_tasks:
-        #         logger.debug(f"🚪 Closing {len(close_tasks)} active connections.")
-        #         await asyncio.gather(*close_tasks, return_exceptions=True)
-        #     self._connections.clear()
+        async with self._lock:
+            close_tasks = [c.close() for c in self._connections]
+            if close_tasks:
+                logger.debug(f"🚪 Closing {len(close_tasks)} active connections.")
+                await asyncio.gather(*close_tasks, return_exceptions=True)
+            self._connections.clear()
 
         # Close client writer
         if self._writer:
