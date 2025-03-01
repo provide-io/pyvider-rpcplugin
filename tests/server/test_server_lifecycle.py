@@ -242,7 +242,7 @@ async def test_server_stop_clean_destructor(
     This test covers the cleanup paths that trigger __del__ in the underlying gRPC server.
     """
     # Create the server with a dummy protocol.
-    transport = mock_server_transport
+    test_transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
