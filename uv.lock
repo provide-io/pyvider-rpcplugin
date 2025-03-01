@@ -966,6 +966,20 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-trace"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "opentelemetry-api" },
+    { name = "opentelemetry-sdk" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e3/4c/090bd5226a90f1b913eaabeaf0da91655849ce5c35540218b40565e18674/pytest-trace-1.0.0.tar.gz", hash = "sha256:bb915c59a944c8b3d5c4f7ae8507b4720db5cc448544c9fe4b6d3a09f7caab52", size = 2525 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a6/30/d6a33a5b863ae23abf226df0dd67dda164639e41ffa222398c98f3bc13a6/pytest_trace-1.0.0-py3-none-any.whl", hash = "sha256:ae2101c9c7da1c551c99ffd1476c237e93570973a525929e890fc935292dbe24", size = 2634 },
+]
+
+[[package]]
 name = "pyvider-rpcplugin"
 version = "0.1.0"
 source = { virtual = "." }
@@ -1008,6 +1022,7 @@ telemetry = [
 dev = [
     { name = "hatch" },
     { name = "pytest-cov" },
+    { name = "pytest-trace" },
 ]
 
 [package.metadata]
@@ -1045,6 +1060,7 @@ provides-extras = ["dev", "telemetry"]
 dev = [
     { name = "hatch", specifier = ">=1.14.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-trace", specifier = ">=1.0.0" },
 ]
 
 [[package]]
