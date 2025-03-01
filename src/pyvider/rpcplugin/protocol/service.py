@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
-# src/pyvider/rpcplugin/protocol/service.py
 
+# pyvider/rpcplugin/protocol/service.py
+
+import os
 import asyncio
 import traceback
 
@@ -161,12 +162,142 @@ class GRPCStdioService(GRPCStdioServicer):
         Public method: feed lines to the queue from somewhere else in your code,
         or from a logging handler that writes to the queue.
         """
-        data = StdioData(
-            channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
-        )
-        await self._message_queue.put(data)
+        try:
+            data = StdioData(
+                channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
+            )
+            await self._message_queue.put(data)
+        except Exception as e:
+            # Log but don't propagate to prevent crashing the service
+            logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
     async def StreamStdio(self, request, context):
+        """
+        Streams STDOUT/STDERR lines to the caller.
+        This RPC endpoint must only be called ONCE. Once stdio data is consumed
+        it is not sent again.
+        
+        Callers should connect early to prevent blocking on the plugin process.
+        """
+        logger.debug(
+            "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
+        )
+        
+        # Create a done event for proper cancellation
+        done = asyncio.Event()
+        
+        def on_rpc_done():
+            # This callback is called when the RPC is cancelled
+            done.set()
+        
+        # Register cancellation callback
+        context.add_done_callback(on_rpc_done)
+        
+        while not self._shutdown and not done.is_set():
+            try:
+                # Wait up to 2s for a new line; if none, we yield a short idle
+                try:
+                    data_item = await asyncio.wait_for(
+                        self._message_queue.get(), timeout=2.0
+                    )
+                    yield data_item
+                except asyncio.TimeoutError:
+                    # Just continue the loop on timeout
+                    continue
+                except asyncio.CancelledError:
+                    # Break the loop on cancellation
+                    logger.debug("🔌📝🛑 StreamStdio cancelled")
+                    break
+            except Exception as e:
+                logger.error(
+                    f"🔌📝❌ Error streaming lines: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
+                break
+
+        logger.debug(
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+        )
+
+    async def XStreamStdio(self, request, context):
+        """
+        Streams STDOUT/STDERR lines to the caller.
+        This RPC endpoint must only be called ONCE. Once stdio data is consumed
+        it is not sent again.
+        
+        Callers should connect early to prevent blocking on the plugin process.
+        """
+        logger.debug(
+            "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
+        )
+        
+        # Create a done event for proper cancellation
+        done = asyncio.Event()
+        
+        def on_rpc_done():
+            # This callback is called when the RPC is cancelled
+            done.set()
+        
+        # Register cancellation callback
+        context.add_done_callback(on_rpc_done)
+        
+        while not self._shutdown and not done.is_set():
+            try:
+                # Wait up to 2s for a new line; if none, we yield a short idle
+                try:
+                    data_item = await asyncio.wait_for(
+                        self._message_queue.get(), timeout=2.0
+                    )
+                    yield data_item
+                except asyncio.TimeoutError:
+                    # Just continue the loop on timeout
+                    continue
+                except asyncio.CancelledError:
+                    # Break the loop on cancellation
+                    logger.debug("🔌📝🛑 StreamStdio cancelled")
+                    break
+            except Exception as e:
+                logger.error(
+                    f"🔌📝❌ Error streaming lines: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
+                break
+
+        logger.debug(
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+        )
+
+    async def XStreamStdio(self, request, context):
+        """
+        Streams STDOUT/STDERR lines to the caller.
+        The host (go-plugin) typically calls this once at startup, then reads forever.
+        """
+        logger.debug(
+            "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
+        )
+        # Use context.cancelled() instead of context.is_active() which doesn't exist
+        while not self._shutdown and not context.cancelled():
+            try:
+                # Wait up to 2s for a new line; if none, we yield a short idle.
+                data_item = await asyncio.wait_for(
+                    self._message_queue.get(), timeout=2.0
+                )
+                yield data_item
+            except TimeoutError:
+                continue
+            except Exception as e:
+                logger.error(
+                    f"🔌📝❌ Error streaming lines: {e}",
+                    extra={"trace": traceback.format_exc()},
+                )
+                break
+
+        logger.debug(
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+        )
+        return
+
+    async def XStreamStdio(self, request, context):
         """
         Streams STDOUT/STDERR lines to the caller.
         The host (go-plugin) typically calls this once at startup, then reads forever.
@@ -214,20 +345,42 @@ class GRPCControllerService(GRPCControllerServicer):
 
     async def Shutdown(self, request, context):
         """
-        In go-plugin’s approach, calling 'Shutdown()' on the plugin triggers the plugin to exit.
+        In go-plugin's approach, calling 'Shutdown()' on the plugin triggers the plugin to exit.
         """
         logger.debug(
             "🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested."
         )
+        # First shut down stdio service
         self._stdio_service.shutdown()
+        
+        # Then signal the shutdown event
         self._shutdown_event.set()
+        
+        # Schedule the server to stop rather than stopping immediately
+        # This allows the response to be sent before shutdown
+        asyncio.create_task(self._delayed_shutdown())
+        
         # Return an empty object
         return CEmpty()
 
+    async def _delayed_shutdown(self):
+        """Allow RPC response to complete before shutting down"""
+        await asyncio.sleep(0.1)
+        # Now trigger actual process exit
+        if hasattr(os, "kill") and hasattr(os, "getpid"):
+            # On Unix systems, we can use a signal
+            try:
+                import signal
+                os.kill(os.getpid(), signal.SIGTERM)
+            except:
+                # Fallback to sys.exit
+                import sys
+                sys.exit(0)
+        else:
+            # Windows or other systems
+            import sys
+            sys.exit(0)
 
-#
-# Combine them: a convenience function that registers all services with the gRPC server.
-#
 def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
     """
     This function is called by your `server.py` to attach all the needed gRPC services.
@@ -250,3 +403,6 @@ def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
 
     # You might want to return references to the services for feeding data etc.
     # e.g. return (stdio_service, broker_service, controller_service)
+
+
+### 🐍🏗️🔌
