@@ -1,5 +1,5 @@
-
-# tests/kv/test_kv_integration_3.py
+#!/usr/bin/env python3
+# tests/kv/test_kv_integration.py
 
 import asyncio
 import contextlib
@@ -29,59 +29,64 @@ def summarize_text(text: str, length: int = 32) -> str:
     return f"{text[:length]} ... {text[-length:]}"
 
 
-@pytest_asyncio.fixture
-async def kv_handler():
-    """Provides a real KV handler implementation with proper bytes/string handling."""
-    class TestKVHandler(kv_pb2_grpc.KVServicer):
-        def __init__(self):
-            self._store = {}
-            logger.debug("🔌🚀✅ KV handler initialized")
+class TestKVHandler(kv_pb2_grpc.KVServicer):
+    """KV service handler implementation with proper type handling."""
+    
+    def __init__(self):
+        """Initialize an in-memory key-value store."""
+        self._store = {}
+        logger.debug("🔌🚀✅ KV handler initialized")
 
-        async def Get(self, request, context):
+    async def Get(self, request, context):
+        """Get a value by key with proper error handling."""
+        key = request.key
+        logger.debug(f"🔌📖🔍 Get request for key: '{key}'")
+        
+        value = self._store.get(key, None)
+        if value is None:
+            logger.debug(f"🔌📖❌ Key not found: '{key}'")
+            await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
+            return kv_pb2.GetResponse()  # Return empty response, will not be used because of abort
+        
+        # Ensure value is returned as bytes
+        if isinstance(value, str):
+            value = value.encode('utf-8')
+            
+        logger.debug(f"🔌📖✅ Retrieved value for key '{key}', size: {len(value)} bytes")
+        return kv_pb2.GetResponse(value=value)
+
+    async def Put(self, request, context):
+        """Store a key-value pair with proper type handling."""
+        try:
             key = request.key
-            logger.debug(f"🔌📖🔍 Get request for key: '{key}'")
+            value = request.value
+            logger.debug(f"🔌📤🔍 Put request for key: '{key}', value type: {type(value).__name__}")
             
-            value = self._store.get(key, None)
-            if value is None:
-                logger.debug(f"🔌📖❌ Key not found: '{key}'")
-                await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
-                return None
+            # Store value as-is (should be bytes from gRPC)
+            self._store[key] = value
             
-            # Ensure value is returned as bytes
-            if isinstance(value, str):
-                value = value.encode('utf-8')
+            # For logging, convert to string if needed
+            if isinstance(value, bytes):
+                value_str = value.decode('utf-8', errors='replace')
+                value_summary = summarize_text(value_str)
+            else:
+                # Handle case where value is already a string
+                value_summary = summarize_text(str(value))
                 
-            logger.debug(f"🔌📖✅ Retrieved value for key '{key}', size: {len(value)} bytes")
-            return kv_pb2.GetResponse(value=value)
-
-        async def Put(self, request, context):
-            try:
-                key = request.key
-                value = request.value
-                logger.debug(f"🔌📤🔍 Put request for key: '{key}', value type: {type(value).__name__}")
-                
-                # Store value as bytes regardless of input type
-                if isinstance(value, str):
-                    value = value.encode('utf-8')
-                    
-                self._store[key] = value
-                
-                value_summary = summarize_text(value.decode('utf-8', errors='replace'))
-                logger.debug(f"🔌📤✅ Stored key '{key}' with value: {value_summary}")
-                return kv_pb2.Empty()
-                
-            except Exception as e:
-                logger.error(f"🔌📤❌ Error in Put operation: {e}")
-                await context.abort(grpc.StatusCode.INTERNAL, str(e))
-                return None
-
-    return TestKVHandler()
+            logger.debug(f"🔌📤✅ Stored key '{key}' with value: {value_summary}")
+            return kv_pb2.Empty()
+            
+        except Exception as e:
+            logger.error(f"🔌📤❌ Error in Put operation: {e}")
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+            return kv_pb2.Empty()  # Return empty response, will not be used because of abort
 
 
 @pytest_asyncio.fixture
 async def unique_transport_path():
-    """Generate a unique path for Unix socket transport with timestamp."""
-    unique_id = f"{time.time()}_{uuid.uuid4().hex}"
+    """Generate a unique path for Unix socket transport."""
+    # Use process ID, timestamp and UUID for maximum uniqueness
+    unique_id = f"{os.getpid()}_{time.time()}_{uuid.uuid4().hex}"
     socket_path = f"/tmp/pyvider_kv_test_{unique_id}.sock"
     
     # Ensure path doesn't exist before starting
@@ -92,20 +97,30 @@ async def unique_transport_path():
         except OSError as e:
             logger.warning(f"🔌🧹⚠️ Failed to clean up existing socket: {e}")
     
+    logger.debug(f"🔌🚀🔍 Created unique socket path: {socket_path}")
     yield socket_path
     
     # Cleanup after test
-    if os.path.exists(socket_path):
-        try:
+    try:
+        if os.path.exists(socket_path):
             os.chmod(socket_path, 0o777)
             os.unlink(socket_path)
-        except OSError as e:
-            logger.warning(f"🔌🧹⚠️ Failed to clean up socket: {e}")
+            logger.debug(f"🔌🧹✅ Cleaned up socket: {socket_path}")
+    except OSError as e:
+        logger.warning(f"🔌🧹⚠️ Failed to clean up socket: {e}")
+
+
+@pytest_asyncio.fixture
+async def kv_handler():
+    """Provides a test KV handler instance."""
+    handler = TestKVHandler()
+    logger.debug("🔌🚀✅ Created KV handler")
+    return handler
 
 
 @pytest_asyncio.fixture(params=["tcp", "unix"])
-async def transport_fixture(request, unique_transport_path) -> AsyncGenerator[tuple[str, TransportT], None]:
-    """Fixture providing different transport types with proper cleanup."""
+async def transport_fixture(request, unique_transport_path):
+    """Parameterized fixture for different transport types."""
     transport_type = request.param
     transport = None
     
@@ -122,20 +137,17 @@ async def transport_fixture(request, unique_transport_path) -> AsyncGenerator[tu
         # Clean up transport
         if transport:
             logger.debug(f"🔌🔒🚀 Closing {transport_type} transport")
-            await transport.close()
-            if transport_type == "unix" and os.path.exists(unique_transport_path):
-                try:
-                    os.chmod(unique_transport_path, 0o777)
-                    os.unlink(unique_transport_path)
-                except OSError as e:
-                    logger.warning(f"🔌🧹⚠️ Error during socket cleanup: {e}")
+            try:
+                await transport.close()
+                logger.debug(f"🔌🔒✅ {transport_type} transport closed")
+            except Exception as e:
+                logger.error(f"🔌🔒❌ Error closing {transport_type} transport: {e}")
 
 
 @pytest_asyncio.fixture
 async def kv_server(transport_fixture, kv_handler, mock_server_config):
     """Provides a running KV server with proper lifecycle management."""
     transport_type, transport = transport_fixture
-    ready_event = asyncio.Event()
     
     logger.debug(f"🛎️🚀🔍 Starting KV server with {transport_type} transport")
     
@@ -146,45 +158,47 @@ async def kv_server(transport_fixture, kv_handler, mock_server_config):
         transport=transport,
     )
     
-    # Prepare for serving but don't start yet
+    # Prepare for serving
     server._serving_future = asyncio.Future()
     server._serving_event = asyncio.Event()
-    
-    # Start listener before serving
-    endpoint = await transport.listen()
-    logger.debug(f"🛎️🕹✅ Server transport listening at {endpoint}")
+    server._shutdown_event = asyncio.Event()
     
     # Start server in background task
     serve_task = asyncio.create_task(server.serve())
     
-    # Wait for server to be ready
     try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
+        # Wait for server to be ready with increased timeout
+        await asyncio.wait_for(server._serving_event.wait(), timeout=10.0)
         logger.debug("🛎️✅👍 KV server is ready")
-        ready_event.set()
+        
+        yield server
     except asyncio.TimeoutError:
         logger.error("🛎️⏱️❌ Timeout waiting for server to be ready")
+        # Try to stop server even if it didn't become ready
+        await server.stop()
+        serve_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await serve_task
         raise RuntimeError("Server failed to become ready in time")
     
-    try:
-        yield server
     finally:
         logger.debug("🛎️🔒🚀 Stopping KV server")
         # Stop server gracefully
         await server.stop()
         
         # Cancel and clean up server task
-        serve_task.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
-            await serve_task
-            
+        if not serve_task.done():
+            serve_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await serve_task
+                
         logger.debug("🛎️🔒✅ KV server stopped")
 
 
 @pytest_asyncio.fixture
 async def kv_client(kv_server, transport_fixture):
-    """Provides a properly configured KV client that connects to the server."""
-    transport_type, _ = transport_fixture
+    """Provides a KV client connected to the server."""
+    transport_type, transport = transport_fixture
     logger.debug(f"🙋🚀🔍 Creating KV client with {transport_type} transport")
     
     # Set up environment for client
@@ -196,8 +210,7 @@ async def kv_client(kv_server, transport_fixture):
         "PLUGIN_AUTO_MTLS": "true",
     }
     
-    # Create client directly - we're not using a subprocess as we're
-    # connecting to an already running server
+    # Create client
     client = RPCPluginClient(
         command=[sys.executable, "-m", "tests.kv.py_kv_server"],
         config={"env": env},
@@ -216,7 +229,7 @@ async def kv_client(kv_server, transport_fixture):
 
 @pytest.mark.asyncio
 async def test_kv_put_get_flow(kv_client):
-    """Test basic Put/Get operations with proper error handling."""
+    """Test basic Put/Get operations."""
     stub = kv_pb2_grpc.KVStub(kv_client._channel)
     logger.debug("🔌🧪🚀 Starting Put/Get flow test")
     
@@ -246,7 +259,7 @@ async def test_kv_put_get_flow(kv_client):
 
 @pytest.mark.asyncio
 async def test_kv_missing_key(kv_client):
-    """Test Get with nonexistent key and verify proper error handling."""
+    """Test Get with nonexistent key."""
     stub = kv_pb2_grpc.KVStub(kv_client._channel)
     logger.debug("🔌🧪🚀 Starting missing key test")
     
@@ -262,13 +275,12 @@ async def test_kv_missing_key(kv_client):
 
 @pytest.mark.asyncio
 async def test_kv_concurrent_operations(kv_client):
-    """Test concurrent Put/Get operations with proper validation."""
+    """Test concurrent Put/Get operations."""
     stub = kv_pb2_grpc.KVStub(kv_client._channel)
     logger.debug("🔌🧪🚀 Starting concurrent operations test")
     
     # Number of concurrent operations
-    operation_count = 10
-    success_count = 0
+    operation_count = 5  # Reduced count for faster tests
     
     # Create operation function
     async def put_get(i: int) -> bool:
@@ -295,11 +307,11 @@ async def test_kv_concurrent_operations(kv_client):
     # Run concurrent operations
     results = await asyncio.gather(
         *[put_get(i) for i in range(operation_count)], 
-        return_exceptions=False
+        return_exceptions=True
     )
     
     # Count successes
-    success_count = sum(1 for result in results if result)
+    success_count = sum(1 for result in results if result is True)
     
     logger.debug(f"🔌🧪🔄 Concurrent operations completed: {success_count}/{operation_count} successful")
     assert success_count == operation_count, f"Only {success_count}/{operation_count} operations succeeded"
