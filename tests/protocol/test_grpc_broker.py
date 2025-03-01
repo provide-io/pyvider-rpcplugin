@@ -89,6 +89,13 @@ def test_broker_pb2_descriptor():
     assert hasattr(descriptor, "message_types_by_name")
     assert "ConnInfo" in descriptor.message_types_by_name
 
+def test_broker_grpc_version_mismatch():
+    """Direct test for grpc_broker_pb2_grpc version check (lines 18-19)."""
+    with patch('grpc._utilities.first_version_is_lower', return_value=True):
+        with pytest.raises(RuntimeError) as excinfo:
+            importlib.reload(grpc_broker_pb2_grpc)
+        assert "grpc package installed is at version" in str(excinfo.value)
+
 def test_broker_experimental_api():
     """Direct test for grpc_broker_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_broker_pb2_grpc, "GRPCBroker")
