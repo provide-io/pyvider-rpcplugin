@@ -72,7 +72,7 @@ async def test_setup_server_unix_success_secure(
 
     try:
         endpoint = await test_transport.listen()
-        await server._setup_server(client_cert)
+        await server._setup_server("client_cert")
         assert server._server is not None
         assert os.path.exists(endpoint)
     finally:
