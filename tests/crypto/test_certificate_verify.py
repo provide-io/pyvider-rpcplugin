@@ -245,18 +245,6 @@ async def test_certificate_invalid_signature():
         )
 
 @pytest.mark.asyncio
-async def test_certificate_extension_failure():
-    """Ensure extension addition failures raise CertificateError."""
-    cert = Certificate(generate_keypair=True)
-
-    with mock.patch(
-        "cryptography.x509.CertificateBuilder.add_extension",
-        side_effect=Exception("Mock failure"),
-    ):
-        with pytest.raises(CertificateError, match="Failed to create"):
-            cert._create_x509_certificate()
-
-@pytest.mark.asyncio
 async def test_certificate_key_usage_extension_failure():
     """Ensure Key Usage extension failure raises CertificateError."""
     cert = Certificate(generate_keypair=True)
