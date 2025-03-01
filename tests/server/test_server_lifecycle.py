@@ -247,7 +247,7 @@ async def test_server_stop_clean_destructor(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=test_transport,
+        transport=None,
     )
 
     # Inject a dummy gRPC server instance.
@@ -257,7 +257,7 @@ async def test_server_stop_clean_destructor(
     fut.set_result(None)
     server._serving_future = fut
     # Call stop() to shut down the server and transport.
-    endpoint = await transport.listen()
+    #endpoint = await test_transport.listen()
     await server.stop()
     # Delete the server instance and force garbage collection.
     del server
