@@ -12,14 +12,14 @@ def test_transport_abc_listen():
     class PartialTransport(RPCPluginTransport):
         async def connect(self, endpoint):
             pass
-            
+
         async def close(self):
             pass
-    
+
     # Should fail because listen is not implemented
     with pytest.raises(TypeError) as excinfo:
         PartialTransport()
-    
+
     assert "Can't instantiate abstract class" in str(excinfo.value)
     assert "listen" in str(excinfo.value)
 
@@ -28,14 +28,14 @@ def test_transport_abc_connect():
     class PartialTransport(RPCPluginTransport):
         async def listen(self):
             pass
-        
+
         async def close(self):
             pass
-    
+
     # Should fail because connect is not implemented
     with pytest.raises(TypeError) as excinfo:
         PartialTransport()
-    
+
     assert "Can't instantiate abstract class" in str(excinfo.value)
     assert "connect" in str(excinfo.value)
 
@@ -44,14 +44,14 @@ def test_transport_abc_close():
     class PartialTransport(RPCPluginTransport):
         async def listen(self):
             pass
-        
+
         async def connect(self, endpoint):
             pass
-    
+
     # Should fail because close is not implemented
     with pytest.raises(TypeError) as excinfo:
         PartialTransport()
-    
+
     assert "Can't instantiate abstract class" in str(excinfo.value)
     assert "close" in str(excinfo.value)
 
