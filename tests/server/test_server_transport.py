@@ -44,7 +44,7 @@ async def test_setup_server_unix_success_insecure(
 
     try:
         endpoint = await transport.listen()
-        await server._setup_server(None)  # Test insecure mode first
+        await server._setup_server(None)
         assert server._server is not None
         assert os.path.exists(endpoint)
     finally:
@@ -59,7 +59,6 @@ async def test_setup_server_unix_success_secure(
     mock_server_handler,
     mock_server_config,
 ):
-    #sock_path = unique_socket_path
     transport = UnixSocketTransport()
 
     server = RPCPluginServer(
@@ -71,7 +70,10 @@ async def test_setup_server_unix_success_secure(
 
     try:
         endpoint = await transport.listen()
-        await server.serve()
+        #await server.serve()
+        await server._setup_server(client_cert)
+        assert server._server is not None
+        assert os.path.exists(endpoint)
         # await server._setup_server("client_cert")
         # expected = f"unix:{endpoint}"
         #assert any(expected in port for port in dummy_server.ports)
