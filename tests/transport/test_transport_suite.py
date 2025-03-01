@@ -396,7 +396,7 @@ async def test_server_with_transport(
         with contextlib.suppress(asyncio.CancelledError):
             await server_task
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_error_handling():
     """Test error handling in Unix socket transport."""
     with tempfile.NamedTemporaryFile() as tf:
