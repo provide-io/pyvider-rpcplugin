@@ -33,21 +33,22 @@ async def test_setup_server_unix_success_insecure(
     mock_server_handler,
     mock_server_config,
 ):
-    transport = UnixSocketTransport()
+    test_transport = UnixSocketTransport()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     try:
-        endpoint = await transport.listen()
+        endpoint = await test_transport.listen()
         await server._setup_server(None)
         assert server._server is not None
         assert os.path.exists(endpoint)
     finally:
+        await test_transport.close()
         await server.stop()
 
 @pytest.mark.asyncio
@@ -59,6 +60,9 @@ async def test_setup_server_unix_success_secure(
     mock_server_handler,
     mock_server_config,
 ):
+
+    test_transport = UnixSocketTransport()
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -67,14 +71,12 @@ async def test_setup_server_unix_success_secure(
     )
 
     try:
+        endpoint = await test_transport.listen()
         await server._setup_server(client_cert)
         assert server._server is not None
         assert os.path.exists(endpoint)
-        # await server._setup_server("client_cert")
-        # expected = f"unix:{endpoint}"
-        #assert any(expected in port for port in dummy_server.ports)
     finally:
-        #await transport.close()
+        await test_transport.close()
         await server.stop()
 
 @pytest.mark.asyncio
