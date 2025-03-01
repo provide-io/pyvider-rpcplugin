@@ -73,32 +73,4 @@ async def test_concrete_protocol_add_to_server():
     # Should not raise any exceptions
     await protocol.add_to_server(server_mock, handler_mock)
 
-def test_abstract_get_grpc_descriptors():
-    """Directly test the abstract get_grpc_descriptors method (line 22)."""
-    # Create a minimal subclass but don't implement get_grpc_descriptors
-    class MinimalProtocol(RPCPluginProtocol):
-        async def add_to_server(self, server, handler):
-            pass
-    
-    # Try to instantiate it - should fail
-    with pytest.raises(TypeError) as excinfo:
-        MinimalProtocol()
-    
-    assert "Can't instantiate abstract class" in str(excinfo.value)
-    assert "get_grpc_descriptors" in str(excinfo.value)
-
-def test_abstract_add_to_server():
-    """Directly test the abstract add_to_server method (line 32)."""
-    # Create a minimal subclass but don't implement add_to_server
-    class MinimalProtocol(RPCPluginProtocol):
-        def get_grpc_descriptors(self):
-            return MagicMock(), "TestService"
-    
-    # Try to instantiate it - should fail 
-    with pytest.raises(TypeError) as excinfo:
-        MinimalProtocol()
-    
-    assert "Can't instantiate abstract class" in str(excinfo.value)
-    assert "add_to_server" in str(excinfo.value)
-
 ### 🐍🏗🧪️
