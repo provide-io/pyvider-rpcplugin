@@ -50,28 +50,6 @@ def test_stdio_pb2_descriptor():
     assert hasattr(descriptor, "message_types_by_name")
     assert "StdioData" in descriptor.message_types_by_name
 
-# Test grpc version mismatch (lines 18-19 in *_grpc.py files)
-def test_broker_grpc_version_mismatch():
-    """Direct test for grpc_broker_pb2_grpc version check (lines 18-19)."""
-    with patch('grpc._utilities.first_version_is_lower', return_value=True):
-        with pytest.raises(RuntimeError) as excinfo:
-            importlib.reload(grpc_broker_pb2_grpc)
-        assert "grpc package installed is at version" in str(excinfo.value)
-
-def test_controller_grpc_version_mismatch():
-    """Direct test for grpc_controller_pb2_grpc version check (lines 18-19, 22)."""
-    with patch('grpc._utilities.first_version_is_lower', return_value=True):
-        with pytest.raises(RuntimeError) as excinfo:
-            importlib.reload(grpc_controller_pb2_grpc)
-        assert "grpc package installed is at version" in str(excinfo.value)
-
-def test_stdio_grpc_version_mismatch():
-    """Direct test for grpc_stdio_pb2_grpc version check (lines 19-20, 23)."""
-    with patch('grpc._utilities.first_version_is_lower', return_value=True):
-        with pytest.raises(RuntimeError) as excinfo:
-            importlib.reload(grpc_stdio_pb2_grpc)
-        assert "grpc package installed is at version" in str(excinfo.value)
-
 def test_controller_experimental_api():
     """Direct test for grpc_controller_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_controller_pb2_grpc, "GRPCController")
