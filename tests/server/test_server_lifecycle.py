@@ -37,6 +37,8 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
+    test_transport = mock_server_transport
+
     class ProtocolWithError(RPCPluginProtocol):
         async def add_to_server(self, handler, server):
             raise RuntimeError("Protocol service registration")
@@ -46,7 +48,7 @@ async def test_server_serve_runtime_error(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     #endpoint = await transport.listen()
@@ -70,7 +72,7 @@ async def test_serve_success(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     fut = asyncio.Future()
@@ -120,7 +122,7 @@ async def test_serve_error(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
@@ -150,7 +152,7 @@ async def test_wait_for_server_ready(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     server._serving_event = asyncio.Event()
@@ -213,7 +215,7 @@ async def test_stop_handles_exceptions(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
     server._server = dummy_server
     server._transport = dummy_transport
@@ -242,7 +244,7 @@ async def test_server_stop_clean_destructor(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     # Inject a dummy gRPC server instance.
@@ -277,7 +279,7 @@ async def test_serve_and_stop_no_unawaited_warning(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     async def dummy_negotiate(self):
