@@ -1,0 +1,66 @@
+
+# tests/protocol/test_protocol_base_completeness.py
+
+import pytest
+import asyncio
+from typing import Any
+from unittest.mock import MagicMock
+
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.types import HandlerT, ServerT
+
+
+class PartialTestProtocol(RPCPluginProtocol):
+    """A partial implementation missing the add_to_server method."""
+
+    def get_grpc_descriptors(self) -> tuple[Any, str]:
+        """Implemented method."""
+        return MagicMock(), "TestService"
+
+    # Missing add_to_server implementation
+
+
+class CompleteTestProtocol(RPCPluginProtocol):
+    """A complete implementation with all methods."""
+
+    def get_grpc_descriptors(self) -> tuple[Any, str]:
+        """Returns mock descriptors and service name."""
+        return MagicMock(), "TestService"
+
+    async def add_to_server(self, server: ServerT, handler: HandlerT) -> None:
+        """Adds the handler to the server."""
+        pass
+
+
+def test_abstract_base_cannot_instantiate():
+    """Test that RPCPluginProtocol cannot be instantiated directly."""
+    with pytest.raises(TypeError):
+        RPCPluginProtocol()
+
+
+def test_partial_implementation_cannot_instantiate():
+    """Test that a partial implementation cannot be instantiated."""
+    with pytest.raises(TypeError):
+        PartialTestProtocol()
+
+
+def test_complete_implementation_can_instantiate():
+    """Test that a complete implementation can be instantiated."""
+    protocol = CompleteTestProtocol()
+    assert isinstance(protocol, RPCPluginProtocol)
+
+
+@pytest.mark.asyncio
+async def test_complete_implementation_methods():
+    """Test that methods of a complete implementation work."""
+    protocol = CompleteTestProtocol()
+
+    # Test get_grpc_descriptors
+    descriptors, service_name = protocol.get_grpc_descriptors()
+    assert service_name == "TestService"
+    assert descriptors is not None
+
+    # Test add_to_server
+    mock_server = MagicMock()
+    mock_handler = MagicMock()
+    await protocol.add_to_server(mock_server, mock_handler)
