@@ -422,6 +422,8 @@ async def test_serve_and_stop_no_unawaited_warning(
     gc.collect()
     # If no warnings/errors are raised, then cleanup is successful.
 
+### 🐍🏗🧪️
+
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _
 #  | | |(_| |  _\  (_|||  ~|~(_)||<_\

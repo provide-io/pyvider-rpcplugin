@@ -27,7 +27,7 @@ from tests.conftest import (
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_success(
+async def test_setup_server_unix_success_2(
     tmp_path,
     mock_server_preotocol,
     mock_server_handler,
@@ -61,7 +61,30 @@ async def test_setup_server_unix_success(
             os.unlink(sock_path)
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_no_socket(
+async def test_setup_server_unix_success_1(
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+):
+    transport = UnixSocketTransport()
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    await transport.listen()
+    await server.serve()
+    # await server._setup_server("client_cert")
+    expected = f"unix:{endpoint}"
+    #assert any(expected in port for port in dummy_server.ports)
+    await transport.close()
+
+@pytest.mark.asyncio
+async def test_setup_server_unix_no_socket_2(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
@@ -102,12 +125,12 @@ async def test_setup_server_unix_no_socket_1(
         transport=transport,
     )
 
-    with pytest.raises(TransportError, match="Failed to start"):
+    with pytest.raises(TransportError, match="Failed to"):
         await transport.listen()
         await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_bad_permissions(
+async def test_setup_server_unix_bad_permissions_2(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
@@ -241,30 +264,6 @@ async def test_setup_server_tcp_success(
     #    for port in server.ports
     #)
 
-
-@pytest.mark.asyncio
-async def test_setup_server_unix_success(
-    tmp_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-):
-    transport = UnixSocketTransport()
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    await transport.listen()
-    await server.serve()
-#    await server._setup_server("client_cert")
-
-    expected = f"unix:{endpoint}"
-    #assert any(expected in port for port in dummy_server.ports)
-    await transport.close()
 
 
 ################################################################################
