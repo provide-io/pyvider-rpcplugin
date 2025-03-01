@@ -134,14 +134,14 @@ class MockIterator:
         self.items = items or []
         self.exception = exception
         self.index = 0
-    
+
     def __aiter__(self):
         return self
-    
+
     async def __anext__(self):
         if self.exception:
             raise self.exception
-        
+
         if self.index < len(self.items):
             item = self.items[self.index]
             self.index += 1
@@ -152,31 +152,31 @@ class MockIterator:
 async def test_broker_start_stream_exception_line95():
     """Direct test for service.py line 95 - exception in StartStream."""
     broker_service = GRPCBrokerService()
-    
+
     # Create a request that raises an exception when processed
     knock_request = ConnInfo(
         service_id=1,
-        network="tcp", 
+        network="tcp",
         address="localhost:12345",
         knock=ConnInfo.Knock(knock=True, ack=False, error="")
     )
-    
+
     # Create an iterator that yields that request
     request_iterator = MockIterator([knock_request])
-    
+
     # Mock context
     context = MagicMock()
-    
+
     # Patch broker service to raise exception when processing request
-    with patch.object(broker_service, '_subchannels', 
+    with patch.object(broker_service, '_subchannels',
                      new_callable=MagicMock,
                      side_effect=Exception("Test exception at line 95")):
-        
+
         # Process the stream
         responses = []
         async for response in broker_service.StartStream(request_iterator, context):
             responses.append(response)
-        
+
         # Verify response
         assert len(responses) == 1
         assert responses[0].knock.ack is False
@@ -186,15 +186,15 @@ async def test_broker_start_stream_exception_line95():
 async def test_stdio_put_line_exception_line123():
     """Direct test for service.py lines 123-128 - exception in put_line."""
     stdio_service = GRPCStdioService()
-    
+
     # Patch message_queue.put to raise exception
     original_put = stdio_service._message_queue.put
-    
+
     async def failing_put(*args, **kwargs):
         raise Exception("Test exception at line 123-128")
-    
+
     stdio_service._message_queue.put = failing_put
-    
+
     # Call put_line which should catch the exception
     try:
         await stdio_service.put_line(b"test data")
@@ -210,19 +210,19 @@ async def test_controller_delayed_shutdown_unix_path():
     stdio_service = GRPCStdioService()
     shutdown_event = asyncio.Event()
     controller_service = GRPCControllerService(shutdown_event, stdio_service)
-    
+
     # Patch sleep to avoid delay
     with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
         # Patch os.kill and os.getpid to prevent actual termination
         with patch('os.kill') as mock_kill, \
              patch('os.getpid', return_value=12345):
-            
+
             # Call _delayed_shutdown - Unix path
             await controller_service._delayed_shutdown()
-            
+
             # Verify sleep was called
             mock_sleep.assert_called_once()
-            
+
             # Verify kill was called with right signal
             mock_kill.assert_called_once_with(12345, signal.SIGTERM)
 
@@ -232,18 +232,20 @@ async def test_controller_delayed_shutdown_windows_path():
     stdio_service = GRPCStdioService()
     shutdown_event = asyncio.Event()
     controller_service = GRPCControllerService(shutdown_event, stdio_service)
-    
+
     # Patch sleep to avoid delay
     with patch('asyncio.sleep', new_callable=AsyncMock) as mock_sleep:
         # Patch os.kill to simulate missing on Windows and sys.exit to prevent actual exit
         with patch('os.kill', side_effect=AttributeError("'module' object has no attribute 'kill'")), \
              patch('sys.exit') as mock_exit:
-            
+
             # Call _delayed_shutdown - Windows fallback path
             await controller_service._delayed_shutdown()
-            
+
             # Verify sleep was called
             mock_sleep.assert_called_once()
-            
+
             # Verify sys.exit was called
             mock_exit.assert_called_once_with(0)
+
+### 🐍🏗🧪️
