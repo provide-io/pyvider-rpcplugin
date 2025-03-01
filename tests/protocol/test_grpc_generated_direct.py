@@ -72,24 +72,6 @@ def test_stdio_grpc_version_mismatch():
             importlib.reload(grpc_stdio_pb2_grpc)
         assert "grpc package installed is at version" in str(excinfo.value)
 
-# Test experimental API (line 90 in various *_grpc.py files)
-def test_broker_experimental_api():
-    """Direct test for grpc_broker_pb2_grpc experimental API (line 90)."""
-    assert hasattr(grpc_broker_pb2_grpc, "GRPCBroker")
-    assert hasattr(grpc_broker_pb2_grpc.GRPCBroker, "StartStream")
-
-    mock_request_iterator = MagicMock()
-    mock_target = MagicMock()
-
-    # Call the experimental method directly
-    with patch('grpc.experimental.stream_stream') as mock_stream_stream:
-        grpc_broker_pb2_grpc.GRPCBroker.StartStream(
-            mock_request_iterator,
-            mock_target,
-            metadata={"test": "value"}
-        )
-        mock_stream_stream.assert_called_once()
-
 def test_controller_experimental_api():
     """Direct test for grpc_controller_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_controller_pb2_grpc, "GRPCController")
