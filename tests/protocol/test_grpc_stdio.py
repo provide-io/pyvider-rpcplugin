@@ -11,7 +11,7 @@ from pyvider.rpcplugin.protocol import (
     grpc_stdio_pb2_grpc,
 )
 
-def test_grpc_stdio_pb2_imports():
+async def test_grpc_stdio_pb2_imports():
     """Test importing grpc_stdio_pb2 and accessing its components."""
     # Access message descriptors
     assert hasattr(grpc_stdio_pb2, 'DESCRIPTOR')
@@ -42,7 +42,7 @@ def test_grpc_stdio_pb2_imports():
     assert deserialized.channel == stdout_data.channel
     assert deserialized.data == stdout_data.data
 
-def test_grpc_stdio_pb2_grpc_stub_creation():
+async def test_grpc_stdio_pb2_grpc_stub_creation():
     """Test creating a GRPCStdioStub."""
     # Mock a channel
     mock_channel = MagicMock()
@@ -53,7 +53,7 @@ def test_grpc_stdio_pb2_grpc_stub_creation():
     # Verify methods
     assert hasattr(stub, 'StreamStdio')
 
-def test_grpc_stdio_servicer_methods():
+async def test_grpc_stdio_servicer_methods():
     """Test GRPCStdioServicer methods."""
     # Create a servicer
     servicer = grpc_stdio_pb2_grpc.GRPCStdioServicer()
@@ -70,7 +70,7 @@ def test_grpc_stdio_servicer_methods():
     context.set_code.assert_called_once_with(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details.assert_called_once_with("Method not implemented!")
 
-def test_stdio_pb2_descriptor():
+async def test_stdio_pb2_descriptor():
     """Direct test for grpc_stdio_pb2 descriptor options (lines 32-38)."""
     assert hasattr(grpc_stdio_pb2, "DESCRIPTOR")
     with patch.object(grpc_stdio_pb2.DESCRIPTOR, "_loaded_options", None), \
@@ -81,14 +81,14 @@ def test_stdio_pb2_descriptor():
     assert hasattr(descriptor, "message_types_by_name")
     assert "StdioData" in descriptor.message_types_by_name
 
-def test_stdio_grpc_version_mismatch():
+async def test_stdio_grpc_version_mismatch():
     """Direct test for grpc_stdio_pb2_grpc version check (lines 19-20, 23)."""
     with patch('grpc._utilities.first_version_is_lower', return_value=True):
         with pytest.raises(RuntimeError) as excinfo:
             importlib.reload(grpc_stdio_pb2_grpc)
         assert "grpc package installed is at version" in str(excinfo.value)
 
-def test_stdio_experimental_api():
+async def test_stdio_experimental_api():
     """Direct test for grpc_stdio_pb2_grpc experimental API (line 105)."""
     assert hasattr(grpc_stdio_pb2_grpc, "GRPCStdio")
     assert hasattr(grpc_stdio_pb2_grpc.GRPCStdio, "StreamStdio")
