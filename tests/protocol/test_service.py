@@ -154,3 +154,146 @@ async def test_broker_start_stream_exception(broker_service, mock_context):
         assert responses[0].service_id == 0
         assert responses[0].knock.ack == False
         assert "error" in responses[0].knock.error
+
+@pytest.fixture
+def stdio_service():
+    """Fixture providing a GRPCStdioService instance."""
+    return GRPCStdioService()
+
+@pytest.mark.asyncio
+async def test_stdio_put_line(stdio_service):
+    """Test putting a line into the stdio queue."""
+    # Put a line into the queue
+    test_data = b"test line"
+    await stdio_service.put_line(test_data)
+    
+    # Verify it was put in the queue
+    assert stdio_service._message_queue.qsize() == 1
+    
+    # Get the item from the queue and verify it
+    item = await stdio_service._message_queue.get()
+    assert item.channel == StdioData.STDOUT
+    assert item.data == test_data
+
+@pytest.mark.asyncio
+async def test_stdio_put_line_stderr(stdio_service):
+    """Test putting a stderr line into the stdio queue."""
+    # Put a stderr line into the queue
+    test_data = b"error line"
+    await stdio_service.put_line(test_data, is_stderr=True)
+    
+    # Verify it was put in the queue with correct channel
+    item = await stdio_service._message_queue.get()
+    assert item.channel == StdioData.STDERR
+    assert item.data == test_data
+
+@pytest.mark.asyncio
+async def test_stdio_put_line_error(stdio_service):
+    """Test error handling in put_line."""
+    # Patch the queue.put to raise an exception
+    with patch.object(stdio_service._message_queue, 'put', side_effect=Exception("Queue error")):
+        # This should not propagate the exception
+        await stdio_service.put_line(b"test data")
+        # Test passes if no exception was raised
+
+@pytest.mark.asyncio
+async def test_stdio_stream_stdio(stdio_service, mock_context):
+    """Test StreamStdio method."""
+    # Add data to the queue before starting stream
+    test_data = b"test output"
+    await stdio_service.put_line(test_data)
+    
+    # Create empty request
+    request = Empty()
+    
+    # Start streaming in a task
+    stream_task = asyncio.create_task(
+        collect_stream_data(stdio_service.StreamStdio(request, mock_context))
+    )
+    
+    # Allow some time for the stream to process
+    await asyncio.sleep(0.1)
+    
+    # Add more data
+    await stdio_service.put_line(b"more data")
+    
+    # Set shutdown flag to end the stream
+    stdio_service.shutdown()
+    
+    # Wait for the stream to complete
+    results = await stream_task
+    
+    # Verify results
+    assert len(results) >= 1
+    assert results[0].data == test_data
+
+async def collect_stream_data(stream):
+    """Helper to collect data from an async stream."""
+    results = []
+    async for item in stream:
+        results.append(item)
+    return results
+
+@pytest.mark.asyncio
+async def test_stdio_stream_timeout(stdio_service, mock_context):
+    """Test StreamStdio with a timeout."""
+    # Replace wait_for with a function that always times out
+    async def timeout_wait_for(*args, **kwargs):
+        raise asyncio.TimeoutError()
+    
+    with patch('asyncio.wait_for', timeout_wait_for):
+        # Start streaming
+        stream_task = asyncio.create_task(
+            collect_stream_data(stdio_service.StreamStdio(Empty(), mock_context))
+        )
+        
+        # Allow some time for the stream to process timeouts
+        await asyncio.sleep(0.3)
+        
+        # End the stream
+        stdio_service.shutdown()
+        
+        # Wait for the stream to complete
+        results = await stream_task
+        
+        # Should have empty results due to timeouts
+        assert len(results) == 0
+
+@pytest.mark.asyncio
+async def test_stdio_stream_cancellation(stdio_service, mock_context):
+    """Test StreamStdio cancellation."""
+    # Mock context.add_done_callback to trigger cancellation
+    done_callback = None
+    def add_callback(callback):
+        nonlocal done_callback
+        done_callback = callback
+    mock_context.add_done_callback.side_effect = add_callback
+    
+    # Start streaming in a task
+    stream_task = asyncio.create_task(
+        collect_with_cancel(stdio_service.StreamStdio(Empty(), mock_context))
+    )
+    
+    # Allow some time for the stream to start
+    await asyncio.sleep(0.1)
+    
+    # Trigger the done callback to simulate cancellation
+    if done_callback:
+        done_callback()
+    
+    # Wait for the stream to complete
+    try:
+        await stream_task
+    except asyncio.CancelledError:
+        pass  # Expected
+
+async def collect_with_cancel(stream):
+    """Helper that will be cancelled."""
+    results = []
+    try:
+        async for item in stream:
+            results.append(item)
+    except asyncio.CancelledError:
+        # Re-raise to propagate to the test
+        raise
+    return results
