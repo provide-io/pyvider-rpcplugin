@@ -29,7 +29,7 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_server_serve_runtime_error(
     monkeypatch,
     mock_server_handler,
