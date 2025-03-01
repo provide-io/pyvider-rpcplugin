@@ -235,14 +235,11 @@ async def test_server_stop_clean_destructor(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport,
 ):
     """
     Create an RPCPluginServer with a dummy gRPC server, then call stop() and delete the server.
     This test covers the cleanup paths that trigger __del__ in the underlying gRPC server.
     """
-    # Create the server with a dummy protocol.
-    test_transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -257,7 +254,6 @@ async def test_server_stop_clean_destructor(
     fut.set_result(None)
     server._serving_future = fut
     # Call stop() to shut down the server and transport.
-    #endpoint = await test_transport.listen()
     await server.stop()
     # Delete the server instance and force garbage collection.
     del server
