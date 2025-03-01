@@ -33,3 +33,5 @@ async def test_protocol_add_to_server():
     
     await protocol.add_to_server(mock_handler, mock_server)
     # Since our implementation is empty, we just verify it doesn't raise an exception
+
+### 🐍🏗🧪️
