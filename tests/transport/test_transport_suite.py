@@ -429,7 +429,7 @@ async def test_transport_error_handling(transport_factory):
 
     await transport.close()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_lifecycle_3(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
@@ -466,7 +466,7 @@ async def test_unix_socket_lifecycle_3(socket_monitor):
             "Socket failed to become inactive"
         )
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_lifecycle_2(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
@@ -505,7 +505,7 @@ async def test_unix_socket_lifecycle_2(socket_monitor):
         assert not state, "Socket still active after close"
         assert not os.path.exists(endpoint), "Socket file remains"
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_lifecycle_1(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
