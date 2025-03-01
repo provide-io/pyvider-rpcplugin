@@ -1,6 +1,8 @@
 
 # tests/protocol/test_service.py
 
+import os
+
 import asyncio
 import pytest
 import pytest_asyncio
