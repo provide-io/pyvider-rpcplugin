@@ -64,3 +64,5 @@ async def test_complete_implementation_methods():
     mock_server = MagicMock()
     mock_handler = MagicMock()
     await protocol.add_to_server(mock_server, mock_handler)
+
+### 🐍🏗🧪️
