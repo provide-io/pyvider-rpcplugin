@@ -32,6 +32,11 @@ async def kv_handler():
             value = self._store.get(request.key, None)
             if value is None:
                 context.abort(grpc.StatusCode.NOT_FOUND, "Key not found")
+            
+            # Ensure value is returned as bytes
+            if isinstance(value, str):
+                value = value.encode('utf-8')
+            
             return kv_pb2.GetResponse(value=value)
 
         ###
