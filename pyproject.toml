@@ -92,9 +92,6 @@ packages = [
 log_cli = true
 # log_cli_level = "DEBUG"
 
-# Enable coverage tracking
-addopts = "--cov --cov-report=term-missing --cov-report=html"
-
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
