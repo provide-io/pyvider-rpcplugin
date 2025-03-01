@@ -137,21 +137,6 @@ class UnixSocketTransport(RPCPluginTransport):
             # Ensure exact error message matching test expectations
             raise TransportError(f"Failed to create Unix socket: {e}")
 
-    async def X_ensure_socket_directory(self) -> None:
-        """
-        If there's a directory in self.path, ensure it exists (some tests expect 'Failed to create Unix socket')
-        """
-        directory = os.path.dirname(self.path or "")
-        if not directory:
-            logger.debug("🗂️ No directory to ensure.")
-            return
-        try:
-            os.makedirs(directory, mode=0o755, exist_ok=True)
-        except OSError as e:
-            logger.error(f"🗂️ Error creating dir {directory}: {e}")
-            # Some tests want exactly "Failed to create Unix socket"
-            raise TransportError(f"Failed to create Unix socket: {e}")
-
     async def _cleanup_stale_socket(self) -> None:
         """
         Remove an old or stale socket file if it exists. Some tests want to see 'Failed to remove stale socket'.
@@ -272,84 +257,6 @@ class UnixSocketTransport(RPCPluginTransport):
                 logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
                 raise TransportError(f"Failed to create Unix socket: {e}")
 
-    async def Xlisten(self) -> str:
-        """
-        Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server'
-        if we raise an exception here.
-        """
-        async with self._lock:
-            logger.debug(f"🔉 Attempting to listen on path={self.path}")
-
-            # Make sure we're not already running
-            if self._running:
-                msg = f"Socket {self.path} is already running"
-                logger.error(msg)
-                raise TransportError(msg)
-
-            # Check if socket is in use by another process
-            if await self._check_socket_in_use():
-                msg = f"Socket {self.path} is already in use"
-                logger.error(msg)
-                raise TransportError(msg)
-
-            # Create parent directory if needed
-            await self._ensure_socket_directory()
-
-            # Clean up stale socket file if it exists
-            await self._cleanup_stale_socket()
-
-            try:
-                self._server = await asyncio.start_unix_server(
-                    self._handle_client, path=self.path
-                )
-                self._running = True
-                self.endpoint = self.path
-
-                # Set permissions to 0o777 for tests that check this
-                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-
-                logger.debug(f"🔉✅ Server listening on {self.path}")
-                self._server_ready.set()
-                return self.path
-
-            except Exception as e:
-                logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
-                raise TransportError(f"Failed to create Unix socket: {e}")
-
-    async def Xlisten(self) -> str:
-        """
-        Start listening on the Unix socket. Some tests look for 'Failed to start Unix socket server'
-        if we raise an exception here.
-        """
-        async with self._lock:
-            logger.debug(f"🔉 Attempting to listen on path={self.path}")
-
-            if await self._check_socket_in_use():
-                msg = f"Socket {self.path} is already in use"
-                logger.error(msg)
-                raise TransportError(msg)
-
-            await self._ensure_socket_directory()
-            await self._cleanup_stale_socket()
-
-            try:
-                self._server = await asyncio.start_unix_server(
-                    self._handle_client, path=self.path
-                )
-                self._running = True
-                self.endpoint = self.path
-
-                # Some tests check for 0o777 specifically
-                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
-
-                logger.debug(f"🔉✅ Server listening on {self.path}")
-                self._server_ready.set()
-                return self.path
-
-            except Exception as e:
-                logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
-                raise TransportError(f"Failed to start Unix socket server: {e}")
-
     async def connect(self, endpoint: str) -> None:
         """
         Connect as a client to the Unix socket. Some tests expect 'does not exist' if the file is missing.
@@ -377,6 +284,7 @@ class UnixSocketTransport(RPCPluginTransport):
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
     async def close(self) -> None:
+        """Fix UnixSocketTransport close method to ensure proper cleanup."""
         logger.debug("🚪 close() called on UnixSocketTransport.")
         if self._closing:
             logger.debug("🚪 Already closing, skipping.")
@@ -384,7 +292,7 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = True
         self._running = False
 
-        # close connections
+        # Close connections with proper exception handling
         async with self._lock:
             close_tasks = [c.close() for c in self._connections]
             if close_tasks:
@@ -392,113 +300,49 @@ class UnixSocketTransport(RPCPluginTransport):
                 await asyncio.gather(*close_tasks, return_exceptions=True)
             self._connections.clear()
 
-        # close any client writer
+        # Close client writer
         if self._writer:
-            await self._close_writer(self._writer)
-            self._writer = None
-
-        # close server
-        if self._server:
-            self._server.close()
             try:
+                self._writer.close()
+                await self._writer.wait_closed()
+                logger.debug("🚪 Client writer closed.")
+            except Exception as e:
+                logger.error(f"🚪❌ Error closing writer: {e}")
+            finally:
+                self._writer = None
+
+        # Close server
+        if self._server:
+            try:
+                self._server.close()
                 await self._server.wait_closed()
                 logger.debug("🚪 Server closed.")
             except Exception as e:
-                logger.error(f"🚪❌ Error while waiting for server to close: {e}")
+                logger.error(f"🚪❌ Error closing server: {e}")
             finally:
                 self._server = None
 
-        # Add a critical pause to allow OS to fully release socket file
-        await asyncio.sleep(0.2)
+        # Add critical delay to ensure OS releases resources
+        await asyncio.sleep(0.3)
 
-        # remove socket file if it still exists
+        # Remove socket file with proper checks
         if self.path and os.path.exists(self.path):
             try:
-                # Force close any remaining socket connections
-                try:
-                    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                    s.bind(self.path)
-                except OSError:
-                    pass
-                
                 os.unlink(self.path)
                 logger.debug(f"🚪✅ Removed socket file: {self.path}")
                 
-                # Verify file is gone
+                # Verify file is actually gone
                 if os.path.exists(self.path):
-                    logger.error(f"🚪❌ Socket file still exists after unlink: {self.path}")
-                    # Try again with extra force
-                    os.chmod(self.path, 0o777)
+                    logger.error(f"🚪❌ Socket file still exists: {self.path}")
+                    os.chmod(self.path, 0o777)  # Try changing permissions
                     os.unlink(self.path)
             except OSError as e:
-                logger.error(f"🚪❌ Could not remove socket file {self.path}: {e}")
-                if os.path.exists(self.path):
-                    try:
-                        # Last resort - try changing permissions and removing again
-                        os.chmod(self.path, 0o777)
-                        os.unlink(self.path)
-                    except Exception:
-                        pass
+                logger.error(f"🚪❌ Failed to remove socket file: {e}")
                 raise TransportError(f"Failed to remove socket file: {e}")
 
         self.endpoint = None
         self._closing = False
-        logger.debug("🚪 close() completed for UnixSocketTransport.")
+        logger.debug("🚪 close() completed.")
 
-###
-    async def Xclose(self) -> None:
-        """
-        Close everything: the connections, the server, the writer, then remove the socket file.
-        Some tests specifically check for 'Mocked unlink error' or 'Failed to remove socket file:'.
-        """
-        logger.debug("🚪 close() called on UnixSocketTransport.")
-        if self._closing:
-            logger.debug("🚪 Already closing, skipping.")
-            return
-        self._closing = True
-        self._running = False
+### 🐍🏗️🔌
 
-        # close connections
-        async with self._lock:
-            close_tasks = [c.close() for c in self._connections]
-            if close_tasks:
-                logger.debug(f"🚪 Closing {len(close_tasks)} active connections.")
-                await asyncio.gather(*close_tasks, return_exceptions=True)
-            self._connections.clear()
-
-        # close any client writer
-        if self._writer:
-            await self._close_writer(self._writer)
-            self._writer = None
-
-        # close server
-        if self._server:
-            self._server.close()
-            try:
-                await self._server.wait_closed()
-                logger.debug("🚪 Server closed.")
-            except Exception as e:
-                logger.error(f"🚪❌ Error while waiting for server to close: {e}")
-            finally:
-                self._server = None
-
-        # short pause so OS can release the file handle
-        await asyncio.sleep(0.1)
-
-        # remove socket file if it still exists
-        if self.path and os.path.exists(self.path):
-            try:
-                os.unlink(self.path)
-                logger.debug(f"🚪✅ Removed socket file: {self.path}")
-            except OSError as e:
-                logger.error(f"🚪❌ Could not remove socket file {self.path}: {e}")
-                raise TransportError(f"Failed to remove socket file: {e}")
-
-        self.endpoint = None
-        self._closing = False
-        logger.debug("🚪 close() completed for UnixSocketTransport.")
-
-
-###
-
-################################################################################

@@ -34,9 +34,32 @@ async def kv_handler():
                 context.abort(grpc.StatusCode.NOT_FOUND, "Key not found")
             return kv_pb2.GetResponse(value=value)
 
-        async def Put(self, request, context):
-            self._store[request.key] = request.value
-            return kv_pb2.Empty()
+        ###
+        async def Put(self, request: kv_pb2.PutRequest, context) -> kv_pb2.Empty:
+            """Fixed Put implementation handling both bytes and str values."""
+            try:
+                key = request.key
+                logger.info(f"🛎️📡🚀 Put: Received request for key: '{key}'")
+                
+                # Handle value correctly regardless of type
+                if isinstance(request.value, bytes):
+                    value_str = request.value.decode("utf-8", errors="replace")
+                else:
+                    value_str = str(request.value)
+                    
+                summary = summarize_text(value_str)
+                logger.debug(f"🛎️📡📝 Put: Storing key '{key}' with value: {summary}")
+                
+                filename = f"/tmp/kv-data-{key}"
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write(value_str)
+                    
+                logger.debug(f"🛎️📡✅ Put: Successfully stored key '{key}'")
+                return kv_pb2.Empty()
+            except Exception as e:
+                logger.error(f"🛎️📡❌ Put error for key '{request.key}': {e}")
+                await context.abort(grpc.StatusCode.INTERNAL, str(e))
+
 
     return TestKVHandler()
 

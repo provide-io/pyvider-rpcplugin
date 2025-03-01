@@ -122,19 +122,26 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
     def _read_client_cert(self) -> str | None:
         """
-        Reads the client certificate from configuration.
+        Reads the client certificate from configuration with better error handling.
         """
         try:
+            # First check the config provided to the server
+            if self.config and hasattr(self.config, "get"):
+                client_cert = self.config.get("PLUGIN_CLIENT_CERT")
+                if client_cert:
+                    logger.debug("🛎️🔐✅ Client cert found in server config.")
+                    return client_cert
+                    
+            # Then check the global config
             client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
             if client_cert:
-                logger.debug("🛎️ Client Cert found in config.")
+                logger.debug("🛎️🔐✅ Client cert found in global config.")
             else:
-                logger.debug("🛎️ No client certificate provided; operating insecurely.")
+                logger.debug("🛎️🔐⚠️ No client certificate provided; operating insecurely.")
+                
             return client_cert
         except Exception as e:
-            logger.error(
-                "🛎️❌ Error reading client certificate", extra={"error": str(e)}
-            )
+            logger.error(f"🛎️🔐❌ Error reading client certificate: {e}")
             return None
 
     def _generate_server_credentials(
@@ -188,7 +195,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise
 
     async def stop(self) -> None:
-        """Ensure proper server shutdown with timeouts."""
         logger.debug("🛎️ Stopping server...")
         
         # Cancel any pending tasks first
@@ -229,21 +235,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
             self._shutdown_requested()
             
-        logger.debug("🛎️ Server shutdown complete.")
-
-    async def Xstop(self) -> None:
-        logger.debug("🛎️ Stopping server...")
-        if self._server:
-            try:
-                await self._server.stop(grace=2)
-                logger.debug("🛎️ gRPC server stopped successfully.")
-            except Exception as e:
-                logger.error(
-                    "🛎️❌ Error stopping gRPC server",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-            finally:
-                self._server = None
         logger.debug("🛎️ Server shutdown complete.")
 
     async def _setup_server(self, client_cert: str | None) -> None:
@@ -470,7 +461,12 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 port=self._port,
             )
             logger.debug(f"Handshake response built: {response}")
+            
+            # Critical fix: Write to stdout with proper flush
+            # This ensures the response is immediately sent to the client
             print(response, file=sys.stdout, flush=True)
+            
+            # Explicitly flush stdout again to ensure the message is sent
             sys.stdout.flush()
         except Exception as e:
             logger.error(
@@ -500,34 +496,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 )
             logger.debug("🛎️ Shutdown complete; exiting process.")
 
-    async def Xstop(self) -> None:
-        logger.debug("🛎️ Stopping server...")
-        if self._server:
-            try:
-                await self._server.stop(grace=2)
-                logger.debug("🛎️ gRPC server stopped successfully.")
-            except Exception as e:
-                logger.error(
-                    "🛎️❌ Error stopping gRPC server",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-            finally:
-                self._server = None
-        if self._transport:
-            try:
-                await self._transport.close()
-                logger.debug("🛎️ Transport closed successfully.")
-            except Exception as e:
-                logger.error(
-                    "🛎️❌ Error closing transport",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-            finally:
-                self._transport = None
-        if not self._serving_future.done():
-            self._shutdown_requested()
-        logger.debug("🛎️ Server shutdown complete.")
-
     def __del__(self) -> None:
         """Safe cleanup in garbage collection."""
         try:
@@ -550,11 +518,4 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             # Suppress all exceptions in __del__
             pass
 
-    def uuuuuuu__del__(self) -> None:
-        try:
-            if not self._serving_event.is_set():
-                logger.warning(
-                    "RPCPluginServer __del__ called but shutdown was not properly requested."
-                )
-        except Exception:
-            pass
+### 🐍🏗️🔌

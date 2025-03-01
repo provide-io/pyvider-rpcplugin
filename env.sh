@@ -136,6 +136,17 @@ alias rpcenv-refresh=" \
     popd;
 "
 
+
+alias py-kv-client="(cd ${BASE_PATH}/tests/kv; ./py_kv_client.py)"
+alias py-kv-server="(cd ${BASE_PATH}/tests/kv; ./py_kv_server.py)"
+
+alias go-kv-client="${BASE_PATH}/tests/kv/go-plugin/bin/kv-go-client"
+alias go-kv-server="${BASE_PATH}/tests/kv/go-plugin/bin/kv-go-server"
+
+PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}
+
+export PLUGIN_SERVER_PATH
+
 echo ""
 echo "🔐 TLS Configuration:"
 echo "   • Algorithm: ${PLUGIN_ALGO}"
