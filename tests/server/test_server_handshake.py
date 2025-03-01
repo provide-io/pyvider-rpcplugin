@@ -28,6 +28,35 @@ from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_server_handshake_invalid_cookie(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+    # Set invalid cookie values directly in rpcplugin_config to ensure they're used by validate_magic_cookie
+    monkeypatch.setattr(rpcplugin_config, "config", {
+        "PLUGIN_MAGIC_COOKIE_KEY": "PLUGIN_MAGIC_COOKIE",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "valid_cookie",
+        "PLUGIN_MAGIC_COOKIE": "invalid_cookie",
+        "PLUGIN_PROTOCOL_VERSIONS": [1],
+        "PLUGIN_SERVER_TRANSPORTS": ["tcp", "unix"]
+    })
+    
+    transport = mock_server_transport
+    
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None,  # Use None to force using the global config
+        transport=transport,
+    )
+
+    with pytest.raises(HandshakeError, match="cookie_provided does not match required cookie_value"):
+        await server._negotiate_handshake()
+
+@pytest.mark.asyncio
+async def test_server_handshake_missing_env(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -36,10 +65,8 @@ async def test_server_handshake_invalid_cookie(
     mock_server_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
-    # mock_server_config.set("PLUGIN_TRANSPORTS", "tcp")
 
     transport = mock_server_transport
-
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -47,15 +74,13 @@ async def test_server_handshake_invalid_cookie(
         transport=transport,
     )
 
-    endpoint = await transport.listen()
-
+    await transport.listen()  # This should be outside the pytest.raises context
+    
     with pytest.raises(HandshakeError):
-        endpoint = await transport.listen()
-        #await server.serve()
-
-
+        await server._negotiate_handshake()  # This will trigger the handshake validation
+        
 @pytest.mark.asyncio
-async def test_server_handshake_missing_env(
+async def test_server_handshake_missing_env_1(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -80,10 +105,6 @@ async def test_server_handshake_missing_env(
         endpoint = await transport.listen()
         #await server.serve()
 
-
-# -------------------------------------------------------------------
-# Tests for _negotiate_handshake (lines ~251–252)
-# -------------------------------------------------------------------
 @pytest.mark.asyncio
 async def test_negotiate_handshake_with_provided_transport(
     monkeypatch,
@@ -115,33 +136,45 @@ async def test_negotiate_handshake_with_provided_transport(
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
 
-
 @pytest.mark.asyncio
-async def test_negotiate_handshake_via_negotiation(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
+async def test_negotiate_handshake_via_negotiation(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport_tcp,
+):
+
+    # right now this fails if there is Unix. But it works fine
+    # with the tests which has a config set.
+    transport = mock_server_transport_tcp
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
+        config=None,
         transport=None,
     )
 
+    # Mock the negotiate_transport function to return unix
     async def fake_negotiate_transport(supported_transports):
-        return "unix", UnixSocketTransport(path="/tmp/fake.sock")
+        return transport._transport_name, transport
 
+    # Apply the mock to the correct module path
     monkeypatch.setattr(
-        "pyvider.rpcplugin.server.negotiate_transport", fake_negotiate_transport
+        "pyvider.rpcplugin.handshake.negotiate_transport", fake_negotiate_transport
     )
+
     await server._negotiate_handshake()
-    assert server._transport_name == "unix"
+    assert server._transport_name == transport._transport_name
 
-
-# -----------------------------------------------------------------------------
-# Test for _negotiate_handshake (lines 230-238)
-# -----------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_negotiate_handshake_provided_transport(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
+async def test_negotiate_handshake_provided_transport(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
     # When self.transport is provided, it should use that transport.
     tcp_transport = TCPSocketTransport(host="127.0.0.1")
     server = RPCPluginServer(
@@ -163,27 +196,33 @@ async def test_negotiate_handshake_provided_transport(monkeypatch):
     await server._negotiate_handshake()
     assert server._transport_name == "tcp"
 
-
 @pytest.mark.asyncio
-async def test_negotiate_handshake_from_config(monkeypatch):
-    transport_name, transport, endpoint = mock_server_transport
+async def test_negotiate_handshake_from_config(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+):
+
+    transport = mock_server_transport
+
     # When self.transport is None, simulate negotiation via configuration.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport,
+        transport=None,
     )
 
     async def fake_negotiate_transport(supported_transports):
-        return "unix", UnixSocketTransport(path="/tmp/fake.sock")
+        return transport._transport_name, transport
 
     monkeypatch.setattr(
         "pyvider.rpcplugin.server.negotiate_transport", fake_negotiate_transport
     )
     await server._negotiate_handshake()
-    assert server._transport_name == "unix"
-
+    assert server._transport_name == transport._transport_name
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _

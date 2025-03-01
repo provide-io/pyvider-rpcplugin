@@ -93,7 +93,7 @@ export PLUGIN_HOST \
     PLUGIN_CS_SERVER_ENDPOINT
 
 # Path configuration
-export PYTHONPATH="${BASE_PATH}/src:${PYTHONPATH}"
+export PYTHONPATH="${BASE_PATH}/src:${BASE_PATH}:${PYTHONPATH}"
 
 # OpenSSL aliases
 alias ossl-client='openssl s_client -connect localhost:50051 \
