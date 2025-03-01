@@ -216,7 +216,7 @@ class RPCPluginClient:
                         await asyncio.sleep(0.1)  # Avoid busy waiting
                         continue
                         
-                    line = line_bytes.decode().strip()
+                    line = line_bytes.decode('utf-8').strip()
                     buffer += line
                     
                     # Check if we have a valid handshake line
