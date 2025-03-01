@@ -26,7 +26,6 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_setup_server_unix_success(
     tmp_path,
@@ -61,7 +60,6 @@ async def test_setup_server_unix_success(
         if os.path.exists(sock_path):
             os.unlink(sock_path)
 
-
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(
     tmp_path,
@@ -88,7 +86,7 @@ async def test_setup_server_unix_no_socket(
         await server._setup_server(None)
 
 @pytest.mark.asyncio
-async def Xtest_setup_server_unix_no_socket(
+async def test_setup_server_unix_no_socket_1(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
@@ -146,7 +144,7 @@ async def test_setup_server_unix_bad_permissions(
             os.unlink(sock_path)
 
 @pytest.mark.asyncio
-async def Xtest_setup_server_unix_bad_permissions(
+async def test_setup_server_unix_bad_permissions_1(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,

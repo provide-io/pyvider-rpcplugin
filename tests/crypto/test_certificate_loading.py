@@ -67,12 +67,6 @@ async def test_load_key_type_error():
             Certificate(cert=valid_cert_pem, key="SOME_KEY")
 
 
-@pytest.mark.asyncio
-async def test_load_private_key_from_file(temporary_key_file, client_cert):
-    """Ensure a private key loads correctly from a file:// path."""
-    # Create cert from the fixture's actual certificate
-    cert = Certificate(cert=client_cert.cert, key=temporary_key_file)
-    assert cert.public_key, "Certificate should have a valid private key"
 
 
 @pytest.mark.asyncio
@@ -83,16 +77,21 @@ async def test_load_cert_with_windows_line_endings(client_cert):
     cert = Certificate(cert=cert_pem)
     assert cert.subject, "Windows line endings should not break parsing"
 
+@pytest.mark.asyncio
+async def test_load_private_key_from_file(temporary_key_file, client_cert):
+    """Ensure a private key loads correctly from a file:// path."""
+    # Create cert from the fixture's actual certificate
+    cert = Certificate(cert=client_cert.cert, key=temporary_key_file)
+    assert cert.public_key, "Certificate should have a valid private key"
 
 @pytest.mark.asyncio
-async def Xtest_load_private_key_from_file(temporary_key_file):
+async def test_load_private_key_from_file_1(temporary_key_file):
     """Ensure a private key loads correctly from a file:// path."""
     cert = Certificate(cert=client_cert, key=temporary_key_file)
     assert cert.public_key, "Certificate should have a valid private key"
 
 
 ### ✅ ERROR HANDLING TESTS ###
-
 
 @pytest.mark.asyncio
 async def test_invalid_certificate_raises_error(invalid_cert_pem):

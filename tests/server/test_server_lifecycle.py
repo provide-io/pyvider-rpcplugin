@@ -31,7 +31,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_serve_success(
+async def test_serve_success_3(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -62,7 +62,6 @@ async def test_serve_success(
     await transport.listen()
     await server.serve()
     assert server._serving_future.done()
-
 
 @pytest.mark.skip
 # FAILED x_test_server_lifecycle.py::test_server_serve_runtime_error[tcp] - Failed: DID NOT RAISE <class 'RuntimeError'>
@@ -99,7 +98,7 @@ async def test_server_serve_runtime_error(
 
 
 @pytest.mark.asyncio
-async def test_serve_success(
+async def test_serve_success_2(
     monkeypatch,
     mock_server_handler,
     mock_server_protocol,
@@ -179,7 +178,6 @@ async def test_serve_error(
         await transport.listen()
         await server.serve()
 
-
 @pytest.mark.asyncio
 async def test_wait_for_server_ready(
     mock_server_protocol,
@@ -208,9 +206,8 @@ async def test_wait_for_server_ready(
     await server.wait_for_server_ready()
     assert server._serving_event.is_set()
 
-
 @pytest.mark.asyncio
-async def Xtest_stop_success(monkeypatch):
+async def test_stop_success(monkeypatch):
     # Create dummy _server and _transport with working async close methods.
     dummy_server = DummyGRPCServer()
 
@@ -235,7 +232,6 @@ async def Xtest_stop_success(monkeypatch):
     dummy_transport.close.assert_called_once()
     # Ensure _shutdown_requested was called so that serving future is done.
     assert fut.done()
-
 
 @pytest.mark.asyncio
 async def test_stop_handles_exceptions(
@@ -273,11 +269,8 @@ async def test_stop_handles_exceptions(
     assert server._serving_future.done()
 
 
-# -----------------------------------------------------------------------------
-# (Optional) Test for graceful shutdown cleanup in serve()
-# -----------------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_serve_success(
+async def test_serve_success_1(
     monkeypatch,
     client_cert,
     mock_server_protocol,
@@ -328,9 +321,6 @@ async def test_serve_success(
     output = fake_stdout.getvalue().strip()
     assert output == "handshake_response"
 
-
-# this test currently just sits there and freezes, it awaits but never shuts
-# down.
 @pytest.mark.asyncio
 async def test_server_stop_clean_destructor(
     mock_server_protocol,
@@ -365,9 +355,6 @@ async def test_server_stop_clean_destructor(
     gc.collect()
     # If no exception is raised, then cleanup passed.
 
-
-# this is segfaulting when run with "tests" but not individual directories.
-# huh
 @pytest.mark.asyncio
 async def test_serve_and_stop_no_unawaited_warning(
     monkeypatch,
@@ -434,7 +421,6 @@ async def test_serve_and_stop_no_unawaited_warning(
     del server
     gc.collect()
     # If no warnings/errors are raised, then cleanup is successful.
-
 
 ################################################################################
 # _|_|_  _ _|_' _   _ ||   |` _ ||  _
