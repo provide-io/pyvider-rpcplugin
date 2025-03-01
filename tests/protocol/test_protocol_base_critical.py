@@ -32,3 +32,5 @@ def test_abstract_methods_must_be_implemented():
     assert "Can't instantiate abstract class" in error_message
     assert "add_to_server" in error_message
     assert "get_grpc_descriptors" not in error_message
+
+### 🐍🏗🧪️
