@@ -51,7 +51,7 @@ async def test_server_serve_runtime_error(
         transport=test_transport,
     )
 
-    #endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
 
@@ -66,7 +66,7 @@ async def test_serve_success(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    test_transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -80,11 +80,11 @@ async def test_serve_success(
     server._serving_future = fut
     server._serving_event = asyncio.Event()
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport_name = transport._transport_name
+        self._transport_name = test_transport._transport_name
 
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
@@ -116,7 +116,7 @@ async def test_serve_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    test_transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -134,7 +134,7 @@ async def test_serve_error(
         server, "_negotiate_handshake", failing_negotiate.__get__(server, type(server))
     )
     with pytest.raises(Exception, match="Handshake failed"):
-        await transport.listen()
+        await test_transport.listen()
         await server.serve()
 
 @pytest.mark.asyncio
@@ -144,9 +144,9 @@ async def test_wait_for_server_ready(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    test_transport = mock_server_transport
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -202,8 +202,8 @@ async def test_stop_handles_exceptions(
     # Test that exceptions during _server.stop() and _transport.close() are caught.
     dummy_server = DummyGRPCServer()
 
-    transport = mock_server_transport
-    endpoint = await transport.listen()
+    test_transport = mock_server_transport
+    endpoint = await test_transport.listen()
 
     async def failing_stop(grace):
         raise Exception("Server stop failed")
@@ -274,7 +274,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     even if the event loop is later closed.
     """
     # Create a server instance with a dummy protocol.
-    transport = mock_server_transport
+    test_transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -284,8 +284,8 @@ async def test_serve_and_stop_no_unawaited_warning(
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport = transport
-        self._transport_name = transport._transport_name
+        self._transport = test_transport
+        self._transport_name = test_transport._transport_name
 
     # Prepare dummy implementations for required methods.
     # Set _negotiate_handshake to simply set a protocol version.
@@ -293,7 +293,7 @@ async def test_serve_and_stop_no_unawaited_warning(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
     await server._negotiate_handshake()
-    assert server._transport_name == transport._transport_name
+    assert server._transport_name == test_transport._transport_name
 
     async def dummy_setup(_):
         pass
@@ -312,7 +312,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     # Patch _register_signal_handlers to do nothing.
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
 
     # Create a task for serve(); then, after a short delay, call stop().
     serve_task = asyncio.create_task(server.serve())
