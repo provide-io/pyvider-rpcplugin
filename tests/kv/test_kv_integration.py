@@ -40,7 +40,21 @@ async def kv_handler():
             return kv_pb2.GetResponse(value=value)
 
         ###
-        async def Put(self, request: kv_pb2.PutRequest, context) -> kv_pb2.Empty:
+        async def Put(self, request, context):
+            try:
+                key = request.key
+                # Properly handle both bytes and string values
+                if isinstance(request.value, bytes):
+                    self._store[key] = request.value  # Store as bytes
+                else:
+                    self._store[key] = str(request.value).encode('utf-8')
+                
+                return kv_pb2.Empty()
+            except Exception as e:
+                await context.abort(grpc.StatusCode.INTERNAL, str(e))
+
+        ###
+        async def X1Put(self, request: kv_pb2.PutRequest, context) -> kv_pb2.Empty:
             """Fixed Put implementation handling both bytes and str values."""
             try:
                 key = request.key
