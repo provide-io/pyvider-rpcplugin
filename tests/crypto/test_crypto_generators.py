@@ -34,7 +34,7 @@ def test_generate_keypair_returns_keypair():
     assert isinstance(ec_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
 
 
-def Xtest_generate_keypair_returns_keypair():
+def test_generate_keypair_returns_keypair_1():
     """Ensure generate_keypair() always returns a KeyPairType instance."""
     rsa_key = generate_keypair(KEY_TYPE_RSA)
     ec_key = generate_keypair(KEY_TYPE_ECDSA)
