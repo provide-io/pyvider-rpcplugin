@@ -674,7 +674,7 @@ async def test_unix_socket_concurrent_connections_1(socket_monitor):
 
         assert not await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_server_integration_2():
     """Test Unix socket transport with server integration."""
     with tempfile.NamedTemporaryFile() as tf:
@@ -740,7 +740,7 @@ async def test_unix_socket_server_integration_2():
         if os.path.exists(socket_path):
             os.unlink(socket_path)
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_server_integration_1(socket_monitor):
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
@@ -785,7 +785,7 @@ async def test_unix_socket_server_integration_1(socket_monitor):
             with contextlib.suppress(asyncio.CancelledError):
                 await server_task
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_cleanup_handling(socket_monitor):
     """Test proper cleanup of Unix socket resources."""
     # Create a temporary path for testing
