@@ -260,11 +260,6 @@ async def build_handshake_response(
                 logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
                 endpoint = await transport.listen()
                 logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
-
-            logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
-            endpoint = await transport.listen()
-            logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
-
         else:
             logger.error(f"🤝📝❌ Unsupported transport type: {transport_name}")
             raise TransportError(f"Unsupported transport: {transport_name}")
