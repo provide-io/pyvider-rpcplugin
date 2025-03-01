@@ -51,7 +51,7 @@ async def test_setup_server_unix_success_insecure(
     finally:
         await server.stop()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_setup_server_unix_success_secure(
     tmp_path,
     client_cert,
