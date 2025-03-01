@@ -3,7 +3,7 @@
 from typing import Protocol, runtime_checkable
 
 
-@runtime_checkable
+@runtime_checkable # pragma: no cover
 class RPCPluginHandler(Protocol): # pragma: no cover
     """
     Base protocol that all RPC handlers must implement.
