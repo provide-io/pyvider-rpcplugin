@@ -45,7 +45,7 @@ async def test_server_serve_runtime_error(
 
     # when this is set to mock_server_protocol it segfaults stuff.
     server = RPCPluginServer(
-        protocol=mock_server_protocol,
+        protocol=ProtocolWithError(),
         handler=mock_server_handler,
         config=mock_server_config,
         transport=test_transport,
@@ -55,7 +55,7 @@ async def test_server_serve_runtime_error(
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
 
-    #await transport.close()
+    await test_transport.close()
 
 @pytest.mark.asyncio
 async def test_serve_success(
