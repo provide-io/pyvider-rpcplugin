@@ -75,8 +75,12 @@ async def kv_server(
     mock_server_config,
     mock_server_transport,
 ):
-
-    transport = mock_server_transport
+    import uuid
+    
+    # Generate unique socket path
+    unique_path = f"/tmp/pyvider_test_{uuid.uuid4().hex}.sock"
+    
+    transport = UnixSocketTransport(path=unique_path)
 
     server = RPCPluginServer(
         protocol=KVProtocol(),
