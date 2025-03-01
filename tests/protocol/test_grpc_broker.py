@@ -11,6 +11,7 @@ from pyvider.rpcplugin.protocol import (
     grpc_broker_pb2_grpc,
 )
 
+@pytest.mark.asyncio
 def test_grpc_broker_pb2_imports():
     """Test importing grpc_broker_pb2 and accessing its components."""
     # Access message descriptors
@@ -47,6 +48,7 @@ def test_grpc_broker_pb2_imports():
     assert deserialized.network == conn_info.network
     assert deserialized.address == conn_info.address
 
+@pytest.mark.asyncio
 def test_grpc_broker_pb2_grpc_stub_creation():
     """Test creating a GRPCBrokerStub."""
     # Mock a channel
@@ -58,6 +60,7 @@ def test_grpc_broker_pb2_grpc_stub_creation():
     # Verify methods
     assert hasattr(stub, 'StartStream')
 
+@pytest.mark.asyncio
 def test_grpc_broker_servicer_methods():
     """Test GRPCBrokerServicer methods."""
     # Create a servicer
@@ -75,6 +78,7 @@ def test_grpc_broker_servicer_methods():
     context.set_code.assert_called_once_with(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details.assert_called_once_with("Method not implemented!")
 
+@pytest.mark.asyncio
 def test_broker_pb2_descriptor():
     """Direct test for grpc_broker_pb2 descriptor options (lines 30-36)."""
     # Direct access to specific global symbols
@@ -89,6 +93,7 @@ def test_broker_pb2_descriptor():
     assert hasattr(descriptor, "message_types_by_name")
     assert "ConnInfo" in descriptor.message_types_by_name
 
+@pytest.mark.asyncio
 def test_broker_grpc_version_mismatch():
     """Direct test for grpc_broker_pb2_grpc version check (lines 18-19)."""
     with patch('grpc._utilities.first_version_is_lower', return_value=True):
@@ -96,6 +101,7 @@ def test_broker_grpc_version_mismatch():
             importlib.reload(grpc_broker_pb2_grpc)
         assert "grpc package installed is at version" in str(excinfo.value)
 
+@pytest.mark.asyncio
 def test_broker_experimental_api():
     """Direct test for grpc_broker_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_broker_pb2_grpc, "GRPCBroker")
@@ -112,6 +118,5 @@ def test_broker_experimental_api():
             metadata={"test": "value"}
         )
         mock_stream_stream.assert_called_once()
-
 
 ### 🐍🏗🧪️
