@@ -152,4 +152,5 @@ dev = [
     "hatch>=1.14.0",
     "pytest-cov>=6.0.0",
     "pytest-trace>=1.0.0",
+    "viztracer>=1.0.2",
 ]
