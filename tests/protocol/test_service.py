@@ -297,3 +297,62 @@ async def collect_with_cancel(stream):
         # Re-raise to propagate to the test
         raise
     return results
+
+@pytest.fixture
+def shutdown_event():
+    """Fixture providing an asyncio Event for shutdown testing."""
+    return asyncio.Event()
+
+@pytest.fixture
+def controller_service(shutdown_event, stdio_service):
+    """Fixture providing a GRPCControllerService instance."""
+    return GRPCControllerService(shutdown_event, stdio_service)
+
+@pytest.mark.asyncio
+async def test_controller_shutdown(controller_service, mock_context, shutdown_event):
+    """Test the Shutdown method."""
+    # Patch the _delayed_shutdown method to prevent actual process termination
+    with patch.object(controller_service, '_delayed_shutdown', new_callable=AsyncMock):
+        # Call Shutdown
+        response = await controller_service.Shutdown(ControllerEmpty(), mock_context)
+        
+        # Verify shutdown event was set
+        assert shutdown_event.is_set()
+        
+        # Verify stdio service was shutdown
+        assert controller_service._stdio_service._shutdown == True
+        
+        # Verify _delayed_shutdown was called
+        controller_service._delayed_shutdown.assert_called_once()
+        
+        # Verify response is an Empty
+        assert isinstance(response, ControllerEmpty)
+
+@pytest.mark.asyncio
+async def test_controller_delayed_shutdown(controller_service):
+    """Test the _delayed_shutdown method."""
+    # Patch sleep to avoid actually waiting
+    with patch('asyncio.sleep', new_callable=AsyncMock):
+        # Patch os.kill to avoid termination
+        with patch('os.kill'):
+            with patch('os.getpid', return_value=12345):
+                await controller_service._delayed_shutdown()
+                # If we get here without error, the test passes
+
+@pytest.mark.asyncio
+async def test_controller_delayed_shutdown_fallback(controller_service):
+    """Test the _delayed_shutdown fallback path."""
+    # Patch sleep to avoid actually waiting
+    with patch('asyncio.sleep', new_callable=AsyncMock):
+        # Patch hasattr to force the fallback path
+        original_hasattr = hasattr
+        def mock_hasattr(obj, name):
+            if name == 'kill' and obj == os:
+                return False
+            return original_hasattr(obj, name)
+        
+        with patch('builtins.hasattr', mock_hasattr):
+            # Patch sys.exit to avoid actual exit
+            with patch('sys.exit'):
+                await controller_service._delayed_shutdown()
+                # If we get here without error, the test passes
