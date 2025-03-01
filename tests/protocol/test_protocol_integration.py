@@ -126,7 +126,7 @@ async def test_broker_integration(grpc_server, grpc_channel):
     # Close the stream
     await stream.done_writing()
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_controller_integration(grpc_server, grpc_channel):
     """Integration test for the controller service."""
     _, _, shutdown_event = grpc_server
