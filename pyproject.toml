@@ -132,9 +132,10 @@ line-length = 88
 
 [tool.coverage.run]
 omit = [
-    "tests/*",
+    "*_pb2.py",
     "*/logger/*",
     "*/crypto/debug.py",
+    "tests/*",
 ]
 
 ################################################################################
