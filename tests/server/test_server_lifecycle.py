@@ -40,6 +40,10 @@ async def test_server_serve_runtime_error(
     test_transport = mock_server_transport
 
     class ProtocolWithError(RPCPluginProtocol):
+        def get_grpc_descriptors(self) -> tuple[Any, str]:
+            """Returns the protobuf descriptor set and service name."""
+            pass
+
         async def add_to_server(self, handler, server):
             raise RuntimeError("Protocol service registration")
 
