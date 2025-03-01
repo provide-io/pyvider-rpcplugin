@@ -160,6 +160,15 @@ exclude_lines = [
     "pragma: no cover"  # Still allow manual exclusion of blocks
 ]
 
+[tool.coverage.html]
+directory = "htmlcov"  # Output directory for HTML coverage reports
+
+[tool.coverage.xml]
+output = "coverage.xml"  # Output XML for CI/CD tools
+
+[tool.coverage.annotate]
+directory = "cover"  # Annotate files with coverage info
+
 ################################################################################
 # pyre
 ################################################################################
