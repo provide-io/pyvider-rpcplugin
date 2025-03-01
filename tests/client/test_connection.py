@@ -121,7 +121,7 @@ async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog)
     await connection.close()
     assert connection._closed is True
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_del_warning(caplog, capsys):
     # Create a ClientConnection without calling close.
     dummy_writer = DummyWriter()
