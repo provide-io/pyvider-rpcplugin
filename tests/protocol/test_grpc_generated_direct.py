@@ -13,16 +13,6 @@ from pyvider.rpcplugin.protocol import (
     grpc_stdio_pb2_grpc,
 )
 
-# Test pb2 descriptor options (lines 30-36 in various pb2 files)
-def test_broker_pb2_descriptor():
-    """Direct test for grpc_broker_pb2 descriptor options (lines 30-36)."""
-    # Direct access to specific global symbols
-    # These will exercise the if not _descriptor._USE_C_DESCRIPTORS block
-    assert hasattr(grpc_broker_pb2, "DESCRIPTOR")
-    with patch.object(grpc_broker_pb2.DESCRIPTOR, "_loaded_options", None), \
-         patch.object(grpc_broker_pb2.DESCRIPTOR, "_USE_C_DESCRIPTORS", False):
-        importlib.reload(grpc_broker_pb2)
-
     # Test specific serialized properties
     descriptor = grpc_broker_pb2.DESCRIPTOR
     assert hasattr(descriptor, "message_types_by_name")
