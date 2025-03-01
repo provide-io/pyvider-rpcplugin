@@ -261,8 +261,6 @@ def test_grpc_stdio_servicer_methods():
     context.set_code.assert_called_once_with(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details.assert_called_once_with("Method not implemented!")
 
-### 🐍🏗🧪️
-
 def test_stdio_pb2_descriptor():
     """Direct test for grpc_stdio_pb2 descriptor options (lines 32-38)."""
     assert hasattr(grpc_stdio_pb2, "DESCRIPTOR")
@@ -298,6 +296,7 @@ def test_stdio_experimental_api():
         )
         mock_unary_stream.assert_called_once()
 
+###
 
 def test_add_servicers_to_server():
     """Test the add_*Servicer_to_server functions."""
