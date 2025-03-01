@@ -40,6 +40,18 @@ async def test_create_x509_cert_validity_error():
             Certificate(generate_keypair=True)
 
 @pytest.mark.asyncio
+async def test_certificate_extension_failure():
+    """Ensure extension addition failures raise CertificateError."""
+    cert = Certificate(generate_keypair=True)
+
+    with mock.patch(
+        "cryptography.x509.CertificateBuilder.add_extension",
+        side_effect=Exception("Mock failure"),
+    ):
+        with pytest.raises(CertificateError, match="Failed to create"):
+            cert._create_x509_certificate()
+
+@pytest.mark.asyncio
 async def test_create_x509_cert_builder_error():
     """Test error in certificate builder."""
     with mock.patch(
@@ -74,16 +86,5 @@ async def test_create_invalid_key_type():
     with pytest.raises(CertificateError, match="Unsupported key type"):
         CertificateBase.create(config)
 
-@pytest.mark.asyncio
-async def test_certificate_extension_failure():
-    """Ensure extension addition failures raise CertificateError."""
-    cert = Certificate(generate_keypair=True)
-
-    with mock.patch(
-        "cryptography.x509.CertificateBuilder.add_extension",
-        side_effect=Exception("Mock failure"),
-    ):
-        with pytest.raises(CertificateError, match="Failed to create"):
-            cert._create_x509_certificate()
 
 ### 🐍🏗🧪️
