@@ -1,9 +1,7 @@
 # pyvider/rpcplugin/transport/base.py
 
 import abc
-
 import attrs
-
 
 @attrs.define(frozen=False, slots=False)
 class RPCPluginTransport(abc.ABC):
