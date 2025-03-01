@@ -15,3 +15,5 @@ class RPCPluginTransport(abc.ABC):
 
     @abc.abstractmethod
     async def close(self) -> None: ...                       # proagma: no cover
+
+# 🐍🏗️🔌
