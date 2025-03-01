@@ -35,7 +35,6 @@ def test_grpc_proto_descriptors():
         assert "_STDIODATA" in grpc_stdio_pb2._globals
         assert "_GRPCSTDIO" in grpc_stdio_pb2._globals
 
-
 def test_grpc_stub_creation():
     """Test creating stubs from gRPC classes."""
     mock_channel = MagicMock()
@@ -50,7 +49,6 @@ def test_grpc_stub_creation():
     assert hasattr(controller_stub, "Shutdown")
     assert hasattr(stdio_stub, "StreamStdio")
 
-
 def test_grpc_version_check():
     """Test the gRPC version compatibility check."""
     # Force a version mismatch
@@ -63,7 +61,6 @@ def test_grpc_version_check():
     with patch("grpc._utilities.first_version_is_lower", return_value=False):
         # Should not raise
         importlib.reload(grpc_broker_pb2_grpc)
-
 
 def test_grpc_add_handlers_to_server():
     """Test adding handlers to server."""
