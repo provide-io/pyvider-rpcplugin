@@ -21,16 +21,14 @@ async def test_tcp_socket_transport_connect_unreachable_address():
     with pytest.raises(TransportError):
         await asyncio.wait_for(transport.listen(), timeout=3.0)
 
-
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_connect_invalid_endpoint():
+async def test_tcp_socket_transport_connect_invalid_endpoint_2():
     transport = TCPSocketTransport()
     with pytest.raises(TransportError):
         await asyncio.wait_for(transport.connect("127.0.0.1:65530"), timeout=5.0)
 
-
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_connect_invalid_endpoint():
+async def test_tcp_socket_transport_connect_invalid_endpoint_1():
     """
     Test connecting to an invalid endpoint with TCPSocketTransport.
     """
@@ -41,7 +39,6 @@ async def test_tcp_socket_transport_connect_invalid_endpoint():
     with pytest.raises(TransportError):
         # Include a timeout to prevent indefinite hanging
         await asyncio.wait_for(transport.connect("127.0.0.1:65530"), timeout=6.0)
-
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_default_host():

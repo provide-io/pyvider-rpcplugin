@@ -14,7 +14,6 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 
 from tests.fixtures import *
 
-
 @pytest.mark.asyncio
 async def test_unix_socket_listen_and_connect(unique_socket_path):
     transport = UnixSocketTransport(path=unique_socket_path)
@@ -40,7 +39,6 @@ async def test_unix_socket_listen_and_connect(unique_socket_path):
         "Socket file was not removed after transport closed."
     )
 
-
 @pytest.mark.asyncio
 async def test_unix_socket_listen_path_creation_failure():
     """Test that UnixSocketTransport.listen raises TransportError when the socket path cannot be created."""
@@ -51,9 +49,9 @@ async def test_unix_socket_listen_path_creation_failure():
 
     assert "Failed to create Unix socket" in str(excinfo.value)
 
-
 @pytest.mark.asyncio
 async def test_unix_socket_listen_socket_in_use(unique_socket_path):
+
     """Test Unix socket transport handling of a socket already in use."""
     # Ensure the path is a string
     socket_path = str(unique_socket_path)
@@ -72,6 +70,21 @@ async def test_unix_socket_listen_socket_in_use(unique_socket_path):
         # Add a small delay to ensure cleanup
         await asyncio.sleep(0.1)
 
+@pytest.mark.asyncio
+async def test_unix_listen_socket_in_use_2(monkeypatch):
+    # Simulate _check_socket_in_use returning True.
+    transport = UnixSocketTransport(path="/tmp/test.sock")
+    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
+    with pytest.raises(TransportError, match="already in use"):
+        await transport.listen()
+
+@pytest.mark.asyncio
+async def test_unix_listen_socket_in_use_1(monkeypatch):
+    # Simulate _check_socket_in_use returning True.
+    transport = UnixSocketTransport(path="/tmp/test.sock")
+    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
+    with pytest.raises(TransportError, match="already in use"):
+        await transport.listen()
 
 @pytest.mark.asyncio
 async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path):
@@ -89,9 +102,8 @@ async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path):
         # Allow event loop to clean up
         await asyncio.sleep(0)
 
-
 @pytest.mark.asyncio
-async def test_unix_listen_success(monkeypatch, tmp_path):
+async def test_unix_listen_success_2(monkeypatch, tmp_path):
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -114,23 +126,8 @@ async def test_unix_listen_success(monkeypatch, tmp_path):
     endpoint = await transport.listen()
     assert endpoint == sock_path
 
-
 @pytest.mark.asyncio
-async def test_unix_listen_socket_in_use(monkeypatch):
-    # Simulate _check_socket_in_use returning True.
-    transport = UnixSocketTransport(path="/tmp/test.sock")
-    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
-    with pytest.raises(TransportError, match="already in use"):
-        await transport.listen()
-
-
-################################################################################
-
-# =============================================================================
-
-
-@pytest.mark.asyncio
-async def test_unix_listen_success(monkeypatch, tmp_path):
+async def test_unix_listen_success_1(monkeypatch, tmp_path):
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -151,16 +148,6 @@ async def test_unix_listen_success(monkeypatch, tmp_path):
     monkeypatch.setattr(os, "chmod", lambda path, mode: None)
     endpoint = await transport.listen()
     assert endpoint == sock_path
-
-
-@pytest.mark.asyncio
-async def test_unix_listen_socket_in_use(monkeypatch):
-    # Simulate _check_socket_in_use returning True.
-    transport = UnixSocketTransport(path="/tmp/test.sock")
-    monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
-    with pytest.raises(TransportError, match="already in use"):
-        await transport.listen()
-
 
 @pytest.mark.asyncio
 async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
@@ -184,5 +171,4 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
     with pytest.raises(TransportError, match="Failed to remove"):
         await transport.listen()
 
-
-# =============================================================================
+### 🐍🏗🧪️

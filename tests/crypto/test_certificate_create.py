@@ -17,21 +17,22 @@ from pyvider.rpcplugin.crypto.certificate import (
 
 
 # 3. Certificate Creation Error Tests
-def test_create_x509_cert_subject_error():
+@pytest.mark.asyncio
+async def test_create_x509_cert_subject_error():
     """Test error in subject/issuer name creation."""
     with mock.patch("cryptography.x509.Name", side_effect=Exception("Name error")):
         with pytest.raises(CertificateError, match="Failed to generate"):
             Certificate(generate_keypair=True)
 
-
-def test_create_x509_cert_serial_error():
+@pytest.mark.asyncio
+async def test_create_x509_cert_serial_error():
     """Test error in serial number generation."""
     with mock.patch("os.urandom", side_effect=Exception("urandom failed")):
         with pytest.raises(CertificateError, match="Failed to generate"):
             Certificate(generate_keypair=True)
 
-
-def test_create_x509_cert_validity_error():
+@pytest.mark.asyncio
+async def test_create_x509_cert_validity_error_2():
     """Test error in validity period calculation."""
     # Mock datetime.timezone to raise an exception
     with mock.patch(
@@ -41,8 +42,18 @@ def test_create_x509_cert_validity_error():
         with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(generate_keypair=True)
 
+@pytest.mark.asyncio
+async def test_create_x509_cert_validity_error_1():
+    """Test error in validity period calculation."""
+    with mock.patch(
+        "pyvider.rpcplugin.crypto.certificate.datetime",
+        side_effect=Exception("Time error"),
+    ):
+        with pytest.raises(CertificateError, match="Failed to initialize certificate"):
+            Certificate(generate_keypair=True)
 
-def test_create_x509_cert_builder_error():
+@pytest.mark.asyncio
+async def test_create_x509_cert_builder_error():
     """Test error in certificate builder."""
     with mock.patch(
         "cryptography.x509.CertificateBuilder.subject_name",
@@ -53,8 +64,8 @@ def test_create_x509_cert_builder_error():
         ):
             Certificate(generate_keypair=True)
 
-
-def test_create_x509_cert_extension_error():
+@pytest.mark.asyncio
+async def test_create_x509_cert_extension_error_2():
     """Test error in adding certificate extensions."""
     with mock.patch(
         "cryptography.x509.CertificateBuilder.add_extension",
@@ -63,8 +74,20 @@ def test_create_x509_cert_extension_error():
         with pytest.raises(CertificateError, match="Failed to"):
             Certificate(generate_keypair=True)
 
+@pytest.mark.asyncio
+async def test_create_x509_cert_extension_error_1():
+    """Test error in adding certificate extensions."""
+    cert = Certificate(generate_keypair=True)
 
-def test_create_invalid_key_type():
+    with mock.patch(
+        "cryptography.x509.CertificateBuilder.add_extension",
+        side_effect=Exception("Mock failure"),
+    ):
+        with pytest.raises(CertificateError, match="Failed to create"):
+            cert._create_x509_certificate()
+
+@pytest.mark.asyncio
+async def test_create_invalid_key_type():
     """Ensure unsupported key types raise ValueError."""
     config = CertificateConfig(
         common_name="test",
@@ -74,8 +97,8 @@ def test_create_invalid_key_type():
     with pytest.raises(CertificateError, match="Unsupported key type"):
         CertificateBase.create(config)
 
-
-def test_certificate_extension_failure():
+@pytest.mark.asyncio
+async def test_certificate_extension_failure():
     """Ensure extension addition failures raise CertificateError."""
     cert = Certificate(generate_keypair=True)
 
@@ -86,24 +109,4 @@ def test_certificate_extension_failure():
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
 
-
-def test_create_x509_cert_validity_error():
-    """Test error in validity period calculation."""
-    with mock.patch(
-        "pyvider.rpcplugin.crypto.certificate.datetime",
-        side_effect=Exception("Time error"),
-    ):
-        with pytest.raises(CertificateError, match="Failed to initialize certificate"):
-            Certificate(generate_keypair=True)
-
-
-def test_create_x509_cert_extension_error():
-    """Test error in adding certificate extensions."""
-    cert = Certificate(generate_keypair=True)
-
-    with mock.patch(
-        "cryptography.x509.CertificateBuilder.add_extension",
-        side_effect=Exception("Mock failure"),
-    ):
-        with pytest.raises(CertificateError, match="Failed to create"):
-            cert._create_x509_certificate()
+### 🐍🏗🧪️
