@@ -33,14 +33,17 @@ async def test_setup_server_unix_success_insecure(
     mock_server_handler,
     mock_server_config,
 ):
+    transport = UnixSocketTransport()
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=transport,
     )
 
     try:
+        endpoint = await transport.listen()
         await server._setup_server(None)
         assert server._server is not None
         assert os.path.exists(endpoint)
