@@ -15,7 +15,6 @@ from pyvider.rpcplugin.protocol import (
     grpc_stdio_pb2_grpc,
 )
 
-
 def test_grpc_proto_descriptors():
     """Test accessing proto descriptors from all proto modules."""
     assert hasattr(grpc_broker_pb2, "DESCRIPTOR")
