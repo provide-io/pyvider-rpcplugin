@@ -43,10 +43,10 @@ async def test_setup_server_unix_success_insecure(
     )
 
     try:
-        await transport.listen()
+        endpoint = await transport.listen()
         await server._setup_server(None)  # Test insecure mode first
         assert server._server is not None
-        assert os.path.exists(sock_path)
+        assert os.path.exists(endpoint)
     finally:
         await server.stop()
 
