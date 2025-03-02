@@ -1,4 +1,3 @@
-## 3. Missing File: docs/advanced/index.md
 ---
 title: Advanced Topics
 description: Advanced patterns and techniques for Pyvider RPC Plugin
