@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+import socket
 import tempfile
 from contextlib import asynccontextmanager
 from dataclasses import dataclass

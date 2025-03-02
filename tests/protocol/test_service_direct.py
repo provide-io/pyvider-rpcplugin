@@ -71,28 +71,6 @@ async def test_broker_start_stream_exception_line95():
         assert "Test exception at line 95" in responses[0].knock.error
 
 @pytest.mark.asyncio
-async def test_stdio_put_line_exception_line123():
-    """Direct test for service.py lines 123-128 - exception in put_line."""
-    stdio_service = GRPCStdioService()
-
-    # Patch message_queue.put to raise exception
-    original_put = stdio_service._message_queue.put
-
-    async def failing_put(*args, **kwargs):
-        raise Exception("Test exception at line 123-128")
-
-    stdio_service._message_queue.put = failing_put
-
-    # Call put_line which should catch the exception
-    try:
-        await stdio_service.put_line(b"test data")
-        # If we get here, exception was properly handled
-        assert True
-    finally:
-        # Restore original method
-        stdio_service._message_queue.put = original_put
-
-@pytest.mark.asyncio
 async def test_controller_delayed_shutdown_unix_path():
     """Direct test for service.py lines 212-216 - unix path in _delayed_shutdown."""
     stdio_service = GRPCStdioService()

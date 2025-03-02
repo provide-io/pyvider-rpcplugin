@@ -123,9 +123,7 @@ class RPCPluginClient:
             logger.info("🔐 mTLS not enabled; operating in insecure mode.")
 
     async def _launch_process(self) -> None:
-        """
-        Launch the plugin as a subprocess if not already running.
-        """
+        """Launch the plugin as a subprocess if not already running."""
         if self._process:
             logger.debug("🖥️ Plugin subprocess is already running; skipping launch.")
             return
@@ -133,8 +131,11 @@ class RPCPluginClient:
         env = os.environ.copy()
         if self.config and "env" in self.config:
             env.update(self.config["env"])
-
-        # Pass the client cert to the server if needed (auto mTLS handshake)
+        
+        # Force unbuffered output in Python subprocesses
+        env["PYTHONUNBUFFERED"] = "1"
+        
+        # Pass client cert if needed
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
 
@@ -146,17 +147,14 @@ class RPCPluginClient:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=False,
+                bufsize=0,  # Disable buffering
+                universal_newlines=False,
             )
             logger.info("🖥️ Plugin subprocess started successfully.")
         except Exception as e:
-            logger.error(
-                f"🖥️❌ Failed to launch plugin subprocess: {e}",
-                extra={"trace": traceback.format_exc()},
-            )
+            logger.error(f"🖥️❌ Failed to launch plugin subprocess: {e}",
+                        extra={"trace": traceback.format_exc()})
             raise
-
-        # Optionally spawn a thread to relay stderr to local stderr
-        self._relay_stderr_background()
 
     def _relay_stderr_background(self) -> None:
         """
@@ -185,50 +183,60 @@ class RPCPluginClient:
         if not self._process or not self._process.stdout:
             raise HandshakeError("No server process or no stdout available.")
 
+        ###
         async def read_stdout_line() -> str:
             loop = asyncio.get_event_loop()
             start_time = loop.time()
-            timeout = 5.0  # Set a reasonable timeout for handshake
+            timeout = 10.0  # Increase timeout for handshake
             
             # Buffer for incomplete handshake lines
             buffer = ""
             
+            # Log the command being used
+            logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
+            
             while (loop.time() - start_time) < timeout:
-                # Check if process is still alive
+                # Check process state
                 if self._process.poll() is not None:
                     stderr_output = ""
                     if self._process.stderr:
-                        stderr_output = self._process.stderr.read()
+                        stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
                     logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
-                    raise HandshakeError(
-                        f"Plugin process exited with code {self._process.returncode} before handshake. Stderr: {stderr_output}"
-                    )
+                    raise HandshakeError(f"Plugin process exited with code {self._process.returncode} before handshake.")
                 
-                # Read line from the plugin's stdout (with shorter timeout)
+                # Try to read a complete line with increased timeout
                 try:
+                    # First try: direct read with longer timeout
                     line_bytes = await asyncio.wait_for(
                         loop.run_in_executor(None, lambda: self._process.stdout.readline()), 
-                        timeout=1.0
+                        timeout=2.0  # Longer per-read timeout
                     )
                     
-                    if not line_bytes:
-                        await asyncio.sleep(0.1)  # Avoid busy waiting
-                        continue
+                    if line_bytes:
+                        line = line_bytes.decode('utf-8', errors='replace').strip()
+                        buffer += line
+                        logger.debug(f"🤝 Read partial handshake data: '{line}', buffer: '{buffer}'")
                         
-                    line = line_bytes.decode('utf-8').strip()
-                    buffer += line
-                    
-                    # Check if we have a valid handshake line
-                    if "|" in buffer and buffer.count("|") >= 5:
-                        logger.debug(f"🤝 Received handshake line: {buffer}")
-                        return buffer
-                    
+                        # Check for complete handshake
+                        if "|" in buffer and buffer.count("|") >= 5:
+                            return buffer
+                    else:
+                        # Empty read but process still running - wait and retry
+                        await asyncio.sleep(0.25)  # Longer sleep to allow buffering
+                
                 except asyncio.TimeoutError:
-                    # Just continue and retry
-                    await asyncio.sleep(0.1)
-                    continue
-                    
-            raise TimeoutError("Timed out waiting for handshake line")
+                    logger.debug("🤝 Timeout on read attempt, retrying...")
+                    await asyncio.sleep(0.5)  # Longer backoff
+            
+            # Start stderr relay now to capture any error messages
+            self._relay_stderr_background()
+            
+            # If we get here, we've timed out
+            stderr_output = ""
+            if self._process.stderr:
+                stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
+            logger.error(f"🤝 Handshake timed out. Stderr output: {stderr_output}")
+            raise TimeoutError("Timed out waiting for handshake line. Check if the server is writing to stdout correctly.")
 
         try:
             line = await read_stdout_line()
@@ -501,6 +509,5 @@ class RPCPluginClient:
             self._transport = None
 
         logger.info("🔄 RPCPluginClient fully closed.")
-
 
 # 🐍🏗️🔌
