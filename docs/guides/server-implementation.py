@@ -28,11 +28,11 @@ Create a class that extends `RPCPluginProtocol`:
 ```python
 class MyProtocol(RPCPluginProtocol):
     """Protocol definition for your service."""
-    
+
     def get_grpc_descriptors(self):
         """Return the protobuf descriptor and service name."""
         return my_service_pb2.DESCRIPTOR, "MyService"
-    
+
     def add_to_server(self, server, handler):
         """Add the service to a gRPC server."""
         my_service_pb2_grpc.add_MyServiceServicer_to_server(handler, server)
@@ -55,22 +55,22 @@ Create a class that implements the generated servicer interface:
 ```python
 class MyServiceHandler(my_service_pb2_grpc.MyServiceServicer):
     """Implementation of your service."""
-    
+
     def __init__(self):
         logger.debug("🔌🚀✅ Initializing MyServiceHandler")
         # Initialize your state here
         self._data = {}
-    
+
     async def SomeMethod(self, request, context):
         """Implement a method from your service."""
         logger.debug(f"🔌📥✅ Received request: {request}")
-        
+
         # Your implementation logic goes here
         result = self._process_request(request)
-        
+
         logger.debug(f"🔌📤✅ Sending response: {result}")
         return my_service_pb2.SomeResponse(result=result)
-    
+
     def _process_request(self, request):
         """Internal helper method."""
         # Your business logic goes here
@@ -107,13 +107,13 @@ from my_handler import MyServiceHandler
 async def main():
     """Start the plugin server."""
     logger.debug("🔌🚀✅ Starting plugin server")
-    
+
     # Create the server with your protocol and handler
     server = RPCPluginServer(
         protocol=MyProtocol(),
         handler=MyServiceHandler()
     )
-    
+
     try:
         # This blocks until the server is shut down
         await server.serve()
@@ -205,14 +205,14 @@ Properly manage resources that need explicit cleanup:
 
 ```python
 class DatabaseHandler(database_pb2_grpc.DatabaseServicer):
-    
+
     def __init__(self):
         self._db_connection = self._connect_to_db()
-    
+
     def _connect_to_db(self):
         # Connect to database
         return db_connection
-    
+
     async def Close(self):
         """Custom cleanup method."""
         if hasattr(self, "_db_connection") and self._db_connection:
@@ -245,7 +245,7 @@ Implement streaming methods from your protobuf definition:
 async def StreamData(self, request, context):
     """Server streaming RPC method."""
     logger.debug(f"🔌📥✅ StreamData request: {request}")
-    
+
     # Generate multiple responses
     for i in range(request.count):
         response = data_pb2.DataResponse(value=f"Item {i}")
