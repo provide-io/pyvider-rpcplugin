@@ -61,6 +61,8 @@ async def unix_transport():
 @pytest_asyncio.fixture(scope="function")
 async def unique_transport_path():
     """Generate a unique path for Unix socket transport."""
+    import os, tempfile, uuid
+
     # Use process ID, timestamp and UUID for maximum uniqueness
     unique_id = f"{os.getpid()}_{time.time()}_{uuid.uuid4().hex}"
     socket_path = f"/tmp/pyvider_kv_test_{unique_id}.sock"
