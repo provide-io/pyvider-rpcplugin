@@ -105,7 +105,6 @@ async def clean_socket_dir(tmp_path):
         except OSError:
             pass
 
-@pytest.fixture(scope="function", autouse=True)
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
     if len(text) <= 2 * length:
