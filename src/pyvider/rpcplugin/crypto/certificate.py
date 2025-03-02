@@ -251,7 +251,7 @@ class Certificate:
                     "📜🔑✅ Certificate.__init__: Generated certificate and key converted to PEM successfully."
                 )
             else:
-                if not cert:
+                if not cert or cert.strip() == "":
                     logger.error(
                         "📜❌ Certificate.__init__: No certificate data provided."
                     )

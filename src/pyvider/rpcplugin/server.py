@@ -138,6 +138,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 logger.debug("🛎️🔐✅ Client cert found in global config.")
             else:
                 logger.debug("🛎️🔐⚠️ No client certificate provided; operating insecurely.")
+                return None
                 
             return client_cert
         except Exception as e:
