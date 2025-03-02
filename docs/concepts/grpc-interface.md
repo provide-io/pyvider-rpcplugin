@@ -1,6 +1,3 @@
-## docs/concepts/grpc-interface.md
-
-```markdown
 ---
 title: gRPC Interface
 description: Service definitions and RPC architecture in Pyvider
