@@ -92,6 +92,8 @@ packages = [
 log_cli = true
 # log_cli_level = "DEBUG"
 
+addopts = "-n auto --dist=loadscope"  # Automatically use all CPUs and balance test load
+
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 
