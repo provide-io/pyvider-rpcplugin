@@ -1,4 +1,3 @@
-## docs/reference/env-variables.md
 ---
 title: Environment Variables
 description: Reference for environment variables used in Pyvider RPC Plugin
