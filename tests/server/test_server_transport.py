@@ -33,25 +33,25 @@ async def test_setup_server_unix_success_insecure(
     mock_server_handler,
     mock_server_config,
 ):
-    sock_path = unique_socket_path
-    transport = UnixSocketTransport(path=sock_path)
+    test_transport = UnixSocketTransport()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     try:
-        await transport.listen()
-        await server._setup_server(None)  # Test insecure mode first
+        endpoint = await test_transport.listen()
+        await server._setup_server(None)
         assert server._server is not None
-        assert os.path.exists(sock_path)
+        assert os.path.exists(endpoint)
     finally:
+        await test_transport.close()
         await server.stop()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_setup_server_unix_success_secure(
     tmp_path,
     client_cert,
@@ -60,24 +60,23 @@ async def test_setup_server_unix_success_secure(
     mock_server_handler,
     mock_server_config,
 ):
-    sock_path = unique_socket_path
-    transport = UnixSocketTransport(path=sock_path)
+
+    test_transport = UnixSocketTransport()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=None,
     )
 
     try:
-        await transport.listen()
-        await server.serve()
-        # await server._setup_server("client_cert")
-        # expected = f"unix:{endpoint}"
-        #assert any(expected in port for port in dummy_server.ports)
+        endpoint = await test_transport.listen()
+        await server._setup_server("client_cert")
+        assert server._server is not None
+        assert os.path.exists(endpoint)
     finally:
-        await transport.close()
+        await test_transport.close()
         await server.stop()
 
 @pytest.mark.asyncio
@@ -101,7 +100,7 @@ async def test_setup_server_unix_no_socket(
         await transport.listen()
         await server._setup_server("client_cert")
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_2(
     tmp_path,
     mock_server_protocol,
@@ -138,7 +137,7 @@ async def test_setup_server_unix_bad_permissions_2(
             os.chmod(sock_path, 0o700)  # Need to restore permissions to delete
             os.unlink(sock_path)
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_1(
     tmp_path,
     mock_server_protocol,

@@ -465,7 +465,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             
             # Critical fix: Write to stdout with proper flush
             # This ensures the response is immediately sent to the client
-            print(response, file=sys.stdout, flush=True)
+            #print(response, file=sys.stdout, flush=True)
+            response_bytes = (response + "\n").encode('utf-8')
+            sys.stdout.buffer.write(response_bytes)
+            sys.stdout.buffer.flush()
             
             # Explicitly flush stdout again to ensure the message is sent
             sys.stdout.flush()

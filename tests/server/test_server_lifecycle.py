@@ -29,7 +29,7 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_server_serve_runtime_error(
     monkeypatch,
     mock_server_handler,
@@ -37,28 +37,28 @@ async def test_server_serve_runtime_error(
     mock_server_config,
     mock_server_transport,
 ):
-    name, transport, endpoint = mock_server_transport
-    transport = mock_server_transport ### hmm.
-    #endpoint = await transport.listen()
+    test_transport = mock_server_transport
 
     class ProtocolWithError(RPCPluginProtocol):
+        def get_grpc_descriptors(self) -> tuple[Any, str]:
+            pass
+
         async def add_to_server(self, handler, server):
             raise RuntimeError("Protocol service registration")
 
     # when this is set to mock_server_protocol it segfaults stuff.
     server = RPCPluginServer(
-        protocol=mock_server_protocol,
+        protocol=ProtocolWithError(),
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport, # if you pass the mock_server_transport in here directly
-                             # it throws up. this needs to be excepted.
+        transport=test_transport,
     )
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
 
-    await transport.close()
+    await test_transport.close()
 
 @pytest.mark.asyncio
 async def test_serve_success(
@@ -69,13 +69,13 @@ async def test_serve_success(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    test_transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     fut = asyncio.Future()
@@ -83,11 +83,11 @@ async def test_serve_success(
     server._serving_future = fut
     server._serving_event = asyncio.Event()
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport_name = transport._transport_name
+        self._transport_name = test_transport._transport_name
 
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
@@ -119,13 +119,13 @@ async def test_serve_error(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    test_transport = mock_server_transport
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
@@ -137,7 +137,7 @@ async def test_serve_error(
         server, "_negotiate_handshake", failing_negotiate.__get__(server, type(server))
     )
     with pytest.raises(Exception, match="Handshake failed"):
-        await transport.listen()
+        await test_transport.listen()
         await server.serve()
 
 @pytest.mark.asyncio
@@ -147,15 +147,15 @@ async def test_wait_for_server_ready(
     mock_server_config,
     mock_server_transport,
 ):
-    transport = mock_server_transport
+    test_transport = mock_server_transport
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     server._serving_event = asyncio.Event()
@@ -205,8 +205,8 @@ async def test_stop_handles_exceptions(
     # Test that exceptions during _server.stop() and _transport.close() are caught.
     dummy_server = DummyGRPCServer()
 
-    transport = mock_server_transport
-    endpoint = await transport.listen()
+    test_transport = mock_server_transport
+    endpoint = await test_transport.listen()
 
     async def failing_stop(grace):
         raise Exception("Server stop failed")
@@ -218,7 +218,7 @@ async def test_stop_handles_exceptions(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
     server._server = dummy_server
     server._transport = dummy_transport
@@ -235,19 +235,16 @@ async def test_server_stop_clean_destructor(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport,
 ):
     """
     Create an RPCPluginServer with a dummy gRPC server, then call stop() and delete the server.
     This test covers the cleanup paths that trigger __del__ in the underlying gRPC server.
     """
-    # Create the server with a dummy protocol.
-    transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=None,
     )
 
     # Inject a dummy gRPC server instance.
@@ -257,7 +254,6 @@ async def test_server_stop_clean_destructor(
     fut.set_result(None)
     server._serving_future = fut
     # Call stop() to shut down the server and transport.
-    endpoint = await transport.listen()
     await server.stop()
     # Delete the server instance and force garbage collection.
     del server
@@ -277,18 +273,18 @@ async def test_serve_and_stop_no_unawaited_warning(
     even if the event loop is later closed.
     """
     # Create a server instance with a dummy protocol.
-    transport = mock_server_transport
+    test_transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=transport,
+        transport=test_transport,
     )
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
-        self._transport = transport
-        self._transport_name = transport._transport_name
+        self._transport = test_transport
+        self._transport_name = test_transport._transport_name
 
     # Prepare dummy implementations for required methods.
     # Set _negotiate_handshake to simply set a protocol version.
@@ -296,7 +292,7 @@ async def test_serve_and_stop_no_unawaited_warning(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
     await server._negotiate_handshake()
-    assert server._transport_name == transport._transport_name
+    assert server._transport_name == test_transport._transport_name
 
     async def dummy_setup(_):
         pass
@@ -315,7 +311,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     # Patch _register_signal_handlers to do nothing.
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
 
-    endpoint = await transport.listen()
+    endpoint = await test_transport.listen()
 
     # Create a task for serve(); then, after a short delay, call stop().
     serve_task = asyncio.create_task(server.serve())

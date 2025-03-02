@@ -143,7 +143,7 @@ async def test_certificate_hash(client_cert):
     # Same certificate should generate same hash
     assert hash(client_cert) == cert_hash
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_certificate_invalid_trust_chain_signature():
     """Ensure certificate trust chain fails on signature mismatch."""
     cert1 = Certificate(generate_keypair=True)

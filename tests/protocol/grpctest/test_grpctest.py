@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 # tests/grpc/test_grpctest.py
 
 import asyncio

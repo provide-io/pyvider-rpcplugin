@@ -83,7 +83,7 @@ async def test_certificate_extension_addition_failure():
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_certificate_trust_chain_validation():
     """Ensure trust chain verification enforces correct issuer-subject matching."""
     cert1 = Certificate(generate_keypair=True)
