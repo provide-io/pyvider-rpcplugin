@@ -376,7 +376,7 @@ $RECYCLE.BIN/
 
 .terraform.lock.hcl
 
-*-bfile*
+*bfile*
 
 .note
 
