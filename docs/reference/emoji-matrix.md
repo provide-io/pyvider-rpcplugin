@@ -172,4 +172,3 @@ The emojis are designed to be displayed in a monospaced font terminal with Unico
 5. **Fun Factor**: Because debugging should be at least a little enjoyable
 
 Remember, logs should be more than just text—they should tell a story. And sometimes that story involves tiny pictures.
-```
