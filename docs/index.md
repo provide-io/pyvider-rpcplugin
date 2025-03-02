@@ -68,3 +68,4 @@ client = RPCPluginClient(command=["python", "my_plugin.py"])
 await client.start()
 plugin_interface = await client.get_interface()
 result = await plugin_interface.do_something()
+```
