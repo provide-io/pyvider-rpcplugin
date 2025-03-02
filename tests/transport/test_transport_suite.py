@@ -396,7 +396,7 @@ async def test_server_with_transport(
         with contextlib.suppress(asyncio.CancelledError):
             await server_task
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_error_handling():
     """Test error handling in Unix socket transport."""
     with tempfile.NamedTemporaryFile() as tf:
@@ -429,7 +429,7 @@ async def test_transport_error_handling(transport_factory):
 
     await transport.close()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_lifecycle_3(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
@@ -466,7 +466,7 @@ async def test_unix_socket_lifecycle_3(socket_monitor):
             "Socket failed to become inactive"
         )
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_lifecycle_2(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
@@ -505,7 +505,7 @@ async def test_unix_socket_lifecycle_2(socket_monitor):
         assert not state, "Socket still active after close"
         assert not os.path.exists(endpoint), "Socket file remains"
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_lifecycle_1(socket_monitor):
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
@@ -527,7 +527,7 @@ async def test_unix_socket_lifecycle_1(socket_monitor):
         await client.connect(endpoint)
         assert await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_4():
     """Test multiple concurrent connections to Unix socket."""
     with tempfile.NamedTemporaryFile() as tf:
@@ -584,7 +584,7 @@ async def test_unix_socket_concurrent_connections_4():
         # Verify socket is gone
         assert not os.path.exists(socket_path), f"Socket file {socket_path} still exists"
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_3(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
@@ -615,7 +615,7 @@ async def test_unix_socket_concurrent_connections_3(socket_monitor):
         await asyncio.sleep(0.1)
         assert not await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_2(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
@@ -645,7 +645,7 @@ async def test_unix_socket_concurrent_connections_2(socket_monitor):
 
         assert not await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_concurrent_connections_1(socket_monitor):
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
@@ -674,7 +674,7 @@ async def test_unix_socket_concurrent_connections_1(socket_monitor):
 
         assert not await monitor.check_state()
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_server_integration_2():
     """Test Unix socket transport with server integration."""
     with tempfile.NamedTemporaryFile() as tf:
@@ -740,7 +740,7 @@ async def test_unix_socket_server_integration_2():
         if os.path.exists(socket_path):
             os.unlink(socket_path)
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_server_integration_1(socket_monitor):
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
@@ -785,7 +785,7 @@ async def test_unix_socket_server_integration_1(socket_monitor):
             with contextlib.suppress(asyncio.CancelledError):
                 await server_task
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_unix_socket_cleanup_handling(socket_monitor):
     """Test proper cleanup of Unix socket resources."""
     # Create a temporary path for testing

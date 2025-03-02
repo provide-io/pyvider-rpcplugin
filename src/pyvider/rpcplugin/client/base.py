@@ -145,7 +145,7 @@ class RPCPluginClient:
                 env=env,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                text=True,
+                text=False,
             )
             logger.info("🖥️ Plugin subprocess started successfully.")
         except Exception as e:
@@ -163,7 +163,6 @@ class RPCPluginClient:
         Continuously read plugin's stderr in a background thread, printing it locally.
         """
         import threading
-
         def read_stderr() -> None:
             while True:
                 if not self._process or self._process.stderr is None:
@@ -171,7 +170,7 @@ class RPCPluginClient:
                 line = self._process.stderr.readline()
                 if not line:
                     break
-                sys.stderr.write(line)
+                sys.stderr.write(line.decode('utf-8', errors='replace'))  # Decode bytes to str
 
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
@@ -216,7 +215,7 @@ class RPCPluginClient:
                         await asyncio.sleep(0.1)  # Avoid busy waiting
                         continue
                         
-                    line = line_bytes.decode().strip()
+                    line = line_bytes.decode('utf-8').strip()
                     buffer += line
                     
                     # Check if we have a valid handshake line

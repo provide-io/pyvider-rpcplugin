@@ -103,7 +103,7 @@ async def test_missing_certificate_file_raises_error():
     with pytest.raises(CertificateError):
         Certificate(cert="file:///nonexistent/path/cert.pem")
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_load_cert_with_utf8_bom():
     """Ensure certificate loading works with UTF-8 BOM characters."""
     cert_pem = "\ufeff" + client_cert

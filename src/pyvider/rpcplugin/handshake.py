@@ -87,7 +87,6 @@ def validate_transport(transport_name: str, supported_transports: list[str]) -> 
         raise TransportError(f"Unsupported transport: {transport_name}")
     logger.debug(f"🤝🚂✅ Transport '{transport_name}' is supported.")
 
-
 def negotiate_protocol_version(server_versions: list[int]) -> int:
     """
     🤝🔄 Selects the highest mutually supported protocol version.
@@ -118,7 +117,6 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
         f"No mutually supported protocol version found. Server supports: {server_versions}, "
         f"Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
     )
-
 
 async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
@@ -177,7 +175,6 @@ def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     Ensures it contains exactly 6 parts and the first two parts are digits.
     """
     return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
-
 
 def validate_magic_cookie(
     magic_cookie_key: str | None = _SENTINEL,
@@ -254,10 +251,15 @@ async def build_handshake_response(
                 raise ValueError("TCP transport requires a valid port.")
             endpoint = f"127.0.0.1:{port}"
             logger.debug(f"🤝📝✅ TCP endpoint set: {endpoint}")
+
         elif transport_name == "unix":
-            logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
-            endpoint = await transport.listen()
-            logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
+            if hasattr(transport, '_running') and transport._running and transport.endpoint:
+                logger.debug(f"🤝📝✅ Using existing Unix transport endpoint: {transport.endpoint}")
+                endpoint = transport.endpoint
+            else:
+                logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
+                endpoint = await transport.listen()
+                logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
         else:
             logger.error(f"🤝📝❌ Unsupported transport type: {transport_name}")
             raise TransportError(f"Unsupported transport: {transport_name}")
