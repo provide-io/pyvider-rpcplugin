@@ -1,5 +1,3 @@
-## docs/concepts/security.md
-
 ---
 title: Security Model
 description: Authentication and encryption in Pyvider RPC Plugin
