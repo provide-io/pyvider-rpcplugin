@@ -122,7 +122,7 @@ async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog)
     assert connection._closed is True
 
 @pytest.mark.skip
-async def Xtest_del_warning(caplog, capsys):
+async def test_del_warning(caplog, capsys):
     # Create a ClientConnection without calling close.
     dummy_writer = DummyWriter()
     # For the reader, use a minimal dummy (can be an already created StreamReader).
@@ -141,6 +141,5 @@ async def Xtest_del_warning(caplog, capsys):
     in_stdout = "was not properly closed" in captured.out
     
     assert in_logs or in_stdout, "No warning about unclosed connection was found"
-
 
 ### 🐍🏗🧪️
