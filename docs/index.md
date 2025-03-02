@@ -26,26 +26,27 @@ At its core, Pyvider RPC Plugin provides a client-server architecture where:
 ## Key Features
 
 - **Process Isolation**: Plugins run in separate processes, preventing crashes
-                         from affecting the host
+                         from affecting the host.
 
 - **Language Agnostic**: Support for plugins written in various languages
-                         through gRPC
+                         through gRPC.
 
 - **Secure Communication**: Mutual TLS authentication ensures connections
-                            are secure
+                            are secure.
 
-- **Transport Flexibility**: Support for both TCP and Unix domain sockets
+- **Transport Flexibility**: Support for both TCP and Unix domain sockets.
 
 - **Protocol Versioning**: Negotiate compatible protocol versions between host
-                           and plugin
+                           and plugin.
 
 - **Graceful Error Handling**: Comprehensive exception hierarchy for detailed
-                               diagnostics
+                               diagnostics.
 
-- **Structured Logging**: Emoji-based logging system for clear, visual debugging
+- **Structured Logging**: Emoji-based logging system for clear,
+-                         visual debugging.
 
 - **Go Compatibility**: Full interoperability with HashiCorp's
-                        go-plugin ecosystem
+                        go-plugin ecosystem.
 
 ## When to Use Pyvider RPC Plugin
 
