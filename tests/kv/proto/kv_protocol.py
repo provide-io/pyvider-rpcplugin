@@ -20,17 +20,17 @@ class KVProtocol(RPCPluginProtocol):
         """Get the gRPC service descriptors."""
         return kv_pb2_grpc, "KV"
 
-    async def add_to_server(self, handler: HandlerT, server: ServerT) -> None:
-        """
-        Add the KV service to a gRPC server.
 
-        Args:
-            handler: The KV service handler implementation
-            server: The async gRPC server instance
-        """
-        try:
-            logger.debug(f"🔍🚀✅ Adding KV service to server with handler: {handler}")
-            kv_pb2_grpc.add_KVServicer_to_server(handler, server)
-        except Exception as e:
-            logger.error(f"🔍❌ Failed to add KV service to server: {e}")
-            raise
+    async def add_to_server(self, handler, server) -> None:
+        logger.debug("🔌📡🚀 KVProtocol.add_to_server: Registering KV service")
+        
+        if not hasattr(handler, 'Get') or not callable(handler.Get):
+            logger.error("🔌📡❌ KVProtocol handler missing required 'Get' method")
+            raise ValueError("Invalid KV handler: missing 'Get' method")
+            
+        if not hasattr(handler, 'Put') or not callable(handler.Put):
+            logger.error("🔌📡❌ KVProtocol handler missing required 'Put' method")
+            raise ValueError("Invalid KV handler: missing 'Put' method")
+            
+        # Register the KV service implementation
+        kv_pb2_grpc.add_KVServicer_to_server(handler, server)
