@@ -47,7 +47,7 @@ Pyvider RPC Plugin is ideal for applications that:
 The fastest way to understand Pyvider is to see it in action:
 
 ```python
-# Host application
+## Host application
 client = RPCPluginClient(command=["python", "my_plugin.py"])
 await client.start()
 plugin_interface = await client.get_interface()
