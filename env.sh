@@ -135,7 +135,7 @@ alias rpcenv-refresh=" \
 
     popd;
 "
-
+alias show-dupdefs="grep -r 'def ' * | sed -E 's/.*def //g;s/\(.*//g' |sort -h | uniq -c | sort -d | grep test | grep -v '1 '"
 
 alias py-kv-client="(cd ${BASE_PATH}/tests/kv; ./py_kv_client.py)"
 alias py-kv-server="(cd ${BASE_PATH}/tests/kv; ./py_kv_server.py)"

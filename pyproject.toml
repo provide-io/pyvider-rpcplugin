@@ -121,7 +121,7 @@ select = ["E", "F", "I", "UP", "ANN", "B"]
 ignore = [
     "ANN401",
     "B008",
-    "E501",     # Line too long
+    "E501",
 ]
 exclude = ["tests/*", "**/*pb2*.py"]
 line-length = 88
@@ -131,12 +131,40 @@ line-length = 88
 ################################################################################
 
 [tool.coverage.run]
+source = ["pyvider.rpcplugin"]
+branch = true
 omit = [
     "*_pb2.py",
     "*/logger/*",
     "*/crypto/debug.py",
     "tests/*",
 ]
+
+[tool.coverage.report]
+# Improve report readability with missing lines
+show_missing = true
+skip_covered = false  # Show all lines, even if 100% covered
+precision = 2  # Decimal places in report output
+
+# Exclude logging statements and unnecessary code blocks
+exclude_lines = [
+    "logger\\.",  # Ignore all logger calls (debug, info, warning, error, critical)
+    "import logging",  # Ignore logging import statements
+    "from logging",  # Ignore logging module imports
+    "raise NotImplementedError",  # Ignore abstract method placeholders
+    "if __name__ == .__main__.:",  # Ignore main script execution guards
+    "pass",  # Ignore no-op placeholders
+    "pragma: no cover"  # Still allow manual exclusion of blocks
+]
+
+[tool.coverage.html]
+directory = "htmlcov"  # Output directory for HTML coverage reports
+
+[tool.coverage.xml]
+output = "coverage.xml"  # Output XML for CI/CD tools
+
+[tool.coverage.annotate]
+directory = "cover"  # Annotate files with coverage info
 
 ################################################################################
 # pyre
@@ -150,6 +178,9 @@ strict = true
 [dependency-groups]
 dev = [
     "hatch>=1.14.0",
+    "pynguin>=0.40.0",
     "pytest-cov>=6.0.0",
+    "pytest-testmon>=2.1.3",
     "pytest-trace>=1.0.0",
+    "viztracer>=1.0.2",
 ]

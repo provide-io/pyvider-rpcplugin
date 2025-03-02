@@ -22,16 +22,6 @@ from pyvider.rpcplugin.crypto import (
     generate_ec_keypair,
 )
 
-
-@pytest.mark.asyncio
-async def test_certificate_public_key(client_cert):
-    """Ensure certificate public key is valid."""
-    assert client_cert.public_key, "Public key should not be None"
-    assert isinstance(
-        client_cert.public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
-    )
-
-
 @pytest.mark.asyncio
 async def test_certificate_verification(client_cert, server_cert):
     """Ensure certificate can verify another certificate."""
