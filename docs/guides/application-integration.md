@@ -1,4 +1,3 @@
-## 2. Missing File: docs/guides/application-integration.md
 ---
 title: Application Integration
 description: How to integrate Pyvider RPC Plugins into your application
