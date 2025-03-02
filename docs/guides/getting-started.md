@@ -1,4 +1,3 @@
-## docs/guides/getting-started.md
 ---
 title: Getting Started
 description: Quick start guide for using Pyvider RPC Plugin
