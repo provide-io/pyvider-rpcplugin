@@ -3,8 +3,6 @@ title: Pyvider RPC Plugin
 date: 2025-03-01
 ---
 
-# Pyvider RPC Plugin
-
 Welcome to the Pyvider RPC Plugin documentation. This library enables Python applications to communicate with plugins over RPC using the same protocol as HashiCorp's go-plugin system, enabling cross-language plugin architectures.
 
 ## What is Pyvider RPC Plugin?
@@ -47,7 +45,7 @@ Pyvider RPC Plugin is ideal for applications that:
 The fastest way to understand Pyvider is to see it in action:
 
 ```python
-## Host application
+# Host application
 client = RPCPluginClient(command=["python", "my_plugin.py"])
 await client.start()
 plugin_interface = await client.get_interface()
