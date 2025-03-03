@@ -1,30 +1,22 @@
 # pyvider/rpcplugin/tests/server/test_server_lifecycle.py
 
 import asyncio
-import os
-import stat
 import sys
-import tempfile
 import pytest
 from io import StringIO
 import gc
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
-from pyvider.rpcplugin.exception import TransportError, HandshakeError, CertificateError
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
-from pyvider.rpcplugin.config import rpcplugin_config
 
 from tests.conftest import (
-    mock_server_transport,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
     DummyAioServer,
     DummyGRPCServer,
-    MockProtocol,
 )
 
 from tests.fixtures import *

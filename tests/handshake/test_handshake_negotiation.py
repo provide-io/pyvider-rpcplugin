@@ -1,6 +1,5 @@
 # pyvider/rpcplugin/tests/handshake/test_handshake_negotiate.py
 
-from unittest.mock import AsyncMock
 
 import pytest
 

@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 
 from unittest import mock
 
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
 
 from pyvider.rpcplugin.exception import CertificateError
 

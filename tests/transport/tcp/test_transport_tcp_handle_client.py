@@ -1,13 +1,9 @@
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_handle_client.py
 
 import asyncio
-import socket
-from unittest.mock import AsyncMock, patch
 
 import pytest
-import pytest_asyncio
 
-from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *

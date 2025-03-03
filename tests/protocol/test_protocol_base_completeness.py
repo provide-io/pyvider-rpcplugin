@@ -2,7 +2,6 @@
 # tests/protocol/test_protocol_base_completeness.py
 
 import pytest
-import asyncio
 from typing import Any
 from unittest.mock import MagicMock
 

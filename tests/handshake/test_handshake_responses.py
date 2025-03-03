@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/handshake/test_handshake_responses.py
 
 import pytest
-import pytest_asyncio
 
 from unittest.mock import AsyncMock
 

@@ -6,12 +6,11 @@ import pytest
 import pytest_asyncio
 import grpc
 from google.protobuf.empty_pb2 import Empty
-from unittest.mock import MagicMock, AsyncMock, patch
+from unittest.mock import MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
     GRPCBrokerService,
     GRPCStdioService,
-    GRPCControllerService,
     register_protocol_service,
 )
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData

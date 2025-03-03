@@ -1,12 +1,9 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_loading.py
 
 import pytest
-import pytest_asyncio
 from unittest import mock
 
-import os
 
-from pathlib import Path
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError

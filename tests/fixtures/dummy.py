@@ -3,7 +3,6 @@
 import pytest
 
 import asyncio
-import os
 
 
 class DummyReader:

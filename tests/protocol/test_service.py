@@ -5,12 +5,9 @@ import os
 
 import asyncio
 import pytest
-import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
-import grpc
 
 from pyvider.rpcplugin.protocol.service import (
-    BrokerError,
     SubchannelConnection,
     GRPCBrokerService,
     GRPCStdioService,
@@ -369,9 +366,6 @@ async def test_register_protocol_service(shutdown_event):
     register_protocol_service(mock_server, shutdown_event)
 
     # Verify the appropriate add_*_to_server methods were called
-    from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import add_GRPCStdioServicer_to_server
-    from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import add_GRPCBrokerServicer_to_server
-    from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import add_GRPCControllerServicer_to_server
 
     # Check if the right number of add_*_to_server calls were made
     assert mock_server.add_generic_rpc_handlers.call_count == 3

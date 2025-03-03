@@ -1,18 +1,11 @@
 # tests/transport/unix/test_transport_unix_handle_client.py
 
 import asyncio
-import errno
 import os
-import socket
-import stat
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, patch
 
 from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
-from pyvider.rpcplugin.client.connection import ClientConnection
 
 from tests.fixtures import *
 

@@ -1,9 +1,7 @@
 # tests/fixtures/handshake.py
 
 import pytest
-import pytest_asyncio
 
-from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.handshake import HandshakeConfig
 
 

@@ -2,7 +2,6 @@
 
 import pytest
 
-import os
 
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.crypto.certificate import Certificate

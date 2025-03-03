@@ -1,28 +1,12 @@
 # pyvider/rpcplugin/tests/server/test_server_handshake.py
 
-import asyncio
-import os
-import stat
-import sys
-import tempfile
 import pytest
-from io import StringIO
-from unittest.mock import AsyncMock, patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.protocol import RPCPluginProtocol
-from pyvider.rpcplugin.exception import TransportError, HandshakeError, CertificateError
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
+from pyvider.rpcplugin.exception import HandshakeError
+from pyvider.rpcplugin.transport import TCPSocketTransport
 from pyvider.rpcplugin.config import rpcplugin_config
 
-from tests.conftest import (
-    mock_server_transport,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    DummyAioServer,
-    DummyGRPCServer,
-)
 
 from tests.fixtures import *
 
