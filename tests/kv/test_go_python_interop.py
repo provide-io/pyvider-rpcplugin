@@ -19,7 +19,7 @@ logging.basicConfig(
 )
 
 # Get Go server path from environment or use default
-GO_SERVER_PATH = os.environ.get("GO_SERVER_PATH", "./tests/kv/go-plugin/plugin-go-server/plugin-go-server")
+GO_SERVER_PATH = os.environ.get("GO_SERVER_PATH", "./tests/kv/go-plugin/bin/kv-go-server")
 
 async def test_go_server_python_client():
     """Test Python client with Go server interoperability."""
