@@ -3,11 +3,7 @@
 
 import asyncio
 import contextlib
-import os
 import sys
-import time
-import uuid
-from typing import AsyncGenerator, Optional
 
 import grpc
 import pytest
@@ -92,7 +88,7 @@ async def transport_fixture(request, unique_transport_path):
     try:
         if transport_type == "tcp":
             transport = TCPSocketTransport(host="127.0.0.1")
-            logger.debug(f"🔌🚀✅ Created TCP transport")
+            logger.debug("🔌🚀✅ Created TCP transport")
         else:
             transport = UnixSocketTransport(path=unique_transport_path)
             logger.debug(f"🔌🚀✅ Created Unix transport at {unique_transport_path}")
@@ -231,7 +227,7 @@ async def test_kv_missing_key(kv_client):
     assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, \
         f"Expected NOT_FOUND, got {exc_info.value.code()}"
 
-    logger.debug(f"🔌🧪✅ Missing key test passed: received expected NOT_FOUND error")
+    logger.debug("🔌🧪✅ Missing key test passed: received expected NOT_FOUND error")
 
 @pytest.mark.asyncio
 async def test_kv_concurrent_operations(kv_client):

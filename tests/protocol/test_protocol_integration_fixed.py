@@ -162,7 +162,7 @@ async def test_broker_start_stream_exception_fixed():
     from unittest.mock import MagicMock
 
     # Mock opening a subchannel to raise an exception
-    original_subchannel = broker_service._subchannels.copy()
+    broker_service._subchannels.copy()
 
     # Create a mock iterator that raises an exception
     class MockIterator:
@@ -183,7 +183,7 @@ async def test_broker_start_stream_exception_fixed():
 
     # Should get an error response
     assert len(results) == 1
-    assert results[0].knock.ack == False
+    assert results[0].knock.ack is False
     assert "error" in results[0].knock.error
 
 ### 🐍🏗🧪️

@@ -48,7 +48,7 @@ async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
     Test that TCPSocketTransport.listen raises TransportError when the port is in use.
     """
     transport = TCPSocketTransport(host="127.0.0.1")
-    endpoint = await transport.listen()
+    await transport.listen()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", unused_tcp_port))

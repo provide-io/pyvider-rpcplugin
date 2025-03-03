@@ -46,7 +46,7 @@ async def test_server_serve_runtime_error(
         transport=test_transport,
     )
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
 
@@ -75,7 +75,7 @@ async def test_serve_success(
     server._serving_future = fut
     server._serving_event = asyncio.Event()
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
@@ -98,7 +98,7 @@ async def test_serve_success(
     )
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
     fake_stdout = StringIO()
-    monkeyatch_stdout = monkeypatch.setattr(sys, "stdout", fake_stdout)
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
     await server.serve()
     output = fake_stdout.getvalue().strip()
     assert output == "handshake_response"
@@ -141,7 +141,7 @@ async def test_wait_for_server_ready(
 ):
     test_transport = mock_server_transport
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -198,7 +198,7 @@ async def test_stop_handles_exceptions(
     dummy_server = DummyGRPCServer()
 
     test_transport = mock_server_transport
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     async def failing_stop(grace):
         raise Exception("Server stop failed")
@@ -303,7 +303,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     # Patch _register_signal_handlers to do nothing.
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     # Create a task for serve(); then, after a short delay, call stop().
     serve_task = asyncio.create_task(server.serve())

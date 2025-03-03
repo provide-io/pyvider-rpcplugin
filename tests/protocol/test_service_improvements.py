@@ -77,7 +77,7 @@ async def test_broker_service_start_stream_error_handling():
 
         # Should have one error response
         assert len(responses) == 1
-        assert responses[0].knock.ack == False
+        assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
 
 

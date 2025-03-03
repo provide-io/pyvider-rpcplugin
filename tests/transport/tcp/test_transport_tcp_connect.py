@@ -23,7 +23,7 @@ async def test_tcp_socket_transport_connect_invalid_endpoint():
     Test connecting to an invalid endpoint with TCPSocketTransport.
     """
     transport = TCPSocketTransport()
-    endpoint = await transport.listen()
+    await transport.listen()
 
     # Use a valid format but an unlikely to be used port
     with pytest.raises(TransportError):

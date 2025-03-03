@@ -119,7 +119,7 @@ async def test_broker_integration(grpc_server, grpc_channel):
 
     # Verify the response
     assert response.service_id == 1
-    assert response.knock.ack == True
+    assert response.knock.ack is True
 
     # Close the stream
     await stream.done_writing()

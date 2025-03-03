@@ -73,6 +73,6 @@ async def test_abstract_transport_methods():
         pass
 
     with pytest.raises(TypeError):
-        transport = IncompleteTransport()
+        IncompleteTransport()
 
 ### 🐍🏗🧪️

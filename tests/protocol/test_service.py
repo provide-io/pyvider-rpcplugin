@@ -89,7 +89,7 @@ async def test_broker_start_stream_open_subchannel(broker_service, mock_context)
     # Verify response
     assert len(responses) == 1
     assert responses[0].service_id == 1
-    assert responses[0].knock.ack == True
+    assert responses[0].knock.ack is True
     assert responses[0].knock.error == ""
 
     # Verify subchannel was created
@@ -123,7 +123,7 @@ async def test_broker_start_stream_close_subchannel(broker_service, mock_context
     # Verify response
     assert len(responses) == 1
     assert responses[0].service_id == 1
-    assert responses[0].knock.ack == True
+    assert responses[0].knock.ack is True
 
     # Verify subchannel was removed
     assert 1 not in broker_service._subchannels
@@ -151,7 +151,7 @@ async def test_broker_start_stream_exception(broker_service, mock_context):
         # Verify error response
         assert len(responses) == 1
         assert responses[0].service_id == 0
-        assert responses[0].knock.ack == False
+        assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
 
 @pytest.fixture
@@ -319,7 +319,7 @@ async def test_controller_shutdown(controller_service, mock_context, shutdown_ev
         assert shutdown_event.is_set()
 
         # Verify stdio service was shutdown
-        assert controller_service._stdio_service._shutdown == True
+        assert controller_service._stdio_service._shutdown is True
 
         # Verify _delayed_shutdown was called
         controller_service._delayed_shutdown.assert_called_once()

@@ -16,7 +16,7 @@ from tests.fixtures import *
 async def test_cleanup_after_failed_generation():
     """Test proper cleanup after failed certificate generation."""
     with pytest.raises(CertificateError):
-        cert = Certificate(generate_keypair=True, key_type="invalid_type")
+        Certificate(generate_keypair=True, key_type="invalid_type")
 
 @pytest.mark.asyncio
 async def test_certificate_is_valid(client_cert):

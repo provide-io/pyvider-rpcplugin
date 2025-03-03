@@ -91,7 +91,7 @@ async def test_read_client_cert_absent(
         transport=transport,
     )
 
-    endpoint = await transport.listen()
+    await transport.listen()
     cert = server._read_client_cert()
     assert cert is None
 

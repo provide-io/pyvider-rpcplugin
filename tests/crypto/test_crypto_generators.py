@@ -94,7 +94,7 @@ async def test_generate_unsupported_key_type():
 @pytest.mark.asyncio
 async def test_key_generation_performance():
     start_time = time.time()
-    cert = Certificate(generate_keypair=True, key_type=KEY_TYPE_RSA, key_size=2048)
+    Certificate(generate_keypair=True, key_type=KEY_TYPE_RSA, key_size=2048)
     generation_time = time.time() - start_time
     assert generation_time < 1.0  # Should complete within 1 second
 

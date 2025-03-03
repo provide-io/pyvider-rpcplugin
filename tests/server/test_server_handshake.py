@@ -50,7 +50,6 @@ async def test_server_handshake_missing_env(
     mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
 
-    transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -80,7 +79,7 @@ async def test_negotiate_handshake_with_provided_transport(
         transport=transport,
     )
 
-    endpoint = await transport.listen()
+    await transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1

@@ -143,7 +143,6 @@ async def test_broker_service_exception_handling():
     )
 
     # Mock the subchannel creation to return our problematic subchannel
-    original_subchannel = SubchannelConnection
 
     class MockSubchannelConnection:
         def __init__(self, conn_id, address):
@@ -170,7 +169,7 @@ async def test_broker_service_exception_handling():
 
         # Check for error response
         assert len(responses) == 1
-        assert responses[0].knock.ack == False
+        assert responses[0].knock.ack is False
         assert "Failed to open subchannel" in responses[0].knock.error or "Broker error" in responses[0].knock.error
 
 
