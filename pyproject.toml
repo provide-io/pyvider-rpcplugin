@@ -33,6 +33,8 @@ dev = [
     "pyright>=1.1.394",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
+    "pytest-testmon>=2.1.3",
+    "pytest-xdist>=3.6.1",
     "ruff>=0.9.7",
     "tabulate>=0.9.0",
     "uv>=0.6.2",
@@ -66,14 +68,16 @@ dependencies = []
 # ]
 
 [tool.hatch.envs.test.scripts]
-test = "pytest {args:tests}"
-coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing --cov-config=pyproject.toml"
+#test = "pytest {args:tests}"
+#coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing --cov-config=pyproject.toml"
 lint = "ruff check src tests"
 format = "ruff format src tests"
 typecheck = "pyre check"
 security = "bandit -r src"
 
 [tool.hatch.envs.default.scripts]
+test = "pytest -n auto --dist=loadscope"  # Parallel tests, no coverage by default
+test-cov = "pytest -n auto --dist=loadscope --cov=your_module --cov-report=html"
 run = "python -m pyvider.rpcplugin"
 
 [tool.hatch.envs.build.scripts]
@@ -182,5 +186,6 @@ dev = [
     "pytest-cov>=6.0.0",
     "pytest-testmon>=2.1.3",
     "pytest-trace>=1.0.0",
+    "pytest-xdist>=3.6.1",
     "viztracer>=1.0.2",
 ]
