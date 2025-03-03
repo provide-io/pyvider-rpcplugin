@@ -21,13 +21,11 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from tests.fixtures import *
 from tests.kv.proto import KVProtocol, kv_pb2, kv_pb2_grpc
 
-
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
     if len(text) <= 2 * length:
         return text
     return f"{text[:length]} ... {text[-length:]}"
-
 
 class TestKVHandler(kv_pb2_grpc.KVServicer):
     """KV service handler implementation with proper type handling."""
@@ -78,7 +76,6 @@ class TestKVHandler(kv_pb2_grpc.KVServicer):
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
             return kv_pb2.Empty()  # Return empty response, will not be used because of abort
 
-
 @pytest_asyncio.fixture
 async def unique_transport_path():
     """Generate a unique path for Unix socket transport."""
@@ -106,14 +103,12 @@ async def unique_transport_path():
     except OSError as e:
         logger.warning(f"🔌🧹⚠️ Failed to clean up socket: {e}")
 
-
 @pytest_asyncio.fixture
 async def kv_handler():
     """Provides a test KV handler instance."""
     handler = TestKVHandler()
     logger.debug("🔌🚀✅ Created KV handler")
     return handler
-
 
 @pytest_asyncio.fixture(params=["tcp", "unix"])
 async def transport_fixture(request, unique_transport_path):
@@ -139,7 +134,6 @@ async def transport_fixture(request, unique_transport_path):
                 logger.debug(f"🔌🔒✅ {transport_type} transport closed")
             except Exception as e:
                 logger.error(f"🔌🔒❌ Error closing {transport_type} transport: {e}")
-
 
 @pytest_asyncio.fixture
 async def kv_server(transport_fixture, kv_handler, mock_server_config):
@@ -191,7 +185,6 @@ async def kv_server(transport_fixture, kv_handler, mock_server_config):
 
         logger.debug("🛎️🔒✅ KV server stopped")
 
-
 @pytest_asyncio.fixture
 async def kv_client(kv_server, transport_fixture):
     """Provides a KV client connected to the server."""
@@ -223,7 +216,6 @@ async def kv_client(kv_server, transport_fixture):
         await client.close()
         logger.debug("🙋🔒✅ KV client closed")
 
-
 @pytest.mark.asyncio
 async def test_kv_put_get_flow(kv_client):
     """Test basic Put/Get operations."""
@@ -253,7 +245,6 @@ async def test_kv_put_get_flow(kv_client):
         logger.error(f"🔌🧪❌ Unexpected error during Put/Get test: {e}")
         raise
 
-
 @pytest.mark.asyncio
 async def test_kv_missing_key(kv_client):
     """Test Get with nonexistent key."""
@@ -268,7 +259,6 @@ async def test_kv_missing_key(kv_client):
         f"Expected NOT_FOUND, got {exc_info.value.code()}"
 
     logger.debug(f"🔌🧪✅ Missing key test passed: received expected NOT_FOUND error")
-
 
 @pytest.mark.asyncio
 async def test_kv_concurrent_operations(kv_client):
@@ -312,3 +302,7 @@ async def test_kv_concurrent_operations(kv_client):
 
     logger.debug(f"🔌🧪🔄 Concurrent operations completed: {success_count}/{operation_count} successful")
     assert success_count == operation_count, f"Only {success_count}/{operation_count} operations succeeded"
+
+
+##
+### 🐍🏗🧪️
