@@ -118,6 +118,63 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
         f"Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
     )
 
+################################################################################
+# Apply to src/pyvider/rpcplugin/handshake.py
+
+# Modify negotiate_transport to prioritize Unix socket (more robust)
+async def N1_negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
+    """
+    (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
+    creates the appropriate transport instance.
+
+    Returns:
+      A tuple of (transport_name, transport_instance).
+
+    Raises:
+      TransportError: If no compatible transport can be negotiated.
+    """
+    logger.debug(
+        f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
+    )
+    if not server_transports:
+        logger.error(
+            "🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided"
+        )
+        raise TransportError("No transport options provided")
+    try:
+        # Reverse the preference - prioritize Unix sockets first
+        if "unix" in server_transports:
+            logger.debug(
+                "🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available"
+            )
+            transport_path = os.path.join(
+                os.environ.get("TEMP_DIR", "/tmp"), f"pyvider-{os.getpid()}.sock"
+            )
+            from pyvider.rpcplugin.transport import UnixSocketTransport
+
+            return "unix", UnixSocketTransport(path=transport_path)
+        elif "tcp" in server_transports:
+            logger.debug(
+                "🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available"
+            )
+            from pyvider.rpcplugin.transport import TCPSocketTransport
+
+            return "tcp", TCPSocketTransport()
+        else:
+            logger.error(
+                "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
+                extra={"server_transports": server_transports},
+            )
+            raise TransportError(f"Unsupported transports: {server_transports}")
+    except Exception as e:
+        logger.error(
+            "🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
+            extra={"error": str(e)},
+        )
+        raise TransportError(f"Error negotiating transport: {e}") from e
+
+################################################################################
+
 async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
     (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
@@ -168,6 +225,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         )
         raise TransportError(f"Error negotiating transport: {e}") from e
 
+################################################################################
 
 def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     """
@@ -347,3 +405,6 @@ def parse_handshake_response(
     except Exception as e:
         logger.error(f"📡❌ Handshake parsing failed: {e}", extra={"error": str(e)})
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
+
+
+### 🐍🏗️🔌

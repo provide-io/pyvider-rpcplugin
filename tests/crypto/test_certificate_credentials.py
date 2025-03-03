@@ -1,7 +1,7 @@
+
 # pyvider/rpcplugin/tests/test_certificate_credentials.py
 
 import pytest
-
 from dataclasses import dataclass
 from typing import Optional
 
@@ -11,21 +11,21 @@ from tests.fixtures import *
 @dataclass
 class MockChannelCredentials:
     """Mock implementation of SSL channel credentials."""
-
     root_certificates: Optional[bytes]
     private_key: Optional[bytes]
     certificate_chain: Optional[bytes]
 
+
 @dataclass
 class MockServerCredentials:
     """Mock implementation of SSL server credentials."""
-
     private_key_certificate_chain_pairs: list[tuple[bytes, bytes]]
     root_certificates: Optional[bytes]
     require_client_auth: bool
 
-@pytest.mark.asyncio
-async def mock_ssl_channel_credentials(
+
+# Convert async functions to regular functions since they don't need to be async
+def mock_ssl_channel_credentials(
     root_certificates: Optional[bytes] = None,
     private_key: Optional[bytes] = None,
     certificate_chain: Optional[bytes] = None,
@@ -37,8 +37,8 @@ async def mock_ssl_channel_credentials(
         certificate_chain=certificate_chain,
     )
 
-@pytest.mark.asyncio
-async def mock_ssl_server_credentials(
+
+def mock_ssl_server_credentials(
     private_key_certificate_chain_pairs: list[tuple[bytes, bytes]],
     root_certificates: Optional[bytes] = None,
     require_client_auth: bool = False,
@@ -65,6 +65,7 @@ async def mock_ssl_server_credentials(
         require_client_auth=require_client_auth,
     )
 
+
 # Tests using conftest fixtures
 @pytest.mark.asyncio
 async def test_mock_channel_credentials_with_client_cert(client_cert):
@@ -80,6 +81,7 @@ async def test_mock_channel_credentials_with_client_cert(client_cert):
     assert creds.root_certificates == client_cert.cert.encode()
     assert creds.private_key == client_cert.key.encode()
     assert creds.certificate_chain == client_cert.cert.encode()
+
 
 @pytest.mark.asyncio
 async def test_mock_server_credentials_with_server_cert(server_cert, client_cert):
@@ -97,6 +99,7 @@ async def test_mock_server_credentials_with_server_cert(server_cert, client_cert
     assert creds.root_certificates == client_cert.cert.encode()
     assert creds.require_client_auth is True
 
+
 @pytest.mark.asyncio
 async def test_mock_server_credentials_multiple_certs(server_cert, client_cert):
     """Test creating server credentials with multiple certificate pairs."""
@@ -112,6 +115,7 @@ async def test_mock_server_credentials_multiple_certs(server_cert, client_cert):
     )
     assert len(creds.private_key_certificate_chain_pairs) == 2
     assert creds.private_key_certificate_chain_pairs == pairs
+
 
 @pytest.mark.asyncio
 async def test_mock_server_credentials_validation_with_certs(server_cert, client_cert):
@@ -132,6 +136,7 @@ async def test_mock_server_credentials_validation_with_certs(server_cert, client
                 (server_cert.key, server_cert.cert)  # Not encoded to bytes
             ]
         )
+
 
 @pytest.mark.asyncio
 async def test_mock_channel_credentials_none_values(client_cert):
