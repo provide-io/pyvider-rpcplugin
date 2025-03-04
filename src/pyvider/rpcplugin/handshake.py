@@ -122,7 +122,7 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
 # Apply to src/pyvider/rpcplugin/handshake.py
 
 # Modify negotiate_transport to prioritize Unix socket (more robust)
-async def N1_negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
+async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
     (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
     creates the appropriate transport instance.
@@ -175,7 +175,7 @@ async def N1_negotiate_transport(server_transports: list[str]) -> tuple[str, Tra
 
 ################################################################################
 
-async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
+async def X1_negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
     (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
     creates the appropriate transport instance.
