@@ -1,4 +1,75 @@
 #!/usr/bin/env python3
+"""
+pyvider/rpcplugin/handshake.py
+
+This module implements handshake logic for the RPC plugin server.
+It includes:
+  - HandshakeConfig and HandshakeParts data classes.
+  - Functions for protocol version negotiation, transport validation,
+    handshake response building, magic cookie validation, and handshake
+    response parsing.
+
+All logging follows our three‑emoji style to clearly indicate component,
+action, and result. Detailed error handling and inline comments are included
+for clarity and debugging.
+"""
+
+import os
+from typing import TypeGuard
+
+import attrs
+
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.crypto import Certificate
+from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
+from pyvider.rpcplugin.logger import logger
+from pyvider.rpcplugin.transport.types import TransportT
+
+# Use a sentinel value to detect omitted parameters.
+_SENTINEL = object()
+
+
+@attrs.define
+class HandshakeConfig:
+    """
+    ⚙️🔧✅ Represents the configuration for the RPC plugin handshake.
+
+    Attributes:
+      magic_cookie_key: The expected environment key for the handshake cookie.
+      magic_cookie_value: The expected handshake cookie value.
+      protocol_versions: A list of protocol versions supported by the server.
+      supported_transports: A list of supported transport types (e.g. "tcp", "unix").
+    """
+
+    magic_cookie_key: str
+    magic_cookie_value: str
+    protocol_versions: list[int]
+    supported_transports: list[str]
+
+
+@attrs.define
+class HandshakeParts:
+    """
+    🤝📝✅ Represents the parts of the handshake response.
+
+    Attributes:
+      core_version: The core protocol version.
+      plugin_version: The plugin’s protocol version.
+      network: The transport/network type (e.g. "tcp" or "unix").
+      address: The network address or socket path.
+      protocol: The communication protocol (currently fixed as "grpc").
+      server_cert: The formatted server certificate (if applicable).
+    """
+
+    core_version: int
+    plugin_version: int
+    network: str
+    address: str
+    protocol: str
+    server_cert: str | None
+
+
+#!/usr/bin/env python3
 # pyvider/rpcplugin/client/handshake.py
 
 import asyncio
