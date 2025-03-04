@@ -1,4 +1,5 @@
-#!/bin/bash -c "exec uv run python3 \"\$0\" \"\$@\" || exec /usr/bin/env python3 \"\$0\" \"\$@\""
+#!/bin/bash -c 'exec uv run python3 "$0" "$@" || exec /usr/bin/env python3 "$0" "$@"'
+
 
 # #!uv run python3
 
