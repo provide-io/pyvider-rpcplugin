@@ -16,8 +16,9 @@ from pyvider.rpcplugin.logger import logger
 from tests.kv.proto import KVProtocol, kv_pb2, kv_pb2_grpc
 from tests.fixtures import *
 
-# Constants
-DEFAULT_GO_SERVER_PATH = "./tests/kv/go-plugin/bin/kv-go-server"
+TEST_DIR = Path(__file__).parent
+DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-plugin" / "bin" / "kv-go-server")
+DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE = 1 * 1024 * 1024  # 1MB
 SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
@@ -303,25 +304,17 @@ async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value
     return True
 
 
-#!/usr/bin/env python3
-# tests/kv/test_go_python_interop.py
-
-import asyncio
-import os
-import subprocess
-import pytest
-import pytest_asyncio
-import time
-from pathlib import Path
-from typing import Dict, Optional, Tuple
-
-import grpc
-
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
-from pyvider.rpcplugin.logger import logger
-
-# Use a relative path based on this test file's location
+# import time
+# from pathlib import Path
+# from typing import Dict, Optional, Tuple
+# 
+# import grpc
+# 
+# from pyvider.rpcplugin.client import RPCPluginClient
+# from pyvider.rpcplugin.exception import HandshakeError, TransportError
+# from pyvider.rpcplugin.logger import logger
+# 
+# # Use a relative path based on this test file's location
 TEST_DIR = Path(__file__).parent
 DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-plugin" / "bin" / "kv-go-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
