@@ -384,8 +384,6 @@ class RPCPluginClient:
             logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
             raise
 
-################################################################################
-
     def _rebuild_x509_pem(self, maybe_cert: str) -> str:
         """
         Rebuilds a single base64 string of the server's certificate into a PEM block if missing headers.
