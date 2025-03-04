@@ -6,7 +6,7 @@ import os
 import pytest
 import pytest_asyncio
 import time
-from typing import AsyncGenerator, Callable, Dict, Generator, Optional
+from typing import Path, AsyncGenerator, Callable, Dict, Generator, Optional
 
 import grpc
 
