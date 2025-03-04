@@ -122,6 +122,7 @@ class RPCPluginClient:
         else:
             logger.info("🔐 mTLS not enabled; operating in insecure mode.")
 
+    # Modify _launch_process to configure better process environment
     async def _launch_process(self) -> None:
         """Launch the plugin as a subprocess if not already running."""
         if self._process:
@@ -131,10 +132,54 @@ class RPCPluginClient:
         env = os.environ.copy()
         if self.config and "env" in self.config:
             env.update(self.config["env"])
-        
+
         # Force unbuffered output in Python subprocesses
         env["PYTHONUNBUFFERED"] = "1"
-        
+
+        # Configure Go process environment for better interoperability
+        # These settings help Go's stdout flushing behavior
+        env["GODEBUG"] = env.get("GODEBUG", "") + ",asyncpreemptoff=1"
+        env["GOOPTS"] = env.get("GOOPTS", "") + " -gcflags=all=-N"  # Disable optimizations
+
+        # Pass client cert if needed
+        if self.client_cert:
+            env["PLUGIN_CLIENT_CERT"] = self.client_cert
+
+        # Force Unix transport preference
+        env["PLUGIN_TRANSPORTS"] = "unix,tcp"
+
+        logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
+        try:
+            self._process = subprocess.Popen(
+                self.command,
+                env=env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=False,
+                bufsize=0,  # Disable buffering
+                universal_newlines=False,
+            )
+            logger.info("🖥️ Plugin subprocess started successfully.")
+        except Exception as e:
+            logger.error(f"🖥️❌ Failed to launch plugin subprocess: {e}",
+                        extra={"trace": traceback.format_exc()})
+            raise
+
+################################################################################
+
+    async def X1__launch_process(self) -> None:
+        """Launch the plugin as a subprocess if not already running."""
+        if self._process:
+            logger.debug("🖥️ Plugin subprocess is already running; skipping launch.")
+            return
+
+        env = os.environ.copy()
+        if self.config and "env" in self.config:
+            env.update(self.config["env"])
+
+        # Force unbuffered output in Python subprocesses
+        env["PYTHONUNBUFFERED"] = "1"
+
         # Pass client cert if needed
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
@@ -156,7 +201,158 @@ class RPCPluginClient:
                         extra={"trace": traceback.format_exc()})
             raise
 
+################################################################################
+
+    # Apply to src/pyvider/rpcplugin/client/base.py
+
+    # Add this method before _perform_handshake
     def _relay_stderr_background(self) -> None:
+        """
+        Continuously read plugin's stderr in a background thread, printing it locally.
+        This helps debug handshake issues in real-time.
+        """
+        import threading
+        def read_stderr() -> None:
+            while True:
+                if not self._process or self._process.stderr is None:
+                    break
+                line = self._process.stderr.readline()
+                if not line:
+                    break
+                sys.stderr.write(line.decode('utf-8', errors='replace'))  # Decode bytes to str
+
+        t = threading.Thread(target=read_stderr, daemon=True)
+        t.start()
+
+    # Then modify _perform_handshake to start the relay early and add more debugging:
+    async def _perform_handshake(self) -> None:
+        """
+        Reads a single line from the plugin stdout for handshake:
+          => Format: CORE_VERSION|PLUGIN_VERSION|network|address|protocol|serverCert
+        """
+        logger.debug("🤝 Initiating handshake with plugin server...")
+
+        if not self._process or not self._process.stdout:
+            raise HandshakeError("No server process or no stdout available.")
+
+        # Start stderr relay immediately to see any error output
+        self._relay_stderr_background()
+
+        # Log the command being used
+        logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
+
+        ###
+        async def read_stdout_line() -> str:
+            loop = asyncio.get_event_loop()
+            start_time = loop.time()
+            timeout = 10.0  # Increase timeout for handshake
+
+            # Buffer for incomplete handshake lines
+            buffer = ""
+
+            while (loop.time() - start_time) < timeout:
+                # Check process state
+                if self._process.poll() is not None:
+                    stderr_output = ""
+                    if self._process.stderr:
+                        stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
+                    logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
+                    raise HandshakeError(f"Plugin process exited with code {self._process.returncode} before handshake.")
+
+                # Try to read a complete line with increased timeout
+                try:
+                    # First try: direct read with longer timeout
+                    line_bytes = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: self._process.stdout.readline()),
+                        timeout=2.0  # Longer per-read timeout
+                    )
+
+                    if line_bytes:
+                        line = line_bytes.decode('utf-8', errors='replace').strip()
+                        buffer += line
+                        logger.debug(f"🤝 Read partial handshake data: '{line}', buffer: '{buffer}'")
+
+                        # Check for complete handshake
+                        if "|" in buffer and buffer.count("|") >= 5:
+                            return buffer
+                    else:
+                        # Empty read but process still running - wait and retry
+                        await asyncio.sleep(0.25)  # Longer sleep to allow buffering
+
+                except asyncio.TimeoutError:
+                    logger.debug("🤝 Timeout on read attempt, retrying...")
+                    await asyncio.sleep(0.5)  # Longer backoff
+
+                # Fallback to byte-by-byte reading if line reading doesn't work
+                # This might help if the Go server doesn't flush properly or uses different line endings
+                if not buffer:  # Only try this if we haven't read anything
+                    try:
+                        char_bytes = await asyncio.wait_for(
+                            loop.run_in_executor(None, lambda: self._process.stdout.read(1)),
+                            timeout=1.0
+                        )
+                        if char_bytes:
+                            char = char_bytes.decode('utf-8', errors='replace')
+                            buffer += char
+                            logger.debug(f"🤝 Byte-by-byte read: buffer now: '{buffer}'")
+                    except asyncio.TimeoutError:
+                        pass  # Just continue the outer loop
+
+            # If we get here, we've timed out
+            stderr_output = ""
+            if self._process.stderr:
+                stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
+            logger.error(f"🤝 Handshake timed out. Stderr output: {stderr_output}")
+            raise TimeoutError("Timed out waiting for handshake line. Check if the server is writing to stdout correctly.")
+
+        try:
+            line = await read_stdout_line()
+            logger.debug(f"🤝 Received handshake response: {line[:60]}...")
+        except TimeoutError:
+            logger.error("🤝 Handshake timed out; no response from plugin.")
+            raise HandshakeError("Handshake timed out.")
+        except Exception:
+            logger.error(
+                "🤝❌ Error reading handshake line.",
+                extra={"trace": traceback.format_exc()},
+            )
+            raise
+
+        # Parse handshake
+        try:
+            core_version, protocol_version, network, address, protocol, server_cert = (
+                parse_handshake_response(line)
+            )
+            logger.debug(
+                f"🤝 Handshake parse => core_version={core_version}, "
+                f"protocol_version={protocol_version}, network={network}, "
+                f"address={address}, protocol={protocol}, cert={bool(server_cert)}"
+            )
+            self._protocol_version = protocol_version
+            self._server_cert = server_cert
+            # Set up the correct transport instance
+            if network == "tcp":
+                self._transport = TCPSocketTransport()
+            elif network == "unix":
+                # Strip "unix:" prefix if present to be more robust
+                sock_path = address.replace("unix:", "", 1)
+                self._transport = UnixSocketTransport(path=sock_path)
+            else:
+                raise TransportError(f"Unsupported transport: {network}")
+
+            # Connect the chosen transport
+            await self._transport.connect(address)
+            logger.info(f"🚄 Transport connected via {network} -> {address}")
+        except Exception as e:
+            logger.error(
+                "🤝❌ Error parsing handshake response or connecting transport.",
+                extra={"trace": traceback.format_exc()},
+            )
+            raise HandshakeError(f"Handshake parse/connect error: {e}")
+
+################################################################################
+
+    def X1_relay_stderr_background(self) -> None:
         """
         Continuously read plugin's stderr in a background thread, printing it locally.
         """
@@ -173,7 +369,7 @@ class RPCPluginClient:
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
 
-    async def _perform_handshake(self) -> None:
+    async def X1_perform_handshake(self) -> None:
         """
         Reads a single line from the plugin stdout for handshake:
           => Format: CORE_VERSION|PLUGIN_VERSION|network|address|protocol|serverCert
@@ -188,13 +384,13 @@ class RPCPluginClient:
             loop = asyncio.get_event_loop()
             start_time = loop.time()
             timeout = 10.0  # Increase timeout for handshake
-            
+
             # Buffer for incomplete handshake lines
             buffer = ""
-            
+
             # Log the command being used
             logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
-            
+
             while (loop.time() - start_time) < timeout:
                 # Check process state
                 if self._process.poll() is not None:
@@ -203,34 +399,34 @@ class RPCPluginClient:
                         stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
                     logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
                     raise HandshakeError(f"Plugin process exited with code {self._process.returncode} before handshake.")
-                
+
                 # Try to read a complete line with increased timeout
                 try:
                     # First try: direct read with longer timeout
                     line_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(None, lambda: self._process.stdout.readline()), 
+                        loop.run_in_executor(None, lambda: self._process.stdout.readline()),
                         timeout=2.0  # Longer per-read timeout
                     )
-                    
+
                     if line_bytes:
                         line = line_bytes.decode('utf-8', errors='replace').strip()
                         buffer += line
                         logger.debug(f"🤝 Read partial handshake data: '{line}', buffer: '{buffer}'")
-                        
+
                         # Check for complete handshake
                         if "|" in buffer and buffer.count("|") >= 5:
                             return buffer
                     else:
                         # Empty read but process still running - wait and retry
                         await asyncio.sleep(0.25)  # Longer sleep to allow buffering
-                
+
                 except asyncio.TimeoutError:
                     logger.debug("🤝 Timeout on read attempt, retrying...")
                     await asyncio.sleep(0.5)  # Longer backoff
-            
+
             # Start stderr relay now to capture any error messages
             self._relay_stderr_background()
-            
+
             # If we get here, we've timed out
             stderr_output = ""
             if self._process.stderr:
@@ -280,6 +476,10 @@ class RPCPluginClient:
                 extra={"trace": traceback.format_exc()},
             )
             raise HandshakeError(f"Handshake parse/connect error: {e}")
+
+    ### those functions and tests are still passing.
+
+################################################################################
 
     async def _create_grpc_channel(self) -> None:
         """
@@ -510,4 +710,4 @@ class RPCPluginClient:
 
         logger.info("🔄 RPCPluginClient fully closed.")
 
-# 🐍🏗️🔌
+### 🐍🏗️🔌
