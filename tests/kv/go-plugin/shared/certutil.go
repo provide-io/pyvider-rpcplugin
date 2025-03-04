@@ -51,13 +51,13 @@ func GenerateCert(logger hclog.Logger) ([]byte, []byte, error) {
 
     logger.Debug("🔐 generating temporary certificate")
 
-    // Generate ECDSA private key using P-521 curve
-    key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+    // Generate ECDSA private key using P-384 curve
+    key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
     if err != nil {
         logger.Error("🔐❌ private key generation failed", "error", err)
         return nil, nil, err
     }
-    logger.Debug("🔐✅ generated ECDSA P-521 private key")
+    logger.Debug("🔐✅ generated ECDSA P-384 private key")
 
     // Generate serial number
     serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
@@ -225,7 +225,7 @@ func CreateTLSConfig(cert *x509.Certificate, key *ecdsa.PrivateKey, certPool *x5
 // generateCert generates a temporary certificate for plugin authentication. The
 // certificate and private key are returns in PEM format.
 func generateCert() (cert []byte, privateKey []byte, err error) {
-    key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+    key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
     if err != nil {
         return nil, nil, err
     }

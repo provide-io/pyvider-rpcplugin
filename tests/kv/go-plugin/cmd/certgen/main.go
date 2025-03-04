@@ -15,7 +15,7 @@ import (
 )
 
 func generateCert() ([]byte, error) {
-    key, err := ecdsa.GenerateKey(elliptic.P521(), rand.Reader)
+    key, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
     if err != nil {
         return nil, err
     }
