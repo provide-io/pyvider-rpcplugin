@@ -12,7 +12,6 @@ from pathlib import Path
 
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
 
 from tests.kv.proto import (
     KVProtocol,
@@ -202,7 +201,7 @@ async def main():
     
     if not os.path.exists(server_path):
         logger.error(f"🚨 Server executable not found at {server_path}")
-        logger.error(f"Please build it or set PLUGIN_SERVER_PATH environment variable")
+        logger.error("Please build it or set PLUGIN_SERVER_PATH environment variable")
         sys.exit(1)
         
     logger.info(f"🚀 Starting KV client with server: {server_path}")
