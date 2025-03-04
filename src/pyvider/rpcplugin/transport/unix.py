@@ -257,7 +257,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
                 raise TransportError(f"Failed to create Unix socket: {e}")
 
-################################################################################
+    ############################################################################
 
     async def connect(self, endpoint: str) -> None:
         """
@@ -295,7 +295,7 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
-################################################################################
+    ############################################################################
 
     async def X_1connect(self, endpoint: str) -> None:
         """
@@ -323,7 +323,7 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
-################################################################################
+    ############################################################################
 
     async def close(self) -> None:
         """Fix UnixSocketTransport close method to ensure proper cleanup."""
