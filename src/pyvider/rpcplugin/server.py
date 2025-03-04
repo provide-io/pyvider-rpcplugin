@@ -369,30 +369,19 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             )
             logger.info(f"🤝 Selected protocol version: {self._protocol_version}")
 
-            if self.transport:
-                if isinstance(self.transport, tuple) and len(self.transport) >= 2:
-                    self._transport_name, self._transport = self.transport[0], self.transport[1]
-                    logger.debug("🤝 Transport tuple provided; unpacked transport.")
-                else:
-                    logger.debug("🤝 Using provided transport instance.")
-                    self._transport = self.transport
-                    self._transport_name = (
-                        "tcp"
-                        if isinstance(self.transport, TCPSocketTransport)
-                        else "unix"
-                    )
-            else:
-                logger.debug("🤝 Negotiating transport from configuration...")
-                supported_transports = self._handshake_config.supported_transports
-                if callable(supported_transports):
-                    supported_transports = supported_transports()
-                self._transport_name, self._transport = await negotiate_transport(
-                    supported_transports
-                )
+            supported_transports = rpcplugin_config.get_list("PLUGIN_SERVER_TRANSPORTS")
+            if not supported_transports:
+                supported_transports = ["unix", "tcp"]  # Default fallback
+
+            logger.debug(f"🤝 Using transport order: {supported_transports}")
+
+            self._transport_name, self._transport = await negotiate_transport(
+                supported_transports
+            )
+
             logger.debug(
                 f"🤝 Handshake negotiation completed; transport selected: {self._transport_name}."
             )
-
             return True
         except Exception as e:
             logger.error(
@@ -400,6 +389,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
             raise HandshakeError(f"Handshake negotiation failed: {e}") from e
+
 
     def _register_signal_handlers(self) -> None:
         logger.debug("🛎️ Registering signal handlers for graceful shutdown...")
