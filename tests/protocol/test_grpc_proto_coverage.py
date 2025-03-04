@@ -3,7 +3,6 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
-import grpc
 import importlib
 
 from pyvider.rpcplugin.protocol import (

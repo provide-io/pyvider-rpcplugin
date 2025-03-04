@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 
 from unittest import mock
 
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
 
 from pyvider.rpcplugin.exception import CertificateError
 
@@ -121,7 +120,6 @@ async def test_verify_multiple_certificates_in_trust_chain(client_cert, server_c
 async def test_verify_subject_issuer_relationship(client_cert, server_cert):
     """Test verification considers subject/issuer relationship."""
     # Document the relationship
-    is_self_signed_client = client_cert.subject == client_cert.issuer
     is_self_signed_server = server_cert.subject == server_cert.issuer
 
     # Add to trust chain

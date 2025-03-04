@@ -1,11 +1,7 @@
 # pyvider/rpcplugin/tests/test_certificate_mtls.py
 
-import os
 import pytest
-import pytest_asyncio
 
-from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import CertificateError
 
 from tests.fixtures import *
 

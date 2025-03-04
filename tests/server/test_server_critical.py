@@ -2,9 +2,7 @@
 # tests/protocol/test_service_critical.py
 
 import asyncio
-import os
 import signal
-import sys
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 

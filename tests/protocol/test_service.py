@@ -5,12 +5,9 @@ import os
 
 import asyncio
 import pytest
-import pytest_asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
-import grpc
 
 from pyvider.rpcplugin.protocol.service import (
-    BrokerError,
     SubchannelConnection,
     GRPCBrokerService,
     GRPCStdioService,
@@ -92,7 +89,7 @@ async def test_broker_start_stream_open_subchannel(broker_service, mock_context)
     # Verify response
     assert len(responses) == 1
     assert responses[0].service_id == 1
-    assert responses[0].knock.ack == True
+    assert responses[0].knock.ack is True
     assert responses[0].knock.error == ""
 
     # Verify subchannel was created
@@ -126,7 +123,7 @@ async def test_broker_start_stream_close_subchannel(broker_service, mock_context
     # Verify response
     assert len(responses) == 1
     assert responses[0].service_id == 1
-    assert responses[0].knock.ack == True
+    assert responses[0].knock.ack is True
 
     # Verify subchannel was removed
     assert 1 not in broker_service._subchannels
@@ -154,7 +151,7 @@ async def test_broker_start_stream_exception(broker_service, mock_context):
         # Verify error response
         assert len(responses) == 1
         assert responses[0].service_id == 0
-        assert responses[0].knock.ack == False
+        assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
 
 @pytest.fixture
@@ -322,7 +319,7 @@ async def test_controller_shutdown(controller_service, mock_context, shutdown_ev
         assert shutdown_event.is_set()
 
         # Verify stdio service was shutdown
-        assert controller_service._stdio_service._shutdown == True
+        assert controller_service._stdio_service._shutdown is True
 
         # Verify _delayed_shutdown was called
         controller_service._delayed_shutdown.assert_called_once()
@@ -369,9 +366,6 @@ async def test_register_protocol_service(shutdown_event):
     register_protocol_service(mock_server, shutdown_event)
 
     # Verify the appropriate add_*_to_server methods were called
-    from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import add_GRPCStdioServicer_to_server
-    from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import add_GRPCBrokerServicer_to_server
-    from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import add_GRPCControllerServicer_to_server
 
     # Check if the right number of add_*_to_server calls were made
     assert mock_server.add_generic_rpc_handlers.call_count == 3

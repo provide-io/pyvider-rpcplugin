@@ -1,11 +1,8 @@
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_connect.py
 
 import asyncio
-import socket
-from unittest.mock import AsyncMock, patch
 
 import pytest
-import pytest_asyncio
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
@@ -26,7 +23,7 @@ async def test_tcp_socket_transport_connect_invalid_endpoint():
     Test connecting to an invalid endpoint with TCPSocketTransport.
     """
     transport = TCPSocketTransport()
-    endpoint = await transport.listen()
+    await transport.listen()
 
     # Use a valid format but an unlikely to be used port
     with pytest.raises(TransportError):

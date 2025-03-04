@@ -2,7 +2,6 @@
 # tests/transport/test_transport_base_direct.py
 
 import pytest
-import asyncio
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 

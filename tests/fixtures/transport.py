@@ -1,3 +1,4 @@
+
 # tests/fixtures/transport.py
 
 import pytest
@@ -9,11 +10,8 @@ import os
 import socket
 
 from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.transport.types import TransportT
 
 from pyvider.rpcplugin.transport import (
-    RPCPluginTransport,
-    TCPSocketTransport,
     UnixSocketTransport,
 )
 
@@ -61,7 +59,9 @@ async def unix_transport():
 @pytest_asyncio.fixture(scope="function")
 async def unique_transport_path():
     """Generate a unique path for Unix socket transport."""
-    import os, tempfile, uuid
+    import os
+    import time
+    import uuid
 
     # Use process ID, timestamp and UUID for maximum uniqueness
     unique_id = f"{os.getpid()}_{time.time()}_{uuid.uuid4().hex}"
@@ -95,7 +95,7 @@ async def transport_cleanup():
 
 @pytest_asyncio.fixture(scope="function")
 async def unique_socket_path() -> str:
-    import os, tempfile, uuid
+    import uuid
 
     # Always keep it under ~100 bytes to be safe
     short_id = uuid.uuid4().hex[:8]

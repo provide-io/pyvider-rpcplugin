@@ -8,7 +8,6 @@ from pyvider.rpcplugin.client.connection import ClientConnection
 
 from tests.fixtures import *
 
-from tests.fixtures.dummy import dummy_reader, dummy_writer
 
 @pytest.fixture
 def connection(dummy_reader, dummy_writer):

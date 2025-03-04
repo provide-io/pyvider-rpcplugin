@@ -3,23 +3,15 @@
 
 import asyncio
 import pytest
-import pytest_asyncio
-import os
 import signal
-import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
     GRPCBrokerService,
     GRPCStdioService,
     GRPCControllerService,
-    register_protocol_service,
-    SubchannelConnection,
 )
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
-from google.protobuf.empty_pb2 import Empty
 
 
 @pytest.mark.asyncio
@@ -85,7 +77,7 @@ async def test_broker_service_start_stream_error_handling():
 
         # Should have one error response
         assert len(responses) == 1
-        assert responses[0].knock.ack == False
+        assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
 
 

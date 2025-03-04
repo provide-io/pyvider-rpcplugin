@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/test_certificate_credentials.py
 
 import pytest
-import pytest_asyncio
 
 from dataclasses import dataclass
 from typing import Optional

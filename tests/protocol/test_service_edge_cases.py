@@ -3,13 +3,11 @@
 
 import asyncio
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
     GRPCStdioService,
     GRPCBrokerService,
-    GRPCControllerService,
     SubchannelConnection,
     BrokerError,
 )
@@ -74,7 +72,6 @@ async def test_stdio_service_timeouts():
     context = MagicMock()
 
     # Mock queue.get to timeout then return a value then timeout again
-    original_get = service._message_queue.get
     get_calls = 0
 
     async def mock_get():

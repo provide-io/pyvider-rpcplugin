@@ -1,11 +1,9 @@
 # tests/protocol/test_service_advanced.py
 
 import asyncio
-import os
 import signal
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
     BrokerError,
@@ -17,7 +15,6 @@ from pyvider.rpcplugin.protocol.service import (
 )
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from google.protobuf.empty_pb2 import Empty
 
 
@@ -146,7 +143,6 @@ async def test_broker_service_exception_handling():
     )
 
     # Mock the subchannel creation to return our problematic subchannel
-    original_subchannel = SubchannelConnection
 
     class MockSubchannelConnection:
         def __init__(self, conn_id, address):
@@ -173,7 +169,7 @@ async def test_broker_service_exception_handling():
 
         # Check for error response
         assert len(responses) == 1
-        assert responses[0].knock.ack == False
+        assert responses[0].knock.ack is False
         assert "Failed to open subchannel" in responses[0].knock.error or "Broker error" in responses[0].knock.error
 
 

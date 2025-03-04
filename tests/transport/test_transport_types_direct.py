@@ -1,14 +1,9 @@
 
 # tests/transport/test_transport_types_direct.py
 
-import pytest
 from typing import Protocol, runtime_checkable
 
 from pyvider.rpcplugin.transport.types import (
-    ConnectionT,
-    TransportT,
-    TCPSocketT,
-    UnixSocketT,
     TransportType
 )
 from pyvider.rpcplugin.transport import (

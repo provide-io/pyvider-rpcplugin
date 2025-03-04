@@ -10,10 +10,6 @@ from pyvider.rpcplugin.handshake import validate_magic_cookie
 VALID_MAGIC_COOKIE_KEY = "PLUGIN_MAGIC_COOKIE"
 VALID_MAGIC_COOKIE = "hello"
 
-import pytest
-from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.exception import HandshakeError
-from pyvider.rpcplugin.handshake import validate_magic_cookie
 
 
 def test_validate_magic_cookie_valid(monkeypatch):
