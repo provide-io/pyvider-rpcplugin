@@ -3,6 +3,7 @@
 
 import asyncio
 import os
+import subprocess
 import pytest
 import pytest_asyncio
 import time
