@@ -9,14 +9,14 @@ import pytest_asyncio
 import time
 
 from pathlib import Path
-from typing import AsyncGenerator, Callable, Generator, Optional
+from typing import AsyncGenerator
 
 import grpc
 
 from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.logger import logger
-from tests.kv.proto import KVProtocol, kv_pb2, kv_pb2_grpc
+from tests.kv.proto import kv_pb2, kv_pb2_grpc
 from tests.fixtures import *
 
 TEST_DIR = Path(__file__).parent
@@ -363,7 +363,7 @@ async def test_go_server_binary_exists():
         logger.error(f"🧪❌ Go server binary exists but is not executable: {server_path}")
         pytest.fail(f"Go server binary exists but is not executable: {server_path}")
 
-    logger.info(f"🧪✅ Go server binary exists and is executable")
+    logger.info("🧪✅ Go server binary exists and is executable")
 
 
 @pytest.mark.asyncio
@@ -376,8 +376,8 @@ async def test_go_server_basic_execution():
     exit_code, stdout, stderr = await run_process_with_timeout([server_path, "--help"], timeout=3.0)
 
     if exit_code is None:
-        logger.error(f"🧪⏱️❌ Go server execution timed out when running with --help")
-        pytest.fail(f"Go server execution timed out when running with --help")
+        logger.error("🧪⏱️❌ Go server execution timed out when running with --help")
+        pytest.fail("Go server execution timed out when running with --help")
 
     if exit_code != 0:
         logger.error(f"🧪❌ Go server execution failed with exit code {exit_code}")
@@ -385,7 +385,7 @@ async def test_go_server_basic_execution():
         logger.error(f"🧪❌ Stderr: {stderr}")
         pytest.fail(f"Go server execution failed with exit code {exit_code}")
 
-    logger.info(f"🧪✅ Go server executed successfully with --help")
+    logger.info("🧪✅ Go server executed successfully with --help")
     logger.debug(f"🧪📝 Go server stdout: {stdout[:200]}...")
     logger.debug(f"🧪📝 Go server stderr: {stderr[:200]}...")
 
@@ -407,7 +407,7 @@ async def test_go_server_with_environment():
     })
 
     # Start process with environment
-    logger.info(f"🧪🚀 Testing Go server with environment variables")
+    logger.info("🧪🚀 Testing Go server with environment variables")
     process = subprocess.Popen(
         [server_path],
         env=env,
@@ -428,16 +428,16 @@ async def test_go_server_with_environment():
         logger.error(f"🧪❌ Stderr: {stderr}")
         pytest.fail(f"Go server exited prematurely with code {process.returncode}")
 
-    logger.info(f"🧪✅ Go server started successfully with environment variables")
+    logger.info("🧪✅ Go server started successfully with environment variables")
 
     # Kill the process
     try:
         process.terminate()
         process.wait(timeout=2.0)
-        logger.debug(f"🧪🔒 Go server process terminated")
+        logger.debug("🧪🔒 Go server process terminated")
     except subprocess.TimeoutExpired:
         process.kill()
-        logger.warning(f"🧪⚠️ Had to force kill Go server process")
+        logger.warning("🧪⚠️ Had to force kill Go server process")
 
 
 @pytest.mark.asyncio
@@ -462,13 +462,13 @@ async def test_client_connection_timeout():
         config={"env": env}
     )
 
-    logger.info(f"🧪⏱️ Testing client connection with timeout (expect failure)")
+    logger.info("🧪⏱️ Testing client connection with timeout (expect failure)")
     start_time = time.time()
 
     try:
         # Use a shorter timeout to speed up the test
         await asyncio.wait_for(client.start(), timeout=DEFAULT_TIMEOUT)
-        logger.error(f"🧪❌ Client connected successfully when it should have failed")
+        logger.error("🧪❌ Client connected successfully when it should have failed")
         pytest.fail("Client connected successfully when it should have failed")
     except asyncio.TimeoutError:
         duration = time.time() - start_time
@@ -510,7 +510,7 @@ async def test_connection_with_debugging():
     }
 
     # Start the Go server directly first to see if it runs
-    logger.info(f"🧪🚀 Starting Go server process directly for diagnostics")
+    logger.info("🧪🚀 Starting Go server process directly for diagnostics")
     process = subprocess.Popen(
         [server_path],
         env=env,
@@ -562,7 +562,7 @@ async def test_connection_with_debugging():
         process.kill()
 
     # Now try with client
-    logger.info(f"🧪🚀 Starting client connection with debugging")
+    logger.info("🧪🚀 Starting client connection with debugging")
     client = RPCPluginClient(
         command=[server_path],
         config={"env": env}
@@ -571,7 +571,7 @@ async def test_connection_with_debugging():
     try:
         logger.info(f"🧪🔌 Attempting to connect to Go server with {DEFAULT_TIMEOUT}s timeout")
         await asyncio.wait_for(client.start(), timeout=DEFAULT_TIMEOUT)
-        logger.info(f"🧪✅ Client connected successfully to Go server!")
+        logger.info("🧪✅ Client connected successfully to Go server!")
 
         # Clean up on success
         await client.close()
@@ -580,7 +580,7 @@ async def test_connection_with_debugging():
 
         # Extra diagnostics for timeout
         if client._process and client._process.poll() is None:
-            logger.info(f"🧪📝 Go server process is still running")
+            logger.info("🧪📝 Go server process is still running")
             # Try to read stderr from the process
             if client._process.stderr:
                 stderr_data = client._process.stderr.read1(1024)
