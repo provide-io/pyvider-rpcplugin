@@ -8,7 +8,7 @@ import pytest_asyncio
 import time
 
 from pathlib import Path
-from typing import AsyncGenerator, Callable, Dict, Generator, Optional
+from typing import AsyncGenerator, Callable, Generator, Optional
 
 import grpc
 
@@ -41,7 +41,7 @@ async def go_server_path() -> str:
 
 
 @pytest_asyncio.fixture
-async def go_server_env() -> Dict[str, str]:
+async def go_server_env() -> dict[str, str]:
     """Return the environment variables for the Go server."""
     return {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
@@ -56,7 +56,7 @@ async def go_server_env() -> Dict[str, str]:
 
 
 @pytest_asyncio.fixture
-async def kv_go_client(go_server_path: str, go_server_env: Dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
+async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
     """Create and yield a RPCPluginClient connected to a Go KV server."""
     client = None
     logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Go server at {go_server_path}")
@@ -308,7 +308,7 @@ async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value
 
 # import time
 # from pathlib import Path
-# from typing import Dict, Optional, Tuple
+# from typing import dict, Optional, tuple
 # 
 # import grpc
 # 
@@ -327,7 +327,7 @@ def is_executable(path: str) -> bool:
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 
-async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> Tuple[int, str, str]:
+async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int, str, str]:
     """Run a process with timeout and return exit code, stdout, stderr."""
     process = await asyncio.create_subprocess_exec(
         *cmd,
