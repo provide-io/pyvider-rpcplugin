@@ -61,7 +61,6 @@ async def test_negotiate_transport_valid_unix():
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
-
 @pytest.mark.asyncio
 async def test_negotiate_transport_no_common_transport():
     """Test transport negotiation when no common transport exists."""
