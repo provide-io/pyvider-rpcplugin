@@ -514,7 +514,7 @@ async def create_stderr_relay(process):
 
 async def parse_and_validate_handshake(
     handshake_line: str
-) -> Tuple[int, int, str, str, str, str | None]:
+) -> tuple[int, int, str, str, str, str | None]:
     """
     Parses and validates a handshake response, checking correct format and values.
     Expected format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
@@ -523,7 +523,7 @@ async def parse_and_validate_handshake(
         handshake_line: The complete handshake response string
         
     Returns:
-        Tuple of (core_version, plugin_version, network, address, protocol, server_cert)
+        tuple of (core_version, plugin_version, network, address, protocol, server_cert)
         
     Raises:
         HandshakeError: If handshake format or values are invalid
