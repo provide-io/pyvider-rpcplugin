@@ -459,12 +459,20 @@ class RPCPluginClient:
             )
             self._protocol_version = protocol_version
             self._server_cert = server_cert
-            # Set up the correct transport instance
+
             if network == "tcp":
                 self._transport = TCPSocketTransport()
             elif network == "unix":
-                # Strip "unix:" prefix if present to be more robust
-                sock_path = address.replace("unix:", "", 1)
+                # More robust handling of unix: prefix formats
+                if address.startswith("unix:"):
+                    sock_path = address[5:]  # Remove standard unix: prefix
+                    # Remove leading slashes (but not all slashes)
+                    while sock_path.startswith("/") and not sock_path.startswith("//"):
+                        sock_path = sock_path[1:]
+                else:
+                    sock_path = address
+                
+                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{sock_path}'")
                 self._transport = UnixSocketTransport(path=sock_path)
             else:
                 raise TransportError(f"Unsupported transport: {network}")
