@@ -7,7 +7,6 @@ import os
 import socket
 import stat
 import sys
-import time
 from contextlib import suppress
 
 import attrs
@@ -16,6 +15,36 @@ from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
+
+
+def normalize_unix_path(path: str) -> str:
+    """
+    Standardized Unix socket path normalization, handling:
+    - unix: prefix
+    - unix:/ prefix
+    - unix:// prefix
+    - Multiple leading slashes
+    
+    Returns a clean path suitable for socket operations.
+    """
+    logger.debug(f"📞🔍🚀 Normalizing Unix path: {path}")
+    
+    # Handle unix: prefix formats
+    if path.startswith("unix:"):
+        path = path[5:]  # Remove 'unix:'
+    
+    # Handle multiple leading slashes
+    if path.startswith("//"):
+        # Split by / and rebuild with single leading slash
+        parts = [p for p in path.split("/") if p]
+        path = "/" + "/".join(parts)
+    elif path.startswith("/"):
+        # Keep absolute paths as-is
+        pass
+    # Relative paths remain unchanged
+    
+    logger.debug(f"📞🔍✅ Normalized path: {path}")
+    return path
 
 
 @attrs.define(frozen=False, slots=True)
@@ -52,25 +81,13 @@ class UnixSocketTransport(RPCPluginTransport):
             self.path = os.path.join(
                 tempfile.gettempdir(), f"pyvider-{uuid.uuid4()}.sock"
             )
-            logger.debug(f"📞🚀 Generated ephemeral Unix socket path: {self.path}")
+            logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path: {self.path}")
         else:
             # Normalize path if it has a unix: prefix
-            self.path = self._normalize_path(self.path)
+            self.path = normalize_unix_path(self.path)
 
         self._server_ready = asyncio.Event()
-        logger.debug(f"📞🚀 UnixSocketTransport initialized with path={self.path}")
-
-    def _normalize_path(self, path: str) -> str:
-        """Normalize Unix socket path, handling various formats."""
-        # Handle unix:, unix:/, unix:// prefixes
-        if path.startswith("unix:"):
-            path = path[5:]  # Remove 'unix:'
-            # Handle additional slashes
-            while path.startswith("/") and not path.startswith("//"):
-                path = path[1:]
-                
-        logger.debug(f"📞🚀 Normalized path: {path}")
-        return path
+        logger.debug(f"📞🚀✅ UnixSocketTransport initialized with path={self.path}")
 
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
@@ -81,7 +98,7 @@ class UnixSocketTransport(RPCPluginTransport):
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.settimeout(0.5)
             
-            logger.debug(f"📞🔍 Checking if socket {self.path} is in use")
+            logger.debug(f"📞🔍🚀 Checking if socket {self.path} is in use")
             sock.connect(self.path)
             logger.debug(f"📞🔍❌ Socket {self.path} is in use")
             sock.close()
@@ -154,6 +171,7 @@ class UnixSocketTransport(RPCPluginTransport):
             dir_path = os.path.dirname(self.path)
             if dir_path:
                 os.makedirs(dir_path, exist_ok=True)
+                logger.debug(f"📞🕹✅ Created directory: {dir_path}")
 
             # Remove stale socket file if it exists
             if os.path.exists(self.path):
@@ -175,6 +193,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 
                 # Set world-writable permissions (crucial for Go interop)
                 os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # 0777
+                logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
                 
                 self._running = True
                 self.endpoint = self.path
@@ -191,12 +210,8 @@ class UnixSocketTransport(RPCPluginTransport):
         # Save original endpoint for logging
         orig_endpoint = endpoint
         
-        # More robust normalization for Unix socket paths
-        if endpoint.startswith("unix:"):
-            # Handle various unix: prefix formats (unix:, unix:/, unix://)
-            endpoint = endpoint[5:]
-            while endpoint.startswith("/") and not endpoint.startswith("//"):
-                endpoint = endpoint[1:]
+        # Normalize endpoint path
+        endpoint = normalize_unix_path(endpoint)
         
         logger.debug(f"📞🤝🚀 Connecting to Unix socket at '{endpoint}' (from '{orig_endpoint}')")
         
@@ -230,7 +245,7 @@ class UnixSocketTransport(RPCPluginTransport):
         logger.debug(f"📞🔒🚀 Closing Unix socket transport at {self.path}")
         
         if self._closing:
-            logger.debug("📞🔒 Already closing, skipping duplicate close")
+            logger.debug("📞🔒✅ Already closing, skipping duplicate close")
             return
             
         self._closing = True
@@ -278,8 +293,9 @@ class UnixSocketTransport(RPCPluginTransport):
                 os.unlink(self.path)
                 logger.debug(f"📞🔒✅ Removed socket file: {self.path}")
             except OSError as e:
-                logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
-                raise TransportError(f"Failed to remove socket file: {e}")
+                if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
+                    logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
+                    raise TransportError(f"Failed to remove socket file: {e}")
 
         self.endpoint = None
         self._closing = False
