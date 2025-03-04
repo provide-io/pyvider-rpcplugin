@@ -175,16 +175,11 @@ async def N1_negotiate_transport(server_transports: list[str]) -> tuple[str, Tra
 
 ################################################################################
 
+# src/pyvider/rpcplugin/handshake.py
 async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
-    (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
-    creates the appropriate transport instance.
-
-    Returns:
-      A tuple of (transport_name, transport_instance).
-
-    Raises:
-      TransportError: If no compatible transport can be negotiated.
+    (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server.
+    PRIORITIZES Unix sockets over TCP for better stability.
     """
     logger.debug(
         f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
@@ -195,14 +190,8 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         )
         raise TransportError("No transport options provided")
     try:
-        if "tcp" in server_transports:
-            logger.debug(
-                "🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available"
-            )
-            from pyvider.rpcplugin.transport import TCPSocketTransport
-
-            return "tcp", TCPSocketTransport()
-        elif "unix" in server_transports:
+        # Prioritize Unix sockets first for stability
+        if "unix" in server_transports:
             logger.debug(
                 "🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available"
             )
@@ -212,6 +201,13 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             from pyvider.rpcplugin.transport import UnixSocketTransport
 
             return "unix", UnixSocketTransport(path=transport_path)
+        elif "tcp" in server_transports:
+            logger.debug(
+                "🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available"
+            )
+            from pyvider.rpcplugin.transport import TCPSocketTransport
+
+            return "tcp", TCPSocketTransport()
         else:
             logger.error(
                 "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
