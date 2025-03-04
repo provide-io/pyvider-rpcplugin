@@ -257,7 +257,47 @@ class UnixSocketTransport(RPCPluginTransport):
                 logger.error(f"🔉❌ Could not start server on {self.path}: {e}")
                 raise TransportError(f"Failed to create Unix socket: {e}")
 
+################################################################################
+
     async def connect(self, endpoint: str) -> None:
+        """
+        Connect as a client to the Unix socket. Some tests expect 'does not exist' if the file is missing.
+        or 'Failed to connect to Unix socket' if there's an OSError.
+        """
+        logger.debug(f"🔌 connect called with endpoint={endpoint}")
+        # Handle both regular paths and unix:// protocol format
+        if endpoint.startswith("unix:"):
+            ep = endpoint.replace("unix:", "", 1)
+            # Also handle the case where there might be multiple slashes
+            if ep.startswith("//"):
+                ep = ep[2:]
+        else:
+            ep = endpoint
+
+        logger.debug(f"🔌 Normalized Unix socket path: {ep}")
+
+        if not os.path.exists(ep):
+            logger.error(f"🔌❌ Socket {ep} does not exist")
+            raise TransportError(f"Socket {ep} does not exist")
+
+        try:
+            logger.debug(f"🔌 Attempting to connect to Unix socket at {ep}")
+            _reader, writer = await asyncio.wait_for(
+                asyncio.open_unix_connection(ep), timeout=5.0
+            )
+            self._writer = writer
+            self.endpoint = ep
+            logger.debug(f"🔌✅ Connected to {ep}")
+        except TimeoutError as e:
+            logger.error(f"🔌❌ Timed out connecting to {ep}: {e}")
+            raise TransportError(f"Connection timeout: {e}")
+        except OSError as e:
+            logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
+            raise TransportError(f"Failed to connect to Unix socket: {e}")
+
+################################################################################
+
+    async def X_1connect(self, endpoint: str) -> None:
         """
         Connect as a client to the Unix socket. Some tests expect 'does not exist' if the file is missing.
         or 'Failed to connect to Unix socket' if there's an OSError.
@@ -282,6 +322,8 @@ class UnixSocketTransport(RPCPluginTransport):
         except OSError as e:
             logger.error(f"🔌❌ OSError while connecting to {ep}: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
+
+################################################################################
 
     async def close(self) -> None:
         """Fix UnixSocketTransport close method to ensure proper cleanup."""
