@@ -1,9 +1,6 @@
-#!/bin/bash -c "echo hi"
+#!uv runv python3
 
-
-# #!uv run python3
-
-# tests/kv/py_kv_client_2.py
+# tests/kv/py_kv_client.py
 
 import asyncio
 import logging
