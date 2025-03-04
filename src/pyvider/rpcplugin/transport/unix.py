@@ -188,6 +188,45 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def connect(self, endpoint: str) -> None:
         """Connect to Unix socket with robust path handling."""
+        # Save original endpoint for logging
+        orig_endpoint = endpoint
+        
+        # More robust normalization for Unix socket paths
+        if endpoint.startswith("unix:"):
+            # Handle various unix: prefix formats (unix:, unix:/, unix://)
+            endpoint = endpoint[5:]
+            while endpoint.startswith("/") and not endpoint.startswith("//"):
+                endpoint = endpoint[1:]
+        
+        logger.debug(f"📞🤝🚀 Connecting to Unix socket at '{endpoint}' (from '{orig_endpoint}')")
+        
+        # Verify socket file exists with retries
+        retries = 3
+        for attempt in range(retries):
+            if os.path.exists(endpoint):
+                break
+            if attempt < retries - 1:
+                logger.debug(f"📞🤝⚠️ Socket file not found, retrying ({attempt+1}/{retries})") 
+                await asyncio.sleep(0.5)  # Short delay between retries
+        
+        if not os.path.exists(endpoint):
+            logger.error(f"📞🤝❌ Socket file does not exist: {endpoint}")
+            raise TransportError(f"Socket {endpoint} does not exist")
+
+        try:
+            # Connect with timeout
+            self._reader, self._writer = await asyncio.wait_for(
+                asyncio.open_unix_connection(endpoint),
+                timeout=5.0
+            )
+            self.endpoint = endpoint
+            logger.debug(f"📞🤝✅ Connected to Unix socket at {endpoint}")
+        except Exception as e:
+            logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
+            raise TransportError(f"Failed to connect to Unix socket: {e}")
+
+    async def X1_connect(self, endpoint: str) -> None:
+        """Connect to Unix socket with robust path handling."""
         # Normalize endpoint (handle unix: prefix, multiple slashes, etc)
         orig_endpoint = endpoint
         endpoint = self._normalize_path(endpoint)
