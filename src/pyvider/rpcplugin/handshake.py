@@ -87,41 +87,6 @@ def validate_transport(transport_name: str, supported_transports: list[str]) -> 
         raise TransportError(f"Unsupported transport: {transport_name}")
     logger.debug(f"🤝🚂✅ Transport '{transport_name}' is supported.")
 
-def negotiate_protocol_version(server_versions: list[int]) -> int:
-    """
-    🤝🔄 Selects the highest mutually supported protocol version.
-
-    Compares the server-provided versions against the client's supported versions
-    from the configuration.
-
-    Returns:
-      The highest mutually supported protocol version.
-
-    Raises:
-      ProtocolError: If no mutually supported version is found.
-    """
-    logger.debug(
-        f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}"
-    )
-    SUPPORTED_PROTOCOL_VERSIONS = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS")
-    for version in sorted(server_versions, reverse=True):
-        if version in SUPPORTED_PROTOCOL_VERSIONS:
-            logger.info(f"🤝✅ Selected protocol version: {version}")
-            return version
-
-    logger.error(
-        f"🤝❌ Protocol negotiation failed: No compatible version found. "
-        f"Server supports: {server_versions}, Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
-    )
-    raise ProtocolError(
-        f"No mutually supported protocol version found. Server supports: {server_versions}, "
-        f"Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
-    )
-
-################################################################################
-# Apply to src/pyvider/rpcplugin/handshake.py
-
-# Modify negotiate_transport to prioritize Unix socket (more robust)
 async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """
     (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
@@ -174,57 +139,36 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         )
         raise TransportError(f"Error negotiating transport: {e}") from e
 
-################################################################################
-
-async def X1_negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
+def negotiate_protocol_version(server_versions: list[int]) -> int:
     """
-    (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
-    creates the appropriate transport instance.
+    🤝🔄 Selects the highest mutually supported protocol version.
+
+    Compares the server-provided versions against the client's supported versions
+    from the configuration.
 
     Returns:
-      A tuple of (transport_name, transport_instance).
+      The highest mutually supported protocol version.
 
     Raises:
-      TransportError: If no compatible transport can be negotiated.
+      ProtocolError: If no mutually supported version is found.
     """
     logger.debug(
-        f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
+        f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}"
     )
-    if not server_transports:
-        logger.error(
-            "🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided"
-        )
-        raise TransportError("No transport options provided")
-    try:
-        if "tcp" in server_transports:
-            logger.debug(
-                "🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available"
-            )
-            from pyvider.rpcplugin.transport import TCPSocketTransport
+    SUPPORTED_PROTOCOL_VERSIONS = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS")
+    for version in sorted(server_versions, reverse=True):
+        if version in SUPPORTED_PROTOCOL_VERSIONS:
+            logger.info(f"🤝✅ Selected protocol version: {version}")
+            return version
 
-            return "tcp", TCPSocketTransport()
-        elif "unix" in server_transports:
-            logger.debug(
-                "🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available"
-            )
-            transport_path = os.path.join(
-                os.environ.get("TEMP_DIR", "/tmp"), f"pyvider-{os.getpid()}.sock"
-            )
-            from pyvider.rpcplugin.transport import UnixSocketTransport
-
-            return "unix", UnixSocketTransport(path=transport_path)
-        else:
-            logger.error(
-                "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
-                extra={"server_transports": server_transports},
-            )
-            raise TransportError(f"Unsupported transports: {server_transports}")
-    except Exception as e:
-        logger.error(
-            "🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
-            extra={"error": str(e)},
-        )
-        raise TransportError(f"Error negotiating transport: {e}") from e
+    logger.error(
+        f"🤝❌ Protocol negotiation failed: No compatible version found. "
+        f"Server supports: {server_versions}, Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
+    )
+    raise ProtocolError(
+        f"No mutually supported protocol version found. Server supports: {server_versions}, "
+        f"Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
+    )
 
 ################################################################################
 
@@ -355,7 +299,6 @@ async def build_handshake_response(
             f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)}
         )
         raise
-
 
 def parse_handshake_response(
     response: str,
