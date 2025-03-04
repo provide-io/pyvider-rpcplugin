@@ -147,7 +147,7 @@ PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"
 
 export PLUGIN_SERVER_PATH
 
-alias venv-pyvider-rpcplugin="source $(uv venv 2>&1 | grep 'Activate with' | cut -d':' -f2- | xargs)"
+alias venv-activate="uv venv 2>&1 | grep 'Activate with' | sed 's/.* source //g'"
 
 echo ""
 echo "🔐 TLS Configuration:"
