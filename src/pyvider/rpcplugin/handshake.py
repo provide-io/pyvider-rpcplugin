@@ -246,4 +246,55 @@ async def parse_and_validate_handshake(
             extra={"trace": traceback.format_exc()}
         )
         raise HandshakeError(f"Failed to parse handshake: {e}") from e
+def parse_handshake_response(
+    response: str,
+) -> tuple[int, int, str, str, str, str | None]:
+    """
+    (📡🔍 Handshake Parsing) Parses the handshake response string.
+    Expected Format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
+    """
+    logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
+    try:
+        if not isinstance(response, str):
+            raise ValueError("Handshake response is not a string")
+        parts = response.strip().split("|")
+        logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
+        if not is_valid_handshake_parts(parts):
+            logger.error(
+                f"📡❌ Invalid handshake response format. Expected 6 parts, got {len(parts)}",
+                extra={"parts": parts},
+            )
+            raise ValueError(f"Expected 6 parts, got {len(parts)}")
+        core_version = int(parts[0])
+        plugin_version = int(parts[1])
+        network = parts[2]
+        if network not in ("tcp", "unix"):
+            logger.error(
+                f"📡❌ Invalid network type: {network}", extra={"network": network}
+            )
+            raise ValueError(f"Invalid network type: {network}")
+        address = parts[3]
+        protocol = parts[4]
+        server_cert = parts[5] if parts[5] else None
+
+        if core_version != int(rpcplugin_config.get("PLUGIN_CORE_VERSION")):
+            logger.error(f"🤝 Unsupported handshake version: {core_version}")
+            raise HandshakeError(f"Unsupported handshake version: {core_version}")
+
+        if server_cert:
+            padding = len(server_cert) % 4
+            if padding:
+                server_cert += "=" * (4 - padding)
+            logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
+
+        logger.debug(
+            f"📡✅ Handshake parsing success: core_version={core_version}, plugin_version={plugin_version}, network={network}, address={address}, protocol={protocol}, server_cert={'present' if server_cert else 'none'}"
+        )
+        return core_version, plugin_version, network, address, protocol, server_cert
+
+    except Exception as e:
+        logger.error(f"📡❌ Handshake parsing failed: {e}", extra={"error": str(e)})
+        raise HandshakeError(f"Failed to parse handshake response: {e}") from e
+
+
 ### 🐍🏗️🔌
