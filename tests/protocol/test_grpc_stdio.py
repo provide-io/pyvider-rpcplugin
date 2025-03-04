@@ -12,7 +12,7 @@ from pyvider.rpcplugin.protocol import (
 )
 
 @pytest.mark.asyncio
-async def test_grpc_stdio_pb2_imports():
+async def test_grpc_stdio_pb2_imports() -> None:
     """Test importing grpc_stdio_pb2 and accessing its components."""
     # Access message descriptors
     assert hasattr(grpc_stdio_pb2, 'DESCRIPTOR')
@@ -44,7 +44,7 @@ async def test_grpc_stdio_pb2_imports():
     assert deserialized.data == stdout_data.data
 
 @pytest.mark.asyncio
-async def test_grpc_stdio_pb2_grpc_stub_creation():
+async def test_grpc_stdio_pb2_grpc_stub_creation() -> None:
     """Test creating a GRPCStdioStub."""
     # Mock a channel
     mock_channel = MagicMock()
@@ -56,7 +56,7 @@ async def test_grpc_stdio_pb2_grpc_stub_creation():
     assert hasattr(stub, 'StreamStdio')
 
 @pytest.mark.asyncio
-async def test_grpc_stdio_servicer_methods():
+async def test_grpc_stdio_servicer_methods() -> None:
     """Test GRPCStdioServicer methods."""
     # Create a servicer
     servicer = grpc_stdio_pb2_grpc.GRPCStdioServicer()
@@ -74,7 +74,7 @@ async def test_grpc_stdio_servicer_methods():
     context.set_details.assert_called_once_with("Method not implemented!")
 
 @pytest.mark.asyncio
-async def test_stdio_pb2_descriptor():
+async def test_stdio_pb2_descriptor() -> None:
     """Direct test for grpc_stdio_pb2 descriptor options (lines 32-38)."""
     assert hasattr(grpc_stdio_pb2, "DESCRIPTOR")
     with patch.object(grpc_stdio_pb2.DESCRIPTOR, "_loaded_options", None), \
@@ -86,7 +86,7 @@ async def test_stdio_pb2_descriptor():
     assert "StdioData" in descriptor.message_types_by_name
 
 @pytest.mark.asyncio
-async def test_stdio_grpc_version_mismatch():
+async def test_stdio_grpc_version_mismatch() -> None:
     """Direct test for grpc_stdio_pb2_grpc version check (lines 19-20, 23)."""
     with patch('grpc._utilities.first_version_is_lower', return_value=True):
         with pytest.raises(RuntimeError) as excinfo:
@@ -94,7 +94,7 @@ async def test_stdio_grpc_version_mismatch():
         assert "grpc package installed is at version" in str(excinfo.value)
 
 @pytest.mark.asyncio
-async def test_stdio_experimental_api():
+async def test_stdio_experimental_api() -> None:
     """Direct test for grpc_stdio_pb2_grpc experimental API (line 105)."""
     assert hasattr(grpc_stdio_pb2_grpc, "GRPCStdio")
     assert hasattr(grpc_stdio_pb2_grpc.GRPCStdio, "StreamStdio")

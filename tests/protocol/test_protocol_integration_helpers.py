@@ -99,7 +99,7 @@ async def grpc_server_with_registry(patched_add_servicers, servicer_registry):
 
 
 @pytest.mark.asyncio
-async def test_stdio_integration_registry(grpc_server_with_registry):
+async def test_stdio_integration_registry(grpc_server_with_registry) -> None:
     """Test stdio service integration using the registry approach."""
     _, address, registry, _ = grpc_server_with_registry
     stdio_service = registry.get('stdio')

@@ -6,12 +6,13 @@ from unittest.mock import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import ServerT, HandlerT
+from typing import Tuple
 
 
 class IncompleteProtocol(RPCPluginProtocol):
     """A protocol implementation that doesn't implement all abstract methods."""
 
-    def get_grpc_descriptors(self):
+    def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:
         return (MagicMock(), "TestService")
 
     # Missing add_to_server implementation
@@ -20,35 +21,35 @@ class IncompleteProtocol(RPCPluginProtocol):
 class ConcreteProtocol(RPCPluginProtocol):
     """A concrete implementation of the protocol with all methods."""
 
-    def get_grpc_descriptors(self):
+    def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:
         descriptors = MagicMock()
         service_name = "TestService"
         return descriptors, service_name
 
-    async def add_to_server(self, server, handler):
+    async def add_to_server(self, server, handler) -> None:
         # Implementation for add_to_server
         pass
 
 
-def test_abstract_protocol_instantiation():
+def test_abstract_protocol_instantiation() -> None:
     """Test that abstract class cannot be instantiated directly."""
     with pytest.raises(TypeError):
         RPCPluginProtocol()
 
 
-def test_incomplete_protocol_instantiation():
+def test_incomplete_protocol_instantiation() -> None:
     """Test that incomplete implementations cannot be instantiated."""
     with pytest.raises(TypeError):
         IncompleteProtocol()
 
 
-def test_concrete_protocol_instantiation():
+def test_concrete_protocol_instantiation() -> None:
     """Test that concrete implementations can be instantiated."""
     protocol = ConcreteProtocol()
     assert isinstance(protocol, RPCPluginProtocol)
 
 
-def test_protocol_type_annotations():
+def test_protocol_type_annotations() -> None:
     """Test that type annotations are correctly used."""
     # This test doesn't instantiate but checks the class structure
     assert hasattr(RPCPluginProtocol, 'get_grpc_descriptors')
@@ -63,7 +64,7 @@ def test_protocol_type_annotations():
 
 
 @pytest.mark.asyncio
-async def test_concrete_protocol_add_to_server():
+async def test_concrete_protocol_add_to_server() -> None:
     """Test add_to_server method with mocked server and handler."""
     protocol = ConcreteProtocol()
     server_mock = MagicMock(spec=ServerT)

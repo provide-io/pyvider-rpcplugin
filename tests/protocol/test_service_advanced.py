@@ -32,7 +32,7 @@ def stdio_service_with_error():
 
 
 @pytest.mark.asyncio
-async def test_stdio_error_handling_in_put_line(stdio_service_with_error):
+async def test_stdio_error_handling_in_put_line(stdio_service_with_error) -> None:
     """Test that put_line gracefully handles exceptions."""
     # This should not raise an exception even though queue.put will fail
     await stdio_service_with_error.put_line(b"test data")
@@ -42,7 +42,7 @@ async def test_stdio_error_handling_in_put_line(stdio_service_with_error):
 
 
 @pytest.mark.asyncio
-async def test_stdio_stream_error_handling():
+async def test_stdio_stream_error_handling() -> None:
     """Test that StreamStdio handles errors in the queue."""
     service = GRPCStdioService()
 
@@ -80,7 +80,7 @@ async def test_stdio_stream_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_stdio_stream_cancellation_handling():
+async def test_stdio_stream_cancellation_handling() -> None:
     """Test handling of cancellation during StreamStdio."""
     service = GRPCStdioService()
 
@@ -123,7 +123,7 @@ async def collect_stream(stream):
 
 
 @pytest.mark.asyncio
-async def test_broker_service_exception_handling():
+async def test_broker_service_exception_handling() -> None:
     """Test that StartStream properly handles exceptions."""
     service = GRPCBrokerService()
 
@@ -175,11 +175,11 @@ async def test_broker_service_exception_handling():
 
 class MockRequestIterator:
     """Mock request iterator for broker stream."""
-    def __init__(self, requests):
+    def __init__(self, requests) -> None:
         self.requests = requests
         self.index = 0
 
-    def __aiter__(self):
+    def __aiter__(self) -> "MockRequestIterator":
         return self
 
     async def __anext__(self):
@@ -191,7 +191,7 @@ class MockRequestIterator:
 
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown_signal_handlers():
+async def test_controller_delayed_shutdown_signal_handlers() -> None:
     """Test _delayed_shutdown with various signal handler implementations."""
     stdio_service = GRPCStdioService()
     shutdown_event = asyncio.Event()
@@ -215,7 +215,7 @@ async def test_controller_delayed_shutdown_signal_handlers():
 
 
 @pytest.mark.asyncio
-async def test_register_protocol_service_with_mocks():
+async def test_register_protocol_service_with_mocks() -> None:
     """Test registering all services with detailed verification."""
     # Mock the services and their add_*_to_server functions
     with patch('pyvider.rpcplugin.protocol.service.GRPCStdioService') as mock_stdio_cls, \

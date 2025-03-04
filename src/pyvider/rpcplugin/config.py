@@ -1,7 +1,7 @@
 # pyvider/rpcplugin/config.py
 
 import os
-from typing import Any, Optional
+from typing import Dict, List, Union, Any, Optional
 
 import attrs
 
@@ -10,7 +10,7 @@ from pyvider.rpcplugin.logger import logger
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
-CONFIG_SCHEMA = {
+CONFIG_SCHEMA: Dict[str, Union[Dict[str, Union[None, bool, str]], Dict[str, Union[List[int], bool, str]], Dict[str, Union[List[str], bool, str]], Dict[str, Union[bool, str]], Dict[str, Union[int, str]]]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
         "default": SUPPORTED_PROTOCOL_VERSIONS,
@@ -149,7 +149,7 @@ def fetch_env_variable(key, meta):
     return value
 
 
-def get_config():
+def get_config() -> Dict[str, Any]:
     """Retrieves configuration values from the environment, applying defaults where necessary."""
     config = {}
     for key, meta in CONFIG_SCHEMA.items():

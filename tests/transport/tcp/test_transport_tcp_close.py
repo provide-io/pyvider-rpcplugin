@@ -12,7 +12,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_close_connection_active(mock_server_transport_tcp):
+async def test_tcp_socket_transport_close_connection_active(mock_server_transport_tcp) -> None:
     transport = TCPSocketTransport()
 
     try:
@@ -22,7 +22,7 @@ async def test_tcp_socket_transport_close_connection_active(mock_server_transpor
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_close_no_connection():
+async def test_tcp_socket_transport_close_no_connection() -> None:
     """
     Test that TCPSocketTransport.close works when no connection is active.
     """
@@ -36,7 +36,7 @@ async def test_tcp_socket_transport_close_no_connection():
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_close_writer_oserror():
+async def test_tcp_socket_transport_close_writer_oserror() -> None:
     transport = TCPSocketTransport(host="127.0.0.1")
     await transport.listen()
 

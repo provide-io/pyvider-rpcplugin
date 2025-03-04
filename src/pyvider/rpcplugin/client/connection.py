@@ -167,7 +167,7 @@ class ClientConnection:
         if not self._closed and hasattr(self, "writer"):
             logger.warning(f"Connection to {self.remote_addr} was not properly closed")
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((id(self), self.remote_addr))
 
     def __eq__(self, other):

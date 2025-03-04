@@ -20,7 +20,7 @@ from pyvider.rpcplugin.crypto import (
 
 
 @pytest.mark.asyncio
-async def test_generate_keypair_returns_keypair():
+async def test_generate_keypair_returns_keypair() -> None:
     """Ensure generate_keypair() returns correct type"""
     rsa_key = generate_keypair(KEY_TYPE_RSA)
     ec_key = generate_keypair(KEY_TYPE_ECDSA)
@@ -30,19 +30,19 @@ async def test_generate_keypair_returns_keypair():
     assert isinstance(ec_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
 
 @pytest.mark.asyncio
-async def test_generate_keypair_invalid_type():
+async def test_generate_keypair_invalid_type() -> None:
     """Ensure an error is raised when an invalid key type is provided."""
     with pytest.raises(ValueError, match="Unsupported key type"):
         generate_keypair("invalid_type")
 
 @pytest.mark.asyncio
-async def test_generate_rsa_keypair():
+async def test_generate_rsa_keypair() -> None:
     """Test RSA keypair generation with a valid size."""
     key = generate_rsa_keypair(2048)
     assert key.key_size == 2048
 
 @pytest.mark.asyncio
-async def test_generate_rsa_keypair_backend_failure():
+async def test_generate_rsa_keypair_backend_failure() -> None:
     """Ensure RSA key generation fails if the cryptography backend encounters an issue."""
     with mock.patch(
         "cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key",
@@ -52,25 +52,25 @@ async def test_generate_rsa_keypair_backend_failure():
             generate_rsa_keypair(2048)
 
 @pytest.mark.asyncio
-async def test_generate_invalid_rsa_key_size():
+async def test_generate_invalid_rsa_key_size() -> None:
     """Test RSA key generation fails with an invalid key size."""
     with pytest.raises(ValueError, match="Unsupported RSA key size"):
         generate_keypair(key_type=KEY_TYPE_RSA, key_size=1024)
 
 @pytest.mark.asyncio
-async def test_generate_ec_keypair():
+async def test_generate_ec_keypair() -> None:
     """Test ECDSA keypair generation with a valid curve."""
     key = generate_keypair(key_type=KEY_TYPE_ECDSA, curve_name="secp256r1")
     assert key.curve.name == "secp256r1"
 
 @pytest.mark.asyncio
-async def test_generate_ec_keypair_invalid_curve():
+async def test_generate_ec_keypair_invalid_curve() -> None:
     """Cover error path in generate_ec_keypair"""
     with pytest.raises(AttributeError):
         generate_ec_keypair("invalid_curve")
 
 @pytest.mark.asyncio
-async def test_generate_ec_keypair_backend_failure():
+async def test_generate_ec_keypair_backend_failure() -> None:
     """Ensure EC key generation fails if the cryptography backend encounters an issue."""
     with mock.patch(
         "cryptography.hazmat.primitives.asymmetric.ec.generate_private_key",
@@ -80,19 +80,19 @@ async def test_generate_ec_keypair_backend_failure():
             generate_ec_keypair("secp256r1")
 
 @pytest.mark.asyncio
-async def test_generate_invalid_ec_curve():
+async def test_generate_invalid_ec_curve() -> None:
     """Test ECDSA key generation fails with an invalid curve name."""
     with pytest.raises(ValueError, match="Unsupported EC curve"):
         generate_keypair(key_type=KEY_TYPE_ECDSA, curve_name="invalid_curve")
 
 @pytest.mark.asyncio
-async def test_generate_unsupported_key_type():
+async def test_generate_unsupported_key_type() -> None:
     """Test unsupported key type raises an error."""
     with pytest.raises(ValueError, match="Unsupported key type"):
         generate_keypair(key_type="unsupported_type")
 
 @pytest.mark.asyncio
-async def test_key_generation_performance():
+async def test_key_generation_performance() -> None:
     start_time = time.time()
     Certificate(generate_keypair=True, key_type=KEY_TYPE_RSA, key_size=2048)
     generation_time = time.time() - start_time

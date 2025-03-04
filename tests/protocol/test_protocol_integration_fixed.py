@@ -19,7 +19,7 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 
 class ServiceContainer:
     """Container to hold service instances for test access."""
-    def __init__(self):
+    def __init__(self) -> None:
         self.stdio_service = None
         self.broker_service = None
         self.controller_service = None
@@ -74,7 +74,7 @@ async def grpc_channel(grpc_server_with_services):
 
 
 @pytest.mark.asyncio
-async def test_stdio_integration_fixed(grpc_server_with_services, grpc_channel):
+async def test_stdio_integration_fixed(grpc_server_with_services, grpc_channel) -> None:
     """Integration test for the stdio service using direct service access."""
     _, _, container, _ = grpc_server_with_services
     stdio_service = container.stdio_service
@@ -111,7 +111,7 @@ async def test_stdio_integration_fixed(grpc_server_with_services, grpc_channel):
 
 
 @pytest.mark.asyncio
-async def test_broker_cancellation_fixed(grpc_server_with_services, grpc_channel):
+async def test_broker_cancellation_fixed(grpc_server_with_services, grpc_channel) -> None:
     """Test broker service with cancellation."""
     # Create a broker stub
     stub = GRPCBrokerStub(grpc_channel)
@@ -153,7 +153,7 @@ async def test_broker_cancellation_fixed(grpc_server_with_services, grpc_channel
 
 
 @pytest.mark.asyncio
-async def test_broker_start_stream_exception_fixed():
+async def test_broker_start_stream_exception_fixed() -> None:
     """Test that broker service handles exceptions properly."""
     # Create service instance
     broker_service = GRPCBrokerService()

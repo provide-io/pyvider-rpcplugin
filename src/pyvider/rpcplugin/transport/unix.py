@@ -6,8 +6,6 @@ import errno
 import os
 import socket
 import stat
-import sys
-from contextlib import suppress
 
 import attrs
 
@@ -72,7 +70,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     _transport_name: str = "unix"
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """Initialize transport state and possibly normalize path."""
         if not self.path:
             # Generate ephemeral path if none provided

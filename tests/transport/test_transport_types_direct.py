@@ -13,7 +13,7 @@ from pyvider.rpcplugin.transport import (
 )
 
 # Tests for the ConnectionT Protocol (lines 22-24)
-def test_connection_protocol():
+def test_connection_protocol() -> None:
     """Test ConnectionT Protocol implementation (lines 22-24)."""
 
     # Create a class that implements ConnectionT
@@ -51,7 +51,7 @@ def test_connection_protocol():
     incomplete = IncompleteConnection()
     assert not isinstance(incomplete, TestConnection)
 
-def test_transport_type():
+def test_transport_type() -> None:
     """Test TransportType alias (line 22)."""
     # Test that TransportType accepts both TCP and Unix transports
     tcp_transport = TCPSocketTransport()

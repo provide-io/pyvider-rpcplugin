@@ -18,6 +18,7 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from google.protobuf.empty_pb2 import Empty
+from asyncio.locks import Event
 
 @pytest.fixture
 def subchannel():
@@ -25,14 +26,14 @@ def subchannel():
     return SubchannelConnection(conn_id=1, address="localhost:12345")
 
 @pytest.mark.asyncio
-async def test_subchannel_open(subchannel):
+async def test_subchannel_open(subchannel) -> None:
     """Test opening a subchannel connection."""
     assert not subchannel.is_open
     await subchannel.open()
     assert subchannel.is_open
 
 @pytest.mark.asyncio
-async def test_subchannel_close(subchannel):
+async def test_subchannel_close(subchannel) -> None:
     """Test closing a subchannel connection."""
     await subchannel.open()
     assert subchannel.is_open
@@ -41,11 +42,11 @@ async def test_subchannel_close(subchannel):
 
 class MockRequestIterator:
     """Mock request iterator for broker stream."""
-    def __init__(self, requests):
+    def __init__(self, requests) -> None:
         self.requests = requests
         self.index = 0
 
-    def __aiter__(self):
+    def __aiter__(self) -> "MockRequestIterator":
         return self
 
     async def __anext__(self):
@@ -61,14 +62,14 @@ def broker_service():
     return GRPCBrokerService()
 
 @pytest.fixture
-def mock_context():
+def mock_context() -> MagicMock:
     """Mock gRPC context for broker."""
     context = MagicMock()
     context.add_done_callback = MagicMock()
     return context
 
 @pytest.mark.asyncio
-async def test_broker_start_stream_open_subchannel(broker_service, mock_context):
+async def test_broker_start_stream_open_subchannel(broker_service, mock_context) -> None:
     """Test StartStream with a knock request."""
     # Create a request with knock=True
     knock_info = ConnInfo(
@@ -97,7 +98,7 @@ async def test_broker_start_stream_open_subchannel(broker_service, mock_context)
     assert broker_service._subchannels[1].is_open
 
 @pytest.mark.asyncio
-async def test_broker_start_stream_close_subchannel(broker_service, mock_context):
+async def test_broker_start_stream_close_subchannel(broker_service, mock_context) -> None:
     """Test StartStream with closing an existing subchannel."""
     # First create a subchannel
     subchan = SubchannelConnection(1, "localhost:12345")
@@ -129,7 +130,7 @@ async def test_broker_start_stream_close_subchannel(broker_service, mock_context
     assert 1 not in broker_service._subchannels
 
 @pytest.mark.asyncio
-async def test_broker_start_stream_exception(broker_service, mock_context):
+async def test_broker_start_stream_exception(broker_service, mock_context) -> None:
     """Test StartStream with an exception during processing."""
     # Create a request that will cause an exception
     with patch.object(broker_service, '_subchannels', side_effect=Exception("Test exception")):
@@ -160,7 +161,7 @@ def stdio_service():
     return GRPCStdioService()
 
 @pytest.mark.asyncio
-async def test_stdio_put_line(stdio_service):
+async def test_stdio_put_line(stdio_service) -> None:
     """Test putting a line into the stdio queue."""
     # Put a line into the queue
     test_data = b"test line"
@@ -175,7 +176,7 @@ async def test_stdio_put_line(stdio_service):
     assert item.data == test_data
 
 @pytest.mark.asyncio
-async def test_stdio_put_line_stderr(stdio_service):
+async def test_stdio_put_line_stderr(stdio_service) -> None:
     """Test putting a stderr line into the stdio queue."""
     # Put a stderr line into the queue
     test_data = b"error line"
@@ -187,7 +188,7 @@ async def test_stdio_put_line_stderr(stdio_service):
     assert item.data == test_data
 
 @pytest.mark.asyncio
-async def test_stdio_put_line_error(stdio_service):
+async def test_stdio_put_line_error(stdio_service) -> None:
     """Test error handling in put_line."""
     # Patch the queue.put to raise an exception
     with patch.object(stdio_service._message_queue, 'put', side_effect=Exception("Queue error")):
@@ -196,7 +197,7 @@ async def test_stdio_put_line_error(stdio_service):
         # Test passes if no exception was raised
 
 @pytest.mark.asyncio
-async def test_stdio_stream_stdio(stdio_service, mock_context):
+async def test_stdio_stream_stdio(stdio_service, mock_context) -> None:
     """Test StreamStdio method."""
     # Add data to the queue before starting stream
     test_data = b"test output"
@@ -234,7 +235,7 @@ async def collect_stream_data(stream):
     return results
 
 @pytest.mark.skip
-async def test_stdio_stream_timeout(stdio_service, mock_context):
+async def test_stdio_stream_timeout(stdio_service, mock_context) -> None:
     """Test StreamStdio with a timeout."""
     # Replace wait_for with a function that always times out
     async def timeout_wait_for(*args, **kwargs):
@@ -259,7 +260,7 @@ async def test_stdio_stream_timeout(stdio_service, mock_context):
         assert len(results) == 0
 
 @pytest.mark.asyncio
-async def test_stdio_stream_cancellation(stdio_service, mock_context):
+async def test_stdio_stream_cancellation(stdio_service, mock_context) -> None:
     """Test StreamStdio cancellation."""
     # Mock context.add_done_callback to trigger cancellation
     done_callback = None
@@ -298,7 +299,7 @@ async def collect_with_cancel(stream):
     return results
 
 @pytest.fixture
-def shutdown_event():
+def shutdown_event() -> Event:
     """Fixture providing an asyncio Event for shutdown testing."""
     return asyncio.Event()
 
@@ -308,7 +309,7 @@ def controller_service(shutdown_event, stdio_service):
     return GRPCControllerService(shutdown_event, stdio_service)
 
 @pytest.mark.asyncio
-async def test_controller_shutdown(controller_service, mock_context, shutdown_event):
+async def test_controller_shutdown(controller_service, mock_context, shutdown_event) -> None:
     """Test the Shutdown method."""
     # Patch the _delayed_shutdown method to prevent actual process termination
     with patch.object(controller_service, '_delayed_shutdown', new_callable=AsyncMock):
@@ -328,7 +329,7 @@ async def test_controller_shutdown(controller_service, mock_context, shutdown_ev
         assert isinstance(response, ControllerEmpty)
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown(controller_service):
+async def test_controller_delayed_shutdown(controller_service) -> None:
     """Test the _delayed_shutdown method."""
     # Patch sleep to avoid actually waiting
     with patch('asyncio.sleep', new_callable=AsyncMock):
@@ -339,7 +340,7 @@ async def test_controller_delayed_shutdown(controller_service):
                 # If we get here without error, the test passes
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown_fallback(controller_service):
+async def test_controller_delayed_shutdown_fallback(controller_service) -> None:
     """Test the _delayed_shutdown fallback path."""
     # Patch sleep to avoid actually waiting
     with patch('asyncio.sleep', new_callable=AsyncMock):
@@ -357,7 +358,7 @@ async def test_controller_delayed_shutdown_fallback(controller_service):
                 # If we get here without error, the test passes
 
 @pytest.mark.asyncio
-async def test_register_protocol_service(shutdown_event):
+async def test_register_protocol_service(shutdown_event) -> None:
     """Test registering all protocol services with a server."""
     # Create a mock server
     mock_server = MagicMock()

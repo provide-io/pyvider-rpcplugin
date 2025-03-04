@@ -14,7 +14,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_unix_transport_server_initialization(unix_transport):
+async def test_unix_transport_server_initialization(unix_transport) -> None:
     print(f"DEBUG: unix_transport type: {type(unix_transport)}")
 
     # Ensure _server attribute exists and is initialized
@@ -26,7 +26,7 @@ async def test_unix_transport_server_initialization(unix_transport):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_connection_metrics(unique_socket_path):
+async def test_unix_socket_connection_metrics(unique_socket_path) -> None:
     """Test connection metrics during data transfer."""
     socket_path = str(unique_socket_path)
     transport = UnixSocketTransport(path=socket_path)

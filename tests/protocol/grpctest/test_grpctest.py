@@ -92,21 +92,21 @@ async def pingpong_stub(grpc_channel: grpc.aio.Channel) -> PingPongStub:
 
 
 @pytest.mark.asyncio
-async def test_double_rpc(test_stub: TestStub):
+async def test_double_rpc(test_stub: TestStub) -> None:
     req = TestRequest(Input=10)
     resp = await test_stub.Double(req)
     assert resp.Output == 20
 
 
 @pytest.mark.asyncio
-async def test_printkv_rpc(test_stub: TestStub):
+async def test_printkv_rpc(test_stub: TestStub) -> None:
     req = PrintKVRequest(Key="test", ValueString="hello")
     resp = await test_stub.PrintKV(req)
     assert isinstance(resp, PrintKVResponse)
 
 
 @pytest.mark.asyncio
-async def test_bidirectional_rpc(test_stub: TestStub):
+async def test_bidirectional_rpc(test_stub: TestStub) -> None:
     req = BidirectionalRequest(id=123)
     resp = await test_stub.Bidirectional(req)
     assert resp.id == 123
@@ -125,14 +125,14 @@ async def test_stream_rpc(test_stub: TestStub):
 
 
 @pytest.mark.asyncio
-async def test_printstdio_rpc(test_stub: TestStub):
+async def test_printstdio_rpc(test_stub: TestStub) -> None:
     req = PrintStdioRequest(stdout=b"abc", stderr=b"def")
     resp = await test_stub.PrintStdio(req)
     assert isinstance(resp, empty_pb2.Empty)
 
 
 @pytest.mark.asyncio
-async def test_pingpong_rpc(pingpong_stub: PingPongStub):
+async def test_pingpong_rpc(pingpong_stub: PingPongStub) -> None:
     req = PingRequest()
     resp = await pingpong_stub.Ping(req)
     assert resp.msg == "pong"

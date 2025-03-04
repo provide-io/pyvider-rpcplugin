@@ -10,7 +10,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_tcp_handle_client_called():
+async def test_tcp_handle_client_called() -> None:
     transport = TCPSocketTransport(host="127.0.0.1")
     endpoint = await transport.listen()
 
@@ -27,7 +27,7 @@ async def test_tcp_handle_client_called():
 
 
 @pytest.mark.asyncio
-async def test_tcp_handle_client_direct():
+async def test_tcp_handle_client_direct() -> None:
     transport = TCPSocketTransport(host="127.0.0.1")
     endpoint = await transport.listen()
 

@@ -9,25 +9,25 @@ from pyvider.rpcplugin.transport.base import RPCPluginTransport
 class TestTransport(RPCPluginTransport):
     """Concrete implementation of RPCPluginTransport for testing."""
 
-    def __init__(self, endpoint=None):
+    def __init__(self, endpoint=None) -> None:
         self.endpoint = endpoint
         self._listen_called = False
         self._connect_called = False
         self._close_called = False
 
-    async def listen(self):
+    async def listen(self) -> str:
         self._listen_called = True
         return "test://endpoint"
 
-    async def connect(self, endpoint):
+    async def connect(self, endpoint) -> None:
         self._connect_called = True
         self.endpoint = endpoint
 
-    async def close(self):
+    async def close(self) -> None:
         self._close_called = True
 
 
-def test_transport_init():
+def test_transport_init() -> None:
     """Test transport initialization."""
     transport = TestTransport()
     assert transport.endpoint is None
@@ -37,7 +37,7 @@ def test_transport_init():
 
 
 @pytest.mark.asyncio
-async def test_transport_listen():
+async def test_transport_listen() -> None:
     """Test transport listen method."""
     transport = TestTransport()
     endpoint = await transport.listen()
@@ -47,7 +47,7 @@ async def test_transport_listen():
 
 
 @pytest.mark.asyncio
-async def test_transport_connect():
+async def test_transport_connect() -> None:
     """Test transport connect method."""
     transport = TestTransport()
     await transport.connect("test://target")
@@ -57,7 +57,7 @@ async def test_transport_connect():
 
 
 @pytest.mark.asyncio
-async def test_transport_close():
+async def test_transport_close() -> None:
     """Test transport close method."""
     transport = TestTransport()
     await transport.close()
@@ -66,7 +66,7 @@ async def test_transport_close():
 
 
 @pytest.mark.asyncio
-async def test_abstract_transport_methods():
+async def test_abstract_transport_methods() -> None:
     """Test that abstract transport methods raise NotImplementedError."""
     # Create a transport with missing implementation
     class IncompleteTransport(RPCPluginTransport):

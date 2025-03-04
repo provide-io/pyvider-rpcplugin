@@ -1257,12 +1257,13 @@ telemetry = [
 dev = [
     { name = "hatch" },
     { name = "pynguin" },
-    { name = "pyre" },
+    { name = "pyre-check" },
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-testmon" },
     { name = "pytest-trace" },
     { name = "pytest-xdist" },
+    { name = "sapp" },
     { name = "viztracer" },
 ]
 
@@ -1303,12 +1304,13 @@ provides-extras = ["dev", "telemetry"]
 dev = [
     { name = "hatch", specifier = ">=1.14.0" },
     { name = "pynguin", specifier = ">=0.40.0" },
-    { name = "pyre", specifier = ">=1.12.5" },
+    { name = "pyre-check", specifier = ">=0.9.23" },
     { name = "pytest-benchmark", specifier = ">=5.1.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-testmon", specifier = ">=2.1.3" },
     { name = "pytest-trace", specifier = ">=1.0.0" },
     { name = "pytest-xdist", specifier = ">=3.6.1" },
+    { name = "sapp", specifier = ">=0.4" },
     { name = "viztracer", specifier = ">=1.0.2" },
 ]
 
@@ -1398,6 +1400,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/49/79/acbc1edd03ac0e2a04ae2593555dbc9990b34090a9729a0c4c0cf20fb595/ruff-0.9.7-py3-none-win32.whl", hash = "sha256:e9ece95b7de5923cbf38893f066ed2872be2f2f477ba94f826c8defdd6ec6b7d", size = 9988751 },
     { url = "https://files.pythonhosted.org/packages/6d/95/67153a838c6b6ba7a2401241fd8a00cd8c627a8e4a0491b8d853dedeffe0/ruff-0.9.7-py3-none-win_amd64.whl", hash = "sha256:3770fe52b9d691a15f0b87ada29c45324b2ace8f01200fb0c14845e499eb0c2c", size = 11002987 },
     { url = "https://files.pythonhosted.org/packages/63/6a/aca01554949f3a401991dc32fe22837baeaccb8a0d868256cbb26a029778/ruff-0.9.7-py3-none-win_arm64.whl", hash = "sha256:b075a700b2533feb7a01130ff656a4ec0d5f340bb540ad98759b8401c32c2037", size = 10177763 },
+]
+
+[[package]]
+name = "sapp"
+version = "0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/a8/1111cf0503fe4dd8a0e98f1f1939efd9f16d405cd9fece8792e0e94a7632/sapp-0.4.tar.gz", hash = "sha256:9bab00392ed8846662e23ef6dd30080f42e2129bee53f1ea8ae9ddf7aab206be", size = 16946 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1a/c2/dadcd55e4e9452e35a10e00cd70d3374e7df7cf5c8f8c7e0f7bbefa1b5b4/sapp-0.4-py3-none-any.whl", hash = "sha256:bbc10e36ff55fd005611aa98959301b993933269b0e6c0b8ec0994d43296ca9c", size = 31069 },
 ]
 
 [[package]]

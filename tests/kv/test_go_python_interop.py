@@ -19,11 +19,11 @@ from pyvider.rpcplugin.logger import logger
 from tests.kv.proto import kv_pb2, kv_pb2_grpc
 from tests.fixtures import *
 
-TEST_DIR = Path(__file__).parent
+TEST_DIR: Path = Path(__file__).parent
 DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-plugin" / "bin" / "kv-go-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
-LARGE_VALUE_SIZE = 1 * 1024 * 1024  # 1MB
+LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
 SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
 
 
@@ -108,7 +108,7 @@ async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
 
 
 @pytest.mark.asyncio
-async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub):
+async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test basic Put/Get operations with Go server."""
     logger.debug("🧪📤🚀 Testing basic Put operation")
 
@@ -139,7 +139,7 @@ async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub):
 
 
 @pytest.mark.asyncio
-async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub):
+async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with empty values."""
     logger.debug("🧪🔍🚀 Testing operations with empty values")
 
@@ -175,7 +175,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub):
 
 
 @pytest.mark.asyncio
-async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub):
+async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with special characters in keys and values."""
     logger.debug("🧪🔍🚀 Testing operations with special characters")
 
@@ -211,7 +211,7 @@ async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub):
 
 
 @pytest.mark.asyncio
-async def test_go_server_nonexistent_key(kv_stub: kv_pb2_grpc.KVStub):
+async def test_go_server_nonexistent_key(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test Get operation for nonexistent key."""
     logger.debug("🧪🔍🚀 Testing Get operation for nonexistent key")
 
@@ -230,7 +230,7 @@ async def test_go_server_nonexistent_key(kv_stub: kv_pb2_grpc.KVStub):
 
 
 @pytest.mark.asyncio
-async def test_go_server_large_value(kv_stub: kv_pb2_grpc.KVStub):
+async def test_go_server_large_value(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with large values."""
     logger.debug(f"🧪🔍🚀 Testing operations with large value ({LARGE_VALUE_SIZE/1024:.1f} KB)")
 
@@ -262,7 +262,7 @@ async def test_go_server_large_value(kv_stub: kv_pb2_grpc.KVStub):
 
 
 @pytest.mark.asyncio
-async def test_go_server_rapid_operations(kv_stub: kv_pb2_grpc.KVStub):
+async def test_go_server_rapid_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test rapid sequence of Put/Get operations."""
     logger.debug("🧪🚀🔄 Testing rapid sequence of operations")
 
@@ -318,7 +318,7 @@ async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value
 # from pyvider.rpcplugin.logger import logger
 # 
 # # Use a relative path based on this test file's location
-TEST_DIR = Path(__file__).parent
+TEST_DIR: Path = Path(__file__).parent
 DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-plugin" / "bin" / "kv-go-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 
@@ -349,7 +349,7 @@ async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int
 
 
 @pytest.mark.asyncio
-async def test_go_server_binary_exists():
+async def test_go_server_binary_exists() -> None:
     """Test that the Go server binary exists and is executable."""
     # Check the default path
     server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
@@ -367,7 +367,7 @@ async def test_go_server_binary_exists():
 
 
 @pytest.mark.asyncio
-async def test_go_server_basic_execution():
+async def test_go_server_basic_execution() -> None:
     """Test that the Go server binary can be executed with basic arguments."""
     server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
 
@@ -391,7 +391,7 @@ async def test_go_server_basic_execution():
 
 
 @pytest.mark.asyncio
-async def test_go_server_with_environment():
+async def test_go_server_with_environment() -> None:
     """Test that the Go server responds properly to environment variables."""
     server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
 
@@ -441,7 +441,7 @@ async def test_go_server_with_environment():
 
 
 @pytest.mark.asyncio
-async def test_client_connection_timeout():
+async def test_client_connection_timeout() -> None:
     """Test how the client handles connection timeout with the Go server."""
     server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
 
@@ -489,7 +489,7 @@ async def test_client_connection_timeout():
 
 
 @pytest.mark.asyncio
-async def test_connection_with_debugging():
+async def test_connection_with_debugging() -> None:
     """Test connection with enhanced debugging to diagnose timeout issues."""
     server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
 

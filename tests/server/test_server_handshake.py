@@ -17,7 +17,7 @@ async def test_server_handshake_invalid_cookie(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     # Set invalid cookie values directly in rpcplugin_config to ensure they're used by validate_magic_cookie
     monkeypatch.setattr(rpcplugin_config, "config", {
         "PLUGIN_MAGIC_COOKIE_KEY": "PLUGIN_MAGIC_COOKIE",
@@ -45,7 +45,7 @@ async def test_server_handshake_missing_env(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     mock_server_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
@@ -69,7 +69,7 @@ async def test_negotiate_handshake_with_provided_transport(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     transport = mock_server_transport
 
     server = RPCPluginServer(
@@ -100,7 +100,7 @@ async def test_negotiate_handshake_via_negotiation(
     mock_server_handler,
     mock_server_config,
     mock_server_transport_tcp,
-):
+) -> None:
 
     # right now this fails if there is Unix. But it works fine
     # with the tests which has a config set.
@@ -131,7 +131,7 @@ async def test_negotiate_handshake_provided_transport(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     # When self.transport is provided, it should use that transport.
     tcp_transport = TCPSocketTransport(host="127.0.0.1")
     server = RPCPluginServer(
@@ -160,7 +160,7 @@ async def test_negotiate_handshake_from_config(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     transport = mock_server_transport
 
     # When self.transport is None, simulate negotiation via configuration.

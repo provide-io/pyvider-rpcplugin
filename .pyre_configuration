@@ -5,5 +5,9 @@
       "import_root": "src/pyvider",
       "source": "src/pyvider/rpcplugin"
     }
+  ],
+  "taint_models_path": [
+    "/Users/tim.perkins/Library/Application Support/hatch/env/virtual/pyvider-rpcplugin/mLNUAH2k/pyvider-rpcplugin/lib/pyre_check/taint",
+    "/Users/tim.perkins/Library/Application Support/hatch/env/virtual/pyvider-rpcplugin/mLNUAH2k/pyvider-rpcplugin/lib/pyre_check/third_party_taint"
   ]
 }

@@ -26,7 +26,7 @@ def summarize_text(text: str, length: int = 32) -> str:
 class TestKVHandler(kv_pb2_grpc.KVServicer):
     """KV service handler implementation with proper type handling."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an in-memory key-value store."""
         self._store = {}
         logger.debug("🔌🚀✅ KV handler initialized")
@@ -73,7 +73,7 @@ class TestKVHandler(kv_pb2_grpc.KVServicer):
             return kv_pb2.Empty()  # Return empty response, will not be used because of abort
 
 @pytest_asyncio.fixture
-async def kv_handler():
+async def kv_handler() -> TestKVHandler:
     """Provides a test KV handler instance."""
     handler = TestKVHandler()
     logger.debug("🔌🚀✅ Created KV handler")
@@ -186,7 +186,7 @@ async def kv_client(kv_server, transport_fixture):
         logger.debug("🙋🔒✅ KV client closed")
 
 @pytest.mark.asyncio
-async def test_kv_put_get_flow(kv_client):
+async def test_kv_put_get_flow(kv_client) -> None:
     """Test basic Put/Get operations."""
     stub = kv_pb2_grpc.KVStub(kv_client._channel)
     logger.debug("🔌🧪🚀 Starting Put/Get flow test")
@@ -215,7 +215,7 @@ async def test_kv_put_get_flow(kv_client):
         raise
 
 @pytest.mark.asyncio
-async def test_kv_missing_key(kv_client):
+async def test_kv_missing_key(kv_client) -> None:
     """Test Get with nonexistent key."""
     stub = kv_pb2_grpc.KVStub(kv_client._channel)
     logger.debug("🔌🧪🚀 Starting missing key test")
@@ -230,7 +230,7 @@ async def test_kv_missing_key(kv_client):
     logger.debug("🔌🧪✅ Missing key test passed: received expected NOT_FOUND error")
 
 @pytest.mark.asyncio
-async def test_kv_concurrent_operations(kv_client):
+async def test_kv_concurrent_operations(kv_client) -> None:
     """Test concurrent Put/Get operations."""
     stub = kv_pb2_grpc.KVStub(kv_client._channel)
     logger.debug("🔌🧪🚀 Starting concurrent operations test")

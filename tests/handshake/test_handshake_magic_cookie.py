@@ -12,7 +12,7 @@ VALID_MAGIC_COOKIE = "hello"
 
 
 
-def test_validate_magic_cookie_valid(monkeypatch):
+def test_validate_magic_cookie_valid(monkeypatch) -> None:
     # Make sure config sees valid cookie scenario
     monkeypatch.setitem(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE"
@@ -22,7 +22,7 @@ def test_validate_magic_cookie_valid(monkeypatch):
     validate_magic_cookie()  # no error expected
 
 
-def test_validate_magic_cookie_invalid(monkeypatch):
+def test_validate_magic_cookie_invalid(monkeypatch) -> None:
     # mismatch scenario
     monkeypatch.setitem(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE"
@@ -53,7 +53,7 @@ def test_validate_magic_cookie_invalid(monkeypatch):
 )
 def test_validate_magic_cookie_failures(
     monkeypatch, magic_cookie_key, magic_cookie_value, expected_error
-):
+) -> None:
     monkeypatch.setitem(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", magic_cookie_key
     )
@@ -68,7 +68,7 @@ def test_validate_magic_cookie_failures(
         validate_magic_cookie()
 
 
-def test_validate_magic_cookie_missing_still_raises():
+def test_validate_magic_cookie_missing_still_raises() -> None:
     with pytest.raises(HandshakeError, match="cookie_key not found"):
         validate_magic_cookie(magic_cookie_key=None, magic_cookie_value=None)
 
@@ -98,7 +98,7 @@ def test_validate_magic_cookie_missing_still_raises():
 )
 def test_validate_magic_cookie(
     monkeypatch, set_key, set_value, set_cookie, expect_error, error_regex
-):
+) -> None:
     """
     Parametrized test that covers valid/invalid cookie scenarios.
     We monkeypatch rpcplugin_config so that validate_magic_cookie sees the right values.
@@ -127,7 +127,7 @@ def test_validate_magic_cookie(
         validate_magic_cookie()
 
 
-def test_validate_magic_cookie_explicit_args(monkeypatch):
+def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     """
     Example test providing explicit function arguments
     rather than reading from config.

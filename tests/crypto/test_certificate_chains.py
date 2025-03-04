@@ -17,7 +17,7 @@ from pyvider.rpcplugin.exception import CertificateError
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_certificate_chain_validation(client_cert, server_cert):
+async def test_certificate_chain_validation(client_cert, server_cert) -> None:
     """Test validation of a certificate chain."""
     # Add server cert to client's trust chain
     client_cert.trust_chain.append(server_cert)
@@ -26,7 +26,7 @@ async def test_certificate_chain_validation(client_cert, server_cert):
     assert client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async def test_certificate_chain_validation_no_trust(client_cert, server_cert):
+async def test_certificate_chain_validation_no_trust(client_cert, server_cert) -> None:
     """Test validation behavior when certificates are not in trust chain."""
     # First ensure trust chain is empty
     client_cert.trust_chain = []
@@ -39,7 +39,7 @@ async def test_certificate_chain_validation_no_trust(client_cert, server_cert):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cert_fixture", ["client_cert", "server_cert"])
-async def test_certificate_basic_properties(cert_fixture, request):
+async def test_certificate_basic_properties(cert_fixture, request) -> None:
     """Test basic certificate properties."""
     cert = request.getfixturevalue(cert_fixture)
 
@@ -51,7 +51,7 @@ async def test_certificate_basic_properties(cert_fixture, request):
     assert isinstance(cert.public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
 
 @pytest.mark.asyncio
-async def test_certificate_self_signed_validation(client_cert):
+async def test_certificate_self_signed_validation(client_cert) -> None:
     """Test self-signed certificate validation."""
     # Clear trust chain first
     client_cert.trust_chain = []
@@ -66,7 +66,7 @@ async def test_certificate_self_signed_validation(client_cert):
         pytest.skip("Certificate is not self-signed")
 
 @pytest.mark.asyncio
-async def test_certificate_extensions(client_cert):
+async def test_certificate_extensions(client_cert) -> None:
     """Test certificate extensions are present and valid."""
     x509_cert = client_cert._cert
 
@@ -95,7 +95,7 @@ async def test_certificate_extensions(client_cert):
         pytest.skip("SAN extension not present")
 
 @pytest.mark.asyncio
-async def test_certificate_validity_period(client_cert):
+async def test_certificate_validity_period(client_cert) -> None:
     """Test certificate validity period checking."""
     now = datetime.now(timezone.utc)
     assert client_cert._cert.not_valid_before_utc <= now
@@ -103,18 +103,18 @@ async def test_certificate_validity_period(client_cert):
     assert client_cert.is_valid
 
 @pytest.mark.asyncio
-async def test_certificate_unique_serial(client_cert, server_cert):
+async def test_certificate_unique_serial(client_cert, server_cert) -> None:
     """Test certificates have unique serial numbers."""
     assert client_cert._cert.serial_number != server_cert._cert.serial_number
 
 @pytest.mark.asyncio
-async def test_generate_certificate_invalid_type():
+async def test_generate_certificate_invalid_type() -> None:
     """Test error handling for invalid key type."""
     with pytest.raises(CertificateError):
         Certificate(generate_keypair=True, key_type="invalid_type")
 
 @pytest.mark.asyncio
-async def test_certificate_repr():
+async def test_certificate_repr() -> None:
     """Ensure repr() includes subject, issuer, and validity."""
     cert = Certificate(generate_keypair=True)
     cert_repr = repr(cert)
@@ -124,7 +124,7 @@ async def test_certificate_repr():
     assert "ca=" in cert_repr
 
 @pytest.mark.asyncio
-async def test_certificate_hash(client_cert):
+async def test_certificate_hash(client_cert) -> None:
     """Test certificate hash generation."""
     cert_hash = hash(client_cert)
     assert isinstance(cert_hash, int)
@@ -132,7 +132,7 @@ async def test_certificate_hash(client_cert):
     assert hash(client_cert) == cert_hash
 
 @pytest.mark.asyncio
-async def test_certificate_invalid_trust_chain_signature():
+async def test_certificate_invalid_trust_chain_signature() -> None:
     """Ensure certificate trust chain fails on signature mismatch."""
     cert1 = Certificate(generate_keypair=True)
     cert2 = Certificate(generate_keypair=True)

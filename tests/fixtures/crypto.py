@@ -98,31 +98,31 @@ def valid_cert_pem(client_cert):
 
 
 @pytest.fixture
-def invalid_key_pem():
+def invalid_key_pem() -> str:
     """Returns an invalid PEM certificate."""
     return "INVALID KEY DATA"
 
 
 @pytest.fixture
-def invalid_cert_pem():
+def invalid_cert_pem() -> str:
     """Returns an invalid PEM certificate."""
     return "INVALID CERTIFICATE DATA"
 
 
 @pytest.fixture
-def malformed_cert_pem():
+def malformed_cert_pem() -> str:
     """Returns a PEM certificate with incorrect headers."""
     return "-----BEGIN CERT-----\nMALFORMED DATA\n-----END CERT-----"
 
 
 @pytest.fixture
-def empty_cert():
+def empty_cert() -> str:
     """Returns an empty certificate string."""
     return ""
 
 
 @pytest.fixture
-def temporary_cert_file(tmp_path, client_cert):
+def temporary_cert_file(tmp_path, client_cert) -> str:
     """Creates a temporary file containing the client certificate."""
     cert_file = tmp_path / "client_cert.pem"
     cert_file.write_text(client_cert.cert)
@@ -130,7 +130,7 @@ def temporary_cert_file(tmp_path, client_cert):
 
 
 @pytest.fixture
-def temporary_key_file(tmp_path, client_cert):
+def temporary_key_file(tmp_path, client_cert) -> str:
     """Creates a temporary file containing the client private key."""
     key_file = tmp_path / "client_key.pem"
     key_file.write_text(client_cert.key)  # Write valid PEM key

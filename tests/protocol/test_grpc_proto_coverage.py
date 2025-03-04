@@ -14,7 +14,7 @@ from pyvider.rpcplugin.protocol import (
     grpc_stdio_pb2_grpc,
 )
 
-def test_grpc_proto_descriptors():
+def test_grpc_proto_descriptors() -> None:
     """Test accessing proto descriptors from all proto modules."""
     assert hasattr(grpc_broker_pb2, "DESCRIPTOR")
     assert hasattr(grpc_controller_pb2, "DESCRIPTOR")
@@ -33,7 +33,7 @@ def test_grpc_proto_descriptors():
         assert "_STDIODATA" in grpc_stdio_pb2._globals
         assert "_GRPCSTDIO" in grpc_stdio_pb2._globals
 
-def test_grpc_stub_creation():
+def test_grpc_stub_creation() -> None:
     """Test creating stubs from gRPC classes."""
     mock_channel = MagicMock()
 
@@ -47,7 +47,7 @@ def test_grpc_stub_creation():
     assert hasattr(controller_stub, "Shutdown")
     assert hasattr(stdio_stub, "StreamStdio")
 
-def test_grpc_version_check():
+def test_grpc_version_check() -> None:
     """Test the gRPC version compatibility check."""
     # Force a version mismatch
     with patch("grpc._utilities.first_version_is_lower", return_value=True):
@@ -60,7 +60,7 @@ def test_grpc_version_check():
         # Should not raise
         importlib.reload(grpc_broker_pb2_grpc)
 
-def test_grpc_add_handlers_to_server():
+def test_grpc_add_handlers_to_server() -> None:
     """Test adding handlers to server."""
     mock_server = MagicMock()
 

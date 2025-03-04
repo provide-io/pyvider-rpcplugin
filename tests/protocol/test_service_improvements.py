@@ -15,7 +15,7 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 
 
 @pytest.mark.asyncio
-async def test_stdio_put_line_exception_handling():
+async def test_stdio_put_line_exception_handling() -> None:
     """Test error handling in stdio put_line method (line 123-128)."""
     stdio_service = GRPCStdioService()
 
@@ -38,7 +38,7 @@ async def test_stdio_put_line_exception_handling():
 
 
 @pytest.mark.asyncio
-async def test_broker_service_start_stream_error_handling():
+async def test_broker_service_start_stream_error_handling() -> None:
     """Test broker StartStream exception handling (line 95)."""
     broker_service = GRPCBrokerService()
 
@@ -82,7 +82,7 @@ async def test_broker_service_start_stream_error_handling():
 
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown_unix():
+async def test_controller_delayed_shutdown_unix() -> None:
     """Test controller _delayed_shutdown on Unix systems (line 211-216)."""
     stdio_service = GRPCStdioService()
     shutdown_event = asyncio.Event()
@@ -101,7 +101,7 @@ async def test_controller_delayed_shutdown_unix():
 
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown_windows():
+async def test_controller_delayed_shutdown_windows() -> None:
     """Test controller _delayed_shutdown on Windows (line 211-216)."""
     stdio_service = GRPCStdioService()
     shutdown_event = asyncio.Event()

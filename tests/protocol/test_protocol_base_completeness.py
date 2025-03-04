@@ -31,26 +31,26 @@ class CompleteTestProtocol(RPCPluginProtocol):
         pass
 
 
-def test_abstract_base_cannot_instantiate():
+def test_abstract_base_cannot_instantiate() -> None:
     """Test that RPCPluginProtocol cannot be instantiated directly."""
     with pytest.raises(TypeError):
         RPCPluginProtocol()
 
 
-def test_partial_implementation_cannot_instantiate():
+def test_partial_implementation_cannot_instantiate() -> None:
     """Test that a partial implementation cannot be instantiated."""
     with pytest.raises(TypeError):
         PartialTestProtocol()
 
 
-def test_complete_implementation_can_instantiate():
+def test_complete_implementation_can_instantiate() -> None:
     """Test that a complete implementation can be instantiated."""
     protocol = CompleteTestProtocol()
     assert isinstance(protocol, RPCPluginProtocol)
 
 
 @pytest.mark.asyncio
-async def test_complete_implementation_methods():
+async def test_complete_implementation_methods() -> None:
     """Test that methods of a complete implementation work."""
     protocol = CompleteTestProtocol()
 

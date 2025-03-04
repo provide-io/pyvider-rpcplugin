@@ -157,7 +157,7 @@ class GRPCStdioService(GRPCStdioServicer):
         self._message_queue = asyncio.Queue()
         self._shutdown = False
 
-    async def put_line(self, line: bytes, is_stderr=False) -> None:
+    async def put_line(self, line: bytes, is_stderr: bool=False) -> None:
         """
         Public method: feed lines to the queue from somewhere else in your code,
         or from a logging handler that writes to the queue.
@@ -256,7 +256,7 @@ class GRPCControllerService(GRPCControllerServicer):
         # Return an empty object
         return CEmpty()
 
-    async def _delayed_shutdown(self):
+    async def _delayed_shutdown(self) -> None:
         """Allow RPC response to complete before shutting down"""
         await asyncio.sleep(0.1)
         # Now trigger actual process exit
