@@ -1,6 +1,8 @@
-#!uv run python3
+#!/bin/bash -c 'exec uv run python3 "$0" "$@" || exec /usr/bin/env python3 "$0" "$@"'
 
-# tests/kv/py_kv_client.py
+# #!uv run python3
+
+# tests/kv/py_kv_client_2.py
 
 import asyncio
 import logging
