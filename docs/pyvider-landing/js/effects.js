@@ -81,6 +81,27 @@ export const effects = {
     // Simple bounce using absolute sine wave
     particle.group.translate.y = particle.originalY + 
                                Math.abs(Math.sin(time * particle.speed)) * particle.amplitude;
+  },
+  
+  /**
+   * Enhanced rotate effect combining rotation with throbbing
+   * @param {Object} particle - The particle to update
+   * @param {number} time - Current time in seconds
+   */
+  rotateAndThrob: (particle, time) => {
+    // Slow rotation on all axes
+    particle.group.rotate.z = Math.sin(time * 0.2 + particle.phase) * 0.3;
+    particle.group.rotate.x = Math.cos(time * 0.15 + particle.phase) * 0.2;
+    particle.group.rotate.y = Math.sin(time * 0.1 + particle.phase * 2) * 0.25;
+    
+    // Throbbing/pulsing effect
+    const baseScale = 1.0;
+    const pulseAmount = 0.1;
+    const scale = baseScale + Math.sin(time * 0.4 + particle.phase * 3) * pulseAmount;
+    
+    particle.group.scale.x = scale;
+    particle.group.scale.y = scale;
+    particle.group.scale.z = scale;
   }
 };
 
@@ -90,7 +111,10 @@ export const effects = {
  * @returns {string} The name of the effect to apply
  */
 export function getEffectForChar(char) {
-  // Map specific characters to specific effects for visual consistency
+  // Now all characters will have the rotateAndThrob effect as requested,
+  // with a few special characters that might get secondary effects
+  
+  // Map specific characters to specific secondary effects
   const effectMap = {
     '@': 'pulse',
     '#': 'orbit',
@@ -103,6 +127,7 @@ export function getEffectForChar(char) {
     '%': 'bounce'
   };
   
-  // Use mapped effect or choose randomly from available effects
-  return effectMap[char] || Object.keys(effects)[Math.floor(Math.random() * Object.keys(effects).length)];
+  // The main effect is rotateAndThrob for all characters
+  // Secondary effects are handled in updateParticles
+  return 'rotateAndThrob';
 }

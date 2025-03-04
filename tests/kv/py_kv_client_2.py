@@ -1,9 +1,8 @@
-#!uv run python3
+#!/usr/bin/env python3
 
-# tests/kv/py_kv_client_1.py
+# tests/kv/py_kv_client_2.py
 
 import asyncio
-import logging
 import os
 import sys
 import time
@@ -19,12 +18,6 @@ from tests.kv.proto import (
     kv_pb2_grpc,
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s.%(msecs)03d %(levelname)s %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
 
 
 class KVClient:
@@ -85,7 +78,6 @@ class KVClient:
             logger.debug("▶️ Starting the client with 10 second timeout")
             await asyncio.wait_for(self._client.start(), timeout=10.0)
             
-            # Diagnostic logging
             if hasattr(self._client, "_client_cert"):
                 logger.info("🔐 Client certificate generated")
                 

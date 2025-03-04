@@ -83,15 +83,15 @@ class AsciiParticleApp {
    * Set up event listeners for interaction
    */
   setupEventListeners() {
-    // Mouse events
-    this.canvas.addEventListener('mousedown', this.handleDragStart.bind(this));
-    window.addEventListener('mousemove', this.handleDragMove.bind(this));
-    window.addEventListener('mouseup', this.handleDragEnd.bind(this));
+    // Mouse events for future interaction (not for rotation)
+    this.canvas.addEventListener('mousedown', this.handleMouseDown.bind(this));
+    window.addEventListener('mousemove', this.handleMouseMove.bind(this));
+    window.addEventListener('mouseup', this.handleMouseUp.bind(this));
     
     // Touch events
-    this.canvas.addEventListener('touchstart', this.handleDragStart.bind(this), { passive: false });
-    window.addEventListener('touchmove', this.handleDragMove.bind(this), { passive: false });
-    window.addEventListener('touchend', this.handleDragEnd.bind(this));
+    this.canvas.addEventListener('touchstart', this.handleMouseDown.bind(this), { passive: false });
+    window.addEventListener('touchmove', this.handleMouseMove.bind(this), { passive: false });
+    window.addEventListener('touchend', this.handleMouseUp.bind(this));
     
     // Window resize
     window.addEventListener('resize', debounce(this.handleResize.bind(this), 250));
@@ -101,46 +101,42 @@ class AsciiParticleApp {
   }
   
   /**
-   * Handle the start of a drag operation
+   * Handle mouse down event
    * @param {Event} event - Mouse or touch event
    */
-  handleDragStart(event) {
+  handleMouseDown(event) {
     event.preventDefault();
     this.isDragging = true;
     
     // Get pointer position
     const pointer = getPointerPosition(event);
-    this.dragStartX = pointer.x;
-    this.dragStartY = pointer.y;
+    
+    // For now, we're just tracking the state
+    // Future interactions can be added here
+    console.log('Mouse down at', pointer);
   }
   
   /**
-   * Handle dragging movement
+   * Handle mouse move event
    * @param {Event} event - Mouse or touch event
    */
-  handleDragMove(event) {
+  handleMouseMove(event) {
     if (!this.isDragging) return;
     
     // Get current pointer position
     const pointer = getPointerPosition(event);
     
-    // Calculate drag distance and update rotation
-    const dragX = pointer.x - this.dragStartX;
-    const dragY = pointer.y - this.dragStartY;
-    
-    this.rotationY += dragX * 0.01;
-    this.rotationX += dragY * 0.01;
-    
-    // Update drag start for next move
-    this.dragStartX = pointer.x;
-    this.dragStartY = pointer.y;
+    // Future mouse move interactions can be added here
+    // For now, we're just logging
+    console.log('Mouse move at', pointer);
   }
   
   /**
-   * Handle the end of a drag operation
+   * Handle mouse up event
    */
-  handleDragEnd() {
+  handleMouseUp() {
     this.isDragging = false;
+    console.log('Mouse up');
   }
   
   /**
@@ -163,7 +159,10 @@ class AsciiParticleApp {
     // Calculate time in seconds for animations
     const time = timestamp / 1000;
     
-    // Apply rotation to particle group
+    // Set a fixed rotation instead of using mouse control
+    // This creates a subtle, constant movement
+    this.rotationY = Math.sin(time * 0.1) * 0.2;
+    this.rotationX = Math.cos(time * 0.1) * 0.1;
     this.particleManager.setRotation(this.rotationX, this.rotationY);
     
     // Update all particles
