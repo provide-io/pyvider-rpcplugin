@@ -56,7 +56,7 @@ class UnixSocketTransport(RPCPluginTransport):
         else:
             # Normalize path if it has a unix: prefix
             self.path = self._normalize_path(self.path)
-            
+
         self._server_ready = asyncio.Event()
         logger.debug(f"📞🚀 UnixSocketTransport initialized with path={self.path}")
 
@@ -71,7 +71,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 
         logger.debug(f"📞🚀 Normalized path: {path}")
         return path
-    
+
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
         if not self.path or not os.path.exists(self.path):
@@ -211,30 +211,6 @@ class UnixSocketTransport(RPCPluginTransport):
         
         if not os.path.exists(endpoint):
             logger.error(f"📞🤝❌ Socket file does not exist: {endpoint}")
-            raise TransportError(f"Socket {endpoint} does not exist")
-
-        try:
-            # Connect with timeout
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_unix_connection(endpoint),
-                timeout=5.0
-            )
-            self.endpoint = endpoint
-            logger.debug(f"📞🤝✅ Connected to Unix socket at {endpoint}")
-        except Exception as e:
-            logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
-            raise TransportError(f"Failed to connect to Unix socket: {e}")
-
-    async def X1_connect(self, endpoint: str) -> None:
-        """Connect to Unix socket with robust path handling."""
-        # Normalize endpoint (handle unix: prefix, multiple slashes, etc)
-        orig_endpoint = endpoint
-        endpoint = self._normalize_path(endpoint)
-        
-        logger.debug(f"📞🤝🚀 Connecting to Unix socket at {endpoint} (from {orig_endpoint})")
-        
-        if not os.path.exists(endpoint):
-            logger.error(f"📞🤝❌ Socket {endpoint} does not exist")
             raise TransportError(f"Socket {endpoint} does not exist")
 
         try:
