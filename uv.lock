@@ -1257,6 +1257,7 @@ telemetry = [
 dev = [
     { name = "hatch" },
     { name = "pynguin" },
+    { name = "pyre" },
     { name = "pytest-benchmark" },
     { name = "pytest-cov" },
     { name = "pytest-testmon" },
@@ -1302,6 +1303,7 @@ provides-extras = ["dev", "telemetry"]
 dev = [
     { name = "hatch", specifier = ">=1.14.0" },
     { name = "pynguin", specifier = ">=0.40.0" },
+    { name = "pyre", specifier = ">=1.12.5" },
     { name = "pytest-benchmark", specifier = ">=5.1.0" },
     { name = "pytest-cov", specifier = ">=6.0.0" },
     { name = "pytest-testmon", specifier = ">=2.1.3" },
