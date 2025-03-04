@@ -188,7 +188,6 @@ class RPCPluginClient:
 
 ################################################################################
 
-    # Then modify _perform_handshake to start the relay early and add more debugging:
     async def _perform_handshake(self) -> None:
         """
         Reads a single line from the plugin stdout for handshake:
@@ -387,7 +386,7 @@ class RPCPluginClient:
 
 ################################################################################
 
-    async def _create_grpc_channel(self) -> None:
+    async def X_create_grpc_channel(self) -> None:
         """
         Creates a secure gRPC channel using the server cert from handshake,
         plus client cert if mTLS is enabled.
