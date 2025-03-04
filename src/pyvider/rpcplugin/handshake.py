@@ -153,6 +153,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             from pyvider.rpcplugin.transport import UnixSocketTransport
 
             return "unix", UnixSocketTransport(path=transport_path)
+
         elif "tcp" in server_transports:
             logger.debug(
                 "🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available"
