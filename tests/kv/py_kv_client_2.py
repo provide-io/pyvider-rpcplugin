@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!uv run python3
 
 # tests/kv/py_kv_client.py
 
