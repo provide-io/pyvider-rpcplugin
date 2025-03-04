@@ -1,0 +1,31 @@
+/* Base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+
+/* Canvas styles */
+#zdog-canvas {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  cursor: move;
+  touch-action: none;
+}
+
+/* Ensure the canvas remains accessible and visible */
+@media (prefers-reduced-motion: reduce) {
+  #zdog-canvas {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
