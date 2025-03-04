@@ -148,7 +148,7 @@ PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"
 export PLUGIN_SERVER_PATH
 
 alias venv-activate="
-  unalias python python3;
+  unalias python python3 > /dev/null 2>&1;
   uv venv 2>&1 | grep 'Activate with' | sed 's/.* source //g'
 "
 
