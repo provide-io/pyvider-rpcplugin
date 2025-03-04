@@ -1,34 +1,25 @@
 # tests/fixtures/mocks.py
 
-import asyncio
-import os
-import socket
-import sys
 
-from typing import TypeVar
 
 import tempfile
-import time
 
 from contextlib import suppress
 
 import pytest
 import pytest_asyncio
 
-from cryptography.hazmat.primitives import serialization
 
 from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 
 from pyvider.rpcplugin.transport import (
-    RPCPluginTransport,
     TCPSocketTransport,
     UnixSocketTransport,
 )
 
-from pyvider.rpcplugin.types import TransportT, ConfigT, HandlerT
+from pyvider.rpcplugin.types import TransportT, HandlerT
 
 from ..fixtures import *
 
@@ -100,7 +91,7 @@ async def mock_server_transport(request) -> TransportT:
 async def mock_server_transport_tcp() -> TransportT:
     try:
         transport = TCPSocketTransport()
-    except Exception as e:
+    except Exception:
         raise ValueError(f"Could not open a TCP Socket Transport: {transport}")
 
     return transport
@@ -113,7 +104,7 @@ async def mock_server_transport_unix() -> TransportT:
     try:
         transport = UnixSocketTransport(path=socket_path)
 
-    except Exception as e:
+    except Exception:
         raise ValueError(f"Could not open a Unix : {transport}")
 
     return transport

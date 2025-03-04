@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_properties.py
 
 import pytest
-import pytest_asyncio
 
 from unittest import mock
 

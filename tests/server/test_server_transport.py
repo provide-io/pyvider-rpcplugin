@@ -1,28 +1,12 @@
 # pyvider/rpcplugin/tests/server/test_server_transport.py
 
-import asyncio
 import os
-import stat
-import sys
-import tempfile
 import pytest
-from io import StringIO
-from unittest.mock import AsyncMock, patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.protocol import RPCPluginProtocol
-from pyvider.rpcplugin.exception import TransportError, HandshakeError, CertificateError
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
-from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import TransportError
+from pyvider.rpcplugin.transport import UnixSocketTransport
 
-from tests.conftest import (
-    mock_server_transport,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    DummyAioServer,
-    DummyGRPCServer,
-)
 
 from tests.fixtures import *
 
@@ -191,7 +175,7 @@ async def test_setup_server_exception(
         transport=transport,
     )
 
-    endpoint = await transport.listen()
+    await transport.listen()
     # with pytest.raises(Exception, match="Server creation failed"):
     with pytest.raises(Exception, match="Failed to "):
         await server._setup_server("client_cert")
@@ -206,14 +190,14 @@ async def test_setup_server_tcp_success(
 ):
 
     transport = mock_server_transport_tcp
-    endpoint = await transport.listen()
+    await transport.listen()
 
     # monkeypatch.setattr(rpcplugin_config, "get",
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
 
     # TODO: man this stuff fails really poorly if any if this stuff is missing.
     #dummy_server = DummyGRPCServer()
-    server = RPCPluginServer(
+    RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,

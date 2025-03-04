@@ -8,16 +8,11 @@ import time
 
 from cryptography.hazmat.primitives.asymmetric import rsa, ec
 
-from pyvider.rpcplugin.exception import CertificateError
 from pyvider.rpcplugin.crypto.certificate import Certificate
 
 from pyvider.rpcplugin.crypto import (
     KEY_TYPE_RSA,
     KEY_TYPE_ECDSA,
-    DEFAULT_RSA_KEY_SIZE,
-    DEFAULT_ECDSA_CURVE,
-    KEY_GENERATORS,
-    KeyPairType,
     generate_rsa_keypair,
     generate_ec_keypair,
     generate_keypair,
@@ -99,7 +94,7 @@ async def test_generate_unsupported_key_type():
 @pytest.mark.asyncio
 async def test_key_generation_performance():
     start_time = time.time()
-    cert = Certificate(generate_keypair=True, key_type=KEY_TYPE_RSA, key_size=2048)
+    Certificate(generate_keypair=True, key_type=KEY_TYPE_RSA, key_size=2048)
     generation_time = time.time() - start_time
     assert generation_time < 1.0  # Should complete within 1 second
 

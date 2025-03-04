@@ -12,9 +12,7 @@ from google.protobuf.empty_pb2 import Empty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 
 from pyvider.rpcplugin.protocol.service import (
-    GRPCBrokerService,
     GRPCStdioService,
-    GRPCControllerService,
     register_protocol_service,
 )
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
@@ -121,7 +119,7 @@ async def test_broker_integration(grpc_server, grpc_channel):
 
     # Verify the response
     assert response.service_id == 1
-    assert response.knock.ack == True
+    assert response.knock.ack is True
 
     # Close the stream
     await stream.done_writing()

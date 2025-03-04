@@ -2,17 +2,14 @@
 # tests/protocol/test_service_direct.py
 
 import asyncio
-import os
 import signal
-import sys
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, ANY
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
     GRPCBrokerService,
     GRPCStdioService,
-    GRPCControllerService,
-    SubchannelConnection
+    GRPCControllerService
 )
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 

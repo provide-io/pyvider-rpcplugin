@@ -5,13 +5,8 @@ import pytest_asyncio
 
 import asyncio
 import os
-import socket
-import sys
 
-import pytest
-import pytest_asyncio
 
-from cryptography.hazmat.primitives import serialization
 
 # rom pyvider.rpcplugin.logger import logger
 # from pyvider.rpcplugin.client import RPCPluginClient

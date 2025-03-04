@@ -1,30 +1,22 @@
 # pyvider/rpcplugin/tests/server/test_server_lifecycle.py
 
 import asyncio
-import os
-import stat
 import sys
-import tempfile
 import pytest
 from io import StringIO
 import gc
 from typing import Any
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
-from pyvider.rpcplugin.exception import TransportError, HandshakeError, CertificateError
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
-from pyvider.rpcplugin.config import rpcplugin_config
 
 from tests.conftest import (
-    mock_server_transport,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
     DummyAioServer,
     DummyGRPCServer,
-    MockProtocol,
 )
 
 from tests.fixtures import *
@@ -54,7 +46,7 @@ async def test_server_serve_runtime_error(
         transport=test_transport,
     )
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
     with pytest.raises(RuntimeError, match="Protocol service registration"):
         await server.serve()
 
@@ -83,7 +75,7 @@ async def test_serve_success(
     server._serving_future = fut
     server._serving_event = asyncio.Event()
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
@@ -106,7 +98,7 @@ async def test_serve_success(
     )
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
     fake_stdout = StringIO()
-    monkeyatch_stdout = monkeypatch.setattr(sys, "stdout", fake_stdout)
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
     await server.serve()
     output = fake_stdout.getvalue().strip()
     assert output == "handshake_response"
@@ -149,7 +141,7 @@ async def test_wait_for_server_ready(
 ):
     test_transport = mock_server_transport
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -206,7 +198,7 @@ async def test_stop_handles_exceptions(
     dummy_server = DummyGRPCServer()
 
     test_transport = mock_server_transport
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     async def failing_stop(grace):
         raise Exception("Server stop failed")
@@ -311,7 +303,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     # Patch _register_signal_handlers to do nothing.
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
 
-    endpoint = await test_transport.listen()
+    await test_transport.listen()
 
     # Create a task for serve(); then, after a short delay, call stop().
     serve_task = asyncio.create_task(server.serve())

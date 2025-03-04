@@ -4,9 +4,6 @@ import pytest
 
 from unittest import mock
 
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from cryptography.x509.oid import NameOID
 
 from pyvider.rpcplugin.exception import CertificateError
 from pyvider.rpcplugin.crypto.certificate import (

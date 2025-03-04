@@ -3,15 +3,11 @@
 
 import pytest
 import importlib
-import grpc
 from unittest.mock import patch, MagicMock
 
 from pyvider.rpcplugin.protocol import (
-    grpc_broker_pb2,
     grpc_broker_pb2_grpc,
-    grpc_controller_pb2,
     grpc_controller_pb2_grpc,
-    grpc_stdio_pb2,
     grpc_stdio_pb2_grpc,
 )
 

@@ -5,10 +5,6 @@ from typing import Any
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
-from pyvider.rpcplugin.types import (
-    ServerT,
-    HandlerT,
-)
 
 from tests.kv.proto import kv_pb2_grpc
 

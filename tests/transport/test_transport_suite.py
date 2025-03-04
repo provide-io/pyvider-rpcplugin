@@ -6,20 +6,17 @@ import os
 import socket
 import tempfile
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
-from typing import AsyncGenerator, Optional, Union, Callable
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
-import attrs
 
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.types import TransportT, HandlerT
+from pyvider.rpcplugin.types import TransportT
 
 # tests/transport/test_transport_suite.py - Replace SocketStateMonitor class entirely
 
@@ -113,7 +110,8 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
     try:
         if transport_type == "unix":
             # Generate unique path
-            import uuid, time
+            import uuid
+            import time
             path = f"/tmp/pyvider_test_{time.time()}_{uuid.uuid4().hex[:8]}.sock"
             
             # Ensure clean state
@@ -132,7 +130,7 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
             try:
                 await asyncio.wait_for(transport.close(), timeout=2.0)
             except asyncio.TimeoutError:
-                logger.error(f"Timeout during transport close")
+                logger.error("Timeout during transport close")
             except Exception as e:
                 logger.error(f"Error during transport close: {e}")
                 

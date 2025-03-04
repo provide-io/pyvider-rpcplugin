@@ -1,30 +1,18 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_chains.py
 
 import pytest
-import pytest_asyncio
 
 from unittest import mock
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from cryptography import x509
 
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
-from cryptography.x509.oid import NameOID
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError
 
-from pyvider.rpcplugin.crypto import (
-    KEY_TYPE_RSA,
-    KEY_TYPE_ECDSA,
-    DEFAULT_RSA_KEY_SIZE,
-    DEFAULT_ECDSA_CURVE,
-    KEY_GENERATORS,
-    KeyPairType,
-    generate_ec_keypair,
-)
 
 from tests.fixtures import *
 

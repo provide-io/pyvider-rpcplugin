@@ -2,13 +2,10 @@
 
 import asyncio
 import os
-from unittest.mock import AsyncMock, patch
 
 import pytest
-import pytest_asyncio
 
 from pyvider.rpcplugin.logger import logger
-from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
 from tests.fixtures import *

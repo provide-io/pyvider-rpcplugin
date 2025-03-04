@@ -2,9 +2,6 @@
 # tests/transport/test_transport_base.py
 
 import pytest
-import pytest_asyncio
-from unittest.mock import AsyncMock, MagicMock
-import asyncio
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
@@ -76,6 +73,6 @@ async def test_abstract_transport_methods():
         pass
 
     with pytest.raises(TypeError):
-        transport = IncompleteTransport()
+        IncompleteTransport()
 
 ### 🐍🏗🧪️

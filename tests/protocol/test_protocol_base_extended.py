@@ -2,8 +2,7 @@
 # tests/protocol/test_protocol_base_extended.py
 
 import pytest
-import asyncio
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import ServerT, HandlerT

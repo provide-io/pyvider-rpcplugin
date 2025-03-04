@@ -5,18 +5,10 @@ import pytest_asyncio
 
 import asyncio
 
-from pyvider.rpcplugin.logger import logger
 
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.handshake import HandshakeConfig
 
-from pyvider.rpcplugin.transport import (
-    RPCPluginTransport,
-    TCPSocketTransport,
-    UnixSocketTransport,
-)
 
-from pyvider.rpcplugin.transport.types import TransportT
 
 
 @pytest.fixture
@@ -51,7 +43,7 @@ async def server_instance(
         )
         rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", "6")
         rpcplugin_config.set("PLUGIN_TRANSPORTS", "unix")
-        client_cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+        rpcplugin_config.get("PLUGIN_CLIENT_CERT")
 
         # Clean up stale socket files
         if transport_name == "unix" and os.path.exists(transport.path):
@@ -64,7 +56,7 @@ async def server_instance(
             config=mock_server_config,
             transport=mock_server_transport,
         )
-        server_task = asyncio.create_task(server.serve())
+        asyncio.create_task(server.serve())
 
         # Wait for server readiness
         await asyncio.wait_for(server.wait_for_server_ready(), timeout=10)
