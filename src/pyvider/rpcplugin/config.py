@@ -139,12 +139,14 @@ def fetch_env_variable(key, meta):
     # Handle lists stored as comma-separated strings
     if isinstance(meta["default"], list) and isinstance(value, str):
         try:
-            return [int(v.strip()) for v in value.split(",")]
+            # Determine if the expected type is integers or strings
+            if all(isinstance(x, int) for x in meta["default"]):
+                return [int(v.strip()) for v in value.split(",")]
+            else:
+                return [v.strip() for v in value.split(",")]
         except ValueError as e:
-            logger.error(f"❌ Failed to parse {key} as a list of integers: {value}")
-            raise ValueError(
-                f"Invalid format for {key}. Expected comma-separated integers, got: {value}"
-            ) from e
+            logger.error(f"❌ Failed to parse {key}: {value}")
+            raise ValueError(f"Invalid format for {key}. Expected list of values, got: {value}") from e
 
     return value
 
