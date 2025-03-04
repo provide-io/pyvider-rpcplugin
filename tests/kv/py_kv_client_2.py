@@ -1,4 +1,4 @@
-#!/bin/bash -c echo hi
+#!/bin/bash -c "echo hi"
 
 
 # #!uv run python3
