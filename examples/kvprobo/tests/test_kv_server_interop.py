@@ -49,7 +49,8 @@ async def go_server_env() -> dict[str, str]:
     """Return the environment variables for the Server."""
     return {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        "BASIC_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport for stability
         "PLUGIN_AUTO_MTLS": "true",   # Enable mTLS
@@ -100,7 +101,6 @@ async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> As
             except Exception as e:
                 logger.error(f"🧪🔒❌ Error closing client: {e}")
 
-
 @pytest_asyncio.fixture
 async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     """Create and return a KV stub for the Server."""
@@ -108,7 +108,6 @@ async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     stub = kv_pb2_grpc.KVStub(kv_go_client._channel)
     logger.debug("🧪🔌✅ KV stub created successfully")
     return stub
-
 
 @pytest.mark.asyncio
 async def test_go_server_binary_exists() -> None:
@@ -157,7 +156,6 @@ async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
         logger.error(f"🧪📥❌ Get operation failed: {e.details()}")
         pytest.fail(f"Get operation failed: {e.details()}")
 
-
 @pytest.mark.asyncio
 async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with empty values."""
@@ -192,7 +190,6 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
     except grpc.RpcError as e:
         logger.error(f"🧪❌ Empty value operation failed: {e.details()}")
         pytest.fail(f"Empty value operation failed: {e.details()}")
-
 
 @pytest.mark.asyncio
 async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None:
