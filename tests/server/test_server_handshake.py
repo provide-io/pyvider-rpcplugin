@@ -46,7 +46,8 @@ async def test_server_handshake_missing_env(
     mock_server_config,
     mock_server_transport,
 ) -> None:
-    mock_server_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
+
+    mock_server_config.set("PLUGIN_MAGIC_COOKIE_KEY", None)
     mock_server_config.set("PLUGIN_MAGIC_COOKIE", "invalid_cookie_value")
     mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "5,6")
 
@@ -75,7 +76,7 @@ async def test_negotiate_handshake_with_provided_transport(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=None,
+        config=mock_server_config,
         transport=transport,
     )
 
