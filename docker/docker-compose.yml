@@ -55,7 +55,7 @@ services:
       target: development
     volumes:
       - .:/app
-    command: ["python", "-m", "tests.kv.server"]
+    command: ["python", "-m", "tests.kv.py_kv_server"]
     environment:
       - PYTHONPATH=/app
       - PLUGIN_AUTO_MTLS=true
