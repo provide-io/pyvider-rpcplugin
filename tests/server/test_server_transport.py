@@ -46,8 +46,10 @@ async def test_setup_server_unix_success_secure(
     mock_server_transport_unix,
 ) -> None:
 
-    test_transport = UnixSocketTransport()
-    # test_transport = mock_server_transport_unix
+    # huh. i should be able to use that UST. but only the mock is working.
+    # i am 99.9% sure this is a me problem.
+    # test_transport = UnixSocketTransport() <-- sigh.
+    test_transport = mock_server_transport_unix # <-- gotta go back and check this
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -58,9 +60,10 @@ async def test_setup_server_unix_success_secure(
 
     try:
         endpoint = await test_transport.listen()
+        assert os.path.exists(endpoint)
+
         await server._setup_server("client_cert")
         assert server._server is not None
-        assert os.path.exists(endpoint)
     finally:
         await test_transport.close()
         await server.stop()
