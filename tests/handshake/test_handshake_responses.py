@@ -39,9 +39,9 @@ async def test_build_handshake_response_with_tls():
 
 
 @pytest.mark.asyncio
-async def test_build_handshake_response_without_tls():
+async def test_build_handshake_response_without_tls(mock_server_transport):
     """Test building a valid handshake response without TLS."""
-    transport = AsyncMock()
+    transport = mock_server_transport
     transport.listen = AsyncMock(return_value="/tmp/pyvider.sock")
 
     response = await build_handshake_response(
