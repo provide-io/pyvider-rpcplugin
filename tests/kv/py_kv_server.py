@@ -1,4 +1,4 @@
-#!uv run python3
+#!uv run python
 
 #!/usr/bin/env python3
 """
