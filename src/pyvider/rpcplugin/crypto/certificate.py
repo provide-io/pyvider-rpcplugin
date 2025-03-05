@@ -205,7 +205,7 @@ class Certificate:
         generate_keypair: bool = False,
         key_type: str = "ecdsa",
         key_size: int = 2048,
-        ecdsa_curve: str = "secp384r1",
+        ecdsa_curve: str = "secp521r1",
         common_name: str = "localhost",
         alt_names: list[str] = None,
         organization_name: str = "HashiCorp",
