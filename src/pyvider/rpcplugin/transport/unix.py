@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 # pyvider/rpcplugin/transport/unix.py
 
 import asyncio
@@ -6,8 +6,6 @@ import errno
 import os
 import socket
 import stat
-import sys
-from contextlib import suppress
 
 import attrs
 
@@ -16,6 +14,15 @@ from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
+
+def X2_normalize_unix_path(path: str) -> str:
+    """Normalize unix socket path formats from Go handshake."""
+    if path.startswith("unix:"):
+        path = path[5:]  
+    # Handle absolute paths with multiple leading slashes
+    while path.startswith("//"):
+        path = path[1:]
+    return path
 
 def normalize_unix_path(path: str) -> str:
     """
@@ -72,7 +79,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     _transport_name: str = "unix"
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """Initialize transport state and possibly normalize path."""
         if not self.path:
             # Generate ephemeral path if none provided
@@ -191,8 +198,7 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
                 
-                # Set world-writable permissions (crucial for Go interop)
-                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # 0777
+                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG)  # 0770
                 logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
                 
                 self._running = True

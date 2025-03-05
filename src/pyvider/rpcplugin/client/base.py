@@ -67,7 +67,7 @@ class RPCPluginClient:
     _stdio_task: asyncio.Task | None = attrs.field(init=False, default=None)
     _broker_task: asyncio.Task | None = attrs.field(init=False, default=None)
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """
         Optionally configure or read environment variables. A place to put
         handshake defaults, but the actual handshake is done in start().

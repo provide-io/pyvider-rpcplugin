@@ -13,7 +13,7 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_and_connect(unique_socket_path):
+async def test_unix_socket_listen_and_connect(unique_socket_path) -> None:
     transport = UnixSocketTransport(path=unique_socket_path)
     # Validate the transport instance
     assert isinstance(transport, UnixSocketTransport), (
@@ -38,7 +38,7 @@ async def test_unix_socket_listen_and_connect(unique_socket_path):
     )
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_path_creation_failure():
+async def test_unix_socket_listen_path_creation_failure() -> None:
     """Test that UnixSocketTransport.listen raises TransportError when the socket path cannot be created."""
     transport = UnixSocketTransport(path="/root/unauthorized/socket.sock")
 
@@ -48,7 +48,7 @@ async def test_unix_socket_listen_path_creation_failure():
     assert "Failed to create Unix socket" in str(excinfo.value)
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_socket_in_use(unique_socket_path):
+async def test_unix_socket_listen_socket_in_use(unique_socket_path) -> None:
 
     """Test Unix socket transport handling of a socket already in use."""
     # Ensure the path is a string
@@ -69,7 +69,7 @@ async def test_unix_socket_listen_socket_in_use(unique_socket_path):
         await asyncio.sleep(0.1)
 
 @pytest.mark.asyncio
-async def test_unix_listen_socket_in_use(monkeypatch):
+async def test_unix_listen_socket_in_use(monkeypatch) -> None:
     # Simulate _check_socket_in_use returning True.
     transport = UnixSocketTransport(path="/tmp/test.sock")
     monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
@@ -77,7 +77,7 @@ async def test_unix_listen_socket_in_use(monkeypatch):
         await transport.listen()
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path):
+async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path) -> None:
     transport = UnixSocketTransport(path=unique_socket_path)
 
     try:
@@ -93,7 +93,7 @@ async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path):
         await asyncio.sleep(0)
 
 @pytest.mark.asyncio
-async def test_unix_listen_success(monkeypatch, tmp_path):
+async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -116,7 +116,7 @@ async def test_unix_listen_success(monkeypatch, tmp_path):
     assert endpoint == sock_path
 
 @pytest.mark.asyncio
-async def test_unix_listen_stale_file_error(monkeypatch, tmp_path):
+async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
     import errno
 
     # Simulate error when removing a stale file.

@@ -3,7 +3,7 @@
 import pytest
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
-def test_transport_base_abstract_methods():
+def test_transport_base_abstract_methods() -> None:
     """Test the abstract methods of RPCPluginTransport."""
     
     # Cannot instantiate the abstract base class

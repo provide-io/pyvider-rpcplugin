@@ -28,3 +28,7 @@ The worlds first comprehensive comprehensive Python-based `go-plugin` implementa
        @@*:::::::::::::::::::::::::::*@@@@@@@@@@      ::.:  . :
          =@@@@@*::::::::::::::-*@@@@@@@@@@@@@.        ::  ::  :
                   :#@@@@@@@@@=.                       :::    ::
+
+## TODO
+
+* Specify licensing.

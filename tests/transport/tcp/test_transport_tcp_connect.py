@@ -10,7 +10,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_connect_unreachable_address():
+async def test_tcp_socket_transport_connect_unreachable_address() -> None:
     unreachable = "192.0.2.254:80"
     transport = TCPSocketTransport(host=unreachable)
 
@@ -18,7 +18,7 @@ async def test_tcp_socket_transport_connect_unreachable_address():
         await asyncio.wait_for(transport.listen(), timeout=3.0)
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_connect_invalid_endpoint():
+async def test_tcp_socket_transport_connect_invalid_endpoint() -> None:
     """
     Test connecting to an invalid endpoint with TCPSocketTransport.
     """
@@ -31,7 +31,7 @@ async def test_tcp_socket_transport_connect_invalid_endpoint():
         await asyncio.wait_for(transport.connect("127.0.0.1:65530"), timeout=6.0)
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_default_host():
+async def test_tcp_socket_transport_default_host() -> None:
     """
     Test that TCPSocketTransport uses the default host when none is provided.
     """

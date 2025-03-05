@@ -28,7 +28,7 @@ async def test_server_serve_runtime_error(
     mock_server_protocol,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     test_transport = mock_server_transport
 
     class ProtocolWithError(RPCPluginProtocol):
@@ -60,7 +60,7 @@ async def test_serve_success(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     test_transport = mock_server_transport
 
     server = RPCPluginServer(
@@ -110,7 +110,7 @@ async def test_serve_error(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     test_transport = mock_server_transport
 
     server = RPCPluginServer(
@@ -138,7 +138,7 @@ async def test_wait_for_server_ready(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     test_transport = mock_server_transport
 
     await test_transport.listen()
@@ -161,7 +161,7 @@ async def test_wait_for_server_ready(
     assert server._serving_event.is_set()
 
 @pytest.mark.asyncio
-async def test_stop_success(monkeypatch):
+async def test_stop_success(monkeypatch) -> None:
     # Create dummy _server and _transport with working async close methods.
     dummy_server = DummyGRPCServer()
 
@@ -193,7 +193,7 @@ async def test_stop_handles_exceptions(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     # Test that exceptions during _server.stop() and _transport.close() are caught.
     dummy_server = DummyGRPCServer()
 
@@ -227,7 +227,7 @@ async def test_server_stop_clean_destructor(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-):
+) -> None:
     """
     Create an RPCPluginServer with a dummy gRPC server, then call stop() and delete the server.
     This test covers the cleanup paths that trigger __del__ in the underlying gRPC server.
@@ -259,7 +259,7 @@ async def test_serve_and_stop_no_unawaited_warning(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     """
     Test that calling serve() and then stop() does not leave unawaited coroutines,
     even if the event loop is later closed.

@@ -23,7 +23,7 @@ from tests.kv.proto import (
 class KVClient:
     """Client for KV plugin server."""
 
-    def __init__(self, server_path: str):
+    def __init__(self, server_path: str) -> None:
         """Initialize KV client.
 
         Args:
@@ -47,7 +47,7 @@ class KVClient:
             }
         )
 
-    async def start(self):
+    async def start(self) -> None:
         """Connect to the KV server."""
         start_time = time.time()
         try:
@@ -112,7 +112,7 @@ class KVClient:
             await self.close()
             raise
 
-    def _relay_stderr(self):
+    def _relay_stderr(self) -> None:
         """Start a background thread to read and relay stderr from the server process."""
         import threading
         
@@ -131,7 +131,7 @@ class KVClient:
         threading.Thread(target=read_stderr, daemon=True).start()
         logger.debug("📝 Started background stderr reader")
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the connection."""
         if self._client:
             logger.debug("🔒 Closing client connection")
@@ -185,7 +185,7 @@ class KVClient:
             raise
 
 
-async def main():
+async def main() -> None:
     """Example usage of KVClient."""
     # Get server path from environment or use default
     default_path = str(Path(__file__).parent / "go-plugin" / "bin" / "kv-go-server")

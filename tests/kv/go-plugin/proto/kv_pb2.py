@@ -9,6 +9,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+from typing import Any, Dict
 
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC, 5, 28, 1, "", "kv.proto"
@@ -22,7 +23,7 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x08kv.proto\x12\x05proto"\x19\n\nGetRequest\x12\x0b\n\x03key\x18\x01 \x01(\t"\x1c\n\x0bGetResponse\x12\r\n\x05value\x18\x01 \x01(\x0c"(\n\nPutRequest\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x0c"\x07\n\x05\x45mpty2Z\n\x02KV\x12,\n\x03Get\x12\x11.proto.GetRequest\x1a\x12.proto.GetResponse\x12&\n\x03Put\x12\x11.proto.PutRequest\x1a\x0c.proto.EmptyB=Z;github.com/provide-io/pyvider-rpcplugin/examples/grpc/protob\x06proto3'
 )
 
-_globals = globals()
+_globals: Dict[str, Any] = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "kv_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:

@@ -67,7 +67,7 @@ import wcwidth
 EMOJI_PADDING = 3  # Adjust this if needed based on terminal behavior
 
 
-def visible_width(text):
+def visible_width(text) -> int:
     """Calculate the displayed width of a string considering emoji width."""
     return sum(
         wcwidth.wcwidth(char) if wcwidth.wcwidth(char) > 0 else 1 for char in text

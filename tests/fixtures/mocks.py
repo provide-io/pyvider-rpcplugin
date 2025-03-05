@@ -22,20 +22,21 @@ from pyvider.rpcplugin.transport import (
 from pyvider.rpcplugin.types import TransportT, HandlerT
 
 from ..fixtures import *
+from typing import Tuple
 
 
 class MockProtocol(RPCPluginProtocol):
-    def get_grpc_descriptors(self):
+    def get_grpc_descriptors(self) -> Tuple[None, None, str]:
         # Mock descriptors for testing
         logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
         return None, None, "MockService"
 
-    async def add_to_server(self, handler, server):
+    async def add_to_server(self, handler, server) -> None:
         # Mock add_to_server for testing
         logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
         pass
 
-    def get_method_type(self, method_name: str):
+    def get_method_type(self, method_name: str) -> str:
         logger.debug("🔌🚀✅ MockProtocol.get_method_type called.")
         return "unary_unary"  # Mock implementation
 
@@ -43,19 +44,19 @@ class MockProtocol(RPCPluginProtocol):
 class MockHandler:
     """Mock handler for testing the RPCPluginServer."""
 
-    async def GetRequest(self, request, context):
+    async def GetRequest(self, request, context) -> None:
         logger.debug("🔌🚀✅ MockHandler.GetRequest called.")
         return None
 
-    async def GetResponse(self, request, context):
+    async def GetResponse(self, request, context) -> None:
         logger.debug("🔌🚀✅ MockHandler.GetResponse called.")
         return None
 
-    async def PutRequest(self, request, context):
+    async def PutRequest(self, request, context) -> None:
         logger.debug("🔌🚀✅ MockHandler.PutRequest called.")
         return None
 
-    async def Empty(self, request, context):
+    async def Empty(self, request, context) -> None:
         logger.debug("🔌🚀✅ MockHandler.Empty called.")
         return None
 
@@ -118,7 +119,7 @@ def mock_server_handler() -> HandlerT:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def mock_server_protocol():
+async def mock_server_protocol() -> MockProtocol:
     """Fixture to provide a mock protocol class."""
     proto = MockProtocol()
     return proto

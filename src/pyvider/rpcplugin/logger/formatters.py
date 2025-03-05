@@ -27,7 +27,7 @@ class AlignedFormatter(logging.Formatter):
         "utils.crypto": "🔧🔏",
     }
 
-    def format(self, record):
+    def format(self, record: logging.LogRecord) -> str:
         # Format timestamp
         timestamp = self.formatTime(record, self.datefmt)
 
@@ -56,7 +56,7 @@ class AlignedFormatter(logging.Formatter):
         return f"{timestamp} {level} {module_name} {prefix} | {message}"
 
     # this aint working quite right yet.
-    def get_prefix(self, logger_name):
+    def get_prefix(self, logger_name) -> str:
         if "auth" in logger_name:
             return self.EMOJI_PREFIXES["auth"]
         if "injector" in logger_name:

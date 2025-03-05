@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 
-def test_abstract_methods_must_be_implemented():
+def test_abstract_methods_must_be_implemented() -> None:
     """Test that both abstract methods must be implemented."""
     # Trying to create a class with neither method implemented
     class EmptyProtocol(RPCPluginProtocol):

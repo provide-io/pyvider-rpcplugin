@@ -3,6 +3,8 @@ import logging
 import sys
 
 from .formatters import AlignedFormatter
+from types import TracebackType
+from typing import Mapping, Optional, Tuple, Type, Union
 
 
 def initialize_logger_provider():
@@ -18,12 +20,12 @@ def initialize_logger_provider():
 
 
 class SuppressKqueueFilter(logging.Filter):
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord):
         return "KqueueSelector" not in record.getMessage()
 
 
 class UTF8StreamHandler(logging.StreamHandler):
-    def __init__(self, stream=None):
+    def __init__(self, stream=None) -> None:
         # Force UTF-8 encoding for the stream
         if stream is None:
             stream = sys.stderr
@@ -33,7 +35,7 @@ class UTF8StreamHandler(logging.StreamHandler):
 class PyviderLoggerBase(logging.Logger):
     """Custom logger class with OTEL integration and dynamic caller detection."""
 
-    def __init__(self, name: str = "default", level=logging.NOTSET):
+    def __init__(self, name: str = "default", level: Union[int, str]=logging.NOTSET) -> None:
         super().__init__(name, level)
 
     def _determine_caller(self) -> str:
@@ -51,14 +53,14 @@ class PyviderLoggerBase(logging.Logger):
 
     def _log(
         self,
-        level,
-        msg,
-        args,
-        exc_info=None,
-        extra=None,
-        stack_info=False,
-        stacklevel=1,
-    ):
+        level: int,
+        msg: object,
+        args: Union[Mapping[str, object], Tuple[object, ...]],
+        exc_info: Union[None, BaseException, bool, Tuple[Type[BaseException], BaseException, Optional[TracebackType]], Tuple[None, ...]]=None,
+        extra: Optional[Mapping[str, object]]=None,
+        stack_info: bool=False,
+        stacklevel: int=1,
+    ) -> None:
         # Inject the correct caller module into the record
         record = logging.LogRecord(
             name=self._determine_caller(),  # Dynamically resolve the caller module
@@ -71,7 +73,7 @@ class PyviderLoggerBase(logging.Logger):
         )
         self.handle(record)  # Directly handle the modified record
 
-    def trace(self, *args, **kwargs):
+    def trace(self, *args, **kwargs) -> None:
         """
         A custom trace method for logging.
         """
@@ -117,7 +119,7 @@ class PyviderLogger:
         insecure: bool = True,
         service_name: str = "pyvider-service",
         instance_id: str = "default-instance",
-    ):
+    ) -> None:
         self.default_level: int = default_level
         self.loggers: dict[str, PyviderLoggerBase] = {}
         self.console = sys.stderr
@@ -167,7 +169,7 @@ class PyviderLogger:
             return getattr(self._default_logger, name)
         raise AttributeError(f"module 'logger' has no attribute '{name}'")
 
-    def _trace(self, logger_self, *args, **kwargs):
+    def _trace(self, logger_self, *args, **kwargs) -> None:
         """
         A custom trace method for logging.
         """
@@ -287,4 +289,4 @@ class PyviderLogger:
 pyvider_logger = PyviderLogger()
 
 # Use the instance to get a logger
-logger = pyvider_logger.get_logger(__name__)
+logger: PyviderLoggerBase = pyvider_logger.get_logger(__name__)

@@ -6,7 +6,7 @@ import os
 import socket
 import tempfile
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Tuple, AsyncGenerator
 
 import pytest
 import pytest_asyncio
@@ -23,7 +23,7 @@ from pyvider.rpcplugin.types import TransportT
 class SocketStateMonitor:
     """Utility for monitoring socket state."""
 
-    def __init__(self, path: str):
+    def __init__(self, path: str) -> None:
         self._path = path
         self._active = False
         self._connections = 0
@@ -164,7 +164,7 @@ async def socket_monitor():
 
 # Base Dummy Classes
 class DummyReader:
-    def __init__(self, data: bytes = b""):
+    def __init__(self, data: bytes = b"") -> None:
         self._data = data
         self._called = False
 
@@ -175,7 +175,7 @@ class DummyReader:
         return b""
 
 class DummyWriter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.closed = False
         self.data = bytearray()
 
@@ -199,15 +199,15 @@ class DummyWriter:
 
 # Protocol & Handler Mocks
 class MockProtocol(RPCPluginProtocol):
-    def get_grpc_descriptors(self):
+    def get_grpc_descriptors(self) -> Tuple[None, str]:
         logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
         return None, "MockService"
 
-    async def add_to_server(self, handler, server):
+    async def add_to_server(self, handler, server) -> None:
         logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
 
 class MockHandler:
-    async def handle_request(self, request, context):
+    async def handle_request(self, request, context) -> None:
         logger.debug("🔌🚀✅ MockHandler.handle_request called.")
         return None
 
@@ -264,12 +264,12 @@ async def transport_factory(request):
             logger.error(f"Error during transport cleanup: {e}")
 
 @pytest_asyncio.fixture
-async def mock_protocol():
+async def mock_protocol() -> MockProtocol:
     """Create a mock protocol instance."""
     return MockProtocol()
 
 @pytest_asyncio.fixture
-async def mock_handler():
+async def mock_handler() -> MockHandler:
     """Create a mock handler instance."""
     return MockHandler()
 
@@ -321,7 +321,7 @@ async def connected_pair_factory(transport_factory):
 # TCP
 ######
 @pytest.mark.asyncio
-async def test_tcp_transport_basic(transport_factory):
+async def test_tcp_transport_basic(transport_factory) -> None:
     """Test basic TCP transport creation and listening."""
     transport = await transport_factory("tcp")
     endpoint = await transport.listen()
@@ -332,7 +332,7 @@ async def test_tcp_transport_basic(transport_factory):
     await transport.close()
 
 @pytest.mark.asyncio
-async def test_unix_transport_basic(transport_factory):
+async def test_unix_transport_basic(transport_factory) -> None:
     """Test basic Unix transport creation and listening."""
     transport = await transport_factory("unix")
     endpoint = await transport.listen()
@@ -345,7 +345,7 @@ async def test_unix_transport_basic(transport_factory):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
-async def test_transport_connection(transport_type, connected_pair_factory):
+async def test_transport_connection(transport_type, connected_pair_factory) -> None:
     """Test transport connection for both TCP and Unix."""
     server_transport, client_transport = await connected_pair_factory(transport_type)
 
@@ -363,7 +363,7 @@ async def test_transport_connection(transport_type, connected_pair_factory):
 @pytest.mark.parametrize("transport_type", ["tcp"])
 async def test_server_with_transport(
     transport_type, transport_factory, server_factory, temp_sock_dir
-):
+) -> None:
     """Test server creation and basic operation with different transports."""
     transport = await transport_factory(transport_type)
     server = await server_factory(transport)
@@ -396,7 +396,7 @@ async def test_server_with_transport(
             await server_task
 
 @pytest.mark.asyncio
-async def test_unix_socket_error_handling():
+async def test_unix_socket_error_handling() -> None:
     """Test error handling in Unix socket transport."""
     with tempfile.NamedTemporaryFile() as tf:
         # Create a file with non-socket content
@@ -418,7 +418,7 @@ async def test_unix_socket_error_handling():
         await transport.connect(nonexistent_path)
 
 @pytest.mark.asyncio
-async def test_transport_error_handling(transport_factory):
+async def test_transport_error_handling(transport_factory) -> None:
     """Test transport error handling."""
     transport = await transport_factory("tcp")
 
@@ -429,7 +429,7 @@ async def test_transport_error_handling(transport_factory):
     await transport.close()
 
 @pytest.mark.asyncio
-async def test_unix_socket_lifecycle_3(socket_monitor):
+async def test_unix_socket_lifecycle_3(socket_monitor) -> None:
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -466,7 +466,7 @@ async def test_unix_socket_lifecycle_3(socket_monitor):
         )
 
 @pytest.mark.asyncio
-async def test_unix_socket_lifecycle_2(socket_monitor):
+async def test_unix_socket_lifecycle_2(socket_monitor) -> None:
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -505,7 +505,7 @@ async def test_unix_socket_lifecycle_2(socket_monitor):
         assert not os.path.exists(endpoint), "Socket file remains"
 
 @pytest.mark.asyncio
-async def test_unix_socket_lifecycle_1(socket_monitor):
+async def test_unix_socket_lifecycle_1(socket_monitor) -> None:
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -527,7 +527,7 @@ async def test_unix_socket_lifecycle_1(socket_monitor):
         assert await monitor.check_state()
 
 @pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_4():
+async def test_unix_socket_concurrent_connections_4() -> None:
     """Test multiple concurrent connections to Unix socket."""
     with tempfile.NamedTemporaryFile() as tf:
         socket_path = tf.name
@@ -584,7 +584,7 @@ async def test_unix_socket_concurrent_connections_4():
         assert not os.path.exists(socket_path), f"Socket file {socket_path} still exists"
 
 @pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_3(socket_monitor):
+async def test_unix_socket_concurrent_connections_3(socket_monitor) -> None:
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -615,7 +615,7 @@ async def test_unix_socket_concurrent_connections_3(socket_monitor):
         assert not await monitor.check_state()
 
 @pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_2(socket_monitor):
+async def test_unix_socket_concurrent_connections_2(socket_monitor) -> None:
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -645,7 +645,7 @@ async def test_unix_socket_concurrent_connections_2(socket_monitor):
         assert not await monitor.check_state()
 
 @pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_1(socket_monitor):
+async def test_unix_socket_concurrent_connections_1(socket_monitor) -> None:
     """Test multiple concurrent connections to Unix socket."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -674,7 +674,7 @@ async def test_unix_socket_concurrent_connections_1(socket_monitor):
         assert not await monitor.check_state()
 
 @pytest.mark.asyncio
-async def test_unix_socket_server_integration_2():
+async def test_unix_socket_server_integration_2() -> None:
     """Test Unix socket transport with server integration."""
     with tempfile.NamedTemporaryFile() as tf:
         socket_path = tf.name
@@ -740,7 +740,7 @@ async def test_unix_socket_server_integration_2():
             os.unlink(socket_path)
 
 @pytest.mark.asyncio
-async def test_unix_socket_server_integration_1(socket_monitor):
+async def test_unix_socket_server_integration_1(socket_monitor) -> None:
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -785,7 +785,7 @@ async def test_unix_socket_server_integration_1(socket_monitor):
                 await server_task
 
 @pytest.mark.asyncio
-async def test_unix_socket_cleanup_handling(socket_monitor):
+async def test_unix_socket_cleanup_handling(socket_monitor) -> None:
     """Test proper cleanup of Unix socket resources."""
     # Create a temporary path for testing
     with tempfile.NamedTemporaryFile(delete=False) as tf:

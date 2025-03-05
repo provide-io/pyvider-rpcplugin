@@ -13,21 +13,21 @@ from pyvider.rpcplugin.crypto.certificate import (
 )
 
 @pytest.mark.asyncio
-async def test_create_x509_cert_subject_error():
+async def test_create_x509_cert_subject_error() -> None:
     """Test error in subject/issuer name creation."""
     with mock.patch("cryptography.x509.Name", side_effect=Exception("Name error")):
         with pytest.raises(CertificateError, match="Failed to generate"):
             Certificate(generate_keypair=True)
 
 @pytest.mark.asyncio
-async def test_create_x509_cert_serial_error():
+async def test_create_x509_cert_serial_error() -> None:
     """Test error in serial number generation."""
     with mock.patch("os.urandom", side_effect=Exception("urandom failed")):
         with pytest.raises(CertificateError, match="Failed to generate"):
             Certificate(generate_keypair=True)
 
 @pytest.mark.asyncio
-async def test_create_x509_cert_validity_error():
+async def test_create_x509_cert_validity_error() -> None:
     """Test error in validity period calculation."""
     with mock.patch(
         "pyvider.rpcplugin.crypto.certificate.datetime",
@@ -37,7 +37,7 @@ async def test_create_x509_cert_validity_error():
             Certificate(generate_keypair=True)
 
 @pytest.mark.asyncio
-async def test_certificate_extension_failure():
+async def test_certificate_extension_failure() -> None:
     """Ensure extension addition failures raise CertificateError."""
     cert = Certificate(generate_keypair=True)
 
@@ -49,7 +49,7 @@ async def test_certificate_extension_failure():
             cert._create_x509_certificate()
 
 @pytest.mark.asyncio
-async def test_create_x509_cert_builder_error():
+async def test_create_x509_cert_builder_error() -> None:
     """Test error in certificate builder."""
     with mock.patch(
         "cryptography.x509.CertificateBuilder.subject_name",
@@ -61,7 +61,7 @@ async def test_create_x509_cert_builder_error():
             Certificate(generate_keypair=True)
 
 @pytest.mark.asyncio
-async def test_create_x509_cert_extension_error():
+async def test_create_x509_cert_extension_error() -> None:
     """Test error in adding certificate extensions."""
     cert = Certificate(generate_keypair=True)
 
@@ -73,7 +73,7 @@ async def test_create_x509_cert_extension_error():
             cert._create_x509_certificate()
 
 @pytest.mark.asyncio
-async def test_create_invalid_key_type():
+async def test_create_invalid_key_type() -> None:
     """Ensure unsupported key types raise ValueError."""
     config = CertificateConfig(
         common_name="test",

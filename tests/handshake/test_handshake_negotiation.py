@@ -15,7 +15,7 @@ from tests.fixtures import *
 
 # Test for Protocol Version Negotiation
 @pytest.mark.asyncio
-async def test_negotiate_protocol_version_valid():
+async def test_negotiate_protocol_version_valid() -> None:
     """Test successful protocol version negotiation."""
     SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
     server_versions = [1, 2, 3, 4, 5, 6, 7]  # Server supports these versions
@@ -27,7 +27,7 @@ async def test_negotiate_protocol_version_valid():
 
 
 @pytest.mark.asyncio
-async def test_negotiate_protocol_version_no_common_version():
+async def test_negotiate_protocol_version_no_common_version() -> None:
     """Test protocol version negotiation when no common version exists."""
     server_versions = [99, 100]  # Versions not supported by the client
     with pytest.raises(
@@ -37,7 +37,7 @@ async def test_negotiate_protocol_version_no_common_version():
 
 
 @pytest.mark.asyncio
-async def test_negotiate_protocol_version_empty_list():
+async def test_negotiate_protocol_version_empty_list() -> None:
     """Test protocol version negotiation when the server provides no versions."""
     server_versions = []  # Server provides no versions
     with pytest.raises(
@@ -47,7 +47,7 @@ async def test_negotiate_protocol_version_empty_list():
 
 
 @pytest.mark.asyncio
-async def test_negotiate_transport_valid_tcp():
+async def test_negotiate_transport_valid_tcp() -> None:
     """Test successful TCP transport negotiation."""
     transport_name, transport = await negotiate_transport(["tcp"])
     assert transport_name == "tcp"
@@ -55,28 +55,28 @@ async def test_negotiate_transport_valid_tcp():
 
 
 @pytest.mark.asyncio
-async def test_negotiate_transport_valid_unix():
+async def test_negotiate_transport_valid_unix() -> None:
     """Test successful Unix transport negotiation."""
     transport_name, transport = await negotiate_transport(["unix"])
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
 @pytest.mark.asyncio
-async def test_negotiate_transport_no_common_transport():
+async def test_negotiate_transport_no_common_transport() -> None:
     """Test transport negotiation when no common transport exists."""
     with pytest.raises(TransportError, match="Unsupported transports"):
         await negotiate_transport(["invalid_transport"])
 
 
 @pytest.mark.asyncio
-async def test_negotiate_transport_empty_list():
+async def test_negotiate_transport_empty_list() -> None:
     """Test transport negotiation when no transports are provided."""
     with pytest.raises(TransportError, match="No transport options provided"):
         await negotiate_transport([])
 
 
 @pytest.mark.asyncio
-async def test_negotiate_transport_prefers_unix():
+async def test_negotiate_transport_prefers_unix() -> None:
     """Test that TCP is preferred when multiple transports are available."""
     transport_name, transport = await negotiate_transport(["tcp", "unix"])
     assert transport_name == "unix"

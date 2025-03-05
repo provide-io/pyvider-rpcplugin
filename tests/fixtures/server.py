@@ -12,7 +12,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 
 
 @pytest.fixture
-def valid_server_env(monkeypatch):
+def valid_server_env(monkeypatch) -> None:
     monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     monkeypatch.setenv(
         "PLUGIN_MAGIC_COOKIE",
@@ -70,7 +70,7 @@ async def server_instance(
 
 
 @pytest_asyncio.fixture(scope="function")
-async def mock_async_tcp_server(mock_server_transport_tcp):
+async def mock_async_tcp_server(mock_server_transport_tcp) -> None:
     transport = mock_server_transport_tcp
     endpoint = await transport.listen()
 

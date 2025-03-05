@@ -10,6 +10,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+from typing import Any, Dict
 
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC, 5, 28, 1, "", "grpc_broker.proto"
@@ -23,7 +24,7 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x11grpc_broker.proto\x12\x06plugin"\x9b\x01\n\x08\x43onnInfo\x12\x12\n\nservice_id\x18\x01 \x01(\r\x12\x0f\n\x07network\x18\x02 \x01(\t\x12\x0f\n\x07\x61\x64\x64ress\x18\x03 \x01(\t\x12%\n\x05knock\x18\x04 \x01(\x0b\x32\x16.plugin.ConnInfo.Knock\x1a\x32\n\x05Knock\x12\r\n\x05knock\x18\x01 \x01(\x08\x12\x0b\n\x03\x61\x63k\x18\x02 \x01(\x08\x12\r\n\x05\x65rror\x18\x03 \x01(\t2C\n\nGRPCBroker\x12\x35\n\x0bStartStream\x12\x10.plugin.ConnInfo\x1a\x10.plugin.ConnInfo(\x01\x30\x01\x62\x06proto3'
 )
 
-_globals = globals()
+_globals: Dict[str, Any] = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "grpc_broker_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
