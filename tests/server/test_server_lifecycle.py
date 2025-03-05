@@ -21,6 +21,77 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
+class MockBytesIO:
+    """Mock implementation of sys.stdout.buffer for testing."""
+    def __init__(self, string_io):
+        self.string_io = string_io
+        
+    def write(self, data):
+        if isinstance(data, bytes):
+            # Convert bytes to string for StringIO
+            self.string_io.write(data.decode('utf-8'))
+        else:
+            # Handle string content 
+            self.string_io.write(str(data))
+        return len(data)
+        
+    def flush(self):
+        self.string_io.flush()
+
+@pytest.mark.asyncio
+async def test_serve_success(
+    monkeypatch,
+    client_cert,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+) -> None:
+    """Test server serve method with proper StringIO buffer handling."""
+    test_transport = mock_server_transport
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=test_transport,
+    )
+
+    fut = asyncio.Future()
+    fut.set_result(None)
+    server._serving_future = fut
+    server._serving_event = asyncio.Event()
+
+    await test_transport.listen()
+
+    async def dummy_negotiate(self):
+        self._protocol_version = 1
+        self._transport_name = test_transport._transport_name
+
+    monkeypatch.setattr(
+        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
+    )
+
+    async def dummy_setup(_):
+        pass
+
+    monkeypatch.setattr(server, "_setup_server", dummy_setup)
+    monkeypatch.setattr(
+        "pyvider.rpcplugin.server.build_handshake_response",
+        lambda plugin_version, transport_name, transport, server_cert=None, port=None: "dummy_handshake",
+    )
+    monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
+    
+    # Create a StringIO with a buffer attribute
+    fake_stdout = StringIO()
+    # Add the buffer attribute to StringIO
+    fake_stdout.buffer = MockBytesIO(fake_stdout)
+    
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
+    await server.serve()
+    output = fake_stdout.getvalue().strip()
+    assert output == "dummy_handshake"
+
 @pytest.mark.asyncio
 async def test_server_serve_runtime_error(
     monkeypatch,
@@ -52,8 +123,8 @@ async def test_server_serve_runtime_error(
 
     await test_transport.close()
 
-@pytest.mark.asyncio
-async def test_serve_success(
+@pytest.mark.skip
+async def X1_test_serve_success(
     monkeypatch,
     client_cert,
     mock_server_protocol,
