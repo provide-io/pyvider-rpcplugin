@@ -1,5 +1,5 @@
 
-// pyvider-rpcplugin/tests/kv/go-plugin/plugin-go-server/main.go
+// pyvider-rpcplugin/examples/kvprobo/go-plugin/plugin-go-server/main.go
 
 package main
 
@@ -20,7 +20,7 @@ import (
 
     "github.com/hashicorp/go-hclog"
     "github.com/hashicorp/go-plugin"
-    "github.com/provide-io/pyvider-rpcplugin/tests/kv/go-plugin/shared"
+    "github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/go-plugin/shared"
 )
 
 type KV struct {

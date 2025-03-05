@@ -1,17 +1,18 @@
-// tests/kv/go-plugin/go.mod
+// examples/kvprobo/go-plugin/go.mod
 
-module github.com/provide-io/pyvider-rpcplugin/tests/kv/go-plugin
+module github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/go-plugin
 
 go 1.23.4
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
-	github.com/hashicorp/go-plugin v1.6.2
+	github.com/hashicorp/go-plugin v1.6.3
 	google.golang.org/grpc v1.69.2
 	google.golang.org/protobuf v1.36.2
 )
 
-replace github.com/hashicorp/go-plugin => /Users/tim/code/tf/go-plugin
+// github.com/hashicorp/go-plugin v1.6.2
+replace github.com/hashicorp/go-plugin => github.com/livingstaccato/go-plugin v0.0.0-20250305031206-470b1c194de6
 
 require (
 	github.com/fatih/color v1.13.0 // indirect

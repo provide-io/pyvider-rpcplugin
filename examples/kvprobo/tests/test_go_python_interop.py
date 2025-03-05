@@ -1,5 +1,5 @@
 
-# tests/kv/test_go_python_interop.py
+# examples/kvprobo/test_go_python_interop.py
 
 import asyncio
 import os
@@ -16,11 +16,13 @@ import grpc
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.logger import logger
-from tests.kv.proto import kv_pb2, kv_pb2_grpc
+
+from examples.kvprobo.py_rpc.proto import kv_pb2, kv_pb2_grpc
+
 from tests.fixtures import *
 
 TEST_DIR: Path = Path(__file__).parent
-DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-plugin" / "bin" / "kv-go-server")
+DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-rpc" / "bin" / "kv-go-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
@@ -319,7 +321,7 @@ async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value
 # 
 # # Use a relative path based on this test file's location
 TEST_DIR: Path = Path(__file__).parent
-DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-plugin" / "bin" / "kv-go-server")
+DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "../bin" / "go-kv-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 
 
