@@ -15,7 +15,7 @@ from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 
-def normalize_unix_path(path: str) -> str:
+def X2_normalize_unix_path(path: str) -> str:
     """Normalize unix socket path formats from Go handshake."""
     if path.startswith("unix:"):
         path = path[5:]  
@@ -24,7 +24,7 @@ def normalize_unix_path(path: str) -> str:
         path = path[1:]
     return path
 
-def X_normalize_unix_path(path: str) -> str:
+def normalize_unix_path(path: str) -> str:
     """
     Standardized Unix socket path normalization, handling:
     - unix: prefix
