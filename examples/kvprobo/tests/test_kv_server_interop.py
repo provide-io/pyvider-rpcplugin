@@ -370,7 +370,7 @@ async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int
 @pytest.mark.asyncio
 async def test_go_server_basic_execution() -> None:
     """Test that the Server binary can be executed with basic arguments."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     # Run with help flag to check if it responds properly
     logger.info(f"🧪🚀 Testing basic execution of Server: {server_path}")
@@ -394,7 +394,7 @@ async def test_go_server_basic_execution() -> None:
 @pytest.mark.asyncio
 async def test_go_server_with_environment() -> None:
     """Test that the Server responds properly to environment variables."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     # Setup environment variables
     env = os.environ.copy()
@@ -445,7 +445,7 @@ async def test_go_server_with_environment() -> None:
 @pytest.mark.asyncio
 async def test_client_connection_timeout() -> None:
     """Test how the client handles connection timeout with the Server."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     if not os.path.exists(server_path):
         pytest.skip(f"Server binary not found at {server_path}")
@@ -493,7 +493,7 @@ async def test_client_connection_timeout() -> None:
 @pytest.mark.asyncio
 async def test_connection_with_debugging() -> None:
     """Test connection with enhanced debugging to diagnose timeout issues."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     if not os.path.exists(server_path):
         pytest.skip(f"Server binary not found at {server_path}")
