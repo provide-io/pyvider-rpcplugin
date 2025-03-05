@@ -32,7 +32,7 @@ SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
 @pytest_asyncio.fixture
 async def go_server_path() -> str:
     """Return the path to the Go server executable."""
-    path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
     logger.debug(f"🧪🔍✅ Using Go server path: {path}")
 
     # Verify the path exists
@@ -108,6 +108,23 @@ async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     logger.debug("🧪🔌✅ KV stub created successfully")
     return stub
 
+
+@pytest.mark.asyncio
+async def test_go_server_binary_exists() -> None:
+    """Test that the Go server binary exists and is executable."""
+    # Check the default path
+    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    logger.info(f"🧪🔍 Checking Go server binary at: {server_path}")
+
+    if not os.path.exists(server_path):
+        logger.error(f"🧪❌ Go server binary not found at {server_path}")
+        pytest.fail(f"Go server binary not found at {server_path}. Please build it or set GO_SERVER_PATH.")
+
+    if not is_executable(server_path):
+        logger.error(f"🧪❌ Go server binary exists but is not executable: {server_path}")
+        pytest.fail(f"Go server binary exists but is not executable: {server_path}")
+
+    logger.info("🧪✅ Go server binary exists and is executable")
 
 @pytest.mark.asyncio
 async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
@@ -350,22 +367,6 @@ async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int
         return None, "", "Process timed out"
 
 
-@pytest.mark.asyncio
-async def test_go_server_binary_exists() -> None:
-    """Test that the Go server binary exists and is executable."""
-    # Check the default path
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
-    logger.info(f"🧪🔍 Checking Go server binary at: {server_path}")
-
-    if not os.path.exists(server_path):
-        logger.error(f"🧪❌ Go server binary not found at {server_path}")
-        pytest.fail(f"Go server binary not found at {server_path}. Please build it or set GO_SERVER_PATH.")
-
-    if not is_executable(server_path):
-        logger.error(f"🧪❌ Go server binary exists but is not executable: {server_path}")
-        pytest.fail(f"Go server binary exists but is not executable: {server_path}")
-
-    logger.info("🧪✅ Go server binary exists and is executable")
 
 
 @pytest.mark.asyncio
