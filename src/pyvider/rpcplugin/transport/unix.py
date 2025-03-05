@@ -297,4 +297,8 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = False
         logger.debug("📞🔒✅ Unix socket transport closed completely")
 
+    def get_connected_path(self) -> str:
+        """Return the actual connected socket path."""
+        return self.path
+
 ### 🐍🏗️🔌
