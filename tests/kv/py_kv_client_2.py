@@ -1,4 +1,4 @@
-#!/usr/bin/env uv run --active
+#!/usr/bin/env python3
 
 # tests/kv/py_kv_client_2.py
 
