@@ -1,3 +1,5 @@
+#!uv run python3
+
 #!/usr/bin/env python3
 """
 py-kv-server.py
