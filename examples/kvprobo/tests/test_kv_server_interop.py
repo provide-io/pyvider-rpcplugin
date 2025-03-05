@@ -165,6 +165,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
 
     # Empty key (should be accepted)
     empty_key = ""
+    value = ""
 
     try:
         await kv_stub.Put(kv_pb2.PutRequest(key=empty_key, value=value))
@@ -172,7 +173,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
 
         response = await kv_stub.Get(kv_pb2.GetRequest(key=empty_key))
         logger.debug("🧪📥✅ Get operation with empty key successful")
-        assert response.value == ""
+        assert response.value == value
     except grpc.RpcError as e:
         # Some implementations may reject empty keys - log but don't fail
         logger.warning(f"🧪⚠️ Empty key operation returned error: {e.details()}")
