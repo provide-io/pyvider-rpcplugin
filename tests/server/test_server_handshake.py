@@ -105,11 +105,12 @@ async def test_negotiate_handshake_via_negotiation(
     # right now this fails if there is Unix. But it works fine
     # with the tests which has a config set.
     transport = mock_server_transport
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=None,
-        transport=None,
+        transport=transport,
     )
 
     # Mock the negotiate_transport function to return unix
