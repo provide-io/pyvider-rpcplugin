@@ -309,8 +309,8 @@ class RPCPluginClient:
                 else:
                     self._address = address
 
-                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{sock_path}'")
-                self._transport = UnixSocketTransport() # path=sock_path)
+                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}'")
+                self._transport = UnixSocketTransport() # path=self._address)
             else:
                 raise TransportError(f"Unsupported transport: {network}")
 
