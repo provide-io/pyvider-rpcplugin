@@ -60,7 +60,7 @@ async def kv_server_env() -> dict[str, str]:
 
 
 @pytest_asyncio.fixture
-async def kv_client(go_server_path: str, go_server_env: dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
+async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
     """Create and yield a RPCPluginClient connected to a KV Server."""
     client = None
     logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Server at {go_server_path}")
@@ -102,10 +102,10 @@ async def kv_client(go_server_path: str, go_server_env: dict[str, str]) -> Async
 
 
 @pytest_asyncio.fixture
-async def kv_stub(kv_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
+async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     """Create and return a KV stub for the Server."""
     logger.debug("🧪🔌🚀 Creating KV stub")
-    stub = kv_pb2_grpc.KVStub(kv_client._channel)
+    stub = kv_pb2_grpc.KVStub(kv_go_client._channel)
     logger.debug("🧪🔌✅ KV stub created successfully")
     return stub
 
