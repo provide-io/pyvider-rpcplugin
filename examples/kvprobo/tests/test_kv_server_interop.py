@@ -165,7 +165,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
 
     # Empty key (should be accepted)
     empty_key = ""
-    value = ""
+    value = "".encode("utf-8")
 
     try:
         await kv_stub.Put(kv_pb2.PutRequest(key=empty_key, value=value))
