@@ -1,5 +1,5 @@
 
-# examples/kvprobo/test_kv_server_interop.py
+# examples/kvprobo/test_go_python_interop.py
 
 import asyncio
 import os
@@ -31,7 +31,7 @@ SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
 
 
 @pytest_asyncio.fixture
-async def kv_server_path() -> str:
+async def go_server_path() -> str:
     """Return the path to the Server executable."""
     path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
     logger.debug(f"🧪🔍✅ Using Server path: {path}")
@@ -61,7 +61,7 @@ async def go_server_env() -> dict[str, str]:
 
 @pytest_asyncio.fixture
 async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
-    """Create and yield a RPCPluginClient connected to a KV Server."""
+    """Create and yield a RPCPluginClient connected to a KV server."""
     client = None
     logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Server at {go_server_path}")
 
