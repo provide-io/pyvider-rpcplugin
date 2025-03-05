@@ -1,6 +1,4 @@
 #!/usr/bin/env uv run
-
-#!/usr/bin/env python3
 """
 py-kv-server.py
 
