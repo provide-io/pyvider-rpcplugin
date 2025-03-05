@@ -71,7 +71,7 @@ async def unique_transport_path():
     # Ensure path doesn't exist before starting
     if os.path.exists(socket_path):
         try:
-            os.chmod(socket_path, 0o777)  # Ensure permissions
+            os.chmod(socket_path, 0o770)  # Ensure permissions
             os.unlink(socket_path)
         except OSError as e:
             logger.warning(f"🔌🧹⚠️ Failed to clean up existing socket: {e}")
@@ -82,7 +82,7 @@ async def unique_transport_path():
     # Cleanup after test
     try:
         if os.path.exists(socket_path):
-            os.chmod(socket_path, 0o777)
+            os.chmod(socket_path, 0o770)
             os.unlink(socket_path)
             logger.debug(f"🔌🧹✅ Cleaned up socket: {socket_path}")
     except OSError as e:
@@ -119,7 +119,7 @@ async def unique_socket_path() -> str:
     # Ensure path doesn't exist before starting
     if os.path.exists(socket_path):
         try:
-            os.chmod(socket_path, 0o777)  # Ensure permissions
+            os.chmod(socket_path, 0o770)  # Ensure permissions
             os.unlink(socket_path)
             logger.debug(f"🧪🧹 Cleaned stale socket at {socket_path}")
         except OSError as e:
@@ -131,7 +131,7 @@ async def unique_socket_path() -> str:
     # Cleanup after test
     if os.path.exists(socket_path):
         try:
-            os.chmod(socket_path, 0o777)
+            os.chmod(socket_path, 0o770)
             os.unlink(socket_path)
             logger.debug(f"🧪🧹 Cleaned up socket: {socket_path}")
         except OSError as e:
