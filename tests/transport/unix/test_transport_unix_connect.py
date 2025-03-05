@@ -11,7 +11,7 @@ from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_unix_connect_success(monkeypatch, tmp_path):
+async def test_unix_connect_success(monkeypatch, tmp_path) -> None:
     sock_path = str(tmp_path / "connect.sock")
     # Create the file so that os.path.exists returns True.
     with open(sock_path, "w") as f:
@@ -29,7 +29,7 @@ async def test_unix_connect_success(monkeypatch, tmp_path):
     os.unlink(sock_path)
 
 @pytest.mark.asyncio
-async def test_unix_connect_nonexistent(monkeypatch, tmp_path):
+async def test_unix_connect_nonexistent(monkeypatch, tmp_path) -> None:
     sock_path = str(tmp_path / "nonexistent.sock")
     transport = UnixSocketTransport(path=sock_path)
     monkeypatch.setattr(os.path, "exists", lambda path: False)
@@ -37,7 +37,7 @@ async def test_unix_connect_nonexistent(monkeypatch, tmp_path):
         await transport.connect("unix:" + sock_path)
 
 @pytest.mark.asyncio
-async def test_unix_connect_oserror(monkeypatch, tmp_path):
+async def test_unix_connect_oserror(monkeypatch, tmp_path) -> None:
     sock_path = str(tmp_path / "error.sock")
     with open(sock_path, "w") as f:
         f.write("")
@@ -52,7 +52,7 @@ async def test_unix_connect_oserror(monkeypatch, tmp_path):
     os.unlink(sock_path)
 
 @pytest.mark.asyncio
-async def test_unix_socket_connect_invalid_endpoint():
+async def test_unix_socket_connect_invalid_endpoint() -> None:
     """
     Test connecting to an invalid endpoint with UnixSocketTransport.
     """
@@ -63,7 +63,7 @@ async def test_unix_socket_connect_invalid_endpoint():
         await transport.connect("invalid_endpoint")
 
 @pytest.mark.asyncio
-async def test_unix_socket_connect_nonexistent_path():
+async def test_unix_socket_connect_nonexistent_path() -> None:
     """
     Test that UnixSocketTransport.connect raises TransportError when connecting to a nonexistent path.
     """

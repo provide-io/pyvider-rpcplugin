@@ -15,11 +15,11 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 
 class MockRequestIterator:
     """Simple async iterator for testing."""
-    def __init__(self, items):
+    def __init__(self, items) -> None:
         self.items = items
         self.index = 0
 
-    def __aiter__(self):
+    def __aiter__(self) -> "MockRequestIterator":
         return self
 
     async def __anext__(self):
@@ -30,7 +30,7 @@ class MockRequestIterator:
         raise StopAsyncIteration
 
 @pytest.mark.asyncio
-async def test_broker_exception_handling_line95():
+async def test_broker_exception_handling_line95() -> None:
     """Test exception handling in broker.StartStream (line 95)."""
     broker = GRPCBrokerService()
 
@@ -61,7 +61,7 @@ async def test_broker_exception_handling_line95():
         assert "error" in responses[0].knock.error
 
 @pytest.mark.asyncio
-async def test_stdio_put_line_exception_line123():
+async def test_stdio_put_line_exception_line123() -> None:
     """Test exception handling in stdio.put_line (lines 123-128)."""
     stdio = GRPCStdioService()
 
@@ -83,7 +83,7 @@ async def test_stdio_put_line_exception_line123():
         stdio._message_queue.put = original_put
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown_unix_line212():
+async def test_controller_delayed_shutdown_unix_line212() -> None:
     """Test Unix path in controller._delayed_shutdown (lines 212-216)."""
     stdio = GRPCStdioService()
     event = asyncio.Event()
@@ -102,7 +102,7 @@ async def test_controller_delayed_shutdown_unix_line212():
         mock_kill.assert_called_once_with(12345, signal.SIGTERM)
 
 @pytest.mark.asyncio
-async def test_controller_delayed_shutdown_windows_line212():
+async def test_controller_delayed_shutdown_windows_line212() -> None:
     """Test Windows path in controller._delayed_shutdown (lines 212-216)."""
     stdio = GRPCStdioService()
     event = asyncio.Event()

@@ -4,7 +4,7 @@
 import logging
 import unicodedata
 from functools import partial
-from typing import Any
+from typing import Dict, Union, Any
 
 
 # Ensure NFC-normalized emoji for consistent formatting
@@ -13,7 +13,7 @@ def normalize_emoji(emoji: str) -> str:
 
 
 # 🔥 Define Logging Levels
-LOG_LEVELS = {
+LOG_LEVELS: Dict[str, int] = {
     "debug": logging.DEBUG,
     "info": logging.INFO,
     "warning": logging.WARNING,
@@ -52,7 +52,7 @@ LOGGING_MATRIX = {
 
 # 📌 Global Logger Configuration
 logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
-logger = logging.getLogger("plog")
+logger: logging.Logger = logging.getLogger("plog")
 
 
 class LogNamespace:
@@ -62,7 +62,7 @@ class LogNamespace:
         self.log_level = log_level
         self.namespace = namespace
 
-    def __getattr__(self, key: str):
+    def __getattr__(self, key: str) -> Union[partial[None], LogNamespace]:
         """Dynamically generate logging functions."""
         if key in self.namespace:
             if isinstance(self.namespace[key], dict):

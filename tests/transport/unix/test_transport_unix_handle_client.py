@@ -11,7 +11,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_handle_client_called(unique_socket_path):
+async def test_unix_socket_handle_client_called(unique_socket_path) -> None:
     transport = UnixSocketTransport(path=unique_socket_path)
     endpoint = await transport.listen()
     logger.debug(f"Unix socket server started at {endpoint}")
@@ -38,7 +38,7 @@ async def test_unix_socket_handle_client_called(unique_socket_path):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_handle_client_direct(unique_socket_path):
+async def test_unix_socket_handle_client_direct(unique_socket_path) -> None:
     transport = UnixSocketTransport(path=unique_socket_path)
     endpoint = await transport.listen()
 
@@ -64,7 +64,7 @@ async def test_unix_socket_handle_client_direct(unique_socket_path):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_handle_client_error(unique_socket_path):
+async def test_unix_socket_handle_client_error(unique_socket_path) -> None:
     """Test error handling during client connection."""
     # Ensure we're using a string path
     transport = UnixSocketTransport(path=unique_socket_path)
@@ -87,7 +87,7 @@ async def test_unix_socket_handle_client_error(unique_socket_path):
 
 
 @pytest.mark.asyncio
-async def test_handle_client_echo(unique_socket_path):
+async def test_handle_client_echo(unique_socket_path) -> None:
     transport = UnixSocketTransport(path=unique_socket_path)
     transport._running = True
     fake_reader = DummyReader(b"echo")

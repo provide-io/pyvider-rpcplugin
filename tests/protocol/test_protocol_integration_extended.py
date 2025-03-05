@@ -56,7 +56,7 @@ async def real_server_client():
 
 
 @pytest.mark.asyncio
-async def test_stdio_end_to_end(real_server_client):
+async def test_stdio_end_to_end(real_server_client) -> None:
     """Test end-to-end stdio service with real server and client."""
     server, channel, stdio_stub, _, _, _ = real_server_client
 
@@ -108,7 +108,7 @@ async def test_stdio_end_to_end(real_server_client):
 
 
 @pytest.mark.asyncio
-async def test_broker_cancellation(real_server_client):
+async def test_broker_cancellation(real_server_client) -> None:
     """Test broker service with cancellation."""
     _, _, _, broker_stub, _, _ = real_server_client
 
@@ -139,7 +139,7 @@ async def test_broker_cancellation(real_server_client):
 
 
 @pytest.mark.skip # this kills the test suite completely.
-async def test_controller_shutdown_with_timeout(real_server_client):
+async def test_controller_shutdown_with_timeout(real_server_client) -> None:
     """Test controller shutdown with a timeout."""
     _, _, _, _, controller_stub, shutdown_event = real_server_client
 
@@ -163,7 +163,7 @@ async def test_controller_shutdown_with_timeout(real_server_client):
 
 
 @pytest.mark.asyncio
-async def test_stdio_early_client_disconnect(real_server_client):
+async def test_stdio_early_client_disconnect(real_server_client) -> None:
     """Test stdio service when client disconnects early."""
     _, channel, stdio_stub, _, _, _ = real_server_client
 
@@ -183,7 +183,7 @@ async def test_stdio_early_client_disconnect(real_server_client):
 
 
 @pytest.mark.asyncio
-async def test_broker_multiple_clients(real_server_client):
+async def test_broker_multiple_clients(real_server_client) -> None:
     """Test multiple clients connecting to broker service simultaneously."""
     server, _, _, _, _, _ = real_server_client
 
@@ -236,11 +236,11 @@ async def test_broker_multiple_clients(real_server_client):
 
 class MockRequestIterator:
     """Mock request iterator for broker stream."""
-    def __init__(self, requests):
+    def __init__(self, requests) -> None:
         self.requests = requests
         self.index = 0
 
-    def __aiter__(self):
+    def __aiter__(self) -> "MockRequestIterator":
         return self
 
     async def __anext__(self):

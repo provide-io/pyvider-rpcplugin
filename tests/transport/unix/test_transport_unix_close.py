@@ -11,7 +11,7 @@ from tests.fixtures import *
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_transport_close_no_path(unix_transport):
+async def test_unix_socket_transport_close_no_path(unix_transport) -> None:
     """
     Test that UnixSocketTransport.close works when no path exists.
     """
@@ -23,7 +23,7 @@ async def test_unix_socket_transport_close_no_path(unix_transport):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_transport_close_oserror(unique_socket_path):
+async def test_unix_socket_transport_close_oserror(unique_socket_path) -> None:
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
     # Create a real socket first
     transport = UnixSocketTransport(path=str(unique_socket_path))
@@ -46,7 +46,7 @@ async def test_unix_socket_transport_close_oserror(unique_socket_path):
 
 
 @pytest.mark.asyncio
-async def test_unix_close_unlink_error(monkeypatch, tmp_path):
+async def test_unix_close_unlink_error(monkeypatch, tmp_path) -> None:
     sock_path = str(tmp_path / "unlink_error.sock")
     with open(sock_path, "w") as f:
         f.write("dummy")
@@ -66,7 +66,7 @@ async def test_unix_close_unlink_error(monkeypatch, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_connection_active(unix_transport):
+async def test_unix_socket_close_connection_active(unix_transport) -> None:
     endpoint = unix_transport.path
     client_transport = UnixSocketTransport(path=endpoint)
     await client_transport.connect(endpoint)
@@ -76,7 +76,7 @@ async def test_unix_socket_close_connection_active(unix_transport):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_no_server(unix_transport):
+async def test_unix_socket_close_no_server(unix_transport) -> None:
     """
     Test that UnixSocketTransport.close works when no server is running.
     """
@@ -88,7 +88,7 @@ async def test_unix_socket_close_no_server(unix_transport):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_no_path(unix_transport):
+async def test_unix_socket_close_no_path(unix_transport) -> None:
     """
     Test that UnixSocketTransport.close works when no path exists.
     """
@@ -100,7 +100,7 @@ async def test_unix_socket_close_no_path(unix_transport):
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_oserror(unique_socket_path):
+async def test_unix_socket_close_oserror(unique_socket_path) -> None:
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
     # Create a real socket first
     transport = UnixSocketTransport(path=str(unique_socket_path))
@@ -126,7 +126,7 @@ async def test_unix_socket_close_oserror(unique_socket_path):
 
 
 @pytest.mark.asyncio
-async def test_close_writer_exception(monkeypatch):
+async def test_close_writer_exception(monkeypatch) -> None:
     transport = UnixSocketTransport(path="/tmp/dummy.sock")
 
     class FakeWriter:

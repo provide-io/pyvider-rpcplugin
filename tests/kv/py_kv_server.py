@@ -32,7 +32,7 @@ class DummyContext:
     async def abort(self, code, details):
         raise Exception(f"Abort: {code}, {details}")
 
-    def peer(self):
+    def peer(self) -> str:
         return "dummy_peer"
 
     def auth_context(self):
@@ -58,7 +58,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
     Detailed logging is added to both Put and Get methods.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         logger.debug("🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
         # Add explicit logging of certificate parameters
         if hasattr(self, "_server_cert_obj"):
@@ -133,7 +133,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
 
-    async def _log_request_details(self, context: grpc.aio.ServicerContext):
+    async def _log_request_details(self, context: grpc.aio.ServicerContext) -> None:
         """Log request details (peer and auth context) for debugging."""
         try:
             logger.debug(f"🛎️🧰🔍 Utils: Request from peer: {context.peer()}")
@@ -149,7 +149,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
 # ------------------------------------------------------------------------------
 # Server entry point
 # ------------------------------------------------------------------------------
-async def serve():
+async def serve() -> None:
     logger.info("🛎️🚀 Starting KV plugin server...")
 
     # Create an instance of KVHandler.

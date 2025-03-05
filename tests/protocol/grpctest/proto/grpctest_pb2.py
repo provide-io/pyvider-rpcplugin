@@ -10,6 +10,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+from typing import Any, Dict
 
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC, 5, 28, 1, "", "grpctest.proto"
@@ -25,7 +26,7 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x0egrpctest.proto\x12\x08grpctest\x1a\x1bgoogle/protobuf/empty.proto"\x1c\n\x0bTestRequest\x12\r\n\x05Input\x18\x01 \x01(\x05"\x1e\n\x0cTestResponse\x12\x0e\n\x06Output\x18\x02 \x01(\x05"Q\n\x0ePrintKVRequest\x12\x0b\n\x03Key\x18\x01 \x01(\t\x12\x15\n\x0bValueString\x18\x02 \x01(\tH\x00\x12\x12\n\x08ValueInt\x18\x03 \x01(\x05H\x00\x42\x07\n\x05Value"\x11\n\x0fPrintKVResponse""\n\x14\x42idirectionalRequest\x12\n\n\x02id\x18\x01 \x01(\r"#\n\x15\x42idirectionalResponse\x12\n\n\x02id\x18\x01 \x01(\r"3\n\x11PrintStdioRequest\x12\x0e\n\x06stdout\x18\x01 \x01(\x0c\x12\x0e\n\x06stderr\x18\x02 \x01(\x0c"\r\n\x0bPingRequest"\x1b\n\x0cPongResponse\x12\x0b\n\x03msg\x18\x01 \x01(\t2\xdb\x02\n\x04Test\x12\x39\n\x06\x44ouble\x12\x15.grpctest.TestRequest\x1a\x16.grpctest.TestResponse"\x00\x12@\n\x07PrintKV\x12\x18.grpctest.PrintKVRequest\x1a\x19.grpctest.PrintKVResponse"\x00\x12R\n\rBidirectional\x12\x1e.grpctest.BidirectionalRequest\x1a\x1f.grpctest.BidirectionalResponse"\x00\x12=\n\x06Stream\x12\x15.grpctest.TestRequest\x1a\x16.grpctest.TestResponse"\x00(\x01\x30\x01\x12\x43\n\nPrintStdio\x12\x1b.grpctest.PrintStdioRequest\x1a\x16.google.protobuf.Empty"\x00\x32\x43\n\x08PingPong\x12\x37\n\x04Ping\x12\x15.grpctest.PingRequest\x1a\x16.grpctest.PongResponse"\x00\x42\x0cZ\n./grpctestb\x06proto3'
 )
 
-_globals = globals()
+_globals: Dict[str, Any] = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "grpctest_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:

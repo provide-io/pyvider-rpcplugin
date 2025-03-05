@@ -75,7 +75,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     # Class-level instance for global access.
     _instance: ServerT | None = None
 
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         """
         Initializes handshake configuration and sets the global server instance.
         """

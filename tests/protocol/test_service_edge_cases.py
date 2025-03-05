@@ -17,7 +17,7 @@ from google.protobuf.empty_pb2 import Empty
 
 
 @pytest.mark.asyncio
-async def test_broker_service_subchannel_open_failure():
+async def test_broker_service_subchannel_open_failure() -> None:
     """Test broker service handling of subchannel open failure."""
     service = GRPCBrokerService()
 
@@ -66,7 +66,7 @@ async def test_broker_service_subchannel_open_failure():
 
 
 @pytest.mark.asyncio
-async def test_stdio_service_timeouts():
+async def test_stdio_service_timeouts() -> None:
     """Test StdioService handling of queue timeouts."""
     service = GRPCStdioService()
     context = MagicMock()
@@ -119,7 +119,7 @@ async def test_stdio_service_timeouts():
 
 
 @pytest.mark.asyncio
-async def test_stdio_service_backpressure():
+async def test_stdio_service_backpressure() -> None:
     """Test StdioService handling of queue backpressure."""
     service = GRPCStdioService()
 

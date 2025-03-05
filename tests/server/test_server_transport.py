@@ -16,7 +16,7 @@ async def test_setup_server_unix_success_insecure(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-):
+) -> None:
     test_transport = UnixSocketTransport()
 
     server = RPCPluginServer(
@@ -43,7 +43,7 @@ async def test_setup_server_unix_success_secure(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-):
+) -> None:
 
     test_transport = UnixSocketTransport()
 
@@ -69,7 +69,7 @@ async def test_setup_server_unix_no_socket(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-):
+) -> None:
     sock_path = str(tmp_path / "nosock.sock")
     transport = UnixSocketTransport(path=sock_path)
 
@@ -90,7 +90,7 @@ async def test_setup_server_unix_bad_permissions_2(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-):
+) -> None:
     sock_path = str(tmp_path / "bad_perms.sock")
     
     # Create socket file with wrong permissions
@@ -129,7 +129,7 @@ async def test_setup_server_unix_bad_permissions_1(
     mock_server_config,
     mock_server_transport_unix,
     unique_socket_path,
-):
+) -> None:
     sock_path = unique_socket_path
 
     print(f"unique_socket_path: {sock_path}")
@@ -164,7 +164,7 @@ async def test_setup_server_exception(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
 
     transport = mock_server_transport
 
@@ -187,7 +187,7 @@ async def test_setup_server_tcp_success(
     mock_server_handler,
     mock_server_config,
     mock_server_transport_tcp,
-):
+) -> None:
 
     transport = mock_server_transport_tcp
     await transport.listen()

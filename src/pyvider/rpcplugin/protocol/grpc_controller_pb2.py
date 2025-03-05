@@ -10,6 +10,7 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+from typing import Any, Dict
 
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC, 5, 28, 1, "", "grpc_controller.proto"
@@ -23,7 +24,7 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x15grpc_controller.proto\x12\x06plugin"\x07\n\x05\x45mpty2:\n\x0eGRPCController\x12(\n\x08Shutdown\x12\r.plugin.Empty\x1a\r.plugin.Emptyb\x06proto3'
 )
 
-_globals = globals()
+_globals: Dict[str, Any] = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "grpc_controller_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:

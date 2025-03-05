@@ -6,11 +6,11 @@ import asyncio
 
 
 class DummyReader:
-    def __init__(self, data: bytes = b""):
+    def __init__(self, data: bytes = b"") -> None:
         self._data = data
         self._called = False
 
-    async def read(self, size: int):
+    async def read(self, size: int) -> bytes:
         if not self._called:
             self._called = True
             return self._data
@@ -18,26 +18,26 @@ class DummyReader:
 
 
 class DummyWriter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.closed = False
         self.data = bytearray()
 
-    def write(self, data: bytes):
+    def write(self, data: bytes) -> None:
         self.data.extend(data)
 
-    async def drain(self):
+    async def drain(self) -> None:
         await asyncio.sleep(0)
 
-    def close(self):
+    def close(self) -> None:
         self.closed = True
 
-    async def wait_closed(self):
+    async def wait_closed(self) -> None:
         await asyncio.sleep(0)
 
-    def is_closing(self):
+    def is_closing(self) -> bool:
         return self.closed
 
-    def get_extra_info(self, key, default=None):
+    def get_extra_info(self, key, default=None) -> str:
         if key == "peername":
             return "dummy_peer"
         return default
@@ -49,40 +49,40 @@ class DummyWriter:
 class DummyGRPCServer:
     """A dummy replacement for grpc.aio.Server."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.ports = []
 
-    def add_secure_port(self, address, creds):
+    def add_secure_port(self, address, creds) -> int:
         self.ports.append(address)
         return 12345
 
-    def add_insecure_port(self, address):
+    def add_insecure_port(self, address) -> int:
         self.ports.append(address)
         return 12345
 
-    async def start(self):
+    async def start(self) -> None:
         pass
 
-    async def stop(self, grace):
+    async def stop(self, grace) -> None:
         pass
 
-    async def wait_closed(self):
+    async def wait_closed(self) -> None:
         pass
 
 
 # A dummy asynchronous GRPC server to simulate grpc.aio.Server behavior.
 class DummyAioServer:
-    async def start(self):
+    async def start(self) -> None:
         pass
 
-    async def stop(self, grace):
+    async def stop(self, grace) -> None:
         # Simulate asynchronous shutdown delay.
         await asyncio.sleep(0.01)
 
-    async def wait_closed(self):
+    async def wait_closed(self) -> None:
         await asyncio.sleep(0.01)
 
-    def __del__(self):
+    def __del__(self) -> None:
         # In __del__, try to get the event loop;
         # if it is closed, simply pass to avoid raising an exception.
         try:
@@ -96,21 +96,21 @@ class DummyAioServer:
 # Dummy stream implementations for testing.
 # -------------------------------------------------------------------
 class CCDummyWriter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.closed = False
         self.data = bytearray()
 
-    def write(self, data: bytes):
+    def write(self, data: bytes) -> None:
         self.data.extend(data)
 
-    async def drain(self):
+    async def drain(self) -> None:
         # Simulate an immediate drain.
         await asyncio.sleep(0)
 
-    def close(self):
+    def close(self) -> None:
         self.closed = True
 
-    async def wait_closed(self):
+    async def wait_closed(self) -> None:
         await asyncio.sleep(0)
 
     def is_closing(self) -> bool:
@@ -118,11 +118,11 @@ class CCDummyWriter:
 
 
 class CCDummyReader:
-    def __init__(self, data: bytes = b""):
+    def __init__(self, data: bytes = b"") -> None:
         self.data = data
         self.called = False
 
-    async def read(self, size: int):
+    async def read(self, size: int) -> bytes:
         self.called = True
         return self.data
 
@@ -131,12 +131,12 @@ class CCDummyReader:
 # Fixtures for DummyReader and DummyWriter.
 # -------------------------------------------------------------------
 @pytest.fixture
-def dummy_writer():
+def dummy_writer() -> DummyWriter:
     return DummyWriter()
 
 
 @pytest.fixture
-def dummy_reader():
+def dummy_reader() -> DummyReader:
     # Default dummy reader returns "test data".
     return DummyReader(b"test data")
 

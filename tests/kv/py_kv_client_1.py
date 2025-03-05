@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run --active
+
 
 # tests/kv/py_kv_client.py
 
@@ -26,7 +27,7 @@ logging.basicConfig(
 class KVClient:
     """Client for KV plugin server."""
 
-    def __init__(self, server_path: str):
+    def __init__(self, server_path: str) -> None:
         """Initialize KV client.
 
         Args:
@@ -47,7 +48,7 @@ class KVClient:
             }
         )
 
-    async def start(self):
+    async def start(self) -> None:
         """Connect to the KV server."""
         try:
             # Create plugin client
@@ -76,7 +77,7 @@ class KVClient:
             await self.close()
             raise
 
-    async def close(self):
+    async def close(self) -> None:
         """Close the connection."""
         if self._client:
             await self._client.close()
@@ -125,7 +126,7 @@ class KVClient:
             raise
 
 
-async def main():
+async def main() -> None:
     """Example usage of KVClient."""
     # Get server path from environment
     server_path = os.environ.get("PLUGIN_SERVER_PATH")

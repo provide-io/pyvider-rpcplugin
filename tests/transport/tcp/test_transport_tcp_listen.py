@@ -12,7 +12,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_listen_and_connect():
+async def test_tcp_socket_transport_listen_and_connect() -> None:
     transport = TCPSocketTransport()
 
     # Start the TCP server
@@ -43,7 +43,7 @@ async def test_tcp_socket_transport_listen_and_connect():
     assert transport._server is None or not transport._server.is_serving()
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port):
+async def test_tcp_socket_transport_listen_port_in_use(unused_tcp_port) -> None:
     """
     Test that TCPSocketTransport.listen raises TransportError when the port is in use.
     """

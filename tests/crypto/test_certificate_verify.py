@@ -19,26 +19,26 @@ from pyvider.rpcplugin.crypto.certificate import (
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_verify_single_certificate_in_trust_chain(client_cert, server_cert):
+async def test_verify_single_certificate_in_trust_chain(client_cert, server_cert) -> None:
     """Test basic trust chain verification with a single certificate."""
     # Add server cert to client's trust chain
     client_cert.trust_chain = [server_cert]
     assert client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async def test_verify_certificate_not_in_trust_chain(client_cert, server_cert):
+async def test_verify_certificate_not_in_trust_chain(client_cert, server_cert) -> None:
     """Test verification fails when certificate is not in trust chain."""
     # Ensure empty trust chain
     client_cert.trust_chain = []
     assert not client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async def test_verify_certificate_chain_error(client_cert, server_cert):
+async def test_verify_certificate_chain_error(client_cert, server_cert) -> None:
     """Ensure verification fails for an untrusted certificate."""
     assert not client_cert.verify_trust(server_cert), "Expected verification to fail"
 
 @pytest.mark.asyncio
-async def test_verify_trust_chain_ordering(client_cert, server_cert):
+async def test_verify_trust_chain_ordering(client_cert, server_cert) -> None:
     """Test trust chain verification is directional - A trusting B doesn't mean B trusts A."""
     # Set up one-way trust: client trusts server
     client_cert.trust_chain = [server_cert]
@@ -55,7 +55,7 @@ async def test_verify_trust_chain_ordering(client_cert, server_cert):
     )
 
 @pytest.mark.asyncio
-async def test_verify_bidirectional_trust_chain(client_cert, server_cert):
+async def test_verify_bidirectional_trust_chain(client_cert, server_cert) -> None:
     """Test certificates can be configured to trust each other."""
     # Set up two-way trust
     client_cert.trust_chain = [server_cert]
@@ -66,7 +66,7 @@ async def test_verify_bidirectional_trust_chain(client_cert, server_cert):
     assert server_cert.verify_trust(client_cert), "Server should verify client"
 
 @pytest.mark.asyncio
-async def test_verify_empty_trust_chain(client_cert, server_cert):
+async def test_verify_empty_trust_chain(client_cert, server_cert) -> None:
     """Test verification with empty trust chain."""
     client_cert.trust_chain = []
     server_cert.trust_chain = []
@@ -74,14 +74,14 @@ async def test_verify_empty_trust_chain(client_cert, server_cert):
     assert not server_cert.verify_trust(client_cert)
 
 @pytest.mark.asyncio
-async def test_verify_self_trust_chain(client_cert):
+async def test_verify_self_trust_chain(client_cert) -> None:
     """Test certificate can verify itself if in its own trust chain."""
     # Add cert to its own trust chain
     client_cert.trust_chain = [client_cert]
     assert client_cert.verify_trust(client_cert)
 
 @pytest.mark.asyncio
-async def test_verify_mutual_trust_chain(client_cert, server_cert):
+async def test_verify_mutual_trust_chain(client_cert, server_cert) -> None:
     """Test mutual trust chain verification."""
     # Set up mutual trust
     client_cert.trust_chain = [server_cert]
@@ -92,7 +92,7 @@ async def test_verify_mutual_trust_chain(client_cert, server_cert):
     assert server_cert.verify_trust(client_cert)
 
 @pytest.mark.asyncio
-async def test_verify_trust_chain_after_modification(client_cert, server_cert):
+async def test_verify_trust_chain_after_modification(client_cert, server_cert) -> None:
     """Test trust chain verification after modifying the chain."""
     # Start with no trust
     client_cert.trust_chain = []
@@ -107,7 +107,7 @@ async def test_verify_trust_chain_after_modification(client_cert, server_cert):
     assert not client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async def test_verify_multiple_certificates_in_trust_chain(client_cert, server_cert):
+async def test_verify_multiple_certificates_in_trust_chain(client_cert, server_cert) -> None:
     """Test verification with multiple certificates in trust chain."""
     # Create a trust chain with both certs
     client_cert.trust_chain = [client_cert, server_cert]
@@ -117,7 +117,7 @@ async def test_verify_multiple_certificates_in_trust_chain(client_cert, server_c
     assert client_cert.verify_trust(server_cert)
 
 @pytest.mark.asyncio
-async def test_verify_subject_issuer_relationship(client_cert, server_cert):
+async def test_verify_subject_issuer_relationship(client_cert, server_cert) -> None:
     """Test verification considers subject/issuer relationship."""
     # Document the relationship
     is_self_signed_server = server_cert.subject == server_cert.issuer
@@ -130,7 +130,7 @@ async def test_verify_subject_issuer_relationship(client_cert, server_cert):
     assert result == (is_self_signed_server and server_cert in client_cert.trust_chain)
 
 @pytest.mark.asyncio
-async def test_verify_public_key_types(client_cert, server_cert):
+async def test_verify_public_key_types(client_cert, server_cert) -> None:
     """Test verification with different public key types."""
     # Document the key types
     client_key_type = type(client_cert.public_key)
@@ -150,21 +150,21 @@ async def test_verify_public_key_types(client_cert, server_cert):
     )
 
 @pytest.mark.asyncio
-async def test_verify_self_signed_rsa():
+async def test_verify_self_signed_rsa() -> None:
     """Test verification of RSA self-signed certificate."""
     cert = Certificate(generate_keypair=True, key_type="rsa")
     cert.trust_chain = [cert]
     assert cert.verify_trust(cert)
 
 @pytest.mark.asyncio
-async def test_verify_self_signed_ec():
+async def test_verify_self_signed_ec() -> None:
     """Test verification of EC self-signed certificate."""
     cert = Certificate(generate_keypair=True, key_type="ecdsa")
     cert.trust_chain = [cert]
     assert cert.verify_trust(cert)
 
 @pytest.mark.asyncio
-async def test_verify_unsupported_key_type():
+async def test_verify_unsupported_key_type() -> None:
     """Test verification with unsupported key type."""
     cert = Certificate(generate_keypair=True)
 
@@ -177,7 +177,7 @@ async def test_verify_unsupported_key_type():
         cert.verify_trust(mock_cert)
 
 @pytest.mark.asyncio
-async def test_self_signed_certificate_verification():
+async def test_self_signed_certificate_verification() -> None:
     """Ensure self-signed certificates are properly recognized and verify themselves."""
     cert = Certificate(generate_keypair=True, key_type="rsa")
 
@@ -189,7 +189,7 @@ async def test_self_signed_certificate_verification():
     )
 
 @pytest.mark.asyncio
-async def test_corrupt_certificate():
+async def test_corrupt_certificate() -> None:
     """Ensure corrupted certificates raise errors."""
     with pytest.raises(CertificateError):
         Certificate(
@@ -197,14 +197,14 @@ async def test_corrupt_certificate():
         )
 
 @pytest.mark.asyncio
-async def test_verify_invalid_public_key():
+async def test_verify_invalid_public_key() -> None:
     """Ensure verification fails when public key is None."""
     cert = Certificate(generate_keypair=True)
     with pytest.raises(CertificateError, match="Cannot verify trust"):
         cert.verify_trust(None)
 
 @pytest.mark.asyncio
-async def test_certificate_naive_datetime():
+async def test_certificate_naive_datetime() -> None:
     """Ensure naive datetime is converted to UTC."""
     naive_time = datetime.now()  # No tzinfo
     config = CertificateConfig(
@@ -220,7 +220,7 @@ async def test_certificate_naive_datetime():
     assert base.not_valid_after.tzinfo is timezone.utc
 
 @pytest.mark.asyncio
-async def test_certificate_mismatched_issuer():
+async def test_certificate_mismatched_issuer() -> None:
     cert1 = Certificate(generate_keypair=True, key_type="rsa", common_name="Cert1")
     cert2 = Certificate(generate_keypair=True, key_type="rsa", common_name="Cert2")
     cert1.trust_chain = []
@@ -229,7 +229,7 @@ async def test_certificate_mismatched_issuer():
     )
 
 @pytest.mark.asyncio
-async def test_certificate_invalid_signature():
+async def test_certificate_invalid_signature() -> None:
     """Ensure invalid signatures fail verification."""
     cert = Certificate(generate_keypair=True)
 
@@ -243,7 +243,7 @@ async def test_certificate_invalid_signature():
         )
 
 @pytest.mark.asyncio
-async def test_certificate_key_usage_extension_failure():
+async def test_certificate_key_usage_extension_failure() -> None:
     """Ensure Key Usage extension failure raises CertificateError."""
     cert = Certificate(generate_keypair=True)
 
@@ -255,7 +255,7 @@ async def test_certificate_key_usage_extension_failure():
             cert._create_x509_certificate()
 
 @pytest.mark.asyncio
-async def test_certificate_equality():
+async def test_certificate_equality() -> None:
     """Ensure certificates are equal only if subject and serial number match."""
     cert1 = Certificate(generate_keypair=True)
     cert2 = Certificate(generate_keypair=True)

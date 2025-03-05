@@ -1,7 +1,7 @@
 # pyvider/rpcplugin/config.py
 
 import os
-from typing import Any, Optional
+from typing import Dict, List, Union, Any, Optional
 
 import attrs
 
@@ -10,7 +10,7 @@ from pyvider.rpcplugin.logger import logger
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
-CONFIG_SCHEMA = {
+CONFIG_SCHEMA: Dict[str, Union[Dict[str, Union[None, bool, str]], Dict[str, Union[List[int], bool, str]], Dict[str, Union[List[str], bool, str]], Dict[str, Union[bool, str]], Dict[str, Union[int, str]]]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
         "default": SUPPORTED_PROTOCOL_VERSIONS,
@@ -139,17 +139,19 @@ def fetch_env_variable(key, meta):
     # Handle lists stored as comma-separated strings
     if isinstance(meta["default"], list) and isinstance(value, str):
         try:
-            return [int(v.strip()) for v in value.split(",")]
+            # Determine if the expected type is integers or strings
+            if all(isinstance(x, int) for x in meta["default"]):
+                return [int(v.strip()) for v in value.split(",")]
+            else:
+                return [v.strip() for v in value.split(",")]
         except ValueError as e:
-            logger.error(f"❌ Failed to parse {key} as a list of integers: {value}")
-            raise ValueError(
-                f"Invalid format for {key}. Expected comma-separated integers, got: {value}"
-            ) from e
+            logger.error(f"❌ Failed to parse {key}: {value}")
+            raise ValueError(f"Invalid format for {key}. Expected list of values, got: {value}") from e
 
     return value
 
 
-def get_config():
+def get_config() -> Dict[str, Any]:
     """Retrieves configuration values from the environment, applying defaults where necessary."""
     config = {}
     for key, meta in CONFIG_SCHEMA.items():

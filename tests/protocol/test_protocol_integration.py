@@ -50,7 +50,7 @@ async def grpc_channel(grpc_server):
     await channel.close()
 
 @pytest.mark.asyncio
-async def test_stdio_integration(grpc_server, grpc_channel):
+async def test_stdio_integration(grpc_server, grpc_channel) -> None:
     """Integration test for the stdio service."""
     server, _, _ = grpc_server
 
@@ -96,7 +96,7 @@ async def test_stdio_integration(grpc_server, grpc_channel):
     assert results[0].channel != results[1].channel
 
 @pytest.mark.asyncio
-async def test_broker_integration(grpc_server, grpc_channel):
+async def test_broker_integration(grpc_server, grpc_channel) -> None:
     """Integration test for the broker service."""
     # Create a broker stub
     stub = GRPCBrokerStub(grpc_channel)
@@ -125,7 +125,7 @@ async def test_broker_integration(grpc_server, grpc_channel):
     await stream.done_writing()
 
 @pytest.mark.skip # the shutdown is killing the actual tests.
-async def test_controller_integration(grpc_server, grpc_channel):
+async def test_controller_integration(grpc_server, grpc_channel) -> None:
     """Integration test for the controller service."""
     _, _, shutdown_event = grpc_server
 

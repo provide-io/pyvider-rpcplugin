@@ -23,7 +23,7 @@ async def test_server_starts_insecurely(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
 
     transport = mock_server_transport
 
@@ -58,7 +58,7 @@ async def test_server_starts_insecurely(
     assert handshake.startswith("1|"), f"Invalid handshake format: {handshake}"
 
 @pytest.mark.asyncio
-async def test_read_client_cert_present(monkeypatch, mock_server_transport):
+async def test_read_client_cert_present(monkeypatch, mock_server_transport) -> None:
     from pyvider.rpcplugin.config import rpcplugin_config
 
     rpcplugin_config.set("PLUGIN_CLIENT_CERT", "client_cert")
@@ -78,7 +78,7 @@ async def test_read_client_cert_absent(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     transport = mock_server_transport
 
     #original_config = rpcplugin_config.config.copy()
@@ -96,13 +96,13 @@ async def test_read_client_cert_absent(
     assert cert is None
 
 @pytest.mark.asyncio
-async def test_generate_server_credentials_insecure(server_with_mocks):
+async def test_generate_server_credentials_insecure(server_with_mocks) -> None:
     """Test generating server credentials in insecure mode."""
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
 
 @pytest.mark.asyncio
-async def test_generate_server_credentials_secure(monkeypatch):
+async def test_generate_server_credentials_secure(monkeypatch) -> None:
     dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
     dummy_key = "-----BEGIN PRIVATE KEY-----\ndummy\n-----END PRIVATE KEY-----"
 
@@ -127,7 +127,7 @@ async def test_generate_server_credentials_success(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
 
     mock_server_config.set(
         "PLUGIN_SERVER_CERT",
@@ -161,7 +161,7 @@ async def test_generate_server_credentials_failure(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-):
+) -> None:
     # Force Certificate creation to raise an exception.
     from pyvider.rpcplugin.crypto.certificate import Certificate
 
