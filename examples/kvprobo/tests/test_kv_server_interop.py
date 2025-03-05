@@ -589,7 +589,7 @@ async def test_connection_with_debugging() -> None:
             logger.info("🧪📝 Go server process is still running")
             # Try to read stderr from the process
             if client._process.stderr:
-                stderr_data = client._process.stderr.read1(1024)
+                stderr_data = client._process.stderr.read(1024)
                 if stderr_data:
                     logger.info(f"🧪📝 Go server stderr: {stderr_data.decode('utf-8', errors='replace')}")
 
