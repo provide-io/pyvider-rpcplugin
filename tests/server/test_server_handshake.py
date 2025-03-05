@@ -99,12 +99,12 @@ async def test_negotiate_handshake_via_negotiation(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport_tcp,
+    mock_server_transport,
 ) -> None:
 
     # right now this fails if there is Unix. But it works fine
     # with the tests which has a config set.
-    transport = mock_server_transport_tcp
+    transport = mock_server_transport
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
