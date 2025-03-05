@@ -303,8 +303,8 @@ class RPCPluginClient:
                     logger.debug("*** address starts with unix")
                     self._address = address[5:]  # Remove standard unix: prefix
                     # Remove leading slashes (but not all slashes)
-                    while sock_path.startswith("/") and not sock_path.startswith("//"):
-                        self._address = sock_path[1:]
+                    while self._address.startswith("/") and not self._address.startswith("//"):
+                        self._address = self._address[1:]
 
                 else:
                     self._address = address
