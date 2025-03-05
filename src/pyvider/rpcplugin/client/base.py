@@ -50,6 +50,7 @@ class RPCPluginClient:
     # Internal fields
     _process: subprocess.Popen | None = attrs.field(init=False, default=None)
     _transport: TransportT | None = attrs.field(init=False, default=None)
+    _address: TransportT | None = attrs.field(init=False, default=None)
     _protocol_version: int | None = attrs.field(init=False, default=None)
     _server_cert: str | None = attrs.field(init=False, default=None)
     _channel: grpc.aio.Channel | None = attrs.field(init=False, default=None)
