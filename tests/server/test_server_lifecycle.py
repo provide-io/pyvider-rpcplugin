@@ -62,7 +62,7 @@ async def test_serve_success(
     server._serving_future = fut
     server._serving_event = asyncio.Event()
 
-    await test_transport.listen()
+    endpoint = await test_transport.listen()
 
     async def dummy_negotiate(self):
         self._protocol_version = 1
