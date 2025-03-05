@@ -548,7 +548,7 @@ class RPCPluginClient:
             logger.debug("🔄 Terminating plugin subprocess...")
             try:
                 self._process.terminate()
-                self._process.wait(timeout=3)
+                self._process.wait(timeout=7) # should be higher than the server timeout
                 logger.debug("🔄 Plugin subprocess terminated.")
             except Exception as e:
                 logger.error(
