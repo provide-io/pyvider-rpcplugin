@@ -56,6 +56,7 @@ async def unix_transport():
             logger.debug("DEBUG: removing sock_path")
             os.unlink(sock_path)
         logger.debug("DEBUG: Fixture cleanup complete")
+
 @pytest_asyncio.fixture(scope="function")
 async def unique_transport_path():
     """Generate a unique path for Unix socket transport."""
@@ -93,12 +94,47 @@ async def transport_cleanup():
     # Force cleanup of transport resources
     await asyncio.sleep(0.1)  # Allow any pending cleanups
 
-@pytest_asyncio.fixture(scope="function")
-async def unique_socket_path() -> str:
+#@pytest_asyncio.fixture(scope="function")
+async def X1_unique_socket_path() -> str:
     import uuid
 
     # Always keep it under ~100 bytes to be safe
     short_id = uuid.uuid4().hex[:8]
     return f"/tmp/pyv_{short_id}.sock"
+
+@pytest_asyncio.fixture(scope="function")
+async def unique_socket_path() -> str:
+    """Generate a unique socket path that won't conflict between tests."""
+    import uuid
+    import tempfile
+    import time
+
+    # Create unique identifier with pid, timestamp and uuid
+    unique_id = f"{os.getpid()}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
+
+    # Create temp directory if it doesn't exist
+    temp_dir = tempfile.gettempdir()
+    socket_path = os.path.join(temp_dir, f"pyvider_test_{unique_id}.sock")
+
+    # Ensure path doesn't exist before starting
+    if os.path.exists(socket_path):
+        try:
+            os.chmod(socket_path, 0o777)  # Ensure permissions
+            os.unlink(socket_path)
+            logger.debug(f"🧪🧹 Cleaned stale socket at {socket_path}")
+        except OSError as e:
+            logger.warning(f"🧪⚠️ Failed to clean stale socket: {e}")
+
+    logger.debug(f"🧪🔌 Created unique socket path: {socket_path}")
+    yield socket_path
+
+    # Cleanup after test
+    if os.path.exists(socket_path):
+        try:
+            os.chmod(socket_path, 0o777)
+            os.unlink(socket_path)
+            logger.debug(f"🧪🧹 Cleaned up socket: {socket_path}")
+        except OSError as e:
+            logger.warning(f"🧪⚠️ Cleanup failed for socket {socket_path}: {e}")
 
 ### 🐍🏗🧪️
