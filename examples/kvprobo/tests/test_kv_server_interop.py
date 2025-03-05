@@ -453,7 +453,8 @@ async def test_client_connection_timeout() -> None:
     # Environment with intentionally wrong cookie to cause handshake failure
     env = {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "wrong_cookie",  # Wrong value to cause handshake failure
+        "PLUGIN_MAGIC_COOKIE_VALUE": "wrong_cookie",  # Wrong value to cause handshake failure
+        "BASIC_PLUGIN": "hello",  # Wrong value to cause handshake failure
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",
         "PLUGIN_AUTO_MTLS": "true",
