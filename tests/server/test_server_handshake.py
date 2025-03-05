@@ -75,7 +75,7 @@ async def test_negotiate_handshake_with_provided_transport(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
+        config=None,
         transport=transport,
     )
 
