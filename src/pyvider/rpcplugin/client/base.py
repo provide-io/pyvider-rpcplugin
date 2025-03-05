@@ -145,9 +145,6 @@ class RPCPluginClient:
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
 
-        # Force Unix transport preference
-        env["PLUGIN_TRANSPORTS"] = "unix,tcp"
-
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
             self._process = subprocess.Popen(
