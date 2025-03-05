@@ -46,8 +46,8 @@ async def test_setup_server_unix_success_secure(
     mock_server_transport_unix,
 ) -> None:
 
-    #test_transport = UnixSocketTransport()
-    test_transport = mock_server_transport_unix
+    test_transport = UnixSocketTransport()
+    # test_transport = mock_server_transport_unix
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
