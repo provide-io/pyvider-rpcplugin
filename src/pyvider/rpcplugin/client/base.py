@@ -600,4 +600,8 @@ class RPCPluginClient:
 
         logger.info("🔄 RPCPluginClient fully closed.")
 
+    def get_connected_path(self) -> str:
+        """Return the actual connected socket path."""
+        return self.path
+
 ### 🐍🏗️🔌
