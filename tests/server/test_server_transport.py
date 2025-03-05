@@ -51,7 +51,7 @@ async def test_setup_server_unix_success_secure(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=None,
+        transport=test_transport,
     )
 
     try:
