@@ -22,7 +22,8 @@ from examples.kvprobo.py_rpc.proto import kv_pb2, kv_pb2_grpc
 from tests.fixtures import *
 
 TEST_DIR: Path = Path(__file__).parent
-DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-rpc" / "bin" / "kv-go-server")
+
+DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "../go-rpc" / "bin" / "kv-go-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
