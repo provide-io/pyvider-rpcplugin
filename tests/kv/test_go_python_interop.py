@@ -1,4 +1,3 @@
-#!/usr/bin/env uv run
 
 # tests/kv/test_go_python_interop.py
 
