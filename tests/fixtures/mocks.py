@@ -128,7 +128,7 @@ async def mock_server_transport_unix(unique_socket_path) -> TransportT:
             
             # Double-check for stale socket file
             if os.path.exists(unique_socket_path):
-                os.chmod(unique_socket_path, 0o777)
+                os.chmod(unique_socket_path, 0o770)
                 os.unlink(unique_socket_path)
                 logger.debug(f"🧪🧹 Manually removed socket file {unique_socket_path}")
         except Exception as e:
