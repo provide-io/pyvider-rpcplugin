@@ -305,7 +305,7 @@ class RPCPluginClient:
                         sock_path = sock_path[1:]
                 else:
                     sock_path = address
-                
+
                 logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{sock_path}'")
                 self._transport = UnixSocketTransport(path=sock_path)
             else:
