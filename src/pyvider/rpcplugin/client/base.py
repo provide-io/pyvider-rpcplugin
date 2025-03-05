@@ -326,7 +326,7 @@ class RPCPluginClient:
     async def _create_grpc_channel(self) -> None:
         """Creates a secure gRPC channel to the plugin."""
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
-        
+
         # CRITICAL FIX: Use the same address that was established during handshake
         if isinstance(self._transport, UnixSocketTransport):
             # For Unix sockets, we must use the exact same socket path from handshake
@@ -334,13 +334,13 @@ class RPCPluginClient:
         else:
             # For TCP, use standard addressing
             target = f"{self._network}:{self._address}"
-            
+
         logger.debug(f"🚢🔍 Creating gRPC channel with target: {target}")
-        
+
         # Rebuild server cert into PEM if needed
         if self._server_cert:
             full_pem = self._rebuild_x509_pem(self._server_cert)
-            
+
             # Set up credentials
             if self.client_cert and self.client_key_pem:
                 logger.debug("🔐 Creating mTLS channel with client certs + server root.")
@@ -354,7 +354,7 @@ class RPCPluginClient:
                 credentials = grpc.ssl_channel_credentials(
                     root_certificates=full_pem.encode()
                 )
-                
+
             # Create the secure channel
             self._channel = grpc.aio.secure_channel(
                 target,
@@ -371,9 +371,9 @@ class RPCPluginClient:
             # Fall back to insecure channel if no cert
             logger.info("🚢 No server certificate. Using insecure channel.")
             self._channel = grpc.aio.insecure_channel(target)
-        
+
         logger.debug("🚢 gRPC channel created successfully.")
-        
+
         # Wait for the channel to be ready with timeout
         try:
             await asyncio.wait_for(self._channel.channel_ready(), timeout=5.0)
