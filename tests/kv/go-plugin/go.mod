@@ -11,7 +11,7 @@ require (
 	google.golang.org/protobuf v1.36.2
 )
 
-// replace github.com/hashicorp/go-plugin => /Users/tim/code/tf/go-plugin
+replace github.com/hashicorp/go-plugin => /Users/tim/code/tf/go-plugin
 
 require (
 	github.com/fatih/color v1.13.0 // indirect

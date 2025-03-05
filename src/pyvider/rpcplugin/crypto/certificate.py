@@ -121,7 +121,7 @@ class CertificateBase:
                         public_exponent=65537, key_size=key_size
                     )
                 case KeyType.ECDSA:
-                    curve_choice = config.get("curve", CurveType.SECP521R1)
+                    curve_choice = config.get("curve", CurveType.SECP384R1)
                     logger.debug(
                         f"📜🔑🚀 CertificateBase.create: Generating ECDSA key (curve: {curve_choice})."
                     )
@@ -205,7 +205,7 @@ class Certificate:
         generate_keypair: bool = False,
         key_type: str = "ecdsa",
         key_size: int = 2048,
-        ecdsa_curve: str = "secp521r1",
+        ecdsa_curve: str = "secp384r1",
         common_name: str = "localhost",
         alt_names: list[str] = None,
         organization_name: str = "HashiCorp",
