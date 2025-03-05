@@ -198,8 +198,7 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
                 
-                # Set world-writable permissions (crucial for Go interop)
-                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)  # 0777
+                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG)  # 0770
                 logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
                 
                 self._running = True
