@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 # pyvider/rpcplugin/transport/unix.py
 
 import asyncio
