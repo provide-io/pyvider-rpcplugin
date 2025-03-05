@@ -502,7 +502,8 @@ async def test_connection_with_debugging() -> None:
     # Environment with debugging enabled
     env = {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        "BASIC_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport
         "PLUGIN_AUTO_MTLS": "false",  # Disable mTLS to simplify
