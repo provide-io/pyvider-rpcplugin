@@ -137,7 +137,7 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
         # Additional socket file cleanup
         if path and os.path.exists(path):
             try:
-                os.chmod(path, 0o777)  # Force permissions
+                os.chmod(path, 0o770)  # Force permissions
                 os.unlink(path)
             except OSError:
                 pass
@@ -447,7 +447,7 @@ async def test_unix_socket_lifecycle_3(socket_monitor) -> None:
         ), "Socket failed to become active"
         
         assert os.path.exists(endpoint), "Socket file missing"
-        assert os.stat(endpoint).st_mode & 0o777 == 0o777, "Invalid permissions"
+        assert os.stat(endpoint).st_mode & 0o770 == 0o770, "Invalid permissions"
 
         # Connect
         client = UnixSocketTransport()
@@ -486,7 +486,7 @@ async def test_unix_socket_lifecycle_2(socket_monitor) -> None:
 
         # Verify permissions
         mode = os.stat(endpoint).st_mode
-        assert mode & 0o777 == 0o777, f"Invalid socket permissions: {mode:o}"
+        assert mode & 0o770 == 0o770, f"Invalid socket permissions: {mode:o}"
 
         # Connect
         client = UnixSocketTransport()
@@ -519,7 +519,7 @@ async def test_unix_socket_lifecycle_1(socket_monitor) -> None:
         assert await monitor.check_state()
         assert transport._running
         assert os.path.exists(endpoint)
-        assert os.stat(endpoint).st_mode & 0o777 == 0o777
+        assert os.stat(endpoint).st_mode & 0o770 == 0o770
 
         # Connect
         client = UnixSocketTransport()
