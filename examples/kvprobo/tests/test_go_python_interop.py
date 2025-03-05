@@ -401,7 +401,8 @@ async def test_go_server_with_environment() -> None:
     env = os.environ.copy()
     env.update({
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        "BASIC)_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",
         "PLUGIN_AUTO_MTLS": "true",
