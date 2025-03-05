@@ -297,14 +297,16 @@ class RPCPluginClient:
             elif network == "unix":
                 # More robust handling of unix: prefix formats
                 logger.debug("*** network is set to unix")
+
                 if address.startswith("unix:"):
                     logger.debug("*** address starts with unix")
-                    sock_path = address[5:]  # Remove standard unix: prefix
+                    self._address = address[5:]  # Remove standard unix: prefix
                     # Remove leading slashes (but not all slashes)
                     while sock_path.startswith("/") and not sock_path.startswith("//"):
-                        sock_path = sock_path[1:]
+                        self._address = sock_path[1:]
+
                 else:
-                    sock_path = address
+                    self._address = address
 
                 logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{sock_path}'")
                 self._transport = UnixSocketTransport() # path=sock_path)
