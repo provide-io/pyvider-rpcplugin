@@ -1,4 +1,4 @@
-#!/usr/bin/env uv run
+#!/usr/bin/env uv run --active
 """
 py-kv-server.py
 
