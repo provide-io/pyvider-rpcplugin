@@ -113,7 +113,7 @@ async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
 async def test_go_server_binary_exists() -> None:
     """Test that the Go server binary exists and is executable."""
     # Check the default path
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
     logger.info(f"🧪🔍 Checking Go server binary at: {server_path}")
 
     if not os.path.exists(server_path):
