@@ -45,7 +45,7 @@ async def kv_server_path() -> str:
 
 
 @pytest_asyncio.fixture
-async def kv_server_env() -> dict[str, str]:
+async def go_server_env() -> dict[str, str]:
     """Return the environment variables for the Server."""
     return {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
