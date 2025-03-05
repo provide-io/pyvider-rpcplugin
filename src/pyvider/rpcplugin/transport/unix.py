@@ -188,7 +188,7 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
 
-                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG)  # 0770
+                await os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG)  # 0770
                 logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
 
                 self._running = True
