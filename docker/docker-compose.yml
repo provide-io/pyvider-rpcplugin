@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # Development environment
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - .:/app
+      - dist:/dist
+    command: dev
+    environment:
+      - PYTHONPATH=/app
+      - PLUGIN_AUTO_MTLS=true
+    ports:
+      - "8000:8000"  # For any web services
+
+  # Run all tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: testing
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONPATH=/app
+      - PLUGIN_AUTO_MTLS=true
+
+  # Build package
+  build:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    volumes:
+      - ./dist:/dist
+
+  # Go interoperability testing
+  go-server:
+    build:
+      context: ./interop/go-server
+      dockerfile: Dockerfile
+    volumes:
+      - ./interop/go-server:/app
+    command: ["./server"]
+
+  # Python server for testing
+  py-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    volumes:
+      - .:/app
+    command: ["python", "-m", "tests.kv.server"]
+    environment:
+      - PYTHONPATH=/app
+      - PLUGIN_AUTO_MTLS=true
+
+volumes:
+  dist:
