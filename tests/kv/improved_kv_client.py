@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-
-# tests/kv/py_kv_client_2.py
+# tests/kv/improved_kv_client.py
 
 import asyncio
+import logging
 import os
 import sys
 import time
@@ -18,10 +18,16 @@ from tests.kv.proto import (
     kv_pb2_grpc,
 )
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s.%(msecs)03d %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 class KVClient:
-    """Client for KV plugin server."""
+    """Client for KV plugin server with improved error handling & diagnostics."""
 
     def __init__(self, server_path: str):
         """Initialize KV client.
@@ -32,26 +38,35 @@ class KVClient:
         self.server_path = server_path
         self._client = None
         self._stub = None
+        self.connection_timeout = 15.0  # Increased timeout
 
-        # Configure environment for plugin
-        # Force UNIX transport for better cross-language compatibility
+        # Configure environment for plugin - FORCE unix transport for stability
         os.environ.update(
             {
                 "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
                 "PLUGIN_MAGIC_COOKIE": "hello",
                 "PLUGIN_PROTOCOL_VERSIONS": "1",
-                "PLUGIN_TRANSPORTS": "unix",  # Force Unix for better Go compatibility
+                "PLUGIN_TRANSPORTS": "unix",  # Force Unix for stability
                 "PLUGIN_AUTO_MTLS": "true",
                 "PYTHONUNBUFFERED": "1",      # Ensure Python output is unbuffered
-                "GODEBUG": "asyncpreemptoff=1", # Improve Go coroutine behavior
+                "GODEBUG": "asyncpreemptoff=1,panicasync=1", # Improve Go coroutine behavior
             }
         )
 
     async def start(self):
-        """Connect to the KV server."""
+        """Connect to the KV server with improved error handling."""
         start_time = time.time()
         try:
-            logger.debug("🤝 Creating an RPCPluginClient for server path: %s", self.server_path)
+            logger.debug(f"🤝 Creating an RPCPluginClient for server path: {self.server_path}")
+            
+            # Validate server path
+            if not os.path.exists(self.server_path):
+                logger.error(f"🚨 Server executable not found at {self.server_path}")
+                raise FileNotFoundError(f"Server executable not found at {self.server_path}")
+            
+            if not os.access(self.server_path, os.X_OK):
+                logger.error(f"🚨 Server executable is not executable: {self.server_path}")
+                raise PermissionError(f"Server executable is not executable: {self.server_path}")
             
             # Create plugin client with explicit environment settings
             self._client = RPCPluginClient(
@@ -66,26 +81,26 @@ class KVClient:
                         "PLUGIN_TRANSPORTS": "unix",
                         "PLUGIN_AUTO_MTLS": "true",
                         "PYTHONUNBUFFERED": "1",
-                        "GODEBUG": "asyncpreemptoff=1",
+                        "GODEBUG": "asyncpreemptoff=1,panicasync=1",
                     }
                 }
             )
 
-            # Add diagnostics - start a background thread to monitor stderr
+            # Start a background thread to relay stderr for diagnostics
             self._relay_stderr()
             
             # Start client with explicit timeout
-            logger.debug("▶️ Starting the client with 10 second timeout")
-            await asyncio.wait_for(self._client.start(), timeout=10.0)
+            logger.debug(f"▶️ Starting the client with {self.connection_timeout} second timeout")
+            await asyncio.wait_for(self._client.start(), timeout=self.connection_timeout)
             
-            if hasattr(self._client, "_client_cert"):
-                logger.info("🔐 Client certificate generated")
-                
             # Log connection details
             if hasattr(self._client, "_transport") and self._client._transport:
                 transport_type = type(self._client._transport).__name__
                 endpoint = getattr(self._client._transport, "endpoint", "unknown")
                 logger.debug(f"🤝✅ Connected via {transport_type} to {endpoint}")
+
+            # Add a small delay to ensure transport is ready
+            await asyncio.sleep(0.5)
 
             # Create gRPC stub
             self._stub = kv_pb2_grpc.KVStub(self._client._channel)
@@ -98,7 +113,7 @@ class KVClient:
                 logger.debug("📝 Server process is still running")
                 if self._client._process.stderr:
                     try:
-                        stderr = self._client._process.stderr.read1(2048)
+                        stderr = self._client._process.stderr.read(2048)
                         if stderr:
                             logger.debug(f"📝 Server stderr: {stderr.decode('utf-8', errors='replace')}")
                     except:
@@ -117,22 +132,26 @@ class KVClient:
         import threading
         
         def read_stderr():
-            while True:
-                if not self._client or not self._client._process or not self._client._process.stderr:
-                    break
+            while self._client and hasattr(self._client, "_process") and self._client._process:
                 try:
-                    line = self._client._process.stderr.readline()
+                    if not self._client._process or not self._client._process.stderr:
+                        break
+                    line = self._client._process.stderr.read(1024)
                     if not line:
                         break
-                    sys.stderr.write(f"SERVER: {line.decode('utf-8', errors='replace')}")
-                except:
+                    decoded = line.decode('utf-8', errors='replace').strip()
+                    if decoded:
+                        logger.debug(f"📝 SERVER: {decoded}")
+                except Exception as e:
+                    logger.error(f"📝 Error reading stderr: {e}")
                     break
         
-        threading.Thread(target=read_stderr, daemon=True).start()
+        thread = threading.Thread(target=read_stderr, daemon=True)
+        thread.start()
         logger.debug("📝 Started background stderr reader")
 
     async def close(self):
-        """Close the connection."""
+        """Close the connection with improved cleanup."""
         if self._client:
             logger.debug("🔒 Closing client connection")
             try:
@@ -142,22 +161,33 @@ class KVClient:
                 logger.debug("🔒 Client connection closed successfully")
             except Exception as e:
                 logger.error(f"🔒 Error closing client connection: {e}")
+                logger.error(traceback.format_exc())
 
-    async def put(self, key: str, value: bytes) -> None:
+    async def put(self, key: str, value: bytes | str) -> None:
         """Put a value into the KV store.
 
         Args:
             key: Key to store value under
-            value: Value to store
+            value: Value to store (bytes or str)
         """
         if not self._stub:
             raise RuntimeError("Not connected to KV server")
 
+        # Convert string value to bytes if needed
+        if isinstance(value, str):
+            value = value.encode('utf-8')
+
         try:
             logger.debug(f"Put request - key={key}, value_size={len(value)}")
-            await self._stub.Put(kv_pb2.PutRequest(key=key, value=value))
+            await asyncio.wait_for(
+                self._stub.Put(kv_pb2.PutRequest(key=key, value=value)),
+                timeout=5.0
+            )
             logger.debug(f"Put successful: key={key}")
 
+        except asyncio.TimeoutError:
+            logger.error(f"Put timed out: key={key}")
+            raise
         except Exception as e:
             logger.error(f"Put failed: key={key}, error={e}")
             raise
@@ -175,11 +205,17 @@ class KVClient:
             raise RuntimeError("Not connected to KV server")
 
         try:
-            response = await self._stub.Get(kv_pb2.GetRequest(key=key))
+            response = await asyncio.wait_for(
+                self._stub.Get(kv_pb2.GetRequest(key=key)),
+                timeout=5.0
+            )
             value = response.value if response else None
             logger.debug(f"Get successful: key={key}, found={'yes' if value else 'no'}")
             return value
 
+        except asyncio.TimeoutError:
+            logger.error(f"Get timed out: key={key}")
+            raise
         except Exception as e:
             logger.error(f"Get failed: key={key}, error={e}")
             raise

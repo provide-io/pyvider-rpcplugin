@@ -52,9 +52,6 @@ export class ParticleManager {
    * @returns {Object} The created particle object
    */
   createParticle(char, x, y, scale, offsetX, offsetY) {
-    // Assign effect based on character
-    const effectType = getEffectForChar(char);
-    
     // Create a group for the particle
     const group = new Zdog.Group({
       addTo: this.mainGroup,
@@ -69,13 +66,33 @@ export class ParticleManager {
     const shape = this.createCharShape(char, group, scale * 0.8);
     
     // Store original properties for animation reference
-    const originalStroke = shape.stroke;
+    const originalStroke = shape.stroke || 0;
     
     // Generate random animation parameters
-    const speed = 0.5 + Math.random() * 1.5;
+    const speed = 0.3 + Math.random() * 0.8; // Slower speed for more gentle animation
     const phase = Math.random() * Math.PI * 2;
-    const radius = 2 + Math.random() * 3;
-    const amplitude = 3 + Math.random() * 5;
+    const radius = 1 + Math.random() * 2;    // Smaller radius for subtler movement
+    const amplitude = 2 + Math.random() * 3; // Smaller amplitude
+    
+    // Assign default effect for rotation and throbbing
+    const effectType = getEffectForChar(char);
+    
+    // Store secondary effect (if any)
+    const secondaryEffect = (() => {
+      // Map specific characters to specific effects for visual variety
+      const effectMap = {
+        '@': 'pulse',
+        '#': 'orbit',
+        '*': 'glow',
+        '+': 'rotate',
+        ':': 'float',
+        '.': 'float',
+        '=': 'wave',
+        '-': 'wave',
+        '%': 'bounce'
+      };
+      return effectMap[char];
+    })();
     
     // Return particle object with all properties needed for animation
     return {
@@ -87,6 +104,7 @@ export class ParticleManager {
       originalZ: group.translate.z,
       originalStroke,
       effect: effectType,
+      secondaryEffect,
       speed,
       phase,
       radius,
@@ -102,74 +120,161 @@ export class ParticleManager {
    * @returns {Zdog.Shape} The created shape
    */
   createCharShape(char, group, size) {
-    const strokeWidth = size * 0.2;
+    const strokeWidth = size * 0.15;
     const color = getCharColor(char);
+    const depth = size * 0.25; // Add depth to make it 3D
     
-    // Choose shape type based on character
-    if (this.characterGroups.box.includes(char)) {
-      // Block shape
-      return new Zdog.Box({
-        addTo: group,
-        width: size,
-        height: size,
-        depth: size / 3,
+    // Create a 3D panel for the character with some depth
+    const panel = new Zdog.Box({
+      addTo: group,
+      width: size * 0.9,
+      height: size * 0.9,
+      depth: depth,
+      stroke: 0,
+      color: getColorVariant(color, 0.8),
+      frontFace: color,
+      backFace: getColorVariant(color, 0.7),
+      leftFace: getColorVariant(color, 0.6),
+      rightFace: getColorVariant(color, 0.6),
+      topFace: getColorVariant(color, 0.9),
+      bottomFace: getColorVariant(color, 0.5),
+    });
+    
+    // Create the actual character on top of the panel
+    // Use character-specific rendering based on the ASCII character
+    let charShape;
+    
+    if (char === '@') {
+      // Create a circular 'at' symbol
+      charShape = new Zdog.Ellipse({
+        addTo: panel,
+        diameter: size * 0.7,
         stroke: strokeWidth,
-        color: color,
-        frontFace: getColorVariant(color, 1.1),
-        backFace: getColorVariant(color, 0.9),
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
+      });
+      
+      // Add a smaller circle inside
+      new Zdog.Ellipse({
+        addTo: charShape,
+        diameter: size * 0.3,
+        stroke: strokeWidth,
+        color: '#FFFFFF',
+        translate: { x: size * 0.1, y: -size * 0.05 },
+      });
+    } else if (char === '#') {
+      // Hash/pound symbol
+      charShape = new Zdog.Shape({
+        addTo: panel,
+        stroke: strokeWidth,
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
+        path: [
+          { x: -size/4, y: -size/3 },
+          { x: -size/4, y: size/3 },
+          { move: { x: size/4, y: -size/3 } },
+          { x: size/4, y: size/3 },
+          { move: { x: -size/3, y: -size/4 } },
+          { x: size/3, y: -size/4 },
+          { move: { x: -size/3, y: size/4 } },
+          { x: size/3, y: size/4 },
+        ],
       });
     } else if (this.characterGroups.star.includes(char)) {
-      // Star-like shape
-      return new Zdog.Shape({
-        addTo: group,
+      // Star-like characters
+      charShape = new Zdog.Shape({
+        addTo: panel,
         stroke: strokeWidth,
-        color: color,
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
         path: [
-          { x: 0, y: -size/2 },
-          { x: size/4, y: -size/4 },
-          { x: size/2, y: 0 },
-          { x: size/4, y: size/4 },
-          { x: 0, y: size/2 },
-          { x: -size/4, y: size/4 },
-          { x: -size/2, y: 0 },
-          { x: -size/4, y: -size/4 },
+          { x: 0, y: -size/3 },
+          { x: size/8, y: -size/8 },
+          { x: size/3, y: -size/8 },
+          { x: size/5, y: size/8 },
+          { x: size/4, y: size/3 },
+          { x: 0, y: size/5 },
+          { x: -size/4, y: size/3 },
+          { x: -size/5, y: size/8 },
+          { x: -size/3, y: -size/8 },
+          { x: -size/8, y: -size/8 },
         ],
         closed: true,
       });
     } else if (this.characterGroups.line.includes(char)) {
-      // Line shape
-      return new Zdog.Shape({
-        addTo: group,
+      // Line characters
+      charShape = new Zdog.Shape({
+        addTo: panel,
         stroke: strokeWidth,
-        color: color,
-        path: [
-          { x: -size/2, y: 0 },
-          { x: size/2, y: 0 },
-        ],
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
+        path: char === '-' 
+          ? [{ x: -size/3, y: 0 }, { x: size/3, y: 0 }]
+          : [{ x: -size/3, y: -size/6 }, { x: size/3, y: -size/6 }, 
+             { move: { x: -size/3, y: size/6 } }, { x: size/3, y: size/6 }],
       });
     } else if (this.characterGroups.dot.includes(char)) {
-      // Simple circle
-      return new Zdog.Ellipse({
-        addTo: group,
-        diameter: size,
+      // Dots and colons
+      const isColon = char === ':';
+      charShape = new Zdog.Shape({
+        addTo: panel,
         stroke: strokeWidth,
-        color: color,
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
+        path: isColon
+          ? [{ x: 0, y: -size/5 }, { move: { x: 0, y: size/5 } }, {}]
+          : [{ x: 0, y: 0 }],
+      });
+    } else if (char === '%') {
+      // Percent symbol
+      charShape = new Zdog.Shape({
+        addTo: panel,
+        stroke: strokeWidth,
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
+        path: [
+          // Diagonal line
+          { x: -size/3, y: size/3 },
+          { x: size/3, y: -size/3 },
+          // Top circle (move and then add small circle)
+          { move: { x: -size/5, y: -size/5 } },
+        ],
+      });
+      
+      // Add small circles for percent
+      new Zdog.Ellipse({
+        addTo: charShape,
+        diameter: size * 0.2,
+        stroke: strokeWidth,
+        color: '#FFFFFF',
+        translate: { x: -size/5, y: -size/5 },
+      });
+      
+      new Zdog.Ellipse({
+        addTo: charShape,
+        diameter: size * 0.2,
+        stroke: strokeWidth,
+        color: '#FFFFFF',
+        translate: { x: size/5, y: size/5 },
       });
     } else {
-      // Default shape for other characters
-      return new Zdog.Shape({
-        addTo: group,
+      // Default for any other character - simple square
+      charShape = new Zdog.Shape({
+        addTo: panel,
         stroke: strokeWidth,
-        color: color,
+        color: '#FFFFFF',
+        translate: { z: depth/2 + 1 },
         path: [
-          { x: -size/3, y: -size/3 },
-          { x: size/3, y: -size/3 },
-          { x: size/3, y: size/3 },
-          { x: -size/3, y: size/3 },
+          { x: -size/4, y: -size/4 },
+          { x: size/4, y: -size/4 },
+          { x: size/4, y: size/4 },
+          { x: -size/4, y: size/4 },
         ],
         closed: true,
       });
     }
+    
+    return panel; // Return the main panel for animation
   }
   
   /**
@@ -178,9 +283,37 @@ export class ParticleManager {
    */
   updateParticles(time) {
     this.particles.forEach(particle => {
+      // Apply the main effect (rotateAndThrob)
       const updateEffect = effects[particle.effect];
       if (updateEffect) {
         updateEffect(particle, time);
+      }
+      
+      // Apply secondary effect if specified
+      if (particle.secondaryEffect && effects[particle.secondaryEffect]) {
+        // Apply secondary effect with reduced intensity
+        const secondaryEffect = effects[particle.secondaryEffect];
+        
+        // Save original properties
+        const origScale = { ...particle.group.scale };
+        const origTranslate = { ...particle.group.translate };
+        const origRotate = { ...particle.group.rotate };
+        
+        // Apply secondary effect
+        secondaryEffect(particle, time);
+        
+        // Blend back with original properties (70% main effect, 30% secondary)
+        particle.group.scale.x = particle.group.scale.x * 0.3 + origScale.x * 0.7;
+        particle.group.scale.y = particle.group.scale.y * 0.3 + origScale.y * 0.7;
+        particle.group.scale.z = particle.group.scale.z * 0.3 + origScale.z * 0.7;
+        
+        particle.group.translate.x = particle.group.translate.x * 0.3 + origTranslate.x * 0.7;
+        particle.group.translate.y = particle.group.translate.y * 0.3 + origTranslate.y * 0.7;
+        particle.group.translate.z = particle.group.translate.z * 0.3 + origTranslate.z * 0.7;
+        
+        particle.group.rotate.x = particle.group.rotate.x * 0.3 + origRotate.x * 0.7;
+        particle.group.rotate.y = particle.group.rotate.y * 0.3 + origRotate.y * 0.7;
+        particle.group.rotate.z = particle.group.rotate.z * 0.3 + origRotate.z * 0.7;
       }
     });
   }

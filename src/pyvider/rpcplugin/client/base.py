@@ -167,46 +167,8 @@ class RPCPluginClient:
 
 ################################################################################
 
-    async def X1__launch_process(self) -> None:
-        """Launch the plugin as a subprocess if not already running."""
-        if self._process:
-            logger.debug("🖥️ Plugin subprocess is already running; skipping launch.")
-            return
-
-        env = os.environ.copy()
-        if self.config and "env" in self.config:
-            env.update(self.config["env"])
-
-        # Force unbuffered output in Python subprocesses
-        env["PYTHONUNBUFFERED"] = "1"
-
-        # Pass client cert if needed
-        if self.client_cert:
-            env["PLUGIN_CLIENT_CERT"] = self.client_cert
-
-        logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
-        try:
-            self._process = subprocess.Popen(
-                self.command,
-                env=env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=False,
-                bufsize=0,  # Disable buffering
-                universal_newlines=False,
-            )
-            logger.info("🖥️ Plugin subprocess started successfully.")
-        except Exception as e:
-            logger.error(f"🖥️❌ Failed to launch plugin subprocess: {e}",
-                        extra={"trace": traceback.format_exc()})
-            raise
-
-################################################################################
-
-    # Apply to src/pyvider/rpcplugin/client/base.py
-
     # Add this method before _perform_handshake
-    def _relay_stderr_background(self) -> None:
+    async def _relay_stderr_background(self) -> None:
         """
         Continuously read plugin's stderr in a background thread, printing it locally.
         This helps debug handshake issues in real-time.
@@ -224,7 +186,8 @@ class RPCPluginClient:
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
 
-    # Then modify _perform_handshake to start the relay early and add more debugging:
+################################################################################
+
     async def _perform_handshake(self) -> None:
         """
         Reads a single line from the plugin stdout for handshake:
@@ -236,7 +199,7 @@ class RPCPluginClient:
             raise HandshakeError("No server process or no stdout available.")
 
         # Start stderr relay immediately to see any error output
-        self._relay_stderr_background()
+        await self._relay_stderr_background()
 
         # Log the command being used
         logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
@@ -330,12 +293,20 @@ class RPCPluginClient:
             )
             self._protocol_version = protocol_version
             self._server_cert = server_cert
-            # Set up the correct transport instance
+
             if network == "tcp":
                 self._transport = TCPSocketTransport()
             elif network == "unix":
-                # Strip "unix:" prefix if present to be more robust
-                sock_path = address.replace("unix:", "", 1)
+                # More robust handling of unix: prefix formats
+                if address.startswith("unix:"):
+                    sock_path = address[5:]  # Remove standard unix: prefix
+                    # Remove leading slashes (but not all slashes)
+                    while sock_path.startswith("/") and not sock_path.startswith("//"):
+                        sock_path = sock_path[1:]
+                else:
+                    sock_path = address
+                
+                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{sock_path}'")
                 self._transport = UnixSocketTransport(path=sock_path)
             else:
                 raise TransportError(f"Unsupported transport: {network}")
@@ -352,132 +323,66 @@ class RPCPluginClient:
 
 ################################################################################
 
-    def X1_relay_stderr_background(self) -> None:
-        """
-        Continuously read plugin's stderr in a background thread, printing it locally.
-        """
-        import threading
-        def read_stderr() -> None:
-            while True:
-                if not self._process or self._process.stderr is None:
-                    break
-                line = self._process.stderr.readline()
-                if not line:
-                    break
-                sys.stderr.write(line.decode('utf-8', errors='replace'))  # Decode bytes to str
+    async def _create_grpc_channel(self) -> None:
+        """Creates a secure gRPC channel with improved timeout handling."""
+        logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
-        t = threading.Thread(target=read_stderr, daemon=True)
-        t.start()
-
-    async def X1_perform_handshake(self) -> None:
-        """
-        Reads a single line from the plugin stdout for handshake:
-          => Format: CORE_VERSION|PLUGIN_VERSION|network|address|protocol|serverCert
-        """
-        logger.debug("🤝 Initiating handshake with plugin server...")
-
-        if not self._process or not self._process.stdout:
-            raise HandshakeError("No server process or no stdout available.")
-
-        ###
-        async def read_stdout_line() -> str:
-            loop = asyncio.get_event_loop()
-            start_time = loop.time()
-            timeout = 10.0  # Increase timeout for handshake
-
-            # Buffer for incomplete handshake lines
-            buffer = ""
-
-            # Log the command being used
-            logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
-
-            while (loop.time() - start_time) < timeout:
-                # Check process state
-                if self._process.poll() is not None:
-                    stderr_output = ""
-                    if self._process.stderr:
-                        stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
-                    logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
-                    raise HandshakeError(f"Plugin process exited with code {self._process.returncode} before handshake.")
-
-                # Try to read a complete line with increased timeout
-                try:
-                    # First try: direct read with longer timeout
-                    line_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(None, lambda: self._process.stdout.readline()),
-                        timeout=2.0  # Longer per-read timeout
-                    )
-
-                    if line_bytes:
-                        line = line_bytes.decode('utf-8', errors='replace').strip()
-                        buffer += line
-                        logger.debug(f"🤝 Read partial handshake data: '{line}', buffer: '{buffer}'")
-
-                        # Check for complete handshake
-                        if "|" in buffer and buffer.count("|") >= 5:
-                            return buffer
-                    else:
-                        # Empty read but process still running - wait and retry
-                        await asyncio.sleep(0.25)  # Longer sleep to allow buffering
-
-                except asyncio.TimeoutError:
-                    logger.debug("🤝 Timeout on read attempt, retrying...")
-                    await asyncio.sleep(0.5)  # Longer backoff
-
-            # Start stderr relay now to capture any error messages
-            self._relay_stderr_background()
-
-            # If we get here, we've timed out
-            stderr_output = ""
-            if self._process.stderr:
-                stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
-            logger.error(f"🤝 Handshake timed out. Stderr output: {stderr_output}")
-            raise TimeoutError("Timed out waiting for handshake line. Check if the server is writing to stdout correctly.")
-
-        try:
-            line = await read_stdout_line()
-            logger.debug(f"🤝 Received handshake response: {line[:60]}...")
-        except TimeoutError:
-            logger.error("🤝 Handshake timed out; no response from plugin.")
-            raise HandshakeError("Handshake timed out.")
-        except Exception:
-            logger.error(
-                "🤝❌ Error reading handshake line.",
-                extra={"trace": traceback.format_exc()},
+        # If we only have an insecure scenario, just do an insecure channel
+        if not self._server_cert:
+            logger.info("🚢 No server certificate. Using insecure channel.")
+            endpoint = self._transport.endpoint
+            self._channel = grpc.aio.insecure_channel(
+                endpoint,
+                options=[("grpc.enable_http_proxy", 0)],
             )
-            raise
+            return
 
-        # Parse handshake
-        try:
-            core_version, protocol_version, network, address, protocol, server_cert = (
-                parse_handshake_response(line)
+        # Rebuild server cert into PEM if needed
+        full_pem = self._rebuild_x509_pem(self._server_cert)
+
+        # Also see if we have client cert
+        if self.client_cert and self.client_key_pem:
+            logger.debug("🔐 Creating mTLS channel with client certs + server root.")
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=full_pem.encode(),
+                private_key=self.client_key_pem.encode(),
+                certificate_chain=self.client_cert.encode(),
             )
+        else:
             logger.debug(
-                f"🤝 Handshake parse => core_version={core_version}, "
-                f"protocol_version={protocol_version}, network={network}, "
-                f"address={address}, protocol={protocol}, cert={bool(server_cert)}"
+                "🔐 Creating TLS channel with server cert only (no client auth)."
             )
-            self._protocol_version = protocol_version
-            self._server_cert = server_cert
-            # Set up the correct transport instance
-            if network == "tcp":
-                self._transport = TCPSocketTransport()
-            elif network == "unix":
-                self._transport = UnixSocketTransport(path=address)
-            else:
-                raise TransportError(f"Unsupported transport: {network}")
-
-            # Connect the chosen transport
-            await self._transport.connect(address)
-            logger.info(f"🚄 Transport connected via {network} -> {address}")
-        except Exception as e:
-            logger.error(
-                "🤝❌ Error parsing handshake response or connecting transport.",
-                extra={"trace": traceback.format_exc()},
+            credentials = grpc.ssl_channel_credentials(
+                root_certificates=full_pem.encode()
             )
-            raise HandshakeError(f"Handshake parse/connect error: {e}")
 
-    ### those functions and tests are still passing.
+        endpoint = self._transport.endpoint
+        self._channel = grpc.aio.secure_channel(
+            endpoint,
+            credentials,
+            options=[
+                ("grpc.ssl_target_name_override", "localhost"),
+                ("grpc.max_receive_message_length", 32 * 1024 * 1024),
+                ("grpc.max_send_message_length", 32 * 1024 * 1024),
+                ("grpc.keepalive_time_ms", 10000),           # Added for stability
+                ("grpc.keepalive_timeout_ms", 5000),         # Added for stability
+                ("grpc.http2.max_pings_without_data", 0),    # Added for stability
+                ("grpc.enable_retries", 1),                  # Added for stability
+            ],
+        )
+        logger.debug("🚢 gRPC secure channel created successfully.")
+
+        # Optional: verify channel readiness with timeout
+        try:
+            # Add timeout to prevent hanging indefinitely
+            await asyncio.wait_for(self._channel.channel_ready(), timeout=5.0)
+            logger.debug("🚢 gRPC channel is ready for calls.")
+        except asyncio.TimeoutError:
+            logger.error("🚢❌ gRPC channel failed to become ready (timeout)")
+            raise  # Re-raise to let caller handle it
+        except grpc.RpcError as e:
+            logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
+            raise
 
 ################################################################################
 
@@ -536,6 +441,8 @@ class RPCPluginClient:
         except grpc.RpcError as e:
             logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
             raise
+
+################################################################################
 
     def _rebuild_x509_pem(self, maybe_cert: str) -> str:
         """
