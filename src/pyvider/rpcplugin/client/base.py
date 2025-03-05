@@ -296,9 +296,12 @@ class RPCPluginClient:
 
             if network == "tcp":
                 self._transport = TCPSocketTransport()
+                logger.debug("*** network is set to tcp")
             elif network == "unix":
                 # More robust handling of unix: prefix formats
+                logger.debug("*** network is set to unix")
                 if address.startswith("unix:"):
+                    logger.debug("*** address starts with unix")
                     sock_path = address[5:]  # Remove standard unix: prefix
                     # Remove leading slashes (but not all slashes)
                     while sock_path.startswith("/") and not sock_path.startswith("//"):
