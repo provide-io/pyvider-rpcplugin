@@ -323,11 +323,38 @@ class RPCPluginClient:
 
 ################################################################################
 
+    def _create_grpc_channel(self):
+        """Create a secure gRPC channel to the plugin."""
+        logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
+        # CRITICAL FIX: Use the transport's actual connected socket path
+        # instead of the client's generated path
+        if isinstance(self._transport, UnixSocketTransport):
+            # Get the actual connected socket path from the transport
+            socket_path = self._transport.get_connected_path()
+            target = f"unix:{socket_path}"
+        else:
+            # For TCP, use standard addressing
+            target = f"{self._network}:{self._address}"
+
+        # Create channel with the correct target
+        channel_creds = self._create_channel_credentials()
+        self._channel = grpc.secure_channel(target, channel_creds)
+
+        # Wait for channel to be ready
+        try:
+            grpc.channel_ready_future(self._channel).result(timeout=5)
+            logger.debug("🚢 gRPC channel ready and connected.")
+        except grpc.FutureTimeoutError:
+            socket_path = target.replace("unix:", "") if target.startswith("unix:") else None
+            logger.error(f"🚢❌ gRPC channel failed to become ready (timeout)")
+            if socket_path:
+                logger.error(f"🚢❌ Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path)}")
+            raise ConnectionError("Failed to establish gRPC channel to plugin")
 
 ################################################################################
 
-    async def _create_grpc_channel(self) -> None:
+    async def X1_create_grpc_channel(self) -> None:
         """Creates a secure gRPC channel with improved timeout handling."""
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
