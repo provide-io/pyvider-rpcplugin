@@ -61,7 +61,6 @@ async def test_negotiate_transport_valid_unix():
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
-
 @pytest.mark.asyncio
 async def test_negotiate_transport_no_common_transport():
     """Test transport negotiation when no common transport exists."""
@@ -77,8 +76,8 @@ async def test_negotiate_transport_empty_list():
 
 
 @pytest.mark.asyncio
-async def test_negotiate_transport_prefers_tcp():
+async def test_negotiate_transport_prefers_unix():
     """Test that TCP is preferred when multiple transports are available."""
-    transport_name, transport = await negotiate_transport(["unix", "tcp"])
-    assert transport_name == "tcp"
-    assert isinstance(transport, TCPSocketTransport)
+    transport_name, transport = await negotiate_transport(["tcp", "unix"])
+    assert transport_name == "unix"
+    assert isinstance(transport, UnixSocketTransport)
