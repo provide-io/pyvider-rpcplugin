@@ -342,7 +342,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
                 # Make socket world-writable for test environments
                 os.chmod(self.path, 0o770)
-                logger.debug(f"📞🕹✅ Set writable permissions (0770) on {self.path}")
+                logger.debug(f"📞🕹✅ Set world-writable permissions (0770) on {self.path}")
 
                 self._running = True
                 self.endpoint = self.path
