@@ -1,5 +1,5 @@
 
-# examples/kvprobo/test_go_python_interop.py
+# examples/kvprobo/test_kv_server_interop.py
 
 import asyncio
 import os
