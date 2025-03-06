@@ -11,7 +11,7 @@ require (
 	google.golang.org/protobuf v1.36.2
 )
 
-// replace github.com/hashicorp/go-plugin => /REDACTED_ABS_PATH
+replace github.com/hashicorp/go-plugin => /REDACTED_ABS_PATH
 
 require (
 	github.com/fatih/color v1.13.0 // indirect
