@@ -2,6 +2,7 @@
 
 import os
 import platform
+from io import StringIO
 import uuid
 import pytest
 
