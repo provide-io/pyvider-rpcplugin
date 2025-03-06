@@ -1,6 +1,7 @@
 # pyvider/rpcplugin/tests/server/test_server_transport.py
 
 import os
+import platform
 import pytest
 
 from pyvider.rpcplugin.server import RPCPluginServer
