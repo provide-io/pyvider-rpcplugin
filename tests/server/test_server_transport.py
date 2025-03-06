@@ -359,7 +359,7 @@ async def test_setup_server_tcp_success(
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_success_secure_B(
-    tmp_path,
+    unique_socket_path,
     client_cert,
     mock_server_protocol,
     mock_server_handler,
@@ -367,7 +367,8 @@ async def test_setup_server_unix_success_secure_B(
 ) -> None:
     """Test secure Unix socket server setup with isolated path."""
     # Create a unique socket path within the test's tmp_path
-    sock_path = str(tmp_path / "secure_socket.sock")
+    #sock_path = str(tmp_path / "secure_socket.sock")
+    sock_path = unique_socket_path
 
     # Create a fresh transport that won't conflict with other tests
     test_transport = UnixSocketTransport(path=sock_path)
@@ -381,8 +382,9 @@ async def test_setup_server_unix_success_secure_B(
 
     try:
         # Listen on the transport first
-        await test_transport.listen()
+        endpoint = await test_transport.listen()
         assert os.path.exists(sock_path), "Socket file should exist after listen()"
+        assert endpoint is sock_path
 
         # Test server setup with client cert
         await server._setup_server("client_cert")
