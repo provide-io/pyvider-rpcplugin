@@ -11,7 +11,7 @@ require (
 	google.golang.org/protobuf v1.36.2
 )
 
-// replace github.com/hashicorp/go-plugin => github.com/livingstaccato/go-plugin v0.0.0-20250305031206-470b1c194de6
+replace github.com/hashicorp/go-plugin => github.com/livingstaccato/go-plugin v0.0.0-20250305031206-470b1c194de6
 
 require (
 	github.com/fatih/color v1.13.0 // indirect
