@@ -598,7 +598,7 @@ async def test_setup_server_exception_4(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("platform_name", ["macos", "linux"])
 async def test_setup_server_unix_no_socket_A(
-    tmp_path,
+    unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -614,7 +614,7 @@ async def test_setup_server_unix_no_socket_A(
         pytest.skip(f"Skipping {platform_name} test on {current_platform}")
 
     # Create a path that definitely doesn't exist
-    nonexistent_path = str(tmp_path / f"nonexistent_{uuid.uuid4().hex[:8]}" / "nosock.sock")
+    nonexistent_path = str(unique_socket_path / "nosock.sock")
 
     # Create directories but not the socket file
     os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
