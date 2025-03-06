@@ -99,7 +99,7 @@ async def test_setup_server_unix_bad_permissions_work1(
 ) -> None:
     """Test server behavior with incorrect socket permissions."""
     # Create a unique socket path
-    sock_path = uniquie_socket_path
+    sock_path = unique_socket_path
 
     # Create the socket file with restricted permissions
     with open(sock_path, "w") as f:
