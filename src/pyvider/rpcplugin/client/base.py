@@ -323,6 +323,10 @@ class RPCPluginClient:
 
 ################################################################################
 
+
+
+################################################################################
+
     async def _create_grpc_channel(self) -> None:
         """Creates a secure gRPC channel with improved timeout handling."""
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
@@ -379,65 +383,17 @@ class RPCPluginClient:
             logger.debug("🚢 gRPC channel is ready for calls.")
         except asyncio.TimeoutError:
             logger.error("🚢❌ gRPC channel failed to become ready (timeout)")
+            # Add diagnostic info
+            if isinstance(self._transport, UnixSocketTransport):
+                socket_path = self._transport.path
+                logger.error(f"🚢❌ Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path)}")
+                if os.path.exists(socket_path):
+                    try:
+                        mode = os.stat(socket_path).st_mode
+                        logger.error(f"🚢❌ Socket permissions: {oct(mode & 0o777)}")
+                    except Exception as e:
+                        logger.error(f"🚢❌ Failed to get socket stats: {e}")
             raise  # Re-raise to let caller handle it
-        except grpc.RpcError as e:
-            logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
-            raise
-
-################################################################################
-
-    async def _create_grpc_channel(self) -> None:
-        """
-        Creates a secure gRPC channel using the server cert from handshake,
-        plus client cert if mTLS is enabled.
-        """
-        logger.debug("🚢 Attempting to create gRPC channel to plugin...")
-
-        # If we only have an insecure scenario, just do an insecure channel
-        if not self._server_cert:
-            logger.info("🚢 No server certificate. Using insecure channel.")
-            endpoint = self._transport.endpoint
-            self._channel = grpc.aio.insecure_channel(
-                endpoint,
-                options=[("grpc.enable_http_proxy", 0)],
-            )
-            return
-
-        # Rebuild server cert into PEM if needed
-        full_pem = self._rebuild_x509_pem(self._server_cert)
-
-        # Also see if we have client cert
-        if self.client_cert and self.client_key_pem:
-            logger.debug("🔐 Creating mTLS channel with client certs + server root.")
-            credentials = grpc.ssl_channel_credentials(
-                root_certificates=full_pem.encode(),
-                private_key=self.client_key_pem.encode(),
-                certificate_chain=self.client_cert.encode(),
-            )
-        else:
-            logger.debug(
-                "🔐 Creating TLS channel with server cert only (no client auth)."
-            )
-            credentials = grpc.ssl_channel_credentials(
-                root_certificates=full_pem.encode()
-            )
-
-        endpoint = self._transport.endpoint
-        self._channel = grpc.aio.secure_channel(
-            endpoint,
-            credentials,
-            options=[
-                ("grpc.ssl_target_name_override", "localhost"),
-                ("grpc.max_receive_message_length", 32 * 1024 * 1024),
-                ("grpc.max_send_message_length", 32 * 1024 * 1024),
-            ],
-        )
-        logger.debug("🚢 gRPC secure channel created successfully.")
-
-        # Optional: verify channel readiness
-        try:
-            await self._channel.channel_ready()
-            logger.debug("🚢 gRPC channel is ready for calls.")
         except grpc.RpcError as e:
             logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
             raise

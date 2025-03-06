@@ -18,7 +18,7 @@ from pyvider.rpcplugin.transport.base import RPCPluginTransport
 def X2_normalize_unix_path(path: str) -> str:
     """Normalize unix socket path formats from Go handshake."""
     if path.startswith("unix:"):
-        path = path[5:]  
+        path = path[5:]
     # Handle absolute paths with multiple leading slashes
     while path.startswith("//"):
         path = path[1:]
@@ -31,15 +31,15 @@ def normalize_unix_path(path: str) -> str:
     - unix:/ prefix
     - unix:// prefix
     - Multiple leading slashes
-    
+
     Returns a clean path suitable for socket operations.
     """
     logger.debug(f"📞🔍🚀 Normalizing Unix path: {path}")
-    
+
     # Handle unix: prefix formats
     if path.startswith("unix:"):
         path = path[5:]  # Remove 'unix:'
-    
+
     # Handle multiple leading slashes
     if path.startswith("//"):
         # Split by / and rebuild with single leading slash
@@ -49,7 +49,7 @@ def normalize_unix_path(path: str) -> str:
         # Keep absolute paths as-is
         pass
     # Relative paths remain unchanged
-    
+
     logger.debug(f"📞🔍✅ Normalized path: {path}")
     return path
 
@@ -58,7 +58,7 @@ def normalize_unix_path(path: str) -> str:
 class UnixSocketTransport(RPCPluginTransport):
     """
     Unix domain socket transport compatible with Go plugin implementation.
-    
+
     Fixed for Go-Python interoperability with specialized handling for:
     - Socket path normalization (supporting unix:, unix:/, unix:///)
     - File permission handling (0777 for cross-process access)
@@ -100,11 +100,11 @@ class UnixSocketTransport(RPCPluginTransport):
         """Check if socket is already in use by another process."""
         if not self.path or not os.path.exists(self.path):
             return False
-            
+
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.settimeout(0.5)
-            
+
             logger.debug(f"📞🔍🚀 Checking if socket {self.path} is in use")
             sock.connect(self.path)
             logger.debug(f"📞🔍❌ Socket {self.path} is in use")
@@ -135,7 +135,7 @@ class UnixSocketTransport(RPCPluginTransport):
         conn = ClientConnection(
             reader=reader, writer=writer, remote_addr=str(peer_info)
         )
-        
+
         try:
             async with self._lock:
                 self._connections.add(conn)
@@ -146,7 +146,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 if not data:
                     logger.debug(f"📞📥⚠️ No data received from {peer_info}, closing connection")
                     break
-                    
+
                 logger.debug(f"📞📥✅ Received data from {peer_info}: {len(data)} bytes")
                 await conn.send_data(data)  # echo
                 logger.debug(f"📞📤✅ Echoed data back to {peer_info}")
@@ -197,16 +197,16 @@ class UnixSocketTransport(RPCPluginTransport):
                 self._server = await asyncio.start_unix_server(
                     self._handle_client, path=self.path
                 )
-                
+
                 os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG)  # 0770
                 logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
-                
+
                 self._running = True
                 self.endpoint = self.path
                 logger.debug(f"📞🕹✅ Server listening on {self.path}")
                 self._server_ready.set()
                 return self.path
-                
+
             except OSError as e:
                 logger.error(f"📞🕹❌ Failed to create Unix socket: {e}")
                 raise TransportError(f"Failed to create Unix socket: {e}")
@@ -215,21 +215,21 @@ class UnixSocketTransport(RPCPluginTransport):
         """Connect to Unix socket with robust path handling."""
         # Save original endpoint for logging
         orig_endpoint = endpoint
-        
+
         # Normalize endpoint path
         endpoint = normalize_unix_path(endpoint)
-        
+
         logger.debug(f"📞🤝🚀 Connecting to Unix socket at '{endpoint}' (from '{orig_endpoint}')")
-        
+
         # Verify socket file exists with retries
         retries = 3
         for attempt in range(retries):
             if os.path.exists(endpoint):
                 break
             if attempt < retries - 1:
-                logger.debug(f"📞🤝⚠️ Socket file not found, retrying ({attempt+1}/{retries})") 
+                logger.debug(f"📞🤝⚠️ Socket file not found, retrying ({attempt+1}/{retries})")
                 await asyncio.sleep(0.5)  # Short delay between retries
-        
+
         if not os.path.exists(endpoint):
             logger.error(f"📞🤝❌ Socket file does not exist: {endpoint}")
             raise TransportError(f"Socket {endpoint} does not exist")
@@ -249,11 +249,11 @@ class UnixSocketTransport(RPCPluginTransport):
     async def close(self) -> None:
         """Close Unix socket transport with proper cleanup."""
         logger.debug(f"📞🔒🚀 Closing Unix socket transport at {self.path}")
-        
+
         if self._closing:
             logger.debug("📞🔒✅ Already closing, skipping duplicate close")
             return
-            
+
         self._closing = True
         self._running = False
 
@@ -291,7 +291,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
         # Critical: small delay to ensure resources are released
         await asyncio.sleep(0.2)
-        
+
         # Remove socket file
         if self.path and os.path.exists(self.path):
             try:
