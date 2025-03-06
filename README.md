@@ -35,3 +35,4 @@ The worlds first comprehensive comprehensive Python-based `go-plugin` implementa
 * Make it a lot easier to mass remove PLUGIN_ environment variables.
 * Maintain a semblance of sanity.
 * Make it possible to set client/server ciphers and priorities.
+* Fix that silly cross-kv

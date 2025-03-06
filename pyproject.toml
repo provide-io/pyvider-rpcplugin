@@ -21,23 +21,26 @@ dependencies = [
     "structlog>=25.1.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "bandit>=1.8.3",
-    "hatch>=1.14.0",
+    "grpcio-tools>=1.70.0",
     "hypothesis>=6.127.1",
     "mypy>=1.15.0",
-    "pyre>=1.12.5",
+    "pynguin>=0.40.0",
     "pyre-check>=0.9.23",
     "pyre-extensions>=0.0.32",
     "pyright>=1.1.394",
     "pytest-asyncio>=0.25.3",
+    "pytest-benchmark>=5.1.0",
     "pytest-cov>=6.0.0",
     "pytest-testmon>=2.1.3",
+    "pytest-trace>=1.0.0",
     "pytest-xdist>=3.6.1",
     "ruff>=0.9.7",
+    "sapp>=0.4",
     "tabulate>=0.9.0",
-    "uv>=0.6.2",
+    "viztracer>=1.0.2",
 ]
 
 telemetry = [
@@ -80,8 +83,9 @@ test = "pytest -n auto --dist=loadscope"  # Parallel tests, no coverage by defau
 test-cov = "pytest -n auto --dist=loadscope --cov=your_module --cov-report=html"
 run = "python -m pyvider.rpcplugin"
 
-[tool.hatch.envs.build.scripts]
-go = "(cd tests/kv/go-plugin; ./build.sh)"
+[tool.hatch.envs.go.scripts]
+build = "(cd examples/kvprobo/go-rpc; ./build.sh)"
+test = "(cd examples/kvprobo/go-rpc; ./build.sh)"
 
 [tool.hatch.metadata.targets.wheel]
 packages = [
@@ -179,16 +183,3 @@ source_directories = ["src"]
 exclude = ["tests/*", "**/*pb2*.py"]
 strict = true
 
-[dependency-groups]
-dev = [
-    "hatch>=1.14.0",
-    "pynguin>=0.40.0",
-    "pyre-check>=0.9.23",
-    "pytest-benchmark>=5.1.0",
-    "pytest-cov>=6.0.0",
-    "pytest-testmon>=2.1.3",
-    "pytest-trace>=1.0.0",
-    "pytest-xdist>=3.6.1",
-    "sapp>=0.4",
-    "viztracer>=1.0.2",
-]

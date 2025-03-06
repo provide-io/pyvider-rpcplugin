@@ -1,5 +1,5 @@
 
-# tests/kv/test_kv_integration.py
+# examples/kvprobo/test_kv_integration.py
 
 import asyncio
 import contextlib
@@ -15,7 +15,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 from tests.fixtures import *
-from tests.kv.proto import KVProtocol, kv_pb2, kv_pb2_grpc
+from examples.kvprobo.py_rpc.proto import KVProtocol, kv_pb2, kv_pb2_grpc
 
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
@@ -171,7 +171,7 @@ async def kv_client(kv_server, transport_fixture):
 
     # Create client
     client = RPCPluginClient(
-        command=[sys.executable, "-m", "tests.kv.py_kv_server"],
+        command=[sys.executable, "-m", "examples.kvprobo.py_rpc.py_kv_server"],
         config={"env": env},
     )
 
