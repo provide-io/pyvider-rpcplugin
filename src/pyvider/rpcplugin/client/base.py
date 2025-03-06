@@ -50,6 +50,7 @@ class RPCPluginClient:
     # Internal fields
     _process: subprocess.Popen | None = attrs.field(init=False, default=None)
     _transport: TransportT | None = attrs.field(init=False, default=None)
+    _address: TransportT | None = attrs.field(init=False, default=None)
     _protocol_version: int | None = attrs.field(init=False, default=None)
     _server_cert: str | None = attrs.field(init=False, default=None)
     _channel: grpc.aio.Channel | None = attrs.field(init=False, default=None)
@@ -144,9 +145,6 @@ class RPCPluginClient:
         # Pass client cert if needed
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
-
-        # Force Unix transport preference
-        env["PLUGIN_TRANSPORTS"] = "unix,tcp"
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
@@ -296,18 +294,23 @@ class RPCPluginClient:
 
             if network == "tcp":
                 self._transport = TCPSocketTransport()
+                logger.debug("*** network is set to tcp")
             elif network == "unix":
                 # More robust handling of unix: prefix formats
+                logger.debug("*** network is set to unix")
+
                 if address.startswith("unix:"):
-                    sock_path = address[5:]  # Remove standard unix: prefix
+                    logger.debug("*** address starts with unix")
+                    self._address = address[5:]  # Remove standard unix: prefix
                     # Remove leading slashes (but not all slashes)
-                    while sock_path.startswith("/") and not sock_path.startswith("//"):
-                        sock_path = sock_path[1:]
+                    while self._address.startswith("/") and not self._address.startswith("//"):
+                        self._address = self._address[1:]
+
                 else:
-                    sock_path = address
-                
-                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{sock_path}'")
-                self._transport = UnixSocketTransport(path=sock_path)
+                    self._address = address
+
+                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}'")
+                self._transport = UnixSocketTransport(path=self._address)
             else:
                 raise TransportError(f"Unsupported transport: {network}")
 
@@ -323,80 +326,70 @@ class RPCPluginClient:
 
 ################################################################################
 
-
-
-################################################################################
-
     async def _create_grpc_channel(self) -> None:
-        """Creates a secure gRPC channel with improved timeout handling."""
+        """Creates a secure gRPC channel to the plugin."""
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
-        # If we only have an insecure scenario, just do an insecure channel
-        if not self._server_cert:
-            logger.info("🚢 No server certificate. Using insecure channel.")
-            endpoint = self._transport.endpoint
-            self._channel = grpc.aio.insecure_channel(
-                endpoint,
-                options=[("grpc.enable_http_proxy", 0)],
-            )
-            return
+        # CRITICAL FIX: Use the same address that was established during handshake
+        if isinstance(self._transport, UnixSocketTransport):
+            # For Unix sockets, we must use the exact same socket path from handshake
+            target = f"unix:{self._address}"
+        else:
+            # For TCP, use standard addressing
+            target = f"{self._network}:{self._address}"
+
+        logger.debug(f"🚢🔍 Creating gRPC channel with target: {target}")
 
         # Rebuild server cert into PEM if needed
-        full_pem = self._rebuild_x509_pem(self._server_cert)
+        if self._server_cert:
+            full_pem = self._rebuild_x509_pem(self._server_cert)
 
-        # Also see if we have client cert
-        if self.client_cert and self.client_key_pem:
-            logger.debug("🔐 Creating mTLS channel with client certs + server root.")
-            credentials = grpc.ssl_channel_credentials(
-                root_certificates=full_pem.encode(),
-                private_key=self.client_key_pem.encode(),
-                certificate_chain=self.client_cert.encode(),
+            # Set up credentials
+            if self.client_cert and self.client_key_pem:
+                logger.debug("🔐 Creating mTLS channel with client certs + server root.")
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=full_pem.encode(),
+                    private_key=self.client_key_pem.encode(),
+                    certificate_chain=self.client_cert.encode()
+                )
+            else:
+                logger.debug("🔐 Creating TLS channel with server cert only.")
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=full_pem.encode()
+                )
+
+            # Create the secure channel
+            self._channel = grpc.aio.secure_channel(
+                target,
+                credentials,
+                options=[
+                    ("grpc.ssl_target_name_override", "localhost"),
+                    ("grpc.max_receive_message_length", 32 * 1024 * 1024),
+                    ("grpc.max_send_message_length", 32 * 1024 * 1024),
+                    ("grpc.keepalive_time_ms", 10000),
+                    ("grpc.keepalive_timeout_ms", 5000)
+                ]
             )
         else:
-            logger.debug(
-                "🔐 Creating TLS channel with server cert only (no client auth)."
-            )
-            credentials = grpc.ssl_channel_credentials(
-                root_certificates=full_pem.encode()
-            )
+            # Fall back to insecure channel if no cert
+            logger.info("🚢 No server certificate. Using insecure channel.")
+            self._channel = grpc.aio.insecure_channel(target)
 
-        endpoint = self._transport.endpoint
-        self._channel = grpc.aio.secure_channel(
-            endpoint,
-            credentials,
-            options=[
-                ("grpc.ssl_target_name_override", "localhost"),
-                ("grpc.max_receive_message_length", 32 * 1024 * 1024),
-                ("grpc.max_send_message_length", 32 * 1024 * 1024),
-                ("grpc.keepalive_time_ms", 10000),           # Added for stability
-                ("grpc.keepalive_timeout_ms", 5000),         # Added for stability
-                ("grpc.http2.max_pings_without_data", 0),    # Added for stability
-                ("grpc.enable_retries", 1),                  # Added for stability
-            ],
-        )
-        logger.debug("🚢 gRPC secure channel created successfully.")
+        logger.debug("🚢 gRPC channel created successfully.")
 
-        # Optional: verify channel readiness with timeout
+        # Wait for the channel to be ready with timeout
         try:
-            # Add timeout to prevent hanging indefinitely
             await asyncio.wait_for(self._channel.channel_ready(), timeout=5.0)
-            logger.debug("🚢 gRPC channel is ready for calls.")
+            logger.debug("🚢✅ gRPC channel ready and connected.")
         except asyncio.TimeoutError:
-            logger.error("🚢❌ gRPC channel failed to become ready (timeout)")
-            # Add diagnostic info
-            if isinstance(self._transport, UnixSocketTransport):
-                socket_path = self._transport.path
+            socket_path = target.replace("unix:", "") if target.startswith("unix:") else None
+            logger.error(f"🚢❌ gRPC channel failed to become ready (timeout)")
+            if socket_path:
                 logger.error(f"🚢❌ Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path)}")
-                if os.path.exists(socket_path):
-                    try:
-                        mode = os.stat(socket_path).st_mode
-                        logger.error(f"🚢❌ Socket permissions: {oct(mode & 0o777)}")
-                    except Exception as e:
-                        logger.error(f"🚢❌ Failed to get socket stats: {e}")
-            raise  # Re-raise to let caller handle it
-        except grpc.RpcError as e:
-            logger.error(f"🚢❌ gRPC channel failed to become ready: {e}")
-            raise
+            raise ConnectionError("Failed to establish gRPC channel to plugin: timeout")
+        except Exception as e:
+            logger.error(f"🚢❌ gRPC channel failed: {e}")
+            raise ConnectionError(f"Failed to establish gRPC channel to plugin: {e}")
 
 ################################################################################
 
@@ -572,5 +565,6 @@ class RPCPluginClient:
             self._transport = None
 
         logger.info("🔄 RPCPluginClient fully closed.")
+
 
 ### 🐍🏗️🔌
