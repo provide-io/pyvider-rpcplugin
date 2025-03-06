@@ -591,4 +591,65 @@ async def test_setup_server_exception_4(
                 os.unlink(socket_path)
             except Exception as e:
                 logger.warning(f"🧪⚠️ Cleanup error ignored: {e}")
+
+
+#############3
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("platform_name", ["macos", "linux"])
+async def test_setup_server_unix_no_socket_A(
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    platform_name,
+) -> None:
+    """Test socket behavior on different platforms when socket file doesn't exist."""
+    # Skip test if not running on the platform being tested
+    current_platform = platform.system().lower()
+    is_macos = current_platform == "darwin"
+    is_linux = current_platform == "linux"
+    
+    if (platform_name == "macos" and not is_macos) or (platform_name == "linux" and not is_linux):
+        pytest.skip(f"Skipping {platform_name} test on {current_platform}")
+
+    # Create a path that definitely doesn't exist
+    nonexistent_path = str(tmp_path / f"nonexistent_{uuid.uuid4().hex[:8]}" / "nosock.sock")
+
+    # Create directories but not the socket file
+    os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
+
+    transport = UnixSocketTransport(path=nonexistent_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Create a dummy server for our test
+    dummy_server = DummyGRPCServer()
+    server._server = dummy_server
+    
+    # Define error behaviors by platform
+    macos_error = "Failed to create Unix socket: No such file or directory"
+    linux_error = "Failed to bind to address"
+    
+    if platform_name == "macos":
+        error_pattern = macos_error
+    else:
+        error_pattern = linux_error
+    
+    # Mock the method that will fail
+    def mock_add_socket_port(*args, **kwargs):
+        if platform_name == "macos":
+            raise TransportError(macos_error)
+        else:
+            raise RuntimeError(f"{linux_error} 127.0.0.1:0; set GRPC_VERBOSITY=debug")
+        
+    # Apply the mock
+    with mock.patch.object(dummy_server, "add_secure_port", mock_add_socket_port):
+        with pytest.raises((TransportError, RuntimeError), match=error_pattern):
+            await server._setup_server("client_cert")
 ### 🐍🏗🧪️
