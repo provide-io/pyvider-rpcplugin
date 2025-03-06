@@ -152,55 +152,6 @@ class UnixSocketTransport(RPCPluginTransport):
             await conn.close()
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
 
-    async def X1_listen(self) -> str:
-        """Start listening on Unix socket with cross-platform compatibility."""
-        async with self._lock:
-            if self._running:
-                raise TransportError(f"Socket {self.path} is already running")
-
-            # Check if socket file is in use
-            socket_in_use = await self._check_socket_in_use()
-            if socket_in_use:
-                logger.error(f"📞🕹❌ Socket {self.path} already in use")
-                raise TransportError(f"Socket {self.path} already in use")
-
-            # Create directory if needed
-            dir_path = os.path.dirname(self.path)
-            if dir_path:
-                os.makedirs(dir_path, exist_ok=True)
-                logger.debug(f"📞🕹✅ Created directory: {dir_path}")
-
-            # Remove stale socket file if it exists
-            if os.path.exists(self.path):
-                try:
-                    os.unlink(self.path)
-                    logger.debug(f"📞🕹✅ Removed stale socket file: {self.path}")
-                    # Brief pause to ensure file system syncs
-                    await asyncio.sleep(0.1)
-                except OSError as e:
-                    if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
-                        logger.error(f"📞🕹❌ Failed to remove stale socket: {e}")
-                        raise TransportError(f"Failed to remove stale socket: {e}")
-
-            try:
-                logger.debug(f"📞🕹🚀 Creating Unix socket at {self.path}")
-                self._server = await asyncio.start_unix_server(
-                    self._handle_client, path=self.path
-                )
-
-                os.chmod(self.path, 0o770)
-                logger.debug(f"📞🕹✅ Set world-writable permissions (0770) on {self.path}")
-
-                self._running = True
-                self.endpoint = self.path
-                logger.debug(f"📞🕹✅ Server listening on {self.path}")
-                self._server_ready.set()
-                return self.path
-
-            except OSError as e:
-                logger.error(f"📞🕹❌ Failed to create Unix socket: {e}")
-                raise TransportError(f"Failed to create Unix socket: {e}")
-
     async def connect(self, endpoint: str) -> None:
         """Connect to Unix socket with robust path handling."""
         # Save original endpoint for logging
@@ -236,72 +187,9 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
 
-    async def X1_close(self) -> None:
-        """Close Unix socket transport with proper cleanup."""
-        logger.debug(f"📞🔒🚀 Closing Unix socket transport at {self.path}")
-
-        if self._closing:
-            logger.debug("📞🔒✅ Already closing, skipping duplicate close")
-            return
-
-        self._closing = True
-        self._running = False
-
-        # Close active connections
-        async with self._lock:
-            connection_count = len(self._connections)
-            if connection_count > 0:
-                logger.debug(f"📞🔒🔄 Closing {connection_count} active connections")
-                close_tasks = [conn.close() for conn in self._connections]
-                await asyncio.gather(*close_tasks, return_exceptions=True)
-                self._connections.clear()
-
-        # Close client writer/reader
-        if self._writer:
-            try:
-                self._writer.close()
-                await self._writer.wait_closed()
-                logger.debug("📞🔒✅ Client writer closed")
-            except Exception as e:
-                logger.error(f"📞🔒⚠️ Error closing writer: {e}")
-            finally:
-                self._writer = None
-                self._reader = None
-
-        # Close server
-        if self._server:
-            try:
-                self._server.close()
-                await self._server.wait_closed()
-                logger.debug("📞🔒✅ Closed server")
-            except Exception as e:
-                logger.error(f"📞🔒⚠️ Error closing server: {e}")
-            finally:
-                self._server = None
-
-        # Critical: small delay to ensure resources are released
-        await asyncio.sleep(0.2)
-
-        # Remove socket file
-        if self.path and os.path.exists(self.path):
-            try:
-                # Ensure socket file is removed
-                os.unlink(self.path)
-                logger.debug(f"📞🔒✅ Removed socket file: {self.path}")
-            except OSError as e:
-                if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
-                    logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
-                    raise TransportError(f"Failed to remove socket file: {e}")
-
-        self.endpoint = None
-        self._closing = False
-        logger.debug("📞🔒✅ Unix socket transport closed completely")
-
     def get_connected_path(self) -> str:
         """Return the actual connected socket path."""
         return self.path
-
-######################################3
 
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""
