@@ -65,6 +65,23 @@ class MockServicer:
     pass
 
 
+class MockBytesIO:
+    """Mock implementation of sys.stdout.buffer for testing."""
+    def __init__(self, string_io):
+        self.string_io = string_io
+        
+    def write(self, data):
+        if isinstance(data, bytes):
+            # Convert bytes to string for StringIO
+            self.string_io.write(data.decode('utf-8'))
+        else:
+            # Handle string content 
+            self.string_io.write(str(data))
+        return len(data)
+        
+    def flush(self):
+        self.string_io.flush()
+
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
 async def mock_server_transport(request) -> TransportT:
     transport_name = request.param
