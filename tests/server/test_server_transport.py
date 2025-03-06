@@ -441,7 +441,7 @@ async def test_setup_server_unix_success_secure(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=None,
+        config=mock_server_config,
         transport=test_transport,
     )
 
