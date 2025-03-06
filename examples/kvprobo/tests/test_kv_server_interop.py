@@ -22,7 +22,8 @@ from examples.kvprobo.py_rpc.proto import kv_pb2, kv_pb2_grpc
 from tests.fixtures import *
 
 TEST_DIR: Path = Path(__file__).parent
-DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "go-rpc" / "bin" / "kv-go-server")
+
+DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../go-rpc" / "bin" / "kv-go-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
@@ -31,24 +32,25 @@ SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
 
 @pytest_asyncio.fixture
 async def go_server_path() -> str:
-    """Return the path to the Go server executable."""
-    path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
-    logger.debug(f"🧪🔍✅ Using Go server path: {path}")
+    """Return the path to the Server executable."""
+    path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
+    logger.debug(f"🧪🔍✅ Using Server path: {path}")
 
     # Verify the path exists
     if not os.path.exists(path):
-        logger.error(f"🧪🔍❌ Go server binary not found at {path}")
-        pytest.skip(f"Go server binary not found at {path}")
+        logger.error(f"🧪🔍❌ Server binary not found at {path}")
+        pytest.skip(f"Server binary not found at {path}")
 
     return path
 
 
 @pytest_asyncio.fixture
 async def go_server_env() -> dict[str, str]:
-    """Return the environment variables for the Go server."""
+    """Return the environment variables for the Server."""
     return {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        "BASIC_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport for stability
         "PLUGIN_AUTO_MTLS": "true",   # Enable mTLS
@@ -60,12 +62,12 @@ async def go_server_env() -> dict[str, str]:
 
 @pytest_asyncio.fixture
 async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
-    """Create and yield a RPCPluginClient connected to a Go KV server."""
+    """Create and yield a RPCPluginClient connected to a KV server."""
     client = None
-    logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Go server at {go_server_path}")
+    logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Server at {go_server_path}")
 
     try:
-        # Create client with Go server command
+        # Create client with Server command
         client = RPCPluginClient(
             command=[go_server_path],
             config={"env": go_server_env}
@@ -83,12 +85,12 @@ async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> As
         logger.error("🧪🚀❌ Client start timed out")
         if client:
             await client.close()
-        pytest.fail("Client connection to Go server timed out")
+        pytest.fail("Client connection to Server timed out")
     except Exception as e:
         logger.error(f"🧪🚀❌ Failed to create/start client: {e}")
         if client:
             await client.close()
-        pytest.fail(f"Failed to connect to Go server: {e}")
+        pytest.fail(f"Failed to connect to Server: {e}")
     finally:
         # Clean up
         if client:
@@ -99,19 +101,34 @@ async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> As
             except Exception as e:
                 logger.error(f"🧪🔒❌ Error closing client: {e}")
 
-
 @pytest_asyncio.fixture
 async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
-    """Create and return a KV stub for the Go server."""
+    """Create and return a KV stub for the Server."""
     logger.debug("🧪🔌🚀 Creating KV stub")
     stub = kv_pb2_grpc.KVStub(kv_go_client._channel)
     logger.debug("🧪🔌✅ KV stub created successfully")
     return stub
 
+@pytest.mark.asyncio
+async def test_go_server_binary_exists() -> None:
+    """Test that the Server binary exists and is executable."""
+    # Check the default path
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
+    logger.info(f"🧪🔍 Checking Server binary at: {server_path}")
+
+    if not os.path.exists(server_path):
+        logger.error(f"🧪❌ Server binary not found at {server_path}")
+        pytest.fail(f"Server binary not found at {server_path}. Please build it or set PLUGIN_SERVER_PATH.")
+
+    if not is_executable(server_path):
+        logger.error(f"🧪❌ Server binary exists but is not executable: {server_path}")
+        pytest.fail(f"Server binary exists but is not executable: {server_path}")
+
+    logger.info("🧪✅ Server binary exists and is executable")
 
 @pytest.mark.asyncio
 async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
-    """Test basic Put/Get operations with Go server."""
+    """Test basic Put/Get operations with Server."""
     logger.debug("🧪📤🚀 Testing basic Put operation")
 
     # Prepare test data
@@ -139,7 +156,6 @@ async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
         logger.error(f"🧪📥❌ Get operation failed: {e.details()}")
         pytest.fail(f"Get operation failed: {e.details()}")
 
-
 @pytest.mark.asyncio
 async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with empty values."""
@@ -147,7 +163,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
 
     # Empty key (should be accepted)
     empty_key = ""
-    value = "value_for_empty_key".encode("utf-8")
+    value = "".encode("utf-8")
 
     try:
         await kv_stub.Put(kv_pb2.PutRequest(key=empty_key, value=value))
@@ -174,7 +190,6 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
     except grpc.RpcError as e:
         logger.error(f"🧪❌ Empty value operation failed: {e.details()}")
         pytest.fail(f"Empty value operation failed: {e.details()}")
-
 
 @pytest.mark.asyncio
 async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None:
@@ -321,7 +336,7 @@ async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value
 # 
 # # Use a relative path based on this test file's location
 TEST_DIR: Path = Path(__file__).parent
-DEFAULT_GO_SERVER_PATH = str(TEST_DIR / "../bin" / "go-kv-server")
+DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../bin" / "go-kv-server")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 
 
@@ -350,58 +365,43 @@ async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int
         return None, "", "Process timed out"
 
 
-@pytest.mark.asyncio
-async def test_go_server_binary_exists() -> None:
-    """Test that the Go server binary exists and is executable."""
-    # Check the default path
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
-    logger.info(f"🧪🔍 Checking Go server binary at: {server_path}")
-
-    if not os.path.exists(server_path):
-        logger.error(f"🧪❌ Go server binary not found at {server_path}")
-        pytest.fail(f"Go server binary not found at {server_path}. Please build it or set GO_SERVER_PATH.")
-
-    if not is_executable(server_path):
-        logger.error(f"🧪❌ Go server binary exists but is not executable: {server_path}")
-        pytest.fail(f"Go server binary exists but is not executable: {server_path}")
-
-    logger.info("🧪✅ Go server binary exists and is executable")
 
 
 @pytest.mark.asyncio
 async def test_go_server_basic_execution() -> None:
-    """Test that the Go server binary can be executed with basic arguments."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    """Test that the Server binary can be executed with basic arguments."""
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     # Run with help flag to check if it responds properly
-    logger.info(f"🧪🚀 Testing basic execution of Go server: {server_path}")
+    logger.info(f"🧪🚀 Testing basic execution of Server: {server_path}")
     exit_code, stdout, stderr = await run_process_with_timeout([server_path, "--help"], timeout=3.0)
 
     if exit_code is None:
-        logger.error("🧪⏱️❌ Go server execution timed out when running with --help")
-        pytest.fail("Go server execution timed out when running with --help")
+        logger.error("🧪⏱️❌ Server execution timed out when running with --help")
+        pytest.fail("Server execution timed out when running with --help")
 
     if exit_code != 0:
-        logger.error(f"🧪❌ Go server execution failed with exit code {exit_code}")
+        logger.error(f"🧪❌ Server execution failed with exit code {exit_code}")
         logger.error(f"🧪❌ Stdout: {stdout}")
         logger.error(f"🧪❌ Stderr: {stderr}")
-        pytest.fail(f"Go server execution failed with exit code {exit_code}")
+        pytest.fail(f"Server execution failed with exit code {exit_code}")
 
-    logger.info("🧪✅ Go server executed successfully with --help")
-    logger.debug(f"🧪📝 Go server stdout: {stdout[:200]}...")
-    logger.debug(f"🧪📝 Go server stderr: {stderr[:200]}...")
+    logger.info("🧪✅ Server executed successfully with --help")
+    logger.debug(f"🧪📝 Server stdout: {stdout[:200]}...")
+    logger.debug(f"🧪📝 Server stderr: {stderr[:200]}...")
 
 
 @pytest.mark.asyncio
 async def test_go_server_with_environment() -> None:
-    """Test that the Go server responds properly to environment variables."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    """Test that the Server responds properly to environment variables."""
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     # Setup environment variables
     env = os.environ.copy()
     env.update({
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        "BASIC)_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",
         "PLUGIN_AUTO_MTLS": "true",
@@ -409,7 +409,7 @@ async def test_go_server_with_environment() -> None:
     })
 
     # Start process with environment
-    logger.info("🧪🚀 Testing Go server with environment variables")
+    logger.info("🧪🚀 Testing Server with environment variables")
     process = subprocess.Popen(
         [server_path],
         env=env,
@@ -425,30 +425,30 @@ async def test_go_server_with_environment() -> None:
     # Check if process is still running
     if process.poll() is not None:
         stdout, stderr = process.communicate()
-        logger.error(f"🧪❌ Go server exited prematurely with code {process.returncode}")
+        logger.error(f"🧪❌ Server exited prematurely with code {process.returncode}")
         logger.error(f"🧪❌ Stdout: {stdout}")
         logger.error(f"🧪❌ Stderr: {stderr}")
-        pytest.fail(f"Go server exited prematurely with code {process.returncode}")
+        pytest.fail(f"Server exited prematurely with code {process.returncode}")
 
-    logger.info("🧪✅ Go server started successfully with environment variables")
+    logger.info("🧪✅ Server started successfully with environment variables")
 
     # Kill the process
     try:
         process.terminate()
         process.wait(timeout=2.0)
-        logger.debug("🧪🔒 Go server process terminated")
+        logger.debug("🧪🔒 Server process terminated")
     except subprocess.TimeoutExpired:
         process.kill()
-        logger.warning("🧪⚠️ Had to force kill Go server process")
+        logger.warning("🧪⚠️ Had to force kill Server process")
 
 
 @pytest.mark.asyncio
 async def test_client_connection_timeout() -> None:
-    """Test how the client handles connection timeout with the Go server."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    """Test how the client handles connection timeout with the Server."""
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     if not os.path.exists(server_path):
-        pytest.skip(f"Go server binary not found at {server_path}")
+        pytest.skip(f"Server binary not found at {server_path}")
 
     # Environment with intentionally wrong cookie to cause handshake failure
     env = {
@@ -493,15 +493,16 @@ async def test_client_connection_timeout() -> None:
 @pytest.mark.asyncio
 async def test_connection_with_debugging() -> None:
     """Test connection with enhanced debugging to diagnose timeout issues."""
-    server_path = os.environ.get("GO_SERVER_PATH", DEFAULT_GO_SERVER_PATH)
+    server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
 
     if not os.path.exists(server_path):
-        pytest.skip(f"Go server binary not found at {server_path}")
+        pytest.skip(f"Server binary not found at {server_path}")
 
     # Environment with debugging enabled
     env = {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        "BASIC_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport
         "PLUGIN_AUTO_MTLS": "false",  # Disable mTLS to simplify
@@ -511,8 +512,8 @@ async def test_connection_with_debugging() -> None:
         "GODEBUG": "asyncpreemptoff=1",  # Improve Go output
     }
 
-    # Start the Go server directly first to see if it runs
-    logger.info("🧪🚀 Starting Go server process directly for diagnostics")
+    # Start the Server directly first to see if it runs
+    logger.info("🧪🚀 Starting Server process directly for diagnostics")
     process = subprocess.Popen(
         [server_path],
         env=env,
@@ -528,10 +529,10 @@ async def test_connection_with_debugging() -> None:
     # Check if process started correctly
     if process.poll() is not None:
         stdout, stderr = process.communicate()
-        logger.error(f"🧪❌ Go server exited prematurely with code {process.returncode}")
+        logger.error(f"🧪❌ Server exited prematurely with code {process.returncode}")
         logger.error(f"🧪❌ Stdout: {stdout}")
         logger.error(f"🧪❌ Stderr: {stderr}")
-        pytest.fail(f"Go server exited prematurely with code {process.returncode}")
+        pytest.fail(f"Server exited prematurely with code {process.returncode}")
 
     # Read some output
     stderr_data = ""
@@ -553,8 +554,8 @@ async def test_connection_with_debugging() -> None:
 
         await asyncio.sleep(0.2)
 
-    logger.info(f"🧪📝 Go server stdout: {stdout_data}")
-    logger.info(f"🧪📝 Go server stderr: {stderr_data}")
+    logger.info(f"🧪📝 Server stdout: {stdout_data}")
+    logger.info(f"🧪📝 Server stderr: {stderr_data}")
 
     # Terminate the process
     try:
@@ -571,9 +572,9 @@ async def test_connection_with_debugging() -> None:
     )
 
     try:
-        logger.info(f"🧪🔌 Attempting to connect to Go server with {DEFAULT_TIMEOUT}s timeout")
+        logger.info(f"🧪🔌 Attempting to connect to Server with {DEFAULT_TIMEOUT}s timeout")
         await asyncio.wait_for(client.start(), timeout=DEFAULT_TIMEOUT)
-        logger.info("🧪✅ Client connected successfully to Go server!")
+        logger.info("🧪✅ Client connected successfully to Server!")
 
         # Clean up on success
         await client.close()
@@ -582,12 +583,12 @@ async def test_connection_with_debugging() -> None:
 
         # Extra diagnostics for timeout
         if client._process and client._process.poll() is None:
-            logger.info("🧪📝 Go server process is still running")
+            logger.info("🧪📝 Server process is still running")
             # Try to read stderr from the process
             if client._process.stderr:
-                stderr_data = client._process.stderr.read1(1024)
+                stderr_data = client._process.stderr.read(1024)
                 if stderr_data:
-                    logger.info(f"🧪📝 Go server stderr: {stderr_data.decode('utf-8', errors='replace')}")
+                    logger.info(f"🧪📝 Server stderr: {stderr_data.decode('utf-8', errors='replace')}")
 
         # Ensure clean up on failure
         try:
