@@ -487,7 +487,7 @@ async def test_setup_server_unix_no_socket_linux(
         raise RuntimeError("Failed to bind to address 127.0.0.1:0; set GRPC_VERBOSITY=debug environment variable to see detailed error message.")
 
     # Apply platform-specific mocking
-    with mock.patch("grpc.aio.server.add_insecure_port", side_effect=mock_add_unix_socket):
+    with mock.patch("grpc.aio.server.add_secure_port", side_effect=mock_add_unix_socket):
         try:
             # Linux behavior will be different, expect a RuntimeError
             with pytest.raises(RuntimeError, match="Failed to bind to address"):
