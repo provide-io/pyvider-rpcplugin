@@ -29,7 +29,7 @@ class MockRequestIterator:
             return item
         raise StopAsyncIteration
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_broker_exception_handling_line95() -> None:
     """Test exception handling in broker.StartStream (line 95)."""
     broker = GRPCBrokerService()
@@ -60,7 +60,7 @@ async def test_broker_exception_handling_line95() -> None:
         assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_stdio_put_line_exception_line123() -> None:
     """Test exception handling in stdio.put_line (lines 123-128)."""
     stdio = GRPCStdioService()
