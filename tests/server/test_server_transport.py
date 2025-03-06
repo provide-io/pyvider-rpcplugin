@@ -575,7 +575,7 @@ async def test_setup_server_exception_4(
 
     try:
         # Listen on transport
-        await transport.listen()
+        endpoint = await transport.listen()
         
         # Attempt setup with expected error
         with pytest.raises(Exception, match="Simulated server credentials error"):
