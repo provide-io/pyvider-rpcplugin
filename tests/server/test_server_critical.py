@@ -82,7 +82,7 @@ async def test_stdio_put_line_exception_line123() -> None:
         # Restore original method
         stdio._message_queue.put = original_put
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_controller_delayed_shutdown_unix_line212() -> None:
     """Test Unix path in controller._delayed_shutdown (lines 212-216)."""
     stdio = GRPCStdioService()
@@ -101,7 +101,7 @@ async def test_controller_delayed_shutdown_unix_line212() -> None:
         mock_sleep.assert_called_once()
         mock_kill.assert_called_once_with(12345, signal.SIGTERM)
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_controller_delayed_shutdown_windows_line212() -> None:
     """Test Windows path in controller._delayed_shutdown (lines 212-216)."""
     stdio = GRPCStdioService()
