@@ -250,7 +250,7 @@ async def test_setup_server_unix_bad_permissions_3(
         await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
-async def test_setup_server_exception(
+async def test_setup_server_exception_1(
     monkeypatch,
     mock_server_protocol,
     mock_server_handler,
@@ -272,6 +272,48 @@ async def test_setup_server_exception(
     with pytest.raises(Exception, match="Failed to "):
         await server._setup_server("client_cert")
         await transport.close()
+
+@pytest.mark.asyncio
+async def test_setup_server_exception_2(
+    monkeypatch,
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+) -> None:
+    """Test properly handling exceptions in server setup."""
+    # Create an isolated transport using tmp_path
+    sock_path = str(tmp_path / "exception_test.sock")
+    transport = UnixSocketTransport(path=sock_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Start the transport to create the socket
+    await transport.listen()
+    assert os.path.exists(sock_path), "Socket should exist"
+
+    # Mock the add_insecure_port method to raise an exception
+    def mock_add_insecure_port(*args, **kwargs):
+        raise Exception("Failed to bind port")
+
+    # Apply the mock to the server instance
+    monkeypatch.setattr(
+        server._server if hasattr(server, '_server') else "grpc.aio.server",
+        "add_insecure_port",
+        mock_add_insecure_port
+    )
+
+    # Now try to set up the server, which should fail
+    with pytest.raises(Exception, match="Failed to bind port"):
+        await server._setup_server(None)
+
+    # Clean up
+    await transport.close()
 
 @pytest.mark.asyncio
 async def test_setup_server_tcp_success(
