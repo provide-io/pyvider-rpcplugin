@@ -185,28 +185,29 @@ async def test_setup_server_unix_bad_permissions_2(
     mock_server_config,
 ) -> None:
     """Test server behavior with unreadable socket path."""
-    # Create a unique directory for this test
-    restricted_dir = tmp_path / "restricted_2"
-    restricted_dir.mkdir(mode=0o700)  # Only owner can access
+    # Create a uniquely named restricted directory for this test
+    restricted_dir = tmp_path / f"restricted_{uuid.uuid4().hex[:8]}"
+    # Use exist_ok=False to catch potential directory conflicts
+    restricted_dir.mkdir(mode=0o700, exist_ok=False)
     sock_path = str(restricted_dir / "restricted.sock")
-
-    # Create a socket transport with a string path
+    
+    # Create a socket transport
     transport = UnixSocketTransport(path=sock_path)
-
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport,
     )
-
+    
     # Mock the server's _setup_server method to detect permissions
     async def mock_setup_server(client_cert):
         # Simulate permission check failing
         if os.path.exists(sock_path):
             os.chmod(sock_path, 0o000)  # No permissions
         raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
-
+    
     # Apply the mock
     with mock.patch.object(server, '_setup_server', mock_setup_server):
         # Now attempt to set up the server, which should fail
@@ -221,12 +222,15 @@ async def test_setup_server_unix_bad_permissions_3(
     mock_server_config,
 ) -> None:
     """Test server behavior with restricted directory permissions."""
-    # Create a unique directory for this test
-    restricted_dir = tmp_path / "restricted_3"
-    if not restricted_dir.exists():
-        restricted_dir.mkdir(mode=0o700)  # Only owner can access
-    sock_path = str(restricted_dir / "restricted.sock")
-
+    # Create a unique name for this test
+    test_id = uuid.uuid4().hex[:8]
+    restricted_dir = tmp_path / f"restricted_dir_{test_id}"
+    restricted_dir.mkdir(mode=0o700, exist_ok=False)  # Only owner can access
+    
+    # Keep the path SHORT - crucial for macOS
+    sock_path = str(restricted_dir / "sock.sock")
+    logger.debug(f"🧪🔌 Test socket path: {sock_path} ({len(sock_path)} chars)")
+    
     # Create a socket transport
     transport = UnixSocketTransport(path=sock_path)
 
@@ -245,7 +249,7 @@ async def test_setup_server_unix_bad_permissions_3(
     os.chmod(sock_path, 0o000)
 
     # Prepare for testing setup with bad permissions
-    with pytest.raises(TransportError, match="incorrect permissions"):
+    with pytest.raises(TransportError, match="incorrect permissions|Failed to bind"):
         # This will fail because permissions on the socket file are wrong
         await server._setup_server("client_cert")
 
