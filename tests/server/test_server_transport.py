@@ -459,6 +459,7 @@ async def test_setup_server_unix_no_socket_macos(
     platform.system() != "Linux",
     reason="This test is Linux-specific"
 )
+
 async def test_setup_server_unix_no_socket_linux(
     tmp_path,
     mock_server_protocol,
