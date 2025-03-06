@@ -179,18 +179,18 @@ async def test_setup_server_unix_bad_permissions_work2(
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_2(
-    tmp_path,
+    unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test server behavior with unreadable socket path."""
     # Create a uniquely named restricted directory for this test
-    restricted_dir = tmp_path / f"restricted_{uuid.uuid4().hex[:8]}"
+    restricted_dir = unique_socket_path
     # Use exist_ok=False to catch potential directory conflicts
     restricted_dir.mkdir(mode=0o700, exist_ok=False)
-    sock_path = str(restricted_dir / "restricted.sock")
-    
+    sock_path = f"{restricted_dir}/restricted.sock"
+
     # Create a socket transport
     transport = UnixSocketTransport(path=sock_path)
     
@@ -280,14 +280,14 @@ async def test_setup_server_exception_1(
 @pytest.mark.asyncio
 async def test_setup_server_exception_2(
     monkeypatch,
-    tmp_path,
+    unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test properly handling exceptions in server setup."""
     # Create an isolated transport using tmp_path
-    sock_path = str(tmp_path / "exception_test.sock")
+    sock_path = unique_socket_path
     transport = UnixSocketTransport(path=sock_path)
 
     server = RPCPluginServer(
