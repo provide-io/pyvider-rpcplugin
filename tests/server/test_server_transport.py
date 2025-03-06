@@ -463,15 +463,16 @@ async def test_setup_server_unix_success_secure(
 
 ##########33
 @pytest.mark.asyncio
-async def test_setup_server_exception_2(
-    tmp_path,
+async def test_setup_server_exception_3(
+    unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test properly handling exceptions in server setup."""
     # Create an isolated transport using tmp_path
-    sock_path = str(tmp_path / "exception_test.sock")
+    #sock_path = str(tmp_path / "exception_test.sock")
+    sock_path = unique_socket_path
     transport = UnixSocketTransport(path=sock_path)
 
     server = RPCPluginServer(
