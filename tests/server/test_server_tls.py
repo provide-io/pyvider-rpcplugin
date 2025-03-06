@@ -2,6 +2,7 @@
 
 import asyncio
 import pytest
+from unittest import mock
 from unittest.mock import patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
