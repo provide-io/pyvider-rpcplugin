@@ -432,7 +432,8 @@ async def test_setup_server_unix_success_secure(
 ) -> None:
     """Test secure Unix socket server setup with isolated path."""
     # Use the short path fixture instead of nested paths
-    sock_path = short_socket_path
+    #sock_path = short_socket_path
+    sock_path = "/tmp/ugh.sock"
 
     # Create a fresh transport that won't conflict with other tests
     test_transport = UnixSocketTransport(path=sock_path)
