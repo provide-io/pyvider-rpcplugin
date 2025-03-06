@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# tests/kv/py_kv_client_2.py
+# examples/kvprobo/py_kv_client_2.py
 
 import asyncio
 import os
@@ -12,7 +12,7 @@ from pathlib import Path
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.client import RPCPluginClient
 
-from tests.kv.proto import (
+from examples.kvprobo.py_rpc.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,

@@ -5,8 +5,8 @@
 # Base configuration
 BASE_PATH=$(pwd)
 
-local DEFAULT_PLUGIN_HOST="localhost"
-local DEFAULT_PLUGIN_PORT="50051"
+# local DEFAULT_PLUGIN_HOST="localhost"
+# local DEFAULT_PLUGIN_PORT="50051"
 
 #local DEFAULT_PLUGIN_ALGO="ec-secp256r1"
 
@@ -14,57 +14,58 @@ export PLUGIN_MAGIC_COOKIE_KEY=BASIC_PLUGIN
 export PLUGIN_MAGIC_COOKIE_VALUE=hello
 export PLUGIN_MAGIC_COOKIE=hello
 export BASIC_PLUGIN=hello
-export PLUGIN_PROTOCOL_VERSIONS=1
-export PLUGIN_TRANSPORTS=unix
+
+# export PLUGIN_PROTOCOL_VERSIONS=1
+# export PLUGIN_TRANSPORTS=unix
 export PLUGIN_AUTO_MTLS=true
 
-PLUGIN_HOST=${PLUGIN_HOST:-${DEFAULT_PLUGIN_HOST}}
-PLUGIN_PORT=${PLUGIN_PORT:-${DEFAULT_PLUGIN_PORT}}
+# PLUGIN_HOST=${PLUGIN_HOST:-${DEFAULT_PLUGIN_HOST}}
+# PLUGIN_PORT=${PLUGIN_PORT:-${DEFAULT_PLUGIN_PORT}}
 
 # TLS algorithm configuration
 #PLUGIN_ALGO=${PLUGIN_ALGO:-${DEFAULT_PLUGIN_ALGO}}
-PLUGIN_CLIENT_ALGO=${PLUGIN_CLIENT_ALGO:-"ec-secp384r1"}
-PLUGIN_SERVER_ALGO=${PLUGIN_SERVER_ALGO:-"ec-secp384r1"}
+# PLUGIN_CLIENT_ALGO=${PLUGIN_CLIENT_ALGO:-"ec-secp384r1"}
+# PLUGIN_SERVER_ALGO=${PLUGIN_SERVER_ALGO:-"ec-secp384r1"}
 
 # Certificate paths
-PLUGIN_CLIENT_CERT_FILE="${BASE_PATH}/tests/certs/${PLUGIN_CLIENT_ALGO}-mtls-client.crt"
-PLUGIN_CLIENT_KEY_FILE="${BASE_PATH}/tests/certs/${PLUGIN_CLIENT_ALGO}-mtls-client.key"
+# PLUGIN_CLIENT_CERT_FILE="${BASE_PATH}/tests/certs/${PLUGIN_CLIENT_ALGO}-mtls-client.crt"
+# PLUGIN_CLIENT_KEY_FILE="${BASE_PATH}/tests/certs/${PLUGIN_CLIENT_ALGO}-mtls-client.key"
 
 # Load certificates
-if [ ! -f "${PLUGIN_CLIENT_CERT_FILE}" ]; then
-    echo "❌ Error: Client certificate not found at ${PLUGIN_CLIENT_CERT_FILE}"
-    return
-fi
+# if [ ! -f "${PLUGIN_CLIENT_CERT_FILE}" ]; then
+#     echo "❌ Error: Client certificate not found at ${PLUGIN_CLIENT_CERT_FILE}"
+#     return
+# fi
 
-if [ ! -f "${PLUGIN_CLIENT_KEY_FILE}" ]; then
-    echo "❌ Error: Client key not found at ${PLUGIN_CLIENT_KEY_FILE}"
-    return
-fi
+# if [ ! -f "${PLUGIN_CLIENT_KEY_FILE}" ]; then
+#     echo "❌ Error: Client key not found at ${PLUGIN_CLIENT_KEY_FILE}"
+#     return
+# fi
 
-PLUGIN_CLIENT_CERT="$(cat ${PLUGIN_CLIENT_CERT_FILE})"
-PLUGIN_CLIENT_KEY="$(cat ${PLUGIN_CLIENT_KEY_FILE})"
-
-PLUGIN_SERVER_CERT_FILE="${BASE_PATH}/tests/certs/${PLUGIN_SERVER_ALGO}-mtls-server.crt"
-PLUGIN_SERVER_KEY_FILE="${BASE_PATH}/tests/certs/${PLUGIN_SERVER_ALGO}-mtls-server.key"
+# PLUGIN_CLIENT_CERT="$(cat ${PLUGIN_CLIENT_CERT_FILE})"
+# PLUGIN_CLIENT_KEY="$(cat ${PLUGIN_CLIENT_KEY_FILE})"
+#
+# PLUGIN_SERVER_CERT_FILE="${BASE_PATH}/tests/certs/${PLUGIN_SERVER_ALGO}-mtls-server.crt"
+# PLUGIN_SERVER_KEY_FILE="${BASE_PATH}/tests/certs/${PLUGIN_SERVER_ALGO}-mtls-server.key"
 
 # Load certificates
-if [ ! -f "${PLUGIN_SERVER_CERT_FILE}" ]; then
-    echo "❌ Error: Server certificate not found at ${PLUGIN_SERVER_CERT_FILE}"
-    return
-fi
+# if [ ! -f "${PLUGIN_SERVER_CERT_FILE}" ]; then
+#     echo "❌ Error: Server certificate not found at ${PLUGIN_SERVER_CERT_FILE}"
+#     return
+# fi
+#
+# if [ ! -f "${PLUGIN_SERVER_KEY_FILE}" ]; then
+#     echo "❌ Error: Server key not found at ${PLUGIN_SERVER_KEY_FILE}"
+#     return
+# fi
 
-if [ ! -f "${PLUGIN_SERVER_KEY_FILE}" ]; then
-    echo "❌ Error: Server key not found at ${PLUGIN_SERVER_KEY_FILE}"
-    return
-fi
-
-PLUGIN_SERVER_CERT="$(cat ${PLUGIN_SERVER_CERT_FILE})"
-PLUGIN_SERVER_KEY="$(cat ${PLUGIN_SERVER_KEY_FILE})"
+# PLUGIN_SERVER_CERT="$(cat ${PLUGIN_SERVER_CERT_FILE})"
+# PLUGIN_SERVER_KEY="$(cat ${PLUGIN_SERVER_KEY_FILE})"
 
 # Endpoint configuration
-PLUGIN_SERVER_ENDPOINT="tcp:${PLUGIN_HOST}:${PLUGIN_PORT}"
-PLUGIN_PYTHON_SERVER_ENDPOINT="${PLUGIN_HOST}:${PLUGIN_PORT}"
-PLUGIN_CS_SERVER_ENDPOINT="https://${PLUGIN_HOST}:${PLUGIN_PORT}"
+# PLUGIN_SERVER_ENDPOINT="tcp:${PLUGIN_HOST}:${PLUGIN_PORT}"
+# PLUGIN_PYTHON_SERVER_ENDPOINT="${PLUGIN_HOST}:${PLUGIN_PORT}"
+# PLUGIN_CS_SERVER_ENDPOINT="https://${PLUGIN_HOST}:${PLUGIN_PORT}"
 
 function get_key_size() {
     openssl req -new \
@@ -78,23 +79,23 @@ function get_key_size() {
         sed -E 's/[^0-9]+//g'
 }
 
-PLUGIN_CLIENT_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_CLIENT_KEY_FILE}"))
-PLUGIN_SERVER_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_SERVER_KEY_FILE}"))
+# PLUGIN_CLIENT_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_CLIENT_KEY_FILE}"))
+# PLUGIN_SERVER_KEY_SIZE=$(echo $(get_key_size "${PLUGIN_SERVER_KEY_FILE}"))
 
-PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}
+PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/examples/kvprobo/bin/py-kv-server"}
 
 # Export all necessary environment variables
-export PLUGIN_HOST \
-    PLUGIN_PORT \
-    PLUGIN_CLIENT_CERT \
-    PLUGIN_CLIENT_KEY \
-    PLUGIN_SERVER_PATH \
-    PLUGIN_SERVER_CERT \
-    PLUGIN_SERVER_KEY \
-    PLUGIN_SERVER_ENDPOINT \
-    PLUGIN_PYTHON_SERVER_ENDPOINT \
-    PLUGIN_CS_SERVER_ENDPOINT
-
+# export PLUGIN_HOST \
+#     PLUGIN_PORT \
+#     PLUGIN_CLIENT_CERT \
+#     PLUGIN_CLIENT_KEY \
+#     PLUGIN_SERVER_PATH \
+#     PLUGIN_SERVER_CERT \
+#     PLUGIN_SERVER_KEY \
+#     PLUGIN_SERVER_ENDPOINT \
+#     PLUGIN_PYTHON_SERVER_ENDPOINT \
+#     PLUGIN_CS_SERVER_ENDPOINT
+#
 # Path configuration
 export PYTHONPATH="${BASE_PATH}/src:${BASE_PATH}:${PYTHONPATH}"
 
@@ -137,13 +138,13 @@ alias rpcenv-refresh=" \
 "
 alias show-dupdefs="grep -r 'def ' * | sed -E 's/.*def //g;s/\(.*//g' |sort -h | uniq -c | sort -d | grep test | grep -v '1 '"
 
-alias py-kv-client="(cd ${BASE_PATH}/tests/kv; ./py_kv_client.py)"
-alias py-kv-server="(cd ${BASE_PATH}/tests/kv; ./py_kv_server.py)"
+alias py-kv-client="(cd ${BASE_PATH}/examples/kvprobo; ./py_kv_client.py)"
+alias py-kv-server="(cd ${BASE_PATH}/examples/kvprobo; ./py_kv_server.py)"
 
-alias go-kv-client="${BASE_PATH}/tests/kv/go-plugin/bin/kv-go-client"
-alias go-kv-server="${BASE_PATH}/tests/kv/go-plugin/bin/kv-go-server"
+alias go-kv-client="${BASE_PATH}/examples/kvprobo/go-plugin/bin/kv-go-client"
+alias go-kv-server="${BASE_PATH}/examples/kvprobo/go-plugin/bin/kv-go-server"
 
-PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/tests/kv/py_kv_server.py"}
+PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/examples/kvprobo/py_kv_server.py"}
 
 export PLUGIN_SERVER_PATH
 
