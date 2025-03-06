@@ -542,3 +542,53 @@ async def test_setup_server_unix_no_socket_linux(
         # Linux behavior will be different, expect a RuntimeError
         with pytest.raises(RuntimeError, match="Failed to bind to address"):
             await server._setup_server("client_cert")
+
+
+@pytest.mark.asyncio
+async def test_setup_server_exception_4(
+    monkeypatch,
+    unique_socket_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+    mock_server_transport,
+) -> None:
+    """Test handling exceptions when server setup fails."""
+    # Create a completely isolated transport path for this test 
+    #socket_path = os.path.join(tmp_path, f"test_exception_{uuid.uuid4().hex[:8]}.sock")
+    socket_path = unique_socket_path
+    transport = UnixSocketTransport(path=socket_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Force specific expected error - mocking the generate_server_credentials 
+    # function to raise a predictable error
+    def mock_generate_credentials(*args, **kwargs):
+        raise Exception("Simulated server credentials error")
+        
+    monkeypatch.setattr(server, "_generate_server_credentials", mock_generate_credentials)
+
+    try:
+        # Listen on transport
+        await transport.listen()
+        
+        # Attempt setup with expected error
+        with pytest.raises(Exception, match="Simulated server credentials error"):
+            await server._setup_server("client_cert")
+    finally:
+        # Ensure proper cleanup
+        await transport.close()
+        
+        # Extra cleanup to be absolutely sure
+        if os.path.exists(socket_path):
+            try:
+                os.chmod(socket_path, 0o777)
+                os.unlink(socket_path)
+            except Exception as e:
+                logger.warning(f"🧪⚠️ Cleanup error ignored: {e}")
+### 🐍🏗🧪️
