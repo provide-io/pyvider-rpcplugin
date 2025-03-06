@@ -39,7 +39,7 @@ async def test_setup_server_unix_success_insecure(
         await server.stop()
 
 @pytest.mark.asyncio
-async def test_serve_success(monkeypatch, mock_server_protocol,
+async def test_serve_success_100(monkeypatch, mock_server_protocol,
                           mock_server_handler, mock_server_config,
                           mock_server_transport) -> None:
     """Test server serve method."""
