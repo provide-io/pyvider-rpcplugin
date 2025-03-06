@@ -39,8 +39,7 @@ async def test_setup_server_unix_success_insecure(
         await server.stop()
 
 @pytest.mark.asyncio
-async def X2_test_setup_server_unix_success_secure(
-    tmp_path,
+async def test_setup_server_unix_success_secure_A(
     client_cert,
     unique_socket_path,
     mock_server_protocol,
