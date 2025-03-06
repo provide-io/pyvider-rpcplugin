@@ -92,13 +92,14 @@ async def test_setup_server_unix_no_socket(
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_work1(
     tmp_path,
+    unique_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test server behavior with incorrect socket permissions."""
     # Create a unique socket path
-    sock_path = str(tmp_path / "bad_perms.sock")
+    sock_path = uniquie_socket_path
 
     # Create the socket file with restricted permissions
     with open(sock_path, "w") as f:
