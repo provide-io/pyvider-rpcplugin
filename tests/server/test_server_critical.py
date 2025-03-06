@@ -60,7 +60,7 @@ async def test_broker_exception_handling_line95() -> None:
         assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
 
-@pytest.mark.skip
+@pytest.mark.asyncio
 async def test_stdio_put_line_exception_line123() -> None:
     """Test exception handling in stdio.put_line (lines 123-128)."""
     stdio = GRPCStdioService()
@@ -82,7 +82,7 @@ async def test_stdio_put_line_exception_line123() -> None:
         # Restore original method
         stdio._message_queue.put = original_put
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_controller_delayed_shutdown_unix_line212() -> None:
     """Test Unix path in controller._delayed_shutdown (lines 212-216)."""
     stdio = GRPCStdioService()
