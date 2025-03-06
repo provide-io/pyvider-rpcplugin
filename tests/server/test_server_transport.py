@@ -89,7 +89,6 @@ async def test_setup_server_unix_no_socket(
         await transport.listen()
         await server._setup_server("client_cert")
 
-
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_1(
     tmp_path,
@@ -178,7 +177,7 @@ async def test_setup_server_unix_bad_permissions_3(
     mock_server_config,
     mock_server_transport_unix,
 ) -> None:
-    sock_path = unique_socket_path()
+    sock_path = unique_socket_path
 
     print(f"unique_socket_path: {sock_path}")
     with open(sock_path, "w") as f:
@@ -242,7 +241,7 @@ async def test_setup_server_unix_bad_permissions_4(
             await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_bad_permissions_1(
+async def test_setup_server_unix_bad_permissions_5(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
