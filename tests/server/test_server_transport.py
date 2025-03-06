@@ -7,7 +7,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
-from unittest.mock import mock
+from unittest import mock
 
 from tests.fixtures import *
 
