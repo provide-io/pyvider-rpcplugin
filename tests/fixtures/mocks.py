@@ -65,6 +65,23 @@ class MockServicer:
     pass
 
 
+class MockBytesIO:
+    """Mock implementation of sys.stdout.buffer for testing."""
+    def __init__(self, string_io):
+        self.string_io = string_io
+
+    def write(self, data):
+        if isinstance(data, bytes):
+            # Convert bytes to string for StringIO
+            self.string_io.write(data.decode('utf-8'))
+        else:
+            # Handle string content
+            self.string_io.write(str(data))
+        return len(data)
+
+    def flush(self):
+        self.string_io.flush()
+
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
 async def mock_server_transport(request) -> TransportT:
     transport_name = request.param
@@ -98,17 +115,41 @@ async def mock_server_transport_tcp() -> TransportT:
     return transport
 
 
-@pytest_asyncio.fixture
-async def mock_server_transport_unix() -> TransportT:
-    with tempfile.NamedTemporaryFile(delete=True) as tmp:
-        socket_path = tmp.name
+# @pytest_asyncio.fixture
+# async def mock_server_transport_unix() -> TransportT:
+#     with tempfile.NamedTemporaryFile(delete=True) as tmp:
+#         socket_path = tmp.name
+#     try:
+#         transport = UnixSocketTransport(path=socket_path)
+#
+#     except Exception:
+#         raise ValueError(f"Could not open a Unix : {transport}")
+#
+#     return transport
+
+@pytest_asyncio.fixture(scope="function")
+async def mock_server_transport_unix(unique_socket_path) -> TransportT:
+    """Fixture providing a properly configured Unix transport with unique path."""
+    transport = UnixSocketTransport(path=unique_socket_path)
+
     try:
-        transport = UnixSocketTransport(path=socket_path)
+        # Early startup to verify it works
+        await transport.listen()
+        logger.debug(f"🧪✅ Unix transport initialized at {unique_socket_path}")
+        yield transport
+    finally:
+        # Ensure proper cleanup
+        try:
+            await transport.close()
+            logger.debug(f"🧪🧹 Transport closed for {unique_socket_path}")
 
-    except Exception:
-        raise ValueError(f"Could not open a Unix : {transport}")
-
-    return transport
+            # Double-check for stale socket file
+            if os.path.exists(unique_socket_path):
+                os.chmod(unique_socket_path, 0o770)
+                os.unlink(unique_socket_path)
+                logger.debug(f"🧪🧹 Manually removed socket file {unique_socket_path}")
+        except Exception as e:
+            logger.error(f"🧪❌ Error cleaning transport: {e}")
 
 
 # @pytest_asyncio.fixture(scope="module", autouse=True)

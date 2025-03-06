@@ -31,14 +31,20 @@ class MockRequestIterator:
 
 @pytest.mark.asyncio
 async def test_broker_exception_handling_line95() -> None:
-    """Test exception handling in broker.StartStream (line 95)."""
+    """Test exception handling in broker.StartStream."""
     broker = GRPCBrokerService()
 
-    # Mock _subchannels to raise an exception
-    with patch.object(broker, '_subchannels',
-                      side_effect=Exception("Test exception")):
+    # Create a mock that raises an exception when accessed
+    class RaisingDict(dict):
+        def __getitem__(self, key):
+            raise Exception("Test exception")
+    
+    # Replace _subchannels with our raising dict
+    original_subchannels = broker._subchannels
+    broker._subchannels = RaisingDict()
 
-        # Create request that triggers exception path
+    try:
+        # Create request with knock=True to trigger the exception path
         request = ConnInfo(
             service_id=1,
             network="tcp",
@@ -50,15 +56,19 @@ async def test_broker_exception_handling_line95() -> None:
         iterator = MockRequestIterator([request])
         context = MagicMock()
 
-        # Process stream
+        # Process stream and collect responses
         responses = []
         async for response in broker.StartStream(iterator, context):
             responses.append(response)
 
-        # Verify error response
+        # Verify the response has an error
         assert len(responses) == 1
         assert responses[0].knock.ack is False
         assert "error" in responses[0].knock.error
+        assert "Test exception" in responses[0].knock.error
+    finally:
+        # Restore original _subchannels
+        broker._subchannels = original_subchannels
 
 @pytest.mark.asyncio
 async def test_stdio_put_line_exception_line123() -> None:
@@ -119,3 +129,5 @@ async def test_controller_delayed_shutdown_windows_line212() -> None:
         # Verify correct calls
         mock_sleep.assert_called_once()
         mock_exit.assert_called_once_with(0)
+
+### 🐍🏗🧪️
