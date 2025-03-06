@@ -297,15 +297,15 @@ async def test_setup_server_exception_2(
     await transport.listen()
     assert os.path.exists(sock_path), "Socket should exist"
 
-    # Mock the add_insecure_port method to raise an exception
-    def mock_add_insecure_port(*args, **kwargs):
+    # Mock the add_secure_port method to raise an exception
+    def mock_secure_port(*args, **kwargs):
         raise Exception("Failed to bind port")
 
     # Apply the mock to the server instance
     monkeypatch.setattr(
         server._server if hasattr(server, '_server') else "grpc.aio.server",
-        "add_insecure_port",
-        mock_add_insecure_port
+        "add_secure_port",
+        mock_add_secure_port
     )
 
     # Now try to set up the server, which should fail
