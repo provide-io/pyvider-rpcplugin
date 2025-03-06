@@ -99,30 +99,30 @@ async def test_setup_server_unix_bad_permissions_work1(
     """Test server behavior with incorrect socket permissions."""
     # Create a unique socket path
     sock_path = str(tmp_path / "bad_perms.sock")
-    
+
     # Create the socket file with restricted permissions
     with open(sock_path, "w") as f:
         f.write("")
     os.chmod(sock_path, 0o000)  # No permissions
-    
+
     # Create server with mocked transport
     transport = mock.AsyncMock()
     transport.path = sock_path
     transport.listen = mock.AsyncMock(return_value=sock_path)
-    
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport
     )
-    
+
     try:
         # Mock _setup_server to check permissions and fail
         async def mock_setup(*args):
             # Fail with the expected error message
             raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
-            
+
         with mock.patch.object(server, '_setup_server', mock_setup):
             # This should raise TransportError with the permission message
             with pytest.raises(TransportError, match="has incorrect permissions"):
@@ -140,34 +140,42 @@ async def test_setup_server_unix_bad_permissions_1(
     mock_server_handler,
     mock_server_config,
 ) -> None:
-    """Test server behavior with unreadable socket path."""
-    # Create a restricted directory for socket
-    restricted_dir = tmp_path / "restricted"
-    restricted_dir.mkdir(mode=0o700)  # Only owner can access
-    sock_path = str(restricted_dir / "restricted.sock")
-    
-    # Create a socket transport
-    transport = UnixSocketTransport(path=sock_path)
-    
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-    
-    # Mock the server's _setup_server method to detect permissions
-    async def mock_setup_server(client_cert):
-        # Simulate permission check failing
+    """Test server behavior with incorrect socket permissions."""
+    # Create a unique socket path for this test
+    sock_path = str(tmp_path / "bad_perms_1.sock")
+
+    # Create the socket file with restricted permissions
+    with open(sock_path, "w") as f:
+        f.write("")
+    os.chmod(sock_path, 0o000)  # No permissions
+
+    try:
+        # Create server with mocked transport
+        transport = mock.AsyncMock()
+        transport.path = sock_path
+        transport.listen = mock.AsyncMock(return_value=sock_path)
+
+        server = RPCPluginServer(
+            protocol=mock_server_protocol,
+            handler=mock_server_handler,
+            config=mock_server_config,
+            transport=transport
+        )
+
+        # Mock _setup_server to check permissions and fail
+        async def mock_setup(*args):
+            # Fail with the expected error message
+            raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
+
+        with mock.patch.object(server, '_setup_server', mock_setup):
+            # This should raise TransportError with the permission message
+            with pytest.raises(TransportError, match="has incorrect permissions"):
+                await server.serve()
+    finally:
+        # Ensure we can clean up the socket file
         if os.path.exists(sock_path):
-            os.chmod(sock_path, 0o000)  # No permissions
-        raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
-    
-    # Apply the mock
-    with mock.patch.object(server, '_setup_server', mock_setup_server):
-        # Now attempt to set up the server, which should fail
-        with pytest.raises(TransportError, match="has incorrect permissions"):
-            await server._setup_server("client_cert")
+            os.chmod(sock_path, 0o777)
+            os.unlink(sock_path)
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_2(
@@ -175,34 +183,35 @@ async def test_setup_server_unix_bad_permissions_2(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport_unix,
 ) -> None:
-    sock_path = unique_socket_path
+    """Test server behavior with unreadable socket path."""
+    # Create a unique directory for this test
+    restricted_dir = tmp_path / "restricted_2"
+    restricted_dir.mkdir(mode=0o700)  # Only owner can access
+    sock_path = str(restricted_dir / "restricted.sock")
 
-    print(f"unique_socket_path: {sock_path}")
-    with open(sock_path, "w") as f:
-        f.write("")
-    os.chmod(sock_path, 0o000)
-
+    # Create a socket transport with a string path
     transport = UnixSocketTransport(path=sock_path)
 
-    try:
-        server = RPCPluginServer(
-            protocol=mock_server_protocol,
-            handler=mock_server_handler,
-            config=mock_server_config,
-            transport=transport,
-        )
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
 
-        await transport.listen()
-
-        with pytest.raises(TransportError, match="has incorrect permissions"):
-            await server.serve()
-            #await server._setup_server("client_cert")
-    finally:
+    # Mock the server's _setup_server method to detect permissions
+    async def mock_setup_server(client_cert):
+        # Simulate permission check failing
         if os.path.exists(sock_path):
-            os.chmod(sock_path, 0o700)
-            os.unlink(sock_path)
+            os.chmod(sock_path, 0o000)  # No permissions
+        raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
+
+    # Apply the mock
+    with mock.patch.object(server, '_setup_server', mock_setup_server):
+        # Now attempt to set up the server, which should fail
+        with pytest.raises(TransportError, match="has incorrect permissions"):
+            await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions_3(
@@ -211,34 +220,34 @@ async def test_setup_server_unix_bad_permissions_3(
     mock_server_handler,
     mock_server_config,
 ) -> None:
-    """Test server behavior with unreadable socket path."""
-    # Create a restricted directory for socket
-    restricted_dir = tmp_path / "restricted"
-    restricted_dir.mkdir(mode=0o700)  # Only owner can access
+    """Test server behavior with restricted directory permissions."""
+    # Create a unique directory for this test
+    restricted_dir = tmp_path / "restricted_3"
+    if not restricted_dir.exists():
+        restricted_dir.mkdir(mode=0o700)  # Only owner can access
     sock_path = str(restricted_dir / "restricted.sock")
-    
+
     # Create a socket transport
     transport = UnixSocketTransport(path=sock_path)
-    
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport,
     )
-    
-    # Mock the server's _setup_server method to detect permissions
-    async def mock_setup_server(client_cert):
-        # Simulate permission check failing
-        if os.path.exists(sock_path):
-            os.chmod(sock_path, 0o000)  # No permissions
-        raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
-    
-    # Apply the mock
-    with mock.patch.object(server, '_setup_server', mock_setup_server):
-        # Now attempt to set up the server, which should fail
-        with pytest.raises(TransportError, match="has incorrect permissions"):
-            await server._setup_server("client_cert")
+
+    # Actually create and listen on the socket
+    await transport.listen()
+    assert os.path.exists(sock_path), "Socket should be created"
+
+    # Now change the socket permissions to be restrictive
+    os.chmod(sock_path, 0o000)
+
+    # Prepare for testing setup with bad permissions
+    with pytest.raises(TransportError, match="incorrect permissions"):
+        # This will fail because permissions on the socket file are wrong
+        await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
 async def test_setup_server_exception(
@@ -313,7 +322,7 @@ async def test_setup_server_unix_success_secure(
     """Test secure Unix socket server setup with isolated path."""
     # Create a unique socket path within the test's tmp_path
     sock_path = str(tmp_path / "secure_socket.sock")
-    
+
     # Create a fresh transport that won't conflict with other tests
     test_transport = UnixSocketTransport(path=sock_path)
 
@@ -328,7 +337,7 @@ async def test_setup_server_unix_success_secure(
         # Listen on the transport first
         await test_transport.listen()
         assert os.path.exists(sock_path), "Socket file should exist after listen()"
-        
+
         # Test server setup with client cert
         await server._setup_server("client_cert")
         assert server._server is not None, "Server should be initialized"
@@ -337,7 +346,7 @@ async def test_setup_server_unix_success_secure(
         # Clean up resources
         await test_transport.close()
         await server.stop()
-        
+
         # Extra cleanup in case transport.close() missed it
         if os.path.exists(sock_path):
             try:
@@ -356,12 +365,12 @@ async def test_setup_server_unix_no_socket(
     """Test behavior when the socket doesn't exist."""
     # Create a path that definitely doesn't exist
     nonexistent_path = str(tmp_path / "nonexistent_dir" / "nosock.sock")
-    
+
     # Create directories but not the socket file
     os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
-    
+
     transport = UnixSocketTransport(path=nonexistent_path)
-    
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -373,20 +382,20 @@ async def test_setup_server_unix_no_socket(
         # This should succeed because a socket will be created
         await transport.listen()
         assert os.path.exists(nonexistent_path), "Socket should be created by listen()"
-        
+
         # Now clean up and try setup_server
         await transport.close()
         os.unlink(nonexistent_path)
-        
+
         # Now when we try setup_server, it should fail because there's no socket
         with pytest.raises(TransportError, match="Failed to"):
             await server._setup_server("client_cert")
-            
+
     finally:
         # Clean up resources
         await transport.close()
         await server.stop()
-        
+
         # Extra cleanup
         if os.path.exists(nonexistent_path):
             try:
