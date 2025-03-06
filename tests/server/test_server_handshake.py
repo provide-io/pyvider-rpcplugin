@@ -64,6 +64,39 @@ async def test_server_handshake_missing_env(
         await server._negotiate_handshake()
 
 @pytest.mark.asyncio
+async def test_server_handshake_missing_env(
+    monkeypatch,
+    mock_server_protocol,
+    mock_server_handler,
+) -> None:
+    """Test that missing environment variables raise HandshakeError."""
+    # Create a clean server with default config
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None,  # Use defaults
+        transport=None,
+    )
+    
+    # Replace validate_magic_cookie to ensure it checks for None
+    original_validate = pyvider.rpcplugin.handshake.validate_magic_cookie
+    
+    def mock_validate(*args, **kwargs):
+        # Force cookie_key to None to trigger error
+        return original_validate(magic_cookie_key=None)
+    
+    # Apply the mock
+    monkeypatch.setattr(
+        "pyvider.rpcplugin.handshake.validate_magic_cookie",
+        mock_validate
+    )
+    
+    # Expect HandshakeError
+    with pytest.raises(HandshakeError, match="cookie_key not found"):
+        await server._negotiate_handshake()
+
+
+@pytest.mark.asyncio
 async def test_negotiate_handshake_with_provided_transport(
     monkeypatch,
     mock_server_protocol,
