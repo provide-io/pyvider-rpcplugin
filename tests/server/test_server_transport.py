@@ -433,10 +433,9 @@ async def test_setup_server_unix_success_secure(
     """Test secure Unix socket server setup with isolated path."""
     # Use the short path fixture instead of nested paths
     #sock_path = short_socket_path
-    sock_path = "/tmp/ugh.sock"
 
     # Create a fresh transport that won't conflict with other tests
-    test_transport = UnixSocketTransport(path=sock_path)
+    test_transport = UnixSocketTransport() # path=sock_path)
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -445,16 +444,15 @@ async def test_setup_server_unix_success_secure(
         transport=test_transport,
     )
 
-    try:
-        # Listen on the transport first
-        await test_transport.listen()
-        assert os.path.exists(sock_path), "Socket file should exist after listen()"
+    # Listen on the transport first
+    sock_path = await test_transport.listen()
+    assert os.path.exists(sock_path), "Socket file should exist after listen()"
 
-        # Test server setup with client cert
-        await server._setup_server("client_cert")
-        assert server._server is not None, "Server should be initialized"
+    # Test server setup with client cert
+    await server._setup_server("client_cert")
+    assert server._server is not None, "Server should be initialized"
 
-    finally:
-        # Clean up resources
-        await test_transport.close()
-        await server.stop()
+    # Clean up resources
+    await test_transport.close()
+    await server.stop()
+
