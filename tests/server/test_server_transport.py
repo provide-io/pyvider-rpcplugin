@@ -39,6 +39,69 @@ async def test_setup_server_unix_success_insecure(
         await server.stop()
 
 @pytest.mark.asyncio
+async def test_serve_success(monkeypatch, mock_server_protocol,
+                          mock_server_handler, mock_server_config,
+                          mock_server_transport) -> None:
+    """Test server serve method."""
+    test_transport = mock_server_transport
+    
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=test_transport,
+    )
+
+    # Set up a completed future for _serving_future
+    fut = asyncio.Future()
+    fut.set_result(None)
+    server._serving_future = fut
+    server._serving_event = asyncio.Event()
+
+    # Create proper AsyncMock for negotiate_handshake
+    async def dummy_negotiate(self):
+        self._protocol_version = 1
+        self._transport_name = test_transport._transport_name
+        self._transport = test_transport
+    
+    monkeypatch.setattr(
+        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
+    )
+
+    # Create AsyncMock for setup_server
+    async def dummy_setup(_):
+        pass
+    
+    monkeypatch.setattr(server, "_setup_server", dummy_setup)
+    
+    # Create AsyncMock for build_handshake_response
+    async def dummy_response(*args, **kwargs):
+        return "dummy_handshake"
+    
+    monkeypatch.setattr(
+        "pyvider.rpcplugin.server.build_handshake_response", 
+        dummy_response
+    )
+    
+    # Mock _register_signal_handlers
+    monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
+    
+    # Create StringIO with buffer attribute
+    fake_stdout = StringIO()
+    fake_stdout.buffer = MockBytesIO(fake_stdout)
+    monkeypatch.setattr(sys, "stdout", fake_stdout)
+    
+    # Listen on transport
+    await test_transport.listen()
+    
+    # Run the serve method
+    await server.serve()
+    
+    # Check output
+    output = fake_stdout.getvalue().strip()
+    assert output == "dummy_handshake"
+
+@pytest.mark.asyncio
 async def test_setup_server_unix_success_secure_A(
     client_cert,
     unique_socket_path,
