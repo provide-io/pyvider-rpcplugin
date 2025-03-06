@@ -36,7 +36,7 @@ from pyvider.rpcplugin.crypto.types import KeyPairType
 
 
 def generate_keypair(
-    key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve_name: str = "secp384r1"
+    key_type: str = KEY_TYPE_ECDSA, key_size: int = 2048, curve_name: str = "secp521r1"
 ) -> KeyPairType:
     """
     Generates an RSA or ECDSA keypair based on the given parameters.

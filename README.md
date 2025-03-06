@@ -32,3 +32,6 @@ The worlds first comprehensive comprehensive Python-based `go-plugin` implementa
 ## TODO
 
 * Specify licensing.
+* Make it a lot easier to mass remove PLUGIN_ environment variables.
+* Maintain a semblance of sanity.
+

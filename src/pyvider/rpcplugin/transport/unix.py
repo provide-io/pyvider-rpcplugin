@@ -14,16 +14,6 @@ from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
-
-def X2_normalize_unix_path(path: str) -> str:
-    """Normalize unix socket path formats from Go handshake."""
-    if path.startswith("unix:"):
-        path = path[5:]
-    # Handle absolute paths with multiple leading slashes
-    while path.startswith("//"):
-        path = path[1:]
-    return path
-
 def normalize_unix_path(path: str) -> str:
     """
     Standardized Unix socket path normalization, handling:
@@ -34,7 +24,7 @@ def normalize_unix_path(path: str) -> str:
 
     Returns a clean path suitable for socket operations.
     """
-    logger.debug(f"📞🔍🚀 Normalizing Unix path: {path}")
+    logger.debug(f"📞🔍🚀 * Normalizing Unix path: {path}")
 
     # Handle unix: prefix formats
     if path.startswith("unix:"):
@@ -50,7 +40,7 @@ def normalize_unix_path(path: str) -> str:
         pass
     # Relative paths remain unchanged
 
-    logger.debug(f"📞🔍✅ Normalized path: {path}")
+    logger.debug(f"📞🔍✅ * Normalized path: {path}")
     return path
 
 
@@ -198,8 +188,8 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
 
-                os.chmod(self.path, stat.S_IRWXU | stat.S_IRWXG)  # 0770
-                logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
+                os.chmod(self.path, 0o770)
+                logger.debug(f"📞🕹✅ Set world-writable permissions (0770) on {self.path}")
 
                 self._running = True
                 self.endpoint = self.path
@@ -306,5 +296,9 @@ class UnixSocketTransport(RPCPluginTransport):
         self.endpoint = None
         self._closing = False
         logger.debug("📞🔒✅ Unix socket transport closed completely")
+
+    def get_connected_path(self) -> str:
+        """Return the actual connected socket path."""
+        return self.path
 
 ### 🐍🏗️🔌

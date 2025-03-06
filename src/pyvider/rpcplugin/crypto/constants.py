@@ -9,7 +9,7 @@ KEY_TYPE_ECDSA = "ecdsa"
 
 # Default parameters
 DEFAULT_RSA_KEY_SIZE = 2048
-DEFAULT_ECDSA_CURVE = "secp384r1"
+DEFAULT_ECDSA_CURVE = "secp521r1"
 
 # Supported algorithms
 SUPPORTED_KEY_TYPES: List[str] = [KEY_TYPE_RSA, KEY_TYPE_ECDSA]
