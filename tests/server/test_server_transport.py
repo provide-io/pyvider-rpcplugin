@@ -278,48 +278,6 @@ async def test_setup_server_exception_1(
         await transport.close()
 
 @pytest.mark.asyncio
-async def test_setup_server_exception_2(
-    monkeypatch,
-    tmp_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-) -> None:
-    """Test properly handling exceptions in server setup."""
-    # Create an isolated transport using tmp_path
-    sock_path = str(tmp_path / "exception_test.sock")
-    transport = UnixSocketTransport(path=sock_path)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    # Start the transport to create the socket
-    await transport.listen()
-    assert os.path.exists(sock_path), "Socket should exist"
-
-    # Mock the add_secure_port method to raise an exception
-    def mock_secure_port(*args, **kwargs):
-        raise Exception("Failed to bind port")
-
-    # Apply the mock to the server instance
-    monkeypatch.setattr(
-        server._server if hasattr(server, '_server') else "grpc.aio.server",
-        "add_secure_port",
-        mock_add_secure_port
-    )
-
-    # Now try to set up the server, which should fail
-    with pytest.raises(Exception, match="Failed to bind port"):
-        await server._setup_server(None)
-
-    # Clean up
-    await transport.close()
-
-@pytest.mark.asyncio
 async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
@@ -460,3 +418,82 @@ async def test_setup_server_unix_success_secure(
     await test_transport.close()
     await server.stop()
 
+#################3
+
+@pytest.mark.asyncio
+async def test_setup_server_exception_3(
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+) -> None:
+    """Test properly handling exceptions in server setup."""
+    # Create an isolated transport using tmp_path
+    sock_path = str(tmp_path / "exception_test.sock")
+    transport = UnixSocketTransport(path=sock_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Start the transport to create the socket
+    await transport.listen()
+    assert os.path.exists(sock_path), "Socket should exist"
+
+    # Create a mock server instance to patch
+    dummy_server = DummyGRPCServer()
+    server._server = dummy_server
+    
+    # Define the mock function that will be used for patching
+    def mock_add_secure_port(*args, **kwargs):
+        raise Exception("Failed to bind port")
+
+    # Apply the mock to the server instance
+    with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
+        # Now try to set up the server, which should fail
+        with pytest.raises(Exception, match="Failed to bind port"):
+            await server._setup_server("client_cert")
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    platform.system() != "Linux",
+    reason="This test is Linux-specific"
+)
+async def test_setup_server_unix_no_socket_linux(
+    tmp_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+) -> None:
+    """Test behavior when the socket doesn't exist (Linux version)."""
+    # Create a path that definitely doesn't exist
+    nonexistent_path = str(tmp_path / "nonexistent_dir" / "nosock.sock")
+
+    # Create directories but not the socket file
+    os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
+
+    transport = UnixSocketTransport(path=nonexistent_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Create a dummy server instance
+    dummy_server = DummyGRPCServer()
+    server._server = dummy_server
+    
+    # Mock the add_secure_port method to simulate Linux binding error
+    def mock_add_secure_port(*args, **kwargs):
+        raise RuntimeError("Failed to bind to address 127.0.0.1:0; set GRPC_VERBOSITY=debug environment variable to see detailed error message.")
+    
+    # Apply platform-specific mocking
+    with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
+        # Linux behavior will be different, expect a RuntimeError
+        with pytest.raises(RuntimeError, match="Failed to bind to address"):
+            await server._setup_server("client_cert")
