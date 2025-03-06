@@ -7,6 +7,10 @@ from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 from pyvider.rpcplugin.config import rpcplugin_config
 
+from pyvider.rpcplugin.handshake import (
+    validate_magic_cookie,
+)
+
 
 from tests.fixtures import *
 
@@ -79,7 +83,7 @@ async def test_server_handshake_missing_env(
     )
     
     # Replace validate_magic_cookie to ensure it checks for None
-    original_validate = pyvider.rpcplugin.handshake.validate_magic_cookie
+    original_validate = validate_magic_cookie
     
     def mock_validate(*args, **kwargs):
         # Force cookie_key to None to trigger error
