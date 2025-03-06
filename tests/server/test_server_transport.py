@@ -37,7 +37,7 @@ async def test_setup_server_unix_success_insecure(
         await server.stop()
 
 @pytest.mark.asyncio
-async def X2_test_setup_server_unix_success_secure(
+async def test_setup_server_unix_success_secure(
     tmp_path,
     client_cert,
     unique_socket_path,
@@ -69,7 +69,7 @@ async def X2_test_setup_server_unix_success_secure(
     await server.stop()
 
 @pytest.mark.asyncio
-async def X1_test_setup_server_unix_no_socket(
+async def test_setup_server_unix_no_socket(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
@@ -300,99 +300,5 @@ async def test_setup_server_tcp_success(
     #    for port in server.ports
     #)
 
-###########
-
-@pytest.mark.asyncio
-async def test_setup_server_unix_success_secure(
-    tmp_path,
-    client_cert,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-) -> None:
-    """Test secure Unix socket server setup with isolated path."""
-    # Create a unique socket path within the test's tmp_path
-    sock_path = str(tmp_path / "secure_socket.sock")
-    
-    # Create a fresh transport that won't conflict with other tests
-    test_transport = UnixSocketTransport(path=sock_path)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=test_transport,
-    )
-
-    try:
-        # Listen on the transport first
-        await test_transport.listen()
-        assert os.path.exists(sock_path), "Socket file should exist after listen()"
-        
-        # Test server setup with client cert
-        await server._setup_server("client_cert")
-        assert server._server is not None, "Server should be initialized"
-
-    finally:
-        # Clean up resources
-        await test_transport.close()
-        await server.stop()
-        
-        # Extra cleanup in case transport.close() missed it
-        if os.path.exists(sock_path):
-            try:
-                os.chmod(sock_path, 0o777)
-                os.unlink(sock_path)
-            except:
-                pass
-
-@pytest.mark.asyncio
-async def test_setup_server_unix_no_socket(
-    tmp_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-) -> None:
-    """Test behavior when the socket doesn't exist."""
-    # Create a path that definitely doesn't exist
-    nonexistent_path = str(tmp_path / "nonexistent_dir" / "nosock.sock")
-    
-    # Create directories but not the socket file
-    os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
-    
-    transport = UnixSocketTransport(path=nonexistent_path)
-    
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    try:
-        # This should succeed because a socket will be created
-        await transport.listen()
-        assert os.path.exists(nonexistent_path), "Socket should be created by listen()"
-        
-        # Now clean up and try setup_server
-        await transport.close()
-        os.unlink(nonexistent_path)
-        
-        # Now when we try setup_server, it should fail because there's no socket
-        with pytest.raises(TransportError, match="Failed to"):
-            await server._setup_server("client_cert")
-            
-    finally:
-        # Clean up resources
-        await transport.close()
-        await server.stop()
-        
-        # Extra cleanup
-        if os.path.exists(nonexistent_path):
-            try:
-                os.chmod(nonexistent_path, 0o777)
-                os.unlink(nonexistent_path)
-            except:
-                pass
 ### 🐍🏗🧪️
 
