@@ -123,57 +123,6 @@ async def test_server_serve_runtime_error(
 
     await test_transport.close()
 
-@pytest.mark.skip
-async def X1_test_serve_success(
-    monkeypatch,
-    client_cert,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-) -> None:
-    test_transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=test_transport,
-    )
-
-    fut = asyncio.Future()
-    fut.set_result(None)
-    server._serving_future = fut
-    server._serving_event = asyncio.Event()
-
-    await test_transport.listen()
-
-    async def dummy_negotiate(self):
-        self._protocol_version = 1
-        self._transport_name = test_transport._transport_name
-
-    monkeypatch.setattr(
-        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
-    )
-
-    async def dummy_setup(client_cert):
-        return
-
-    monkeypatch.setattr(server, "_setup_server", dummy_setup)
-
-    async def dummy_build_handshake(*args, **kwargs):
-        return "handshake_response"
-
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.server.build_handshake_response", dummy_build_handshake
-    )
-    monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
-    fake_stdout = StringIO()
-    monkeypatch.setattr(sys, "stdout", fake_stdout)
-    await server.serve()
-    output = fake_stdout.getvalue().strip()
-    assert output == "handshake_response"
-
 @pytest.mark.asyncio
 async def test_serve_error(
     monkeypatch,
@@ -322,77 +271,6 @@ async def test_server_stop_clean_destructor(
     del server
     gc.collect()
     # If no exception is raised, then cleanup passed.
-
-###
-
-@pytest.mark.asyncio
-async def X1_test_serve_and_stop_no_unawaited_warning(
-    monkeypatch,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-) -> None:
-    """
-    Test that calling serve() and then stop() does not leave unawaited coroutines,
-    even if the event loop is later closed.
-    """
-    # Create a server instance with a dummy protocol.
-    test_transport = mock_server_transport
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=test_transport,
-    )
-
-    async def dummy_negotiate(self):
-        self._protocol_version = 1
-        self._transport = test_transport
-        self._transport_name = test_transport._transport_name
-
-    # Prepare dummy implementations for required methods.
-    # Set _negotiate_handshake to simply set a protocol version.
-    monkeypatch.setattr(
-        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
-    )
-    await server._negotiate_handshake()
-    assert server._transport_name == test_transport._transport_name
-
-    async def dummy_setup(_):
-        pass
-
-    monkeypatch.setattr(server, "_setup_server", dummy_setup)
-    # Patch build_handshake_response to return a fixed string.
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.server.build_handshake_response",
-        lambda plugin_version,
-        transport_name,
-        transport,
-        server_cert=None,
-        port=None: asyncio.sleep(0) or "dummy_handshake",
-    )
-
-    # Patch _register_signal_handlers to do nothing.
-    monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
-
-    await test_transport.listen()
-
-    # Create a task for serve(); then, after a short delay, call stop().
-    serve_task = asyncio.create_task(server.serve())
-    # Wait briefly to allow serve() to start.
-    await asyncio.sleep(0.1)
-    await server.stop()
-    # Cancel serve() task if still running.
-    serve_task.cancel()
-    with pytest.raises(asyncio.CancelledError):
-        await serve_task
-    # Delete the server and force gc to trigger __del__.
-    del server
-    gc.collect()
-    # If no warnings/errors are raised, then cleanup is successful.
-
-###
 
 @pytest.mark.asyncio
 async def test_serve_and_stop_no_unawaited_warning(
