@@ -69,16 +69,16 @@ class MockBytesIO:
     """Mock implementation of sys.stdout.buffer for testing."""
     def __init__(self, string_io):
         self.string_io = string_io
-        
+
     def write(self, data):
         if isinstance(data, bytes):
             # Convert bytes to string for StringIO
             self.string_io.write(data.decode('utf-8'))
         else:
-            # Handle string content 
+            # Handle string content
             self.string_io.write(str(data))
         return len(data)
-        
+
     def flush(self):
         self.string_io.flush()
 
@@ -121,17 +121,17 @@ async def mock_server_transport_tcp() -> TransportT:
 #         socket_path = tmp.name
 #     try:
 #         transport = UnixSocketTransport(path=socket_path)
-# 
+#
 #     except Exception:
 #         raise ValueError(f"Could not open a Unix : {transport}")
-# 
+#
 #     return transport
 
 @pytest_asyncio.fixture(scope="function")
 async def mock_server_transport_unix(unique_socket_path) -> TransportT:
     """Fixture providing a properly configured Unix transport with unique path."""
     transport = UnixSocketTransport(path=unique_socket_path)
-    
+
     try:
         # Early startup to verify it works
         await transport.listen()
@@ -142,7 +142,7 @@ async def mock_server_transport_unix(unique_socket_path) -> TransportT:
         try:
             await transport.close()
             logger.debug(f"🧪🧹 Transport closed for {unique_socket_path}")
-            
+
             # Double-check for stale socket file
             if os.path.exists(unique_socket_path):
                 os.chmod(unique_socket_path, 0o770)
