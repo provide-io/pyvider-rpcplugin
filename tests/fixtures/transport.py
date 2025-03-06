@@ -102,9 +102,7 @@ async def unique_socket_path() -> str:
     import time
 
     # Create unique identifier with pid, timestamp and uuid
-    # unique_id = f"{os.getpid()}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
-    unique_id = f"{os.getpid()}_{int(time.time() * 1e6)}_{uuid.uuid4().hex[:8]}"
-
+    unique_id = f"{os.getpid()}_{int(time.time())}_{uuid.uuid4().hex[:8]}"
 
     # Create temp directory if it doesn't exist
     temp_dir = tempfile.gettempdir()
