@@ -492,12 +492,12 @@ async def test_setup_server_exception_3(
     
     # Define the mock function that will be used for patching
     def mock_add_secure_port(*args, **kwargs):
-        raise Exception("Failed to bind port")
+        raise Exception("Failed to bind to")
 
     # Apply the mock to the server instance
     with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
         # Now try to set up the server, which should fail
-        with pytest.raises(Exception, match="Failed to bind port"):
+        with pytest.raises(Exception, match="Failed to bind to"):
             await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
