@@ -719,3 +719,39 @@ async def test_setup_server_unix_no_socket_A(
         with pytest.raises((TransportError, RuntimeError), match=error_pattern):
             await server._setup_server("client_cert")
 ### 🐍🏗🧪️
+
+@pytest.mark.asyncio
+async def test_setup_server_unix_bad_permissions_9(
+    tmp_path, mock_server_protocol, mock_server_handler, mock_server_config
+) -> None:
+    """Test server behavior with unreadable socket path."""
+    import pathlib
+    
+    # Create uniquely named restricted directory
+    restricted_dir = tmp_path / f"restricted_{uuid.uuid4().hex[:8]}"
+    restricted_dir.mkdir(mode=0o700, exist_ok=False)
+    sock_path = str(restricted_dir / "restricted.sock")
+    
+    # Create socket transport
+    transport = UnixSocketTransport(path=sock_path)
+    
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+    
+    # Mock _setup_server to simulate permission check failure
+    async def mock_setup_server(client_cert):
+        # Create socket file with restricted permissions
+        with open(sock_path, 'w') as f:
+            pass
+        os.chmod(sock_path, 0o000)  # No permissions
+        
+        raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
+    
+    # Apply mock
+    with mock.patch.object(server, '_setup_server', mock_setup_server):
+        with pytest.raises(TransportError, match="incorrect permissions"):
+            await server._setup_server("client_cert")
