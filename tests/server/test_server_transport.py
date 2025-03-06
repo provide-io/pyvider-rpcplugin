@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/server/test_server_transport.py
 
 import os
-import platform
 import pytest
 
 from pyvider.rpcplugin.server import RPCPluginServer
@@ -70,13 +69,12 @@ async def X2_test_setup_server_unix_success_secure(
     await server.stop()
 
 @pytest.mark.asyncio
-async def X1_test_setup_server_unix_no_socket(
-    tmp_path,
+async def test_setup_server_unix_no_socket(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
-    sock_path = str(tmp_path / "nosock.sock")
+    sock_path = "/fucked" #unique_socket_path
     transport = UnixSocketTransport(path=sock_path)
 
     server = RPCPluginServer(
@@ -464,7 +462,7 @@ async def test_setup_server_unix_success_secure(
 
 ##########33
 @pytest.mark.asyncio
-async def test_setup_server_exception_3(
+async def test_setup_server_exception_2(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
