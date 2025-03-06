@@ -102,8 +102,8 @@ async def test_generate_server_credentials_insecure(server_with_mocks) -> None:
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
 
-@pytest.mark.skip
-async def X1_test_generate_server_credentials_secure(monkeypatch) -> None:
+@pytest.mark.asyncio
+async def test_generate_server_credentials_secure_1(monkeypatch) -> None:
     dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
     dummy_key = "-----BEGIN PRIVATE KEY-----\ndummy\n-----END PRIVATE KEY-----"
 
@@ -183,7 +183,7 @@ async def test_generate_server_credentials_failure(
 ###
 
 @pytest.mark.asyncio
-async def test_generate_server_credentials_secure(monkeypatch) -> None:
+async def test_generate_server_credentials_secure_2(monkeypatch) -> None:
     """Test generating server credentials in secure mode with proper mocking."""
     dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
     dummy_key = "-----BEGIN PRIVATE KEY-----\ndummy\n-----END PRIVATE KEY-----"
@@ -240,6 +240,52 @@ async def test_read_client_cert_absent(monkeypatch) -> None:
         mock_get.assert_any_call("PLUGIN_CLIENT_CERT")
 
 ###
+
+@pytest.mark.asyncio
+async def test_generate_server_credentials_secure_3(monkeypatch, mock_server_protocol, mock_server_handler) -> None:
+    """Test generating server credentials in secure mode."""
+    dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
+    dummy_key = "-----BEGIN PRIVATE KEY-----\ndummy\n-----END PRIVATE KEY-----"
+    
+    # Create a mock config object
+    class MockConfig:
+        def __init__(self):
+            self.values = {}
+            
+        def set(self, key, value):
+            self.values[key] = value
+            
+        def get(self, key, default=None):
+            return self.values.get(key, default)
+    
+    mock_config = MockConfig()
+    mock_config.set("PLUGIN_SERVER_CERT", dummy_cert)
+    mock_config.set("PLUGIN_SERVER_KEY", dummy_key)
+    mock_config.set("PLUGIN_CLIENT_CERT", "client_cert")
+    
+    # Create server with mock config
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_config,
+    )
+    
+    # Mock Certificate to avoid actual certificate operations
+    with mock.patch('pyvider.rpcplugin.crypto.certificate.Certificate') as mock_cert:
+        # Setup mock certificate instance
+        mock_cert_instance = mock.MagicMock()
+        mock_cert_instance.cert = dummy_cert
+        mock_cert_instance.key = dummy_key
+        mock_cert.return_value = mock_cert_instance
+        
+        # Test the method
+        creds = server._generate_server_credentials("client_cert")
+        
+        # Verify Certificate was called
+        mock_cert.assert_called_once()
+        
+        # Verify credentials were generated
+        assert creds is not None
 
 
 ### 🐍🏗🧪️
