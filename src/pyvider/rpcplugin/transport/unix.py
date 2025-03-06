@@ -50,7 +50,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     Fixed for Go-Python interoperability with specialized handling for:
     - Socket path normalization (supporting unix:, unix:/, unix:///)
-    - File permission handling (0777 for cross-process access)
+    - File permission handling (0770 for cross-process access)
     - Proper socket state verification and cleanup
     - Robust connection tracking and shutdown
     """
@@ -152,8 +152,8 @@ class UnixSocketTransport(RPCPluginTransport):
                 )
 
                 # Make socket world-writable for test environments
-                os.chmod(self.path, 0o777)
-                logger.debug(f"📞🕹✅ Set world-writable permissions (0777) on {self.path}")
+                os.chmod(self.path, 0o770)
+                logger.debug(f"📞🕹✅ Set world-writable permissions (0770) on {self.path}")
 
                 self._running = True
                 self.endpoint = self.path
@@ -253,7 +253,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 # Ensure socket file is removed with multiple attempts
                 for _ in range(3):
                     try:
-                        os.chmod(socket_path, 0o777)  # Set permissive permissions first
+                        os.chmod(socket_path, 0o770)  # Set permissive permissions first
                         os.unlink(socket_path)
                         logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
                         break
