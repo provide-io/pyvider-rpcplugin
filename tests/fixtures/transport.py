@@ -94,14 +94,6 @@ async def transport_cleanup():
     # Force cleanup of transport resources
     await asyncio.sleep(0.1)  # Allow any pending cleanups
 
-#@pytest_asyncio.fixture(scope="function")
-async def X1_unique_socket_path() -> str:
-    import uuid
-
-    # Always keep it under ~100 bytes to be safe
-    short_id = uuid.uuid4().hex[:8]
-    return f"/tmp/pyv_{short_id}.sock"
-
 @pytest_asyncio.fixture(scope="function")
 async def unique_socket_path() -> str:
     """Generate a unique socket path that won't conflict between tests."""
