@@ -306,9 +306,9 @@ class UnixSocketTransport(RPCPluginTransport):
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""
         async with self._lock:
-            if self._running:
-                logger.error(f"📞🕹❌ Socket {self.path} is already running")
-                raise TransportError(f"Socket {self.path} is already running")
+            # if self._running:
+            #     logger.error(f"📞🕹❌ Socket {self.path} is already running")
+            #     raise TransportError(f"Socket {self.path} is already running")
 
             # Check if socket file is in use
             socket_in_use = await self._check_socket_in_use()
