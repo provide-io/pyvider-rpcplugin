@@ -2,6 +2,7 @@
 
 import os
 import platform
+import uuid
 import pytest
 
 from pyvider.rpcplugin.server import RPCPluginServer
