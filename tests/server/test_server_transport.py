@@ -1,6 +1,7 @@
 # pyvider/rpcplugin/tests/server/test_server_transport.py
 
 import os
+import sys
 import platform
 from io import StringIO
 import uuid
