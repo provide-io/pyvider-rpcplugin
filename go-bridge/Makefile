@@ -10,6 +10,10 @@ ARCHITECTURES=amd64 arm64
 # Default target
 all: build
 
+# Build for current platform
+build:
+   @mkdir -p $(BUILD_DIR)
+   go build -o $(BUILD_DIR)/$(BINARY_NAME) .
 
 # Clean build artifacts
 clean:
@@ -24,13 +28,13 @@ release:
    @mkdir -p $(BUILD_DIR)/release
    @for platform in $(PLATFORMS); do \
       for arch in $(ARCHITECTURES); do \
-         if [ "$platform" = "windows" ]; then \
+         if [ "$$platform" = "windows" ]; then \
             EXTENSION=".exe"; \
          else \
             EXTENSION=""; \
          fi; \
-         echo "Building for $platform/$arch..."; \
-         GOOS=$platform GOARCH=$arch go build -o $(BUILD_DIR)/release/$(BINARY_NAME)_$(VERSION)_${platform}_${arch}${EXTENSION} .; \
+         echo "Building for $$platform/$$arch..."; \
+         GOOS=$$platform GOARCH=$$arch go build -o $(BUILD_DIR)/release/$(BINARY_NAME)_$(VERSION)_$${platform}_$${arch}$${EXTENSION} ./cmd/rpcplugin-bridge; \
       done; \
    done
    @echo "Release binaries built in $(BUILD_DIR)/release/"
