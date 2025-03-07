@@ -10,9 +10,6 @@ ARCHITECTURES=amd64 arm64
 # Default target
 all: build
 
-# Build for current platform
-build:
-   go build -o $(BUILD_DIR)/$(BINARY_NAME) .
 
 # Clean build artifacts
 clean:
