@@ -1,4 +1,16 @@
-# Pyvider RPC Plugin Bridge
+## Repository Structure
+
+```
+pyvider-rpcplugin/
+├── bridge/                # Go module directory
+│   ├── main.go            # Main entry point 
+│   ├── launcher.go        # Python launcher
+│   ├── proxy.go           # Proxy implementation
+│   ├── go.mod             # Go module definition
+│   ├── go.sum             # Go dependency checksums
+│   └── Makefile           # Build automation
+└── ... (other Python-related files)
+```# pyvider-rpcplugin-bridge
 
 A lightweight bridge that allows Terraform to communicate with Python-based Terraform providers.
 
@@ -28,15 +40,17 @@ make install
 make release
 ```
 
+Note: When installed, the binary is renamed to `terraform-provider-pyvider` in the Terraform plugin directory, as that's the name Terraform expects based on the provider source.
+
 ### Manual installation:
 
 ```bash
 # Build the binary
-go build -o bin/terraform-provider-pyvider ./cmd/rpcplugin-bridge
+go build -o bin/pyvider-rpcplugin-bridge .
 
-# Copy to Terraform plugin directory
-mkdir -p ~/.terraform.d/plugins/registry.terraform.io/local/pyvider/0.1.0/$(go env GOOS)_$(go env GOARCH)
-cp bin/terraform-provider-pyvider ~/.terraform.d/plugins/registry.terraform.io/local/pyvider/0.1.0/$(go env GOOS)_$(go env GOARCH)/
+# Copy to Terraform plugin directory (note the rename to what Terraform expects)
+mkdir -p ~/.terraform.d/plugins/registry.terraform.io/provide-io/pyvider/0.1.0/$(go env GOOS)_$(go env GOARCH)
+cp bin/pyvider-rpcplugin-bridge ~/.terraform.d/plugins/registry.terraform.io/provide-io/pyvider/0.1.0/$(go env GOOS)_$(go env GOARCH)/terraform-provider-pyvider
 ```
 
 ## Usage
@@ -47,7 +61,7 @@ Once installed, you can use it in your Terraform configuration:
 terraform {
   required_providers {
     pyvider = {
-      source = "local/pyvider"
+      source = "provide-io/pyvider"
       version = "0.1.0"
     }
   }
@@ -63,7 +77,7 @@ provider "pyvider" {
 The bridge can be configured with the following flags:
 
 ```
-Usage of terraform-provider-pyvider:
+Usage of pyvider-rpcplugin-bridge:
   -debug
         Enable debug logging
   -install-deps
