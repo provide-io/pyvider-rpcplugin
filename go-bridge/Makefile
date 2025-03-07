@@ -12,7 +12,7 @@ all: build
 
 # Build for current platform
 build:
-   @mkdir -p $(BUILD_DIR)
+   mkdir -p $(BUILD_DIR)
    go build -o $(BUILD_DIR)/$(BINARY_NAME) .
 
 # Clean build artifacts
