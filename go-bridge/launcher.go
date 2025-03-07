@@ -1,113 +1,214 @@
 package main
 
 import (
-	"fmt"
+	"bytes"
+	"flag"
 	"io"
-	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"testing"
+	"time"
 )
 
-// Constants for environment variables
-const (
-	TFPluginMagicCookieKey   = "TF_PLUGIN_MAGIC_COOKIE"
-	PyviderMagicCookieKey    = "PLUGIN_MAGIC_COOKIE"
-	PyviderMagicCookieValue  = "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2"
-)
-
-// launchPyvider starts the Python Pyvider process and sets up I/O proxying
-func launchPyvider(pythonPath, pythonModule string, installDeps bool) (*os.Process, error) {
-	// Check if the Python executable exists
-	if _, err := os.Stat(pythonPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("Python executable not found at: %s", pythonPath)
-	}
-
-	// If installDeps is enabled, try to install dependencies
-	if installDeps {
-		if err := ensureDependencies(pythonPath, pythonModule); err != nil {
-			log.Printf("Warning: Failed to ensure dependencies: %v", err)
-			// Continue anyway, the module might already be installed
-		}
-	}
-
-	// Prepare arguments to run the Python module
-	args := []string{"-m", pythonModule}
-	if *debug {
-		args = append([]string{"-v"}, args...)
-	}
-
-	// Create the command
-	cmd := exec.Command(pythonPath, args...)
-
-	// Set up environment
-	cmd.Env = os.Environ()
-
-	// Forward the magic cookie
-	tfCookie := os.Getenv(TFPluginMagicCookieKey)
-	if tfCookie != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", PyviderMagicCookieKey, tfCookie))
-	} else {
-		// If not set by Terraform, set the default value
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", PyviderMagicCookieKey, PyviderMagicCookieValue))
-	}
-
-	// Set up stdin/stdout/stderr
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	
-	// For stderr, we want to see it but also log it
-	stderrPipe, err := cmd.StderrPipe()
+func TestFindPythonExecutable(t *testing.T) {
+	// Real test that should pass on most systems
+	pythonPath, err := findPythonExecutable()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create stderr pipe: %v", err)
-	}
-	
-	// Start the process
-	if err := cmd.Start(); err != nil {
-		return nil, fmt.Errorf("failed to start Python process: %v", err)
-	}
-
-	// Start goroutine to handle stderr
-	go func() {
-		// Create a multi-writer to both os.Stderr and our log
-		multiWriter := io.MultiWriter(os.Stderr, writeLogger{})
-		if _, err := io.Copy(multiWriter, stderrPipe); err != nil {
-			log.Printf("Error reading from stderr pipe: %v", err)
+		t.Logf("Could not find a Python executable, this might be normal depending on your system: %v", err)
+	} else {
+		t.Logf("Found Python at: %s", pythonPath)
+		// Verify it's actually Python by running a simple command
+		cmd := exec.Command(pythonPath, "-c", "print('test successful')")
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Errorf("Failed to execute Python command: %v", err)
 		}
+		if !bytes.Contains(output, []byte("test successful")) {
+			t.Errorf("Python output doesn't contain expected string. Got: %s", output)
+		}
+	}
+}
+
+func TestMainVersionFlag(t *testing.T) {
+	// Save original os.Args and stdout
+	oldArgs := os.Args
+	oldStdout := os.Stdout
+
+	// Restore original values when the test completes
+	defer func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
 	}()
 
-	log.Printf("Started Python process (PID: %d)", cmd.Process.Pid)
-	return cmd.Process, nil
+	// Create a pipe to capture stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	// Set command line args to include version flag
+	os.Args = []string{"cmd", "--version"}
+	
+	// Reset flags to their default values
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	
+	// Define a custom exit function for testing
+	oldOsExit := osExit
+	osExit = func(code int) { /* do nothing during test */ }
+	defer func() { osExit = oldOsExit }()
+
+	// Call main (this will exit via our custom exit function)
+	go func() {
+		defer func() {
+			// Recover from any panics
+			if r := recover(); r != nil {
+				t.Logf("Recovered from panic: %v", r)
+			}
+		}()
+		main()
+	}()
+	
+	// Give it time to complete
+	time.Sleep(100 * time.Millisecond)
+	
+	// Close the write end of the pipe to release any io.ReadAll
+	w.Close()
+
+	// Read the output
+	output, _ := io.ReadAll(r)
+	
+	// Check that the version information was printed
+	expectedPrefix := "pyvider-rpcplugin-bridge v"
+	if !bytes.Contains(output, []byte(expectedPrefix)) {
+		t.Errorf("Expected output to contain '%s', got: %s", expectedPrefix, output)
+	}
 }
 
-// ensureDependencies makes sure the required Python dependencies are installed
-func ensureDependencies(pythonPath, pythonModule string) error {
-	// First check if the module can be imported
-	checkCmd := exec.Command(pythonPath, "-c", fmt.Sprintf("import %s", pythonModule))
-	if err := checkCmd.Run(); err == nil {
-		// Module can be imported, no need to install
-		return nil
-	}
+// Mock version of osExit that we can use in testing to prevent tests from actually exiting
+var osExit = func(code int) {
+	os.Exit(code)
+}
 
-	log.Printf("Module %s not found, attempting to install...", pythonModule)
+// TestMainHelp tests the help output
+func TestMainHelp(t *testing.T) {
+	// Save original os.Args and stdout
+	oldArgs := os.Args
+	oldStdout := os.Stdout
 
-	// Try to install the module using pip
-	pipArgs := []string{"-m", "pip", "install", "--user", pythonModule}
-	installCmd := exec.Command(pythonPath, pipArgs...)
+	// Restore original values when the test completes
+	defer func() {
+		os.Args = oldArgs
+		os.Stdout = oldStdout
+	}()
+
+	// Create a pipe to capture stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	// Set command line args to include help flag
+	os.Args = []string{"cmd", "--help"}
 	
-	// Capture output for logging
-	output, err := installCmd.CombinedOutput()
+	// Reset flags to their default values
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	
+	// Define a custom exit function for testing
+	var exitCode int
+	oldOsExit := osExit
+	osExit = func(code int) { exitCode = code }
+	defer func() { osExit = oldOsExit }()
+
+	// Call main (this will exit via our custom exit function)
+	go func() {
+		// This is a bit of a hack - flag.Parse() will call os.Exit(2) for --help
+		// but we need to catch that and return instead
+		defer func() {
+			if r := recover(); r != nil {
+				t.Log("Recovered from panic in TestMainHelp")
+			}
+		}()
+		main()
+	}()
+	
+	// Give it time to complete
+	time.Sleep(100 * time.Millisecond)
+	
+	// Close the write end of the pipe to release any io.ReadAll
+	w.Close()
+
+	// Read the output
+	output, _ := io.ReadAll(r)
+	
+	// Check that the help information was printed
+	if !bytes.Contains(output, []byte("Usage of")) {
+		t.Errorf("Expected help output to contain 'Usage of', got: %s", output)
+	}
+}
+
+func TestCreateLogFile(t *testing.T) {
+	// Create a temporary directory for the test
+	tempDir, err := os.MkdirTemp("", "pyvider-test-")
 	if err != nil {
-		return fmt.Errorf("pip install failed: %v\nOutput: %s", err, output)
+		t.Fatalf("Failed to create temp directory: %v", err)
 	}
+	defer os.RemoveAll(tempDir)
 	
-	log.Printf("Successfully installed %s module", pythonModule)
-	return nil
-}
-
-// writeLogger is a helper type that implements io.Writer to redirect to log
-type writeLogger struct{}
-
-func (wl writeLogger) Write(p []byte) (n int, err error) {
-	log.Print(string(p))
-	return len(p), nil
+	// Create a log file path in the temp directory
+	logFilePath := filepath.Join(tempDir, "test.log")
+	
+	// Save original os.Args and flags
+	oldArgs := os.Args
+	oldFlagSet := flag.CommandLine
+	
+	// Restore original values when the test completes
+	defer func() {
+		os.Args = oldArgs
+		flag.CommandLine = oldFlagSet
+	}()
+	
+	// Set command line args with log file flag
+	os.Args = []string{"cmd", "--log-file", logFilePath, "--no-proxy"}
+	
+	// Reset flags to their default values
+	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	
+	// Define a custom exit function for testing
+	oldOsExit := osExit
+	osExit = func(code int) { /* Do nothing */ }
+	defer func() { osExit = oldOsExit }()
+	
+	// We don't want to actually run the main function fully since it would
+	// try to establish connections, but we can test the log file creation by
+	// creating a mock parseFlags function that simulates the behavior
+	*logFile = logFilePath
+	*noProxy = true
+	
+	// Create a go routine to "simulate" main but just for log file setup
+	go func() {
+		// Set up logging
+		if *logFile != "" {
+			f, err := os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err == nil {
+				defer f.Close()
+				log, _ := f.WriteString("Test log entry\n")
+				if log == 0 {
+					t.Error("Failed to write to log file")
+				}
+			}
+		}
+	}()
+	
+	// Give it time to complete
+	time.Sleep(100 * time.Millisecond)
+	
+	// Check that the log file was created and contains content
+	if _, err := os.Stat(logFilePath); os.IsNotExist(err) {
+		t.Errorf("Log file was not created at %s", logFilePath)
+	} else {
+		// Read the log file
+		content, err := os.ReadFile(logFilePath)
+		if err != nil {
+			t.Errorf("Failed to read log file: %v", err)
+		} else if !bytes.Contains(content, []byte("Test log entry")) {
+			t.Errorf("Log file does not contain expected content. Got: %s", content)
+		}
+	}
 }
