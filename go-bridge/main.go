@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -26,6 +26,7 @@ var (
 // Version information
 const (
 	BridgeVersion = "0.1.0"
+	BridgeName    = "pyvider-rpcplugin-bridge"
 )
 
 func main() {
@@ -45,11 +46,11 @@ func main() {
 
 	// Show version and exit if requested
 	if *version {
-		fmt.Printf("RPC Plugin Bridge v%s\n", BridgeVersion)
+		fmt.Printf("%s v%s\n", BridgeName, BridgeVersion)
 		os.Exit(0)
 	}
 
-	log.Printf("RPC Plugin Bridge v%s starting...", BridgeVersion)
+	log.Printf("%s v%s starting...", BridgeName, BridgeVersion)
 
 	// Automatically find Python if not specified
 	pythonPath := *pythonExecutable
