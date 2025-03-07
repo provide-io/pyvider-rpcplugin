@@ -13,7 +13,7 @@ all: build
 # Build for current platform
 build:
 	@mkdir -p $(BUILD_DIR)
-	go build -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/rpcplugin-bridge
+	go build -o $(BUILD_DIR)/$(BINARY_NAME) .
 
 # Clean build artifacts
 clean:
