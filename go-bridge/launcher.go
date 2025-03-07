@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -7,9 +6,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 // Constants for environment variables
