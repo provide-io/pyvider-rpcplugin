@@ -51,12 +51,12 @@ debug: build
 
 help:
    @echo "Available targets:"
-   @echo "  build    - Build for current platform"
-   @echo "  clean    - Remove build artifacts"
-   @echo "  test     - Run tests"
+   @echo "  build  - Build for current platform"
+   @echo "  clean  - Remove build artifacts"
+   @echo "  test    - Run tests"
    @echo "  release  - Build release binaries for all platforms"
    @echo "  install  - Install provider in Terraform plugin directory"
-   @echo "  debug    - Run with debugging enabled"
+   @echo "  debug  - Run with debugging enabled"
    @echo ""
    @echo "Variables:"
    @echo "  VERSION  - Provider version (default: $(VERSION))"
