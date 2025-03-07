@@ -95,7 +95,14 @@ func main() {
 	// Set up another go routine to handle process termination
 	waitChan := make(chan error, 1)
 	go func() {
-		waitChan <- proc.Wait()
+		ps, err := proc.Wait()
+		if err != nil {
+			waitChan <- err
+		} else if !ps.Success() {
+			waitChan <- fmt.Errorf("process exited with code %d", ps.ExitCode())
+		} else {
+			waitChan <- nil
+		}
 	}()
 
 	// Wait for completion
@@ -105,8 +112,8 @@ func main() {
 	// Check exit status
 	if err != nil {
 		log.Printf("Python process exited with error: %v", err)
-		if exitErr, ok := err.(*os.ProcessState); ok {
-			os.Exit(exitErr.ExitCode())
+		if exiterr, ok := err.(*exec.ExitError); ok {
+			os.Exit(exiterr.ExitCode())
 		}
 		os.Exit(1)
 	}
