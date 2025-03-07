@@ -1,7 +1,7 @@
 .PHONY: build clean test install
 
 # Variables
-BINARY_NAME=terraform-provider-pyvider
+BINARY_NAME=pyvider-rpcplugin-bridge
 BUILD_DIR=bin
 VERSION ?= 0.1.0
 PLATFORMS=darwin linux windows
@@ -28,22 +28,22 @@ release:
 	@mkdir -p $(BUILD_DIR)/release
 	@for platform in $(PLATFORMS); do \
 		for arch in $(ARCHITECTURES); do \
-			if [ "$$platform" = "windows" ]; then \
+			if [ "$platform" = "windows" ]; then \
 				EXTENSION=".exe"; \
 			else \
 				EXTENSION=""; \
 			fi; \
-			echo "Building for $$platform/$$arch..."; \
-			GOOS=$$platform GOARCH=$$arch go build -o $(BUILD_DIR)/release/$(BINARY_NAME)_$(VERSION)_$${platform}_$${arch}$${EXTENSION} ./cmd/rpcplugin-bridge; \
+			echo "Building for $platform/$arch..."; \
+			GOOS=$platform GOARCH=$arch go build -o $(BUILD_DIR)/release/$(BINARY_NAME)_$(VERSION)_${platform}_${arch}${EXTENSION} .; \
 		done; \
 	done
 	@echo "Release binaries built in $(BUILD_DIR)/release/"
 
 # Install in Terraform plugin directory
 install: build
-	@mkdir -p ~/.terraform.d/plugins/registry.terraform.io/local/pyvider/$(VERSION)/$$(go env GOOS)_$$(go env GOARCH)
-	@cp $(BUILD_DIR)/$(BINARY_NAME) ~/.terraform.d/plugins/registry.terraform.io/local/pyvider/$(VERSION)/$$(go env GOOS)_$$(go env GOARCH)/
-	@echo "Provider installed to ~/.terraform.d/plugins/registry.terraform.io/local/pyvider/$(VERSION)/$$(go env GOOS)_$$(go env GOARCH)/"
+	@mkdir -p ~/.terraform.d/plugins/registry.terraform.io/provide-io/pyvider/$(VERSION)/$(go env GOOS)_$(go env GOARCH)
+	@cp $(BUILD_DIR)/$(BINARY_NAME) ~/.terraform.d/plugins/registry.terraform.io/provide-io/pyvider/$(VERSION)/$(go env GOOS)_$(go env GOARCH)/terraform-provider-pyvider
+	@echo "Provider installed to ~/.terraform.d/plugins/registry.terraform.io/provide-io/pyvider/$(VERSION)/$(go env GOOS)_$(go env GOARCH)/"
 
 # Run with debugging enabled
 debug: build
