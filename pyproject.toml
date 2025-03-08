@@ -175,3 +175,7 @@ source_directories = ["src"]
 exclude = ["tests/*", "**/*pb2*.py"]
 strict = true
 
+[tool.setuptools_scm]
+write_to = "src/pyvider/version.py"
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
