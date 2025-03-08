@@ -12,12 +12,12 @@ import (
 	"time"
 )
 
-// Launches the Python Pyvider process and sets up bidirectional I/O
-func launchPyvider(pythonPath string, args []string, env []string, bufferSize int64) (*os.Process, error) {
-	log.Printf("Launching Python process: %s %v", pythonPath, args)
+// Launches the Python Pyvider process using uv and sets up bidirectional I/O
+func launchPyvider(uvPath string, args []string, env []string, bufferSize int64) (*os.Process, error) {
+	log.Printf("Launching Pyvider with uv: %s %v", uvPath, args)
 	
 	// Create the command
-	cmd := exec.Command(pythonPath, args...)
+	cmd := exec.Command(uvPath, args...)
 	
 	// Set environment variables
 	cmd.Env = env
@@ -53,7 +53,7 @@ func launchPyvider(pythonPath string, args []string, env []string, bufferSize in
 	}
 	
 	process := cmd.Process
-	log.Printf("Started Python process (PID: %d)", process.Pid)
+	log.Printf("Started Python process via uv (PID: %d)", process.Pid)
 	
 	// Start goroutines for proxying I/O
 	var wg sync.WaitGroup
