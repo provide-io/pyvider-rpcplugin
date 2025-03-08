@@ -77,7 +77,7 @@ test = "(cd examples/kvprobo/go-rpc; ./test.sh)"
 
 [tool.hatch.envs.docker.scripts]
 build = "docker build -t pyvider-rpcplugin ."
-run = "docker run --rm pyvider-rpcplugin"
+run = "docker run --rm pyvider-rpcplugin {args}"
 
 [tool.hatch.metadata.targets.wheel]
 packages = [
