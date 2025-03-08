@@ -9,7 +9,7 @@ eval "$(uv venv)"
 run_tests() {
     echo "Running Pyvider tests..."
     uv sync --all-groups --dev
-    uv run pytest -n auto --cov=pyvider.rpcplugin $@
+    uv run pytest -n auto --cov=pyvider.rpcplugin --cov-teport=term-missing
 }
 
 # Function to build the package
@@ -22,7 +22,7 @@ run_build() {
 # Main entrypoint logic
 case "$1" in
 test)
-    run_tests $@
+    run_tests
     ;;
 build)
     run_build
