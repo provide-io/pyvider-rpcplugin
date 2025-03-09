@@ -8,13 +8,6 @@ import (
 	"os/exec"
 )
 
-// Constants for environment variables
-const (
-	TFPluginMagicCookieKey   = "TF_PLUGIN_MAGIC_COOKIE"
-	PyviderMagicCookieKey    = "PLUGIN_MAGIC_COOKIE"
-	PyviderMagicCookieValue  = "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2"
-)
-
 // launchPyvider starts the Python Pyvider process and sets up I/O proxying
 func launchPyvider(pythonPath, pythonModule string, installDeps bool) (*os.Process, error) {
 	// Check if the Python executable exists
@@ -42,14 +35,11 @@ func launchPyvider(pythonPath, pythonModule string, installDeps bool) (*os.Proce
 	// Set up environment
 	cmd.Env = os.Environ()
 
-	// Forward the magic cookie
-	tfCookie := os.Getenv(TFPluginMagicCookieKey)
-	if tfCookie != "" {
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", PyviderMagicCookieKey, tfCookie))
-	} else {
-		// If not set by Terraform, set the default value
-		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", PyviderMagicCookieKey, PyviderMagicCookieValue))
-	}
+// WITH THIS - pass environment through unchanged
+cmd.Env = os.Environ()
+
+// Only add bridge-specific variables
+cmd.Env = append(cmd.Env, "PYVIDER_BRIDGE_VERSION="+BridgeVersion)
 
 	// Set up stdin/stdout/stderr
 	cmd.Stdin = os.Stdin
