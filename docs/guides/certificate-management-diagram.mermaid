@@ -1,0 +1,56 @@
+classDiagram
+    class CertificateBase {
+        <<immutable>>
+        +subject x509.Name
+        +issuer x509.Name
+        +public_key PublicKey
+        +not_valid_before datetime
+        +not_valid_after datetime
+        +serial_number int
+        +create(config) tuple~Self, KeyPair~
+    }
+    
+    class Certificate {
+        +cert str
+        +key str
+        -_base CertificateBase
+        -_private_key KeyPair
+        -_cert x509.Certificate
+        -_trust_chain list~Certificate~
+        +is_valid bool
+        +is_ca bool
+        +public_key PublicKey
+        +verify_trust(other_cert) bool
+        +display_cert_details() None
+        +display_key_details() None
+    }
+    
+    class CertificateConfig {
+        <<TypedDict>>
+        +common_name str
+        +organization str
+        +alt_names list~str~
+        +key_type KeyType
+        +validity_days? int
+        +key_size? int
+        +curve? CurveType
+    }
+    
+    class KeyType {
+        <<StrEnum>>
+        RSA
+        ECDSA
+    }
+    
+    class CurveType {
+        <<StrEnum>>
+        SECP256R1
+        SECP384R1
+        SECP521R1
+    }
+    
+    Certificate o-- CertificateBase : contains
+    CertificateBase ..> CertificateConfig : creates from
+    CertificateConfig --> KeyType : references
+    CertificateConfig --> CurveType : references
+    Certificate o-- Certificate : trust chain

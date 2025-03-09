@@ -1,0 +1,44 @@
+classDiagram
+    class RPCPluginProtocol {
+        <<abstract>>
+        +get_grpc_descriptors() tuple
+        +add_to_server(server, handler) None
+    }
+    
+    class GRPCBrokerService {
+        -_subchannels dict
+        +StartStream(request_iterator, context) AsyncGenerator
+    }
+    
+    class GRPCControllerService {
+        -_shutdown_event AsyncEvent
+        -_stdio_service GRPCStdioService
+        +Shutdown(request, context) Empty
+        -_delayed_shutdown() None
+    }
+    
+    class GRPCStdioService {
+        -_message_queue AsyncQueue
+        -_shutdown bool
+        +StreamStdio(request, context) AsyncGenerator
+        +put_line(line, is_stderr) None
+        +shutdown() None
+    }
+    
+    class SubchannelConnection {
+        +conn_id int
+        +address str
+        +is_open bool
+        +open() None
+        +close() None
+    }
+    
+    RPCPluginProtocol <|-- CustomProtocolImpl
+    
+    GRPCBrokerService o-- SubchannelConnection : manages
+    GRPCControllerService --> GRPCStdioService : references
+    
+    note for RPCPluginProtocol "Base class for all RPC protocols"
+    note for GRPCBrokerService "Handles connection multiplexing"
+    note for GRPCControllerService "Controls plugin lifecycle"
+    note for GRPCStdioService "Streams stdout/stderr"
