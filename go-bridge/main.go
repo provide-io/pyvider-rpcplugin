@@ -1,86 +1,257 @@
-// Main entry point for the RPC Plugin Bridge
+// The pyvider-rpcplugin-bridge acts as a connector between Terraform and Python-based providers
 package main
 
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
-)
 
-var (
-	// Command line flags
-	debug             = flag.Bool("debug", false, "Enable debug logging")
-	pythonExecutable  = flag.String("python", "", "Path to Python executable (default: auto-detect)")
-	pythonModule      = flag.String("module", "pyvider", "Python module to run")
-	installDeps       = flag.Bool("install-deps", true, "Automatically install dependencies if missing")
-	logFile           = flag.String("log-file", "", "Log file path (default: stderr only)")
-	version           = flag.Bool("version", false, "Show version information")
-	noProxy           = flag.Bool("no-proxy", false, "Skip proxying to Python (debugging only)")
+	"gopkg.in/yaml.v3"
 )
 
 // Version information
 const (
-	BridgeVersion = "0.1.0"
+	BridgeVersion = "0.2.0"
 	BridgeName    = "pyvider-rpcplugin-bridge"
 )
+
+// BridgeConfig represents the configuration structure
+type BridgeConfig struct {
+	Environment map[string]string `yaml:"environment"`
+	Python      struct {
+		Args string `yaml:"args"`
+	} `yaml:"python"`
+	Bridge struct {
+		BufferSize   int64  `yaml:"buffer_size"`
+		LogFile      string `yaml:"log_file"`
+		DebugEnabled bool   `yaml:"debug_enabled"`
+	} `yaml:"bridge"`
+}
+
+var (
+	// Command line flags
+	debug      = flag.Bool("debug", false, "Enable debug logging")
+	logFile    = flag.String("log-file", "", "Log file path (default: stderr only)")
+	version    = flag.Bool("version", false, "Show version information")
+	configFile = flag.String("config", "", "Path to configuration file")
+	bufferSize = flag.Int64("buffer-size", 4*1024*1024, "Buffer size for I/O operations (bytes)")
+	
+	// Configuration
+	config BridgeConfig
+	
+	// Path to the executable directory - will be set during initialization
+	executableDir string
+)
+
+// Get the directory of the current executable
+func getExecutableDir() (string, error) {
+	execPath, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %w", err)
+	}
+	return filepath.Dir(execPath), nil
+}
+
+// Initialize logging to file if specified
+func setupLogging() {
+	if config.Bridge.LogFile != "" {
+		// If log file path is relative, make it relative to executable directory
+		if !filepath.IsAbs(config.Bridge.LogFile) {
+			config.Bridge.LogFile = filepath.Join(executableDir, config.Bridge.LogFile)
+		}
+		
+		f, err := os.OpenFile(config.Bridge.LogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			log.Printf("WARNING: Failed to open log file: %v, falling back to stderr", err)
+		} else {
+			log.SetOutput(f)
+		}
+	}
+
+	// Set debug level if configured
+	if config.Bridge.DebugEnabled {
+		*debug = true
+	}
+}
+
+// Load configuration from file
+func loadConfig(path string) error {
+	// Default configuration
+	config = BridgeConfig{
+		Environment: make(map[string]string),
+		Bridge: struct {
+			BufferSize   int64  "yaml:\"buffer_size\""
+			LogFile      string "yaml:\"log_file\""
+			DebugEnabled bool   "yaml:\"debug_enabled\""
+		}{
+			BufferSize: 4 * 1024 * 1024, // 4MB default
+		},
+	}
+
+	// If no config file specified, try default locations
+	if path == "" {
+		// First check in the same directory as the executable
+		execDirConfig := filepath.Join(executableDir, "pyvider.yaml")
+		if _, err := os.Stat(execDirConfig); err == nil {
+			path = execDirConfig
+			log.Printf("Found configuration file at %s", path)
+		}
+		
+		// If not found, check current working directory
+		if path == "" {
+			if _, err := os.Stat("pyvider.yaml"); err == nil {
+				path = "pyvider.yaml"
+				log.Printf("Found configuration file at %s", path)
+			}
+		}
+	}
+
+	// Load config file if it exists
+	if path != "" {
+		data, err := ioutil.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read config file: %w", err)
+		}
+
+		if err := yaml.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("failed to parse config file: %w", err)
+		}
+		
+		log.Printf("Loaded configuration from %s", path)
+	}
+
+	// Override with command line flags
+	if *logFile != "" {
+		config.Bridge.LogFile = *logFile
+	}
+	if *debug {
+		config.Bridge.DebugEnabled = true
+	}
+	if *bufferSize != 0 {
+		config.Bridge.BufferSize = *bufferSize
+	}
+
+	return nil
+}
+
+// Set up the Python environment including PYTHONPATH
+func setupPythonEnv() map[string]string {
+	env := make(map[string]string)
+	
+	// Add all current environment variables
+	for _, envPair := range os.Environ() {
+		parts := strings.SplitN(envPair, "=", 2)
+		if len(parts) == 2 {
+			env[parts[0]] = parts[1]
+		}
+	}
+	
+	// Add configuration environment variables
+	for key, value := range config.Environment {
+		env[key] = value
+	}
+	
+	// Ensure Python doesn't buffer output
+	env["PYTHONUNBUFFERED"] = "1"
+	
+	// Add our version for debugging
+	env["PYVIDER_BRIDGE_VERSION"] = BridgeVersion
+	
+	// Special handling for PYTHONPATH - add executable directory
+	if pyPath, exists := env["PYTHONPATH"]; exists {
+		sep := string(os.PathListSeparator)
+		env["PYTHONPATH"] = executableDir + sep + pyPath
+	} else {
+		env["PYTHONPATH"] = executableDir
+	}
+	
+	// Debug flag
+	if config.Bridge.DebugEnabled {
+		env["PYVIDER_DEBUG"] = "1"
+	}
+	
+	return env
+}
 
 func main() {
 	// Parse command line flags
 	flag.Parse()
-
-	// Setup logging
-	if *logFile != "" {
-		f, err := os.OpenFile(*logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			log.Printf("Warning: Failed to open log file: %v, falling back to stderr", err)
-		} else {
-			defer f.Close()
-			log.SetOutput(f)
-		}
-	}
 
 	// Show version and exit if requested
 	if *version {
 		fmt.Printf("%s v%s\n", BridgeName, BridgeVersion)
 		os.Exit(0)
 	}
-
-	log.Printf("%s v%s starting...", BridgeName, BridgeVersion)
-
-	// Automatically find Python if not specified
-	pythonPath := *pythonExecutable
-	if pythonPath == "" {
-		var err error
-		pythonPath, err = findPythonExecutable()
-		if err != nil {
-			log.Fatalf("Failed to find Python executable: %v", err)
-		}
+	
+	// Get the executable directory
+	var err error
+	executableDir, err = getExecutableDir()
+	if err != nil {
+		log.Fatalf("Failed to determine executable directory: %v", err)
 	}
-
-	log.Printf("Using Python executable: %s", pythonPath)
-
-	// Set up signal handling before starting processes
+	
+	// Load configuration
+	if err := loadConfig(*configFile); err != nil {
+		log.Fatalf("Configuration error: %v", err)
+	}
+	
+	// Set up logging
+	setupLogging()
+	
+	log.Printf("%s v%s starting from %s", BridgeName, BridgeVersion, executableDir)
+	
+	// Set up environment variables
+	env := setupPythonEnv()
+	
+	// Convert env map to slice for exec.Command
+	envSlice := make([]string, 0, len(env))
+	for key, value := range env {
+		envSlice = append(envSlice, key+"="+value)
+	}
+	
+	// Set up signal handling for graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	// Skip actually proxying for debugging
-	if *noProxy {
-		log.Printf("Skipping proxy mode (--no-proxy flag set)")
-		return
+	
+	// Find uv executable
+	uvPath, err := exec.LookPath("uv")
+	if err != nil {
+		log.Fatalf("Failed to find 'uv' executable in PATH: %v", err)
 	}
-
+	log.Printf("Using uv executable: %s", uvPath)
+	
+	// Prepare Python command arguments
+	pythonArgs := []string{"run", "python3", "-mpyvider"}
+	
+	// Add any additional args from config
+	if config.Python.Args != "" {
+		pythonArgs = append(pythonArgs, strings.Fields(config.Python.Args)...)
+	}
+	
+	// Add -v flag for Python verbosity if debug is enabled
+	if config.Bridge.DebugEnabled {
+		// Insert -v before -mpyvider
+		pythonArgs = []string{"run", "python3", "-v", "-mpyvider"}
+		if config.Python.Args != "" {
+			pythonArgs = append(pythonArgs, strings.Fields(config.Python.Args)...)
+		}
+	}
+	
 	// Start the Python process
-	proc, err := launchPyvider(pythonPath, *pythonModule, *installDeps)
+	proc, err := launchPyvider(uvPath, pythonArgs, envSlice, config.Bridge.BufferSize)
 	if err != nil {
 		log.Fatalf("Failed to launch Python process: %v", err)
 	}
-
-	// Set up a go routine to handle signals
+	
+	// Set up a goroutine to handle signals
 	go func() {
 		sig := <-sigChan
 		log.Printf("Received signal: %v, forwarding to child process", sig)
@@ -91,24 +262,11 @@ func main() {
 			proc.Kill() // Force kill if forwarding fails
 		}
 	}()
-
-	// Set up another go routine to handle process termination
-	waitChan := make(chan error, 1)
-	go func() {
-		ps, err := proc.Wait()
-		if err != nil {
-			waitChan <- err
-		} else if !ps.Success() {
-			waitChan <- fmt.Errorf("process exited with code %d", ps.ExitCode())
-		} else {
-			waitChan <- nil
-		}
-	}()
-
-	// Wait for completion
-	err = <-waitChan
-	signal.Stop(sigChan)
-
+	
+	// Wait for process completion
+	ps, err := proc.Wait()
+	signal.Stop(sigChan) // Stop signal handling
+	
 	// Check exit status
 	if err != nil {
 		log.Printf("Python process exited with error: %v", err)
@@ -117,26 +275,18 @@ func main() {
 		}
 		os.Exit(1)
 	}
-
-	log.Printf("Python process completed successfully")
-}
-
-// findPythonExecutable attempts to find a Python executable in the PATH
-func findPythonExecutable() (string, error) {
-	// Try Python 3 first, then fall back to just 'python'
-	candidates := []string{"python3", "python", "python3.12", "python3.11", "python3.10", "python3.9", "python3.8"}
 	
-	for _, candidate := range candidates {
-		path, err := exec.LookPath(candidate)
-		if err == nil {
-			// Verify it's Python 3
-			cmd := exec.Command(path, "--version")
-			output, err := cmd.CombinedOutput()
-			if err == nil && strings.Contains(string(output), "Python 3") {
-				return path, nil
+	if !ps.Success() {
+		exitCode := 1
+		if runtime.GOOS != "windows" {
+			// Extract exit code on Unix-like systems
+			if status, ok := ps.Sys().(syscall.WaitStatus); ok {
+				exitCode = status.ExitStatus()
 			}
 		}
+		log.Printf("Python process exited with non-zero status: %d", exitCode)
+		os.Exit(exitCode)
 	}
 	
-	return "", fmt.Errorf("no suitable Python 3 executable found in PATH")
+	log.Printf("Python process completed successfully")
 }

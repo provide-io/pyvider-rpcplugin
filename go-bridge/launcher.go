@@ -1,100 +1,174 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
+	"sync"
+	"time"
 )
 
-// launchPyvider starts the Python Pyvider process and sets up I/O proxying
-func launchPyvider(pythonPath, pythonModule string, installDeps bool) (*os.Process, error) {
-	// Check if the Python executable exists
-	if _, err := os.Stat(pythonPath); os.IsNotExist(err) {
-		return nil, fmt.Errorf("Python executable not found at: %s", pythonPath)
-	}
-
-	// If installDeps is enabled, try to install dependencies
-	if installDeps {
-		if err := ensureDependencies(pythonPath, pythonModule); err != nil {
-			log.Printf("Warning: Failed to ensure dependencies: %v", err)
-			// Continue anyway, the module might already be installed
-		}
-	}
-
-	// Prepare arguments to run the Python module
-	args := []string{"-m", pythonModule}
-	if *debug {
-		args = append([]string{"-v"}, args...)
-	}
-
-	// Create the command
-	cmd := exec.Command(pythonPath, args...)
-
-	// Set up environment
-	cmd.Env = os.Environ()
-
-// WITH THIS - pass environment through unchanged
-cmd.Env = os.Environ()
-
-// Only add bridge-specific variables
-cmd.Env = append(cmd.Env, "PYVIDER_BRIDGE_VERSION="+BridgeVersion)
-
-	// Set up stdin/stdout/stderr
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
+// Launches the Python Pyvider process using uv and sets up bidirectional I/O
+func launchPyvider(uvPath string, args []string, env []string, bufferSize int64) (*os.Process, error) {
+	log.Printf("Launching Pyvider with uv: %s %v", uvPath, args)
 	
-	// For stderr, we want to see it but also log it
-	stderrPipe, err := cmd.StderrPipe()
+	// Create the command
+	cmd := exec.Command(uvPath, args...)
+	
+	// Set environment variables
+	cmd.Env = env
+	
+	// Set up pipes for stdin/stdout/stderr
+	stdin, err := cmd.StdinPipe()
 	if err != nil {
+		return nil, fmt.Errorf("failed to create stdin pipe: %v", err)
+	}
+	
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		stdin.Close()
+		return nil, fmt.Errorf("failed to create stdout pipe: %v", err)
+	}
+	
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		stdin.Close()
+		stdout.Close()
 		return nil, fmt.Errorf("failed to create stderr pipe: %v", err)
 	}
 	
+	// Create a buffer to capture initial stderr output for debugging
+	stderrBuffer := bytes.NewBuffer(nil)
+	
 	// Start the process
 	if err := cmd.Start(); err != nil {
+		stdin.Close()
+		stdout.Close()
+		stderr.Close()
 		return nil, fmt.Errorf("failed to start Python process: %v", err)
 	}
-
-	// Start goroutine to handle stderr
+	
+	process := cmd.Process
+	log.Printf("Started Python process via uv (PID: %d)", process.Pid)
+	
+	// Start goroutines for proxying I/O
+	var wg sync.WaitGroup
+	
+	// Capture stderr to both our log and pass through to Terraform
+	wg.Add(1)
 	go func() {
-		// Create a multi-writer to both os.Stderr and our log
+		defer wg.Done()
+		
+		// Use a tee reader to capture stderr to our buffer while also forwarding it
+		teeReader := io.TeeReader(stderr, stderrBuffer)
+		
+		// Create a multi-writer to send to both stderr and our log
 		multiWriter := io.MultiWriter(os.Stderr, writeLogger{})
-		if _, err := io.Copy(multiWriter, stderrPipe); err != nil {
-			log.Printf("Error reading from stderr pipe: %v", err)
+		
+		// Use the optimized buffer size
+		buf := make([]byte, bufferSize)
+		
+		// Copy with our larger buffer
+		_, err := io.CopyBuffer(multiWriter, teeReader, buf)
+		if err != nil && err != io.EOF {
+			log.Printf("Error reading from stderr: %v", err)
 		}
 	}()
-
-	log.Printf("Started Python process (PID: %d)", cmd.Process.Pid)
-	return cmd.Process, nil
+	
+	// Forward stdin from Terraform to Pyvider
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer stdin.Close()
+		
+		// Use the optimized buffer size for large Terraform state
+		buf := make([]byte, bufferSize)
+		
+		// Copy with timeout protection to avoid deadlocks
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		
+		go func() {
+			_, err := io.CopyBuffer(stdin, os.Stdin, buf)
+			if err != nil && err != io.EOF {
+				log.Printf("Error writing to stdin: %v", err)
+			}
+			cancel() // Signal completion
+		}()
+		
+		// Wait for either completion or process termination
+		<-ctx.Done()
+	}()
+	
+	// Forward stdout from Pyvider to Terraform
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		
+		// Use the optimized buffer size for large state files
+		buf := make([]byte, bufferSize)
+		
+		// Create a context with timeout for the first line (handshake)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		
+		// Check for handshake with a deadline
+		handshakeComplete := make(chan bool, 1)
+		
+		// Monitor the first line of output separately
+		go func() {
+			// Read just enough for the handshake
+			handshakeBuf := make([]byte, 1024)
+			n, err := stdout.Read(handshakeBuf)
+			if err != nil {
+				log.Printf("Error reading handshake: %v", err)
+				handshakeComplete <- false
+				return
+			}
+			
+			// Write the handshake to stdout
+			if _, err := os.Stdout.Write(handshakeBuf[:n]); err != nil {
+				log.Printf("Error writing handshake to stdout: %v", err)
+			}
+			
+			// Signal handshake completion
+			handshakeComplete <- true
+		}()
+		
+		// Wait for handshake with timeout
+		select {
+		case success := <-handshakeComplete:
+			if !success {
+				// If handshake failed, dump the stderr buffer for debugging
+				log.Printf("Handshake failed, stderr contents: %s", stderrBuffer.String())
+			} else {
+				log.Printf("Handshake received successfully, continuing stream")
+			}
+		case <-ctx.Done():
+			// Handshake timed out
+			log.Printf("Handshake timed out, stderr contents: %s", stderrBuffer.String())
+			process.Kill()
+			return
+		}
+		
+		// Continue streaming the remaining stdout
+		_, err := io.CopyBuffer(os.Stdout, stdout, buf)
+		if err != nil && err != io.EOF {
+			log.Printf("Error forwarding stdout: %v", err)
+		}
+	}()
+	
+	// Don't wait for the goroutines to finish - they'll continue running
+	// as long as the process is alive
+	
+	return process, nil
 }
 
-// ensureDependencies makes sure the required Python dependencies are installed
-func ensureDependencies(pythonPath, pythonModule string) error {
-	// First check if the module can be imported
-	checkCmd := exec.Command(pythonPath, "-c", fmt.Sprintf("import %s", pythonModule))
-	if err := checkCmd.Run(); err == nil {
-		// Module can be imported, no need to install
-		return nil
-	}
-
-	log.Printf("Module %s not found, attempting to install...", pythonModule)
-
-	// Try to install the module using pip
-	pipArgs := []string{"-m", "pip", "install", "--user", pythonModule}
-	installCmd := exec.Command(pythonPath, pipArgs...)
-	
-	// Capture output for logging
-	output, err := installCmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("pip install failed: %v\nOutput: %s", err, output)
-	}
-	
-	log.Printf("Successfully installed %s module", pythonModule)
-	return nil
-}
-
-// writeLogger is a helper type that implements io.Writer to redirect to log
+// writeLogger implements io.Writer to forward messages to the log
 type writeLogger struct{}
 
 func (wl writeLogger) Write(p []byte) (n int, err error) {
