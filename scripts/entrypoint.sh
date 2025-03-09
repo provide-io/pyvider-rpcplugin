@@ -9,7 +9,7 @@ eval "$(uv venv)"
 run_tests() {
     echo "Running Pyvider tests..."
     uv sync --all-groups --dev
-    uv run pytest -n auto --cov=pyvider.rpcplugin
+    uv run pytest -n auto --cov=pyvider.rpcplugin --cov-report=term-missing
 }
 
 # Function to build the package

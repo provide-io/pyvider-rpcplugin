@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# TODO: Make sure to notify if what is set is what's different than the default.
-
 # Base configuration
 BASE_PATH=$(pwd)
 
