@@ -135,13 +135,13 @@ alias rpcenv-refresh=" \
 "
 alias show-dupdefs="grep -r 'def ' * | sed -E 's/.*def //g;s/\(.*//g' |sort -h | uniq -c | sort -d | grep test | grep -v '1 '"
 
-alias py-kv-client="(cd ${BASE_PATH}/examples/kvprobo; ./py_kv_client.py)"
-alias py-kv-server="(cd ${BASE_PATH}/examples/kvprobo; ./py_kv_server.py)"
+alias py-kv-client="(cd ${BASE_PATH}/examples/kvproto; ./py_kv_client.py)"
+alias py-kv-server="(cd ${BASE_PATH}/examples/kvproto; ./py_kv_server.py)"
 
-alias go-kv-client="${BASE_PATH}/examples/kvprobo/go-plugin/bin/kv-go-client"
-alias go-kv-server="${BASE_PATH}/examples/kvprobo/go-plugin/bin/kv-go-server"
+alias go-kv-client="${BASE_PATH}/examples/kvproto/go-plugin/bin/kv-go-client"
+alias go-kv-server="${BASE_PATH}/examples/kvproto/go-plugin/bin/kv-go-server"
 
-PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/examples/kvprobo/py_kv_server.py"}
+PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${BASE_PATH}/examples/kvproto/py_kv_server.py"}
 
 export PLUGIN_SERVER_PATH
 

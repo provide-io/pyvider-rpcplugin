@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-
-# examples/kvprobo/improved_kv_client.py
+#!/usr/bin/env -S uv run python3
 
 import asyncio
 import logging
@@ -13,7 +11,7 @@ from pathlib import Path
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.client import RPCPluginClient
 
-from examples.kvprobo.py_rpc.proto import (
+from examples.kvproto.py_rpc.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,

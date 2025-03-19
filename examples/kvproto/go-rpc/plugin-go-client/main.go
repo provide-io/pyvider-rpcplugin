@@ -1,5 +1,5 @@
 
-// pyvider-rpcplugin/examples/kvprobo/go-plugin/plugin-go-client/main.go
+// pyvider-rpcplugin/examples/kvproto/go-plugin/plugin-go-client/main.go
 
 package main
 
@@ -16,7 +16,7 @@ import (
 
     "github.com/hashicorp/go-hclog"
     "github.com/hashicorp/go-plugin"
-    "github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/go-plugin/shared"
+    "github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin/shared"
 )
 
 // DisplayCertificate logs the certificate details.

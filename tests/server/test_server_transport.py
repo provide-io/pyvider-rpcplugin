@@ -41,100 +41,6 @@ async def test_setup_server_unix_success_insecure(
         await server.stop()
 
 @pytest.mark.asyncio
-async def test_serve_success_100(monkeypatch, mock_server_protocol,
-                          mock_server_handler, mock_server_config,
-                          mock_server_transport) -> None:
-    """Test server serve method."""
-    test_transport = mock_server_transport
-    
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=test_transport,
-    )
-
-    # Set up a completed future for _serving_future
-    fut = asyncio.Future()
-    fut.set_result(None)
-    server._serving_future = fut
-    server._serving_event = asyncio.Event()
-
-    # Create proper AsyncMock for negotiate_handshake
-    async def dummy_negotiate(self):
-        self._protocol_version = 1
-        self._transport_name = test_transport._transport_name
-        self._transport = test_transport
-    
-    monkeypatch.setattr(
-        server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
-    )
-
-    # Create AsyncMock for setup_server
-    async def dummy_setup(_):
-        pass
-    
-    monkeypatch.setattr(server, "_setup_server", dummy_setup)
-    
-    # Create AsyncMock for build_handshake_response
-    async def dummy_response(*args, **kwargs):
-        return "dummy_handshake"
-    
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.server.build_handshake_response", 
-        dummy_response
-    )
-    
-    # Mock _register_signal_handlers
-    monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
-    
-    # Create StringIO with buffer attribute
-    fake_stdout = StringIO()
-    fake_stdout.buffer = MockBytesIO(fake_stdout)
-    monkeypatch.setattr(sys, "stdout", fake_stdout)
-    
-    # Listen on transport
-    await test_transport.listen()
-    
-    # Run the serve method
-    await server.serve()
-    
-    # Check output
-    output = fake_stdout.getvalue().strip()
-    assert output == "dummy_handshake"
-
-@pytest.mark.asyncio
-async def test_setup_server_unix_success_secure_A(
-    client_cert,
-    unique_socket_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport_unix,
-) -> None:
-
-    # huh. i should be able to use that UST. but only the mock is working.
-    # i am 99.9% sure this is a me problem.
-    # test_transport = UnixSocketTransport() <-- sigh.
-    test_transport = mock_server_transport_unix # <-- gotta go back and check this
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=test_transport,
-    )
-
-    endpoint = await test_transport.listen()
-    assert os.path.exists(endpoint)
-
-    await server._setup_server("client_cert")
-    assert server._server is not None
-
-    await test_transport.close()
-    await server.stop()
-
-@pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(
     mock_server_protocol,
     mock_server_handler,
@@ -155,7 +61,7 @@ async def test_setup_server_unix_no_socket(
         await server._setup_server("client_cert")
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_bad_permissions_work1(
+async def test_setup_server_unix_bad_permissions(
     tmp_path,
     unique_socket_path,
     mock_server_protocol,
@@ -200,50 +106,6 @@ async def test_setup_server_unix_bad_permissions_work1(
             os.unlink(sock_path)
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_bad_permissions_work2(
-    tmp_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-) -> None:
-    """Test server behavior with incorrect socket permissions."""
-    # Create a unique socket path for this test
-    sock_path = str(tmp_path / "bad_perms_work2.sock")
-
-    # Create the socket file with restricted permissions
-    with open(sock_path, "w") as f:
-        f.write("")
-    os.chmod(sock_path, 0o000)  # No permissions
-
-    try:
-        # Create server with mocked transport
-        transport = mock.AsyncMock()
-        transport.path = sock_path
-        transport.listen = mock.AsyncMock(return_value=sock_path)
-
-        server = RPCPluginServer(
-            protocol=mock_server_protocol,
-            handler=mock_server_handler,
-            config=mock_server_config,
-            transport=transport
-        )
-
-        # Mock _setup_server to check permissions and fail
-        async def mock_setup(*args):
-            # Fail with the expected error message
-            raise TransportError(f"Socket file {sock_path} has incorrect permissions.")
-
-        with mock.patch.object(server, '_setup_server', mock_setup):
-            # This should raise TransportError with the permission message
-            with pytest.raises(TransportError, match="has incorrect permissions"):
-                await server.serve()
-    finally:
-        # Ensure we can clean up the socket file
-        if os.path.exists(sock_path):
-            os.chmod(sock_path, 0o777)
-            os.unlink(sock_path)
-
-@pytest.mark.asyncio
 async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
@@ -282,7 +144,7 @@ async def test_setup_server_tcp_success(
 ###########
 
 @pytest.mark.asyncio
-async def test_setup_server_unix_success_secure_B(
+async def test_setup_server_unix_success_secure(
     unique_socket_path,
     client_cert,
     mock_server_protocol,
@@ -449,12 +311,12 @@ async def test_setup_server_exception_2(
     
     # Define the mock function that will be used directly
     def mock_add_secure_port(*args, **kwargs):
-        raise Exception("Failed to bind to port")
+        raise Exception("Failed to bind to")
         
     # Apply the mock to the server instance
     with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
         # Now try to set up the server, which should fail
-        with pytest.raises(Exception, match="Failed to bind to port"):
+        with pytest.raises(Exception, match="Failed to bind to"):
             await server._setup_server("client_cert")
     
     # Clean up

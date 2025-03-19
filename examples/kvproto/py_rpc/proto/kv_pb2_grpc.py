@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import examples.kvprobo.py_rpc.proto.kv_pb2 as kv__pb2
+import examples.kvproto.py_rpc.proto.kv_pb2 as kv__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
