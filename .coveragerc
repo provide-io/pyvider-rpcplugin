@@ -1,0 +1,17 @@
+[run]
+omit =
+    *pb2*
+    */logger/*
+    */tests*
+    test_*
+    debug.py
+
+[report]
+exclude_also =
+    logger\\.
+    import logger
+    from logging
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    pass
+    pragma: no cover

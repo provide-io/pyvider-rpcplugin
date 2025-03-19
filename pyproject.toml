@@ -132,32 +132,15 @@ line-length = 88
 # coverage
 ################################################################################
 
-[tool.coverage.run]
+[tool.coverage]
 source = ["pyvider.rpcplugin"]
 branch = true
-omit = [
-    "*_pb2.py",
-    "*/logger/*",
-    "*/crypto/debug.py",
-    "tests/*",
-]
 
 [tool.coverage.report]
 # Improve report readability with missing lines
 show_missing = true
 skip_covered = false  # Show all lines, even if 100% covered
 precision = 2  # Decimal places in report output
-
-# Exclude logging statements and unnecessary code blocks
-exclude_lines = [
-    "logger\\.",  # Ignore all logger calls (debug, info, warning, error, critical)
-    "import logging",  # Ignore logging import statements
-    "from logging",  # Ignore logging module imports
-    "raise NotImplementedError",  # Ignore abstract method placeholders
-    "if __name__ == .__main__.:",  # Ignore main script execution guards
-    "pass",  # Ignore no-op placeholders
-    "pragma: no cover"  # Still allow manual exclusion of blocks
-]
 
 [tool.coverage.html]
 directory = "htmlcov"  # Output directory for HTML coverage reports

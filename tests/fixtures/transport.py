@@ -129,4 +129,7 @@ async def unique_socket_path() -> str:
         except OSError as e:
             logger.warning(f"🧪⚠️ Cleanup failed for socket {socket_path}: {e}")
 
+    # Allow event loop to process socket close events
+    await asyncio.sleep(0.2)
+
 ### 🐍🏗🧪️

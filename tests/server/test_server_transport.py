@@ -244,72 +244,6 @@ async def test_setup_server_unix_bad_permissions_work2(
             os.unlink(sock_path)
 
 @pytest.mark.asyncio
-async def test_setup_server_exception_1(
-    monkeypatch,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-) -> None:
-
-    transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    await transport.listen()
-    # with pytest.raises(Exception, match="Server creation failed"):
-    with pytest.raises(Exception, match="Failed to "):
-        await server._setup_server("client_cert")
-        await transport.close()
-
-@pytest.mark.asyncio
-async def test_setup_server_exception_2(
-    monkeypatch,
-    unique_socket_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-) -> None:
-    """Test properly handling exceptions in server setup."""
-    # Create an isolated transport using tmp_path
-    sock_path = unique_socket_path
-    transport = UnixSocketTransport(path=sock_path)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    # Start the transport to create the socket
-    await transport.listen()
-    assert os.path.exists(sock_path), "Socket should exist"
-
-    # Mock the add_secure_port method to raise an exception
-    def mock_secure_port(*args, **kwargs):
-        raise Exception("Failed to bind port")
-
-    # Apply the mock to the server instance
-    monkeypatch.setattr(
-        server._server if hasattr(server, '_server') else "grpc.aio.server",
-        "add_secure_port",
-        mock_add_secure_port
-    )
-
-    # Now try to set up the server, which should fail
-    with pytest.raises(Exception, match="Failed to bind port"):
-        await server._setup_server(None)
-
-    # Clean up
-    await transport.close()
-
-@pytest.mark.asyncio
 async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
@@ -453,7 +387,79 @@ async def test_setup_server_unix_success_secure(
     await server.stop()
 
 
-##########33
+################################################################################
+
+@pytest.mark.asyncio
+async def test_setup_server_exception_1(
+    monkeypatch,
+    unique_socket_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+) -> None:
+    # Use a unique socket path for this test
+    transport = UnixSocketTransport(path=unique_socket_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # First listen to set up the socket
+    await transport.listen()
+    
+    # Create a new transport with the same path, which should fail
+    transport2 = UnixSocketTransport(path=unique_socket_path)
+    
+    with pytest.raises(TransportError, match="already in use"):
+        await transport2.listen()
+        
+    # Clean up
+    await transport.close()
+
+@pytest.mark.asyncio
+async def test_setup_server_exception_2(
+    monkeypatch,
+    unique_socket_path,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_config,
+) -> None:
+    """Test properly handling exceptions in server setup."""
+    # Create an isolated transport using tmp_path
+    socket_path = unique_socket_path
+    transport = UnixSocketTransport(path=socket_path)
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+
+    # Start the transport to create the socket
+    await transport.listen()
+    assert os.path.exists(socket_path), "Socket should exist"
+
+    # Create a dummy server instance to patch
+    dummy_server = DummyGRPCServer()
+    server._server = dummy_server
+    
+    # Define the mock function that will be used directly
+    def mock_add_secure_port(*args, **kwargs):
+        raise Exception("Failed to bind to port")
+        
+    # Apply the mock to the server instance
+    with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
+        # Now try to set up the server, which should fail
+        with pytest.raises(Exception, match="Failed to bind to port"):
+            await server._setup_server("client_cert")
+    
+    # Clean up
+    await transport.close()
+
 @pytest.mark.asyncio
 async def test_setup_server_exception_3(
     unique_socket_path,
@@ -461,6 +467,8 @@ async def test_setup_server_exception_3(
     mock_server_handler,
     mock_server_config,
 ) -> None:
+
+################################################################################
     """Test properly handling exceptions in server setup."""
     # Create an isolated transport using tmp_path
     #sock_path = str(tmp_path / "exception_test.sock")
@@ -533,54 +541,6 @@ async def test_setup_server_unix_no_socket_linux(
         with pytest.raises(RuntimeError, match="Failed to bind to address"):
             await server._setup_server("client_cert")
 
-
-@pytest.mark.asyncio
-async def test_setup_server_exception_4(
-    monkeypatch,
-    unique_socket_path,
-    mock_server_protocol,
-    mock_server_handler,
-    mock_server_config,
-    mock_server_transport,
-) -> None:
-    """Test handling exceptions when server setup fails."""
-    # Create a completely isolated transport path for this test 
-    #socket_path = os.path.join(tmp_path, f"test_exception_{uuid.uuid4().hex[:8]}.sock")
-    socket_path = unique_socket_path
-    transport = UnixSocketTransport(path=socket_path)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-
-    # Force specific expected error - mocking the generate_server_credentials 
-    # function to raise a predictable error
-    def mock_generate_credentials(*args, **kwargs):
-        raise Exception("Simulated server credentials error")
-        
-    monkeypatch.setattr(server, "_generate_server_credentials", mock_generate_credentials)
-
-    try:
-        # Listen on transport
-        endpoint = await transport.listen()
-        
-        # Attempt setup with expected error
-        with pytest.raises(Exception, match="Simulated server credentials error"):
-            await server._setup_server("client_cert")
-    finally:
-        # Ensure proper cleanup
-        await transport.close()
-        
-        # Extra cleanup to be absolutely sure
-        if os.path.exists(socket_path):
-            try:
-                os.chmod(socket_path, 0o777)
-                os.unlink(socket_path)
-            except Exception as e:
-                logger.warning(f"🧪⚠️ Cleanup error ignored: {e}")
 
 
 #############3

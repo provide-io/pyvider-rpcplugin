@@ -472,9 +472,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             sys.stdout.buffer.flush()
             sys.stdout.flush()
 
-            # Also try direct print for good measure
-            print(response, flush=True)
-
             logger.debug("🤝📝✅ Handshake response sent to stdout")
         except Exception as e:
             logger.error(f"🛎️❌ Error building handshake response: {e}",
