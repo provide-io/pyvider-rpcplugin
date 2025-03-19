@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 # pyvider/rpcplugin/transport/unix.py
 
 import asyncio
@@ -265,6 +265,7 @@ class UnixSocketTransport(RPCPluginTransport):
                             break
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
+                raise TransportError(f"Failed to remove socket file: {e}")
 
         self.endpoint = None
         self._closing = False
@@ -306,5 +307,3 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._connections.remove(conn)
             await conn.close()
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
-
-### 🐍🏗️🔌
