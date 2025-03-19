@@ -1,6 +1,6 @@
-// examples/kvprobo/go-plugin/go.mod
+// examples/kvproto/go-plugin/go.mod
 
-module github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/go-plugin
+module github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin
 
 go 1.23.4
 

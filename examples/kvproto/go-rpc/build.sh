@@ -1,5 +1,5 @@
 #!/bin/sh
-# pyvider-rpcplugin/examples/kvprobo/go-plugin/build.sh
+# pyvider-rpcplugin/examples/kvproto/go-plugin/build.sh
 
 set -e # Exit on any error
 
@@ -12,7 +12,7 @@ rm -f ${PLUGIN_CLIENT_PATH} ${PLUGIN_SERVER_PATH}
 # Initialize module if needed
 if [ ! -f go.mod ]; then
 	echo "Initializing Go module..."
-	go mod init github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/go-plugin
+	go mod init github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin
 
 	echo "Installing buf dependencies..."
 	go install github.com/bufbuild/buf/cmd/buf@latest

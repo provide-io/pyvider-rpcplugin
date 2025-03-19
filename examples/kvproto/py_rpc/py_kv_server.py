@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+###!/usr/bin/env -S uv run python3
 """
 py-kv-server.py
 
@@ -18,7 +20,7 @@ import grpc
 from pyvider.rpcplugin.logger import logger
 from pyvider.rpcplugin.server import RPCPluginServer
 
-from examples.kvprobo.py_rpc.proto import (
+from examples.kvproto.py_rpc.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,

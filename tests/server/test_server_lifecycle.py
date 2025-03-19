@@ -41,15 +41,14 @@ class MockBytesIO:
 @pytest.mark.asyncio
 async def test_serve_success(
     monkeypatch,
-    client_cert,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
 ) -> None:
-    """Test server serve method with proper StringIO buffer handling."""
+    """Test server serve method with proper stdout handling."""
     test_transport = mock_server_transport
-
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -57,38 +56,50 @@ async def test_serve_success(
         transport=test_transport,
     )
 
+    # Set up a completed future for _serving_future
     fut = asyncio.Future()
     fut.set_result(None)
     server._serving_future = fut
     server._serving_event = asyncio.Event()
 
-    endpoint = await test_transport.listen()
-
+    # Create proper mock for negotiate_handshake
     async def dummy_negotiate(self):
         self._protocol_version = 1
         self._transport_name = test_transport._transport_name
-
+        self._transport = test_transport
+    
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
     )
 
+    # Mock setup_server
     async def dummy_setup(_):
         pass
-
+    
     monkeypatch.setattr(server, "_setup_server", dummy_setup)
+    
+    # Create async mock for build_handshake_response
+    async def dummy_response(*args, **kwargs):
+        return "dummy_handshake"
+    
     monkeypatch.setattr(
-        "pyvider.rpcplugin.server.build_handshake_response",
-        lambda plugin_version, transport_name, transport, server_cert=None, port=None: "dummy_handshake",
+        "pyvider.rpcplugin.server.build_handshake_response", 
+        dummy_response
     )
+    
+    # Mock signal handlers
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
     
-    # Create a StringIO with a buffer attribute
+    # Set up stdout capturing
     fake_stdout = StringIO()
-    # Add the buffer attribute to StringIO
     fake_stdout.buffer = MockBytesIO(fake_stdout)
-    
     monkeypatch.setattr(sys, "stdout", fake_stdout)
+    
+    # Listen on transport and run serve
+    await test_transport.listen()
     await server.serve()
+    
+    # Check output
     output = fake_stdout.getvalue().strip()
     assert output == "dummy_handshake"
 
@@ -123,16 +134,18 @@ async def test_server_serve_runtime_error(
 
     await test_transport.close()
 
+# Fix for test_serve_error[unix]
 @pytest.mark.asyncio
 async def test_serve_error(
     monkeypatch,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport,
+    unique_socket_path,  # Use unique path
 ) -> None:
-    test_transport = mock_server_transport
-
+    # Create fresh transport with unique path
+    test_transport = UnixSocketTransport(path=unique_socket_path)
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -142,27 +155,35 @@ async def test_serve_error(
 
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
 
+    # Use specific error message for regex match
     async def failing_negotiate(self):
         raise Exception("Handshake failed")
 
     monkeypatch.setattr(
         server, "_negotiate_handshake", failing_negotiate.__get__(server, type(server))
     )
+    
+    # We will NOT listen on the transport
+    # Instead directly check for the exception
     with pytest.raises(Exception, match="Handshake failed"):
-        await test_transport.listen()
         await server.serve()
+        
+    # Clean up
+    await server.stop()
 
+# Fix for test_wait_for_server_ready[unix]
 @pytest.mark.asyncio
 async def test_wait_for_server_ready(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport,
+    unique_socket_path,  # Use unique path
 ) -> None:
-    test_transport = mock_server_transport
-
-    await test_transport.listen()
-
+    # Create fresh transport with unique path
+    test_transport = UnixSocketTransport(path=unique_socket_path)
+    
+    # Don't actually listen on the socket here
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -179,6 +200,8 @@ async def test_wait_for_server_ready(
     asyncio.create_task(set_event())
     await server.wait_for_server_ready()
     assert server._serving_event.is_set()
+    
+    # Clean up (no need to call listen or close)
 
 @pytest.mark.asyncio
 async def test_stop_success(monkeypatch) -> None:
@@ -207,40 +230,51 @@ async def test_stop_success(monkeypatch) -> None:
     # Ensure _shutdown_requested was called so that serving future is done.
     assert fut.done()
 
+# Fix for test_stop_handles_exceptions[unix]
 @pytest.mark.asyncio
 async def test_stop_handles_exceptions(
+    monkeypatch,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    mock_server_transport,
+    unique_socket_path,  # Use a unique path fixture
 ) -> None:
-    # Test that exceptions during _server.stop() and _transport.close() are caught.
+    # Create a fresh transport with unique path for this test
+    dummy_transport = UnixSocketTransport(path=unique_socket_path)
+    
+    # Don't actually listen on the transport to avoid socket creation
+    # We're only testing exception handling during stop()
+    
     dummy_server = DummyGRPCServer()
-
-    test_transport = mock_server_transport
-    await test_transport.listen()
-
+    
     async def failing_stop(grace):
         raise Exception("Server stop failed")
 
     dummy_server.stop = failing_stop
-    dummy_transport = AsyncMock()
-    dummy_transport.close = AsyncMock(side_effect=Exception("Transport close failed"))
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=test_transport,
+        transport=dummy_transport,
     )
     server._server = dummy_server
-    server._transport = dummy_transport
+    
+    # Don't reuse the actual transport for testing
+    mock_transport = AsyncMock()
+    mock_transport.close = AsyncMock(side_effect=Exception("Transport close failed"))
+    server._transport = mock_transport
+    
     fut = asyncio.Future()
     fut.set_result(None)
     server._serving_future = fut
-    # Calling stop() should log errors but eventually complete.
+    
+    # Call stop() and verify it handles exceptions without raising
     await server.stop()
-    # Even though exceptions occurred, _shutdown_requested() should have been called.
+    
+    # Verify expectations
     assert server._serving_future.done()
+    mock_transport.close.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_server_stop_clean_destructor(

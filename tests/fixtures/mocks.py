@@ -90,30 +90,36 @@ async def mock_server_transport(request) -> TransportT:
         socket_path = tmp.name
 
     logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
-    logger.debug(
-        f"🧪🔌🐛 socket_path: {socket_path}"
-    )
+    logger.debug(f"🧪🔌🐛 socket_path: {socket_path}")
 
-    match transport_name:
-        case "tcp":
-            transport = TCPSocketTransport()
-        case "unix":
-            transport = UnixSocketTransport()
-        case _:
-            raise ValueError(f"Unknown transport: {transport_name}")
+    try:
+        match transport_name:
+            case "tcp":
+                transport = TCPSocketTransport()
+            case "unix":
+                transport = UnixSocketTransport()
+            case _:
+                raise ValueError(f"Unknown transport: {transport_name}")
 
-    return transport
+    finally:
+        # Ensure cleanup happens
+        if transport is not None:
+            await transport.close()
+            await asyncio.sleep(0.1)  # Allow time for resources to be released
 
+    yield transport
 
 @pytest_asyncio.fixture
 async def mock_server_transport_tcp() -> TransportT:
     try:
         transport = TCPSocketTransport()
+        yield transport
     except Exception:
         raise ValueError(f"Could not open a TCP Socket Transport: {transport}")
-
-    return transport
-
+    finally:
+        # Clean up
+        await transport.close()
+        await asyncio.sleep(0.1)  # Allow time for resources to be released
 
 # @pytest_asyncio.fixture
 # async def mock_server_transport_unix() -> TransportT:

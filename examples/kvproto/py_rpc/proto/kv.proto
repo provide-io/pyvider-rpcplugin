@@ -4,7 +4,7 @@
 syntax = "proto3";
 package proto;
 
-option go_package = "github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/proto";
+option go_package = "github.com/provide-io/pyvider-rpcplugin/examples/kvproto/proto";
 
 message GetRequest {
     string key = 1;

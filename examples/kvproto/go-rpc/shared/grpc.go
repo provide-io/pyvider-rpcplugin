@@ -1,5 +1,5 @@
 
-// pyvider-rpcplugin/examples/kvprobo/go-plugin/shared/grpc.go
+// pyvider-rpcplugin/examples/kvproto/go-plugin/shared/grpc.go
 
 package shared
 
@@ -15,7 +15,7 @@ import (
     "google.golang.org/grpc"
     //"google.golang.org/grpc/credentials"
 
-    "github.com/provide-io/pyvider-rpcplugin/examples/kvprobo/go-plugin/proto"
+    "github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin/proto"
 )
 
 // GRPCClient is an implementation of KV that talks over RPC.

@@ -1,5 +1,5 @@
 
-# examples/kvprobo/test_go_python_interop.py
+# examples/kvproto/test_go_python_interop.py
 
 import asyncio
 import os
@@ -17,7 +17,7 @@ from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.logger import logger
 
-from examples.kvprobo.py_rpc.proto import kv_pb2, kv_pb2_grpc
+from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
 
 from tests.fixtures import *
 
