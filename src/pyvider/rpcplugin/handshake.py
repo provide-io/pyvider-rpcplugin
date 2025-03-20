@@ -13,8 +13,11 @@ All logging follows our three‑emoji style to clearly indicate component,
 action, and result. Detailed error handling and inline comments are included
 for clarity and debugging.
 """
-
+import asyncio
 import os
+import socket
+import time
+import traceback
 from typing import TypeGuard
 
 import attrs

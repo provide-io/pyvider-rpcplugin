@@ -229,6 +229,9 @@ async def test_kv_missing_key(kv_client) -> None:
 
     logger.debug("🔌🧪✅ Missing key test passed: received expected NOT_FOUND error")
 
+# TODO: Fix this.
+# There is a race condition somewhere around here. I've seen it fail with:
+# test_kv_concurrent_operations[unix] - AssertionError: Only 4/5 operations succeeded
 @pytest.mark.asyncio
 async def test_kv_concurrent_operations(kv_client) -> None:
     """Test concurrent Put/Get operations."""
