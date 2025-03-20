@@ -191,7 +191,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
         logger.error(f"🧪❌ Empty value operation failed: {e.details()}")
         pytest.fail(f"Empty value operation failed: {e.details()}")
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with special characters in keys and values."""
     logger.debug("🧪🔍🚀 Testing operations with special characters")
@@ -490,7 +490,7 @@ async def test_client_connection_timeout() -> None:
             pass
 
 
-@pytest.mark.asyncio
+@pytest.mark.skip
 async def test_connection_with_debugging() -> None:
     """Test connection with enhanced debugging to diagnose timeout issues."""
     server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)

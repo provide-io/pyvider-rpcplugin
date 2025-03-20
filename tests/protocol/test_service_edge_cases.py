@@ -64,7 +64,6 @@ async def test_broker_service_subchannel_open_failure() -> None:
         assert not responses[0].knock.ack
         assert "Failed to open subchannel" in responses[0].knock.error
 
-
 @pytest.mark.asyncio
 async def test_stdio_service_timeouts() -> None:
     """Test StdioService handling of queue timeouts."""
@@ -117,7 +116,6 @@ async def test_stdio_service_timeouts() -> None:
         assert len(results) == 1
         assert results[0].data == b"test data"
 
-
 @pytest.mark.asyncio
 async def test_stdio_service_backpressure() -> None:
     """Test StdioService handling of queue backpressure."""
@@ -140,5 +138,46 @@ async def test_stdio_service_backpressure() -> None:
     assert len(items) == 5
     for i, item in enumerate(items):
         assert item.data == f"test line {i}".encode()
+
+@pytest.mark.asyncio
+async def test_broker_exception_handling_line95() -> None:
+    """Test exception handling in broker.StartStream."""
+    broker = GRPCBrokerService()
+
+    # Create a mock that raises an exception when accessed
+    class RaisingDict(dict):
+        def __getitem__(self, key):
+            raise Exception("Test exception")
+    
+    # Replace _subchannels with our raising dict
+    original_subchannels = broker._subchannels
+    broker._subchannels = RaisingDict()
+
+    try:
+        # Create request with knock=True to trigger the exception path
+        request = ConnInfo(
+            service_id=1,
+            network="tcp",
+            address="localhost:12345",
+            knock=ConnInfo.Knock(knock=True, ack=False, error="")
+        )
+
+        # Create iterator and context
+        iterator = MockRequestIterator([request])
+        context = MagicMock()
+
+        # Process stream and collect responses
+        responses = []
+        async for response in broker.StartStream(iterator, context):
+            responses.append(response)
+
+        # Verify the response has an error
+        assert len(responses) == 1
+        assert responses[0].knock.ack is False
+        assert "error" in responses[0].knock.error
+        assert "Test exception" in responses[0].knock.error
+    finally:
+        # Restore original _subchannels
+        broker._subchannels = original_subchannels
 
 ### 🐍🏗🧪️
