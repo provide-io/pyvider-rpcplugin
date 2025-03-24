@@ -12,14 +12,16 @@ from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     HandshakeParts,
-    is_valid_tcp_endpoint,
     is_valid_handshake_parts,
     validate_transport,
 )
 
+from pyvider.rpcplugin.transport.tcp import is_valid_tcp_endpoint
+
 
 def test_is_valid_tcp_endpoint():
-    """Test the TCP endpoint validator function."""
+    from pyvider.rpcplugin.transport.tcp import is_valid_tcp_endpoint
+
     # Valid endpoints
     assert is_valid_tcp_endpoint("localhost:8080") is True
     assert is_valid_tcp_endpoint("127.0.0.1:1234") is True

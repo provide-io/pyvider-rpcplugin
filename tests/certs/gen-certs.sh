@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Variables
-CERT_DIR="./certs"
+CERT_DIR="."
 
 DAYS=365
 

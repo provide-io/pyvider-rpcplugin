@@ -23,12 +23,11 @@ from tests.fixtures import *
 
 TEST_DIR: Path = Path(__file__).parent
 
-DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../go-rpc" / "bin" / "kv-go-server")
+DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../py_rpc" / "py_kv_server.py")
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
 SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
-
 
 @pytest_asyncio.fixture
 async def go_server_path() -> str:
@@ -322,22 +321,6 @@ async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value
     response = await stub.Get(kv_pb2.GetRequest(key=key))
     assert response.value == expected_value, f"Value mismatch for {key}"
     return True
-
-
-# import time
-# from pathlib import Path
-# from typing import dict, Optional, tuple
-# 
-# import grpc
-# 
-# from pyvider.rpcplugin.client import RPCPluginClient
-# from pyvider.rpcplugin.exception import HandshakeError, TransportError
-# from pyvider.rpcplugin.logger import logger
-# 
-# # Use a relative path based on this test file's location
-TEST_DIR: Path = Path(__file__).parent
-DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../bin" / "go-kv-server")
-DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 
 
 def is_executable(path: str) -> bool:
