@@ -28,7 +28,7 @@ CONFIG_SCHEMA: Dict[str, Union[Dict[str, Union[None, bool, str]], Dict[str, Unio
     },
     "PLUGIN_MAGIC_COOKIE_KEY": {
         "required": True,
-        "default": "PLUGIN_MAGIC_COOKIE_VALUE",
+        "default": "PLUGIN_MAGIC_COOKIE",
         "description": "Magic cookie key for plugin handshake",
     },
     "PLUGIN_MAGIC_COOKIE_VALUE": {
