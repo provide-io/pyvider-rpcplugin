@@ -6,4 +6,5 @@ from .mocks import *
 from .crypto import *
 from .handshake import *
 from .transport import *
+from .client import *
 from .server import *

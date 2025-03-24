@@ -50,6 +50,8 @@ class RPCPluginClient:
     # Internal fields
     _process: subprocess.Popen | None = attrs.field(init=False, default=None)
     _transport: TransportT | None = attrs.field(init=False, default=None)
+    _transport_name: str | None = attrs.field(init=False, default=None)  # Add this attribute
+
     _address: TransportT | None = attrs.field(init=False, default=None)
     _protocol_version: int | None = attrs.field(init=False, default=None)
     _server_cert: str | None = attrs.field(init=False, default=None)
@@ -137,14 +139,12 @@ class RPCPluginClient:
         # Force unbuffered output in Python subprocesses
         env["PYTHONUNBUFFERED"] = "1"
 
-        # Configure Go process environment for better interoperability
-        # These settings help Go's stdout flushing behavior
-        env["GODEBUG"] = env.get("GODEBUG", "") + ",asyncpreemptoff=1"
-        env["GOOPTS"] = env.get("GOOPTS", "") + " -gcflags=all=-N"  # Disable optimizations
-
         # Pass client cert if needed
         if self.client_cert:
+            # set the environment variable so the server knows what the clients
+            # certificate is.
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
+            cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
@@ -291,6 +291,8 @@ class RPCPluginClient:
             )
             self._protocol_version = protocol_version
             self._server_cert = server_cert
+            self._transport_name = network
+
 
             if network == "tcp":
                 self._transport = TCPSocketTransport()
@@ -336,7 +338,7 @@ class RPCPluginClient:
             target = f"unix:{self._address}"
         else:
             # For TCP, use standard addressing
-            target = f"{self._network}:{self._address}"
+            target = f"{self._transport_name}:{self._address}"
 
         logger.debug(f"🚢🔍 Creating gRPC channel with target: {target}")
 

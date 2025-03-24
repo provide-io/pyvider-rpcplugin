@@ -141,4 +141,73 @@ async def test_del_warning(caplog, capsys) -> None:
     
     assert in_logs or in_stdout, "No warning about unclosed connection was found"
 
+# tests/client/test_connection.py
+
+import asyncio
+import gc
+import pytest
+
+from pyvider.rpcplugin.client.connection import ClientConnection
+from tests.fixtures.dummy import DummyReader, DummyWriter
+
+@pytest.fixture
+def connection(dummy_reader, dummy_writer):
+    """Create a test ClientConnection with dummy streams."""
+    return ClientConnection(
+        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
+    )
+
+@pytest.mark.asyncio
+async def test_is_closed_initial(connection):
+    """Test connection initially open."""
+    assert connection.is_closed is False
+
+@pytest.mark.asyncio
+async def test_is_closed_when_closed_flag(connection):
+    """Test closed flag affects is_closed."""
+    connection._closed = True
+    assert connection.is_closed is True
+
+@pytest.mark.asyncio
+async def test_send_data_normal(connection, dummy_writer):
+    """Test send_data writes data and updates metrics."""
+    data = b"hello"
+    await connection.send_data(data)
+    
+    # Data should be in writer and metrics updated
+    assert dummy_writer.data == data
+    assert connection.bytes_sent == len(data)
+
+@pytest.mark.asyncio
+async def test_send_data_when_closed(connection):
+    """Test send_data when connection closed."""
+    connection._closed = True
+    with pytest.raises(
+        ConnectionError, match="Attempted to send data on closed connection"
+    ):
+        await connection.send_data(b"data")
+
+@pytest.mark.asyncio
+async def test_receive_data_normal(connection, dummy_reader):
+    """Test receive_data reads data and updates metrics."""
+    test_bytes = b"test data"
+    dummy_reader.data = test_bytes
+    
+    result = await connection.receive_data()
+    
+    assert result == test_bytes
+    assert connection.bytes_received == len(test_bytes)
+
+@pytest.mark.asyncio
+async def test_close_normal(connection, dummy_writer):
+    """Test close() properly closes connection."""
+    connection._closed = False
+    await connection.close()
+    
+    assert connection._closed is True
+    assert dummy_writer.closed is True
+    
+    # Calling close() again should be safe
+    await connection.close()
+
 ### 🐍🏗🧪️

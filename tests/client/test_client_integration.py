@@ -1,0 +1,106 @@
+# tests/client/test_client_integration.py
+
+import pytest
+import asyncio
+from unittest.mock import patch, MagicMock, AsyncMock
+
+from pyvider.rpcplugin.client.base import RPCPluginClient
+
+@pytest.mark.asyncio
+async def test_client_integration(test_client_command):
+    """
+    Integration test for RPCPluginClient full lifecycle.
+    
+    Tests the complete flow:
+    1. Create client
+    2. Start client (setup certs, launch process, handshake, create channel)
+    3. Use client (read logs, open subchannel, shutdown plugin)
+    4. Close client
+    """
+    # Mock all external dependencies
+    with patch('subprocess.Popen') as mock_popen, \
+         patch('pyvider.rpcplugin.client.base.Certificate') as mock_cert_class, \
+         patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel') as mock_channel_func, \
+         patch('pyvider.rpcplugin.client.base.GRPCStdioStub') as mock_stdio_stub_class, \
+         patch('pyvider.rpcplugin.client.base.GRPCBrokerStub') as mock_broker_stub_class, \
+         patch('pyvider.rpcplugin.client.base.GRPCControllerStub') as mock_controller_stub_class, \
+         patch('pyvider.rpcplugin.client.base.TCPSocketTransport') as mock_transport_class, \
+         patch('threading.Thread') as mock_thread:
+        
+        # Mock process
+        mock_process = MagicMock()
+        mock_process.stdout = MagicMock()
+        mock_process.stderr = MagicMock()
+        mock_process.poll.return_value = None
+        mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+        mock_popen.return_value = mock_process
+        
+        # Mock certificate
+        mock_cert = MagicMock()
+        mock_cert.cert = "test-cert"
+        mock_cert.key = "test-key"
+        mock_cert_class.return_value = mock_cert
+        
+        # Mock transport
+        mock_transport = AsyncMock()
+        mock_transport.endpoint = "127.0.0.1:8000"
+        mock_transport_class.return_value = mock_transport
+        
+        # Mock channel
+        mock_channel = AsyncMock()
+        mock_channel.channel_ready = AsyncMock()
+        mock_channel_func.return_value = mock_channel
+        
+        # Mock stubs
+        mock_stdio_stub = MagicMock()
+        mock_broker_stub = MagicMock()
+        mock_controller_stub = MagicMock()
+        
+        mock_stdio_stub_class.return_value = mock_stdio_stub
+        mock_broker_stub_class.return_value = mock_broker_stub
+        mock_controller_stub_class.return_value = mock_controller_stub
+        
+        # Setup mock stdio stream
+        async def mock_stream_stdio(_):
+            yield MagicMock(channel=1, data=b"log message")
+            await asyncio.sleep(0.1)
+        
+        mock_stdio_stub.StreamStdio = mock_stream_stdio
+        
+        # Mock broker call
+        mock_broker_call = AsyncMock()
+        mock_broker_stub.StartStream.return_value = mock_broker_call
+        
+        # Mock shutdown
+        mock_controller_stub.Shutdown = AsyncMock()
+        
+        # Create and configure client
+        client = RPCPluginClient(command=test_client_command)
+        
+        # Mock config for mTLS
+        with patch('pyvider.rpcplugin.client.base.rpcplugin_config.get') as mock_config_get:
+            mock_config_get.side_effect = lambda key, default=None: "true" if key == "PLUGIN_AUTO_MTLS" else None
+            
+            # Start client
+            await client.start()
+            
+            # Verify client initialized correctly
+            assert client._process == mock_process
+            assert client.client_cert == "test-cert"
+            assert client._channel == mock_channel
+        
+        # Test broker subchannel
+        await client.open_broker_subchannel(123, "127.0.0.1:8001")
+        mock_broker_stub.StartStream.assert_called_once()
+        
+        # Test shutdown
+        await client.shutdown_plugin()
+        mock_controller_stub.Shutdown.assert_called_once()
+        
+        # Clean up
+        await client.close()
+        
+        # Verify resources cleaned up
+        assert client._channel is None
+        assert client._process is None
+        assert client._transport is None
