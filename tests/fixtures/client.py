@@ -22,7 +22,7 @@ async def client_command() -> list[str]:
     ]
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture
 async def client_instance(test_client_command):
     """Base RPCPluginClient instance for testing with required attributes set."""
     with patch('subprocess.Popen'):
