@@ -1,21 +1,17 @@
 # pyvider/rpcplugin/__init__.py
 
 # from .handshake import HandshakeConfig
-from .client import RPCPluginClient
-from .config import RPCPluginConfig, rpcplugin_config
-from .exception import (
+from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config
+from pyvider.rpcplugin.exception import (
     HandshakeError,
     ProtocolError,
     RPCPluginError,
     SecurityError,
     TransportError,
 )
-from .protocol import RPCPluginProtocol
-from .server import RPCPluginServer
-
-from pyvider.rpcplugin.logger.emoji_matrix import show_emoji_matrix
-
-show_emoji_matrix()
+from pyvider.rpcplugin.protocol import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
 
 __all__ = [
     "RPCPluginConfig",
@@ -29,5 +25,3 @@ __all__ = [
     "TransportError",
     "SecurityError",
 ]
-
-__version__ = "0.1.0"  # Remember to update the version

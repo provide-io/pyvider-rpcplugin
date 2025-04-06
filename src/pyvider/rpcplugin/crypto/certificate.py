@@ -16,7 +16,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from pyvider.rpcplugin.exception import CertificateError
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 
 # =============================================================================
 # Supported Key Types and Curve Types

@@ -5,7 +5,7 @@ from typing import Dict, List, Union, Any, Optional
 
 import attrs
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 

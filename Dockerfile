@@ -66,7 +66,7 @@ ENV PY_COLORS 1
 # Run tests
 ENTRYPOINT ["uv", "sync", "--all-groups", "--dev"]
 
-CMD ["uv", "run", "pytest", "-n", "auto", "--cov", "pyvider.rpclugin", "--color", "yes"]
+CMD ["uv", "run", "pytest", "-n", "auto", "--cov", "pyvider.rpcplugin", "--color", "yes"]
 
 # === Build Stage ===
 FROM development AS build

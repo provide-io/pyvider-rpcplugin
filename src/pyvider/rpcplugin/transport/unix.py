@@ -11,7 +11,7 @@ import attrs
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 def normalize_unix_path(path: str) -> str:

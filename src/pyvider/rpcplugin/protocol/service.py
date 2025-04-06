@@ -5,7 +5,7 @@ import os
 import asyncio
 import traceback
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
     GRPCBrokerServicer,

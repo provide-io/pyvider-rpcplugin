@@ -25,7 +25,7 @@ import attrs
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.transport.types import TransportT
 
 # Use a sentinel value to detect omitted parameters.

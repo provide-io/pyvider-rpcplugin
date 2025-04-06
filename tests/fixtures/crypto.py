@@ -3,7 +3,7 @@
 import pytest
 
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.crypto.certificate import Certificate
 
 

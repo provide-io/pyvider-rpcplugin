@@ -17,7 +17,7 @@ from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.handshake import parse_handshake_response
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
