@@ -15,7 +15,7 @@ import grpc
 
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.exception import HandshakeError
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 
 from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
 

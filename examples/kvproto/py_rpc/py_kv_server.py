@@ -16,7 +16,7 @@ import asyncio
 import os
 import grpc
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.server import RPCPluginServer
 
 from examples.kvproto.py_rpc.proto import (

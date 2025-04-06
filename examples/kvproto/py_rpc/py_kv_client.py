@@ -8,7 +8,7 @@ import time
 import traceback
 from pathlib import Path
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.client import RPCPluginClient
 
 from examples.kvproto.py_rpc.proto import (

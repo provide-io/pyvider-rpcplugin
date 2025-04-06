@@ -25,7 +25,7 @@ from pyvider.rpcplugin.handshake import (
     negotiate_transport,
     validate_magic_cookie,
 )
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol import register_protocol_service
 from pyvider.rpcplugin.transport import (
     TCPSocketTransport,

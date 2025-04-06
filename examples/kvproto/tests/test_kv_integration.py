@@ -10,7 +10,7 @@ import pytest
 import pytest_asyncio
 
 from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 

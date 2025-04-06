@@ -6,7 +6,7 @@ from collections.abc import Awaitable, Callable
 
 import attrs
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 
 # Type aliases for dependency-injected I/O functions.
 SendFuncType = Callable[[bytes], Awaitable[None]]

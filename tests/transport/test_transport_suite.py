@@ -11,7 +11,7 @@ from typing import Tuple, AsyncGenerator
 import pytest
 import pytest_asyncio
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol

@@ -3,7 +3,7 @@
 
 from typing import Any
 
-from pyvider.rpcplugin.logger import logger
+from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
 from examples.kvproto.py_rpc.proto import kv_pb2_grpc

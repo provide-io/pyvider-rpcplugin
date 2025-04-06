@@ -60,7 +60,7 @@ async def test_register_signal_handlers_not_supported(
     mock_server_handler
 ) -> None:
     """Direct mock of server's _register_signal_handlers method."""
-    from pyvider.rpcplugin.logger import logger
+    from pyvider.telemetry import logger
     
     # Create server instance
     server = RPCPluginServer(
