@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/crypto/generators.py
+#
 
 from collections.abc import Callable
 
@@ -68,3 +70,5 @@ def generate_keypair(
 
     else:
         raise ValueError(f"Unsupported key type: {key_type}")
+
+# 🐍🏗️🔌

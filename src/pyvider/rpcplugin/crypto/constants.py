@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/crypto/constants.py
+#
 
 
 # Key types
@@ -15,3 +17,5 @@ DEFAULT_ECDSA_CURVE = "secp521r1"
 SUPPORTED_KEY_TYPES: List[str] = [KEY_TYPE_RSA, KEY_TYPE_ECDSA]
 SUPPORTED_RSA_SIZES = [2048, 3072, 4096]
 SUPPORTED_EC_CURVES = ["secp256r1", "secp384r1", "secp521r1"]
+
+# 🐍🏗️🔌

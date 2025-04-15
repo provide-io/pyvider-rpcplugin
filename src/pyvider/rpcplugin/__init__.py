@@ -1,6 +1,7 @@
+#
 # pyvider/rpcplugin/__init__.py
+#
 
-# from .handshake import HandshakeConfig
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config
 from pyvider.rpcplugin.exception import (
@@ -25,3 +26,5 @@ __all__ = [
     "TransportError",
     "SecurityError",
 ]
+
+# 🐍🏗️🔌

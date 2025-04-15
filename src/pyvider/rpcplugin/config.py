@@ -1,9 +1,11 @@
+#
 # pyvider/rpcplugin/config.py
+#
 
 import os
 from typing import Dict, List, Union, Any, Optional
 
-import attrs
+from attrs import define, field
 
 from pyvider.telemetry import logger
 
@@ -151,7 +153,7 @@ def get_config() -> Dict[str, Any]:
 
 class RPCPluginConfig:
     _instance: Optional["RPCPluginConfig"] = None
-    _config: dict[str, Any] = attrs.field(factory=dict)
+    _config: dict[str, Any] = field(factory=dict)
 
     def __init__(self) -> None:
         self.config = get_config()
@@ -202,3 +204,5 @@ class RPCPluginConfig:
 
 
 rpcplugin_config = RPCPluginConfig()
+
+# 🐍🏗️🔌

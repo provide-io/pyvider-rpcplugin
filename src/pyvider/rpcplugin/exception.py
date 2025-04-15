@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/exception.py
+#
 
 
 class RPCPluginError(Exception):
@@ -37,3 +39,5 @@ class CertificateError(SecurityError):
 
 class CredentialsError(SecurityError):
     """Credential configuration and validation errors."""
+
+# 🐍🏗️🔌

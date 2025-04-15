@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/client/types.py
+#
 
 from typing import Any, Protocol, TypeVar
 
@@ -24,3 +26,5 @@ class SecureRpcClientT(Protocol):
     async def _setup_tls(self) -> None: ...
     async def _create_grpc_channel(self) -> None: ...
     async def close(self) -> None: ...
+
+# 🐍🏗️🔌

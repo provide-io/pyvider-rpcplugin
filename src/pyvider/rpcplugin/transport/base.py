@@ -1,11 +1,13 @@
+#
 # pyvider/rpcplugin/transport/base.py
+#
 
 import abc
-import attrs
+from attrs import define, field
 
-@attrs.define(frozen=False, slots=False)
+@define(frozen=False, slots=False)
 class RPCPluginTransport(abc.ABC):
-    endpoint: str | None = attrs.field(init=False, default=None)
+    endpoint: str | None = field(init=False, default=None)
 
     @abc.abstractmethod
     async def listen(self) -> str: ...                       # pragma: no cover

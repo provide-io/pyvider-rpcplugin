@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/crypto/certificate.py
+#
 
 import os
 from datetime import UTC, datetime, timedelta
@@ -7,7 +9,7 @@ from functools import cached_property
 from pathlib import Path
 from typing import NotRequired, Self, TypedDict
 
-import attrs
+from attrs import define, field
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
@@ -57,7 +59,7 @@ type PublicKey = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 # =============================================================================
 
 
-@attrs.define(slots=True, frozen=True)
+@define(slots=True, frozen=True)
 class CertificateBase:
     """Immutable base certificate data."""
 
@@ -860,3 +862,5 @@ class Certificate:
         rep = f"<Certificate subject={self.subject} issuer={self.issuer} valid={self.is_valid} ca={self.is_ca}>"
         logger.debug(f"📜🔍✅ __repr__: {rep}")
         return rep
+
+# 🐍🏗️🔌

@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+#
 # pyvider/rpcplugin/client/base.py
+#
 
 import asyncio
 import contextlib
@@ -9,7 +10,8 @@ import sys
 import traceback
 from typing import Any
 
-import attrs
+from attrs import define, field
+
 import grpc
 from google.protobuf import empty_pb2
 
@@ -30,7 +32,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import TransportT
 
 
-@attrs.define
+@define
 class RPCPluginClient:
     """
     RPCPluginClient updated to interact with the new broker, stdio, and controller services.
@@ -44,31 +46,31 @@ class RPCPluginClient:
          => send shutdown signals (ControllerStub.Shutdown).
     """
 
-    command: list[str] = attrs.field()
-    config: dict[str, Any] | None = attrs.field(default=None)
+    command: list[str] = field()
+    config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = attrs.field(init=False, default=None)
-    _transport: TransportT | None = attrs.field(init=False, default=None)
-    _transport_name: str | None = attrs.field(init=False, default=None)  # Add this attribute
+    _process: subprocess.Popen | None = field(init=False, default=None)
+    _transport: TransportT | None = field(init=False, default=None)
+    _transport_name: str | None = field(init=False, default=None)  # Add this attribute
 
-    _address: TransportT | None = attrs.field(init=False, default=None)
-    _protocol_version: int | None = attrs.field(init=False, default=None)
-    _server_cert: str | None = attrs.field(init=False, default=None)
-    _channel: grpc.aio.Channel | None = attrs.field(init=False, default=None)
+    _address: TransportT | None = field(init=False, default=None)
+    _protocol_version: int | None = field(init=False, default=None)
+    _server_cert: str | None = field(init=False, default=None)
+    _channel: grpc.aio.Channel | None = field(init=False, default=None)
 
     # Generated or loaded client certificate
-    client_cert: str | None = attrs.field(init=False, default=None)
-    client_key_pem: str | None = attrs.field(init=False, default=None)
+    client_cert: str | None = field(init=False, default=None)
+    client_key_pem: str | None = field(init=False, default=None)
 
     # gRPC stubs for the new services
-    _stdio_stub: GRPCStdioStub | None = attrs.field(init=False, default=None)
-    _broker_stub: GRPCBrokerStub | None = attrs.field(init=False, default=None)
-    _controller_stub: GRPCControllerStub | None = attrs.field(init=False, default=None)
+    _stdio_stub: GRPCStdioStub | None = field(init=False, default=None)
+    _broker_stub: GRPCBrokerStub | None = field(init=False, default=None)
+    _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: asyncio.Task | None = attrs.field(init=False, default=None)
-    _broker_task: asyncio.Task | None = attrs.field(init=False, default=None)
+    _stdio_task: asyncio.Task | None = field(init=False, default=None)
+    _broker_task: asyncio.Task | None = field(init=False, default=None)
 
     def __attrs_post_init__(self) -> None:
         """
@@ -569,4 +571,4 @@ class RPCPluginClient:
         logger.info("🔄 RPCPluginClient fully closed.")
 
 
-### 🐍🏗️🔌
+# 🐍🏗️🔌

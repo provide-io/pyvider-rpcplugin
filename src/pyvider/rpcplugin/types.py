@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/types.py
+#
 
 from typing import Any, Protocol, TypeVar
 
@@ -24,3 +26,5 @@ ServerT = TypeVar("ServerT", bound=GRPCServer)
 # Common Return Types
 ResultT = TypeVar("ResultT")
 ErrorT = TypeVar("ErrorT", bound=Exception)
+
+# 🐍🏗️🔌

@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+#
 # pyvider/rpcplugin/transport/unix.py
+#
 
 import asyncio
 import errno
@@ -7,7 +8,7 @@ import os
 import socket
 import stat
 
-import attrs
+from attrs import define, field
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
@@ -43,7 +44,7 @@ def normalize_unix_path(path: str) -> str:
     logger.debug(f"📞🔍✅ * Normalized path: {path}")
     return path
 
-@attrs.define(frozen=False, slots=True)
+@define(frozen=False, slots=True)
 class UnixSocketTransport(RPCPluginTransport):
     """
     Unix domain socket transport compatible with Go plugin implementation.
@@ -55,16 +56,16 @@ class UnixSocketTransport(RPCPluginTransport):
     - Robust connection tracking and shutdown
     """
 
-    path: str | None = attrs.field(default=None)
-    _server: asyncio.AbstractServer | None = attrs.field(init=False, default=None)
-    _writer: asyncio.StreamWriter | None = attrs.field(init=False, default=None)
-    _reader: asyncio.StreamReader | None = attrs.field(init=False, default=None)
-    endpoint: str | None = attrs.field(init=False, default=None)
+    path: str | None = field(default=None)
+    _server: asyncio.AbstractServer | None = field(init=False, default=None)
+    _writer: asyncio.StreamWriter | None = field(init=False, default=None)
+    _reader: asyncio.StreamReader | None = field(init=False, default=None)
+    endpoint: str | None = field(init=False, default=None)
 
-    _connections: set[ClientConnection] = attrs.field(init=False, factory=set)
-    _running: bool = attrs.field(init=False, default=False)
-    _closing: bool = attrs.field(init=False, default=False)
-    _lock: asyncio.Lock = attrs.field(init=False, factory=asyncio.Lock)
+    _connections: set[ClientConnection] = field(init=False, factory=set)
+    _running: bool = field(init=False, default=False)
+    _closing: bool = field(init=False, default=False)
+    _lock: asyncio.Lock = field(init=False, factory=asyncio.Lock)
 
     _transport_name: str = "unix"
 
@@ -307,3 +308,5 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._connections.remove(conn)
             await conn.close()
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
+
+# 🐍🏗️🔌

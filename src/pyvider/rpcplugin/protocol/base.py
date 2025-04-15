@@ -1,4 +1,6 @@
-# pyvider/rpcplugin/protocol.py
+#
+# pyvider/rpcplugin/protocol/base.py
+#
 
 from abc import ABC, abstractmethod
 from typing import Any, Generic
@@ -30,3 +32,5 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]): # pragma: no cover
             handler: The handler implementing the RPC methods
         """
         pass
+
+# 🐍🏗️🔌

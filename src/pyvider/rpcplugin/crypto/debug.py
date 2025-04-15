@@ -1,5 +1,6 @@
+#
 # pyvider/crypto/debug.py
-
+#
 
 from cryptography import x509
 from cryptography.x509.oid import NameOID
@@ -52,5 +53,4 @@ def display_cert_details(cert: x509.Certificate, logger) -> None:
         logger.debug("📜🚨 Could not extract certificate details.")
         raise SecurityError("📜🚨 Could not extract certificate details.")
 
-
-###
+# 🐍🏗️🔌
