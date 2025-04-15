@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/client/__init__.py
+#
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
 from pyvider.rpcplugin.client.connection import ClientConnection
@@ -21,3 +23,5 @@ __all__ = [
     "ClientConnection",
     "RPCPluginClient",
 ]
+
+# 🐍🏗️🔌

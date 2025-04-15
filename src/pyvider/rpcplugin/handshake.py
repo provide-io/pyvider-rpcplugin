@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
-"""
-pyvider/rpcplugin/handshake.py
+#
+# pyvider/rpcplugin/handshake.py
+#
 
+"""
 This module implements handshake logic for the RPC plugin server.
 It includes:
   - HandshakeConfig and HandshakeParts data classes.
@@ -13,6 +14,7 @@ All logging follows our three‑emoji style to clearly indicate component,
 action, and result. Detailed error handling and inline comments are included
 for clarity and debugging.
 """
+
 import asyncio
 import os
 import socket
@@ -20,7 +22,7 @@ import time
 import traceback
 from typing import TypeGuard
 
-import attrs
+from attrs import define, field
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto import Certificate
@@ -32,7 +34,7 @@ from pyvider.rpcplugin.transport.types import TransportT
 _SENTINEL = object()
 
 
-@attrs.define
+@define
 class HandshakeConfig:
     """
     ⚙️🔧✅ Represents the configuration for the RPC plugin handshake.
@@ -50,7 +52,7 @@ class HandshakeConfig:
     supported_transports: list[str]
 
 
-@attrs.define
+@define
 class HandshakeParts:
     """
     🤝📝✅ Represents the parts of the handshake response.
@@ -353,9 +355,6 @@ def parse_handshake_response(
         logger.error(f"📡❌ Handshake parsing failed: {e}", extra={"error": str(e)})
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
 
-
-### 🐍🏗️🔌
-
 async def read_handshake_response(process) -> str:
     """
     Robust handshake response reader with multiple strategies to handle
@@ -472,7 +471,6 @@ async def read_handshake_response(process) -> str:
         f"Timed out waiting for handshake after {timeout}s. "
         f"Buffer so far: '{buffer}'. Stderr: {stderr_output}"
     )
-
 
 async def create_stderr_relay(process):
     """
@@ -591,3 +589,4 @@ async def parse_and_validate_handshake(
         )
         raise HandshakeError(f"Failed to parse handshake: {e}") from e
 
+# 🐍🏗️🔌

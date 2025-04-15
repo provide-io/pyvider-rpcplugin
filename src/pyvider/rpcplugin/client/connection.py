@@ -1,10 +1,11 @@
-#!/usr/bin/env python3
+#
 # pyvider/rpcplugin/client/connection.py
+#
 
 import asyncio
 from collections.abc import Awaitable, Callable
 
-import attrs
+from attrs import define, field
 
 from pyvider.telemetry import logger
 
@@ -13,7 +14,7 @@ SendFuncType = Callable[[bytes], Awaitable[None]]
 ReceiveFuncType = Callable[[int], Awaitable[bytes]]
 
 
-@attrs.define(slots=True, frozen=False)
+@define(slots=True, frozen=False)
 class ClientConnection:
     """
     Represents an active client connection with associated metrics and state.
@@ -33,14 +34,14 @@ class ClientConnection:
         receive_func: Callable used to receive data; defaults to _default_receive.
     """
 
-    reader: asyncio.StreamReader = attrs.field()
-    writer: asyncio.StreamWriter = attrs.field()
-    remote_addr: str = attrs.field()
-    bytes_sent: int = attrs.field(default=0)
-    bytes_received: int = attrs.field(default=0)
-    _closed: bool = attrs.field(default=False, init=False)
-    send_func: SendFuncType | None = attrs.field(default=None)
-    receive_func: ReceiveFuncType | None = attrs.field(default=None)
+    reader: asyncio.StreamReader = field()
+    writer: asyncio.StreamWriter = field()
+    remote_addr: str = field()
+    bytes_sent: int = field(default=0)
+    bytes_received: int = field(default=0)
+    _closed: bool = field(default=False, init=False)
+    send_func: SendFuncType | None = field(default=None)
+    receive_func: ReceiveFuncType | None = field(default=None)
 
     def __attrs_post_init__(self) -> None:
         if self.send_func is None:
@@ -174,3 +175,5 @@ class ClientConnection:
         if not isinstance(other, ClientConnection):
             return NotImplemented
         return id(self) == id(other)
+
+# 🐍🏗️🔌

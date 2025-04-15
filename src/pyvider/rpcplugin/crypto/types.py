@@ -1,4 +1,6 @@
+#
 # pyvider/rpcplugin/crypto/types.py
+#
 
 from typing import Protocol
 
@@ -23,3 +25,5 @@ class CertificateProtocolT(Protocol):
     def is_valid(self) -> bool: ...
     @property
     def public_key(self) -> PublicKeyType: ...
+
+# 🐍🏗️🔌

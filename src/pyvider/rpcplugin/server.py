@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+#
 # pyvider/rpcplugin/server.py
+#
 
 import asyncio
 import os
@@ -10,7 +11,7 @@ import traceback
 from abc import ABC
 from typing import Generic, Optional
 
-import attrs
+from attrs import define, field
 import grpc
 from grpc.aio import server as GRPCServer
 
@@ -39,7 +40,7 @@ from pyvider.rpcplugin.types import (
 )
 
 
-@attrs.define(slots=False)
+@define(slots=False)
 class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     """
     RPCPluginServer initializes and runs a gRPC server according to negotiated
@@ -53,24 +54,24 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     """
 
     # Public initialization parameters.
-    protocol: ProtocolT = attrs.field()
-    handler: HandlerT = attrs.field()
-    config: ClientT | None = attrs.field(default=None)
-    transport: TransportT | None = attrs.field(default=None)
+    protocol: ProtocolT = field()
+    handler: HandlerT = field()
+    config: ClientT | None = field(default=None)
+    transport: TransportT | None = field(default=None)
 
-    _exit_on_stop: bool = attrs.field(default=True, init=False)
+    _exit_on_stop: bool = field(default=True, init=False)
 
     # Internal attributes.
-    _transport: TransportT | None = attrs.field(init=False, default=None)
-    _server: ServerT | None = attrs.field(init=False, default=None)
-    _handshake_config: HandshakeConfig = attrs.field(init=False)
-    _protocol_version: int = attrs.field(init=False)
-    _transport_name: str = attrs.field(init=False)
-    _server_cert_obj: Certificate | None = attrs.field(init=False, default=None)
-    _port: int | None = attrs.field(init=False, default=None)
-    _serving_future: asyncio.Future = attrs.field(init=False, factory=asyncio.Future)
-    _serving_event: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
-    _shutdown_event: asyncio.Event = attrs.field(init=False, factory=asyncio.Event)
+    _transport: TransportT | None = field(init=False, default=None)
+    _server: ServerT | None = field(init=False, default=None)
+    _handshake_config: HandshakeConfig = field(init=False)
+    _protocol_version: int = field(init=False)
+    _transport_name: str = field(init=False)
+    _server_cert_obj: Certificate | None = field(init=False, default=None)
+    _port: int | None = field(init=False, default=None)
+    _serving_future: asyncio.Future = field(init=False, factory=asyncio.Future)
+    _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
+    _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
 
     # Class-level instance for global access.
     _instance: ServerT | None = None
@@ -521,4 +522,4 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             # Suppress all exceptions in __del__
             pass
 
-### 🐍🏗️🔌
+# 🐍🏗️🔌

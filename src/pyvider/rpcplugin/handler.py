@@ -1,5 +1,6 @@
-
+#
 # pyvider/rpcplugin/handler.py
+#
 
 from typing import Protocol, runtime_checkable               # pragma: no cover
 
@@ -11,3 +12,5 @@ class RPCPluginHandler(Protocol):                            # pragma: no cover
     """
 
     pass
+
+# 🐍🏗️🔌

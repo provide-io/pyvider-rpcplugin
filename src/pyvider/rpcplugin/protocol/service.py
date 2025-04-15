@@ -1,5 +1,6 @@
-
+#
 # pyvider/rpcplugin/protocol/service.py
+#
 
 import os
 import asyncio
@@ -298,4 +299,4 @@ def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
     # e.g. return (stdio_service, broker_service, controller_service)
 
 
-### 🐍🏗️🔌
+# 🐍🏗️🔌

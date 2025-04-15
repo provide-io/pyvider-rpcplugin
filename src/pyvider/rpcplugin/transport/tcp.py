@@ -1,3 +1,7 @@
+#
+# pyvider/rpcplugin/transport/tcp.py
+#
+
 """
 pyvider.rpcplugin.transport.tcp
 --------------------------------
@@ -11,7 +15,7 @@ import asyncio
 import socket
 from typing import TypeGuard
 
-import attrs
+from attrs import define, field
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.telemetry import logger
@@ -30,7 +34,7 @@ def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
     return port_str.isdigit()
 
 
-@attrs.define(frozen=False)
+@define(frozen=False)
 class TCPSocketTransport(RPCPluginTransport):
     """
     🔌🚀📝  TCP Socket Transport implementing the Transport interface.
@@ -38,12 +42,12 @@ class TCPSocketTransport(RPCPluginTransport):
     and close the transport.
     """
 
-    host: str = attrs.field(default="127.0.0.1")
-    port: int = attrs.field(init=False, default=0)
+    host: str = field(default="127.0.0.1")
+    port: int = field(init=False, default=0)
 
-    _server: asyncio.AbstractServer | None = attrs.field(init=False, default=None)
-    _writer: asyncio.StreamWriter | None = attrs.field(init=False, default=None)
-    endpoint: str | None = attrs.field(init=False, default=None)
+    _server: asyncio.AbstractServer | None = field(init=False, default=None)
+    _writer: asyncio.StreamWriter | None = field(init=False, default=None)
+    endpoint: str | None = field(init=False, default=None)
 
     _transport_name: str = "tcp"
 
@@ -181,3 +185,5 @@ class TCPSocketTransport(RPCPluginTransport):
                 logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
             finally:
                 self._server = None
+
+# 🐍🏗️🔌
