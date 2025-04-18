@@ -1,6 +1,5 @@
 # tests/transport/test_transport_types_direct.py
 
-from typing import Protocol, runtime_checkable
 import pytest
 
 from pyvider.rpcplugin.transport.types import (

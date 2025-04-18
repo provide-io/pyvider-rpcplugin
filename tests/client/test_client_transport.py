@@ -1,11 +1,8 @@
 # tests/client/test_client_transport.py
 
 import pytest
-import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
-from pyvider.rpcplugin.exception import TransportError
 
 @pytest.mark.asyncio
 async def test_launch_process(client_instance):

@@ -404,7 +404,7 @@ class RPCPluginClient:
             logger.debug("🚢✅ gRPC channel ready and connected.")
         except asyncio.TimeoutError:
             socket_path = target.replace("unix:", "") if target.startswith("unix:") else None
-            logger.error(f"🚢❌ gRPC channel failed to become ready (timeout)")
+            logger.error("🚢❌ gRPC channel failed to become ready (timeout)")
             if socket_path:
                 logger.error(f"🚢❌ Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path)}")
             raise ConnectionError("Failed to establish gRPC channel to plugin: timeout")

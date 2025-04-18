@@ -60,7 +60,6 @@ async def test_register_signal_handlers_not_supported(
     mock_server_handler
 ) -> None:
     """Direct mock of server's _register_signal_handlers method."""
-    from pyvider.telemetry import logger
     
     # Create server instance
     server = RPCPluginServer(
@@ -88,7 +87,7 @@ async def test_register_signal_handlers_not_supported(
             with mock.patch('asyncio.get_event_loop', return_value=loop):
                 # Now call the original to trigger our mocked error
                 original_method()
-        except Exception as e:
+        except Exception:
             # Don't propagate exceptions
             pass
     

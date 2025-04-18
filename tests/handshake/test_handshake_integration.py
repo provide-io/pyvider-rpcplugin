@@ -4,7 +4,6 @@
 import asyncio
 import io
 import os
-import socket
 import sys
 import tempfile
 from contextlib import contextmanager
@@ -14,14 +13,9 @@ import pytest
 
 from pyvider.rpcplugin.config import rpcplugin_config 
 from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.handshake import (
-    HandshakeConfig,
     build_handshake_response,
-    negotiate_protocol_version,
-    negotiate_transport,
     parse_handshake_response,
-    validate_magic_cookie,
 )
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import (

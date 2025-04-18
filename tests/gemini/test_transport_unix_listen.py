@@ -1,9 +1,7 @@
 # tests/transport/unix/test_transport_unix_listen.py
 
-import asyncio
 import os
-from unittest.mock import AsyncMock, patch
-import tempfile
+from unittest.mock import patch
 
 import pytest
 

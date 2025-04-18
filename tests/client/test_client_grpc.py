@@ -1,10 +1,8 @@
 # tests/client/test_client_grpc.py
 
 import pytest
-import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock, ANY
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
 
 @pytest.mark.asyncio
 async def test_rebuild_x509_pem(client_instance):

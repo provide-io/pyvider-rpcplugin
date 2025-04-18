@@ -3,7 +3,6 @@
 import asyncio
 import pytest
 from unittest import mock
-from unittest.mock import patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -21,7 +20,6 @@ async def test_server_starts_insecurely_5(
     monkeypatch, mock_server_protocol, mock_server_handler,
     mock_server_config, mock_server_transport
 ) -> None:
-    from io import StringIO
     import io
     
     transport = mock_server_transport
@@ -73,7 +71,6 @@ async def test_server_starts_insecurely_5(
 
 @pytest.mark.asyncio
 async def test_read_client_cert_present(monkeypatch, mock_server_transport) -> None:
-    from pyvider.rpcplugin.config import rpcplugin_config
 
     rpcplugin_config.set("PLUGIN_CLIENT_CERT", "client_cert")
     server = RPCPluginServer(
@@ -279,7 +276,6 @@ async def test_server_starts_insecurely_A_1(
     )
     
     # Capture stdout buffer writes
-    from io import StringIO
     import io
     
     # Create a buffer that captures both string and bytes writes

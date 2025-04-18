@@ -1,10 +1,8 @@
 # tests/client/test_client_lifecycle.py
 
 import pytest
-import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock, call
+from unittest.mock import patch, MagicMock, AsyncMock
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
 
 @pytest.mark.asyncio
 async def test_start_complete_flow(client_instance):

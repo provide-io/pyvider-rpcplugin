@@ -143,12 +143,9 @@ async def test_del_warning(caplog, capsys) -> None:
 
 # tests/client/test_connection.py
 
-import asyncio
-import gc
 import pytest
 
-from pyvider.rpcplugin.client.connection import ClientConnection
-from tests.fixtures.dummy import DummyReader, DummyWriter
+from tests.fixtures.dummy import DummyWriter
 
 @pytest.fixture
 def connection(dummy_reader, dummy_writer):

@@ -2,10 +2,6 @@
 # tests/handshake/test_handshake_process_io.py
 
 import asyncio
-import os
-import subprocess
-import time
-import traceback
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest

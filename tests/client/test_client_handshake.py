@@ -1,10 +1,8 @@
 # tests/client/test_client_handshake.py
 
 import pytest
-import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
 from pyvider.rpcplugin.exception import HandshakeError
 
 @pytest.mark.asyncio

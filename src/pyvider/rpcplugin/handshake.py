@@ -5,7 +5,7 @@
 """
 This module implements handshake logic for the RPC plugin server.
 It includes:
-  - HandshakeConfig and HandshakeParts data classes.
+  - HandshakeConfig data classes.
   - Functions for protocol version negotiation, transport validation,
     handshake response building, magic cookie validation, and handshake
     response parsing.
@@ -17,12 +17,11 @@ for clarity and debugging.
 
 import asyncio
 import os
-import socket
 import time
 import traceback
 from typing import TypeGuard
 
-from attrs import define, field
+from attrs import define
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto import Certificate
@@ -51,46 +50,6 @@ class HandshakeConfig:
     protocol_versions: list[int]
     supported_transports: list[str]
 
-
-@define
-class HandshakeParts:
-    """
-    🤝📝✅ Represents the parts of the handshake response.
-
-    Attributes:
-      core_version: The core protocol version.
-      plugin_version: The plugin’s protocol version.
-      network: The transport/network type (e.g. "tcp" or "unix").
-      address: The network address or socket path.
-      protocol: The communication protocol (currently fixed as "grpc").
-      server_cert: The formatted server certificate (if applicable).
-    """
-
-    core_version: int
-    plugin_version: int
-    network: str
-    address: str
-    protocol: str
-    server_cert: str | None
-
-
-def validate_transport(transport_name: str, supported_transports: list[str]) -> None:
-    """
-    🚂🔍 Validates whether the specified transport is supported.
-
-    Raises:
-      TransportError: If the transport_name is not in the supported_transports.
-    """
-    logger.debug(
-        f"🤝🚂🔍 Checking transport: {transport_name} against supported list: {supported_transports}"
-    )
-    if transport_name not in supported_transports:
-        logger.error(
-            f"🤝🚂❌ Unsupported transport detected: {transport_name}",
-            extra={"transport": transport_name},
-        )
-        raise TransportError(f"Unsupported transport: {transport_name}")
-    logger.debug(f"🤝🚂✅ Transport '{transport_name}' is supported.")
 
 async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
     """

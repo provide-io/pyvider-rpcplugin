@@ -6,7 +6,6 @@ import asyncio
 import errno
 import os
 import socket
-import stat
 
 from attrs import define, field
 

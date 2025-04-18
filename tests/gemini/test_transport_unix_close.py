@@ -3,7 +3,6 @@
 import os
 import pytest
 from unittest.mock import patch
-import tempfile
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport

@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 # tests/handshake/test_handshake_utils.py
 
-import os
-import socket
-import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     HandshakeParts,
@@ -20,7 +16,6 @@ from pyvider.rpcplugin.transport.tcp import is_valid_tcp_endpoint
 
 
 def test_is_valid_tcp_endpoint():
-    from pyvider.rpcplugin.transport.tcp import is_valid_tcp_endpoint
 
     # Valid endpoints
     assert is_valid_tcp_endpoint("localhost:8080") is True

@@ -16,7 +16,7 @@ full power of the underlying implementation for advanced users.
 
 import os
 import asyncio
-from typing import Any, Callable, Optional, Union, List, Dict
+from typing import Any, Callable, Optional, Dict
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.client import RPCPluginClient
