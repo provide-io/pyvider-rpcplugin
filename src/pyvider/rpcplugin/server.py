@@ -44,13 +44,23 @@ from pyvider.rpcplugin.types import (
 class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     """
     RPCPluginServer initializes and runs a gRPC server according to negotiated
-    handshake parameters. It supports mTLS via the Certificate API and can use
-    either TCP or Unix socket transports.
+    handshake parameters.
 
-    This version includes:
-      - Global instance access.
-      - Shutdown signaling via a serving future.
-      - Detailed debug logging and robust exception handling.
+    This class manages the complete lifecycle of a plugin server:
+    1. Setting up the transport (Unix socket or TCP)
+    2. Performing the handshake protocol with clients
+    3. Starting the gRPC server with the provided protocol and handler
+    4. Managing server shutdown and cleanup
+
+    The server supports mTLS for secure communication and can operate with either
+    TCP or Unix socket transports. It handles signals for graceful shutdown and
+    provides a comprehensive logging interface for debugging.
+
+    Attributes:
+        protocol: The protocol implementation describing the gRPC service
+        handler: The handler implementation that processes requests
+        config: Optional configuration parameters
+        transport: Optional pre-configured transport instance
     """
 
     # Public initialization parameters.
@@ -79,6 +89,14 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     def __attrs_post_init__(self) -> None:
         """
         Initializes handshake configuration and sets the global server instance.
+
+        This method:
+        1. Loads handshake configuration from rpcplugin_config
+        2. Sets up protocol versions and supported transports
+        3. Registers this instance as the global server instance
+
+        Raises:
+            Exception: If initialization of handshake configuration fails
         """
         try:
             logger.debug("🛎️⚙️ Initializing HandshakeConfig from configuration.")
@@ -102,7 +120,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         logger.debug("🛎️⚙️ Global RPCPluginServer instance set.")
 
     async def wait_for_server_ready(self, timeout: float = 3.14) -> None:
-        """Wait for server to be ready."""
+        """
+        Wait for the server to be in a ready state.
+
+        This method blocks until the server is fully initialized and ready to accept
+        connections, or until the specified timeout is reached.
+
+        Args:
+            timeout: Maximum time to wait for server readiness, in seconds
+
+        Raises:
+            TimeoutError: If the server does not become ready within the timeout period
+        """
         try:
             logger.debug("Waiting for server ready event...")
             await asyncio.wait_for(self._serving_event.wait(), timeout)
@@ -118,12 +147,25 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     def get_instance(cls) -> Optional["RPCPluginServer"]:
         """
         Retrieve the currently running server instance.
+
+        This class method provides access to the singleton server instance,
+        allowing other components to access the server when needed.
+
+        Returns:
+            The singleton RPCPluginServer instance, or None if not yet created
         """
         return cls._instance
 
     def _read_client_cert(self) -> str | None:
         """
-        Reads the client certificate from configuration with better error handling.
+        Reads the client certificate from configuration.
+
+        This method attempts to find a client certificate in either:
+        1. The server's local configuration
+        2. The global rpcplugin_config
+
+        Returns:
+            The client certificate as a string, or None if not found
         """
         try:
             # First check the config provided to the server
@@ -151,6 +193,20 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     ) -> grpc.ServerCredentials | None:
         """
         Generates gRPC server TLS credentials using the Certificate API.
+
+        This method creates the necessary TLS credentials for secure communication:
+        1. Loads or generates a server certificate
+        2. Creates gRPC server credentials with the certificate
+        3. Optionally configures mutual TLS (mTLS) with client verification
+
+        Args:
+            client_cert: The client certificate for mTLS validation, or None for regular TLS
+
+        Returns:
+            gRPC server credentials object, or None for insecure operation
+
+        Raises:
+            Exception: If credential generation fails
         """
         logger.debug("🛎️ Generating server credentials using Certificate API.")
         try:
@@ -178,16 +234,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 root_certificates=client_cert_bytes,
                 require_client_auth=False,
             )
-            # creds = grpc.ssl_server_credentials(
-            #     private_key_certificate_chain_pairs=[
-            #         (
-            #             self._server_cert_obj.key.encode(),
-            #             self._server_cert_obj.cert.encode(),
-            #         )
-            #     ],
-            #     root_certificates=client_cert.encode(),
-            #     require_client_auth=False,
-            # )
             logger.debug("🛎️ Server TLS credentials created with mTLS enabled.")
             return creds
         except Exception as e:
@@ -197,6 +243,17 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise
 
     async def stop(self) -> None:
+        """
+        Stop the server gracefully, cleaning up all resources.
+
+        This method performs a complete shutdown sequence:
+        1. Cancels any pending tasks
+        2. Stops the gRPC server with a grace period
+        3. Closes the transport
+        4. Completes the serving future to signal shutdown
+
+        The method is designed to be idempotent and can be called multiple times safely.
+        """
         logger.debug("🛎️ Stopping server...")
 
         # Cancel any pending tasks first
@@ -242,6 +299,20 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     async def _setup_server(self, client_cert: str | None) -> None:
         """
         Sets up the gRPC server instance and registers the provider service.
+
+        This method:
+        1. Creates a gRPC server with optimized options
+        2. Registers the protocol service and handler
+        3. Configures TLS if needed
+        4. Binds to the transport endpoint
+        5. Starts the server
+
+        Args:
+            client_cert: Client certificate for mTLS, or None for insecure mode
+
+        Raises:
+            RuntimeError: If protocol service registration fails
+            TransportError: If server setup or binding fails
         """
         logger.debug("🛎️ Setting up gRPC server instance...")
         try:
@@ -360,6 +431,21 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise
 
     async def _negotiate_handshake(self) -> bool | None:
+        """
+        Negotiate the handshake parameters with the client.
+
+        This method:
+        1. Validates the magic cookie for authentication
+        2. Negotiates the protocol version
+        3. Selects and initializes the appropriate transport
+
+        Returns:
+            True if handshake negotiation succeeds
+
+        Raises:
+            HandshakeError: If handshake negotiation fails
+            TransportError: If transport negotiation fails
+        """
         logger.debug("🤝 Starting handshake negotiation...")
         try:
             validate_magic_cookie()
@@ -382,18 +468,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                         if isinstance(self.transport, TCPSocketTransport)
                         else "unix"
                     )
-            # if self.transport:
-            #     if isinstance(self.transport, tuple):
-            #         self._transport_name, self._transport, _ = self.transport
-            #         logger.debug("🤝 Transport tuple provided; unpacked transport.")
-            #     else:
-            #         logger.debug("🤝 Using provided transport instance.")
-            #         self._transport = self.transport
-            #         self._transport_name = (
-            #             "tcp"
-            #             if isinstance(self.transport, TCPSocketTransport)
-            #             else "unix"
-            #         )
             else:
                 logger.debug("🤝 Negotiating transport from configuration...")
                 supported_transports = self._handshake_config.supported_transports
@@ -415,6 +489,12 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             raise HandshakeError(f"Handshake negotiation failed: {e}") from e
 
     def _register_signal_handlers(self) -> None:
+        """
+        Register signal handlers for graceful shutdown.
+
+        This method sets up handlers for SIGINT and SIGTERM to trigger
+        graceful shutdown when the process receives these signals.
+        """
         logger.debug("🛎️ Registering signal handlers for graceful shutdown...")
         try:
             loop = asyncio.get_event_loop()
@@ -433,6 +513,16 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             )
 
     def _shutdown_requested(self, *args) -> None:
+        """
+        Handle a shutdown request, either from a signal or explicit call.
+
+        This method:
+        1. Initiates a graceful shutdown sequence
+        2. Resolves the serving future to signal completion
+
+        Args:
+            *args: Optional arguments passed by signal handlers (ignored)
+        """
         logger.info("🛎️ Shutdown signal received; initiating graceful shutdown...")
         if self._server:
             asyncio.create_task(self.stop())
@@ -441,6 +531,22 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug("🛎️ Serving future resolved on shutdown request.")
 
     async def serve(self) -> None:
+        """
+        Main entry point for starting the server.
+
+        This method:
+        1. Sets up signal handlers
+        2. Negotiates handshake parameters
+        3. Sets up the server with the chosen transport
+        4. Sends the handshake response to stdout
+        5. Runs until shutdown is requested
+        6. Performs graceful shutdown
+
+        This is a blocking method that runs until the server is shut down.
+
+        Raises:
+            Any exception that occurs during setup or serving
+        """
         logger.debug("🛎️ Entering serve(); starting server setup...")
         try:
             self._register_signal_handlers()
@@ -501,7 +607,12 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug("🛎️ Shutdown complete; exiting process.")
 
     def __del__(self) -> None:
-        """Safe cleanup in garbage collection."""
+        """
+        Cleanup resources when the object is garbage collected.
+
+        This method ensures that resources are properly cleaned up even if
+        the server is not explicitly stopped.
+        """
         try:
             # Check if event loop exists and is running
             try:
