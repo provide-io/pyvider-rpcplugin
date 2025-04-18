@@ -48,11 +48,23 @@ class UnixSocketTransport(RPCPluginTransport):
     """
     Unix domain socket transport compatible with Go plugin implementation.
 
-    Fixed for Go-Python interoperability with specialized handling for:
-    - Socket path normalization (supporting unix:, unix:/, unix:///)
-    - File permission handling (0770 for cross-process access)
+    This transport implementation handles Unix domain socket communication with
+    specific adaptations for interoperability with HashiCorp's Go-based plugin
+    system. It manages socket creation, permission handling, and cleanup.
+
+    Key features:
+    - Socket path normalization (supporting unix:, unix:/, unix:// prefixes)
+    - File permission management (0770 for cross-process access)
     - Proper socket state verification and cleanup
-    - Robust connection tracking and shutdown
+    - Connection tracking
+
+    Example:
+        ```python
+        transport = UnixSocketTransport(path="/tmp/plugin.sock")
+        endpoint = await transport.listen()  # Start listening
+        # ... use in server ...
+        await transport.close()  # Clean up resources
+        ```
     """
 
     path: str | None = field(default=None)
@@ -166,7 +178,23 @@ class UnixSocketTransport(RPCPluginTransport):
                 raise TransportError(f"Failed to create Unix socket: {e}")
 
     async def connect(self, endpoint: str) -> None:
-        """Connect to Unix socket with robust path handling."""
+        """
+        Connect to a remote Unix socket with robust path handling.
+        
+        This method:
+        1. Normalizes the endpoint path to handle various formats
+        2. Verifies the socket file exists (with retries)
+        3. Establishes the connection with timeout handling
+        
+        Args:
+            endpoint: The Unix socket path to connect to, which can be in various formats:
+                     - Absolute path: "/tmp/socket.sock"
+                     - With prefix: "unix:/tmp/socket.sock"
+                     
+        Raises:
+            TransportError: If the socket file doesn't exist or connection fails
+            TimeoutError: If the connection attempt times out
+        """
         # Save original endpoint for logging
         orig_endpoint = endpoint
 

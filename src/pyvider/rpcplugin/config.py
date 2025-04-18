@@ -32,8 +32,9 @@ Usage:
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union, cast, get_args
+from typing import Any, Dict, List, Literal, Optional, Union, cast, get_args, get_type_hints
 
+from attrs import define, field
 
 from pyvider.telemetry import logger
 
@@ -103,7 +104,7 @@ CONFIG_SCHEMA: Dict[str, Dict[str, Any]] = {
         "type": "str",
     },
     "PLUGIN_AUTO_MTLS": {
-        "required": False,
+        "required": True,
         "default": "true",
         "description": "Flag to enable automatic mTLS (true/false).",
         "type": "bool",
@@ -181,30 +182,30 @@ CONFIG_SCHEMA: Dict[str, Dict[str, Any]] = {
 def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
     """
     Fetches and processes an environment variable based on schema metadata.
-    
+
     This function:
     1. Reads the variable from environment or uses default
     2. Handles file-based values (file://) by reading from the file
     3. Converts to the correct type based on schema information
-    
+
     Args:
         key: The configuration key to fetch
         meta: Metadata about the configuration value
-        
+
     Returns:
         The processed configuration value
-        
+
     Raises:
         ValueError: If file reading fails or type conversion fails
     """
     # Get raw value from environment or default
     value = os.getenv(key, meta["default"])
-    logger.debug(f"⚙️🔍✅ Reading config {key}: raw value = {value}")
-    
+    # logger.debug(f"⚙️🔍✅ Reading config {key}: raw value = {value}") # lots of logs
+
     # Return None for None values
     if value is None:
         return None
-        
+
     # Handle file-based values
     if isinstance(value, str) and value.startswith("file://"):
         file_path = value[7:]
@@ -223,24 +224,24 @@ def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
             case "str":
                 # String values need no conversion
                 return value
-                
+
             case "int":
                 if isinstance(value, int):
                     return value
                 return int(value)
-                
+
             case "float":
                 if isinstance(value, float):
                     return value
                 return float(value)
-                
+
             case "bool":
                 if isinstance(value, bool):
                     return value
                 if isinstance(value, str):
                     return value.lower() in ("true", "yes", "1", "on")
                 return bool(value)
-                
+
             case "list_str":
                 # Handle lists stored as comma-separated strings
                 if isinstance(value, list):
@@ -248,7 +249,7 @@ def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
                 if isinstance(value, str):
                     return [v.strip() for v in value.split(",")]
                 return list(value)
-                
+
             case "list_int":
                 # Handle lists of integers
                 if isinstance(value, list) and all(isinstance(x, int) for x in value):
@@ -258,12 +259,12 @@ def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
                 if isinstance(value, str):
                     return [int(v.strip()) for v in value.split(",")]
                 return [int(value)]
-                
+
             case _:
                 # Default case - return as is
                 logger.warning(f"⚙️⚠️ Unknown type {meta['type']} for {key}, returning raw value")
                 return value
-                
+
     except (ValueError, TypeError) as e:
         logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
         raise ValueError(f"Invalid format for {key}. Expected {meta['type']}, got: {value}") from e
@@ -272,29 +273,29 @@ def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
 def validate_config_value(key: str, value: Any, meta: Dict[str, Any]) -> bool:
     """
     Validates a configuration value against schema requirements.
-    
+
     Args:
         key: The configuration key
         value: The value to validate
         meta: Schema metadata for the key
-        
+
     Returns:
         True if valid, False otherwise
-        
+
     Raises:
         ValueError: For validation failures
     """
     logger.debug(f"⚙️🔍🚀 Validating config {key} = {value}")
-    
+
     # Required check
     if meta.get("required", False) and value is None:
         logger.error(f"⚙️❌ Missing required configuration: {key}")
         raise ValueError(f"Missing required configuration: {key}. {meta['description']}")
-        
+
     # If value is None, no further validation needed
     if value is None:
         return True
-        
+
     # Check valid_values if defined
     if "valid_values" in meta and value not in meta["valid_values"]:
         logger.error(
@@ -304,24 +305,24 @@ def validate_config_value(key: str, value: Any, meta: Dict[str, Any]) -> bool:
         raise ValueError(
             f"Invalid value for {key}: {value}. Valid values: {meta['valid_values']}"
         )
-        
-    logger.debug(f"⚙️🔍✅ Config {key} validation passed")
+
+    # logger.debug(f"⚙️🔍✅ Config {key} validation passed") # lots of logs
     return True
 
 
 def get_config() -> Dict[str, Any]:
     """
     Retrieves all configuration values from environment, applying defaults and validation.
-    
+
     Returns:
         Dictionary of configuration key-value pairs
-        
+
     Raises:
         ValueError: For invalid configuration
     """
     config = {}
     logger.debug("⚙️🔄 Building configuration from environment and defaults")
-    
+
     for key, meta in CONFIG_SCHEMA.items():
         try:
             value = fetch_env_variable(key, meta)
@@ -330,24 +331,23 @@ def get_config() -> Dict[str, Any]:
         except ValueError as e:
             logger.error(f"⚙️❌ Configuration error for {key}", extra={"error": str(e)})
             raise
-            
+
     logger.debug(f"⚙️✅ Configuration complete with {len(config)} values")
     return config
 
 
-# Fix: Use regular class instead of attrs.define to maintain compatibility
 class RPCPluginConfig:
     """
     Configuration manager for Pyvider RPC Plugin.
-    
+
     This class provides a singleton pattern for accessing configuration values,
     with methods for getting and setting values. It loads configuration from
     environment variables and defaults on initialization.
-    
+
     Attributes:
         config: Dictionary of configuration values
     """
-    
+
     _instance = None
 
     def __init__(self):
@@ -364,7 +364,7 @@ class RPCPluginConfig:
     def instance(cls) -> "RPCPluginConfig":
         """
         Get or create the singleton instance.
-        
+
         Returns:
             The singleton RPCPluginConfig instance
         """
@@ -376,11 +376,11 @@ class RPCPluginConfig:
     def get(self, key: str, default: Any = None) -> Any:
         """
         Retrieve a configuration value.
-        
+
         Args:
             key: The configuration key
             default: Default value if key doesn't exist
-            
+
         Returns:
             The configuration value or default
         """
@@ -391,10 +391,10 @@ class RPCPluginConfig:
     def get_list(self, key: str) -> List[Any]:
         """
         Retrieve a configuration value as a list.
-        
+
         Args:
             key: The configuration key
-            
+
         Returns:
             The configuration value as a list
         """
@@ -407,11 +407,11 @@ class RPCPluginConfig:
     def set(self, key: str, value: Any) -> None:
         """
         Set a configuration value dynamically.
-        
+
         Args:
             key: The configuration key
             value: The value to set
-            
+
         Raises:
             KeyError: If key is not in CONFIG_SCHEMA
         """
@@ -425,7 +425,7 @@ class RPCPluginConfig:
     def magic_cookie_key(self) -> str:
         """
         Get the configured magic cookie key.
-        
+
         Returns:
             The magic cookie key
         """
@@ -434,7 +434,7 @@ class RPCPluginConfig:
     def magic_cookie_value(self) -> str:
         """
         Get the expected magic cookie value.
-        
+
         Returns:
             The magic cookie value
         """
@@ -443,7 +443,7 @@ class RPCPluginConfig:
     def server_transports(self) -> List[str]:
         """
         Get the list of transports supported by the server.
-        
+
         Returns:
             List of transport names
         """
@@ -452,7 +452,7 @@ class RPCPluginConfig:
     def server_endpoint(self) -> Optional[str]:
         """
         Get the server endpoint configuration.
-        
+
         Returns:
             The server endpoint or None
         """
@@ -461,7 +461,7 @@ class RPCPluginConfig:
     def client_transports(self) -> List[str]:
         """
         Get the list of transports supported by the client.
-        
+
         Returns:
             List of transport names
         """
@@ -470,43 +470,41 @@ class RPCPluginConfig:
     def client_endpoint(self) -> Optional[str]:
         """
         Get the client endpoint configuration.
-        
+
         Returns:
             The client endpoint or None
         """
         return cast(Optional[str], self.get("PLUGIN_CLIENT_ENDPOINT"))
-    
+
     def auto_mtls_enabled(self) -> bool:
         """
         Check if auto mTLS is enabled.
-        
+
         Returns:
             True if enabled, False otherwise
         """
-        return cast(bool, self.get("PLUGIN_AUTO_MTLS", True))
-    
+        return cast(bool, self.get("PLUGIN_AUTO_MTLS"))
+
     def handshake_timeout(self) -> float:
         """
         Get the handshake timeout in seconds.
-        
+
         Returns:
             Timeout in seconds
         """
-        return cast(float, self.get("PLUGIN_HANDSHAKE_TIMEOUT", 10.0))
-    
+        return cast(float, self.get("PLUGIN_HANDSHAKE_TIMEOUT"))
+
     def connection_timeout(self) -> float:
         """
         Get the connection timeout in seconds.
-        
+
         Returns:
             Timeout in seconds
         """
-        return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT", 30.0))
-
+        return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
 
 # Global singleton instance
 rpcplugin_config = RPCPluginConfig.instance()
-
 
 def configure(
     magic_cookie: Optional[str] = None,
@@ -523,11 +521,11 @@ def configure(
 ) -> None:
     """
     Configure Pyvider RPC plugin with simplified options.
-    
+
     This function provides a more user-friendly way to configure the plugin system
     compared to setting individual environment variables. It handles type conversion
     and validation automatically.
-    
+
     Args:
         magic_cookie: The plugin magic cookie for handshake validation
         protocol_version: The protocol version to use
@@ -540,18 +538,18 @@ def configure(
         client_cert: Client certificate in PEM format or file:// path
         client_key: Client private key in PEM format or file:// path
         **kwargs: Any additional configuration options
-        
+
     Raises:
         ValueError: For invalid configuration values
     """
     logger.debug("⚙️🔄 Running simplified configuration")
-    
+
     # Magic cookie configuration
     if magic_cookie is not None:
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE", magic_cookie)
         logger.debug(f"⚙️📝 Set magic cookie: {magic_cookie}")
-    
+
     # Protocol version configuration
     if protocol_version is not None:
         if protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:
@@ -561,7 +559,7 @@ def configure(
             )
         rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", [protocol_version])
         logger.debug(f"⚙️📝 Set protocol version: {protocol_version}")
-    
+
     # Transport configuration
     if transports is not None:
         # Validate transport types
@@ -574,74 +572,74 @@ def configure(
                 raise ValueError(
                     f"Unknown transport type: {transport}. Valid types: {get_args(TRANSPORT_TYPES)}"
                 )
-        
+
         rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", transports)
         rpcplugin_config.set("PLUGIN_CLIENT_TRANSPORTS", transports)
         logger.debug(f"⚙️📝 Set transports: {transports}")
-    
+
     # Auto mTLS configuration
     if auto_mtls is not None:
         rpcplugin_config.set("PLUGIN_AUTO_MTLS", "true" if auto_mtls else "false")
         logger.debug(f"⚙️📝 Set auto mTLS: {auto_mtls}")
-    
+
     # Timeout configurations
     if handshake_timeout is not None:
         rpcplugin_config.set("PLUGIN_HANDSHAKE_TIMEOUT", handshake_timeout)
         logger.debug(f"⚙️📝 Set handshake timeout: {handshake_timeout}s")
-        
+
     if connection_timeout is not None:
         rpcplugin_config.set("PLUGIN_CONNECTION_TIMEOUT", connection_timeout)
         logger.debug(f"⚙️📝 Set connection timeout: {connection_timeout}s")
-    
+
     # Certificate configurations
     if server_cert is not None:
         rpcplugin_config.set("PLUGIN_SERVER_CERT", server_cert)
         logger.debug("⚙️📝 Set server certificate")
-        
+
     if server_key is not None:
         rpcplugin_config.set("PLUGIN_SERVER_KEY", server_key)
         logger.debug("⚙️📝 Set server key")
-        
+
     if client_cert is not None:
         rpcplugin_config.set("PLUGIN_CLIENT_CERT", client_cert)
         logger.debug("⚙️📝 Set client certificate")
-        
+
     if client_key is not None:
         rpcplugin_config.set("PLUGIN_CLIENT_KEY", client_key)
         logger.debug("⚙️📝 Set client key")
-    
+
     # Set any additional options
     for key, value in kwargs.items():
         config_key = f"PLUGIN_{key.upper()}"
         rpcplugin_config.set(config_key, value)
         logger.debug(f"⚙️📝 Set additional config {config_key} = {value}")
-    
+
     logger.debug("⚙️✅ Configuration completed successfully")
 
 
 def load_config_from_file(config_file: Union[str, Path]) -> None:
     """
     Load configuration from a file.
-    
+
     The file can be:
     - A .env file with KEY=VALUE pairs
     - A JSON file with configuration in JSON format
     - A YAML file with configuration in YAML format
-    
+
     Args:
         config_file: Path to the configuration file
-        
+
     Raises:
         ValueError: If the file format is not supported or loading fails
     """
     path = Path(config_file) if isinstance(config_file, str) else config_file
-    
+
     if not path.exists():
         logger.error(f"⚙️❌ Configuration file not found: {path}")
         raise ValueError(f"Configuration file not found: {path}")
-    
+
     logger.debug(f"⚙️📂🚀 Loading configuration from {path}")
-    
+
     try:
         match path.suffix.lower():
             case ".env":
@@ -655,11 +653,11 @@ def load_config_from_file(config_file: Union[str, Path]) -> None:
                 raise ValueError(
                     f"Unsupported file format: {path.suffix}. Supported formats: .env, .json, .yaml, .yml"
                 )
-                
+
         # Reload configuration from environment
         rpcplugin_config.config = get_config()
         logger.debug(f"⚙️📂✅ Successfully loaded configuration from {path}")
-        
+
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading configuration from {path}", extra={"error": str(e)})
         raise ValueError(f"Error loading configuration from {path}: {e}") from e
@@ -668,36 +666,36 @@ def load_config_from_file(config_file: Union[str, Path]) -> None:
 def _load_dotenv_file(path: Path) -> None:
     """
     Load configuration from a .env file.
-    
+
     Args:
         path: Path to the .env file
-        
+
     Raises:
         ValueError: If loading fails
     """
     logger.debug(f"⚙️📂🚀 Loading .env file: {path}")
-    
+
     try:
         with open(path, "r", encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if not line or line.startswith("#"):
                     continue
-                    
+
                 key, value = line.split("=", 1)
                 key = key.strip()
                 value = value.strip()
-                
+
                 # Remove quotes if present
                 if value.startswith('"') and value.endswith('"'):
                     value = value[1:-1]
                 if value.startswith("'") and value.endswith("'"):
                     value = value[1:-1]
-                    
+
                 # Set environment variable
                 os.environ[key] = value
                 logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
-                
+
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading .env file: {path}", extra={"error": str(e)})
         raise ValueError(f"Error loading .env file: {path}") from e
@@ -706,30 +704,30 @@ def _load_dotenv_file(path: Path) -> None:
 def _load_json_file(path: Path) -> None:
     """
     Load configuration from a JSON file.
-    
+
     Args:
         path: Path to the JSON file
-        
+
     Raises:
         ValueError: If loading fails
     """
     logger.debug(f"⚙️📂🚀 Loading JSON file: {path}")
-    
+
     try:
         import json
-        
+
         with open(path, "r", encoding="utf-8") as f:
             config_data = json.load(f)
-            
+
         for key, value in config_data.items():
             # Convert to string for environment variables
             if isinstance(value, (list, dict)):
                 os.environ[key] = json.dumps(value)
             else:
                 os.environ[key] = str(value)
-                
+
             logger.debug(f"⚙️📂✅ Set environment variable from JSON: {key}")
-            
+
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading JSON file: {path}", extra={"error": str(e)})
         raise ValueError(f"Error loading JSON file: {path}") from e
@@ -738,34 +736,34 @@ def _load_json_file(path: Path) -> None:
 def _load_yaml_file(path: Path) -> None:
     """
     Load configuration from a YAML file.
-    
+
     Args:
         path: Path to the YAML file
-        
+
     Raises:
         ValueError: If loading fails or PyYAML is not installed
     """
     logger.debug(f"⚙️📂🚀 Loading YAML file: {path}")
-    
+
     try:
         try:
             import yaml
         except ImportError:
             logger.error("⚙️📂❌ PyYAML is required for YAML configuration")
             raise ValueError("PyYAML is required for YAML configuration. Install with 'pip install PyYAML'")
-            
+
         with open(path, "r", encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
-            
+
         for key, value in config_data.items():
             # Convert to string for environment variables
             if isinstance(value, (list, dict)):
                 os.environ[key] = yaml.dump(value)
             else:
                 os.environ[key] = str(value)
-                
+
             logger.debug(f"⚙️📂✅ Set environment variable from YAML: {key}")
-            
+
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})
         raise ValueError(f"Error loading YAML file: {path}") from e

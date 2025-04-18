@@ -171,7 +171,7 @@ class Certificate:
     ecdsa_curve: str = field(default="secp384r1", kw_only=True) # For ECDSA
     common_name: str = field(default="localhost", kw_only=True)
     alt_names: list[str] | None = field(default=Factory(lambda: ["localhost"]), kw_only=True)
-    organization_name: str = field(default="provide.io", kw_only=True)
+    organization_name: str = field(default="HashiCorp", kw_only=True)
     validity_days: int = field(default=365, kw_only=True) # For generation
 
     # --- Internal state fields (not part of constructor, set in post_init) ---
