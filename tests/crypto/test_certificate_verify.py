@@ -173,7 +173,7 @@ async def test_verify_unsupported_key_type() -> None:
     mock_cert._cert = mock.MagicMock()
     mock_cert.public_key = None  # Force unsupported key type
 
-    with pytest.raises(CertificateError, match="Unsupported public key algorithm"):
+    with pytest.raises(CertificateError, match="Cannot verify trust: Other certificate has no public key."):
         cert.verify_trust(mock_cert)
 
 @pytest.mark.asyncio
@@ -193,7 +193,7 @@ async def test_corrupt_certificate() -> None:
     """Ensure corrupted certificates raise errors."""
     with pytest.raises(CertificateError):
         Certificate(
-            cert="-----BEGIN CERTIFICATE-----\nINVALID DATA\n-----END CERTIFICATE-----"
+            cert_pem_or_uri="-----BEGIN CERTIFICATE-----\nINVALID DATA\n-----END CERTIFICATE-----"
         )
 
 @pytest.mark.asyncio

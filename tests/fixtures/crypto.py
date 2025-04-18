@@ -43,7 +43,7 @@ zvpvL+mfy1c5oHQhh6KPnxpoo1WyDJGYplwPTGS68DvvWmolrPAtC7I7r7spgyJS
     logger.info(f"Loaded CLIENT_CERT: {cert[:30]}...")
     logger.info(f"Loaded CLIENT_KEY: {key[:30]}...")
 
-    return Certificate(cert=cert, key=key)
+    return Certificate(cert_pem_or_uri=cert, key_pem_or_uri=key)
 
 
 @pytest.fixture(scope="module")
@@ -82,7 +82,7 @@ VXHTAdc/bLFFy9kybQqo300Rv6ViW2I=
     logger.info(f"Loaded SERVER_CERT: {cert[:30]}...")
     logger.info(f"Loaded SERVER_KEY: {key[:30]}...")
 
-    return Certificate(cert=cert, key=key)
+    return Certificate(cert_pem_or_uri=cert, key_pem_or_uri=key)
 
 
 @pytest.fixture(scope="module")

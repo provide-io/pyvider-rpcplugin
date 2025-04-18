@@ -13,7 +13,7 @@ from tests.fixtures import *
 @pytest.mark.asyncio
 async def test_load_invalid_pem() -> None:
     with pytest.raises(CertificateError):
-        Certificate(cert="INVALID DATA", key="INVALID DATA")
+        Certificate(cert_pem_or_uri="INVALID DATA", key_pem_or_uri="INVALID DATA")
 
 @pytest.mark.asyncio
 async def test_load_pem_certificate(client_cert) -> None:
@@ -29,7 +29,7 @@ async def test_load_pem_private_key(client_cert) -> None:
 @pytest.mark.asyncio
 async def test_load_certificate_from_file(temporary_cert_file) -> None:
     """Ensure a certificate loads correctly from a file:// path."""
-    cert = Certificate(cert=temporary_cert_file)
+    cert = Certificate(cert_pem_or_uri=temporary_cert_file)
     assert cert.subject, "Certificate subject should not be empty"
 
 @pytest.mark.asyncio
@@ -41,8 +41,8 @@ async def test_load_key_value_error(valid_cert_pem) -> None:
     ):
         with pytest.raises(CertificateError, match="Could not deserialize key data"):
             Certificate(
-                cert=valid_cert_pem,
-                key="-----BEGIN PRIVATE KEY-----\nINVALID\n-----END PRIVATE KEY-----",
+                cert_pem_or_uri=valid_cert_pem,
+                key_pem_or_uri="-----BEGIN PRIVATE KEY-----\nINVALID\n-----END PRIVATE KEY-----",
             )
 
 @pytest.mark.asyncio
@@ -53,58 +53,58 @@ async def test_load_key_type_error() -> None:
         side_effect=TypeError("Password required"),
     ):
         with pytest.raises(CertificateError, match="Failed to load data"):
-            Certificate(cert=valid_cert_pem, key="SOME_KEY")
+            Certificate(cert_pem_or_uri=valid_cert_pem, key_pem_or_uri="SOME_KEY")
 
 @pytest.mark.asyncio
 async def test_load_cert_with_windows_line_endings(client_cert) -> None:
     """Ensure certificate loading works with Windows-style line endings."""
     # Use the actual certificate content from the fixture
     cert_pem = client_cert.cert.replace("\n", "\r\n")
-    cert = Certificate(cert=cert_pem)
+    cert = Certificate(cert_pem_or_uri=cert_pem)
     assert cert.subject, "Windows line endings should not break parsing"
 
 @pytest.mark.asyncio
 async def test_load_private_key_from_file(temporary_key_file, client_cert) -> None:
     """Ensure a private key loads correctly from a file:// path."""
     # Create cert from the fixture's actual certificate
-    cert = Certificate(cert=client_cert.cert, key=temporary_key_file)
+    cert = Certificate(cert_pem_or_uri=client_cert.cert, key_pem_or_uri=temporary_key_file)
     assert cert.public_key, "Certificate should have a valid private key"
 
 @pytest.mark.asyncio
 async def test_invalid_certificate_raises_error(invalid_cert_pem) -> None:
     """Ensure an invalid PEM certificate raises CertificateError."""
     with pytest.raises(CertificateError):
-        Certificate(cert=invalid_cert_pem)
+        Certificate(cert_pem_or_uri=invalid_cert_pem)
 
 @pytest.mark.asyncio
 async def test_load_cert_with_malformed_pem(malformed_cert_pem) -> None:
     """Test loading certificate with malformed PEM format."""
     with pytest.raises(CertificateError, match="Unable to load PEM"):
-        Certificate(cert=malformed_cert_pem)
+        Certificate(cert_pem_or_uri=malformed_cert_pem)
 
 @pytest.mark.asyncio
 async def test_malformed_certificate_raises_error(malformed_cert_pem) -> None:
     """Ensure a malformed PEM certificate raises CertificateError."""
     with pytest.raises(CertificateError):
-        Certificate(cert=malformed_cert_pem)
+        Certificate(cert_pem_or_uri=malformed_cert_pem)
 
 @pytest.mark.asyncio
 async def test_empty_certificate_raises_error(empty_cert) -> None:
     """Ensure an empty certificate raises CertificateError."""
     with pytest.raises(CertificateError):
-        Certificate(cert=empty_cert)
+        Certificate(cert_pem_or_uri=empty_cert)
 
 @pytest.mark.asyncio
 async def test_missing_certificate_file_raises_error() -> None:
     """Ensure a missing certificate file raises CertificateError."""
     with pytest.raises(CertificateError):
-        Certificate(cert="file:///nonexistent/path/cert.pem")
+        Certificate(cert_pem_or_uri="file:///nonexistent/path/cert.pem")
 
 @pytest.mark.asyncio
 async def test_load_cert_with_utf8_bom() -> None:
     """Ensure certificate loading works with UTF-8 BOM characters."""
     "\ufeff" + client_cert
-    cert = Certificate(cert=client_pem)
+    cert = Certificate(cert_pem_or_uri=client_pem)
     assert cert.subject, "UTF-8 BOM should not break certificate parsing"
 
 @pytest.mark.asyncio
@@ -112,7 +112,7 @@ async def test_malformed_certificate_loading() -> None:
     """Ensure malformed certificates raise CertificateError."""
     with pytest.raises(CertificateError, match="Unable to load PEM"):
         Certificate(
-            cert="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----"
+            cert_pem_or_uri="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----"
         )
 
 @pytest.mark.asyncio
@@ -120,7 +120,7 @@ async def test_load_cert_with_extra_whitespace(client_cert) -> None:
     """Ensure certificate loading is robust against extra whitespace."""
     # Use cert.cert instead of cert directly
     cert_pem = f"\n\n{client_cert.cert}\n\n"
-    cert = Certificate(cert=cert_pem)
+    cert = Certificate(cert_pem_or_uri=cert_pem)
     assert cert.subject, "Whitespace should not affect certificate loading"
 
 ### 🐍🏗🧪️
