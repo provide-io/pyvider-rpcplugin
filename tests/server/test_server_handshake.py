@@ -7,9 +7,6 @@ from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 from pyvider.rpcplugin.config import rpcplugin_config
 
-from pyvider.rpcplugin.handshake import (
-    validate_magic_cookie,
-)
 
 
 from tests.fixtures import *

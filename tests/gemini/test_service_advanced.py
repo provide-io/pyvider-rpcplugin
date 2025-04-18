@@ -1,16 +1,10 @@
 # tests/service_advanced.py
-import asyncio
-import signal
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
-    BrokerError,
-    SubchannelConnection,
     GRPCBrokerService,
     GRPCStdioService,
-    GRPCControllerService,
-    register_protocol_service,
 )
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData

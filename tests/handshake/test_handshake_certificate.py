@@ -1,7 +1,6 @@
 
 # tests/handshake/test_handshake_certificate.py
 
-import os
 import pytest
 
 from pyvider.rpcplugin.crypto.certificate import Certificate

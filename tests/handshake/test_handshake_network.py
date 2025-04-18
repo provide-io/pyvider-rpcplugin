@@ -1,18 +1,13 @@
 
 # tests/handshake/test_handshake_network.py
 
-import os
-import socket
-import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
-from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.handshake import (
     negotiate_transport,
-    validate_transport,
 )
 from pyvider.rpcplugin.transport import (
     TCPSocketTransport,

@@ -1,5 +1,4 @@
 # tests/protocol/test_service.py
-import os
 
 import asyncio
 import pytest
@@ -9,15 +8,10 @@ from pyvider.rpcplugin.protocol.service import (
     SubchannelConnection,
     GRPCBrokerService,
     GRPCStdioService,
-    GRPCControllerService,
-    register_protocol_service,
     BrokerError,
 )
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
-from google.protobuf.empty_pb2 import Empty
-from asyncio.locks import Event
 
 @pytest.fixture
 def subchannel():

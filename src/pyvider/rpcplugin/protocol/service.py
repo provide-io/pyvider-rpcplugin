@@ -6,6 +6,8 @@ import os
 import asyncio
 import traceback
 
+from attrs import define, field
+
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
@@ -28,11 +30,15 @@ class BrokerError(Exception):
     pass
 
 
+@define(slots=True)
 class SubchannelConnection:
     """
     Represents a single 'brokered' subchannel. The go-plugin host
     can request to open or dial it. We store an ID, connection state, etc.
     """
+    conn_id: int = field()
+    address: str = field()
+    is_open: bool = field(default=False, init=False) # Keep init=False if state managed externally
 
     def __init__(self, conn_id: int, address: str) -> None:
         self.conn_id = conn_id

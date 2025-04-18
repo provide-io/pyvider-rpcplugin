@@ -1,8 +1,5 @@
 # tests/client/conftest.py
 
-import asyncio
-import os
-import pytest
 import pytest_asyncio
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch

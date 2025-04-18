@@ -1,13 +1,10 @@
 # tests/protocol/test_protocol_integration.py
-import asyncio
 import pytest
 import pytest_asyncio
 
-from unittest.mock import patch
 
 import grpc
 from google.protobuf.empty_pb2 import Empty
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 
 from pyvider.rpcplugin.protocol.service import (
     GRPCStdioService,

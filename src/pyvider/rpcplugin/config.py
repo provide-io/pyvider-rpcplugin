@@ -32,9 +32,8 @@ Usage:
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union, cast, get_args, get_type_hints
+from typing import Any, Dict, List, Literal, Optional, Union, cast, get_args
 
-from attrs import define, field
 
 from pyvider.telemetry import logger
 

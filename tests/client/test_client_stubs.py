@@ -4,8 +4,6 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock, ANY
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
-from google.protobuf import empty_pb2
 
 @pytest.mark.asyncio
 async def test_init_stubs(client_instance):
