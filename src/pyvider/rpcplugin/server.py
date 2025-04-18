@@ -217,10 +217,13 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             server_cert_conf = rpcplugin_config.get("PLUGIN_SERVER_CERT")
             server_key_conf = rpcplugin_config.get("PLUGIN_SERVER_KEY")
             self._server_cert_obj = Certificate(
-                cert=server_cert_conf,
-                key=server_key_conf,
+
+                # Use new keyword names:
+                cert_pem_or_uri=server_cert_conf,
+                key_pem_or_uri=server_key_conf,
+                # Other args remain the same if their names match fields:
                 generate_keypair=not (server_cert_conf and server_key_conf),
-                key_type="ecdsa",
+                key_type="ecdsa", # Or get from config if applicable
                 common_name="localhost",
             )
             logger.debug("🛎️ Server certificate loaded/generated successfully.")

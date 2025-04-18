@@ -1,30 +1,30 @@
-#
 # pyvider/rpcplugin/crypto/certificate.py
-#
 
 import os
+import traceback
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum, auto
 from functools import cached_property
 from pathlib import Path
 from typing import NotRequired, Self, TypedDict
 
-from attrs import define
+# Use attrs imports
+from attrs import Factory, define, field
 from cryptography import x509
+# Rename imported Certificate to avoid naming collision
+from cryptography.x509 import Certificate as X509Certificate
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
-from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import CertificateError
-from pyvider.rpcplugin.crypto.debug import display_cert_details, display_key_details
+from pyvider.telemetry import logger
 
 # =============================================================================
 # Supported Key Types and Curve Types
-# ====================================================================:=========
-
+# =============================================================================
 
 class KeyType(StrEnum):
     RSA = auto()
@@ -41,13 +41,15 @@ class CurveType(StrEnum):
 # CertificateConfig: Dictionary for certificate generation settings.
 # =============================================================================
 
-
 class CertificateConfig(TypedDict):
     common_name: str
     organization: str
     alt_names: list[str]
     key_type: KeyType
-    validity_days: NotRequired[int]
+    # Add validity dates here if they need to be passed explicitly
+    not_valid_before: datetime
+    not_valid_after: datetime
+    # Optional key generation parameters
     key_size: NotRequired[int]
     curve: NotRequired[CurveType]
 
@@ -56,9 +58,8 @@ type KeyPair = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
 type PublicKey = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 
 # =============================================================================
-# CertificateBase: Immutable certificate base data
+# CertificateBase: Immutable certificate base data (already uses attrs)
 # =============================================================================
-
 
 @define(slots=True, frozen=True)
 class CertificateBase:
@@ -75,79 +76,46 @@ class CertificateBase:
     def create(cls, config: CertificateConfig) -> tuple[Self, KeyPair]:
         """
         📜📝🚀 CertificateBase.create: Create a new certificate base and private key.
-
-        Logs:
-          - Current UTC time and validity period settings.
-          - Key generation (RSA/ECDSA) parameters.
-          - Creation of subject/issuer names.
-          - Generation of a random serial number.
-
-        Raises:
-          CertificateError: If any step of the creation fails.
         """
         try:
-            logger.debug(
-                "📜📝🚀 CertificateBase.create: Starting certificate base creation."
-            )
-            now = datetime.now(UTC)
-            logger.debug(f"📜⏳✅ CertificateBase.create: Current UTC time: {now}")
+            logger.debug("📜📝🚀 CertificateBase.create: Starting base creation.")
+            # Use validity dates directly from the config dict
+            not_valid_before = config["not_valid_before"]
+            not_valid_after = config["not_valid_after"]
 
-            # Get validity period from config or set defaults.
-            not_valid_before = config.get("not_valid_before", now)
-            not_valid_after = config.get(
-                "not_valid_after", not_valid_before + timedelta(days=365)
-            )
-            logger.debug(
-                f"📜⏳✅ CertificateBase.create: Validity period: before={not_valid_before}, after={not_valid_after}"
-            )
-
-            # Ensure both dates are timezone-aware.
+            # Ensure timezone awareness (redundant if already set, but safe)
             if not_valid_before.tzinfo is None:
                 not_valid_before = not_valid_before.replace(tzinfo=UTC)
-                logger.debug(
-                    "📜⏳✅ CertificateBase.create: Adjusted not_valid_before to UTC."
-                )
             if not_valid_after.tzinfo is None:
                 not_valid_after = not_valid_after.replace(tzinfo=UTC)
-                logger.debug(
-                    "📜⏳✅ CertificateBase.create: Adjusted not_valid_after to UTC."
-                )
 
-            # Generate the private key according to the specified type.
+            logger.debug(
+                f"📜⏳✅ CertificateBase.create: Using validity: {not_valid_before} to {not_valid_after}"
+            )
+
+            # Generate the private key
             match config["key_type"]:
                 case KeyType.RSA:
                     key_size = config.get("key_size", 2048)
-                    logger.debug(
-                        f"📜🔑🚀 CertificateBase.create: Generating RSA key (size: {key_size})."
-                    )
+                    logger.debug(f"📜🔑🚀 Generating RSA key (size: {key_size}).")
                     private_key = rsa.generate_private_key(
                         public_exponent=65537, key_size=key_size
                     )
                 case KeyType.ECDSA:
                     curve_choice = config.get("curve", CurveType.SECP384R1)
-                    logger.debug(
-                        f"📜🔑🚀 CertificateBase.create: Generating ECDSA key (curve: {curve_choice})."
-                    )
-                    curve = getattr(ec, curve_choice.name)()
+                    logger.debug(f"📜🔑🚀 Generating ECDSA key (curve: {curve_choice}).")
+                    curve = getattr(ec, curve_choice.name)() # Get curve object
                     private_key = ec.generate_private_key(curve)
-                case _:
-                    logger.error(
-                        f"📜❌ CertificateBase.create: Unsupported key type: {config['key_type']}"
-                    )
-                    raise ValueError(f"Unsupported key type: {config['key_type']}")
+                case _: # Should be validated before calling
+                    raise ValueError(f"Internal Error: Unsupported key type: {config['key_type']}")
 
-            # Create subject and issuer names.
+            # Create subject and issuer names
             subject = cls._create_name(config["common_name"], config["organization"])
             issuer = cls._create_name(config["common_name"], config["organization"])
-            logger.debug(
-                f"📜📝✅ CertificateBase.create: Created subject and issuer: {subject}"
-            )
 
             # Generate a random serial number.
-            serial_number = int.from_bytes(os.urandom(16), "big")
-            logger.debug(
-                f"📜🔑✅ CertificateBase.create: Generated serial number: {serial_number}"
-            )
+            serial_number = x509.random_serial_number() # Use crypto library func
+            logger.debug(f"📜🔑✅ Generated serial number: {serial_number}")
 
             base = cls(
                 subject=subject,
@@ -157,29 +125,20 @@ class CertificateBase:
                 not_valid_after=not_valid_after,
                 serial_number=serial_number,
             )
-            logger.debug(
-                "📜📝✅ CertificateBase.create: Certificate base creation completed successfully."
-            )
+            logger.debug("📜📝✅ CertificateBase.create: Base creation complete.")
             return base, private_key
 
         except Exception as e:
             logger.error(
-                f"📜❌ CertificateBase.create: Failed to create certificate base: {e}",
-                extra={"error": str(e)},
+                f"📜❌ CertificateBase.create: Failed: {e}",
+                extra={"error": str(e), "trace": traceback.format_exc()}
             )
-            raise CertificateError(f"Failed to generate certificate: {e}")
+            # Wrap in CertificateError for consistent exception type
+            raise CertificateError(f"Failed to generate certificate base: {e}") from e
 
     @staticmethod
     def _create_name(common_name: str, org: str) -> x509.Name:
-        """
-        📜📝🚀 _create_name: Helper method to construct an X.509 name.
-
-        Returns:
-          An x509.Name object with the common name and organization.
-        """
-        logger.debug(
-            f"📜📝🚀 _create_name: Creating name with common_name='{common_name}', organization='{org}'."
-        )
+        """Helper method to construct an X.509 name."""
         return x509.Name(
             [
                 x509.NameAttribute(NameOID.COMMON_NAME, common_name),
@@ -187,497 +146,426 @@ class CertificateBase:
             ]
         )
 
-
 # =============================================================================
-# Certificate: Backward compatibility layer for certificate management.
+# Certificate: Refactored main class using attrs
 # =============================================================================
 
-
+# Tell attrs *not* to generate default eq/hash methods, we provide our own.
+@define(slots=True, eq=False, hash=False)
 class Certificate:
     """
-    Certificate: Encapsulates X.509 certificate functionality.
+    Certificate: Encapsulates X.509 certificate functionality using attrs.
 
-    This class supports generating new certificates or loading existing PEM data.
-    All major operations are logged in detail.
+    Supports generating new certificates or loading existing PEM data.
+    Initialization logic is handled in __attrs_post_init__.
+    Provides properties for accessing certificate details and PEM strings.
+    Implements custom __eq__ and __hash__ based on subject and serial number.
     """
 
-    def __init__(
-        self,
-        cert: str | None = None,
-        key: str | None = None,
-        generate_keypair: bool = False,
-        key_type: str = "ecdsa",
-        key_size: int = 2048,
-        ecdsa_curve: str = "secp384r1",
-        common_name: str = "localhost",
-        alt_names: list[str] = None,
-        organization_name: str = "HashiCorp",
-        **kwargs,
-    ) -> None:
-        try:
-            if generate_keypair:
-                logger.debug(
-                    "📜🔑🚀 Certificate.__init__: Generating new keypair as requested."
-                )
-                conf: CertificateConfig = {
-                    "common_name": common_name,
-                    "organization": organization_name,
-                    "alt_names": alt_names or ["localhost"],
-                    "key_type": KeyType.ECDSA
-                    if key_type.lower() == "ecdsa"
-                    else KeyType.RSA,
-                    "key_size": key_size if key_type.lower() == "rsa" else None,
-                    "curve": CurveType[ecdsa_curve.upper()]
-                    if key_type.lower() == "ecdsa"
-                    else None,
-                    "not_valid_before": kwargs.get(
-                        "not_valid_before", datetime.now(UTC)
-                    ),
-                    "not_valid_after": kwargs.get(
-                        "not_valid_after", datetime.now(UTC) + timedelta(days=365)
-                    ),
-                }
-                logger.debug(
-                    f"📜🔑🚀 Certificate.__init__: Keypair generation config: {conf}"
-                )
-                base, private_key = CertificateBase.create(conf)
-                self._base = base
-                self._private_key = private_key
-                self._cert = self._create_x509_certificate()
-                self.cert = self._cert.public_bytes(serialization.Encoding.PEM).decode()
-                self.key = private_key.private_bytes(
-                    encoding=serialization.Encoding.PEM,
-                    format=serialization.PrivateFormat.PKCS8,
-                    encryption_algorithm=serialization.NoEncryption(),
-                ).decode()
-                logger.debug(
-                    "📜🔑✅ Certificate.__init__: Generated certificate and key converted to PEM successfully."
-                )
-            else:
-                if not cert or cert.strip() == "":
-                    logger.error(
-                        "📜❌ Certificate.__init__: No certificate data provided."
-                    )
-                    raise CertificateError("Certificate data required")
-                logger.debug(
-                    "📜🔑🚀 Certificate.__init__: Loading certificate from provided data."
-                )
-                cert_data = self._load_from_uri_or_pem(cert)
-                x509_cert = x509.load_pem_x509_certificate(cert_data.encode())
-                logger.debug(
-                    "📜🔑✅ Certificate.__init__: X.509 certificate loaded successfully from PEM."
-                )
+    # --- Parameters for attrs constructor (keyword-only for clarity) ---
+    cert_pem_or_uri: str | None = field(default=None, kw_only=True)
+    key_pem_or_uri: str | None = field(default=None, kw_only=True)
+    generate_keypair: bool = field(default=False, kw_only=True)
+    key_type: str = field(default="ecdsa", kw_only=True) # 'rsa' or 'ecdsa'
+    key_size: int = field(default=2048, kw_only=True) # For RSA
+    ecdsa_curve: str = field(default="secp384r1", kw_only=True) # For ECDSA
+    common_name: str = field(default="localhost", kw_only=True)
+    alt_names: list[str] | None = field(default=Factory(lambda: ["localhost"]), kw_only=True)
+    organization_name: str = field(default="provide.io", kw_only=True)
+    validity_days: int = field(default=365, kw_only=True) # For generation
 
-                key_data = None
-                private_key = None
-                if key:
-                    logger.debug(
-                        "📜🔑🚀 Certificate.__init__: Loading private key from provided data."
+    # --- Internal state fields (not part of constructor, set in post_init) ---
+    # Mark internal fields as non-representing for cleaner default repr
+    _base: CertificateBase = field(init=False, repr=False) # Underlying base data
+    _private_key: KeyPair | None = field(init=False, default=None, repr=False) # Actual key object
+    _cert: X509Certificate = field(init=False, repr=False) # Actual cryptography cert object
+    _trust_chain: list["Certificate"] = field(init=False, factory=list, repr=False)
+
+    # --- Public PEM representations (derived, set in post_init) ---
+    # Let 'cert' (the PEM string) be part of the repr for identification
+    cert: str = field(init=False, default="", repr=True) # Public PEM certificate string
+    # Keep key PEM out of repr
+    key: str | None = field(init=False, default=None, repr=False) # Public PEM key string (sensitive)
+
+    def __attrs_post_init__(self) -> None:
+        """
+        Handles loading or generation logic after attrs initializes basic fields.
+        """
+        try:
+            if self.generate_keypair:
+                # --- Generate New Certificate ---
+                logger.debug("📜🔑🚀 Certificate.__attrs_post_init__: Generating new keypair.")
+
+                # Prepare config for CertificateBase.create
+                now = datetime.now(UTC)
+                not_valid_before = now - timedelta(minutes=1) # Start slightly in the past
+                not_valid_after = now + timedelta(days=self.validity_days)
+
+                gen_key_type = KeyType.ECDSA if self.key_type.lower() == "ecdsa" else KeyType.RSA
+                gen_curve = None
+                gen_key_size = None
+
+                if gen_key_type == KeyType.ECDSA:
+                    try:
+                         gen_curve = CurveType[self.ecdsa_curve.upper()]
+                    except KeyError:
+                         raise ValueError(f"Unsupported ECDSA curve: {self.ecdsa_curve}")
+                else: # RSA
+                     gen_key_size = self.key_size
+                     # Add validation for RSA key size if needed
+
+                conf: CertificateConfig = {
+                    "common_name": self.common_name,
+                    "organization": self.organization_name,
+                    "alt_names": self.alt_names or ["localhost"], # Ensure list
+                    "key_type": gen_key_type,
+                    "curve": gen_curve,
+                    "key_size": gen_key_size,
+                    "not_valid_before": not_valid_before,
+                    "not_valid_after": not_valid_after,
+                }
+                logger.debug(f"📜🔑🚀 Generation config: {conf}")
+
+                # Create base info and private key
+                self._base, self._private_key = CertificateBase.create(conf)
+
+                # Create the X.509 certificate object using the base and key
+                self._cert = self._create_x509_certificate()
+
+                # Store public PEM representations
+                self.cert = self._cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+                if self._private_key: # Ensure private key exists before encoding
+                    self.key = self._private_key.private_bytes(
+                        encoding=serialization.Encoding.PEM,
+                        format=serialization.PrivateFormat.PKCS8,
+                        encryption_algorithm=serialization.NoEncryption(),
+                    ).decode("utf-8")
+                else:
+                     self.key = None # Should not happen if generate_keypair is True
+
+                logger.debug("📜🔑✅ Certificate.__attrs_post_init__: Generated cert and key.")
+
+            else:
+                # --- Load Existing Certificate ---
+                if not self.cert_pem_or_uri:
+                    raise CertificateError("cert_pem_or_uri required when not generating")
+
+                logger.debug("📜🔑🚀 Loading certificate from provided data.")
+                cert_data = self._load_from_uri_or_pem(self.cert_pem_or_uri)
+                self.cert = cert_data # Store raw PEM provided
+
+                # Load the cryptography certificate object
+                self._cert = x509.load_pem_x509_certificate(cert_data.encode("utf-8"))
+                logger.debug("📜🔑✅ X.509 certificate object loaded from PEM.")
+
+                # Load the private key if provided
+                if self.key_pem_or_uri:
+                    logger.debug("📜🔑🚀 Loading private key.")
+                    key_data = self._load_from_uri_or_pem(self.key_pem_or_uri)
+                    self.key = key_data # Store raw PEM provided
+                    self._private_key = load_pem_private_key(
+                        key_data.encode("utf-8"), password=None
                     )
-                    key_data = self._load_from_uri_or_pem(key)
-                    private_key = load_pem_private_key(key_data.encode(), password=None)
-                    logger.debug(
-                        "📜🔑✅ Certificate.__init__: Private key loaded successfully."
-                    )
+                    logger.debug("📜🔑✅ Private key object loaded.")
+                else:
+                     self.key = None # Explicitly None if not loaded
+
+                # Reconstruct the CertificateBase from the loaded certificate object
+                # Ensure dates are timezone-aware
+                loaded_not_valid_before = self._cert.not_valid_before_utc
+                loaded_not_valid_after = self._cert.not_valid_after_utc
+                if loaded_not_valid_before.tzinfo is None:
+                     loaded_not_valid_before = loaded_not_valid_before.replace(tzinfo=UTC)
+                if loaded_not_valid_after.tzinfo is None:
+                     loaded_not_valid_after = loaded_not_valid_after.replace(tzinfo=UTC)
 
                 self._base = CertificateBase(
-                    subject=x509_cert.subject,
-                    issuer=x509_cert.issuer,
-                    public_key=x509_cert.public_key(),
-                    not_valid_before=(
-                        x509_cert.not_valid_before_utc.replace(tzinfo=UTC)
-                        if x509_cert.not_valid_before_utc.tzinfo is None
-                        else x509_cert.not_valid_before_utc
-                    ),
-                    not_valid_after=(
-                        x509_cert.not_valid_after_utc.replace(tzinfo=UTC)
-                        if x509_cert.not_valid_after_utc.tzinfo is None
-                        else x509_cert.not_valid_after_utc
-                    ),
-                    serial_number=x509_cert.serial_number,
+                    subject=self._cert.subject,
+                    issuer=self._cert.issuer,
+                    public_key=self._cert.public_key(),
+                    not_valid_before=loaded_not_valid_before,
+                    not_valid_after=loaded_not_valid_after,
+                    serial_number=self._cert.serial_number,
                 )
-                self._private_key = private_key
-                self._cert = x509_cert
-                self.cert = cert_data
-                self.key = key_data
-                logger.debug(
-                    "📜🔑✅ Certificate.__init__: Loaded certificate and key from PEM successfully."
-                )
-
-                # Log certificate details (this may raise an error if extraction fails)
-                display_cert_details(cert=self._cert)
-
-            self._trust_chain = []
-            logger.debug("📜📝✅ Certificate.__init__: Trust chain initialized.")
+                logger.debug("📜🔑✅ Reconstructed CertificateBase from loaded cert.")
 
         except Exception as e:
-            logger.error(
-                f"📜❌ Certificate.__init__: Failed to initialize certificate: {e}",
-                extra={"error": str(e)},
-            )
-            raise CertificateError(f"Failed to initialize certificate: {e}")
+             # Log original error clearly
+             logger.error(
+                 f"📜❌ Certificate.__attrs_post_init__: Failed. Error: {type(e).__name__}: {e}",
+                 extra={"error": str(e), "trace": traceback.format_exc()},
+             )
+             # Re-raise as CertificateError for consistency
+             raise CertificateError(f"Failed to initialize certificate. Original error: {type(e).__name__}") from e
 
-    def _create_x509_certificate(self) -> x509.Certificate:
+    def _create_x509_certificate(self) -> X509Certificate:
         """
-        📜📝🚀 _create_x509_certificate: Builds and signs an X.509 certificate.
-
-        Steps:
-          1. Calculate validity period.
-          2. Initialize the certificate builder with subject, issuer, public key, serial number, and validity.
-          3. Add extensions: Basic Constraints, Key Usage, and Extended Key Usage.
-          4. Log key details.
-          5. Sign the certificate using SHA512.
-
-        Raises:
-          CertificateError: On any failure during the building or signing process.
+        Internal helper to build and sign the X.509 certificate object.
+        Uses self._base and self._private_key which must be set beforehand.
         """
+        if not self._private_key: # Defensive check
+            raise CertificateError("Cannot sign certificate without a private key.")
+        if not hasattr(self, '_base'): # Defensive check
+             raise CertificateError("Cannot create certificate without base information.")
+
         try:
-            logger.debug(
-                "📜📝🚀 _create_x509_certificate: Starting certificate creation process."
-            )
-            try:
-                now = datetime.now(UTC)
-                not_valid_before = now - timedelta(seconds=30)
-                # Set expiration 30 years from now with a fixed hour.
-                not_valid_after = now.replace(year=now.year + 30, hour=12)
-                logger.debug(
-                    f"📜⏳✅ _create_x509_certificate: Validity period: not_valid_before={not_valid_before}, not_valid_after={not_valid_after}"
-                )
-            except Exception as e:
-                logger.error(
-                    f"📜❌ _create_x509_certificate: Validity period calculation failed: {e}",
-                    extra={"error": str(e)},
-                )
-                raise CertificateError(f"Failed to calculate validity period: {e}")
-
+            logger.debug("📜📝🚀 _create_x509_certificate: Building certificate.")
             builder = (
                 x509.CertificateBuilder()
                 .subject_name(self._base.subject)
-                .issuer_name(self._base.issuer)
+                .issuer_name(self._base.issuer) # Self-signed for now
                 .public_key(self._base.public_key)
                 .serial_number(self._base.serial_number)
-                .not_valid_before(not_valid_before)
-                .not_valid_after(not_valid_after)
-            )
-            logger.debug(
-                "📜📝🚀 _create_x509_certificate: Certificate builder initialized with base data."
+                .not_valid_before(self._base.not_valid_before)
+                .not_valid_after(self._base.not_valid_after)
             )
 
             # Add Subject Alternative Names (SANs)
-            san = x509.SubjectAlternativeName(
-                [
-                    x509.DNSName("localhost"),
-                    # x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
-                    # x509.IPAddress(ipaddress.IPv6Address("::1"))
-                ]
+            san_list = [x509.DNSName(name) for name in self.alt_names if name]
+            if san_list:
+                 builder = builder.add_extension(
+                    x509.SubjectAlternativeName(san_list), critical=False
+                 )
+                 logger.debug(f"📜📝✅ Added SANs: {self.alt_names}")
+
+            # --- Add standard extensions ---
+            builder = builder.add_extension(
+                x509.BasicConstraints(ca=True, path_length=None), critical=True
             )
-            builder = builder.add_extension(san, critical=False)
-            logger.debug(
-                "📜📝✅ _create_x509_certificate: Added Subject Alternative Names"
+            builder = builder.add_extension(
+                x509.KeyUsage(
+                    digital_signature=True, key_encipherment=True, key_agreement=False,
+                    content_commitment=False, data_encipherment=False,
+                    key_cert_sign=True, crl_sign=False,
+                    encipher_only=False, decipher_only=False,
+                ),
+                critical=True,
             )
+            builder = builder.add_extension(
+                x509.ExtendedKeyUsage([
+                    ExtendedKeyUsageOID.SERVER_AUTH,
+                    ExtendedKeyUsageOID.CLIENT_AUTH,
+                ]),
+                critical=False,
+            )
+            logger.debug("📜📝✅ Added BasicConstraints, KeyUsage, ExtendedKeyUsage.")
 
-            # Add Basic Constraints extension (indicates CA status).
-            try:
-                builder = builder.add_extension(
-                    x509.BasicConstraints(ca=True, path_length=None), critical=True
-                )
-                logger.debug(
-                    "📜📝✅ _create_x509_certificate: Added Basic Constraints extension."
-                )
-            except Exception as e:
-                logger.error(
-                    f"📜❌ _create_x509_certificate: Failed to add Basic Constraints extension: {e}",
-                    extra={"error": str(e)},
-                )
-                raise CertificateError(
-                    "Failed to add Basic Constraints extension"
-                ) from e
+            # Sign the certificate
+            signed_cert = builder.sign(
+                private_key=self._private_key,
+                algorithm=hashes.SHA256(),
+                backend=default_backend(),
+            )
+            logger.debug("📜📝✅ Certificate signed successfully.")
+            return signed_cert
 
-            # Add Key Usage extension.
-            try:
-                builder = builder.add_extension(
-                    x509.KeyUsage(
-                        digital_signature=True,
-                        content_commitment=False,
-                        key_encipherment=True,
-                        data_encipherment=False,
-                        key_agreement=True,
-                        key_cert_sign=True,
-                        crl_sign=False,
-                        encipher_only=False,
-                        decipher_only=False,
-                    ),
-                    critical=True,
-                )
-                logger.debug(
-                    "📜📝✅ _create_x509_certificate: Added Key Usage extension."
-                )
-            except Exception as e:
-                logger.error(
-                    f"📜❌ _create_x509_certificate: Failed to add Key Usage extension: {e}",
-                    extra={"error": str(e)},
-                )
-                raise CertificateError("Failed to add Key Usage extension") from e
-
-            # Add Extended Key Usage extension.
-            try:
-                builder = builder.add_extension(
-                    x509.ExtendedKeyUsage(
-                        [
-                            ExtendedKeyUsageOID.CLIENT_AUTH,
-                            ExtendedKeyUsageOID.SERVER_AUTH,
-                        ]
-                    ),
-                    critical=False,
-                )
-                logger.debug(
-                    "📜📝✅ _create_x509_certificate: Added Extended Key Usage extension."
-                )
-            except Exception as e:
-                logger.error(
-                    f"📜❌ _create_x509_certificate: Failed to add Extended Key Usage extension: {e}",
-                    extra={"error": str(e)},
-                )
-                raise CertificateError(
-                    "Failed to add Extended Key Usage extension"
-                ) from e
-
-            # Log private key details for debugging.
-            display_key_details(self._private_key)
-
-            # Sign the certificate.
-            try:
-                signed_cert = builder.sign(
-                    private_key=self._private_key,
-                    algorithm=hashes.SHA512(),
-                    backend=default_backend(),
-                )
-                logger.debug(
-                    "📜📝✅ _create_x509_certificate: Certificate signed successfully."
-                )
-                return signed_cert
-            except Exception as e:
-                logger.error(
-                    f"📜❌ _create_x509_certificate: Failed to sign certificate: {e}",
-                    extra={"error": str(e)},
-                )
-                raise CertificateError("Failed to sign certificate") from e
-
-        except CertificateError:
-            raise
         except Exception as e:
             logger.error(
-                f"📜❌ _create_x509_certificate: Failed to create X.509 certificate: {e}",
-                extra={"error": str(e)},
+                f"📜❌ _create_x509_certificate: Failed: {e}",
+                extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise CertificateError(f"Failed to create X.509 certificate: {e}")
+            raise CertificateError("Failed to create X.509 certificate object") from e
 
     @staticmethod
     def _load_from_uri_or_pem(data: str) -> str:
-        """
-        📜📂🚀 _load_from_uri_or_pem: Loads PEM data either from a file (if prefixed with 'file://')
-        or directly from the provided string.
-
-        Returns:
-          The stripped PEM data as a string.
-
-        Raises:
-          CertificateError: If the data cannot be loaded.
-        """
+        """Loads PEM data from a file URI ('file://...') or directly."""
         try:
             if data.startswith("file://"):
-                path = Path(data.replace("file://", ""))
+                path_str = data.removeprefix("file://")
+                if os.name == 'nt' and path_str.startswith("//"):
+                     path = Path(path_str)
+                else:
+                     path_str = path_str.lstrip('/')
+                     if os.name != 'nt' and data.startswith("file:///"):
+                          path_str = "/" + path_str
+                     path = Path(path_str)
+
+                logger.debug(f"📜📂🚀 Loading data from file: {path}")
                 with path.open("r", encoding="utf-8") as f:
                     loaded_data = f.read().strip()
-                    logger.debug(
-                        "📜📂✅ _load_from_uri_or_pem: Loaded data from file.",
-                        extra={"path": str(path)},
-                    )
-                    return loaded_data
+                logger.debug("📜📂✅ Loaded data from file.")
+                return loaded_data
+
             loaded_data = data.strip()
-            logger.debug("📜📂✅ _load_from_uri_or_pem: Loaded data from PEM string.")
+            if not loaded_data.startswith("-----BEGIN"):
+                 logger.warning("📜📂⚠️ Data doesn't look like PEM format.")
             return loaded_data
         except Exception as e:
             logger.error(
-                f"📜📂❌ _load_from_uri_or_pem: Failed to load data: {e}",
-                extra={"error": str(e)},
+                f"📜📂❌ Failed to load data: {e}", extra={"error": str(e)}
             )
-            raise CertificateError(f"Failed to load data: {e}")
+            raise CertificateError(f"Failed to load data: {e}") from e
 
+    # --- Properties ---
     @property
     def trust_chain(self) -> list["Certificate"]:
-        logger.debug("📜📝✅ trust_chain: Retrieving trust chain.")
+        """Returns the list of trusted certificates associated with this one."""
         return self._trust_chain
 
     @trust_chain.setter
     def trust_chain(self, value: list["Certificate"]) -> None:
-        logger.debug("📜📝✅ trust_chain: Updating trust chain.")
+        """Sets the list of trusted certificates."""
         self._trust_chain = value
 
     @cached_property
     def is_valid(self) -> bool:
-        """Check if the certificate is currently valid."""
+        """Checks if the certificate is currently valid based on its dates."""
+        if not hasattr(self, '_base'): return False # Check if base exists
         now = datetime.now(UTC)
         valid = self._base.not_valid_before <= now <= self._base.not_valid_after
-        logger.debug(f"📜⏳✅ is_valid: Certificate validity check result: {valid}")
         return valid
-
-    def verify_trust(self, other_cert: "Certificate") -> bool:
-        """
-        📜🔍🚀 verify_trust: Verifies that the other certificate is trusted.
-
-        Checks if:
-          - The other certificate is not None.
-          - It is currently valid.
-          - It has a public key.
-          - It is either self-signed (and matches) or present/validated in the trust chain.
-
-        Returns:
-          True if trusted, False otherwise.
-
-        Raises:
-          CertificateError: If required fields are missing.
-        """
-        logger.debug("📜🔍🚀 verify_trust: Starting trust verification.")
-        if other_cert is None:
-            logger.error("📜🔍❌ verify_trust: Other certificate is None.")
-            raise CertificateError("Cannot verify trust: other_cert is None")
-        if not other_cert.is_valid:
-            logger.debug(
-                "📜🔍⚠️ verify_trust: Other certificate is not valid (expired or not yet valid)."
-            )
-            return False
-        if other_cert.public_key is None:
-            logger.error("📜🔍❌ verify_trust: Other certificate has no public key.")
-            raise CertificateError("Unsupported public key algorithm: key is None")
-        # If self-signed and identical, consider trusted.
-        if self.subject == self.issuer and other_cert == self:
-            logger.debug(
-                "📜🔍✅ verify_trust: Self-signed certificate verified by itself."
-            )
-            return True
-        if other_cert in self._trust_chain:
-            logger.debug("📜🔍✅ verify_trust: Other certificate found in trust chain.")
-            return True
-        # Otherwise, validate against each certificate in the trust chain.
-        for trusted in self._trust_chain:
-            valid = self._validate_cert(trusted, other_cert)
-            logger.debug(
-                f"📜🔍🔁 verify_trust: Validation against a trusted certificate returned: {valid}"
-            )
-            if valid:
-                return True
-        logger.debug(
-            "📜🔍❌ verify_trust: Certificate verification failed; certificate is not trusted."
-        )
-        return False
-
-    def _validate_cert(self, trusted: "Certificate", other_cert: "Certificate") -> bool:
-        """
-        📜🔍🚀 _validate_cert: Validates the other certificate against a trusted certificate.
-
-        Verifies:
-          - That the trusted certificate’s issuer matches the other certificate’s subject.
-          - That the signature on the other certificate is valid using the trusted certificate’s public key.
-
-        Returns:
-          True if validation is successful, False otherwise.
-        """
-        logger.debug(
-            "📜🔍🚀 _validate_cert: Starting validation against trusted certificate."
-        )
-        if trusted._base.issuer != other_cert._base.subject:
-            logger.debug(
-                "📜🔍❌ _validate_cert: Issuer mismatch between trusted and other certificate."
-            )
-            return False
-        try:
-            public_key = trusted._base.public_key
-            signature = other_cert._cert.signature
-            data = other_cert._cert.tbs_certificate_bytes
-            hash_algo = other_cert._cert.signature_hash_algorithm
-            # Choose verification method based on key type.
-            if isinstance(public_key, rsa.RSAPublicKey):
-                public_key.verify(signature, data, padding.PKCS1v15(), hash_algo)
-            elif isinstance(public_key, ec.EllipticCurvePublicKey):
-                public_key.verify(signature, data, ec.ECDSA(hash_algo))
-            else:
-                logger.error(
-                    "📜🔍❌ _validate_cert: Unsupported public key type for signature verification."
-                )
-                return False
-            logger.debug(
-                "📜🔍✅ _validate_cert: Certificate signature verified successfully."
-            )
-            return True
-        except Exception as e:
-            logger.error(
-                f"📜🔍❌ _validate_cert: Signature verification failed: {e}",
-                extra={"error": str(e)},
-            )
-            return False
 
     @property
     def is_ca(self) -> bool:
-        """
-        📜🔍🚀 is_ca: Determines whether the certificate is a Certificate Authority (CA).
-
-        Returns:
-          True if the certificate is a CA, False otherwise.
-        """
+        """Checks if the certificate has the Basic Constraints CA flag set to True."""
+        if not hasattr(self, '_cert'): return False # Check if cert obj exists
         try:
             ext = self._cert.extensions.get_extension_for_oid(
                 x509.oid.ExtensionOID.BASIC_CONSTRAINTS
             )
-            ca = ext.value.ca
-            logger.debug(f"📜🔍✅ is_ca: Certificate CA flag: {ca}")
-            return ca
-        except (x509.ExtensionNotFound, AttributeError) as e:
-            logger.error(
-                f"📜🔍❌ is_ca: Failed to retrieve CA flag: {e}",
-                extra={"error": str(e)},
-            )
+            if isinstance(ext.value, x509.BasicConstraints):
+                return ext.value.ca
+            return False
+        except x509.ExtensionNotFound:
+            logger.debug("📜🔍⚠️ is_ca: Basic Constraints extension not found.")
             return False
 
     @property
     def subject(self) -> str:
-        """Legacy property: Returns the certificate subject as a string."""
-        subject_str = self._base.subject.rfc4514_string()
-        logger.debug(f"📜🔍✅ subject: {subject_str}")
-        return subject_str
+        """Returns the certificate subject as an RFC4514 string."""
+        if not hasattr(self, '_base'): return "SubjectNotInitialized"
+        return self._base.subject.rfc4514_string()
 
     @property
     def issuer(self) -> str:
-        """Legacy property: Returns the certificate issuer as a string."""
-        issuer_str = self._base.issuer.rfc4514_string()
-        logger.debug(f"📜🔍✅ issuer: {issuer_str}")
-        return issuer_str
+        """Returns the certificate issuer as an RFC4514 string."""
+        if not hasattr(self, '_base'): return "IssuerNotInitialized"
+        return self._base.issuer.rfc4514_string()
 
     @property
-    def public_key(self) -> PublicKey:
-        logger.debug("📜🔑✅ public_key: Retrieving public key from certificate base.")
+    def public_key(self) -> PublicKey | None:
+        """Returns the public key object from the certificate."""
+        if not hasattr(self, '_base'): return None
         return self._base.public_key
 
+    @property
+    def serial_number(self) -> int | None:
+         """Returns the certificate serial number."""
+         if not hasattr(self, '_base'): return None
+         return self._base.serial_number
+
+    # --- Core Logic Methods ---
+
+    def verify_trust(self, other_cert: Self) -> bool:
+        """Verifies if the `other_cert` is trusted based on this certificate's trust chain."""
+        logger.debug(f"📜🔍🚀 Verifying trust for cert S/N {other_cert.serial_number} against chain of S/N {self.serial_number}")
+        if other_cert is None:
+            raise CertificateError("Cannot verify trust: other_cert is None")
+        if not other_cert.is_valid:
+            logger.debug("📜🔍⚠️ Trust verification failed: Other certificate is not valid.")
+            return False
+        if not other_cert.public_key:
+             raise CertificateError("Cannot verify trust: Other certificate has no public key.")
+
+        # Check 1: Is it the same certificate? (Uses custom __eq__)
+        if self == other_cert:
+            logger.debug("📜🔍✅ Trust verified: Certificates are identical (based on subject/serial).")
+            return True
+
+        # Check 2: Is the other certificate directly in our trust chain? (Uses custom __eq__)
+        if other_cert in self._trust_chain:
+            logger.debug("📜🔍✅ Trust verified: Other certificate found in trust chain.")
+            return True
+
+        # Check 3: Is the other certificate signed by *any* certificate in our trust chain?
+        for trusted_cert in self._trust_chain:
+            logger.debug(f"📜🔍🔁 Checking signature against trusted cert S/N {trusted_cert.serial_number}")
+            if self._validate_signature(signed_cert=other_cert, signing_cert=trusted_cert):
+                logger.debug(f"📜🔍✅ Trust verified: Other cert signed by trusted cert S/N {trusted_cert.serial_number}.")
+                return True
+
+        logger.debug("📜🔍❌ Trust verification failed: Other certificate not identical, not in chain, and not signed by any cert in chain.")
+        return False
+
+    def _validate_signature(self, signed_cert: Self, signing_cert: Self) -> bool:
+        """Internal helper: Validates signature and issuer/subject match."""
+        if not hasattr(signed_cert, '_cert') or not hasattr(signing_cert, '_cert'):
+             logger.error("📜🔍❌ Cannot validate signature: Certificate object(s) not initialized.")
+             return False
+
+        # Check Issuer(signed) == Subject(signing) using the Name objects
+        if signed_cert._cert.issuer != signing_cert._cert.subject:
+            logger.debug(
+                 f"📜🔍❌ Signature validation failed: Issuer/Subject mismatch. "
+                 f"Signed Issuer='{signed_cert._cert.issuer}', "
+                 f"Signing Subject='{signing_cert._cert.subject}'"
+            )
+            return False
+
+        try:
+            signing_public_key = signing_cert.public_key
+            if not signing_public_key:
+                 logger.error("📜🔍❌ Cannot validate signature: Signing certificate has no public key.")
+                 return False
+
+            signature = signed_cert._cert.signature
+            tbs_certificate_bytes = signed_cert._cert.tbs_certificate_bytes
+            signature_hash_algorithm = signed_cert._cert.signature_hash_algorithm
+
+            if not signature_hash_algorithm:
+                 logger.error("📜🔍❌ Cannot validate signature: Unknown hash algorithm.")
+                 return False
+
+            if isinstance(signing_public_key, rsa.RSAPublicKey):
+                signing_public_key.verify(
+                    signature, tbs_certificate_bytes, padding.PKCS1v15(), signature_hash_algorithm
+                )
+            elif isinstance(signing_public_key, ec.EllipticCurvePublicKey):
+                 signing_public_key.verify(
+                    signature, tbs_certificate_bytes, ec.ECDSA(signature_hash_algorithm)
+                 )
+            else:
+                logger.error(f"📜🔍❌ Unsupported signing public key type: {type(signing_public_key)}")
+                return False
+
+            return True
+
+        except Exception as e: # Catches crypto InvalidSignature errors
+            logger.debug(f"📜🔍❌ Signature validation failed: {type(e).__name__}: {e}")
+            return False
+
+    # --- Custom __eq__ and __hash__ to replicate original behavior ---
     def __eq__(self, other: object) -> bool:
+        """Custom equality based on subject and serial number."""
         if not isinstance(other, Certificate):
-            logger.debug("📜🔍❌ __eq__: Other object is not a Certificate.")
             return NotImplemented
+        # Ensure _base is initialized on both objects before comparing
+        if not hasattr(self, '_base') or not hasattr(other, '_base'):
+             # If not initialized, they cannot be equal in this context
+             return False
+        # Compare using the Name object directly for subject
         eq = (
             self._base.subject == other._base.subject
             and self._base.serial_number == other._base.serial_number
         )
-        logger.debug(f"📜🔍✅ __eq__: Equality result: {eq}")
+        # logger.debug(f"📜🔍✅ __eq__ result: {eq}") # Too verbose
         return eq
 
     def __hash__(self) -> int:
+        """Custom hash based on subject and serial number."""
+        # Ensure _base is initialized before hashing
+        if not hasattr(self, '_base'):
+             # Return a default hash or raise error if called before init?
+             # Returning 0 might group uninitialized objects, raising is safer maybe?
+             # For consistency with __eq__, let's use a default hash for uninitialized.
+             logger.warning("📜🔍⚠️ __hash__ called before _base initialized.")
+             return hash((None, None)) # Or some other constant tuple
+
+        # Hash the Name object directly for subject
         h = hash((self._base.subject, self._base.serial_number))
-        logger.debug(f"📜🔍✅ __hash__: Hash value: {h}")
+        # logger.debug(f"📜🔍✅ __hash__ value: {h}") # Too verbose
         return h
 
-    def __repr__(self) -> str:
-        """Return a consistent string representation of the certificate."""
-        rep = f"<Certificate subject={self.subject} issuer={self.issuer} valid={self.is_valid} ca={self.is_ca}>"
-        logger.debug(f"📜🔍✅ __repr__: {rep}")
-        return rep
+    # __repr__ is now handled by attrs, using fields marked repr=True
 
 # 🐍🏗️🔌

@@ -128,10 +128,14 @@ class RPCPluginClient:
         If PLUGIN_AUTO_MTLS is true, load or generate a client certificate and key.
         """
         logger.debug("🔐 Checking if auto-mTLS is enabled for client.")
-        auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS", "").lower()
+
+        #auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS", "")
+
+        auto_mtls: bool = rpcplugin_config.auto_mtls_enabled()
+
         if auto_mtls in ("true", "1", "yes"):
-            cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
-            key_pem = rpcplugin_config.get("PLUGIN_CLIENT_KEY", "")
+            cert_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
+            key_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_KEY", "")
             if cert_pem and key_pem:
                 logger.info("🔐 Using existing client cert/key from config.")
                 self.client_cert = cert_pem
