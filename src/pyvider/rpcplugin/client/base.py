@@ -2,6 +2,41 @@
 # pyvider/rpcplugin/client/base.py
 #
 
+"""
+RPCPluginClient module for managing plugin connections and lifecycle.
+
+This module provides the core client interface for the Pyvider RPC Plugin system,
+enabling secure communication with Terraform-compatible plugin servers through
+a robust handshake protocol, TLS security, and gRPC service interfaces.
+
+The client manages the complete lifecycle of plugin connections:
+1. Launching or attaching to plugin server subprocesses
+2. Performing secure handshake and protocol negotiation
+3. Establishing TLS/mTLS encrypted communication channels
+4. Providing service stubs for RPC method invocation
+5. Monitoring and forwarding plugin stdout/stderr
+6. Cleanly shutting down connections and processes
+
+Example usage:
+    ```python
+    from pyvider.rpcplugin.client import RPCPluginClient
+    
+    # Create and start a plugin client
+    client = RPCPluginClient(command=["./terraform-provider-example"])
+    await client.start()
+    
+    # Get access to protocol-specific stubs after connection
+    provider_stub = TerraformProviderStub(client._channel)
+    
+    # Make RPC calls
+    response = await provider_stub.GetSchema(request)
+    
+    # Clean shutdown
+    await client.shutdown_plugin()
+    await client.close()
+    ```
+"""
+
 import asyncio
 import contextlib
 import os
@@ -17,7 +52,7 @@ from google.protobuf import empty_pb2
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, RPCPluginError, TransportError
 from pyvider.rpcplugin.handshake import parse_handshake_response
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
@@ -25,8 +60,6 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-
-# Generated stubs from your .proto files:
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import TransportT
@@ -35,15 +68,48 @@ from pyvider.rpcplugin.transport.types import TransportT
 @define
 class RPCPluginClient:
     """
-    RPCPluginClient updated to interact with the new broker, stdio, and controller services.
-    This version:
-      • Launches or attaches to a plugin server subprocess.
-      • Performs handshake, sets up TLS.
-      • Creates a secure gRPC channel.
-      • Exposes methods to:
-         => read plugin logs (StdioStub.StreamStdio)
-         => manage broker subchannels (BrokerStub.StartStream)
-         => send shutdown signals (ControllerStub.Shutdown).
+    Client interface for interacting with Terraform-compatible plugin servers.
+    
+    The RPCPluginClient handles the complete lifecycle of plugin communication:
+    1. Launching or attaching to a plugin server subprocess
+    2. Performing handshake, protocol negotiation, and transport selection
+    3. Setting up secure TLS/mTLS communication when enabled
+    4. Creating gRPC channels and service stubs
+    5. Providing plugin logs (stdout/stderr) streaming
+    6. Managing broker subchannels for multi-service communication
+    7. Handling graceful shutdown of plugin processes
+    
+    The client follows the Terraform go-plugin protocol, which includes
+    a standardized handshake format, negotiated protocol version, and 
+    support for Unix socket or TCP transport modes.
+    
+    Attributes:
+        command: List containing the plugin executable command and arguments
+        config: Optional configuration dictionary for customizing client behavior
+        
+    Example:
+        ```python
+        # Create a client for a plugin
+        client = RPCPluginClient(
+            command=["terraform-provider-example"],
+            config={"env": {"TF_LOG": "DEBUG"}}
+        )
+        
+        # Start the client (launches process, performs handshake, etc.)
+        await client.start()
+        
+        # Use the created channel with protocol-specific stubs
+        provider_stub = MyProviderStub(client._channel)
+        response = await provider_stub.SomeMethod(request)
+        
+        # Graceful shutdown
+        await client.shutdown_plugin()
+        await client.close()
+        ```
+        
+    Note:
+        The client supports automatic mTLS if enabled in configuration,
+        and can read/generate certificates as needed for secure communication.
     """
 
     command: list[str] = field()
@@ -52,7 +118,7 @@ class RPCPluginClient:
     # Internal fields
     _process: subprocess.Popen | None = field(init=False, default=None)
     _transport: TransportT | None = field(init=False, default=None)
-    _transport_name: str | None = field(init=False, default=None)  # Add this attribute
+    _transport_name: str | None = field(init=False, default=None)
 
     _address: TransportT | None = field(init=False, default=None)
     _protocol_version: int | None = field(init=False, default=None)
@@ -74,8 +140,11 @@ class RPCPluginClient:
 
     def __attrs_post_init__(self) -> None:
         """
-        Optionally configure or read environment variables. A place to put
-        handshake defaults, but the actual handshake is done in start().
+        Initialize client state after attributes are set.
+        
+        This method is called automatically after object instantiation
+        to set up initial client state. It doesn't perform any network 
+        operations - those happen in the start() method.
         """
         logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
 
@@ -83,7 +152,7 @@ class RPCPluginClient:
         """
         Launch the plugin subprocess, perform handshake, and establish connection.
 
-        This method:
+        This method executes the complete client initialization sequence:
         1. Sets up client certificates if auto-mTLS is enabled
         2. Launches the server subprocess
         3. Performs the handshake protocol
@@ -125,17 +194,23 @@ class RPCPluginClient:
 
     async def _setup_client_certificates(self) -> None:
         """
-        If PLUGIN_AUTO_MTLS is true, load or generate a client certificate and key.
+        Load or generate client certificates for mTLS if enabled.
+        
+        If PLUGIN_AUTO_MTLS is true, this method will:
+        1. Check for existing client certificate/key in config
+        2. Generate new ephemeral credentials if not found
+        3. Store the certificate/key for later use in TLS setup
+        
+        This method is essential for secure communication with the plugin.
         """
         logger.debug("🔐 Checking if auto-mTLS is enabled for client.")
 
-        #auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS", "")
-
         auto_mtls: bool = rpcplugin_config.auto_mtls_enabled()
 
-        if auto_mtls in ("true", "1", "yes"):
-            cert_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
-            key_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_KEY", "")
+        if auto_mtls:
+            cert_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+            key_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+
             if cert_pem and key_pem:
                 logger.info("🔐 Using existing client cert/key from config.")
                 self.client_cert = cert_pem
@@ -148,9 +223,22 @@ class RPCPluginClient:
         else:
             logger.info("🔐 mTLS not enabled; operating in insecure mode.")
 
-    # Modify _launch_process to configure better process environment
     async def _launch_process(self) -> None:
-        """Launch the plugin as a subprocess if not already running."""
+        """
+        Launch the plugin as a subprocess with appropriate environment configuration.
+        
+        This method:
+        1. Checks if the process is already running
+        2. Sets up the environment with configuration values
+        3. Starts the subprocess with unbuffered I/O
+        4. Handles potential process startup errors
+        
+        The subprocess is launched with its stdout/stderr captured for
+        handshake and logging purposes.
+        
+        Raises:
+            RuntimeError: If the process cannot be started
+        """
         if self._process:
             logger.debug("🖥️ Plugin subprocess is already running; skipping launch.")
             return
@@ -186,13 +274,13 @@ class RPCPluginClient:
                         extra={"trace": traceback.format_exc()})
             raise
 
-    ############################################################################
-
-    # Add this method before _perform_handshake
     async def _relay_stderr_background(self) -> None:
         """
         Continuously read plugin's stderr in a background thread, printing it locally.
-        This helps debug handshake issues in real-time.
+        
+        This method creates a non-blocking background thread that reads and logs
+        stderr output from the plugin process, which is especially helpful for
+        debugging handshake issues in real-time.
         """
         import threading
         def read_stderr() -> None:
@@ -207,12 +295,20 @@ class RPCPluginClient:
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
 
-    ############################################################################
-
     async def _perform_handshake(self) -> None:
         """
-        Reads a single line from the plugin stdout for handshake:
-          => Format: CORE_VERSION|PLUGIN_VERSION|network|address|protocol|serverCert
+        Perform the handshake protocol with the plugin server.
+        
+        The handshake is a critical part of the plugin protocol that:
+        1. Reads a formatted response line from the plugin's stdout
+        2. Parses protocol version, network type, address, and certificate info
+        3. Sets up the appropriate transport based on the handshake
+        
+        Format: CORE_VERSION|PLUGIN_VERSION|network|address|protocol|serverCert
+        
+        Raises:
+            HandshakeError: If handshake cannot be completed or is invalid
+            TimeoutError: If handshake response is not received in time
         """
         logger.debug("🤝 Initiating handshake with plugin server...")
 
@@ -225,11 +321,11 @@ class RPCPluginClient:
         # Log the command being used
         logger.debug(f"🤝 Waiting for handshake from command: {self.command}")
 
-        ###
         async def read_stdout_line() -> str:
+            """Read a complete handshake line from stdout with robust retry logic."""
             loop = asyncio.get_event_loop()
             start_time = loop.time()
-            timeout = 10.0  # Increase timeout for handshake
+            timeout = 10.0  # Increased timeout for handshake
 
             # Buffer for incomplete handshake lines
             buffer = ""
@@ -316,7 +412,6 @@ class RPCPluginClient:
             self._server_cert = server_cert
             self._transport_name = network
 
-
             if network == "tcp":
                 self._transport = TCPSocketTransport()
                 logger.debug("*** network is set to tcp")
@@ -349,10 +444,21 @@ class RPCPluginClient:
             )
             raise HandshakeError(f"Handshake parse/connect error: {e}")
 
-################################################################################
-
     async def _create_grpc_channel(self) -> None:
-        """Creates a secure gRPC channel to the plugin."""
+        """
+        Create a secure gRPC channel to communicate with the plugin.
+        
+        This method:
+        1. Constructs the appropriate target address based on transport type
+        2. Sets up TLS credentials if a server certificate is available
+        3. Creates and configures the gRPC channel with optimized settings
+        4. Waits for the channel to be ready before proceeding
+        
+        The channel becomes the foundation for all subsequent RPC communication.
+        
+        Raises:
+            ConnectionError: If channel creation or connection fails
+        """
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
         # CRITICAL FIX: Use the same address that was established during handshake
@@ -416,11 +522,19 @@ class RPCPluginClient:
             logger.error(f"🚢❌ gRPC channel failed: {e}")
             raise ConnectionError(f"Failed to establish gRPC channel to plugin: {e}")
 
-################################################################################
-
     def _rebuild_x509_pem(self, maybe_cert: str) -> str:
         """
-        Rebuilds a single base64 string of the server's certificate into a PEM block if missing headers.
+        Convert a raw base64 certificate into proper PEM format.
+        
+        This method adds the required PEM headers and formatting to a raw
+        certificate string if they're missing. This is necessary because the
+        handshake protocol transmits certificates without PEM headers.
+        
+        Args:
+            maybe_cert: The certificate string, either in PEM format already or as raw base64
+            
+        Returns:
+            A properly formatted PEM certificate string
         """
         if maybe_cert.startswith("-----BEGIN CERTIFICATE-----"):
             logger.debug("🔐 Server cert already has PEM headers.")
@@ -437,7 +551,17 @@ class RPCPluginClient:
 
     def _init_stubs(self) -> None:
         """
-        Once the channel is established, create stubs for Stdio, Broker, and Controller.
+        Initialize gRPC service stubs for communication with the plugin.
+        
+        This method creates the standard service stubs that enable:
+        1. Stdio: receiving plugin stdout/stderr streams
+        2. Broker: managing subchannels for multi-service communication
+        3. Controller: sending control commands like shutdown
+        
+        These stubs provide the API for client-server interaction.
+        
+        Raises:
+            RuntimeError: If called before the gRPC channel is established
         """
         if not self._channel:
             raise RuntimeError("Cannot init stubs; no gRPC channel available.")
@@ -451,8 +575,14 @@ class RPCPluginClient:
 
     async def _read_stdio_logs(self) -> None:
         """
-        Subscribes to the plugin's stdio stream. This is an infinite loop
-        that reads messages from the plugin, logs them, and prints them.
+        Subscribe to and process the plugin's stdout/stderr stream.
+        
+        This method starts a long-running task that:
+        1. Connects to the plugin's stdio streaming service
+        2. Continuously reads stdout/stderr messages
+        3. Logs them for monitoring and debugging
+        
+        The stream continues until the connection is closed or task is cancelled.
         """
         if not self._stdio_stub:
             logger.debug("🔌📝 _read_stdio_logs called, but no _stdio_stub. Exiting.")
@@ -480,8 +610,20 @@ class RPCPluginClient:
 
     async def open_broker_subchannel(self, sub_id: int, address: str) -> None:
         """
-        Demonstrates how to dial a subchannel with the broker stub.
-        We do so by calling 'StartStream' in a streaming manner and sending a 'knock' message.
+        Open a subchannel for additional service communication.
+        
+        The broker mechanism allows for multiple logical services to be
+        provided over a single plugin connection. This method:
+        1. Initiates a streaming RPC with the broker service
+        2. Sends a "knock" message to request subchannel establishment
+        3. Processes acknowledgment responses
+        
+        Args:
+            sub_id: Unique identifier for the subchannel
+            address: Address for the subchannel connection
+            
+        Raises:
+            RuntimeError: If broker stub is not initialized
         """
         if not self._broker_stub:
             raise RuntimeError("Broker stub not initialized.")
@@ -523,7 +665,15 @@ class RPCPluginClient:
 
     async def shutdown_plugin(self) -> None:
         """
-        Call the plugin's controller to request a graceful shutdown.
+        Request graceful shutdown of the plugin server.
+        
+        This method calls the Controller service's Shutdown method,
+        which instructs the plugin to perform an orderly shutdown.
+        The client should still call close() afterwards to clean up
+        local resources.
+        
+        Returns:
+            None
         """
         if not self._controller_stub:
             logger.debug("🔌🛑 No controller stub found; cannot call Shutdown().")
@@ -541,11 +691,16 @@ class RPCPluginClient:
 
     async def close(self) -> None:
         """
-        Gracefully shut down the client:
-         • Cancel tasks (e.g. reading stdio logs).
-         • Close gRPC channel.
-         • Terminate the plugin subprocess.
-         • Close transport sockets.
+        Clean up all resources and connections.
+        
+        This method performs complete cleanup of client resources:
+        1. Cancels any background tasks (stdio reading, etc.)
+        2. Closes the gRPC channel
+        3. Terminates the plugin subprocess
+        4. Closes the transport connection
+        
+        This method is idempotent and can be called multiple times safely.
+        It should be called when the client is no longer needed.
         """
         logger.debug("🔄 Closing RPCPluginClient...")
 
@@ -590,6 +745,5 @@ class RPCPluginClient:
             self._transport = None
 
         logger.info("🔄 RPCPluginClient fully closed.")
-
 
 # 🐍🏗️🔌

@@ -1,6 +1,24 @@
 #
 # pyvider/rpcplugin/transport/types.py
 #
+"""
+Type definitions for the Pyvider RPC plugin transport system.
+
+This module provides Protocol classes, TypeVars, and type aliases that define
+the interfaces and contracts used by transport implementations. These types
+enable static type checking and clear API boundaries.
+
+Usage:
+    from pyvider.rpcplugin.transport.types import TransportT
+
+    class MyCustomTransport(RPCPluginTransport):
+        async def listen(self) -> str:
+            ...
+
+    def setup_server(transport: TransportT) -> None:
+        # Type-safe transport handling
+        ...
+"""
 
 import asyncio
 from typing import Protocol, TypeVar
