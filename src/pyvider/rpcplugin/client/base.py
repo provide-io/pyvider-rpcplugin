@@ -81,8 +81,25 @@ class RPCPluginClient:
 
     async def start(self) -> None:
         """
-        Launch the plugin subprocess, do the handshake, create a secure channel,
-        init stubs, and optionally begin streaming logs.
+        Launch the plugin subprocess, perform handshake, and establish connection.
+
+        This method:
+        1. Sets up client certificates if auto-mTLS is enabled
+        2. Launches the server subprocess
+        3. Performs the handshake protocol
+        4. Creates a secure gRPC channel
+        5. Initializes service stubs
+
+        Raises:
+            HandshakeError: If the handshake fails
+            ConnectionError: If the connection cannot be established
+            TransportError: If the transport encounters an error
+
+        Example:
+            ```python
+            client = RPCPluginClient(command=["./my_plugin"])
+            await client.start()
+            ```
         """
         logger.debug("🔄 Starting RPC plugin client...")
 
@@ -165,7 +182,7 @@ class RPCPluginClient:
                         extra={"trace": traceback.format_exc()})
             raise
 
-################################################################################
+    ############################################################################
 
     # Add this method before _perform_handshake
     async def _relay_stderr_background(self) -> None:
@@ -186,7 +203,7 @@ class RPCPluginClient:
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
 
-################################################################################
+    ############################################################################
 
     async def _perform_handshake(self) -> None:
         """

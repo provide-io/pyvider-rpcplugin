@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+#
 # pyvider/rpcplugin/factories.py
+#
 
 """
 Factory Functions for Pyvider RPC Plugin
