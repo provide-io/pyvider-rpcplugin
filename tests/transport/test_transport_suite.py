@@ -1,106 +1,27 @@
-#!/usr/bin/env python3
+#
 # tests/test_transport_suite.py
+#
 
 import asyncio
 import os
 import socket
 import tempfile
 from contextlib import asynccontextmanager
-from typing import Tuple, AsyncGenerator
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import TransportError
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.protocol import RPCPluginProtocol
+
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.types import TransportT
 
-# tests/transport/test_transport_suite.py - Replace SocketStateMonitor class entirely
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
-class SocketStateMonitor:
-    """Utility for monitoring socket state."""
-
-    def __init__(self, path: str) -> None:
-        self._path = path
-        self._active = False
-        self._connections = 0
-        self._lock = asyncio.Lock()
-
-    @property
-    def active(self) -> bool:
-        return self._active
-
-    @property
-    def path(self) -> str:
-        return self._path
-
-    @property
-    def connections(self) -> int:
-        return self._connections
-
-    async def check_state(self) -> bool:
-        """Check current socket state with retries."""
-        for attempt in range(3):  # Retry up to 3 times
-            async with self._lock:
-                try:
-                    if not os.path.exists(self._path):
-                        self._active = False
-                        return False
-
-                    # Check if it's a valid socket file
-                    try:
-                        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                        sock.settimeout(0.5)
-                        sock.connect(self._path)
-                        self._active = True
-                        self._connections += 1
-                        sock.close()
-                        return True
-                    except (ConnectionRefusedError, FileNotFoundError):
-                        # Socket exists but nothing listening
-                        if attempt < 2:  # Only sleep if we have more retries
-                            await asyncio.sleep(0.2)  # Wait for socket to be ready
-                            continue
-                        self._active = False
-                        return False
-                    except OSError:
-                        self._active = False
-                        return False
-                    finally:
-                        try:
-                            sock.close()
-                        except (NameError, UnboundLocalError):
-                            pass
-                except Exception as e:
-                    logger.error(f"Socket state check error: {e}")
-                    
-            # Sleep between retries
-            if attempt < 2:
-                await asyncio.sleep(0.2)
-                
-        self._active = False
-        return False
-
-    async def wait_for_active(self, timeout: float = 3.0) -> bool:
-        """Wait for socket to become active with regular checks."""
-        end_time = asyncio.get_event_loop().time() + timeout
-        while asyncio.get_event_loop().time() < end_time:
-            if await self.check_state():
-                return True
-            await asyncio.sleep(0.1)
-        return False
-
-    async def wait_for_inactive(self, timeout: float = 3.0) -> bool:
-        """Wait for socket to become inactive."""
-        end_time = asyncio.get_event_loop().time() + timeout
-        while asyncio.get_event_loop().time() < end_time:
-            if not await self.check_state():
-                return True
-            await asyncio.sleep(0.1)
-        return False
+from tests.fixtures import *
 
 @asynccontextmanager
 async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[TransportT, None]:
@@ -113,17 +34,17 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
             import uuid
             import time
             path = f"/tmp/pyvider_test_{time.time()}_{uuid.uuid4().hex[:8]}.sock"
-            
+
             # Ensure clean state
             if os.path.exists(path):
                 os.unlink(path)
-                
+
             transport = UnixSocketTransport(path=path, **kwargs)
         else:
             transport = TCPSocketTransport(host="127.0.0.1", **kwargs)
-            
+
         yield transport
-        
+
     finally:
         # Robust cleanup with timeouts
         if transport:
@@ -133,7 +54,7 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
                 logger.error("Timeout during transport close")
             except Exception as e:
                 logger.error(f"Error during transport close: {e}")
-                
+
         # Additional socket file cleanup
         if path and os.path.exists(path):
             try:
@@ -141,75 +62,6 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
                 os.unlink(path)
             except OSError:
                 pass
-
-@pytest_asyncio.fixture
-async def socket_monitor():
-    """Fixture providing socket state monitoring."""
-    monitors = []
-
-    def create_monitor(path: str) -> SocketStateMonitor:
-        monitor = SocketStateMonitor(path)
-        monitors.append(monitor)
-        return monitor
-
-    yield create_monitor
-
-    # Verify all sockets were properly cleaned up
-    for monitor in monitors:
-        assert not monitor.active, f"Socket {monitor.path} was not properly cleaned up"
-        if os.path.exists(monitor.path):
-            os.unlink(monitor.path)
-
-################################################################################
-
-# Base Dummy Classes
-class DummyReader:
-    def __init__(self, data: bytes = b"") -> None:
-        self._data = data
-        self._called = False
-
-    async def read(self, size: int) -> bytes:
-        if not self._called:
-            self._called = True
-            return self._data
-        return b""
-
-class DummyWriter:
-    def __init__(self) -> None:
-        self.closed = False
-        self.data = bytearray()
-
-    def write(self, data: bytes) -> None:
-        self.data.extend(data)
-
-    async def drain(self) -> None:
-        await asyncio.sleep(0)
-
-    def close(self) -> None:
-        self.closed = True
-
-    async def wait_closed(self) -> None:
-        await asyncio.sleep(0)
-
-    def is_closing(self) -> bool:
-        return self.closed
-
-    def get_extra_info(self, key: str, default: any = None) -> any:
-        return "dummy_peer" if key == "peername" else default
-
-# Protocol & Handler Mocks
-class MockProtocol(RPCPluginProtocol):
-    def get_grpc_descriptors(self) -> Tuple[None, str]:
-        logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
-        return None, "MockService"
-
-    async def add_to_server(self, handler, server) -> None:
-        logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
-
-class MockHandler:
-    async def handle_request(self, request, context) -> None:
-        logger.debug("🔌🚀✅ MockHandler.handle_request called.")
-        return None
 
 # Core Fixtures
 @pytest.fixture
@@ -231,7 +83,7 @@ def temp_sock_dir():
 async def transport_factory(request):
     """Factory fixture for creating isolated transport instances."""
     created = []
-    
+
     async def create(transport_type: str, **kwargs) -> TransportT:
         # Create unique paths for Unix sockets
         if transport_type == "unix":
@@ -246,12 +98,12 @@ async def transport_factory(request):
             transport = UnixSocketTransport(path=socket_path, **kwargs)
         else:
             transport = TCPSocketTransport(**kwargs)
-            
+
         created.append(transport)
         return transport
-        
+
     yield create
-    
+
     # Thorough cleanup
     for transport in created:
         try:
@@ -402,7 +254,7 @@ async def test_unix_socket_error_handling() -> None:
         # Create a file with non-socket content
         tf.write(b"this is not a socket")
         tf.flush()
-        
+
         # Try to use file that exists but isn't a socket
         transport = UnixSocketTransport(path=tf.name)
         with pytest.raises(TransportError, match="Failed to create Unix socket"):
@@ -412,7 +264,7 @@ async def test_unix_socket_error_handling() -> None:
     nonexistent_path = "/tmp/nonexistent_socket_path_12345.sock"
     if os.path.exists(nonexistent_path):
         os.unlink(nonexistent_path)
-        
+
     transport = UnixSocketTransport(path=nonexistent_path)
     with pytest.raises(TransportError, match="does not exist"):
         await transport.connect(nonexistent_path)
@@ -429,7 +281,7 @@ async def test_transport_error_handling(transport_factory) -> None:
     await transport.close()
 
 @pytest.mark.asyncio
-async def test_unix_socket_lifecycle_3(socket_monitor) -> None:
+async def test_unix_socket_lifecycle(socket_monitor) -> None:
     """Test complete Unix socket transport lifecycle."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -439,13 +291,13 @@ async def test_unix_socket_lifecycle_3(socket_monitor) -> None:
 
         # Listen with timeout
         endpoint = await asyncio.wait_for(transport.listen(), timeout=2.0)
-        
+
         # Wait with timeout
         assert await asyncio.wait_for(
-            monitor.wait_for_active(timeout=1.0), 
+            monitor.wait_for_active(timeout=1.0),
             timeout=2.0
         ), "Socket failed to become active"
-        
+
         assert os.path.exists(endpoint), "Socket file missing"
         assert os.stat(endpoint).st_mode & 0o770 == 0o770, "Invalid permissions"
 
@@ -466,281 +318,7 @@ async def test_unix_socket_lifecycle_3(socket_monitor) -> None:
         )
 
 @pytest.mark.asyncio
-async def test_unix_socket_lifecycle_2(socket_monitor) -> None:
-    """Test complete Unix socket transport lifecycle."""
-    async with managed_transport("unix") as transport:
-        monitor = socket_monitor(transport.path)
-
-        # Pre-listen state
-        state = await monitor.check_state()
-        assert not state, "Socket exists before listen"
-        assert not transport._running, "Transport running before listen"
-
-        # Listen
-        endpoint = await transport.listen()
-        await asyncio.sleep(0.1)  # Allow startup
-        state = await monitor.check_state()
-        assert state, "Socket not active after listen"
-        assert transport._running, "Transport not running after listen"
-        assert os.path.exists(endpoint), "Socket file missing"
-
-        # Verify permissions
-        mode = os.stat(endpoint).st_mode
-        assert mode & 0o770 == 0o770, f"Invalid socket permissions: {mode:o}"
-
-        # Connect
-        client = UnixSocketTransport()
-        await client.connect(endpoint)
-
-        # Test data transfer
-        test_data = b"lifecycle test"
-        client._writer.write(test_data)
-        await client._writer.drain()
-
-        await client.close()
-        await transport.close()
-
-        state = await monitor.check_state()
-        assert not state, "Socket still active after close"
-        assert not os.path.exists(endpoint), "Socket file remains"
-
-@pytest.mark.asyncio
-async def test_unix_socket_lifecycle_1(socket_monitor) -> None:
-    """Test complete Unix socket transport lifecycle."""
-    async with managed_transport("unix") as transport:
-        monitor = socket_monitor(transport.path)
-
-        # Pre-listen state
-        assert not await monitor.check_state()
-        assert not transport._running
-
-        # Listen
-        endpoint = await transport.listen()
-        assert await monitor.check_state()
-        assert transport._running
-        assert os.path.exists(endpoint)
-        assert os.stat(endpoint).st_mode & 0o770 == 0o770
-
-        # Connect
-        client = UnixSocketTransport()
-        await client.connect(endpoint)
-        assert await monitor.check_state()
-
-@pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_4() -> None:
-    """Test multiple concurrent connections to Unix socket."""
-    with tempfile.NamedTemporaryFile() as tf:
-        socket_path = tf.name
-    
-    # Remove file so we can create socket
-    os.unlink(socket_path)
-    
-    # Create a connection counter
-    connection_count = 0
-    
-    # Create transport and start server
-    transport = UnixSocketTransport(path=socket_path)
-    
-    try:
-        # Start listening
-        endpoint = await transport.listen()
-        
-        # Ensure socket exists
-        assert os.path.exists(socket_path), f"Socket file {socket_path} does not exist"
-        
-        # Wait briefly for socket to be ready
-        await asyncio.sleep(0.2)
-        
-        # Create multiple clients
-        clients = []
-        for i in range(5):
-            client = UnixSocketTransport()
-            await client.connect(endpoint)
-            clients.append(client)
-            connection_count += 1
-            
-        # Check connection count
-        assert len(clients) == 5, f"Expected 5 clients, got {len(clients)}"
-        assert connection_count == 5, f"Expected 5 connections, got {connection_count}"
-        
-        # Test concurrent data transfer
-        test_data = b"concurrent test"
-        for client in clients:
-            client._writer.write(test_data)
-            await client._writer.drain()
-        
-        # Cleanup - close all clients
-        for client in clients:
-            await client.close()
-            
-        # Wait for connections to close
-        await asyncio.sleep(0.5)
-        
-    finally:
-        # Cleanup transport
-        await transport.close()
-        
-        # Verify socket is gone
-        assert not os.path.exists(socket_path), f"Socket file {socket_path} still exists"
-
-@pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_3(socket_monitor) -> None:
-    """Test multiple concurrent connections to Unix socket."""
-    async with managed_transport("unix") as transport:
-        monitor = socket_monitor(transport.path)
-        endpoint = await transport.listen()
-
-        # Create multiple clients
-        clients = []
-        for i in range(5):
-            client = UnixSocketTransport()
-            await client.connect(endpoint)
-            clients.append(client)
-
-        # Fixed: Correctly check monitor connections
-        assert await monitor.check_state(), "Socket should be active"
-        
-        # Test concurrent data transfer
-        test_data = b"concurrent test"
-        for client in clients:
-            client._writer.write(test_data)
-            await client._writer.drain()
-
-        # Cleanup - must await each close() call
-        for client in clients:
-            await client.close()
-
-        # Wait briefly for cleanup to complete
-        await asyncio.sleep(0.1)
-        assert not await monitor.check_state()
-
-@pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_2(socket_monitor) -> None:
-    """Test multiple concurrent connections to Unix socket."""
-    async with managed_transport("unix") as transport:
-        monitor = socket_monitor(transport.path)
-        endpoint = await transport.listen()
-
-        # Create multiple clients
-        clients = []
-        for i in range(5):
-            client = UnixSocketTransport()
-            await client.connect(endpoint)
-            clients.append(client)
-            # Check state for each connection to increment counter
-            await monitor.check_state()  # Add this line
-
-        # Verify all connections
-        assert monitor.connections == 5
-        assert len(transport._connections) == 5
-        
-        test_data = b"concurrent test"
-        await asyncio.gather(*(client._writer.write(test_data) for client in clients))
-        await asyncio.gather(*(client._writer.drain() for client in clients))
-
-        # Cleanup
-        for client in clients:
-            await client.close()
-
-        assert not await monitor.check_state()
-
-@pytest.mark.asyncio
-async def test_unix_socket_concurrent_connections_1(socket_monitor) -> None:
-    """Test multiple concurrent connections to Unix socket."""
-    async with managed_transport("unix") as transport:
-        monitor = socket_monitor(transport.path)
-        endpoint = await transport.listen()
-
-        # Create multiple clients
-        clients = []
-        for i in range(5):
-            client = UnixSocketTransport()
-            await client.connect(endpoint)
-            clients.append(client)
-
-        # Verify all connections
-        assert monitor.connections == 5
-        assert len(transport._connections) == 5
-
-        # Test concurrent data transfer
-        test_data = b"concurrent test"
-        await asyncio.gather(*(client._writer.write(test_data) for client in clients))
-        await asyncio.gather(*(client._writer.drain() for client in clients))
-
-        # Cleanup
-        for client in clients:
-            await client.close()
-
-        assert not await monitor.check_state()
-
-@pytest.mark.asyncio
-async def test_unix_socket_server_integration_2() -> None:
-    """Test Unix socket transport with server integration."""
-    with tempfile.NamedTemporaryFile() as tf:
-        socket_path = tf.name
-    
-    # Remove the file so we can create a socket
-    os.unlink(socket_path)
-    
-    # Create transport with unique path
-    transport = UnixSocketTransport(path=socket_path)
-    
-    # Create server
-    protocol = MockProtocol()
-    handler = MockHandler()
-    
-    server = RPCPluginServer(
-        protocol=protocol, 
-        handler=handler, 
-        transport=transport
-    )
-    
-    server._serving_future = asyncio.Future()
-    server._serving_event = asyncio.Event()
-    
-    try:
-        # Start server
-        server_task = asyncio.create_task(server.serve())
-        
-        # Wait for server to be ready (with longer timeout)
-        try:
-            await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
-        except asyncio.TimeoutError:
-            pytest.fail("Server failed to become ready in time")
-        
-        assert server._serving_event.is_set(), "Server should be ready"
-        assert os.path.exists(socket_path), f"Socket file {socket_path} does not exist"
-        
-        # Create client connection
-        client = UnixSocketTransport()
-        await client.connect(socket_path)
-        
-        # Test data transfer
-        test_data = b"server test"
-        client._writer.write(test_data)
-        await client._writer.drain()
-        
-        await client.close()
-        
-    finally:
-        # Cleanup
-        server._shutdown_requested()
-        await server.stop()
-        
-        # Cancel server task
-        if 'server_task' in locals():
-            server_task.cancel()
-            try:
-                await server_task
-            except asyncio.CancelledError:
-                pass
-        
-        # Ensure socket is cleaned up
-        if os.path.exists(socket_path):
-            os.unlink(socket_path)
-
-@pytest.mark.asyncio
-async def test_unix_socket_server_integration_1(socket_monitor) -> None:
+async def test_unix_socket_server_integration(socket_monitor) -> None:
     """Test Unix socket transport with server integration."""
     async with managed_transport("unix") as transport:
         monitor = socket_monitor(transport.path)
@@ -790,41 +368,41 @@ async def test_unix_socket_cleanup_handling(socket_monitor) -> None:
     # Create a temporary path for testing
     with tempfile.NamedTemporaryFile(delete=False) as tf:
         path = tf.name
-    
+
     # Create file with non-socket content
     with open(path, "w") as f:
         f.write("not a socket")
-    
+
     # Create the monitor
     monitor = socket_monitor(path)
-    
+
     try:
         # First transport should handle stale file
         transport1 = UnixSocketTransport(path=path)
         await transport1.listen()
-        
+
         # Verify socket is active
         assert await monitor.check_state(), "Socket should be active after listen"
-        
+
         # Close first transport
         await transport1.close()
-        
+
         # Verify socket is inactive
         assert not await monitor.check_state(), "Socket should be inactive after close"
         assert not os.path.exists(path), "Socket file should be removed after close"
-        
+
         # New transport should work on same path
         transport2 = UnixSocketTransport(path=path)
         await transport2.listen()
-        
+
         # Verify new socket is active
         assert await monitor.check_state(), "New socket should be active after listen"
-        
+
         await transport2.close()
-        
+
         # Final verification
         assert not await monitor.check_state(), "Socket should be inactive after final close"
-        
+
     finally:
         # Cleanup if anything remains
         if os.path.exists(path):

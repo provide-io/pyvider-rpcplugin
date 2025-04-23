@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import tempfile
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -40,12 +41,20 @@ async def test_unix_socket_listen_and_connect(unique_socket_path) -> None:
 @pytest.mark.asyncio
 async def test_unix_socket_listen_path_creation_failure() -> None:
     """Test that UnixSocketTransport.listen raises TransportError when the socket path cannot be created."""
-    transport = UnixSocketTransport(path="/root/unauthorized/socket.sock")
-
-    with pytest.raises(TransportError) as excinfo:
-        await transport.listen()
-
-    assert "Failed to create Unix socket" in str(excinfo.value)
+    # Create a temporary directory with no permissions to create sockets
+    temp_dir = tempfile.mkdtemp()
+    try:
+        # Make temp dir inaccessible
+        os.chmod(temp_dir, 0o000)
+        
+        # Try to create a socket in the inaccessible directory
+        transport = UnixSocketTransport(path=os.path.join(temp_dir, "socket.sock"))
+        with pytest.raises(TransportError, match="Failed to create Unix socket"):
+            await transport.listen()
+    finally:
+        # Restore permissions for cleanup
+        os.chmod(temp_dir, 0o700)
+        os.rmdir(temp_dir)
 
 @pytest.mark.asyncio
 async def test_unix_socket_listen_socket_in_use(unique_socket_path) -> None:
@@ -137,4 +146,4 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
     with pytest.raises(TransportError, match="Failed to remove"):
         await transport.listen()
 
-### 🐍🏗🧪️
+# 🐍🏗🧪️

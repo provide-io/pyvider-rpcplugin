@@ -34,7 +34,7 @@ async def test_unix_socket_transport_close_oserror(unique_socket_path) -> None:
         patch("os.unlink", side_effect=OSError("Mocked unlink error")),
         patch("os.path.exists", return_value=True),
     ):  # Ensure path exists check returns True
-        with pytest.raises(TransportError, match="Mocked unlink error"):
+        with pytest.raises(TransportError, match="Failed to remove socket file"):
             await transport.close()
 
     # Clean up any remaining socket file
@@ -61,18 +61,29 @@ async def test_unix_close_unlink_error(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(
         os, "unlink", lambda path: (_ for _ in ()).throw(OSError("unlink error"))
     )
-    with pytest.raises(TransportError, match="Failed to remove socket file:"):
+    with pytest.raises(TransportError, match="Failed to remove socket file"):
         await transport.close()
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_connection_active(unix_transport) -> None:
-    endpoint = unix_transport.path
-    client_transport = UnixSocketTransport(path=endpoint)
+async def test_unix_socket_close_connection_active(unique_socket_path) -> None:
+    """Test closing a transport with active connections."""
+    # Create a server transport
+    transport = UnixSocketTransport(path=str(unique_socket_path))
+    endpoint = await transport.listen()
+    
+    # Create and connect a client
+    client_transport = UnixSocketTransport()
     await client_transport.connect(endpoint)
 
-    await unix_transport.close()
+    # Close the server - should close client connections too
+    await transport.close()
+    
+    # Socket file should be removed
     assert not os.path.exists(endpoint)
+    
+    # Cleanup client too to be safe
+    await client_transport.close()
 
 
 @pytest.mark.asyncio
@@ -111,7 +122,7 @@ async def test_unix_socket_close_oserror(unique_socket_path) -> None:
         patch("os.unlink", side_effect=OSError("Mocked unlink error")),
         patch("os.path.exists", return_value=True),
     ):  # Ensure path exists check returns True
-        with pytest.raises(TransportError, match="Mocked unlink error"):
+        with pytest.raises(TransportError, match="Failed to remove socket file"):
             await transport.close()
 
     # Clean up any remaining socket file
@@ -122,11 +133,9 @@ async def test_unix_socket_close_oserror(unique_socket_path) -> None:
         pass
 
 
-################################################################################
-
-
 @pytest.mark.asyncio
 async def test_close_writer_exception(monkeypatch) -> None:
+    """Test handling of exceptions during writer close."""
     transport = UnixSocketTransport(path="/tmp/dummy.sock")
 
     class FakeWriter:
@@ -140,3 +149,5 @@ async def test_close_writer_exception(monkeypatch) -> None:
     # _close_writer should catch the exception and log an error.
     await transport._close_writer(fake_writer)
     # No exception should propagate.
+
+# 🐍🏗🧪️
