@@ -1,4 +1,3 @@
-
 # tests/transport/test_transport_types_direct.py
 
 from typing import Protocol, runtime_checkable
@@ -7,7 +6,6 @@ from pyvider.rpcplugin.transport.types import (
     TransportType
 )
 from pyvider.rpcplugin.transport import (
-    RPCPluginTransport,
     TCPSocketTransport,
     UnixSocketTransport
 )
@@ -65,8 +63,7 @@ def test_transport_type() -> None:
     accepts_transport(tcp_transport)
     accepts_transport(unix_transport)
 
-    # This shouldn't type check, but will work at runtime
-    # Just test it doesn't raise an exception
-    accepts_transport(RPCPluginTransport())  # type: ignore
+    # Don't instantiate the abstract base class directly
+    # accepts_transport(RPCPluginTransport())  # type: ignore
 
-### 🐍🏗🧪️
+# 🐍🏗🧪️

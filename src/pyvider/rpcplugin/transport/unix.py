@@ -95,6 +95,7 @@ class UnixSocketTransport(RPCPluginTransport):
             self.path = normalize_unix_path(self.path)
 
         self._server_ready = asyncio.Event()
+        self._connections = set()  # Initialize connection set
         logger.debug(f"📞🚀✅ UnixSocketTransport initialized with path={self.path}")
 
     async def _check_socket_in_use(self) -> bool:
@@ -142,8 +143,12 @@ class UnixSocketTransport(RPCPluginTransport):
             # Create directory if needed
             dir_path = os.path.dirname(self.path)
             if dir_path:
-                os.makedirs(dir_path, exist_ok=True)
-                logger.debug(f"📞🕹✅ Created directory: {dir_path}")
+                try:
+                    os.makedirs(dir_path, exist_ok=True)
+                    logger.debug(f"📞🕹✅ Created directory: {dir_path}")
+                except (PermissionError, OSError) as e:
+                    logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
+                    raise TransportError(f"Failed to create Unix socket directory: {e}")
 
             # Remove stale socket file if it exists
             if os.path.exists(self.path):
@@ -180,17 +185,17 @@ class UnixSocketTransport(RPCPluginTransport):
     async def connect(self, endpoint: str) -> None:
         """
         Connect to a remote Unix socket with robust path handling.
-        
+
         This method:
         1. Normalizes the endpoint path to handle various formats
         2. Verifies the socket file exists (with retries)
         3. Establishes the connection with timeout handling
-        
+
         Args:
             endpoint: The Unix socket path to connect to, which can be in various formats:
                      - Absolute path: "/tmp/socket.sock"
                      - With prefix: "unix:/tmp/socket.sock"
-                     
+
         Raises:
             TransportError: If the socket file doesn't exist or connection fails
             TimeoutError: If the connection attempt times out
@@ -217,16 +222,67 @@ class UnixSocketTransport(RPCPluginTransport):
             raise TransportError(f"Socket {endpoint} does not exist")
 
         try:
-            # Connect with timeout
-            self._reader, self._writer = await asyncio.wait_for(
+            reader_writer = await asyncio.wait_for(
                 asyncio.open_unix_connection(endpoint),
                 timeout=5.0
             )
+            self._reader, self._writer = reader_writer  # Unpack after awaiting
             self.endpoint = endpoint
             logger.debug(f"📞🤝✅ Connected to Unix socket at {endpoint}")
         except Exception as e:
             logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")
+
+    async def _handle_client(
+        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
+    ) -> None:
+        """Handle client connections with proper tracking."""
+        peer_info = writer.get_extra_info("peername") or "unknown"
+        logger.debug(f"📞🤝🚀 New client connection from {peer_info}")
+
+        conn = ClientConnection(
+            reader=reader, writer=writer, remote_addr=str(peer_info)
+        )
+
+        try:
+            async with self._lock:
+                self._connections.add(conn)
+                logger.debug(f"📞📥✅ Added connection to pool: {conn.remote_addr}, total: {len(self._connections)}")
+
+            while self._running and not conn.is_closed:
+                data = await conn.receive_data()
+                if not data:
+                    logger.debug(f"📞📥⚠️ No data received from {peer_info}, closing connection")
+                    break
+
+                logger.debug(f"📞📥✅ Received data from {peer_info}: {len(data)} bytes")
+                await conn.send_data(data)  # echo
+                logger.debug(f"📞📤✅ Echoed data back to {peer_info}")
+
+        except asyncio.CancelledError:
+            logger.debug(f"📞🛑✅ Connection handler cancelled for {peer_info}")
+        except Exception as e:
+            logger.error(f"📞❗❌ Error handling client {peer_info}: {e}")
+        finally:
+            async with self._lock:
+                if conn in self._connections:
+                    self._connections.remove(conn)
+                    logger.debug(f"📞🔒✅ Removed connection from pool, remaining: {len(self._connections)}")
+            await conn.close()
+            logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
+
+    async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:
+        """Close a StreamWriter with proper error handling."""
+        if writer is None:
+            return
+
+        try:
+            await writer.close()
+            await writer.wait_closed()
+            logger.debug("📞🔒✅ Writer closed successfully")
+        except Exception as e:
+            logger.error(f"📞🔒⚠️ Error closing writer: {e}")
+            # Don't propagate exception to avoid crashing cleanup
 
     async def close(self) -> None:
         """Close Unix socket transport with proper cleanup."""
@@ -250,15 +306,9 @@ class UnixSocketTransport(RPCPluginTransport):
 
         # Close client writer/reader
         if self._writer:
-            try:
-                self._writer.close()
-                await self._writer.wait_closed()
-                logger.debug("📞🔒✅ Client writer closed")
-            except Exception as e:
-                logger.error(f"📞🔒⚠️ Error closing writer: {e}")
-            finally:
-                self._writer = None
-                self._reader = None
+            await self._close_writer(self._writer)
+            self._writer = None
+            self._reader = None
 
         # Close server
         if self._server:
@@ -271,14 +321,11 @@ class UnixSocketTransport(RPCPluginTransport):
             finally:
                 self._server = None
 
-        # Critical: small delay to ensure resources are released
-        await asyncio.sleep(0.2)
-
-        # Remove socket file - force removal despite errors
+        # Ensure socket file is removed - critical step
         socket_path = self.path
         if socket_path and os.path.exists(socket_path):
             try:
-                # Ensure socket file is removed with multiple attempts
+                # Make multiple attempts with proper error handling
                 for _ in range(3):
                     try:
                         os.chmod(socket_path, 0o770)  # Set permissive permissions first
@@ -286,11 +333,13 @@ class UnixSocketTransport(RPCPluginTransport):
                         logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
                         break
                     except OSError as e:
-                        if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
+                        if e.errno != errno.ENOENT:  # Ignore file not found
                             logger.warning(f"📞🔒⚠️ Retry removing socket file: {e}")
                             await asyncio.sleep(0.1)  # Brief pause before retry
                         else:
                             break
+                else:  # If all retries failed
+                    raise TransportError(f"Failed to remove socket file after multiple attempts")
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
                 raise TransportError(f"Failed to remove socket file: {e}")
@@ -299,41 +348,5 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = False
         logger.debug("📞🔒✅ Unix socket transport closed completely")
 
-    async def _handle_client(
-        self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
-    ) -> None:
-        """Handle client connections with proper tracking."""
-        peer_info = writer.get_extra_info("peername") or "unknown"
-        logger.debug(f"📞🤝🚀 New client connection from {peer_info}")
-
-        conn = ClientConnection(
-            reader=reader, writer=writer, remote_addr=str(peer_info)
-        )
-
-        try:
-            async with self._lock:
-                self._connections.add(conn)
-                logger.debug(f"📞📥✅ Added connection to pool: {conn.remote_addr}")
-
-            while self._running and not conn.is_closed:
-                data = await conn.receive_data()
-                if not data:
-                    logger.debug(f"📞📥⚠️ No data received from {peer_info}, closing connection")
-                    break
-
-                logger.debug(f"📞📥✅ Received data from {peer_info}: {len(data)} bytes")
-                await conn.send_data(data)  # echo
-                logger.debug(f"📞📤✅ Echoed data back to {peer_info}")
-
-        except asyncio.CancelledError:
-            logger.debug(f"📞🛑✅ Connection handler cancelled for {peer_info}")
-        except Exception as e:
-            logger.error(f"📞❗❌ Error handling client {peer_info}: {e}")
-        finally:
-            async with self._lock:
-                if conn in self._connections:
-                    self._connections.remove(conn)
-            await conn.close()
-            logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
 
 # 🐍🏗️🔌

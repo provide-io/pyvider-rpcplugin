@@ -43,12 +43,15 @@ class TCPSocketTransport(RPCPluginTransport):
     """
 
     host: str = field(default="127.0.0.1")
-    port: int = field(init=False, default=0)
+    port: int = field(default=0)  # 0 = Random port assigned by OS
 
     _server: asyncio.AbstractServer | None = field(init=False, default=None)
     _writer: asyncio.StreamWriter | None = field(init=False, default=None)
+    _reader: asyncio.StreamReader | None = field(init=False, default=None)
     endpoint: str | None = field(init=False, default=None)
 
+    _connections: set = field(init=False, factory=set) 
+    _running: bool = field(init=False, default=False)
     _transport_name: str = "tcp"
 
     async def listen(self) -> str:
@@ -57,7 +60,7 @@ class TCPSocketTransport(RPCPluginTransport):
         """
         logger.debug("🔌🚀🕹: Starting listen() for TCP server...")
         try:
-            self._server = await asyncio.start_server(self._handle_client, self.host, 0)
+            self._server = await asyncio.start_server(self._handle_client, self.host, self.port)
         except OSError as e:
             logger.error(f"🔌❌⚠: Failed to bind TCP server: {e}")
             raise TransportError(f"Failed to bind TCP server: {e}") from e
@@ -67,6 +70,7 @@ class TCPSocketTransport(RPCPluginTransport):
             addr = sock.getsockname()
             self.port = addr[1]
             self.endpoint = f"{self.host}:{self.port}"
+            self._running = True
             logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}")
             return self.endpoint
         except Exception as e:
@@ -141,10 +145,9 @@ class TCPSocketTransport(RPCPluginTransport):
                     f"Address resolution failed for {self.host}:{self.port}: {e}"
                 ) from e
 
-            _reader, writer = await asyncio.wait_for(
+            self._reader, self._writer = await asyncio.wait_for(
                 asyncio.open_connection(self.host, self.port), timeout=5.0
             )
-            self._writer = writer
             logger.info(
                 f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}"
             )
@@ -157,33 +160,48 @@ class TCPSocketTransport(RPCPluginTransport):
                 f"Failed to connect to TCP endpoint {endpoint}: {e}"
             ) from e
 
+    async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:
+        """Close a StreamWriter with proper error handling."""
+        if writer is None:
+            return
+
+        try:
+            await writer.close()
+            await writer.wait_closed()
+            logger.debug("🔌🔒✅ Writer closed successfully")
+        except Exception as e:
+            logger.error(f"🔌🔒⚠️ Error closing writer: {e}")
+            # Don't propagate exception to avoid crashing cleanup
+
     async def close(self) -> None:
         """
         🔌🔒🛑  Close the TCP transport.
         Closes both the client connection (if any) and the server.
         """
         logger.debug(f"🔌🔒🛑: Closing TCP transport at endpoint {self.endpoint}")
+        
+        # Close client connection
         if self._writer:
             try:
-                result = self._writer.close()
-                if asyncio.iscoroutine(result):
-                    await result
-                await self._writer.wait_closed()
+                await self._close_writer(self._writer)
                 logger.info("🔌🔒✅: Client writer closed successfully")
             except Exception as e:
                 logger.error(f"🔌🔒❌: Error closing client writer: {e}")
                 raise TransportError(f"Error closing client writer: {e}") from e
             finally:
                 self._writer = None
+                self._reader = None
 
+        # Close server
         if self._server:
             try:
-                self._server.close()
+                await self._server.close()
                 await self._server.wait_closed()
                 logger.info("🔌🔒✅: TCP server closed successfully")
             except Exception as e:
                 logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
             finally:
                 self._server = None
+                self._running = False
 
 # 🐍🏗️🔌

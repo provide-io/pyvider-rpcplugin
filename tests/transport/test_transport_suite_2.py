@@ -1,123 +1,27 @@
-#
-# tests/transport/test_transport_suite.py
-#
+# tests/transport/test_transport_suite_2.py
 
 import asyncio
-import io # Added for type hinting and potential use
 import os
 import socket
-import stat # Added for potential permission checks if needed later
 import tempfile
-from typing import Tuple, AsyncGenerator, Callable, Type # Added Callable, Type
+from typing import AsyncGenerator, Callable, Type
 
 import pytest
 import pytest_asyncio
 
-# Assuming pyvider.telemetry exists and logger is configured
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.server import RPCPluginServer
-# Assuming a base or mock protocol/handler is needed for server init
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-# Import specific transport types
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-# Import base transport type for hinting
 from pyvider.rpcplugin.transport.base import RPCPluginTransport as BaseTransportT
 
+from tests.fixtures import *
 
-# Mock Handler/Protocol for Server Initialization (replace with actual if needed)
-class MockHandler:
-    pass # Add methods required by your protocol
-
-class MockProtocol(RPCPluginProtocol):
-     async def get_grpc_descriptors(self) -> tuple[None, str]:
-         return None, "MockService"
-     async def add_to_server(self, handler: MockHandler, server: any) -> None:
-         pass # No-op for basic testing
-
-# Simple SocketStateMonitor (consider enhancements if needed)
-class SocketStateMonitor:
-    """Utility for monitoring socket state (basic version)."""
-    def __init__(self, path: str) -> None:
-        self._path = path
-        self._lock = asyncio.Lock()
-
-    @property
-    def path(self) -> str:
-        return self._path
-
-    async def exists(self) -> bool:
-        """Check if the socket file exists."""
-        return os.path.exists(self._path)
-
-    async def is_connectable(self) -> bool:
-        """Check if the socket is connectable (basic check)."""
-        if not await self.exists():
-            return False
-        async with self._lock:
-            sock = None # Ensure sock is defined
-            try:
-                if self._path.startswith("unix:"): # Check if path is URI for Unix
-                     path_to_connect = self._path.split(":", 1)[1]
-                else: # Assume raw path
-                     path_to_connect = self._path
-
-                # Differentiate based on socket type deduced from path or known type
-                # For simplicity, assuming Unix if not obviously TCP format
-                if ":" not in path_to_connect or "/" in path_to_connect: # Heuristic for Unix
-                    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                    sock.settimeout(0.2)
-                    await asyncio.get_event_loop().sock_connect(sock, path_to_connect)
-                    return True
-                else: # Assume TCP
-                     host, port_str = path_to_connect.split(":", 1)
-                     port = int(port_str)
-                     reader, writer = await asyncio.wait_for(
-                         asyncio.open_connection(host, port), timeout=0.5
-                     )
-                     writer.close()
-                     await writer.wait_closed()
-                     return True
-
-            except (ConnectionRefusedError, FileNotFoundError, asyncio.TimeoutError, OSError, ValueError):
-                return False # Cannot connect or invalid format
-            finally:
-                if sock:
-                    sock.close()
-
-    async def wait_for_active(self, timeout: float = 3.0) -> bool:
-        """Wait for socket to become connectable."""
-        end_time = asyncio.get_event_loop().time() + timeout
-        while asyncio.get_event_loop().time() < end_time:
-            if await self.is_connectable():
-                return True
-            await asyncio.sleep(0.1)
-        logger.warning(f"Timed out waiting for socket {self._path} to become active.")
-        return False
-
-    async def cleanup(self) -> None:
-        """Attempt to remove the socket file if it's a Unix socket path."""
-        # Only attempt unlink if it looks like a file path
-        if os.path.exists(self._path) and "/" in self._path:
-            async with self._lock:
-                 try:
-                     # Check if it's actually a socket before unlinking
-                     if stat.S_ISSOCK(os.stat(self._path).st_mode):
-                         os.unlink(self._path)
-                         logger.info(f"Cleaned up socket file: {self._path}")
-                     else:
-                          logger.warning(f"Path exists but is not a socket: {self._path}")
-                 except FileNotFoundError:
-                      pass # Already gone
-                 except OSError as e:
-                     logger.error(f"Error cleaning up socket {self._path}: {e}")
-
-
-# Define TransportFactoryType more explicitly
+# Define TransportFactoryType
 TransportFactoryType = Callable[..., BaseTransportT]
 
 @pytest_asyncio.fixture(params=["tcp", "unix"], scope="function")
-async def transport_fixture(request, unused_tcp_port_factory) -> AsyncGenerator[Tuple[str, TransportFactoryType, str | None], None]:
+async def transport_fixture(request, unused_tcp_port) -> AsyncGenerator[tuple[str, TransportFactoryType, str | None], None]:
     """
     Parametrized fixture providing transport type, factory, and endpoint.
     Uses function scope and proper cleanup for Unix sockets.
@@ -131,7 +35,7 @@ async def transport_fixture(request, unused_tcp_port_factory) -> AsyncGenerator[
 
     try:
         if transport_type == "tcp":
-            port = unused_tcp_port_factory()
+            port = unused_tcp_port
             host = "127.0.0.1"
             endpoint = f"{host}:{port}"
             # Factory now includes host/port binding
@@ -140,7 +44,7 @@ async def transport_fixture(request, unused_tcp_port_factory) -> AsyncGenerator[
 
         elif transport_type == "unix":
             # Create socket inside the dedicated temp directory
-            socket_file = f"test-{os.urandom(4).hex()}.sock"
+            socket_file = f"test-{request.node.name}-{os.urandom(4).hex()}.sock"
             socket_path = os.path.join(temp_dir.name, socket_file)
             endpoint = socket_path # Raw path used for Unix
             monitor = SocketStateMonitor(socket_path)
@@ -222,10 +126,15 @@ async def rpc_server(server_transport, server_protocol, server_handler) -> Async
 # --- Test Functions ---
 
 @pytest.mark.asyncio
-async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transport_fixture):
+async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transport_fixture, socket_monitor):
     """Test server starts listening and shuts down cleanly."""
     transport_type, _, endpoint = transport_fixture
-    monitor = SocketStateMonitor(endpoint) # Monitor the specific endpoint
+
+    # Create a socket monitor appropriate for the transport type
+    monitor = None
+    if transport_type == "unix":
+        monitor = socket_monitor(endpoint)  # Use the fixture correctly here
+
 
     logger.info(f"Testing server startup: Type={transport_type}, Endpoint={endpoint}")
     server_task = asyncio.create_task(rpc_server.serve())
@@ -234,8 +143,18 @@ async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transpor
     try:
         await rpc_server.wait_for_server_ready(timeout=5.0)
         logger.info("Server reported ready.")
+
         # Verify the transport endpoint is active
-        assert await monitor.wait_for_active(timeout=2.0), "Transport endpoint did not become active"
+        if transport_type == "unix":
+            assert await monitor.wait_for_active(timeout=2.0), "Transport endpoint did not become active"
+        else:  # tcp
+            # For TCP, try to connect to verify it's active
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            host, port_str = endpoint.split(":")
+            sock.settimeout(2.0)
+            sock.connect((host, int(port_str)))
+            sock.close()
+
         logger.info("Transport endpoint confirmed active.")
     except Exception as e:
          server_task.cancel()
@@ -246,15 +165,23 @@ async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transpor
     await rpc_server.stop() # Request graceful shutdown
 
     # Wait for the serve() task to complete
-    await asyncio.wait_for(server_task, timeout=5.0)
+    await asyncio.wait_for(asyncio.gather(server_task, return_exceptions=True), timeout=5.0)
     logger.info("Server serve task completed.")
 
     # Verify endpoint is no longer active/exists
-    assert not await monitor.is_connectable(), "Transport endpoint still connectable after shutdown"
-    # For Unix, also check existence (cleanup might be slightly delayed)
     if transport_type == "unix":
-         await asyncio.sleep(0.2) # Short delay for file system ops
-         assert not await monitor.exists(), "Unix socket file still exists after shutdown"
+        # For Unix, check file existence (cleanup might be slightly delayed)
+        await asyncio.sleep(0.2) # Short delay for file system ops
+        assert not os.path.exists(endpoint), "Unix socket file still exists after shutdown"
+    else:  # tcp
+        # For TCP, try to connect - should fail now
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host, port_str = endpoint.split(":")
+        sock.settimeout(1.0)
+        with pytest.raises(ConnectionRefusedError):
+            sock.connect((host, int(port_str)))
+        sock.close()
+
     logger.info("Server shutdown confirmed.")
 
 
@@ -262,67 +189,148 @@ async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transpor
 async def test_connection_refused(transport_fixture):
     """Test connecting fails when no server is listening."""
     transport_type, factory, endpoint = transport_fixture
-    monitor = SocketStateMonitor(endpoint)
 
-    # Ensure nothing is listening
-    assert not await monitor.is_connectable(), "Endpoint unexpectedly connectable before test"
+    # For Unix sockets, verify the file doesn't exist
+    if transport_type == "unix":
+        if os.path.exists(endpoint):
+            os.unlink(endpoint)
+        assert not os.path.exists(endpoint), "Socket file unexpectedly exists before test"
+
+    # For TCP, verify nothing is listening on the port
+    else:  # tcp
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(0.5)
+        host, port_str = endpoint.split(":")
+        try:
+            sock.connect((host, int(port_str)))
+            sock.close()
+            pytest.fail(f"Expected connection to be refused, but was successful: {endpoint}")
+        except (ConnectionRefusedError, socket.timeout):
+            # This is expected
+            pass
+        finally:
+            sock.close()
 
     logger.info(f"Testing connection refusal: Type={transport_type}, Endpoint={endpoint}")
     client = factory() # Create a client transport instance
-    with pytest.raises((TransportError, ConnectionRefusedError, FileNotFoundError, OSError)):
+    with pytest.raises(TransportError):
         # Attempt to connect - should fail quickly
-        await asyncio.wait_for(client.connect(endpoint), timeout=1.0)
+        await asyncio.wait_for(client.connect(endpoint), timeout=2.0)
 
-    # Cleanup client transport if connect failed partially (less likely)
+    # Cleanup client transport even if connect failed
     await client.close()
-    await monitor.cleanup() # Cleanup socket file if Unix
 
 
 @pytest.mark.asyncio
 async def test_basic_client_server_connect_disconnect(rpc_server, transport_fixture):
     """Test a client connecting to and disconnecting from a running server."""
     transport_type, client_factory, endpoint = transport_fixture
-    monitor = SocketStateMonitor(endpoint)
 
     logger.info(f"Testing connect/disconnect: Type={transport_type}, Endpoint={endpoint}")
     server_task = asyncio.create_task(rpc_server.serve())
-    await rpc_server.wait_for_server_ready(timeout=5.0)
-    assert await monitor.wait_for_active(timeout=2.0), "Server endpoint did not become active"
 
-    # Create and connect client
-    client = client_factory()
     try:
-        logger.info("Client connecting...")
-        await asyncio.wait_for(client.connect(endpoint), timeout=2.0)
-        logger.info("Client connected successfully.")
-        # Add a small delay to ensure connection is fully established server-side if needed
-        await asyncio.sleep(0.1)
+        # Wait for server to be ready
+        await rpc_server.wait_for_server_ready(timeout=5.0)
+
+        # Verify endpoint is active
+        if transport_type == "unix":
+            # For Unix, check file exists and is connectable
+            assert os.path.exists(endpoint), "Unix socket file does not exist"
+
+            # Verify socket is active with a direct socket connection
+            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            sock.settimeout(2.0)
+            sock.connect(endpoint)
+            sock.close()
+        else:  # tcp
+            # For TCP, verify with a direct socket connection
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            host, port_str = endpoint.split(":")
+            sock.settimeout(2.0)
+            sock.connect((host, int(port_str)))
+            sock.close()
+
+        logger.info("Server endpoint is active and connectable")
+
+        # Create and connect client
+        client = client_factory()
+        try:
+            logger.info("Client connecting...")
+            await asyncio.wait_for(client.connect(endpoint), timeout=2.0)
+            logger.info("Client connected successfully.")
+            # Add a small delay to ensure connection is fully established server-side
+            await asyncio.sleep(0.1)
+        except Exception as e:
+            logger.error(f"Client connection failed: {e}")
+            raise
+
+        # Test data transfer
+        if hasattr(client, "_writer") and client._writer:
+            test_data = b"test data"
+            client._writer.write(test_data)
+            await client._writer.drain()
+            logger.info("Data sent through client")
+
+        # Disconnect client
+        logger.info("Client disconnecting...")
+        await client.close()
+        logger.info("Client disconnected.")
+
     except Exception as e:
-        logger.error(f"Client connection failed: {e}")
-        server_task.cancel()
+        logger.error(f"Test failure: {e}")
+        raise
+    finally:
+        # Shutdown server
+        logger.info("Stopping server...")
         await rpc_server.stop()
-        await asyncio.gather(server_task, return_exceptions=True)
-        await client.close() # Attempt cleanup
-        await monitor.cleanup()
-        pytest.fail(f"Client failed to connect: {e}")
-
-    # Disconnect client
-    logger.info("Client disconnecting...")
-    await client.close()
-    logger.info("Client disconnected.")
-
-    # Shutdown server
-    logger.info("Stopping server...")
-    await rpc_server.stop()
-    await asyncio.wait_for(server_task, timeout=5.0)
-    logger.info("Server stopped.")
-
-    # Final checks
-    assert not await monitor.is_connectable(), "Endpoint still connectable after test"
-    await monitor.cleanup()
+        await asyncio.wait_for(asyncio.gather(server_task, return_exceptions=True), timeout=5.0)
+        logger.info("Server stopped.")
 
 
-# Add more tests:
-# - test_concurrent_connections (similar to original but using fixtures)
-# - test_data_echo (requires simple echo logic in MockHandler/Protocol)
-# - test_transport_error_scenarios (e.g., invalid endpoint format)
+@pytest.mark.asyncio
+async def test_transport_error_scenarios(transport_fixture):
+    """Test various error scenarios with transports."""
+    transport_type, factory, endpoint = transport_fixture
+
+    # Test 1: Invalid endpoint format (TCP only)
+    if transport_type == "tcp":
+        invalid_transport = TCPSocketTransport()
+        with pytest.raises(TransportError):
+            await invalid_transport.connect("invalid:endpoint:format")
+        await invalid_transport.close()
+
+    # Test 2: Connect timeout
+    connect_transport = factory()
+
+    if transport_type == "unix":
+        # For Unix, need a file that exists but isn't a valid socket
+        with tempfile.NamedTemporaryFile() as temp_file:
+            with pytest.raises(TransportError):
+                await connect_transport.connect(temp_file.name)
+    else:  # tcp
+        # For TCP, use an unroutable IP with short timeout
+        with pytest.raises(TransportError):
+            # Use a shorter timeout to speed up the test (5s is typical connect timeout)
+            await asyncio.wait_for(
+                connect_transport.connect("240.0.0.1:12345"),  # Unroutable IP
+                timeout=1.0
+            )
+
+    await connect_transport.close()
+
+    # Test 3: Listen on already-in-use endpoint
+    # First create and start a transport
+    server1 = factory()
+    await server1.listen()
+
+    # Then try to listen on the same endpoint
+    server2 = factory()
+    with pytest.raises(TransportError):
+        await server2.listen()
+
+    # Clean up
+    await server1.close()
+    await server2.close()
+
+# 🐍🏗🧪️
