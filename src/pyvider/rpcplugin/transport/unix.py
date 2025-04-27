@@ -6,6 +6,7 @@ import asyncio
 import errno
 import os
 import socket
+import stat
 
 from attrs import define, field
 
@@ -87,7 +88,7 @@ class UnixSocketTransport(RPCPluginTransport):
             import tempfile
             import uuid
             self.path = os.path.join(
-                tempfile.gettempdir(), f"pyvider-{uuid.uuid4()}.sock"
+                tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock"
             )
             logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path: {self.path}")
         else:
@@ -220,6 +221,15 @@ class UnixSocketTransport(RPCPluginTransport):
         if not os.path.exists(endpoint):
             logger.error(f"📞🤝❌ Socket file does not exist: {endpoint}")
             raise TransportError(f"Socket {endpoint} does not exist")
+            
+        # Add validation that it's actually a socket
+        try:
+            if not stat.S_ISSOCK(os.stat(endpoint).st_mode):
+                logger.error(f"📞🤝❌ Path exists but is not a socket: {endpoint}")
+                raise TransportError(f"Path exists but is not a socket: {endpoint}")
+        except OSError as e:
+            logger.error(f"📞🤝❌ Error checking if path is a socket: {e}")
+            raise TransportError(f"Error checking socket status: {e}")
 
         try:
             reader_writer = await asyncio.wait_for(
@@ -229,6 +239,9 @@ class UnixSocketTransport(RPCPluginTransport):
             self._reader, self._writer = reader_writer  # Unpack after awaiting
             self.endpoint = endpoint
             logger.debug(f"📞🤝✅ Connected to Unix socket at {endpoint}")
+        except asyncio.TimeoutError as e:
+            logger.error(f"📞🤝❌ Connection to Unix socket timed out: {e}")
+            raise TransportError(f"Connection to Unix socket timed out: {e}") from e
         except Exception as e:
             logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
             raise TransportError(f"Failed to connect to Unix socket: {e}")

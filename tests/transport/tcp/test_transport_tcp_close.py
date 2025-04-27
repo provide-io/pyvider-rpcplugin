@@ -1,9 +1,12 @@
+#
 # tests/transport/tcp/test_transport_tcp_close.py
+#
 
 import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
+import socket # Added import
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
@@ -13,10 +16,20 @@ from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_close_connection_active(mock_server_transport_tcp) -> None:
+    # This test seems incomplete - it creates a transport but doesn't use the fixture?
+    # Assuming it meant to test closing while a server is listening.
     transport = TCPSocketTransport()
-
+    endpoint = None
     try:
-        await asyncio.wait_for(transport.listen(), timeout=5)
+        endpoint = await asyncio.wait_for(transport.listen(), timeout=5)
+        # Add a simple check that listening worked
+        host, port_str = endpoint.split(":")
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1.0)
+        sock.connect((host, int(port_str)))
+        sock.close()
+    except Exception as e:
+        pytest.fail(f"Setup failed: {e}")
     finally:
         await transport.close()
 
@@ -48,7 +61,8 @@ async def test_tcp_socket_transport_close_writer_oserror() -> None:
 
     # Create a mock writer that raises an error on close
     mock_writer = AsyncMock()
-    mock_writer.close.side_effect = Exception("Mocked close error")
+    # Simulate error only on wait_closed, as close itself might not raise
+    mock_writer.close.return_value = None
     mock_writer.wait_closed.side_effect = Exception("Mocked wait_closed error")
 
     # Replace the client's writer with our mock
@@ -81,38 +95,19 @@ async def test_tcp_socket_transport_server_error() -> None:
     await transport.close()
 
 
-# tests/transport/tcp/test_transport_tcp_close.py - fix connect timeout test
-
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_timeout() -> None:
     """Test that TCPSocketTransport.connect handles connection timeouts properly."""
     # Use an unroutable IP address to force a timeout
     transport = TCPSocketTransport()
 
-    with pytest.raises(TransportError):
-        # Use a shorter timeout to speed up the test
-        await asyncio.wait_for(
-            transport.connect("240.0.0.1:12345"),  # Unroutable IP
-            timeout=1.0  # Shorter timeout for tests
-        )
+    # TCPSocketTransport.connect catches asyncio.TimeoutError and raises TransportError
+    with pytest.raises(TransportError, match="timed out|Connection timed out|refused"):
+        # Let connect handle its internal timeout (default 5s)
+        # Don't use asyncio.wait_for here as it masks the internal error handling
+        await transport.connect("240.0.0.1:12345") # Unroutable IP
 
-    await transport.close()
-
-@pytest.mark.asyncio
-async def X_test_tcp_socket_transport_connect_timeout() -> None:
-    """
-    Test that TCPSocketTransport.connect handles connection timeouts properly.
-    """
-    # Use an unroutable IP address to force a timeout
-    transport = TCPSocketTransport()
-
-    with pytest.raises(TransportError, match="timed out"):
-        # Use a shorter timeout to speed up the test
-        await asyncio.wait_for(
-            transport.connect("240.0.0.1:12345"),  # Unroutable IP
-            timeout=2.0
-        )
-
+    # Ensure close still works even after failed connect attempt
     await transport.close()
 
 ################################################################################

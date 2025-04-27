@@ -133,15 +133,54 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             TimeoutError: If the server does not become ready within the timeout period
         """
         try:
-            logger.debug("Waiting for server ready event...")
+            logger.debug("🛎️⏳ Waiting for server ready event...")
+
+            # First wait for the internal event to be set
             await asyncio.wait_for(self._serving_event.wait(), timeout)
-            logger.debug("Server ready event received.")
-        except TimeoutError as e:
+            logger.debug("🛎️✅ Server ready event received.")
+
+            # Additional verification: ensure transport endpoint is active and connectable
+            if self._transport and hasattr(self._transport, 'endpoint') and self._transport.endpoint:
+                if isinstance(self._transport, UnixSocketTransport):
+                    # For Unix sockets, check file exists and is connectable
+                    if not os.path.exists(self._transport.path):
+                        logger.error("🛎️❌ Unix socket file doesn't exist")
+                        raise TimeoutError("Unix socket file not created")
+
+                    # Try to connect to verify socket is active
+                    try:
+                        logger.debug(f"🛎️🔍 Testing Unix socket connection to {self._transport.path}")
+                        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                        sock.settimeout(1.0)
+                        sock.connect(self._transport.path)
+                        sock.close()
+                        logger.debug(f"🛎️✅ Unix socket connection test successful")
+                    except Exception as e:
+                        logger.error(f"🛎️❌ Unix socket connection test failed: {e}")
+                        raise TimeoutError(f"Unix socket not connectable: {e}")
+
+                elif isinstance(self._transport, TCPSocketTransport):
+                    # For TCP, verify endpoint is reachable
+                    try:
+                        logger.debug(f"🛎️🔍 Testing TCP connection to {self._transport.endpoint}")
+                        host, port_str = self._transport.endpoint.split(":")
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(1.0)
+                        sock.connect((host, int(port_str)))
+                        sock.close()
+                        logger.debug(f"🛎️✅ TCP connection test successful")
+                    except Exception as e:
+                        logger.error(f"🛎️❌ TCP connection test failed: {e}")
+                        raise TimeoutError(f"TCP socket not connectable: {e}")
+        except asyncio.TimeoutError:
             logger.error(
-                "Server did not become ready within timeout.",
+                "🛎️❌ Server did not become ready within timeout.",
                 extra={"timeout": timeout},
             )
-            raise TimeoutError("Server failed to become ready") from e
+            raise TimeoutError("Server failed to become ready")
+        except Exception as e:
+            logger.error(f"🛎️❌ Error during server readiness check: {e}")
+            raise TimeoutError(f"Server readiness check failed: {e}")
 
     @classmethod
     def get_instance(cls) -> Optional["RPCPluginServer"]:
