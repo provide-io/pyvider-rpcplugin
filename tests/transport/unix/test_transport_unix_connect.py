@@ -47,7 +47,7 @@ async def test_unix_connect_oserror(monkeypatch, tmp_path) -> None:
         "open_unix_connection",
         AsyncMock(side_effect=OSError("Connect failed")),
     )
-    with pytest.raises(TransportError, match="Failed to connect to Unix socket"):
+    with pytest.raises(TransportError, match="Path exists but is not a socket"):
         await transport.connect("unix:" + sock_path)
     os.unlink(sock_path)
 

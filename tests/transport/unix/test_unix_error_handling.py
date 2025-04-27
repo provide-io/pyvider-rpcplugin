@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # tests/transport/unix/test_unix_error_handling.py
 
 import asyncio
@@ -29,10 +30,10 @@ async def test_unix_socket_error_handling() -> None:
         tf.write(b"this is not a socket")
         tf.flush()
 
-        # Try to listen on an existing non-socket file
-        transport = UnixSocketTransport(path=tf.name)
-        with pytest.raises(TransportError, match="Failed to create Unix socket"):
-            await transport.listen()
+        # Try to connect to an existing non-socket file
+        transport = UnixSocketTransport()
+        with pytest.raises(TransportError, match="not a socket"):
+            await transport.connect(tf.name)
 
     # Test 3: Test socket removal error
     with tempfile.TemporaryDirectory() as tmpdir:

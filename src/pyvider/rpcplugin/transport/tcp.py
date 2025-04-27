@@ -52,30 +52,43 @@ class TCPSocketTransport(RPCPluginTransport):
 
     _connections: set = field(init=False, factory=set) 
     _running: bool = field(init=False, default=False)
+    _connection_attempts: int = field(init=False, default=0)
     _transport_name: str = "tcp"
+
+    def __attrs_post_init__(self) -> None:
+        """Initialize transport state and resources."""
+        self._lock = asyncio.Lock()
+        self._server_ready = asyncio.Event()
+        logger.debug(f"🔌🚀✅: TCP transport initialized with host={self.host}, port={self.port}")
 
     async def listen(self) -> str:
         """
         🔌🚀🕹  Start a TCP server on a random available port and return the endpoint (host:port).
         """
-        logger.debug("🔌🚀🕹: Starting listen() for TCP server...")
-        try:
-            self._server = await asyncio.start_server(self._handle_client, self.host, self.port)
-        except OSError as e:
-            logger.error(f"🔌❌⚠: Failed to bind TCP server: {e}")
-            raise TransportError(f"Failed to bind TCP server: {e}") from e
+        async with self._lock:
+            if self._running:
+                logger.error("🔌❌⚠: Server is already running")
+                raise TransportError("TCP server is already running")
+                
+            logger.debug("🔌🚀🕹: Starting listen() for TCP server...")
+            try:
+                self._server = await asyncio.start_server(self._handle_client, self.host, self.port)
+            except OSError as e:
+                logger.error(f"🔌❌⚠: Failed to bind TCP server: {e}")
+                raise TransportError(f"Failed to bind TCP server: {e}") from e
 
-        try:
-            sock = self._server.sockets[0]
-            addr = sock.getsockname()
-            self.port = addr[1]
-            self.endpoint = f"{self.host}:{self.port}"
-            self._running = True
-            logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}")
-            return self.endpoint
-        except Exception as e:
-            logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")
-            raise TransportError(f"Error initializing TCP server: {e}") from e
+            try:
+                sock = self._server.sockets[0]
+                addr = sock.getsockname()
+                self.port = addr[1]
+                self.endpoint = f"{self.host}:{self.port}"
+                self._running = True
+                self._server_ready.set()
+                logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}")
+                return self.endpoint
+            except Exception as e:
+                logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")
+                raise TransportError(f"Error initializing TCP server: {e}") from e
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -145,15 +158,23 @@ class TCPSocketTransport(RPCPluginTransport):
                     f"Address resolution failed for {self.host}:{self.port}: {e}"
                 ) from e
 
-            self._reader, self._writer = await asyncio.wait_for(
-                asyncio.open_connection(self.host, self.port), timeout=5.0
-            )
-            logger.info(
-                f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}"
-            )
-        except TimeoutError as e:
-            logger.error(f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}")
-            raise TransportError(f"Connection timed out: {e}") from e
+            try:
+                self._reader, self._writer = await asyncio.wait_for(
+                    asyncio.open_connection(self.host, self.port), timeout=5.0
+                )
+                logger.info(
+                    f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}"
+                )
+            except asyncio.TimeoutError as e:
+                logger.error(f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}")
+                raise TransportError(f"Connection timed out: {e}") from e
+            except ConnectionRefusedError as e:
+                logger.error(f"🔌❌⚠: Connection refused to TCP endpoint {endpoint}: {e}")
+                raise TransportError(f"Connection refused: {e}") from e
+            
+        except TransportError:
+            # Re-raise TransportError without additional wrapping
+            raise
         except Exception as e:
             logger.error(f"🔌❌⚠: Failed to connect to TCP endpoint {endpoint}: {e}")
             raise TransportError(
@@ -180,28 +201,31 @@ class TCPSocketTransport(RPCPluginTransport):
         """
         logger.debug(f"🔌🔒🛑: Closing TCP transport at endpoint {self.endpoint}")
         
-        # Close client connection
-        if self._writer:
-            try:
-                await self._close_writer(self._writer)
-                logger.info("🔌🔒✅: Client writer closed successfully")
-            except Exception as e:
-                logger.error(f"🔌🔒❌: Error closing client writer: {e}")
-                raise TransportError(f"Error closing client writer: {e}") from e
-            finally:
-                self._writer = None
-                self._reader = None
+        async with self._lock:
+            # Close client connection
+            if self._writer:
+                try:
+                    await self._close_writer(self._writer)
+                    logger.info("🔌🔒✅: Client writer closed successfully")
+                except Exception as e:
+                    logger.error(f"🔌🔒❌: Error closing client writer: {e}")
+                finally:
+                    self._writer = None
+                    self._reader = None
 
-        # Close server
-        if self._server:
-            try:
-                await self._server.close()
-                await self._server.wait_closed()
-                logger.info("🔌🔒✅: TCP server closed successfully")
-            except Exception as e:
-                logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
-            finally:
-                self._server = None
-                self._running = False
+            # Close server
+            if self._server:
+                try:
+                    await self._server.close()
+                    await self._server.wait_closed()
+                    logger.info("🔌🔒✅: TCP server closed successfully")
+                except Exception as e:
+                    logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
+                finally:
+                    self._server = None
+                    self._running = False
+
+        self.endpoint = None
+        logger.debug("🔌🔒✅: TCP socket transport closed completely")
 
 # 🐍🏗️🔌
