@@ -5,7 +5,6 @@
 import asyncio
 import socket
 import errno # Added import
-from unittest.mock import AsyncMock, patch
 
 import pytest
 

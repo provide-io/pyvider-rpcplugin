@@ -5,7 +5,7 @@ import os
 import socket
 import stat # Import stat
 import tempfile
-from typing import AsyncGenerator, Callable, Type
+from typing import AsyncGenerator, Callable
 
 import pytest
 import pytest_asyncio
