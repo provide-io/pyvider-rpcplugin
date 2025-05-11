@@ -154,7 +154,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                         sock.settimeout(1.0)
                         sock.connect(self._transport.path)
                         sock.close()
-                        logger.debug(f"🛎️✅ Unix socket connection test successful")
+                        logger.debug("🛎️✅ Unix socket connection test successful")
                     except Exception as e:
                         logger.error(f"🛎️❌ Unix socket connection test failed: {e}")
                         raise TimeoutError(f"Unix socket not connectable: {e}")
@@ -168,7 +168,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                         sock.settimeout(1.0)
                         sock.connect((host, int(port_str)))
                         sock.close()
-                        logger.debug(f"🛎️✅ TCP connection test successful")
+                        logger.debug("🛎️✅ TCP connection test successful")
                     except Exception as e:
                         logger.error(f"🛎️❌ TCP connection test failed: {e}")
                         raise TimeoutError(f"TCP socket not connectable: {e}")

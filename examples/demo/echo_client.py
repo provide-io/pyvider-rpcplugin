@@ -4,7 +4,6 @@ import os
 import sys
 import grpc
 import logging
-import traceback
 from pathlib import Path
 
 # Assuming a basic logger setup (can use logging module directly)

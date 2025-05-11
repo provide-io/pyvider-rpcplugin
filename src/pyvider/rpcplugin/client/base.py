@@ -52,7 +52,7 @@ from google.protobuf import empty_pb2
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, RPCPluginError, TransportError
+from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.handshake import parse_handshake_response
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo

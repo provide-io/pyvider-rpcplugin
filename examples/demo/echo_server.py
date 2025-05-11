@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 import asyncio
 import os
-import grpc
 
 # Assuming a basic logger setup
 from pyvider.telemetry import logger
 
 # Import pyvider components
-from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.factories import plugin_server
 

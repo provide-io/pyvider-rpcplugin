@@ -5,7 +5,6 @@
 import asyncio
 import os
 import socket
-import stat # Added import
 import tempfile
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
@@ -20,7 +19,6 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.types import TransportT
 
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
 from tests.fixtures import * # Assumes SocketStateMonitor, MockProtocol, MockHandler are here
 

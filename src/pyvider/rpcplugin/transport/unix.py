@@ -352,7 +352,7 @@ class UnixSocketTransport(RPCPluginTransport):
                         else:
                             break
                 else:  # If all retries failed
-                    raise TransportError(f"Failed to remove socket file after multiple attempts")
+                    raise TransportError("Failed to remove socket file after multiple attempts")
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
                 raise TransportError(f"Failed to remove socket file: {e}")

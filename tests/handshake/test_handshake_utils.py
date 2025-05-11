@@ -2,9 +2,7 @@
 # tests/handshake/test_handshake_utils.py
 
 
-import pytest
 
-from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     is_valid_handshake_parts,

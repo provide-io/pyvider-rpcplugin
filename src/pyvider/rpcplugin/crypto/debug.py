@@ -3,14 +3,13 @@
 #
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 
 # from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.telemetry import logger
-from pyvider.rpcplugin.exception import CertificateError, SecurityError
+from pyvider.rpcplugin.exception import CertificateError
 
 def display_cert_details(cert) -> None:
     """
