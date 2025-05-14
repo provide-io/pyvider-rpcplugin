@@ -5,6 +5,7 @@
 import os
 import asyncio
 import traceback
+from typing import Any # Added for type hinting
 
 from attrs import define, field
 
@@ -71,50 +72,40 @@ class GRPCBrokerService(GRPCBrokerServicer):
 
     def __init__(self) -> None:
         # We hold subchannel references here.
-        self._subchannels = {}
+        self._subchannels: dict[int, SubchannelConnection] = {}
 
     async def StartStream(self, request_iterator, context):
         """
         StartStream is a bidirectional streaming RPC. Each side can send
         'ConnInfo' messages. We'll interpret them to open or close subchannels.
         """
-        # Note: Because this is an async generator, you read from `request_iterator`
-        # and optionally yield responses. Some advanced use-cases might do a real
-        # 'broker mux' with synchronous channels. Here, we do a simplified approach.
-
         logger.debug(
             "🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream (bidirectional)."
         )
 
-        # We'll produce responses as we handle each incoming message.
         async for incoming in request_iterator:
             try:
                 logger.debug(
                     f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'"
                 )
 
-                # If we see 'knock.knock==True' then the host is requesting a subchannel open.
                 if incoming.knock.knock:
-                    # Attempt to open or create a subchannel.
                     sub_id = incoming.service_id
                     if sub_id in self._subchannels:
-                        # Already exists, maybe just re-open or error out
                         logger.debug(
                             f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels."
                         )
                     else:
-                        # Create a new subchannel
                         subchan = SubchannelConnection(sub_id, incoming.address)
                         self._subchannels[sub_id] = subchan
                         await subchan.open()
 
-                    # Send back a response with knock.ack=True
                     outgoing = ConnInfo(
                         service_id=sub_id,
                         network=incoming.network,
                         address=incoming.address,
                         knock=ConnInfo.Knock(
-                            knock=False,  # we are responding
+                            knock=False,
                             ack=True,
                             error="",
                         ),
@@ -125,13 +116,11 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     yield outgoing
 
                 else:
-                    # Possibly a close request or just a no-op
                     sub_id = incoming.service_id
                     if sub_id in self._subchannels:
                         logger.debug(f"🔌📡🛑 Closing subchannel {sub_id}.")
                         await self._subchannels[sub_id].close()
                         del self._subchannels[sub_id]
-                    # Return ack again
                     outgoing = ConnInfo(
                         service_id=sub_id,
                         knock=ConnInfo.Knock(knock=False, ack=True, error=""),
@@ -144,76 +133,58 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     f"🔌📡❌ {err_str}", extra={"trace": traceback.format_exc()}
                 )
                 yield ConnInfo(
-                    service_id=0,
+                    service_id=0, # Using 0 or incoming.service_id based on context
                     knock=ConnInfo.Knock(knock=False, ack=False, error=err_str),
                 )
 
         logger.debug("🔌📡🛑 GRPCBrokerService.StartStream => stream closed by client.")
-        return
 
 
 class GRPCStdioService(GRPCStdioServicer):
     """
-    Implementation of plugin stdio streaming. Typically you want to capture
-    plugin’s stdout/stderr and send it back to the host. We'll show a simplified
-    approach. In real usage, you might run a background task collecting logs.
+    Implementation of plugin stdio streaming.
     """
 
     def __init__(self) -> None:
-        # We keep an internal queue for all outgoing lines.
-        self._message_queue = asyncio.Queue()
+        self._message_queue: asyncio.Queue[StdioData] = asyncio.Queue()
         self._shutdown = False
 
-    async def put_line(self, line: bytes, is_stderr: bool=False) -> None:
-        """
-        Public method: feed lines to the queue from somewhere else in your code,
-        or from a logging handler that writes to the queue.
-        """
+    async def put_line(self, line: bytes, is_stderr: bool = False) -> None:
+        """Feed lines to the queue."""
         try:
             data = StdioData(
                 channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
             )
             await self._message_queue.put(data)
         except Exception as e:
-            # Log but don't propagate to prevent crashing the service
             logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
     async def StreamStdio(self, request, context):
-        """
-        Streams STDOUT/STDERR lines to the caller.
-        This RPC endpoint must only be called ONCE. Once stdio data is consumed
-        it is not sent again.
-        
-        Callers should connect early to prevent blocking on the plugin process.
-        """
+        """Streams STDOUT/STDERR lines to the caller."""
         logger.debug(
             "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
         )
         
-        # Create a done event for proper cancellation
         done = asyncio.Event()
         
-        def on_rpc_done():
-            # This callback is called when the RPC is cancelled
+        # FIX: Corrected on_rpc_done signature
+        def on_rpc_done(_ignored_arg: Any): # Accepts one argument
+            logger.debug("🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called.")
             done.set()
         
-        # Register cancellation callback
         context.add_done_callback(on_rpc_done)
         
         while not self._shutdown and not done.is_set():
             try:
-                # Wait up to 2s for a new line; if none, we yield a short idle
                 try:
                     data_item = await asyncio.wait_for(
                         self._message_queue.get(), timeout=2.0
                     )
                     yield data_item
                 except asyncio.TimeoutError:
-                    # Just continue the loop on timeout
                     continue
                 except asyncio.CancelledError:
-                    # Break the loop on cancellation
-                    logger.debug("🔌📝🛑 StreamStdio cancelled")
+                    logger.debug("🔌📝🛑 StreamStdio task cancelled by client.")
                     break
             except Exception as e:
                 logger.error(
@@ -223,7 +194,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 break
 
         logger.debug(
-            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping, either shutdown or context done."
+            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping."
         )
 
     def shutdown(self) -> None:
@@ -233,8 +204,7 @@ class GRPCStdioService(GRPCStdioServicer):
 
 class GRPCControllerService(GRPCControllerServicer):
     """
-    A simple Controller that can handle plugin lifecycle calls (Shutdown, Ping, etc.).
-    You can add additional calls to replicate go-plugin’s “Ping” or “Health” checks.
+    Controller for plugin lifecycle (Shutdown).
     """
 
     def __init__(
@@ -244,65 +214,43 @@ class GRPCControllerService(GRPCControllerServicer):
         self._stdio_service = stdio_service
 
     async def Shutdown(self, request, context):
-        """
-        In go-plugin's approach, calling 'Shutdown()' on the plugin triggers the plugin to exit.
-        """
+        """Handles plugin shutdown request."""
         logger.debug(
             "🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested."
         )
-        # First shut down stdio service
         self._stdio_service.shutdown()
-        
-        # Then signal the shutdown event
         self._shutdown_event.set()
         
-        # Schedule the server to stop rather than stopping immediately
-        # This allows the response to be sent before shutdown
         asyncio.create_task(self._delayed_shutdown())
-        
-        # Return an empty object
         return CEmpty()
 
     async def _delayed_shutdown(self) -> None:
-        """Allow RPC response to complete before shutting down"""
+        """Allow RPC response to complete before actual shutdown."""
         await asyncio.sleep(0.1)
-        # Now trigger actual process exit
         if hasattr(os, "kill") and hasattr(os, "getpid"):
-            # On Unix systems, we can use a signal
             try:
                 import signal
                 os.kill(os.getpid(), signal.SIGTERM)
-            except:
-                # Fallback to sys.exit
+            except Exception: # pylint: disable=broad-except
                 import sys
-                sys.exit(0)
+                sys.exit(0) # Fallback exit
         else:
-            # Windows or other systems
             import sys
             sys.exit(0)
 
-def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
-    """
-    This function is called by your `server.py` to attach all the needed gRPC services.
-    """
-    # Create the “shared” Stdio service instance
-    stdio_service = GRPCStdioService()
 
-    # Initialize the broker + controller
+def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
+    """Registers all standard gRPC services for the plugin."""
+    stdio_service = GRPCStdioService()
     broker_service = GRPCBrokerService()
     controller_service = GRPCControllerService(shutdown_event, stdio_service)
 
-    # Register them on the server
     add_GRPCStdioServicer_to_server(stdio_service, server)
     add_GRPCBrokerServicer_to_server(broker_service, server)
     add_GRPCControllerServicer_to_server(controller_service, server)
 
     logger.debug(
-        "🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController with gRPC server."
+        "🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController."
     )
-
-    # You might want to return references to the services for feeding data etc.
-    # e.g. return (stdio_service, broker_service, controller_service)
-
 
 # 🐍🏗️🔌
