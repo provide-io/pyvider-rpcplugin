@@ -5,7 +5,7 @@
 name = "pyvider-rpcplugin"
 description = "Pyvider RPC Plugin"
 version = "0.0.11"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 readme = "README.md"
 authors = [
     {name = "Tim Perkins", email = "code@tim.life"}
