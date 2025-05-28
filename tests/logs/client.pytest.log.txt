@@ -1,0 +1,282 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.3, pytest-8.3.4, pluggy-1.5.0
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: /REDACTED_ABS_PATH
+configfile: pyproject.toml
+plugins: cov-6.0.0, hypothesis-6.127.1, testmon-2.1.3, asyncio-0.25.3, anyio-4.8.0, typeguard-2.13.3, benchmark-5.1.0, trace-1.0.0, xdist-3.6.1
+asyncio: mode=Mode.AUTO, asyncio_default_fixture_loop_scope=function
+collected 46 items
+
+client/test_client_grpc.py::test_rebuild_x509_pem PASSED                 [  2%]
+client/test_client_grpc.py::test_create_grpc_channel_with_tls PASSED     [  4%]
+client/test_client_grpc.py::test_create_grpc_channel_with_mtls PASSED    [  6%]
+client/test_client_grpc.py::test_create_grpc_channel_insecure PASSED     [  8%]
+client/test_client_grpc.py::test_create_grpc_channel_unix_socket PASSED  [ 10%]
+client/test_client_handshake.py::test_relay_stderr_background PASSED     [ 13%]
+client/test_client_handshake.py::test_perform_handshake_success PASSED   [ 15%]
+client/test_client_handshake.py::test_perform_handshake_with_cert PASSED [ 17%]
+client/test_client_handshake.py::test_perform_handshake_with_unix_transport PASSED [ 19%]
+client/test_client_handshake.py::test_perform_handshake_no_process PASSED [ 21%]
+client/test_client_handshake.py::test_perform_handshake_process_exit PASSED [ 23%]
+client/test_client_handshake.py::test_perform_handshake_invalid_format PASSED [ 26%]
+client/test_client_init.py::test_client_initialization PASSED            [ 28%]
+client/test_client_init.py::test_client_initialization_with_config PASSED [ 30%]
+client/test_client_init.py::test_setup_client_certificates_with_auto_mtls PASSED [ 32%]
+client/test_client_init.py::test_setup_client_certificates_with_existing_certs PASSED [ 34%]
+client/test_client_init.py::test_setup_client_certificates_without_mtls PASSED [ 36%]
+client/test_client_integration.py::test_client_integration FAILED        [ 39%]
+client/test_client_lifecycle.py::test_start_complete_flow PASSED         [ 41%]
+client/test_client_lifecycle.py::test_close_with_tasks FAILED            [ 43%]
+client/test_client_lifecycle.py::test_close_with_errors PASSED           [ 45%]
+client/test_client_stubs.py::test_init_stubs PASSED                      [ 47%]
+client/test_client_stubs.py::test_init_stubs_no_channel PASSED           [ 50%]
+client/test_client_stubs.py::test_read_stdio_logs PASSED                 [ 52%]
+client/test_client_stubs.py::test_read_stdio_logs_no_stub PASSED         [ 54%]
+client/test_client_stubs.py::test_open_broker_subchannel PASSED          [ 56%]
+client/test_client_stubs.py::test_shutdown_plugin PASSED                 [ 58%]
+client/test_client_transport.py::test_launch_process PASSED              [ 60%]
+client/test_client_transport.py::test_launch_process_with_client_cert PASSED [ 63%]
+client/test_client_transport.py::test_launch_process_already_running PASSED [ 65%]
+client/test_client_transport.py::test_launch_process_error PASSED        [ 67%]
+client/test_client_transport.py::test_connect_tcp_transport PASSED       [ 69%]
+client/test_client_transport.py::test_connect_unix_transport PASSED      [ 71%]
+client/test_connection.py::test_is_closed_initial PASSED                 [ 73%]
+client/test_connection.py::test_is_closed_when_closed_flag PASSED        [ 76%]
+client/test_connection.py::test_is_closed_when_writer_closing PASSED     [ 78%]
+client/test_connection.py::test_update_metrics PASSED                    [ 80%]
+client/test_connection.py::test_send_data_normal PASSED                  [ 82%]
+client/test_connection.py::test_send_data_when_closed PASSED             [ 84%]
+client/test_connection.py::test_send_data_oserror PASSED                 [ 86%]
+client/test_connection.py::test_receive_data_normal PASSED               [ 89%]
+client/test_connection.py::test_receive_data_when_closed PASSED          [ 91%]
+client/test_connection.py::test_receive_data_oserror PASSED              [ 93%]
+client/test_connection.py::test_close_normal PASSED                      [ 95%]
+client/test_connection.py::test_close_writer_error PASSED                [ 97%]
+client/test_connection.py::test_del_warning PASSED                       [100%]
+
+=================================== FAILURES ===================================
+___________________________ test_client_integration ____________________________
+
+test_client_command = ['python', '-m', 'dummy_plugin']
+
+    @pytest.mark.asyncio
+    async def test_client_integration(test_client_command):
+        """
+        Integration test for RPCPluginClient full lifecycle.
+    
+        Tests the complete flow:
+        1. Create client
+        2. Start client (setup certs, launch process, handshake, create channel)
+        3. Use client (read logs, open subchannel, shutdown plugin)
+        4. Close client
+        """
+        # Mock all external dependencies
+        with patch('pyvider.rpcplugin.client.base.subprocess.Popen') as mock_popen, \
+>            patch('pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake.<locals>.read_stdout_line', new_callable=AsyncMock) as mock_read_stdout_line_helper, \
+             patch('pyvider.rpcplugin.client.base.Certificate') as mock_cert_class, \
+             patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel') as mock_channel_func, \
+             patch('pyvider.rpcplugin.client.base.GRPCStdioStub') as mock_stdio_stub_class, \
+             patch('pyvider.rpcplugin.client.base.GRPCBrokerStub') as mock_broker_stub_class, \
+             patch('pyvider.rpcplugin.client.base.GRPCControllerStub') as mock_controller_stub_class, \
+             patch('pyvider.rpcplugin.client.base.TCPSocketTransport') as mock_transport_class, \
+             patch('threading.Thread') as mock_thread: # Corrected target for threading.Thread
+
+../../../tfppf/pyvider-rpcplugin/tests/client/test_client_integration.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/REDACTED_ABS_PATH:1481: in __enter__
+    self.target = self.getter()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+name = 'pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake.<locals>'
+
+    def resolve_name(name):
+        """
+        Resolve a name to an object.
+    
+        It is expected that `name` will be a string in one of the following
+        formats, where W is shorthand for a valid Python identifier and dot stands
+        for a literal period in these pseudo-regexes:
+    
+        W(.W)*
+        W(.W)*:(W(.W)*)?
+    
+        The first form is intended for backward compatibility only. It assumes that
+        some part of the dotted name is a package, and the rest is an object
+        somewhere within that package, possibly nested inside other objects.
+        Because the place where the package stops and the object hierarchy starts
+        can't be inferred by inspection, repeated attempts to import must be done
+        with this form.
+    
+        In the second form, the caller makes the division point clear through the
+        provision of a single colon: the dotted name to the left of the colon is a
+        package to be imported, and the dotted name to the right is the object
+        hierarchy within that package. Only one import is needed in this form. If
+        it ends with the colon, then a module object is returned.
+    
+        The function will return an object (which might be a module), or raise one
+        of the following exceptions:
+    
+        ValueError - if `name` isn't in a recognised format
+        ImportError - if an import failed when it shouldn't have
+        AttributeError - if a failure occurred when traversing the object hierarchy
+                         within the imported package to get to the desired object.
+        """
+        global _NAME_PATTERN
+        if _NAME_PATTERN is None:
+            # Lazy import to speedup Python startup time
+            import re
+            dotted_words = r'(?!\d)(\w+)(\.(?!\d)(\w+))*'
+            _NAME_PATTERN = re.compile(f'^(?P<pkg>{dotted_words})'
+                                       f'(?P<cln>:(?P<obj>{dotted_words})?)?$',
+                                       re.UNICODE)
+    
+        m = _NAME_PATTERN.match(name)
+        if not m:
+>           raise ValueError(f'invalid format: {name!r}')
+E           ValueError: invalid format: 'pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake.<locals>'
+
+/REDACTED_ABS_PATH:501: ValueError
+____________________________ test_close_with_tasks _____________________________
+
+client_instance = RPCPluginClient(command=['python', '-m', 'dummy_plugin'], config=None, _process=None, _transport=None, _transport_name...coro() done, defined at /REDACTED_ABS_PATH:38> result=None>)
+
+    @pytest.mark.asyncio
+    async def test_close_with_tasks(client_instance):
+        """Test closing client with active tasks."""
+    
+        async def dummy_task_coro():
+            try:
+                await asyncio.sleep(5) # Simulate some work
+            except asyncio.CancelledError:
+                # print("Dummy task cancelled") # Optional: for debugging test execution
+                raise
+    
+        # Create real asyncio.Task instances
+        stdio_task_actual = asyncio.create_task(dummy_task_coro())
+        broker_task_actual = asyncio.create_task(dummy_task_coro())
+    
+        # Mock their methods for assertions and control
+        # Mock 'done' to control the condition in client.close()
+        # The real .done() would also work but this gives explicit control.
+        stdio_task_actual.done = MagicMock(return_value=False, name="StdioTask.done")
+        # Mock 'cancel' to assert it's called. The real .cancel() will be called by client.close().
+        # We are replacing it with a mock to check the call.
+        # If we needed the task to actually be cancelled for subsequent logic, we'd use side_effect.
+        # For this test, just checking it's called is enough.
+        stdio_task_actual.cancel = MagicMock(name="StdioTask.cancel_mock")
+    
+        broker_task_actual.done = MagicMock(return_value=False, name="BrokerTask.done")
+        broker_task_actual.cancel = MagicMock(name="BrokerTask.cancel_mock")
+    
+        client_instance._stdio_task = stdio_task_actual
+        client_instance._broker_task = broker_task_actual
+    
+        local_mock_channel = AsyncMock(name="Channel")
+        local_mock_channel.close = AsyncMock(name="Channel.close_method")
+        client_instance._channel = local_mock_channel
+    
+        local_mock_process = MagicMock(name="Process")
+        local_mock_process.terminate = MagicMock(name="Process.terminate_method")
+        local_mock_process.wait = MagicMock(name="Process.wait_method")
+        client_instance._process = local_mock_process
+    
+        local_mock_transport = AsyncMock(name="Transport")
+        local_mock_transport.close = AsyncMock(name="Transport.close_method")
+        client_instance._transport = local_mock_transport
+    
+        await client_instance.close() # This will now await actual (though mocked) tasks
+    
+        stdio_task_actual.cancel.assert_called_once()
+        broker_task_actual.cancel.assert_called_once()
+    
+        local_mock_channel.close.assert_called_once()
+        local_mock_process.terminate.assert_called_once()
+        local_mock_transport.close.assert_called_once()
+    
+        # Clean up tasks to prevent them from interfering with other tests if they weren't fully cancelled
+        # (though client.close() should handle awaiting them after cancellation)
+        # For safety in testing, explicitly ensure tasks are finished if not already.
+        if not stdio_task_actual.done():
+            # stdio_task_actual.cancel() # This is the MagicMock, not the real cancel.
+                                      # The client.close() called this MagicMock.
+                                      # To actually cancel the task for cleanup, we need to call the real cancel.
+            asyncio.Task.cancel(stdio_task_actual) # Call the static method to ensure actual cancellation
+>           with pytest.raises(asyncio.CancelledError): # Expect cancellation
+E           Failed: DID NOT RAISE <class 'asyncio.exceptions.CancelledError'>
+
+../../../tfppf/pyvider-rpcplugin/tests/client/test_client_lifecycle.py:95: Failed
+---------------------------- Captured stdout setup -----------------------------
+2025-05-27 09:35:24 [debug    ] 🔧 RPCPluginClient.__attrs_post_init__: Client object created. [pyvider.dynamic_call]
+----------------------------- Captured stdout call -----------------------------
+2025-05-27 09:35:24 [debug    ] 🔄 Closing RPCPluginClient...   [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 Closing gRPC channel...      [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 gRPC channel closed.         [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 Terminating plugin subprocess... [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 Sent terminate signal to plugin subprocess. [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 Plugin subprocess terminated. [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 Closing transport socket...  [pyvider.dynamic_call]
+2025-05-27 09:35:29 [debug    ] 🔄 Transport socket closed.     [pyvider.dynamic_call]
+2025-05-27 09:35:29 [info     ] 🔄 RPCPluginClient fully closed. [pyvider.dynamic_call]
+=============================== warnings summary ===============================
+tests/client/test_client_lifecycle.py::test_close_with_tasks
+  /REDACTED_ABS_PATH:2247: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    def __init__(self, name, parent):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/client/test_client_stubs.py::test_read_stdio_logs
+tests/client/test_client_stubs.py::test_read_stdio_logs
+  /REDACTED_ABS_PATH:594: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    async for chunk in self._stdio_stub.StreamStdio(empty_pb2.Empty()):
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+tests/client/test_connection.py::test_del_warning
+  /REDACTED_ABS_PATH:141: RuntimeWarning: coroutine 'AsyncMockMixin._execute_mock_call' was never awaited
+    gc.collect()
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform darwin, python 3.13.3-final-0 ----------
+Name                                                                                               Stmts   Miss Branch BrPart  Cover   Missing
+----------------------------------------------------------------------------------------------------------------------------------------------
+/REDACTED_ABS_PATH                                6      0      0      0   100%
+/REDACTED_ABS_PATH                         4      0      0      0   100%
+/REDACTED_ABS_PATH                           303     47     78     17    81%   248, 289, 293, 337->339, 360-364, 369-379, 383->385, 423-427, 435, 440-445, 515-523, 594->609, 595-598, 600, 629, 650-659, 679-680, 686-687, 720->730, 730->751, 738-739, 751->760
+/REDACTED_ABS_PATH                      76      4     18      3    90%   47->49, 49->exit, 96->101, 172, 175-177
+/REDACTED_ABS_PATH                           12      0      8      4    80%   25->exit, 26->exit, 27->exit, 28->exit
+/REDACTED_ABS_PATH                                258    174    104     12    31%   210-218, 230, 235, 239, 242, 248-250, 256-269, 291-292, 300-304, 330-332, 358-360, 370->373, 400-404, 417-422, 431, 440, 449, 458, 467, 476, 485, 494, 503, 544-616, 634-662, 675-700, 713-732, 745-768, 774-777
+/REDACTED_ABS_PATH                         6      0      0      0   100%
+/REDACTED_ABS_PATH                    311    221     86      0    23%   80-137, 142, 195-318, 325-386, 391-416, 422, 427, 432-435, 440-450, 455-456, 461-462, 467-468, 473-474, 480-512, 516-559, 564-576, 581-591, 598-609
+/REDACTED_ABS_PATH                        8      0      0      0   100%
+/REDACTED_ABS_PATH                           93     86     28      0     6%   30-143, 157-191
+/REDACTED_ABS_PATH                      22     11      8      0    37%   20, 26, 57-72
+/REDACTED_ABS_PATH                           14      0      6      3    85%   23->exit, 25->exit, 27->exit
+/REDACTED_ABS_PATH                              14      0      0      0   100%
+/REDACTED_ABS_PATH                              66     66     16      0     0%   17-226
+/REDACTED_ABS_PATH                             249    201     86      5    16%   65-104, 119-132, 158-199, 212-265, 277, 281-285, 290-293, 299-300, 305, 313-315, 335-429, 445-473, 491-549
+/REDACTED_ABS_PATH                       6      0      0      0   100%
+/REDACTED_ABS_PATH                           3      0      0      0   100%
+/REDACTED_ABS_PATH               20      7      2      1    64%   31-37
+/REDACTED_ABS_PATH          27     10      2      1    62%   22, 40, 53-55, 59-70, 90
+/REDACTED_ABS_PATH           18      5      2      1    70%   31-35
+/REDACTED_ABS_PATH      27     10      2      1    62%   22, 40, 53-55, 59-70, 90
+/REDACTED_ABS_PATH                20      7      2      1    64%   33-39
+/REDACTED_ABS_PATH           28     10      2      1    63%   23, 44, 65-67, 71-82, 105
+/REDACTED_ABS_PATH                      124     89     12      0    26%   45-47, 50-54, 57-61, 75, 82-140, 149-150, 154-160, 164-196, 201-202, 213-214, 218-225, 229-239, 244-252
+/REDACTED_ABS_PATH                                307    255     58      0    14%   101-120, 135-183, 196, 209-228, 250-285, 299-339, 359-473, 491-531, 540-552, 568-573, 592-649, 658-676
+/REDACTED_ABS_PATH                      4      0      0      0   100%
+/REDACTED_ABS_PATH                          7      0      2      1    89%   49->exit
+/REDACTED_ABS_PATH                         143    117     18      0    16%   30-34, 60-62, 68-91, 99-125, 133-180, 186-194, 202-229
+/REDACTED_ABS_PATH                        17      0      6      3    87%   42->exit, 43->exit, 44->exit
+/REDACTED_ABS_PATH                        220    190     54      0    11%   28-45, 86-100, 104-129, 133-184, 205-247, 253-285, 289-297, 302-362
+/REDACTED_ABS_PATH                                  74     21      0      0    72%   65, 75, 87, 108, 117, 123, 142, 155, 174, 186, 192, 219, 223, 227, 231, 244-245, 257-258, 270-271
+----------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                                                                               2487   1531    600     54    35%
+
+=========================== short test summary info ============================
+FAILED client/test_client_integration.py::test_client_integration - ValueErro...
+FAILED client/test_client_lifecycle.py::test_close_with_tasks - Failed: DID N...
+================== 2 failed, 44 passed, 4 warnings in 36.85s ===================

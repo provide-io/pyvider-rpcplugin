@@ -8,12 +8,12 @@ CWD=$(pwd)
 cd ${ENV_SCRIPT_DIR}
 
 if ! command -v uv >/dev/null 2>&1; then
-  log "🚀 Installing 'uv'..."
+  echo "🚀 Installing 'uv'..."
   curl -LsSf https://astral.sh/uv/install.sh | sh
-  success "✅ 'uv' installed at $(which uv)"
+  source "${HOME}/.local/bin/env"
+  echo "✅ 'uv' installed at $(which uv)"
   uv -V
 fi
-
 
 uv venv
 uv sync --all-groups --dev
