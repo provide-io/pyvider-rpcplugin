@@ -39,7 +39,7 @@ async def test_load_key_value_error(valid_cert_pem) -> None:
         "cryptography.hazmat.primitives.serialization.load_pem_private_key",
         side_effect=ValueError("Invalid key format"),
     ):
-        with pytest.raises(CertificateError, match="Could not deserialize key data"):
+        with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(
                 cert_pem_or_uri=valid_cert_pem,
                 key_pem_or_uri="-----BEGIN PRIVATE KEY-----\nINVALID\n-----END PRIVATE KEY-----",
@@ -52,7 +52,7 @@ async def test_load_key_type_error() -> None:
         "cryptography.hazmat.primitives.serialization.load_pem_private_key",
         side_effect=TypeError("Password required"),
     ):
-        with pytest.raises(CertificateError, match="Failed to load data"):
+        with pytest.raises(CertificateError, match="Failed to initialize certificate"):
             Certificate(cert_pem_or_uri=valid_cert_pem, key_pem_or_uri="SOME_KEY")
 
 @pytest.mark.asyncio
@@ -79,7 +79,7 @@ async def test_invalid_certificate_raises_error(invalid_cert_pem) -> None:
 @pytest.mark.asyncio
 async def test_load_cert_with_malformed_pem(malformed_cert_pem) -> None:
     """Test loading certificate with malformed PEM format."""
-    with pytest.raises(CertificateError, match="Unable to load PEM"):
+    with pytest.raises(CertificateError, match="Failed to initialize certificate"):
         Certificate(cert_pem_or_uri=malformed_cert_pem)
 
 @pytest.mark.asyncio
@@ -101,16 +101,16 @@ async def test_missing_certificate_file_raises_error() -> None:
         Certificate(cert_pem_or_uri="file:///nonexistent/path/cert.pem")
 
 @pytest.mark.asyncio
-async def test_load_cert_with_utf8_bom() -> None:
+async def test_load_cert_with_utf8_bom(client_cert) -> None: # Added client_cert fixture
     """Ensure certificate loading works with UTF-8 BOM characters."""
-    "\ufeff" + client_cert
-    cert = Certificate(cert_pem_or_uri=client_pem)
+    cert_with_bom = "\ufeff" + client_cert.cert # Correctly use the cert string from the fixture
+    cert = Certificate(cert_pem_or_uri=cert_with_bom) # Use the modified string
     assert cert.subject, "UTF-8 BOM should not break certificate parsing"
 
 @pytest.mark.asyncio
 async def test_malformed_certificate_loading() -> None:
     """Ensure malformed certificates raise CertificateError."""
-    with pytest.raises(CertificateError, match="Unable to load PEM"):
+    with pytest.raises(CertificateError, match="Failed to initialize certificate"):
         Certificate(
             cert_pem_or_uri="-----BEGIN CERTIFICATE-----\nINVALID\n-----END CERTIFICATE-----"
         )

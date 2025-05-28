@@ -719,8 +719,11 @@ class RPCPluginClient:
         # Close gRPC channel
         if self._channel:
             logger.debug("🔄 Closing gRPC channel...")
-            await self._channel.close()
-            logger.debug("🔄 gRPC channel closed.")
+            try:
+                await self._channel.close()
+                logger.debug("🔄 gRPC channel closed.")
+            except Exception as e:
+                logger.error(f"🔄❌ Error closing gRPC channel: {e}", extra={"trace": traceback.format_exc()})
             self._channel = None
 
         # Terminate plugin process
@@ -728,11 +731,18 @@ class RPCPluginClient:
             logger.debug("🔄 Terminating plugin subprocess...")
             try:
                 self._process.terminate()
-                self._process.wait(timeout=7) # should be higher than the server timeout
-                logger.debug("🔄 Plugin subprocess terminated.")
-            except Exception as e:
+                logger.debug("🔄 Sent terminate signal to plugin subprocess.")
+                try:
+                    self._process.wait(timeout=7) # should be higher than the server timeout
+                    logger.debug("🔄 Plugin subprocess terminated.")
+                except Exception as e: # Catches subprocess.TimeoutExpired and other wait issues
+                    logger.error(
+                        f"🔄❌ Error waiting for plugin process to terminate: {e}",
+                        extra={"trace": traceback.format_exc()},
+                    )
+            except Exception as e: # Catches errors from terminate() itself
                 logger.error(
-                    f"🔄❌ Error terminating plugin process: {e}",
+                    f"🔄❌ Error sending terminate signal to plugin process: {e}",
                     extra={"trace": traceback.format_exc()},
                 )
             self._process = None
@@ -740,8 +750,11 @@ class RPCPluginClient:
         # Close underlying transport
         if self._transport:
             logger.debug("🔄 Closing transport socket...")
-            await self._transport.close()
-            logger.debug("🔄 Transport socket closed.")
+            try:
+                await self._transport.close()
+                logger.debug("🔄 Transport socket closed.")
+            except Exception as e:
+                logger.error(f"🔄❌ Error closing transport socket: {e}", extra={"trace": traceback.format_exc()})
             self._transport = None
 
         logger.info("🔄 RPCPluginClient fully closed.")

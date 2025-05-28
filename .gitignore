@@ -390,4 +390,5 @@ kv-data-*
 bin/
 
 # stupid code coverage result.
-result.json
+result.json*.bf.txt
+*.log.txt
