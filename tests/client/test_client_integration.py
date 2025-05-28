@@ -18,21 +18,24 @@ async def test_client_integration(test_client_command):
     4. Close client
     """
     # Mock all external dependencies
-    with patch('subprocess.Popen') as mock_popen, \
+    with patch('pyvider.rpcplugin.client.base.subprocess.Popen') as mock_popen, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake.<locals>.read_stdout_line', new_callable=AsyncMock) as mock_read_stdout_line_helper, \
          patch('pyvider.rpcplugin.client.base.Certificate') as mock_cert_class, \
          patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel') as mock_channel_func, \
          patch('pyvider.rpcplugin.client.base.GRPCStdioStub') as mock_stdio_stub_class, \
          patch('pyvider.rpcplugin.client.base.GRPCBrokerStub') as mock_broker_stub_class, \
          patch('pyvider.rpcplugin.client.base.GRPCControllerStub') as mock_controller_stub_class, \
          patch('pyvider.rpcplugin.client.base.TCPSocketTransport') as mock_transport_class, \
-         patch('threading.Thread') as mock_thread:
+         patch('threading.Thread') as mock_thread: # Corrected target for threading.Thread
         
+        mock_read_stdout_line_helper.return_value = "1|1|tcp|127.0.0.1:8000|grpc|"
+
         # Mock process
         mock_process = MagicMock()
         mock_process.stdout = MagicMock()
         mock_process.stderr = MagicMock()
         mock_process.poll.return_value = None
-        mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+        # mock_process.stdout.readline.side_effect = lambda: b"1|1|tcp|127.0.0.1:8000|grpc|\n" # Commented out
         mock_popen.return_value = mock_process
         
         # Mock certificate

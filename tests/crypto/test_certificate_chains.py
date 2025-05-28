@@ -139,9 +139,9 @@ async def test_certificate_invalid_trust_chain_signature() -> None:
 
     cert1.trust_chain.append(cert2)
 
-    with mock.patch.object(
-        cert2._cert.public_key, "signature", side_effect=Exception("Signature failure")
-    ):
+    # Class-level patch for ec.EllipticCurvePublicKey.verify
+    with mock.patch('cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify',
+                    side_effect=Exception("Signature failure")):
         assert not cert1.verify_trust(cert2), (
             "Verification should fail due to invalid signature"
         )

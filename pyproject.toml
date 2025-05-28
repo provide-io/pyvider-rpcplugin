@@ -17,7 +17,7 @@ dependencies = [
     "google>=3.0.0",
     "grpcio>=1.70.0",
     "protobuf>=5.29.3",
-    "pytest-asyncio>=0.25.3",
+    "pyvider-telemetry>=0.0.4",
     "structlog>=25.1.0",
 ]
 
@@ -32,6 +32,7 @@ dev = [
     "pyre-check>=0.9.23",
     "pyre-extensions>=0.0.32",
     "pyright>=1.1.394",
+    "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
     "pytest-benchmark>=5.1.0",
     "pytest-cov>=6.0.0",
@@ -41,6 +42,8 @@ dev = [
     "ruff>=0.9.7",
     "sapp>=0.4",
     "tabulate>=0.9.0",
+    "ty>=0.0.1a6",
+    "uv>=0.6.5",
     "viztracer>=1.0.2",
 ]
 

@@ -29,13 +29,17 @@ async def test_expired_certificate() -> None:
     expired_cert = Certificate(
         generate_keypair=True,
         key_type="rsa",
-        not_valid_before=datetime.now(timezone.utc) - timedelta(days=365),
-        not_valid_after=datetime.now(timezone.utc)
-        - timedelta(days=1),  # Expired yesterday
+        validity_days=-1  # Set to expire yesterday relative to its creation 'now'
     )
-    assert expired_cert._base.not_valid_after < datetime.now(timezone.utc), (
-        "Certificate should be expired"
-    )
+    
+    # Ensure the certificate's not_valid_after is indeed in the past
+    # compared to the current real time.
+    # datetime.now(timezone.utc) inside the test will be slightly after 
+    # the datetime.now(timezone.utc) used inside Certificate's __attrs_post_init__.
+    current_real_now = datetime.now(timezone.utc)
+    assert expired_cert._base.not_valid_after < current_real_now, \
+        f"Certificate expiry date {expired_cert._base.not_valid_after} should be before current time {current_real_now}"
+    
     assert not expired_cert.is_valid, "Expired certificates should be invalid"
 
 @pytest.mark.asyncio
@@ -52,8 +56,7 @@ async def test_verify_expired_certificate() -> None:
     expired_cert = Certificate(
         generate_keypair=True,
         key_type="rsa",
-        not_valid_before=datetime.now(timezone.utc) - timedelta(days=365),
-        not_valid_after=datetime.now(timezone.utc) - timedelta(days=1),
+        validity_days=-1  # Set to make it expired
     )
     assert not expired_cert.is_valid, "Expired certificate should be invalid"
     assert not expired_cert.verify_trust(expired_cert), (
@@ -91,10 +94,9 @@ async def test_certificate_trust_chain_validation() -> None:
     cert1.trust_chain.append(cert2)
 
     # Ensure invalid trust chain fails verification
-    # with mock.patch.object(cert2._base.public_key, "verify", side_effect=Exception("Signature mismatch")):
     with mock.patch(
         "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
-        ...,
+        side_effect=Exception("Signature failure")
     ):
         assert not cert1.verify_trust(cert2), "Trust chain validation should fail"
 

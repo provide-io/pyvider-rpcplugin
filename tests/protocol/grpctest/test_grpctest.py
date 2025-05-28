@@ -8,7 +8,7 @@ import grpc
 from google.protobuf import empty_pb2
 
 # Import generated classes from your compiled proto.
-from proto.grpctest_pb2 import (
+from .proto.grpctest_pb2 import (
     TestRequest,
     TestResponse,
     PrintKVRequest,
@@ -19,7 +19,7 @@ from proto.grpctest_pb2 import (
     PingRequest,
     PongResponse,
 )
-from proto.grpctest_pb2_grpc import (
+from .proto.grpctest_pb2_grpc import (
     TestServicer,
     add_TestServicer_to_server,
     PingPongServicer,

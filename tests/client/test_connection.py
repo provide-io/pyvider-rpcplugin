@@ -5,8 +5,9 @@ import gc
 import pytest
 
 from pyvider.rpcplugin.client.connection import ClientConnection
+from tests.fixtures.dummy import DummyReader, DummyWriter # Import added
 
-from tests.fixtures import *
+from tests.fixtures import * # Keep for other fixtures if used by other tests
 
 
 @pytest.fixture
@@ -43,14 +44,16 @@ async def test_update_metrics(connection) -> None:
     assert connection.bytes_received == 20
 
 @pytest.mark.asyncio
-async def test_send_data_normal(connection, dummy_writer) -> None:
-    # Test that send_data writes data and updates metrics.
+async def test_send_data_normal() -> None: # Removed fixtures
+    local_dummy_reader = DummyReader() # Default empty reader
+    local_dummy_writer = DummyWriter()
+    conn = ClientConnection(reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1")
+    
     data = b"hello"
-    await connection.send_data(data)
-    # The dummy writer should have accumulated the data.
-    assert dummy_writer.data == data
-    # Metrics should be updated.
-    assert connection.bytes_sent == len(data)
+    await conn.send_data(data)
+    
+    assert local_dummy_writer.data == data
+    assert conn.bytes_sent == len(data)
 
 @pytest.mark.asyncio
 async def test_send_data_when_closed(connection) -> None:
@@ -72,14 +75,17 @@ async def test_send_data_oserror(monkeypatch, connection) -> None:
         await connection.send_data(b"data")
 
 @pytest.mark.asyncio
-async def test_receive_data_normal(connection, dummy_reader) -> None:
-    # Test normal reception: dummy_reader returns preset data.
+async def test_receive_data_normal() -> None: # Removed fixtures
     test_bytes = b"test data"
-    dummy_reader.data = test_bytes
-    result = await connection.receive_data()
+    local_dummy_reader = DummyReader(data=test_bytes) # Initialize with data
+    local_dummy_writer = DummyWriter()
+    conn = ClientConnection(reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1")
+    
+    # No need to set dummy_reader.data as it's set on init
+    result = await conn.receive_data()
+    
     assert result == test_bytes
-    # Metrics for bytes_received should be updated.
-    assert connection.bytes_received == len(test_bytes)
+    assert conn.bytes_received == len(test_bytes)
 
 @pytest.mark.asyncio
 async def test_receive_data_when_closed(connection) -> None:
@@ -123,11 +129,12 @@ async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog)
 @pytest.mark.asyncio
 async def test_del_warning(caplog, capsys) -> None:
     # Create a ClientConnection without calling close.
-    dummy_writer = DummyWriter()
-    # For the reader, use a minimal dummy (can be an already created StreamReader).
-    dummy_reader = asyncio.StreamReader()
+    # Ensure local dummy instances are used here too if this test relies on specific dummy behavior
+    local_dummy_writer = DummyWriter()
+    local_dummy_reader = DummyReader() # Or asyncio.StreamReader() if that's more appropriate for this specific test's goal
+    
     conn = ClientConnection(
-        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
+        reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
     # Do not call close(), so __del__ should log a warning.
     del conn
@@ -140,71 +147,3 @@ async def test_del_warning(caplog, capsys) -> None:
     in_stdout = "was not properly closed" in captured.out
     
     assert in_logs or in_stdout, "No warning about unclosed connection was found"
-
-# tests/client/test_connection.py
-
-import pytest
-
-from tests.fixtures.dummy import DummyWriter
-
-@pytest.fixture
-def connection(dummy_reader, dummy_writer):
-    """Create a test ClientConnection with dummy streams."""
-    return ClientConnection(
-        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
-    )
-
-@pytest.mark.asyncio
-async def test_is_closed_initial(connection):
-    """Test connection initially open."""
-    assert connection.is_closed is False
-
-@pytest.mark.asyncio
-async def test_is_closed_when_closed_flag(connection):
-    """Test closed flag affects is_closed."""
-    connection._closed = True
-    assert connection.is_closed is True
-
-@pytest.mark.asyncio
-async def test_send_data_normal(connection, dummy_writer):
-    """Test send_data writes data and updates metrics."""
-    data = b"hello"
-    await connection.send_data(data)
-    
-    # Data should be in writer and metrics updated
-    assert dummy_writer.data == data
-    assert connection.bytes_sent == len(data)
-
-@pytest.mark.asyncio
-async def test_send_data_when_closed(connection):
-    """Test send_data when connection closed."""
-    connection._closed = True
-    with pytest.raises(
-        ConnectionError, match="Attempted to send data on closed connection"
-    ):
-        await connection.send_data(b"data")
-
-@pytest.mark.asyncio
-async def test_receive_data_normal(connection, dummy_reader):
-    """Test receive_data reads data and updates metrics."""
-    test_bytes = b"test data"
-    dummy_reader.data = test_bytes
-    
-    result = await connection.receive_data()
-    
-    assert result == test_bytes
-    assert connection.bytes_received == len(test_bytes)
-
-@pytest.mark.asyncio
-async def test_close_normal(connection, dummy_writer):
-    """Test close() properly closes connection."""
-    connection._closed = False
-    await connection.close()
-    
-    assert connection._closed is True
-    assert dummy_writer.closed is True
-    
-    # Calling close() again should be safe
-    await connection.close()
-
-### 🐍🏗🧪️

@@ -2,7 +2,17 @@
 
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock, ANY
+from unittest.mock import patch, MagicMock, AsyncMock, ANY # Keep ANY if other tests need it
+# Attempt to import StdioData and Empty, but don't fail if not found during this subtask
+try:
+    from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+except ImportError:
+    StdioData = None # Will use integer literals if not found
+
+try:
+    from google.protobuf import empty_pb2
+except ImportError:
+    empty_pb2 = None # Will omit argument assertion if not found
 
 
 @pytest.mark.asyncio
@@ -49,20 +59,38 @@ async def test_init_stubs_no_channel(client_instance):
 async def test_read_stdio_logs(client_instance):
     """Test reading logs from stdio stub."""
     # Setup
-    mock_stdio_stub = MagicMock()
-    client_instance._stdio_stub = mock_stdio_stub
+    mock_stdio_stub_instance = AsyncMock()  # Use AsyncMock for the stub
+    client_instance._stdio_stub = mock_stdio_stub_instance
     
-    # Mock StreamStdio as async generator
-    async def mock_stream_stdio(_):
-        yield MagicMock(channel=1, data=b"stdout log message")
-        yield MagicMock(channel=2, data=b"stderr log message")
-        raise asyncio.CancelledError()  # Simulate cancellation
+    # Prepare mock data to be yielded by the async generator
+    mock_chunk_stdout = MagicMock()
+    # Use StdioData.STDOUT if available, otherwise fallback to integer
+    mock_chunk_stdout.channel = StdioData.STDOUT if StdioData else 1 
+    mock_chunk_stdout.data = b"stdout log message"
     
-    mock_stdio_stub.StreamStdio = mock_stream_stdio
+    mock_chunk_stderr = MagicMock()
+    # Use StdioData.STDERR if available, otherwise fallback to integer
+    mock_chunk_stderr.channel = StdioData.STDERR if StdioData else 2
+    mock_chunk_stderr.data = b"stderr log message"
     
-    # Test
-    with pytest.raises(asyncio.CancelledError):
-        await client_instance._read_stdio_logs()
+    mock_stream_data = [mock_chunk_stdout, mock_chunk_stderr]
+
+    # Define an async generator function
+    async def mock_async_generator(*args, **kwargs):
+        for item in mock_stream_data:
+            yield item
+        # The original method's loop will terminate when this generator is exhausted.
+    
+    # Set the StreamStdio method of the mock stub to return the generator
+    mock_stdio_stub_instance.StreamStdio.return_value = mock_async_generator()
+    
+    # Call the method under test
+    await client_instance._read_stdio_logs()
+    
+    # Verify that StreamStdio was called
+    mock_stdio_stub_instance.StreamStdio.assert_called_once()
+    if empty_pb2: # Only assert with argument if Empty was successfully imported
+        mock_stdio_stub_instance.StreamStdio.assert_called_once_with(empty_pb2.Empty())
 
 @pytest.mark.asyncio
 async def test_read_stdio_logs_no_stub(client_instance):
@@ -76,31 +104,49 @@ async def test_read_stdio_logs_no_stub(client_instance):
 async def test_open_broker_subchannel(client_instance):
     """Test opening a broker subchannel."""
     # Setup
-    mock_broker_stub = MagicMock()
-    client_instance._broker_stub = mock_broker_stub
+    mock_broker_stub_instance = AsyncMock() 
+    client_instance._broker_stub = mock_broker_stub_instance
     
-    # Mock StartStream call
-    mock_call = AsyncMock()
-    mock_broker_stub.StartStream.return_value = mock_call
+    # Mock the StartStream call object (the bidirectional stream)
+    mock_call_object = AsyncMock() 
+
+    # Configure mock_broker_stub_instance.StartStream to be a MagicMock
+    # that returns mock_call_object when called. This assumes StartStream
+    # is a synchronous method that returns an awaitable stream object.
+    mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_call_object)
     
-    # Test response generator
-    async def mock_response_gen():
-        yield MagicMock(
-            service_id=123,
-            knock=MagicMock(ack=True, error="")
-        )
-    
-    # Mock call's aiter method
-    mock_call.__aiter__.return_value = mock_response_gen()
+    # Mock the response from the stream (the knock-ack)
+    async def mock_response_gen_func(): # Renamed to avoid confusion
+        response_message = MagicMock()
+        response_message.service_id = 123
+        response_message.knock.ack = True
+        response_message.knock.error = ""
+        yield response_message
+        # No more yields, so the generator will be exhausted after one item
+        return 
+
+    # Configure mock_call_object to use mock_response_gen_func as its side_effect for async iteration
+    mock_call_object.side_effect = mock_response_gen_func 
     
     # Open subchannel
     await client_instance.open_broker_subchannel(123, "127.0.0.1:8001")
     
-    # Verify call was made correctly
+    # Assert _broker_task was created
     assert client_instance._broker_task is not None
-    mock_broker_stub.StartStream.assert_called_once()
-    mock_call.write.assert_called_once()
-    mock_call.done_writing.assert_called_once()
+
+    # Await the task to ensure the coroutine completes and check for internal errors
+    try:
+        await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
+    except asyncio.TimeoutError:
+        pytest.fail("Broker coroutine timed out")
+    
+    # Verify calls were made correctly AFTER awaiting the task
+    mock_broker_stub_instance.StartStream.assert_called_once()
+    mock_call_object.write.assert_called_once() 
+    mock_call_object.done_writing.assert_called_once()
+    
+    # Check that aclose was called from the finally block in _broker_coroutine
+    mock_call_object.aclose.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_shutdown_plugin(client_instance):

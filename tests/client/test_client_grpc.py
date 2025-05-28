@@ -1,7 +1,8 @@
 # tests/client/test_client_grpc.py
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, ANY
+from unittest.mock import patch, MagicMock, AsyncMock, ANY # ANY added back
+from pyvider.rpcplugin.transport import UnixSocketTransport # Import added
 
 
 @pytest.mark.asyncio
@@ -113,20 +114,17 @@ async def test_create_grpc_channel_insecure(client_instance):
 async def test_create_grpc_channel_unix_socket(client_instance):
     """Test creating a gRPC channel for Unix socket transport."""
     # Setup
-    client_instance._transport = MagicMock()
-    client_instance._transport_name = "unix"
-    client_instance._address = "/tmp/test.sock"
-    client_instance._server_cert = None
+    client_instance._transport = AsyncMock(spec=UnixSocketTransport) # Changed to use spec
+    client_instance._transport_name = "unix" # This is correct for the logic path
+    client_instance._address = "/tmp/test.sock" # This is the raw path
+    client_instance._server_cert = None # To ensure insecure_channel is called
     
-    # Mock insecure_channel
     with patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel') as mock_insecure_channel:
         mock_channel = AsyncMock()
         mock_insecure_channel.return_value = mock_channel
-        
-        # Mock channel_ready() to return immediately
-        mock_channel.channel_ready = AsyncMock()
+        mock_channel.channel_ready = AsyncMock() # Mock channel_ready
         
         await client_instance._create_grpc_channel()
         
-        # Verify unix prefix was used
-        mock_insecure_channel.assert_called_once_with("unix:/tmp/test.sock", ANY)
+        # Verify unix prefix was used and no extra args
+        mock_insecure_channel.assert_called_once_with("unix:/tmp/test.sock") # Corrected assertion
