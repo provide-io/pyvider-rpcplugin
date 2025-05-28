@@ -200,16 +200,10 @@ class Certificate:
                 # Prepare config for CertificateBase.create
                 now = datetime.now(UTC) # Or use the existing import for timezone.utc
 
-                # Calculate not_valid_after based on now and validity_days
-                # If validity_days is -1, not_valid_after will be yesterday.
-                # If validity_days is 0, not_valid_after will be today (potentially tricky with exact times).
-                # If validity_days is 1, not_valid_after will be tomorrow.
+                # Set not_valid_before to be 1 day in the past to ensure immediate validity.
+                not_valid_before = now - timedelta(days=1)
+                # Set not_valid_after based on validity_days from now.
                 not_valid_after = now + timedelta(days=self.validity_days)
-
-                # Set not_valid_before to be, for example, 1 day before not_valid_after.
-                # This creates a certificate that was valid for 1 day, ending at not_valid_after.
-                # If not_valid_after is already in the past, this whole period is in the past.
-                not_valid_before = not_valid_after - timedelta(days=1)
 
                 # Ensure that 'now' (for the purpose of the certificate's "creation moment" logging)
                 # is still relevant or adjust if needed, though the key is the relation
