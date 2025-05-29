@@ -83,45 +83,44 @@ def temp_sock_dir():
         yield tmpdir
 
 @pytest_asyncio.fixture(scope="function")
-async def transport_factory(request):
+async def transport_factory(request, managed_unix_socket_path: str): # Added managed_unix_socket_path
     """Factory fixture for creating isolated transport instances."""
-    created = []
+    created_transports = [] # Renamed to avoid confusion with the create function
 
     async def create(transport_type: str, **kwargs) -> TransportT:
-        # Create unique paths for Unix sockets
+        transport: TransportT
         if transport_type == "unix":
-            import uuid
-            # Use tempfile.gettempdir() and shorter name
-            socket_path = os.path.join(tempfile.gettempdir(), f"pyv_t_{uuid.uuid4().hex[:6]}.sock")
-            # Clean any existing file
-            if os.path.exists(socket_path):
-                try:
-                    os.unlink(socket_path)
-                except OSError:
-                    pass
-            transport = UnixSocketTransport(path=socket_path, **kwargs)
-        else:
+            # Use managed_unix_socket_path instead of manual path generation
+            # The managed_unix_socket_path fixture provides a unique, clean path for each test function
+            # that requests transport_factory. If a test needs multiple unix transports via this
+            # factory in a single test run, managed_unix_socket_path would provide the *same* path.
+            # This implies that if a test needs two separate unix transports, it should either
+            # call managed_unix_socket_path twice (not possible directly in this factory pattern for a single call to create)
+            # or this factory needs to be adjusted. For now, assuming one unix path per factory use is okay,
+            # or that the kwargs might override the path if multiple are needed.
+            # For a general factory, it might be better if it could generate multiple unique paths if called multiple times
+            # for "unix". However, the fixture `managed_unix_socket_path` is function-scoped.
+            # A single test using transport_factory multiple times for "unix" will get the same path from `managed_unix_socket_path`.
+            # This change makes the factory simpler but potentially less flexible if a single test needs *multiple different* unix sockets from it.
+            # Given the prompt, this is the direct interpretation.
+            socket_path_to_use = managed_unix_socket_path 
+            transport = UnixSocketTransport(path=socket_path_to_use, **kwargs)
+        else: # TCP
             transport = TCPSocketTransport(**kwargs)
-
-        created.append(transport)
+        
+        created_transports.append(transport)
         return transport
 
     yield create
 
-    # Thorough cleanup
-    for transport in created:
+    # Thorough cleanup: close all created transports
+    # The managed_unix_socket_path fixture will handle the cleanup of its specific path.
+    # This loop just ensures transport.close() is called.
+    for transport_instance in created_transports:
         try:
-            # Ensure close is awaited
-            await transport.close()
-            # For Unix sockets, ensure file is gone
-            if isinstance(transport, UnixSocketTransport) and hasattr(transport, 'path') and transport.path:
-                if os.path.exists(transport.path):
-                     try:
-                          os.unlink(transport.path)
-                     except OSError:
-                          pass # Ignore cleanup errors
+            await transport_instance.close()
         except Exception as e:
-            logger.error(f"Error during transport cleanup: {e}")
+            logger.error(f"Error during transport_factory cleanup of {transport_instance}: {e}")
 
 
 @pytest_asyncio.fixture
