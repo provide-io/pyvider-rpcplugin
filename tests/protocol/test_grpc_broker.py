@@ -3,6 +3,7 @@
 
 import pytest
 import importlib
+import os # Added import
 import grpc
 from unittest.mock import patch, MagicMock
 
@@ -80,18 +81,22 @@ async def test_grpc_broker_servicer_methods() -> None:
 
 @pytest.mark.asyncio
 async def test_broker_pb2_descriptor() -> None:
-    """Direct test for grpc_broker_pb2 descriptor options (lines 30-36)."""
-    # Direct access to specific global symbols
-    # These will exercise the if not _descriptor._USE_C_DESCRIPTORS block
+    """Test that grpc_broker_pb2.DESCRIPTOR is available and has expected properties."""
     assert hasattr(grpc_broker_pb2, "DESCRIPTOR")
-    with patch.object(grpc_broker_pb2.DESCRIPTOR, "_loaded_options", None), \
-         patch.object(grpc_broker_pb2.DESCRIPTOR, "_USE_C_DESCRIPTORS", False):
-        importlib.reload(grpc_broker_pb2)
-    
-    # Test specific serialized properties 
     descriptor = grpc_broker_pb2.DESCRIPTOR
+    
+    # Test specific serialized properties / public API
     assert hasattr(descriptor, "message_types_by_name")
     assert "ConnInfo" in descriptor.message_types_by_name
+    
+    # Ensure it has a name (check basename)
+    assert os.path.basename(descriptor.name) == "grpc_broker.proto"
+    
+    # Check for a known option if available and stable, e.g. python_package
+    # For protobuf 5.x, options are accessed via descriptor.GetOptions()
+    options = descriptor.GetOptions()
+    assert options.HasField("python_package")
+    assert options.python_package == "pyvider.rpcplugin.protocol"
 
 @pytest.mark.asyncio
 async def test_broker_grpc_version_mismatch() -> None:

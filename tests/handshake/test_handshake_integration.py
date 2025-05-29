@@ -162,7 +162,7 @@ async def test_full_handshake_cycle():
 
 
 @pytest.mark.asyncio
-async def test_server_handshake_integration(setup_environment, mock_protocol, mock_handler):
+async def test_server_handshake_integration(setup_environment, mock_protocol, mock_handler, managed_unix_socket_path):
     """Test integration of handshake with the server."""
     # Patch sys.stdout to capture handshake output
     with patch('sys.stdout.buffer.write') as mock_write, \
@@ -178,7 +178,7 @@ async def test_server_handshake_integration(setup_environment, mock_protocol, mo
         mock_grpc_server.return_value = mock_server
         
         # Create server with Unix transport
-        socket_path = os.path.join(tempfile.gettempdir(), f"test_socket_{os.getpid()}.sock")
+        socket_path = managed_unix_socket_path
         transport = UnixSocketTransport(path=socket_path)
         
         server = RPCPluginServer(
@@ -249,3 +249,5 @@ async def test_certificate_handling_in_handshake():
     
     # Clean up
     await transport.close()
+
+### 🐍🏗🧪️

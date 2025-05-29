@@ -7,12 +7,17 @@ import pytest_asyncio
 import grpc
 from google.protobuf.empty_pb2 import Empty
 from unittest.mock import MagicMock, patch
+from attrs import define # Added import
 
+# Service implementations
 from pyvider.rpcplugin.protocol.service import (
     GRPCBrokerService,
     GRPCStdioService,
-    register_protocol_service,
+    GRPCControllerService, # Added import
+    # register_protocol_service, # To be removed
 )
+
+# Stubs for client-side
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
@@ -20,56 +25,74 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 
+# Servicer adders for server-side
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import add_GRPCStdioServicer_to_server # Added import
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import add_GRPCBrokerServicer_to_server # Added import
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import add_GRPCControllerServicer_to_server # Added import
+
+
+@define
+class ExtendedServerFixtureOutput:
+    server: grpc.aio.Server
+    channel: grpc.aio.Channel
+    stdio_stub: GRPCStdioStub
+    broker_stub: GRPCBrokerStub
+    controller_stub: GRPCControllerStub
+    shutdown_event: asyncio.Event
+    stdio_service: GRPCStdioService
+    broker_service: GRPCBrokerService
+    controller_service: GRPCControllerService
+
 
 @pytest_asyncio.fixture
-async def real_server_client():
+async def real_server_client() -> ExtendedServerFixtureOutput: # Updated return type hint
     """Fixture to create a real gRPC server and client pair."""
-    # Create a server
     server = grpc.aio.server()
-
-    # Create shutdown event
     shutdown_event = asyncio.Event()
 
-    # Register services
-    register_protocol_service(server, shutdown_event)
+    # Instantiate services
+    stdio_service = GRPCStdioService()
+    broker_service = GRPCBrokerService()
+    controller_service = GRPCControllerService(shutdown_event, stdio_service)
 
-    # Start on random port
+    # Register services directly
+    add_GRPCStdioServicer_to_server(stdio_service, server)
+    add_GRPCBrokerServicer_to_server(broker_service, server)
+    add_GRPCControllerServicer_to_server(controller_service, server)
+
     port = server.add_insecure_port('localhost:0')
+    address = f'localhost:{port}' # Define address for channel
     await server.start()
 
-    # Create client channel
-    channel = grpc.aio.insecure_channel(f'localhost:{port}')
-
-    # Wait for channel to be ready
+    channel = grpc.aio.insecure_channel(address) # Use defined address
     await channel.channel_ready()
 
-    # Create stubs
     stdio_stub = GRPCStdioStub(channel)
     broker_stub = GRPCBrokerStub(channel)
     controller_stub = GRPCControllerStub(channel)
 
-    yield server, channel, stdio_stub, broker_stub, controller_stub, shutdown_event
+    yield ExtendedServerFixtureOutput(
+        server=server,
+        channel=channel,
+        stdio_stub=stdio_stub,
+        broker_stub=broker_stub,
+        controller_stub=controller_stub,
+        shutdown_event=shutdown_event,
+        stdio_service=stdio_service,
+        broker_service=broker_service,
+        controller_service=controller_service
+    )
 
-    # Cleanup
     await channel.close()
     await server.stop(0)
 
 
 @pytest.mark.asyncio
-async def test_stdio_end_to_end(real_server_client) -> None:
+async def test_stdio_end_to_end(real_server_client: ExtendedServerFixtureOutput) -> None: # Updated parameter
     """Test end-to-end stdio service with real server and client."""
-    server, channel, stdio_stub, _, _, _ = real_server_client
-
-    # Find the stdio service in the server
-    stdio_service = None
-    for handler in server._generic_handlers:
-        if handler.service_name() == 'plugin.GRPCStdio':
-            servicer = handler._method_handlers['StreamStdio']._unary_stream_handler._servicer
-            if isinstance(servicer, GRPCStdioService):
-                stdio_service = servicer
-                break
-
-    assert stdio_service is not None, "Could not find stdio service in server"
+    stdio_service = real_server_client.stdio_service
+    stdio_stub = real_server_client.stdio_stub
+    assert stdio_service is not None, "Stdio service not found in fixture output"
 
     # Create a background task to collect stdio output
     async def collect_stdio():
@@ -108,9 +131,9 @@ async def test_stdio_end_to_end(real_server_client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_broker_cancellation(real_server_client) -> None:
+async def test_broker_cancellation(real_server_client: ExtendedServerFixtureOutput) -> None: # Updated parameter
     """Test broker service with cancellation."""
-    _, _, _, broker_stub, _, _ = real_server_client
+    broker_stub = real_server_client.broker_stub
 
     # Start a broker stream
     stream = broker_stub.StartStream()
@@ -132,16 +155,17 @@ async def test_broker_cancellation(real_server_client) -> None:
     assert response.knock.ack is True
 
     # Abruptly cancel the stream instead of cleanly closing it
-    stream._cython_call.cancel()
+    stream.cancel() # Changed from stream._cython_call.cancel()
 
     # Close the write side of the stream
     await stream.done_writing()
 
 
 @pytest.mark.skip # this kills the test suite completely.
-async def test_controller_shutdown_with_timeout(real_server_client) -> None:
+async def test_controller_shutdown_with_timeout(real_server_client: ExtendedServerFixtureOutput) -> None: # Updated parameter
     """Test controller shutdown with a timeout."""
-    _, _, _, _, controller_stub, shutdown_event = real_server_client
+    controller_stub = real_server_client.controller_stub
+    shutdown_event = real_server_client.shutdown_event
 
     # Patch os.kill and sys.exit to prevent actual process termination
     with patch('os.kill'), patch('sys.exit'), patch('os.getpid', return_value=12345):
@@ -163,9 +187,10 @@ async def test_controller_shutdown_with_timeout(real_server_client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_stdio_early_client_disconnect(real_server_client) -> None:
+async def test_stdio_early_client_disconnect(real_server_client: ExtendedServerFixtureOutput) -> None: # Updated parameter
     """Test stdio service when client disconnects early."""
-    _, channel, stdio_stub, _, _, _ = real_server_client
+    channel = real_server_client.channel
+    stdio_stub = real_server_client.stdio_stub
 
     # Start the stream
     stream_call = stdio_stub.StreamStdio(Empty())
@@ -183,20 +208,10 @@ async def test_stdio_early_client_disconnect(real_server_client) -> None:
 
 
 @pytest.mark.asyncio
-async def test_broker_multiple_clients(real_server_client) -> None:
+async def test_broker_multiple_clients(real_server_client: ExtendedServerFixtureOutput) -> None: # Updated parameter
     """Test multiple clients connecting to broker service simultaneously."""
-    server, _, _, _, _, _ = real_server_client
-
-    # Find the broker service in the server
-    broker_service = None
-    for handler in server._generic_handlers:
-        if handler.service_name() == 'plugin.GRPCBroker':
-            servicer = handler._method_handlers['StartStream']._stream_stream_handler._servicer
-            if isinstance(servicer, GRPCBrokerService):
-                broker_service = servicer
-                break
-
-    assert broker_service is not None, "Could not find broker service in server"
+    broker_service = real_server_client.broker_service
+    assert broker_service is not None, "Broker service not found in fixture output"
 
     # Create multiple mock contexts and iterators
     num_clients = 3

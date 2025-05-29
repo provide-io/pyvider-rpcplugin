@@ -4,6 +4,7 @@
 import pytest
 from unittest.mock import MagicMock, patch
 import importlib
+import os # Added import
 
 from pyvider.rpcplugin.protocol import (
     grpc_broker_pb2,
@@ -20,18 +21,37 @@ def test_grpc_proto_descriptors() -> None:
     assert hasattr(grpc_controller_pb2, "DESCRIPTOR")
     assert hasattr(grpc_stdio_pb2, "DESCRIPTOR")
 
-    # Access specific loaded options
-    if not grpc_broker_pb2.DESCRIPTOR._USE_C_DESCRIPTORS:
-        assert "_CONNINFO" in grpc_broker_pb2._globals
-        assert "_GRPCBROKER" in grpc_broker_pb2._globals
+    proto_modules_and_expected_basenames = [ # Renamed list
+        (grpc_broker_pb2, "grpc_broker.proto"), # Changed to basename
+        (grpc_controller_pb2, "grpc_controller.proto"), # Changed to basename
+        (grpc_stdio_pb2, "grpc_stdio.proto"), # Changed to basename
+    ]
 
-    if not grpc_controller_pb2.DESCRIPTOR._USE_C_DESCRIPTORS:
-        assert "_EMPTY" in grpc_controller_pb2._globals
-        assert "_GRPCCONTROLLER" in grpc_controller_pb2._globals
-
-    if not grpc_stdio_pb2.DESCRIPTOR._USE_C_DESCRIPTORS:
-        assert "_STDIODATA" in grpc_stdio_pb2._globals
-        assert "_GRPCSTDIO" in grpc_stdio_pb2._globals
+    for module, expected_basename in proto_modules_and_expected_basenames: # Changed variable name
+        descriptor = module.DESCRIPTOR
+        assert descriptor is not None, f"DESCRIPTOR not found in {module.__name__}"
+        
+        # Check basic properties (using basename for name assertion)
+        assert os.path.basename(descriptor.name) == expected_basename, \
+            f"Unexpected descriptor basename for {module.__name__}: got {os.path.basename(descriptor.name)}, expected {expected_basename}"
+        
+        options = descriptor.GetOptions()
+        assert options.HasField("python_package"), \
+            f"python_package option not found for {module.__name__}"
+        assert options.python_package == "pyvider.rpcplugin.protocol", \
+            f"Unexpected python_package for {module.__name__}: {options.python_package}"
+            
+        # Ensure some message types are loaded
+        assert len(descriptor.message_types_by_name) > 0, \
+            f"No message types found in {module.__name__}"
+        
+        # Optionally, check for a specific, known message if applicable and stable
+        if module == grpc_broker_pb2:
+            assert "ConnInfo" in descriptor.message_types_by_name
+        elif module == grpc_controller_pb2:
+            assert "Empty" in descriptor.message_types_by_name
+        elif module == grpc_stdio_pb2:
+            assert "StdioData" in descriptor.message_types_by_name
 
 def test_grpc_stub_creation() -> None:
     """Test creating stubs from gRPC classes."""

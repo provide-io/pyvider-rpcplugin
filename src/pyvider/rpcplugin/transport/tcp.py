@@ -31,6 +31,8 @@ def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
     if len(parts) != 2:
         return False
     _host, port_str = parts
+    if not _host:  # Added check for empty host
+        return False
     return port_str.isdigit()
 
 

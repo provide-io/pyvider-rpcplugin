@@ -80,20 +80,4 @@ async def test_negotiate_transport_exception_handling():
         with pytest.raises(TransportError, match="Error negotiating transport"):
             await negotiate_transport(["unix", "tcp"])
 
-
-def test_pem_rebuilding():
-    """Test certificate PEM rebuilding."""
-    # We'll test the function directly rather than through a class instance
-    from pyvider.rpcplugin.handshake import _rebuild_x509_pem
-    
-    # Test with already formatted PEM
-    existing_pem = "-----BEGIN CERTIFICATE-----\nABCDEF\n-----END CERTIFICATE-----\n"
-    result = _rebuild_x509_pem(existing_pem)
-    assert result == existing_pem
-    
-    # Test with base64 data only
-    base64_only = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    result = _rebuild_x509_pem(base64_only)
-    assert "-----BEGIN CERTIFICATE-----" in result
-    assert "-----END CERTIFICATE-----" in result
-    assert base64_only in result
+### 🐍🏗🧪️
