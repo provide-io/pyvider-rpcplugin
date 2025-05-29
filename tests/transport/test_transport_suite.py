@@ -1,4 +1,5 @@
 #
+#
 # tests/test_transport_suite.py
 #
 
@@ -8,6 +9,8 @@ import socket
 import tempfile
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
+from pathlib import Path # Added import
+import uuid # Added import
 
 import pytest
 import pytest_asyncio
@@ -83,28 +86,25 @@ def temp_sock_dir():
         yield tmpdir
 
 @pytest_asyncio.fixture(scope="function")
-async def transport_factory(request, managed_unix_socket_path: str): # Added managed_unix_socket_path
+async def transport_factory(request, tmp_path: Path): # Use tmp_path
     """Factory fixture for creating isolated transport instances."""
-    created_transports = [] # Renamed to avoid confusion with the create function
+    created_transports = [] 
 
     async def create(transport_type: str, **kwargs) -> TransportT:
         transport: TransportT
         if transport_type == "unix":
-            # Use managed_unix_socket_path instead of manual path generation
-            # The managed_unix_socket_path fixture provides a unique, clean path for each test function
-            # that requests transport_factory. If a test needs multiple unix transports via this
-            # factory in a single test run, managed_unix_socket_path would provide the *same* path.
-            # This implies that if a test needs two separate unix transports, it should either
-            # call managed_unix_socket_path twice (not possible directly in this factory pattern for a single call to create)
-            # or this factory needs to be adjusted. For now, assuming one unix path per factory use is okay,
-            # or that the kwargs might override the path if multiple are needed.
-            # For a general factory, it might be better if it could generate multiple unique paths if called multiple times
-            # for "unix". However, the fixture `managed_unix_socket_path` is function-scoped.
-            # A single test using transport_factory multiple times for "unix" will get the same path from `managed_unix_socket_path`.
-            # This change makes the factory simpler but potentially less flexible if a single test needs *multiple different* unix sockets from it.
-            # Given the prompt, this is the direct interpretation.
-            socket_path_to_use = managed_unix_socket_path 
-            transport = UnixSocketTransport(path=socket_path_to_use, **kwargs)
+            # Generate a unique path within tmp_path for each Unix transport created
+            socket_path_to_use = tmp_path / f"pyv_tf_{uuid.uuid4().hex[:8]}.sock" # "tf" for transport_factory
+            
+            # Ensure it doesn't exist (it shouldn't if uuid is unique enough for the scope)
+            if os.path.exists(socket_path_to_use):
+                try:
+                    os.unlink(socket_path_to_use)
+                except OSError as e:
+                    logger.warning(f"transport_factory: Could not unlink pre-existing socket {socket_path_to_use}: {e}")
+                    # Depending on strictness, could raise here or let UnixSocketTransport handle it
+
+            transport = UnixSocketTransport(path=str(socket_path_to_use), **kwargs)
         else: # TCP
             transport = TCPSocketTransport(**kwargs)
         
@@ -113,12 +113,17 @@ async def transport_factory(request, managed_unix_socket_path: str): # Added man
 
     yield create
 
-    # Thorough cleanup: close all created transports
-    # The managed_unix_socket_path fixture will handle the cleanup of its specific path.
-    # This loop just ensures transport.close() is called.
     for transport_instance in created_transports:
         try:
             await transport_instance.close()
+            if isinstance(transport_instance, UnixSocketTransport) and transport_instance.path:
+                if os.path.exists(transport_instance.path):
+                    try:
+                        # Attempt chmod for robustness, similar to managed_unix_socket_path
+                        os.chmod(transport_instance.path, 0o777)
+                        os.unlink(transport_instance.path)
+                    except OSError as e:
+                        logger.warning(f"transport_factory: Error unlinking socket {transport_instance.path}: {e}")
         except Exception as e:
             logger.error(f"Error during transport_factory cleanup of {transport_instance}: {e}")
 
