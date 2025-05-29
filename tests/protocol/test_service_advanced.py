@@ -105,7 +105,7 @@ async def test_stdio_stream_cancellation_handling() -> None:
 
     # Trigger the callback to simulate cancellation
     if callback:
-        callback()
+        callback(MagicMock()) # Pass a mock Call object
 
     # Wait for the task to complete
     await asyncio.wait_for(stream_task, timeout=1.0)

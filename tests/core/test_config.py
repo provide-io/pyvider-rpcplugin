@@ -561,8 +561,11 @@ def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists,
 @patch('yaml.safe_load')
 def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists, mock_global_config_instance):
     '''Test loading configuration from a .yaml file.'''
+    assert YAML_AVAILABLE, "PyYAML must be installed for this test" # Ensure yaml was imported
     mock_path_exists.return_value = True
-    yaml_data = {"MY_YAML_VAR": "yaml_value", "PLUGIN_BOOL_VAR": True, "PLUGIN_NESTED_VAR": {"sub_key": "sub_val"}}
+    
+    nested_dict_val = {"sub_key": "sub_val"}
+    yaml_data = {"MY_YAML_VAR": "yaml_value", "PLUGIN_BOOL_VAR": True, "PLUGIN_NESTED_VAR": nested_dict_val}
     mock_yaml_load.return_value = yaml_data
 
     original_environ = os.environ.copy()
@@ -579,7 +582,11 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists,
 
         assert os.environ["MY_YAML_VAR"] == "yaml_value"
         assert os.environ["PLUGIN_BOOL_VAR"] == "True"
-        assert os.environ["PLUGIN_NESTED_VAR"] == "{'sub_key': 'sub_val'}"
+        
+        # Calculate the expected environment variable value for the nested dictionary
+        # The load_config_from_file uses yaml.dump for dict/list values from yaml/json.
+        expected_env_value_for_nested = yaml.dump(nested_dict_val).strip()
+        assert os.environ["PLUGIN_NESTED_VAR"] == expected_env_value_for_nested
 
         assert mock_global_config_instance.method_calls[0][0] == 'config='
     finally:

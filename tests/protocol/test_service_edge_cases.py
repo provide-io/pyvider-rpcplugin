@@ -16,6 +16,23 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from google.protobuf.empty_pb2 import Empty
 
 
+# Definition for MockRequestIterator, needed by test_broker_exception_handling_line95
+class MockRequestIterator:
+    def __init__(self, requests) -> None:
+        self.requests = requests
+        self.index = 0
+
+    def __aiter__(self) -> "MockRequestIterator":
+        return self
+
+    async def __anext__(self):
+        if self.index < len(self.requests):
+            request = self.requests[self.index]
+            self.index += 1
+            return request
+        raise StopAsyncIteration
+
+
 @pytest.mark.asyncio
 async def test_broker_service_subchannel_open_failure() -> None:
     """Test broker service handling of subchannel open failure."""
@@ -139,45 +156,37 @@ async def test_stdio_service_backpressure() -> None:
     for i, item in enumerate(items):
         assert item.data == f"test line {i}".encode()
 
+from unittest.mock import AsyncMock # Ensure this is imported
+
 @pytest.mark.asyncio
 async def test_broker_exception_handling_line95() -> None:
-    """Test exception handling in broker.StartStream."""
+    """Test exception handling in broker.StartStream when subchannel.open() fails."""
     broker = GRPCBrokerService()
 
-    # Create a mock that raises an exception when accessed
-    class RaisingDict(dict):
-        def __getitem__(self, key):
-            raise Exception("Test exception")
+    request = ConnInfo(
+        service_id=1,
+        network="tcp",
+        address="localhost:12345",
+        knock=ConnInfo.Knock(knock=True, ack=False, error="")
+    )
     
-    # Replace _subchannels with our raising dict
-    original_subchannels = broker._subchannels
-    broker._subchannels = RaisingDict()
+    # MockRequestIterator should already be defined in this file from a previous fix
+    iterator = MockRequestIterator([request]) 
+    context = MagicMock()
 
-    try:
-        # Create request with knock=True to trigger the exception path
-        request = ConnInfo(
-            service_id=1,
-            network="tcp",
-            address="localhost:12345",
-            knock=ConnInfo.Knock(knock=True, ack=False, error="")
-        )
+    # Patch SubchannelConnection.open for all instances created within this context
+    # Make it an AsyncMock because it's an async method.
+    with patch('pyvider.rpcplugin.protocol.service.SubchannelConnection.open', new_callable=AsyncMock) as mock_subchannel_open:
+        mock_subchannel_open.side_effect = Exception("Test exception from open")
 
-        # Create iterator and context
-        iterator = MockRequestIterator([request])
-        context = MagicMock()
-
-        # Process stream and collect responses
         responses = []
         async for response in broker.StartStream(iterator, context):
             responses.append(response)
 
-        # Verify the response has an error
-        assert len(responses) == 1
-        assert responses[0].knock.ack is False
-        assert "error" in responses[0].knock.error
-        assert "Test exception" in responses[0].knock.error
-    finally:
-        # Restore original _subchannels
-        broker._subchannels = original_subchannels
+    assert len(responses) == 1, "Should receive one error response"
+    assert responses[0].knock.ack is False, "Acknowledgement should be False on error"
+    assert "error" in responses[0].knock.error, "Error message should be present"
+    # Check for part of the specific exception message
+    assert "Test exception from open" in responses[0].knock.error, "Specific error message not found"
 
 ### 🐍🏗🧪️

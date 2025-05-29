@@ -1,4 +1,4 @@
-# pyvider/rpcplugin/tests/server/test_server_transport.py
+# tests/server/test_server_transport.py
 
 import os
 import platform
@@ -14,12 +14,15 @@ from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_success_insecure(
-    unique_socket_path,
+    managed_unix_socket_path, # Changed
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
-    test_transport = UnixSocketTransport()
+    # The managed_unix_socket_path will be used by the transport if not explicitly passed
+    # For this test, we want the transport to pick its own path initially if not given one,
+    # or use the one we give it. Let's assume the test implies the transport should use a specific path.
+    test_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -59,24 +62,26 @@ async def test_setup_server_unix_no_socket(
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_bad_permissions(
-    tmp_path,
-    unique_socket_path,
+    tmp_path, # tmp_path might still be useful for other temporary files if needed by test setup
+    managed_unix_socket_path, # Changed
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test server behavior with incorrect socket permissions."""
-    # Create a unique socket path
-    sock_path = unique_socket_path
+    # Use the managed socket path
+    sock_path = managed_unix_socket_path
 
-    # Create the socket file with restricted permissions
+    # Create the socket file (as a file, not a dir) at the managed path with restricted permissions
+    # The managed_unix_socket_path fixture ensures the path itself is valid and will be cleaned.
+    # We are creating a file at this path for the purpose of this test.
     with open(sock_path, "w") as f:
         f.write("")
     os.chmod(sock_path, 0o000)  # No permissions
 
     # Create server with mocked transport
     transport = mock.AsyncMock()
-    transport.path = sock_path
+    transport.path = sock_path # Mock transport uses this path
     transport.listen = mock.AsyncMock(return_value=sock_path)
 
     server = RPCPluginServer(
@@ -97,26 +102,26 @@ async def test_setup_server_unix_bad_permissions(
             with pytest.raises(TransportError, match="has incorrect permissions"):
                 await server.serve()
     finally:
-        # Ensure we can clean up the socket file
+        # Cleanup of sock_path is handled by managed_unix_socket_path fixture.
+        # However, we manually chmodded it, so ensure it's writable for the fixture.
         if os.path.exists(sock_path):
             os.chmod(sock_path, 0o770)
-            os.unlink(sock_path)
+            # The fixture will unlink.
 
 
 ###########
 
 @pytest.mark.skip
 async def test_setup_server_unix_success_secure(
-    unique_socket_path,
+    managed_unix_socket_path, # Changed
     client_cert,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test secure Unix socket server setup with isolated path."""
-    # Create a unique socket path within the test's tmp_path
-    #sock_path = str(tmp_path / "secure_socket.sock")
-    sock_path = unique_socket_path
+    # Use the managed socket path
+    sock_path = managed_unix_socket_path
 
     # Create a fresh transport that won't conflict with other tests
     test_transport = UnixSocketTransport(path=sock_path)
@@ -156,13 +161,13 @@ async def test_setup_server_unix_success_secure(
 @pytest.mark.asyncio
 async def test_setup_server_exception_1(
     monkeypatch,
-    unique_socket_path,
+    managed_unix_socket_path, # Changed
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     # Use a unique socket path for this test
-    transport = UnixSocketTransport(path=unique_socket_path)
+    transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -175,7 +180,7 @@ async def test_setup_server_exception_1(
     await transport.listen()
     
     # Create a new transport with the same path, which should fail
-    transport2 = UnixSocketTransport(path=unique_socket_path)
+    transport2 = UnixSocketTransport(path=managed_unix_socket_path)
     
     with pytest.raises(TransportError, match="already in use"):
         await transport2.listen()
@@ -186,14 +191,14 @@ async def test_setup_server_exception_1(
 @pytest.mark.asyncio
 async def test_setup_server_exception_2(
     monkeypatch,
-    unique_socket_path,
+    managed_unix_socket_path, # Changed
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
     """Test properly handling exceptions in server setup."""
-    # Create an isolated transport using tmp_path
-    socket_path = unique_socket_path
+    # Use the managed socket path
+    socket_path = managed_unix_socket_path
     transport = UnixSocketTransport(path=socket_path)
 
     server = RPCPluginServer(
@@ -226,7 +231,7 @@ async def test_setup_server_exception_2(
 
 @pytest.mark.skip
 async def test_setup_server_exception_3(
-    unique_socket_path,
+    managed_unix_socket_path, # Changed
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -234,9 +239,8 @@ async def test_setup_server_exception_3(
 
 ################################################################################
     """Test properly handling exceptions in server setup."""
-    # Create an isolated transport using tmp_path
-    #sock_path = str(tmp_path / "exception_test.sock")
-    sock_path = unique_socket_path
+    # Use the managed socket path
+    sock_path = managed_unix_socket_path
     transport = UnixSocketTransport(path=sock_path)
 
     server = RPCPluginServer(
@@ -310,7 +314,7 @@ async def test_setup_server_unix_no_socket_linux_1(
 @pytest.mark.skip
 @pytest.mark.parametrize("platform_name", ["macos", "linux"])
 async def test_setup_server_unix_no_socket_2(
-    unique_socket_path,
+    managed_unix_socket_path, # Changed
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
@@ -325,11 +329,13 @@ async def test_setup_server_unix_no_socket_2(
     if (platform_name == "macos" and not is_macos) or (platform_name == "linux" and not is_linux):
         pytest.skip(f"Skipping {platform_name} test on {current_platform}")
 
-    # Create a path that definitely doesn't exist
-    nonexistent_path = f"{unique_socket_path}/nosock.sock"
-
-    # Create directories but not the socket file
-    os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
+    # Create a path that definitely doesn't exist, in the same temp area as the managed path
+    # managed_unix_socket_path is like .../sockets_pvXYZ/somehash.sock
+    # We want .../sockets_pvXYZ/nosock.sock
+    nonexistent_path = os.path.join(os.path.dirname(managed_unix_socket_path), "nosock.sock")
+    
+    # The directory os.path.dirname(managed_unix_socket_path) is created by the fixture.
+    # So, no need for os.makedirs here.
 
     transport = UnixSocketTransport(path=nonexistent_path)
 
@@ -364,7 +370,6 @@ async def test_setup_server_unix_no_socket_2(
     with mock.patch.object(dummy_server, "add_secure_port", mock_add_socket_port):
         with pytest.raises((TransportError, RuntimeError), match=error_pattern):
             await server._setup_server("client_cert")
-### 🐍🏗🧪️
 
 @pytest.mark.asyncio
 async def test_setup_server_tcp_success(
@@ -401,3 +406,5 @@ async def test_setup_server_tcp_success(
     #    "127.0.0.1" in port and not port.startswith("unix:")
     #    for port in server.ports
     #)
+
+### 🐍🏗🧪️

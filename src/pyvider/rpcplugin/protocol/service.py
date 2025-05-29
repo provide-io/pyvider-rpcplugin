@@ -39,7 +39,7 @@ class SubchannelConnection:
     """
     conn_id: int = field()
     address: str = field()
-    is_open: bool = field(default=False, init=False) # Keep init=False if state managed externally
+    is_open: bool = field(init=False) # Restored as per original fix plan
 
     def __init__(self, conn_id: int, address: str) -> None:
         self.conn_id = conn_id

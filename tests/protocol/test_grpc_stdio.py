@@ -1,8 +1,9 @@
 
-# tests/protocol/test_grpc_compatibility.py
+# tests/protocol/test_grpc_stdio.py
 
 import pytest
 import importlib
+import os # Added import
 import grpc
 from unittest.mock import patch, MagicMock
 
@@ -75,15 +76,21 @@ async def test_grpc_stdio_servicer_methods() -> None:
 
 @pytest.mark.asyncio
 async def test_stdio_pb2_descriptor() -> None:
-    """Direct test for grpc_stdio_pb2 descriptor options (lines 32-38)."""
+    """Test that grpc_stdio_pb2.DESCRIPTOR is available and has expected properties."""
     assert hasattr(grpc_stdio_pb2, "DESCRIPTOR")
-    with patch.object(grpc_stdio_pb2.DESCRIPTOR, "_loaded_options", None), \
-         patch.object(grpc_stdio_pb2.DESCRIPTOR, "_USE_C_DESCRIPTORS", False):
-        importlib.reload(grpc_stdio_pb2)
-    
     descriptor = grpc_stdio_pb2.DESCRIPTOR
+    
+    # Test specific serialized properties / public API
     assert hasattr(descriptor, "message_types_by_name")
     assert "StdioData" in descriptor.message_types_by_name
+    
+    # Ensure it has a name (check basename)
+    assert os.path.basename(descriptor.name) == "grpc_stdio.proto"
+    
+    # Check for a known option if available and stable, e.g. python_package
+    options = descriptor.GetOptions()
+    assert options.HasField("python_package")
+    assert options.python_package == "pyvider.rpcplugin.protocol"
 
 @pytest.mark.asyncio
 async def test_stdio_grpc_version_mismatch() -> None:

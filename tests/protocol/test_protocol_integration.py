@@ -4,6 +4,7 @@
 import asyncio
 import pytest
 import pytest_asyncio
+import attr # Added import
 
 from unittest.mock import patch
 
@@ -11,23 +12,52 @@ import grpc
 from google.protobuf.empty_pb2 import Empty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 
+# Service implementations
 from pyvider.rpcplugin.protocol.service import (
     GRPCStdioService,
-    register_protocol_service,
+    GRPCBrokerService,
+    GRPCControllerService,
+    # register_protocol_service, # Removed
 )
+
+# Stubs for client-side
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
+
+# Servicer adders for server-side
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import add_GRPCStdioServicer_to_server
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import add_GRPCBrokerServicer_to_server
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import add_GRPCControllerServicer_to_server
+
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 
+
+@attr.s(auto_attribs=True, frozen=True)
+class ServerFixtureOutput:
+    server: grpc.aio.Server
+    address: str
+    shutdown_event: asyncio.Event
+    stdio_service: GRPCStdioService
+    broker_service: GRPCBrokerService
+    controller_service: GRPCControllerService
+
+
 @pytest_asyncio.fixture
-async def grpc_server():
+async def grpc_server_output() -> ServerFixtureOutput: # Changed fixture name for clarity
     """Fixture providing a real gRPC server with our services registered."""
     server = grpc.aio.server()
     shutdown_event = asyncio.Event()
 
-    # Register our services
-    register_protocol_service(server, shutdown_event)
+    # Instantiate services
+    stdio_service = GRPCStdioService()
+    broker_service = GRPCBrokerService()
+    controller_service = GRPCControllerService(shutdown_event, stdio_service) # Assuming it needs stdio_service
+
+    # Register services directly
+    add_GRPCStdioServicer_to_server(stdio_service, server)
+    add_GRPCBrokerServicer_to_server(broker_service, server)
+    add_GRPCControllerServicer_to_server(controller_service, server)
 
     # Add an insecure port
     port = server.add_insecure_port('localhost:0')
@@ -36,33 +66,29 @@ async def grpc_server():
     # Start the server
     await server.start()
 
-    yield server, address, shutdown_event
+    yield ServerFixtureOutput(
+        server=server,
+        address=address,
+        shutdown_event=shutdown_event,
+        stdio_service=stdio_service,
+        broker_service=broker_service,
+        controller_service=controller_service,
+    )
 
     # Cleanup
     await server.stop(grace=0.1)
 
 @pytest_asyncio.fixture
-async def grpc_channel(grpc_server):
+async def grpc_channel(grpc_server_output: ServerFixtureOutput): # Changed fixture name
     """Fixture providing a client channel to the gRPC server."""
-    _, address, _ = grpc_server
-    channel = grpc.aio.insecure_channel(address)
+    channel = grpc.aio.insecure_channel(grpc_server_output.address)
     yield channel
     await channel.close()
 
 @pytest.mark.asyncio
-async def test_stdio_integration(grpc_server, grpc_channel) -> None:
+async def test_stdio_integration(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None: # Changed fixture name
     """Integration test for the stdio service."""
-    server, _, _ = grpc_server
-
-    # Extract the stdio service from the server
-    stdio_service = None
-    for handler in server._generic_handlers:
-        if handler.service_name() == 'plugin.GRPCStdio':
-            servicer = handler._method_handlers['StreamStdio']._unary_stream_handler._servicer
-            if isinstance(servicer, GRPCStdioService):
-                stdio_service = servicer
-                break
-
+    stdio_service = grpc_server_output.stdio_service
     assert stdio_service is not None
 
     # Create a stdio stub
@@ -96,7 +122,7 @@ async def test_stdio_integration(grpc_server, grpc_channel) -> None:
     assert results[0].channel != results[1].channel
 
 @pytest.mark.asyncio
-async def test_broker_integration(grpc_server, grpc_channel) -> None:
+async def test_broker_integration(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None: # Changed fixture name
     """Integration test for the broker service."""
     # Create a broker stub
     stub = GRPCBrokerStub(grpc_channel)
@@ -125,9 +151,9 @@ async def test_broker_integration(grpc_server, grpc_channel) -> None:
     await stream.done_writing()
 
 @pytest.mark.skip # the shutdown is killing the actual tests.
-async def test_controller_integration(grpc_server, grpc_channel) -> None:
+async def test_controller_integration(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None: # Changed fixture name
     """Integration test for the controller service."""
-    _, _, shutdown_event = grpc_server
+    shutdown_event = grpc_server_output.shutdown_event
 
     # Create a controller stub
     stub = GRPCControllerStub(grpc_channel)

@@ -45,16 +45,12 @@ async def server_instance(
         rpcplugin_config.set("PLUGIN_TRANSPORTS", "unix")
         rpcplugin_config.get("PLUGIN_CLIENT_CERT")
 
-        # Clean up stale socket files
-        if transport_name == "unix" and os.path.exists(transport.path):
-            os.unlink(transport.path)
-
         # Start the server with mock handler
         server = RPCPluginServer(
             protocol=mock_server_protocol,
             handler=mock_server_handler,
             config=mock_server_config,
-            transport=mock_server_transport,
+            transport=mock_server_transport, # This transport's path is managed by managed_unix_socket_path
         )
         asyncio.create_task(server.serve())
 
@@ -65,8 +61,9 @@ async def server_instance(
     finally:
         # Cleanup
         await server.stop()
-        if transport_name == "unix" and os.path.exists(transport.path):
-            os.unlink(transport.path)
+        # Socket cleanup is now fully handled by the managed_unix_socket_path fixture
+        # which is used by the unix_transport fixture, which mock_server_transport might be.
+        # No need to check transport_name or os.path.exists here.
 
 
 @pytest_asyncio.fixture(scope="function")

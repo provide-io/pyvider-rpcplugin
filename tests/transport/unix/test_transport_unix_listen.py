@@ -14,8 +14,8 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 from tests.fixtures import *
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_and_connect(unique_socket_path) -> None:
-    transport = UnixSocketTransport(path=unique_socket_path)
+async def test_unix_socket_listen_and_connect(managed_unix_socket_path) -> None:
+    transport = UnixSocketTransport(path=managed_unix_socket_path)
     # Validate the transport instance
     assert isinstance(transport, UnixSocketTransport), (
         f"Expected UnixSocketTransport, got {type(transport)}"
@@ -23,8 +23,8 @@ async def test_unix_socket_listen_and_connect(unique_socket_path) -> None:
 
     # Listen on the unique socket
     endpoint = await transport.listen()
-    assert endpoint == unique_socket_path, (
-        f"Expected {unique_socket_path}, got {endpoint}"
+    assert endpoint == managed_unix_socket_path, (
+        f"Expected {managed_unix_socket_path}, got {endpoint}"
     )
 
     # Client transport setup and connect
@@ -57,11 +57,11 @@ async def test_unix_socket_listen_path_creation_failure() -> None:
         os.rmdir(temp_dir)
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_socket_in_use(unique_socket_path) -> None:
+async def test_unix_socket_listen_socket_in_use(managed_unix_socket_path) -> None:
 
     """Test Unix socket transport handling of a socket already in use."""
     # Ensure the path is a string
-    socket_path = str(unique_socket_path)
+    socket_path = str(managed_unix_socket_path)
 
     transport1 = UnixSocketTransport(path=socket_path)
     await transport1.listen()
@@ -86,14 +86,14 @@ async def test_unix_listen_socket_in_use(monkeypatch) -> None:
         await transport.listen()
 
 @pytest.mark.asyncio
-async def test_unix_socket_listen_unlink_file_not_found(unique_socket_path) -> None:
-    transport = UnixSocketTransport(path=unique_socket_path)
+async def test_unix_socket_listen_unlink_file_not_found(managed_unix_socket_path) -> None:
+    transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     try:
         # Mock `os.unlink` to raise FileNotFoundError
         with patch("os.unlink", side_effect=FileNotFoundError):
             endpoint = await transport.listen()
-            assert endpoint == unique_socket_path, (
+            assert endpoint == managed_unix_socket_path, (
                 "Socket should be initialized despite missing file."
             )
     finally:
@@ -146,4 +146,4 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
     with pytest.raises(TransportError, match="Failed to remove"):
         await transport.listen()
 
-# 🐍🏗🧪️
+### 🐍🏗🧪️

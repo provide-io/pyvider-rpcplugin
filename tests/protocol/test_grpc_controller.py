@@ -3,6 +3,7 @@
 
 import pytest
 import importlib
+import os # Added import
 import grpc
 from unittest.mock import patch, MagicMock
 
@@ -60,15 +61,21 @@ async def test_grpc_controller_servicer_methods() -> None:
 
 @pytest.mark.asyncio
 async def test_controller_pb2_descriptor() -> None:
-    """Direct test for grpc_controller_pb2 descriptor options (lines 30-34)."""
+    """Test that grpc_controller_pb2.DESCRIPTOR is available and has expected properties."""
     assert hasattr(grpc_controller_pb2, "DESCRIPTOR")
-    with patch.object(grpc_controller_pb2.DESCRIPTOR, "_loaded_options", None), \
-         patch.object(grpc_controller_pb2.DESCRIPTOR, "_USE_C_DESCRIPTORS", False):
-        importlib.reload(grpc_controller_pb2)
-    
     descriptor = grpc_controller_pb2.DESCRIPTOR
+    
+    # Test specific serialized properties / public API
     assert hasattr(descriptor, "message_types_by_name")
-    assert "Empty" in descriptor.message_types_by_name
+    assert "Empty" in descriptor.message_types_by_name # Assuming Empty is a message type
+    
+    # Ensure it has a name (check basename)
+    assert os.path.basename(descriptor.name) == "grpc_controller.proto"
+    
+    # Check for a known option if available and stable, e.g. python_package
+    options = descriptor.GetOptions()
+    assert options.HasField("python_package")
+    assert options.python_package == "pyvider.rpcplugin.protocol"
 
 @pytest.mark.asyncio
 async def test_controller_grpc_version_mismatch() -> None:
