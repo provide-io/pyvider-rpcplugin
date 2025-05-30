@@ -141,10 +141,10 @@ async def test_serve_error(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    unique_socket_path,  # Use unique path
+    managed_unix_socket_path,  # Use unique path
 ) -> None:
     # Create fresh transport with unique path
-    test_transport = UnixSocketTransport(path=unique_socket_path)
+    test_transport = UnixSocketTransport(path=managed_unix_socket_path)
     
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -177,10 +177,10 @@ async def test_wait_for_server_ready(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    unique_socket_path,  # Use unique path
+    managed_unix_socket_path,  # Use unique path
 ) -> None:
     # Create fresh transport with unique path
-    test_transport = UnixSocketTransport(path=unique_socket_path)
+    test_transport = UnixSocketTransport(path=managed_unix_socket_path)
     
     # Don't actually listen on the socket here
     
@@ -237,10 +237,10 @@ async def test_stop_handles_exceptions(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
-    unique_socket_path,  # Use a unique path fixture
+    managed_unix_socket_path,  # Use a unique path fixture
 ) -> None:
     # Create a fresh transport with unique path for this test
-    dummy_transport = UnixSocketTransport(path=unique_socket_path)
+    dummy_transport = UnixSocketTransport(path=managed_unix_socket_path)
     
     # Don't actually listen on the transport to avoid socket creation
     # We're only testing exception handling during stop()

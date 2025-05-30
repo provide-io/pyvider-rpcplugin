@@ -1,15 +1,8 @@
 # tests/fixtures/mocks.py
-#
-# Copyright (C) 2024 - All Rights Reserved
-#
-# This file is part of the PyVider RPCPlugin project.
-#
-# Any unauthorized use, reproduction, or distribution of this software
-# is strictly prohibited without the express written permission of the copyright holder.
-#
 
-import asyncio # Added for asyncio.sleep
-import os # Added for os.path and os.chmod/unlink in mock_server_transport_unix
+
+import asyncio
+import os
 import tempfile
 
 from contextlib import suppress
@@ -29,7 +22,7 @@ from pyvider.rpcplugin.transport import (
 
 from pyvider.rpcplugin.types import TransportT, HandlerT
 
-from ..fixtures import * # This might be problematic if fixtures isn't structured as a package. Assuming it's fine.
+from ..fixtures import *
 from typing import Tuple
 
 
@@ -91,127 +84,89 @@ class MockBytesIO:
         self.string_io.flush()
 
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
-async def mock_server_transport(request) -> TransportT:
+async def mock_server_transport(request, managed_unix_socket_path: str) -> TransportT: # Added managed_unix_socket_path
     transport_name = request.param
-    transport = None # Initialize transport to None
+    transport = None # Initialize transport
 
-    # tempfile.NamedTemporaryFile creates a file, which is good for UnixSocketTransport path
-    # For TCP, it's not directly used but doesn't harm.
-    # Ensure delete=False if UnixSocketTransport needs path after context, or manage path string.
-    # For this fixture, path is only used if transport_name is "unix".
-    # Let's refine socket_path logic for clarity if it's only for unix.
-    socket_path = None
-    if transport_name == "unix":
-        with tempfile.NamedTemporaryFile(delete=False) as tmp: # delete=False, UnixSocketTransport will delete
-            socket_path = tmp.name
-    
     logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
-    if socket_path:
-        logger.debug(f"🧪🔌🐛 socket_path for unix: {socket_path}")
 
-    try:
-        if transport_name == "tcp":
-            transport = TCPSocketTransport() # OS picks a free port
-        elif transport_name == "unix":
-            if not socket_path: # Should have been created above
-                 raise RuntimeError("Socket path not created for Unix transport")
-            transport = UnixSocketTransport(path=socket_path)
-        else:
-            raise ValueError(f"Unknown transport: {transport_name}")
-        
+    if transport_name == "tcp":
+        # For TCP, we don't use managed_unix_socket_path.
+        # The original logic for TCP can remain.
+        transport = TCPSocketTransport()
+        logger.debug("🧪🔌🐛 Providing TCPSocketTransport")
         yield transport
+    elif transport_name == "unix":
+        # Use the path from managed_unix_socket_path fixture
+        logger.debug(f"🧪🔌🐛 Providing UnixSocketTransport with path: {managed_unix_socket_path}")
+        transport = UnixSocketTransport(path=managed_unix_socket_path)
+        yield transport
+    else:
+        # This case should ideally not be reached if params are correct
+        raise ValueError(f"Unknown transport parameter: {transport_name}")
 
-    except Exception as e:
-        err_msg = f"Could not open {transport_name.upper()} Socket Transport"
-        if transport:
-            err_msg += f": {transport} (Error: {e})"
-        elif socket_path and transport_name == "unix":
-             err_msg += f" for path {socket_path} (Error: {e})"
-        else:
-            err_msg += f" (Instantiation failed: {e})"
-        logger.error(err_msg)
-        raise ValueError(err_msg) from e
-
-    finally:
-        if transport is not None:
-            try:
-                await transport.close()
-                logger.debug(f"🧪🧹 Transport {transport_name} closed for {getattr(transport, 'path', '') or getattr(transport, 'endpoint', '')}")
-            except Exception as close_exc:
-                logger.error(f"🧪❌ Error during mock_server_transport ({transport_name}) cleanup: {close_exc}")
-            await asyncio.sleep(0.1)  # Allow time for resources to be released
-            
-            # Specific cleanup for Unix socket file if it wasn't deleted by transport.close()
-            if transport_name == "unix" and socket_path and os.path.exists(socket_path):
-                try:
-                    os.unlink(socket_path)
-                    logger.debug(f"🧪🧹 Manually unlinked stale socket file: {socket_path}")
-                except OSError as e:
-                    logger.error(f"🧪❌ Error unlinking stale socket file {socket_path}: {e}")
-
+    # Cleanup is handled after yield returns for the specific yielded transport
+    if transport:
+        logger.debug(f"🧪🔌🐛 Cleaning up transport {transport_name} for path/endpoint: {getattr(transport, 'path', getattr(transport, 'endpoint', 'N/A'))}")
+        try:
+            await transport.close()
+        except Exception as e:
+            logger.error(f"🧪🔌🐛 Error during transport.close(): {e}")
+        # Short sleep to help ensure resources are released, especially sockets.
+        await asyncio.sleep(0.1)
+    else:
+        logger.warning(f"🧪🔌🐛 Transport was None for {transport_name}, no cleanup performed by mock_server_transport.")
 
 @pytest_asyncio.fixture
 async def mock_server_transport_tcp() -> TransportT:
-    transport = None  # Initialize transport to None
     try:
-        # TCPSocketTransport uses port=0 by default, so OS picks a free port.
-        transport = TCPSocketTransport() 
+        transport = TCPSocketTransport()
         yield transport
-    except Exception as e:
-        err_msg = "Could not open a TCP Socket Transport"
-        if transport: # Check if transport was instantiated
-            err_msg += f": {transport} (Error: {e})"
-        else:
-            err_msg += f" (instantiation failed: {e})"
-        # Consider raising a more specific error or just re-raising e
-        logger.error(err_msg) # Log the error
-        raise ValueError(err_msg) from e
+    except Exception:
+        raise ValueError(f"Could not open a TCP Socket Transport: {transport}")
     finally:
-        if transport: # Only close if transport was successfully created and assigned
-            try:
-                await transport.close()
-                logger.debug("🧪🧹 TCP Transport closed.")
-            except Exception as close_exc:
-                # Log or handle close error, but don't let it mask original exception
-                logger.error(f"🧪❌ Error during mock_server_transport_tcp cleanup: {close_exc}")
-            await asyncio.sleep(0.1)  # Allow time for resources to be released
+        # Clean up
+        await transport.close()
+        await asyncio.sleep(0.1)  # Allow time for resources to be released
 
+# @pytest_asyncio.fixture
+# async def mock_server_transport_unix() -> TransportT:
+#     with tempfile.NamedTemporaryFile(delete=True) as tmp:
+#         socket_path = tmp.name
+#     try:
+#         transport = UnixSocketTransport(path=socket_path)
+#
+#     except Exception:
+#         raise ValueError(f"Could not open a Unix : {transport}")
+#
+#     return transport
 
 @pytest_asyncio.fixture(scope="function")
 async def mock_server_transport_unix(unique_socket_path) -> TransportT:
     """Fixture providing a properly configured Unix transport with unique path."""
     transport = UnixSocketTransport(path=unique_socket_path)
+
     try:
         # Early startup to verify it works
-        # await transport.listen() # listen() is now part of test logic, not fixture setup for this one
+        await transport.listen()
         logger.debug(f"🧪✅ Unix transport initialized at {unique_socket_path}")
         yield transport
-    except Exception as e:
-        logger.error(f"🧪❌ Error initializing Unix transport at {unique_socket_path}: {e}")
-        raise
     finally:
         # Ensure proper cleanup
         try:
             await transport.close()
             logger.debug(f"🧪🧹 Transport closed for {unique_socket_path}")
 
-            # Double-check for stale socket file, even if transport.close() should handle it
+            # Double-check for stale socket file
             if os.path.exists(unique_socket_path):
-                logger.warning(f"🧪⚠️ Stale socket file found after close: {unique_socket_path}. Attempting removal.")
-                try:
-                    current_mode = os.stat(unique_socket_path).st_mode
-                    if not (current_mode & 0o200): # Check if write permission is missing for user
-                        os.chmod(unique_socket_path, current_mode | 0o200) # Add user write permission
-                    os.unlink(unique_socket_path)
-                    logger.debug(f"🧪🧹 Manually removed stale socket file {unique_socket_path}")
-                except OSError as unlink_e:
-                     logger.error(f"🧪❌ Error removing stale socket file {unique_socket_path}: {unlink_e}")
-
+                os.chmod(unique_socket_path, 0o770)
+                os.unlink(unique_socket_path)
+                logger.debug(f"🧪🧹 Manually removed socket file {unique_socket_path}")
         except Exception as e:
-            logger.error(f"🧪❌ Error cleaning up Unix transport for {unique_socket_path}: {e}")
-        await asyncio.sleep(0.1) # Allow time for resources to be released
+            logger.error(f"🧪❌ Error cleaning transport: {e}")
 
 
+# @pytest_asyncio.fixture(scope="module", autouse=True)
 @pytest.fixture(scope="function")
 def mock_server_handler() -> HandlerT:
     """Fixture to provide a mock hadler instance."""
@@ -236,7 +191,7 @@ def mock_server_config():
     # Set default test values
     config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     config.set("PLUGIN_MAGIC_COOKIE_VALUE", "hello")
-    config.set("PLUGIN_MAGIC_COOKIE", "hello") # Duplicate of _VALUE, kept for compatibility if used elsewhere
+    config.set("PLUGIN_MAGIC_COOKIE", "hello")
     config.set("PLUGIN_PROTOCOL_VERSIONS", [1, 2, 3, 4, 5, 6, 7])
     config.set("PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
 
@@ -245,25 +200,17 @@ def mock_server_config():
 
 @pytest_asyncio.fixture
 async def server_with_mocks(
-    mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport # This now uses the parameterized one
+    mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
 ):
     """Fixture to provide a server instance with mocks."""
-    # Determine transport_name for logging/clarity if needed
-    transport_name = "tcp" if isinstance(mock_server_transport, TCPSocketTransport) else "unix"
-    logger.debug(f"🧪🔧 Creating server_with_mocks with {transport_name} transport.")
-
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
-        transport=mock_server_transport, # Pass the actual transport instance from the fixture
+        transport=mock_server_transport,
     )
     try:
         yield server
     finally:
-        logger.debug(f"🧪🧹 Stopping server_with_mocks ({transport_name} transport)...")
-        with suppress(Exception): # Suppress errors during stop, as test might have failed earlier
+        with suppress(Exception):
             await server.stop()
-        logger.debug(f"🧪🧹 Server_with_mocks ({transport_name} transport) stopped.")
-
-# 🐍🏗️🔌

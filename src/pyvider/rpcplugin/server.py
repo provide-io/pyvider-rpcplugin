@@ -5,6 +5,7 @@
 import asyncio
 import os
 import signal
+import socket # Added: Missing import
 import stat
 import sys
 import traceback
@@ -274,7 +275,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             creds = grpc.ssl_server_credentials(
                 private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
                 root_certificates=client_cert_bytes,
-                require_client_auth=False,
+                require_client_auth=True,
             )
             logger.debug("🛎️ Server TLS credentials created with mTLS enabled.")
             return creds
@@ -438,6 +439,12 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 )
                 self._port = port
                 logger.debug(f"🛎️ Bound to TCP port: {port}.")
+                # Ensure the transport's endpoint is updated if a dynamic port was used
+                if hasattr(self._transport, 'host') and hasattr(self._transport, 'port'):
+                    if self._transport.port == 0 or self._transport.port is None: # Dynamic port
+                        self._transport.port = port
+                        self._transport.endpoint = f"{self._transport.host}:{port}"
+                        logger.debug(f"🛎️ Transport endpoint updated to: {self._transport.endpoint}")
             await self._server.start()
             logger.debug("🛎️ gRPC server started successfully.")
         except Exception as e:
@@ -455,7 +462,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     raise TransportError(error_msg)
                 mode = os.stat(self._transport.path).st_mode
                 if not (
-                    mode & stat.S_IRWXU and mode & stat.S_IRWXG
+                    mode & stat.S_IRWXU and mode & stat.S_IRWXG and mode & stat.S_IRWXO
                 ):
                     error_msg = (
                         f"Socket file {self._transport.path} has incorrect permissions."

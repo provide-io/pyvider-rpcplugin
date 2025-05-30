@@ -16,6 +16,9 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.base import RPCPluginTransport as BaseTransportT
 
+# Ensure Certificate is available for type hinting, and rpcplugin_config for manipulation
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.crypto.certificate import Certificate 
 from tests.fixtures import *
 
 # Define TransportFactoryType
@@ -127,9 +130,12 @@ async def rpc_server(server_transport, server_protocol, server_handler) -> Async
 # --- Test Functions ---
 
 @pytest.mark.asyncio
-async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transport_fixture, socket_monitor):
+async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transport_fixture, socket_monitor, dev_root_ca: Certificate):
     """Test server starts listening and shuts down cleanly."""
     transport_type, _, endpoint = transport_fixture
+
+    original_client_cert_config = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+    rpcplugin_config.set("PLUGIN_CLIENT_CERT", dev_root_ca.cert)
 
     # Create a socket monitor appropriate for the transport type
     monitor = None
@@ -167,6 +173,8 @@ async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transpor
          server_task.cancel()
          await asyncio.gather(server_task, return_exceptions=True)
          pytest.fail(f"Server readiness check failed for {transport_type}: {e}")
+    finally: # Ensure config is restored even if the try block has an issue
+        rpcplugin_config.set("PLUGIN_CLIENT_CERT", original_client_cert_config)
 
     logger.info("Requesting server shutdown...")
     await rpc_server.stop() # Request graceful shutdown
@@ -193,6 +201,8 @@ async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transpor
         sock.close()
 
     logger.info("Server shutdown confirmed.")
+    # Restore original config in a finally block to ensure it always runs - MOVED TO FINALLY OF THE TRY
+    # rpcplugin_config.set("PLUGIN_CLIENT_CERT", original_client_cert_config) # Moved
 
 
 @pytest.mark.asyncio
@@ -228,9 +238,12 @@ async def test_connection_refused(transport_fixture):
 
 
 @pytest.mark.asyncio
-async def test_basic_client_server_connect_disconnect(rpc_server, transport_fixture):
+async def test_basic_client_server_connect_disconnect(rpc_server, transport_fixture, dev_root_ca: Certificate):
     """Test a client connecting to and disconnecting from a running server."""
     transport_type, client_factory, endpoint = transport_fixture
+
+    original_client_cert_config = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+    rpcplugin_config.set("PLUGIN_CLIENT_CERT", dev_root_ca.cert)
 
     logger.info(f"Testing connect/disconnect: Type={transport_type}, Endpoint={endpoint}")
     server_task = asyncio.create_task(rpc_server.serve())
@@ -299,6 +312,8 @@ async def test_basic_client_server_connect_disconnect(rpc_server, transport_fixt
             await rpc_server.stop()
             await asyncio.wait_for(server_task, timeout=5.0)
             logger.info("Server stopped.")
+            # Restore original config in a finally block
+            rpcplugin_config.set("PLUGIN_CLIENT_CERT", original_client_cert_config)
 
 
 @pytest.mark.asyncio
