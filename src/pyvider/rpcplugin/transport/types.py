@@ -21,7 +21,7 @@ Usage:
 """
 
 import asyncio
-from typing import Protocol, TypeVar
+from typing import Protocol, TypeVar, Union, Tuple # Added Union and Tuple
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.tcp import TCPSocketTransport
@@ -31,9 +31,7 @@ TransportT = TypeVar("TransportT", bound=RPCPluginTransport)
 TCPSocketT = TypeVar("TCPSocketT", bound=TCPSocketTransport)
 UnixSocketT = TypeVar("UnixSocketT", bound=UnixSocketTransport)
 
-type TransportType[TCPSocketT: TCPSocketTransport, UnixSocketT: UnixSocketTransport] = (
-    TCPSocketT | UnixSocketT
-)
+TransportType = Union[TCPSocketTransport, UnixSocketTransport]
 
 
 class ConnectionT(Protocol):
@@ -49,7 +47,7 @@ ReaderT = TypeVar("ReaderT", bound=asyncio.StreamReader)
 WriterT = TypeVar("WriterT", bound=asyncio.StreamWriter)
 
 # Transport Aliases
-type EndpointType = str
-type AddressType = tuple[str, int]
+EndpointType = str
+AddressType = Tuple[str, int] # Using typing.Tuple for older compatibility if needed, else tuple
 
 # 🐍🏗️🔌

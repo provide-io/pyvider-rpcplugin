@@ -193,7 +193,8 @@ def test_validate_config_value_invalid_choice():
     meta = CONFIG_SCHEMA[key]
     invalid_level = "TRACE"
     # Escape special characters in the expected message for regex matching
-    expected_message = f"Invalid value for {key}: {invalid_level}. Valid values: {str(meta['valid_values']).replace('[', '\\[').replace(']', '\\]')}"
+    valid_values_str = str(meta['valid_values']).replace('[', '\\[').replace(']', '\\]')
+    expected_message = f"Invalid value for {key}: {invalid_level}. Valid values: {valid_values_str}"
     with pytest.raises(ValueError, match=expected_message):
         validate_config_value(key, invalid_level, meta)
 
