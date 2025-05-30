@@ -1,7 +1,8 @@
 # tests/fixtures/mocks.py
 
 
-
+import asyncio
+import os
 import tempfile
 
 from contextlib import suppress
@@ -83,31 +84,38 @@ class MockBytesIO:
         self.string_io.flush()
 
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
-async def mock_server_transport(request) -> TransportT:
+async def mock_server_transport(request, managed_unix_socket_path: str) -> TransportT: # Added managed_unix_socket_path
     transport_name = request.param
-
-    with tempfile.NamedTemporaryFile(delete=True) as tmp:
-        socket_path = tmp.name
+    transport = None # Initialize transport
 
     logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
-    logger.debug(f"🧪🔌🐛 socket_path: {socket_path}")
 
-    try:
-        match transport_name:
-            case "tcp":
-                transport = TCPSocketTransport()
-            case "unix":
-                transport = UnixSocketTransport()
-            case _:
-                raise ValueError(f"Unknown transport: {transport_name}")
+    if transport_name == "tcp":
+        # For TCP, we don't use managed_unix_socket_path.
+        # The original logic for TCP can remain.
+        transport = TCPSocketTransport()
+        logger.debug("🧪🔌🐛 Providing TCPSocketTransport")
+        yield transport
+    elif transport_name == "unix":
+        # Use the path from managed_unix_socket_path fixture
+        logger.debug(f"🧪🔌🐛 Providing UnixSocketTransport with path: {managed_unix_socket_path}")
+        transport = UnixSocketTransport(path=managed_unix_socket_path)
+        yield transport
+    else:
+        # This case should ideally not be reached if params are correct
+        raise ValueError(f"Unknown transport parameter: {transport_name}")
 
-    finally:
-        # Ensure cleanup happens
-        if transport is not None:
+    # Cleanup is handled after yield returns for the specific yielded transport
+    if transport:
+        logger.debug(f"🧪🔌🐛 Cleaning up transport {transport_name} for path/endpoint: {getattr(transport, 'path', getattr(transport, 'endpoint', 'N/A'))}")
+        try:
             await transport.close()
-            await asyncio.sleep(0.1)  # Allow time for resources to be released
-
-    yield transport
+        except Exception as e:
+            logger.error(f"🧪🔌🐛 Error during transport.close(): {e}")
+        # Short sleep to help ensure resources are released, especially sockets.
+        await asyncio.sleep(0.1)
+    else:
+        logger.warning(f"🧪🔌🐛 Transport was None for {transport_name}, no cleanup performed by mock_server_transport.")
 
 @pytest_asyncio.fixture
 async def mock_server_transport_tcp() -> TransportT:

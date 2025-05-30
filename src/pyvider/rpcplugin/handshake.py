@@ -295,9 +295,22 @@ def parse_handshake_response(
         protocol = parts[4]
         server_cert = parts[5] if parts[5] else None
 
-        if core_version != int(rpcplugin_config.get("PLUGIN_CORE_VERSION")):
-            logger.error(f"🤝 Unsupported handshake version: {core_version}")
-            raise HandshakeError(f"Unsupported handshake version: {core_version}")
+        expected_core_version_from_config = rpcplugin_config.get("PLUGIN_CORE_VERSION")
+        logger.debug(f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_core_version_from_config} (type: {type(expected_core_version_from_config)})")
+
+        if expected_core_version_from_config is None:
+            logger.error("CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1.")
+            expected_core_version_int = 1
+        else:
+            try:
+                expected_core_version_int = int(expected_core_version_from_config)
+            except (ValueError, TypeError) as e:
+                logger.error(f"CRITICAL: Could not convert PLUGIN_CORE_VERSION '{expected_core_version_from_config}' to int. Error: {e}. Falling back to default 1.")
+                expected_core_version_int = 1
+        
+        if core_version != expected_core_version_int:
+            logger.error(f"🤝 Unsupported handshake version: {core_version} (expected: {expected_core_version_int})")
+            raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})")
 
         if server_cert:
             padding = len(server_cert) % 4

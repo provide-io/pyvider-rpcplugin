@@ -2,19 +2,19 @@
 # pyvider/rpcplugin/crypto/types.py
 #
 
-from typing import Protocol, Union
+from typing import Protocol
 
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.x509 import Certificate as X509Certificate
 
 # Key Types
-PrivateKeyType = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
-PublicKeyType = Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey]
-KeyPairType = tuple[PublicKeyType, PrivateKeyType]
+type PrivateKeyType = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
+type PublicKeyType = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
+type KeyPairType = tuple[PublicKeyType, PrivateKeyType]
 
 # Certificate Types
-CertificateType = X509Certificate
-PEMType = str
+type CertificateType = X509Certificate
+type PEMType = str
 
 
 class CertificateProtocolT(Protocol):
