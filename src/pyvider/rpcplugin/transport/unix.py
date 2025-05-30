@@ -169,9 +169,9 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
 
-                # Make socket accessible by user, group, and others for test/interop environments
-                os.chmod(self.path, 0o777)
-                logger.debug(f"📞🕹✅ Set permissions to 0777 on {self.path}")
+                # Make socket world-writable for test environments
+                os.chmod(self.path, 0o770)
+                logger.debug(f"📞🕹✅ Set world-writable permissions (0770) on {self.path}")
 
                 self._running = True
                 self.endpoint = self.path
