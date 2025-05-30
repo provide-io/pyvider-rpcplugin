@@ -455,7 +455,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     raise TransportError(error_msg)
                 mode = os.stat(self._transport.path).st_mode
                 if not (
-                    mode & stat.S_IRWXU and mode & stat.S_IRWXG and mode & stat.S_IRWXO
+                    mode & stat.S_IRWXU and mode & stat.S_IRWXG
                 ):
                     error_msg = (
                         f"Socket file {self._transport.path} has incorrect permissions."

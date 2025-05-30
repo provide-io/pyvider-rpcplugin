@@ -180,8 +180,10 @@ class GRPCStdioService(GRPCStdioServicer):
                     data_item = await asyncio.wait_for(
                         self._message_queue.get(), timeout=2.0
                     )
+                    logger.debug(f"GRPCStdioService.StreamStdio: Yielding item: {data_item}") # Added log
                     yield data_item
                 except asyncio.TimeoutError:
+                    logger.debug("GRPCStdioService.StreamStdio: Queue timeout, continuing loop.") # Added log
                     continue
                 except asyncio.CancelledError:
                     logger.debug("🔌📝🛑 StreamStdio task cancelled by client.")
@@ -194,6 +196,9 @@ class GRPCStdioService(GRPCStdioServicer):
                 break
 
         logger.debug(
+            f"GRPCStdioService.StreamStdio: Loop ended. shutdown={self._shutdown}, done_event_is_set={done.is_set()}" # Added log
+        )
+        logger.debug( # Kept original log for context
             "🔌📝🛑 GRPCStdioService.StreamStdio => stopping."
         )
 
