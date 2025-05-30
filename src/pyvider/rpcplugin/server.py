@@ -5,6 +5,7 @@
 import asyncio
 import os
 import signal
+import socket # Added import
 import stat
 import sys
 import traceback
