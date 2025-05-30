@@ -2,7 +2,7 @@
 # pyvider/rpcplugin/client/types.py
 #
 
-from typing import Any, Protocol, TypeVar, Union # Added Union
+from typing import Any, Protocol, TypeVar
 
 import grpc
 
@@ -11,11 +11,11 @@ ClientT = TypeVar("ClientT", bound="RPCPluginClient")
 ConnectionT = TypeVar("ConnectionT", bound="ClientConnection")
 
 # Type Aliases for gRPC Clients
-GrpcChannelType = Union[grpc.aio.Channel, grpc.Channel]
-RpcConfigType = dict[str, Any] # Removed 'type' keyword
+type GrpcChannelType = grpc.aio.Channel | grpc.Channel
+type RpcConfigType = dict[str, Any]
 
 # gRPC Credentials Type (used for TLS setup)
-GrpcCredentialsType = Union[grpc.ChannelCredentials, None] # Removed 'type' and used Union
+type GrpcCredentialsType = grpc.ChannelCredentials | None
 
 
 # Protocol for Clients that support secure transport & handshake

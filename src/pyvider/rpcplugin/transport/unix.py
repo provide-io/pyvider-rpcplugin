@@ -87,9 +87,8 @@ class UnixSocketTransport(RPCPluginTransport):
             # Generate ephemeral path if none provided
             import tempfile
             import uuid
-            # Use a shorter prefix and hex length for the socket name
             self.path = os.path.join(
-                tempfile.gettempdir(), f"pv-{uuid.uuid4().hex[:6]}.sock"
+                tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock"
             )
             logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path: {self.path}")
         else:
@@ -170,9 +169,9 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
 
-                # Make socket world-writable for test environments
-                os.chmod(self.path, 0o770)
-                logger.debug(f"📞🕹✅ Set world-writable permissions (0770) on {self.path}")
+                # Make socket accessible by user, group, and others for test/interop environments
+                os.chmod(self.path, 0o777)
+                logger.debug(f"📞🕹✅ Set permissions to 0777 on {self.path}")
 
                 self._running = True
                 self.endpoint = self.path

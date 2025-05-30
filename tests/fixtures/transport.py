@@ -6,7 +6,7 @@ import pytest_asyncio
 
 import asyncio
 from pathlib import Path # Added import
-import os
+import os # Ensure os is imported
 import socket
 import uuid
 
@@ -160,36 +160,35 @@ async def unused_tcp_port() -> int:
         return s.getsockname()[1]
 
 @pytest_asyncio.fixture
-async def unix_transport():
-
-    logger.debug("unix_transport fixture invoked.")
-
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(delete=True) as tmp:
-        sock_path = tmp.name
+async def unix_transport(managed_unix_socket_path: str): # Added managed_unix_socket_path
+    logger.debug("unix_transport fixture invoked, now using managed_unix_socket_path.")
+    
+    sock_path = managed_unix_socket_path
 
     logger.debug(f"Using socket at: {sock_path}")
 
-    # sock_path=f"/tmp/pyvider_test_{os.getpid()}.sock"
-
     transport = UnixSocketTransport(path=sock_path)
 
-    await transport.listen()
+    await transport.listen() 
     logger.debug(
-        f"DEBUG: Fixture initialized transport at {transport.path}, _server: {transport._server}"
+        f"DEBUG: Fixture initialized transport at {transport.path}, _server active: {hasattr(transport, '_server') and transport._server is not None}"
     )
-    # logger.debug(f"DEBUG: Initialized transport at {transport.path} of type {type(transport)}")
 
-    logger.debug(f"DEBUG: Fixture setup complete: {transport.path}")
+    logger.debug(f"DEBUG: Fixture setup complete for unix_transport with path: {transport.path}")
     try:
         yield transport
     finally:
-        await transport.close()
-        if os.path.exists(sock_path):
-            logger.debug("DEBUG: removing sock_path")
-            os.unlink(sock_path)
-        logger.debug("DEBUG: Fixture cleanup complete")
+        logger.debug(f"DEBUG: Starting cleanup for unix_transport with path: {sock_path}")
+        await transport.close() # transport.close() should handle unlinking its own path
+        # Double check for safety, as managed_unix_socket_path also has a finalizer.
+        if os.path.exists(sock_path): 
+            logger.warning(f"DEBUG: Socket file {sock_path} still exists after transport.close() in unix_transport. Attempting unlink.")
+            try:
+                os.unlink(sock_path)
+                logger.debug(f"DEBUG: Successfully unlinked {sock_path} in unix_transport finalizer.")
+            except OSError as e:
+                logger.error(f"DEBUG: Error unlinking {sock_path} in unix_transport finalizer: {e}")
+        logger.debug(f"DEBUG: Fixture unix_transport cleanup complete for path: {sock_path}")
 
 @pytest_asyncio.fixture(scope="function")
 async def managed_unix_socket_path(tmp_path: Path, request: pytest.FixtureRequest) -> AsyncGenerator[str, None]:

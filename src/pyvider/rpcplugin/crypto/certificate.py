@@ -2,13 +2,11 @@
 
 import os
 import traceback
-from datetime import datetime, timedelta, timezone
-from strenum import StrEnum # Use backfill for StrEnum
-from enum import auto # Keep auto from standard enum
+from datetime import UTC, datetime, timedelta
+from enum import StrEnum, auto
 from functools import cached_property
 from pathlib import Path
-from typing import Union # Self, NotRequired, TypedDict will come from typing_extensions
-from typing_extensions import NotRequired, Self, TypedDict
+from typing import NotRequired, Self, TypedDict
 
 # Use attrs imports
 from attrs import Factory, define, field
@@ -56,8 +54,8 @@ class CertificateConfig(TypedDict):
     curve: NotRequired[CurveType]
 
 
-KeyPair = Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]
-PublicKey = Union[rsa.RSAPublicKey, ec.EllipticCurvePublicKey]
+type KeyPair = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
+type PublicKey = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 
 # =============================================================================
 # CertificateBase: Immutable certificate base data (already uses attrs)
@@ -87,9 +85,9 @@ class CertificateBase:
 
             # Ensure timezone awareness (redundant if already set, but safe)
             if not_valid_before.tzinfo is None:
-                not_valid_before = not_valid_before.replace(tzinfo=timezone.utc)
+                not_valid_before = not_valid_before.replace(tzinfo=UTC)
             if not_valid_after.tzinfo is None:
-                not_valid_after = not_valid_after.replace(tzinfo=timezone.utc)
+                not_valid_after = not_valid_after.replace(tzinfo=UTC)
 
             logger.debug(
                 f"📜⏳✅ CertificateBase.create: Using validity: {not_valid_before} to {not_valid_after}"
@@ -200,7 +198,7 @@ class Certificate:
                 logger.debug("📜🔑🚀 Certificate.__attrs_post_init__: Generating new keypair.")
 
                 # Prepare config for CertificateBase.create
-                now = datetime.now(timezone.utc) # Or use the existing import for timezone.utc
+                now = datetime.now(UTC) # Or use the existing import for timezone.utc
 
                 # Set not_valid_before to be 1 day in the past to ensure immediate validity.
                 not_valid_before = now - timedelta(days=1)
@@ -293,12 +291,12 @@ class Certificate:
 
                 # Reconstruct the CertificateBase from the loaded certificate object
                 # Ensure dates are timezone-aware
-                loaded_not_valid_before = self._cert.not_valid_before # Use .not_valid_before
-                loaded_not_valid_after = self._cert.not_valid_after   # Use .not_valid_after
+                loaded_not_valid_before = self._cert.not_valid_before_utc
+                loaded_not_valid_after = self._cert.not_valid_after_utc
                 if loaded_not_valid_before.tzinfo is None:
-                     loaded_not_valid_before = loaded_not_valid_before.replace(tzinfo=timezone.utc)
+                     loaded_not_valid_before = loaded_not_valid_before.replace(tzinfo=UTC)
                 if loaded_not_valid_after.tzinfo is None:
-                     loaded_not_valid_after = loaded_not_valid_after.replace(tzinfo=timezone.utc)
+                     loaded_not_valid_after = loaded_not_valid_after.replace(tzinfo=UTC)
 
                 self._base = CertificateBase(
                     subject=self._cert.subject,
@@ -432,7 +430,7 @@ class Certificate:
     def is_valid(self) -> bool:
         """Checks if the certificate is currently valid based on its dates."""
         if not hasattr(self, '_base'): return False # Check if base exists
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         valid = self._base.not_valid_before <= now <= self._base.not_valid_after
         return valid
 
