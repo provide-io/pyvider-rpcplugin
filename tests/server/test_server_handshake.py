@@ -69,7 +69,7 @@ async def test_server_handshake_missing_env(monkeypatch, mock_server_protocol, m
 @pytest.mark.asyncio
 async def test_negotiate_handshake_with_provided_transport(
     monkeypatch,
-    unique_socket_path,
+    managed_unix_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,

@@ -136,4 +136,18 @@ def temporary_key_file(tmp_path, client_cert) -> str:
     key_file.write_text(client_cert.key)  # Write valid PEM key
     return f"file://{key_file}"
 
+
+@pytest.fixture(scope="module")
+def dev_root_ca() -> Certificate:
+    """Generates a self-signed CA certificate for testing mTLS setups."""
+    ca_cert = Certificate(
+        common_name="Test Development CA", # Differentiate from other default certs
+        generate_keypair=True,
+        key_type="ecdsa" # Default is "ecdsa", explicit for clarity
+        # No need for basic_constraints_ca or key_usage_extensions here,
+        # as the Certificate class currently makes all generated certs CAs by default.
+    )
+    logger.info(f"Generated Development Root CA (common_name='Test Development CA'): {ca_cert.cert[:30]}...")
+    return ca_cert
+
 ### 🐍🏗🧪️

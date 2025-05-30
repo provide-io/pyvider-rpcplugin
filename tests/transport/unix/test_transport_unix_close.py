@@ -23,10 +23,10 @@ async def test_unix_socket_transport_close_no_path(unix_transport) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_transport_close_oserror(unique_socket_path) -> None:
+async def test_unix_socket_transport_close_oserror(managed_unix_socket_path) -> None:
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
     # Create a real socket first
-    transport = UnixSocketTransport(path=str(unique_socket_path))
+    transport = UnixSocketTransport(path=str(managed_unix_socket_path))
     await transport.listen()
 
     # Create patches for both unlink and stat
@@ -39,8 +39,8 @@ async def test_unix_socket_transport_close_oserror(unique_socket_path) -> None:
 
     # Clean up any remaining socket file
     try:
-        if os.path.exists(unique_socket_path):
-            os.unlink(unique_socket_path)
+        if os.path.exists(managed_unix_socket_path):
+            os.unlink(managed_unix_socket_path)
     except:
         pass
 
@@ -66,10 +66,10 @@ async def test_unix_close_unlink_error(monkeypatch, tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_connection_active(unique_socket_path) -> None:
+async def test_unix_socket_close_connection_active(managed_unix_socket_path) -> None:
     """Test closing a transport with active connections."""
     # Create a server transport
-    transport = UnixSocketTransport(path=str(unique_socket_path))
+    transport = UnixSocketTransport(path=str(managed_unix_socket_path))
     endpoint = await transport.listen()
     
     # Create and connect a client
@@ -111,10 +111,10 @@ async def test_unix_socket_close_no_path(unix_transport) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_oserror(unique_socket_path) -> None:
+async def test_unix_socket_close_oserror(managed_unix_socket_path) -> None:
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
     # Create a real socket first
-    transport = UnixSocketTransport(path=str(unique_socket_path))
+    transport = UnixSocketTransport(path=str(managed_unix_socket_path))
     await transport.listen()
 
     # Create patches for both unlink and stat
@@ -127,8 +127,8 @@ async def test_unix_socket_close_oserror(unique_socket_path) -> None:
 
     # Clean up any remaining socket file
     try:
-        if os.path.exists(unique_socket_path):
-            os.unlink(unique_socket_path)
+        if os.path.exists(managed_unix_socket_path):
+            os.unlink(managed_unix_socket_path)
     except:
         pass
 
