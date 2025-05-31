@@ -86,11 +86,11 @@ class UnixSocketTransport(RPCPluginTransport):
         if not self.path:
             # Generate ephemeral path if none provided
             import tempfile
-            import uuid # Ensure uuid is imported
-            base_temp_dir = tempfile.gettempdir()
-            socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"  # p_ + 6-char hex + .s
-            self.path = os.path.join(base_temp_dir, socket_filename)
-            logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path (shortened default): {self.path}")
+            import uuid
+            self.path = os.path.join(
+                tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock"
+            )
+            logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path: {self.path}")
         else:
             # Normalize path if it has a unix: prefix
             self.path = normalize_unix_path(self.path)
@@ -287,19 +287,31 @@ class UnixSocketTransport(RPCPluginTransport):
     async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:
         """Close a StreamWriter with proper error handling."""
         if writer is None:
+            logger.debug("📞🔒✍️ _close_writer: writer is None, returning.")
             return
 
         try:
-            await writer.close()
+            logger.debug(f"📞🔒✍️ _close_writer: writer.close() called for {writer!r}")
+            writer.close()
+
+            # Add detailed diagnostic logging here
+            logger.debug(f"📞🔒✍️ DIAGNOSTIC: type(writer): {type(writer)}")
+            logger.debug(f"📞🔒✍️ DIAGNOSTIC: repr(writer): {writer!r}")
+            logger.debug(f"📞🔒✍️ DIAGNOSTIC: hasattr(writer, 'wait_closed'): {hasattr(writer, 'wait_closed')}")
+            if hasattr(writer, 'wait_closed'):
+                logger.debug(f"📞🔒✍️ DIAGNOSTIC: type(writer.wait_closed): {type(writer.wait_closed)}")
+                logger.debug(f"📞🔒✍️ DIAGNOSTIC: repr(writer.wait_closed): {writer.wait_closed!r}")
+            logger.debug(f"📞🔒✍️ DIAGNOSTIC: writer.is_closing(): {writer.is_closing()}")
+            
             await writer.wait_closed()
             logger.debug("📞🔒✅ Writer closed successfully")
         except Exception as e:
-            logger.error(f"📞🔒⚠️ Error closing writer: {e}")
+            logger.error(f"📞🔒⚠️ Error closing writer: {e}", exc_info=True)
             # Don't propagate exception to avoid crashing cleanup
 
     async def close(self) -> None:
         """Close Unix socket transport with proper cleanup."""
-        logger.debug(f"📞🔒🚀 UnixSocketTransport.close() called for path: {self.path}. Current _closing state: {self._closing}") # Existing + path
+        logger.debug(f"📞🔒🚀 Closing Unix socket transport at {self.path}")
 
         if self._closing:
             logger.debug("📞🔒✅ Already closing, skipping duplicate close")
@@ -359,7 +371,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
         self.endpoint = None
         self._closing = False
-        logger.debug(f"📞🔒✅ UnixSocketTransport.close() completed for path: {self.path}") # Existing + path
+        logger.debug("📞🔒✅ Unix socket transport closed completely")
 
 
 # 🐍🏗️🔌
