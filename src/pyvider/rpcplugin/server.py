@@ -8,7 +8,8 @@ import signal
 import socket # Added: Missing import
 import stat
 import sys
-import traceback
+import traceback # Ensure traceback is imported
+import sys  # Ensure sys is imported
 from abc import ABC
 from typing import Generic, Optional
 
@@ -297,7 +298,8 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
         The method is designed to be idempotent and can be called multiple times safely.
         """
-        logger.debug("🛎️ Stopping server...")
+        logger.debug(f"‼️ RPCPluginServer.stop() CALLED. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
+        traceback.print_stack(file=sys.stdout) # Log stack trace to stdout
 
         # Cancel any pending tasks first
         all_tasks = [task for task in asyncio.all_tasks()
@@ -572,7 +574,8 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         Args:
             *args: Optional arguments passed by signal handlers (ignored)
         """
-        logger.info("🛎️ Shutdown signal received; initiating graceful shutdown...")
+        logger.info(f"‼️ RPCPluginServer._shutdown_requested() CALLED. Args: {args}. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
+        traceback.print_stack(file=sys.stdout) # Log stack trace to stdout
         if self._server:
             asyncio.create_task(self.stop())
         if not self._serving_future.done():

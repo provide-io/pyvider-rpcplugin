@@ -209,7 +209,7 @@ async def managed_unix_socket_path(request: pytest.FixtureRequest) -> AsyncGener
             # Depending on strictness, could raise an error here or let the test proceed.
 
     async def finalizer():
-        logger.debug(f"🧪🧹 Finalizing managed socket path: {socket_path}")
+        logger.debug(f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER: Finalizing managed socket path: {socket_path}") # Existing + emphasis
         await asyncio.sleep(0.05) 
         if os.path.exists(socket_path):
             try:
