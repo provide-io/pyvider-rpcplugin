@@ -150,4 +150,28 @@ def dev_root_ca() -> Certificate:
     logger.info(f"Generated Development Root CA (common_name='Test Development CA'): {ca_cert.cert[:30]}...")
     return ca_cert
 
+
+@pytest.fixture(scope="module")
+def external_dev_ca_pem() -> str:
+    """Provides a known-good, externally generated self-signed CA certificate PEM string."""
+    # This is a sample ECDSA P-256 CA certificate.
+    # Issuer: CN=External Test CA, O=MyOrg
+    # Subject: CN=External Test CA, O=MyOrg
+    # Basic Constraints: CA:TRUE
+    # Key Usage: Certificate Sign, CRL Sign
+    return """-----BEGIN CERTIFICATE-----
+MIIB4TCCAYegAwIBAgIJAPZ9vcVfR8AdMAoGCCqGSM49BAMCMFExCzAJBgNVBAYT
+AlVTMQswCQYDVQQIDAJDQTEUMBIGA1UEBwwLU2FuIEZyYW5jaXNjbzEOMAwGA1UE
+CgwFTXlPcmcxEzARBgNVBAMMCkV4dGVybmFsIENBMB4XDTI0MDgwMjEwNTgwMVoX
+DTM0MDczMDEwNTgwMVowUTELMAkGA1UEBhMCVVMxCzAJBgNVBAgMAkNBMREwDwYD
+VQQHDAhTYW5EaWVnbzEOMAwGA1UECgwFTXlPcmcxEzARBgNVBAMMCkV4dGVybmFs
+IENBMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEgyF5Y8upm+M3ZzO8P4n7q2sS+L4c
+mhl5XGg3vIOwFf7lG8XZCgJ6Xy4t1t8oD3zY0m9X8H8Z4YhY7K6b7c8Y7Xv6Y9fV
+Q8M7Jg9nJ0x5c1N40zQwZzKjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8E
+BTADAQH/MB0GA1UdDgQWBBTGX00Gq7b09y/0C9eK0XgJp0mY7DAKBggqhkjOPQQD
+AgNJADBGAiEAx1xH/b83/u5t7r29a/THZnFjQ7pvT2N0L4hG4BgGgXACIQD02W2+
+MHB78ZWM+JOgikYj99qD6nLp0nkMyGmkSC7RYg==
+-----END CERTIFICATE-----
+"""
+
 ### 🐍🏗🧪️

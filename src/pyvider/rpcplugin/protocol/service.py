@@ -169,19 +169,23 @@ class GRPCStdioService(GRPCStdioServicer):
         
         # FIX: Corrected on_rpc_done signature
         def on_rpc_done(_ignored_arg: Any): # Accepts one argument
-            logger.debug("🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called.")
+            logger.debug("🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called (client disconnected or call ended).") # Modified log
             done.set()
         
         context.add_done_callback(on_rpc_done)
         
+        logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})") # New log
         while not self._shutdown and not done.is_set():
             try:
                 try:
                     data_item = await asyncio.wait_for(
                         self._message_queue.get(), timeout=2.0
                     )
+                    logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}") # New log
                     yield data_item
                 except asyncio.TimeoutError:
+                    # This is normal if no messages are in the queue for the timeout period
+                    logger.debug("🔌📝 GRPCStdioService: Queue get timed out, continuing loop.")
                     continue
                 except asyncio.CancelledError:
                     logger.debug("🔌📝🛑 StreamStdio task cancelled by client.")
@@ -192,10 +196,9 @@ class GRPCStdioService(GRPCStdioServicer):
                     extra={"trace": traceback.format_exc()},
                 )
                 break
-
-        logger.debug(
-            "🔌📝🛑 GRPCStdioService.StreamStdio => stopping."
-        )
+            logger.debug(f"🔌📝 GRPCStdioService: Loop continuing (shutdown={self._shutdown}, done={done.is_set()})") # New log after try-except
+        
+        logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => stopping. Reason: shutdown={self._shutdown}, done.is_set()={done.is_set()}") # Modified log
 
     def shutdown(self) -> None:
         logger.debug("🔌📝⚠️ GRPCStdioService => marking service as shutdown")

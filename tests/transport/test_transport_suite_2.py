@@ -130,12 +130,13 @@ async def rpc_server(server_transport, server_protocol, server_handler) -> Async
 # --- Test Functions ---
 
 @pytest.mark.asyncio
-async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transport_fixture, socket_monitor, dev_root_ca: Certificate):
+async def test_server_startup_and_shutdown(rpc_server: RPCPluginServer, transport_fixture, socket_monitor, dev_root_ca: Certificate, external_dev_ca_pem: str): # Added external_dev_ca_pem
     """Test server starts listening and shuts down cleanly."""
     transport_type, _, endpoint = transport_fixture
 
     original_client_cert_config = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-    rpcplugin_config.set("PLUGIN_CLIENT_CERT", dev_root_ca.cert)
+    # Use the external CA PEM string for this diagnostic test
+    rpcplugin_config.set("PLUGIN_CLIENT_CERT", external_dev_ca_pem)
 
     # Create a socket monitor appropriate for the transport type
     monitor = None
