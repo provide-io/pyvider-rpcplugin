@@ -299,7 +299,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def close(self) -> None:
         """Close Unix socket transport with proper cleanup."""
-        logger.debug(f"📞🔒🚀 Closing Unix socket transport at {self.path}")
+        logger.debug(f"📞🔒🚀 UnixSocketTransport.close() called for path: {self.path}. Current _closing state: {self._closing}") # Existing + path
 
         if self._closing:
             logger.debug("📞🔒✅ Already closing, skipping duplicate close")
@@ -359,7 +359,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
         self.endpoint = None
         self._closing = False
-        logger.debug("📞🔒✅ Unix socket transport closed completely")
+        logger.debug(f"📞🔒✅ UnixSocketTransport.close() completed for path: {self.path}") # Existing + path
 
 
 # 🐍🏗️🔌
