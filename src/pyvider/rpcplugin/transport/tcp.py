@@ -189,9 +189,15 @@ class TCPSocketTransport(RPCPluginTransport):
             return
 
         try:
-            await writer.close()
-            await writer.wait_closed()
+            # writer.close() is synchronous and signals the intent to close.
+            if not writer.is_closing(): # Check if already closing
+                 writer.close()
+            
+            # await writer.wait_closed() can hang.
+            await asyncio.wait_for(writer.wait_closed(), timeout=5.0) 
             logger.debug("🔌🔒✅ Writer closed successfully")
+        except asyncio.TimeoutError:
+            logger.warning(f"🔌🔒⚠️ Timeout closing writer for endpoint {self.endpoint if self.endpoint else 'unknown'}")
         except Exception as e:
             logger.error(f"🔌🔒⚠️ Error closing writer: {e}")
             # Don't propagate exception to avoid crashing cleanup
@@ -218,9 +224,14 @@ class TCPSocketTransport(RPCPluginTransport):
             # Close server
             if self._server:
                 try:
-                    await self._server.close()
-                    await self._server.wait_closed()
+                    if self._server.is_serving(): # Check if it's serving before trying to close
+                        self._server.close() # This is synchronous, initiates closing
+                    
+                    # await self._server.wait_closed() can hang.
+                    await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
                     logger.info("🔌🔒✅: TCP server closed successfully")
+                except asyncio.TimeoutError:
+                    logger.warning(f"🔌🔒⚠️ Timeout closing TCP server for endpoint {self.endpoint if self.endpoint else 'unknown'}")
                 except Exception as e:
                     logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
                 finally:

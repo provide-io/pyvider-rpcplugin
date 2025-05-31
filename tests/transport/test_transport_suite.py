@@ -262,9 +262,7 @@ async def test_server_with_transport(
     transport = await transport_factory(transport_type)
     server = await server_factory(transport=transport) # Pass transport explicitly
 
-    # Server needs a future to await on in serve()
-    server._serving_future = asyncio.Future()
-    # server._serving_event is created by default
+    # server._serving_event is created by default; _serving_future is now created in __attrs_post_init__
 
     # Start server in background task
     server_task = asyncio.create_task(server.serve())
@@ -276,7 +274,8 @@ async def test_server_with_transport(
 
         # Simple check: try to connect to the endpoint
         client = await transport_factory(transport_type)
-        await client.connect(transport.endpoint)
+        # Client should connect to the server's actual transport endpoint
+        await client.connect(server._transport.endpoint)
         await client.close()
 
         # Trigger server shutdown

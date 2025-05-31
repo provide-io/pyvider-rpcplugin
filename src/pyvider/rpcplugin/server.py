@@ -85,8 +85,8 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
 
-    # Class-level instance for global access.
-    _instance: ServerT | None = None
+    # Class-level instance for global access. - REMOVING THIS
+    # _instance: ServerT | None = None
 
     def __attrs_post_init__(self) -> None:
         """
@@ -118,8 +118,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 extra={"error": str(e)},
             )
             raise
-        RPCPluginServer._instance = self
-        logger.debug("🛎️⚙️ Global RPCPluginServer instance set.")
+        # Ensure each instance has a truly unique future.
+        self._serving_future = asyncio.Future()
+        # RPCPluginServer._instance = self # REMOVING THIS
+        logger.debug(f"🛎️⚙️ RPCPluginServer instance initialized. New _serving_future created (ID: {id(self._serving_future)}).")
 
     async def wait_for_server_ready(self, timeout: float = 3.14) -> None:
         """
@@ -163,12 +165,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
                 elif isinstance(self._transport, TCPSocketTransport):
                     # For TCP, verify endpoint is reachable
+                    # Use self._port (actual bound port) and self._transport.host
+                    actual_server_host = self._transport.host if self._transport.host else "127.0.0.1"
+                    actual_server_port = self._port
+                    if actual_server_port is None:
+                        logger.error("🛎️❌ TCP port not set after server start.")
+                        raise TimeoutError("TCP port not available for readiness check")
+                    
+                    logger.debug(f"🛎️🔍 Testing TCP connection to {actual_server_host}:{actual_server_port}")
                     try:
-                        logger.debug(f"🛎️🔍 Testing TCP connection to {self._transport.endpoint}")
-                        host, port_str = self._transport.endpoint.split(":")
                         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                         sock.settimeout(1.0)
-                        sock.connect((host, int(port_str)))
+                        sock.connect((actual_server_host, actual_server_port))
                         sock.close()
                         logger.debug("🛎️✅ TCP connection test successful")
                     except Exception as e:
@@ -184,18 +192,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.error(f"🛎️❌ Error during server readiness check: {e}")
             raise TimeoutError(f"Server readiness check failed: {e}")
 
-    @classmethod
-    def get_instance(cls) -> Optional["RPCPluginServer"]:
-        """
-        Retrieve the currently running server instance.
+    # @classmethod # REMOVING THIS
+    # def get_instance(cls) -> Optional["RPCPluginServer"]:
+    #     """
+    #     Retrieve the currently running server instance.
 
-        This class method provides access to the singleton server instance,
-        allowing other components to access the server when needed.
+    #     This class method provides access to the singleton server instance,
+    #     allowing other components to access the server when needed.
 
-        Returns:
-            The singleton RPCPluginServer instance, or None if not yet created
-        """
-        return cls._instance
+    #     Returns:
+    #         The singleton RPCPluginServer instance, or None if not yet created
+    #     """
+    #     return cls._instance
 
     def _read_client_cert(self) -> str | None:
         """
@@ -299,7 +307,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         The method is designed to be idempotent and can be called multiple times safely.
         """
         logger.debug(f"‼️ RPCPluginServer.stop() CALLED. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
-        traceback.print_stack(file=sys.stdout) # Log stack trace to stdout
+        # traceback.print_stack(file=sys.stdout) # Removed diagnostic
 
         # Cancel any pending tasks first
         all_tasks = [task for task in asyncio.all_tasks()
@@ -441,12 +449,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 )
                 self._port = port
                 logger.debug(f"🛎️ Bound to TCP port: {port}.")
-                # Ensure the transport's endpoint is updated if a dynamic port was used
-                if hasattr(self._transport, 'host') and hasattr(self._transport, 'port'):
-                    if self._transport.port == 0 or self._transport.port is None: # Dynamic port
+                # Ensure the transport's port is updated to the actual bound port for TCP.
+                if isinstance(self._transport, TCPSocketTransport):
+                    if hasattr(self._transport, 'port'): # Check if transport has a port attribute
+                        if self._transport.port != port:
+                            logger.debug(f"🛎️ Updating transport port from {self._transport.port} to actual bound port {port}.")
                         self._transport.port = port
-                        self._transport.endpoint = f"{self._transport.host}:{port}"
-                        logger.debug(f"🛎️ Transport endpoint updated to: {self._transport.endpoint}")
+                        # Explicitly set the endpoint attribute on the transport instance
+                        if self._transport.host and self._transport.port is not None:
+                            self._transport.endpoint = f"{self._transport.host}:{self._transport.port}"
+                        else:
+                            self._transport.endpoint = None # Should not happen if host/port are set
+                        logger.debug(f"🛎️ Transport details post-update: host={self._transport.host}, port={self._transport.port}, endpoint attribute: {self._transport.endpoint}")
             await self._server.start()
             logger.debug("🛎️ gRPC server started successfully.")
         except Exception as e:
@@ -575,7 +589,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             *args: Optional arguments passed by signal handlers (ignored)
         """
         logger.info(f"‼️ RPCPluginServer._shutdown_requested() CALLED. Args: {args}. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
-        traceback.print_stack(file=sys.stdout) # Log stack trace to stdout
+        # traceback.print_stack(file=sys.stdout) # Removed diagnostic
         if self._server:
             asyncio.create_task(self.stop())
         if not self._serving_future.done():
@@ -599,7 +613,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         Raises:
             Any exception that occurs during setup or serving
         """
-        logger.debug("🛎️ Entering serve(); starting server setup...")
+        logger.debug(f"🛎️ Entering serve(); initial _serving_future (ID: {id(self._serving_future)}) done state: {self._serving_future.done()}")
         try:
             self._register_signal_handlers()
             await self._negotiate_handshake()
@@ -639,8 +653,12 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
         try:
             self._serving_event.set()
-            logger.debug("🛎️ Server running; awaiting shutdown signal...")
+            logger.debug(f"🛎️ Server running; _serving_future created at {id(self._serving_future)}, done={self._serving_future.done()}. Awaiting shutdown signal...")
             await self._serving_future
+            logger.debug(f"🛎️ Server _serving_future completed. Done state: {self._serving_future.done()}")
+        except asyncio.CancelledError:
+            logger.info("🛎️ Serve task explicitly cancelled.")
+            raise
         except Exception as e:
             logger.error(
                 "🛎️❌ Serve() encountered an error during run",
@@ -659,30 +677,28 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             logger.debug("🛎️ Shutdown complete; exiting process.")
 
     def __del__(self) -> None:
-        """
-        Cleanup resources when the object is garbage collected.
+        # Check if the server was properly shut down via explicit stop()
+        # The _serving_future is resolved by stop() or _shutdown_requested()
+        serving_future_exists = hasattr(self, '_serving_future') and self._serving_future
+        server_was_shutdown = serving_future_exists and self._serving_future.done()
 
-        This method ensures that resources are properly cleaned up even if
-        the server is not explicitly stopped.
-        """
-        try:
-            # Check if event loop exists and is running
-            try:
-                loop = asyncio.get_running_loop()
-                if not loop.is_closed():
-                    # Create non-coroutine cleanup
-                    if hasattr(self, '_server') and self._server:
-                        if hasattr(self._server, 'close'):
-                            self._server.close()
+        if not server_was_shutdown:
+            # Determine a representative endpoint for logging, if possible
+            endpoint_info = "unknown endpoint"
+            if hasattr(self, '_transport') and self._transport and hasattr(self._transport, 'endpoint') and self._transport.endpoint:
+                endpoint_info = self._transport.endpoint
+            elif hasattr(self, '_port') and self._port is not None: # For TCP if endpoint wasn't formed on transport
+                endpoint_info = f"port {self._port}"
+            
+            logger.warning(
+                f"RPCPluginServer for {endpoint_info} was not explicitly stopped before garbage collection. "
+                f"Ensure stop() is called to properly release resources."
+            )
 
-                    # Signal shutdown without awaiting
-                    if hasattr(self, '_serving_future') and not self._serving_future.done():
-                        self._shutdown_requested()
-            except RuntimeError:
-                # No running event loop, just pass
-                pass
-        except Exception:
-            # Suppress all exceptions in __del__
-            pass
+        # It's generally unsafe to call async methods or methods that might rely on a 
+        # running event loop from __del__. Explicit cleanup via stop() is essential.
+        # The original attempt to call self._server.close() is also risky here
+        # as grpc.aio.Server's own __del__ might handle some synchronous cleanup,
+        # but complex operations should be in stop().
 
 # 🐍🏗️🔌
