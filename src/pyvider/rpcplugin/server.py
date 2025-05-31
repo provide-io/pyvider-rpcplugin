@@ -274,10 +274,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
 
             creds = grpc.ssl_server_credentials(
                 private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
-                root_certificates=client_cert_bytes,
-                require_client_auth=True,
+                root_certificates=None,       # Temporarily disable client cert verification
+                require_client_auth=False     # Temporarily disable client cert requirement
             )
-            logger.debug("🛎️ Server TLS credentials created with mTLS enabled.")
+            logger.debug("🛎️ Server TLS credentials created for server-side TLS only (no mTLS).")
             return creds
         except Exception as e:
             logger.error(
