@@ -86,11 +86,11 @@ class UnixSocketTransport(RPCPluginTransport):
         if not self.path:
             # Generate ephemeral path if none provided
             import tempfile
-            import uuid
-            self.path = os.path.join(
-                tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock"
-            )
-            logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path: {self.path}")
+            import uuid # Ensure uuid is imported
+            base_temp_dir = tempfile.gettempdir()
+            socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"  # p_ + 6-char hex + .s
+            self.path = os.path.join(base_temp_dir, socket_filename)
+            logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path (shortened default): {self.path}")
         else:
             # Normalize path if it has a unix: prefix
             self.path = normalize_unix_path(self.path)
