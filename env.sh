@@ -15,6 +15,8 @@ if ! command -v uv >/dev/null 2>&1; then
   uv -V
 fi
 
+uv python pin 3.13 --global
+
 uv venv
 uv sync --all-groups --dev
 
