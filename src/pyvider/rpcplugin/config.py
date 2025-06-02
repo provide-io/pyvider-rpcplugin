@@ -676,12 +676,13 @@ def _load_dotenv_file(path: Path) -> None:
 
     try:
         with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line or line.startswith("#"):
-                    continue
+            content = f.read()
+        for line in content.splitlines(): # Process lines from full content
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
 
-                key, value = line.split("=", 1)
+            key, value = line.split("=", 1)
                 key = key.strip()
                 value = value.strip()
 
@@ -693,7 +694,6 @@ def _load_dotenv_file(path: Path) -> None:
 
                 # Set environment variable
                 os.environ[key] = value
-                print(f"DEBUG: Setting os.environ['{key}'] = '{value}'") # Temporary debug print
                 logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
 
     except Exception as e:
@@ -758,7 +758,7 @@ def _load_yaml_file(path: Path) -> None:
         for key, value in config_data.items():
             # Convert to string for environment variables
             if isinstance(value, (list, dict)):
-                os.environ[key] = yaml.dump(value)
+                os.environ[key] = yaml.dump(value).strip() # Ensure stripped
             else:
                 os.environ[key] = str(value)
 

@@ -133,24 +133,30 @@ async def test_certificate_hash(client_cert) -> None:
 
 @pytest.mark.asyncio
 async def test_certificate_invalid_trust_chain_signature() -> None:
-    """Ensure certificate trust chain fails on signature mismatch."""
-    cert1 = Certificate(generate_keypair=True)
-    cert2 = Certificate(generate_keypair=True)
+    """Ensure certificate trust chain fails on signature mismatch when signature check is performed."""
+    # Ensure 'mock' is imported from unittest (already done at file level)
+    # from unittest import mock
 
-    cert1.trust_chain.append(cert2)
+    # Create a self-trusted CA. Ensure key_type is ecdsa for the mock to apply.
+    ca_cert = Certificate(generate_keypair=True, common_name="Test Root CA", key_type="ecdsa")
+    ca_cert.trust_chain = [ca_cert] # CA trusts itself
 
-    # Class-level patch for ec.EllipticCurvePublicKey.verify
-    with mock.patch('cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify',
-                    side_effect=Exception("Signature failure")):
-        assert not cert1.verify_trust(cert2), (
-            "Verification should fail due to invalid signature"
-        )
+    # Create an end-entity certificate that will be checked against the CA.
+    # Ensure key_type is ecdsa.
+    cert_to_check = Certificate(generate_keypair=True, common_name="End Entity Cert", key_type="ecdsa")
 
+    # To ensure _validate_signature is reached and its issuer check passes:
+    # Mock the issuer of cert_to_check to appear as if it was issued by ca_cert.
+    # This is a targeted patch specifically for this test's logic flow.
+    # Note: Accessing _cert like this is for testing internals.
+    with mock.patch.object(cert_to_check._cert, 'issuer', ca_cert._cert.subject):
+        # Mock the actual signature verification call at the cryptography library level
+        # to simulate a signature mismatch. This mock is active when _validate_signature calls
+        # public_key.verify(...).
+        with mock.patch('cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify',
+                        side_effect=Exception("Simulated Signature Failure")):
 
-#    # Force a signature failure
-#    with mock.patch.object(
-#        cert2._cert, "signature", new=cert1._cert.signature + b"corrupt"
-#    ):
-#        assert not cert1.verify_trust(cert2), "Verification should fail due to invalid signature"
+            assert not ca_cert.verify_trust(cert_to_check), \
+                "Verification should fail due to the mocked signature validation failure."
 
 ### 🐍🏗🧪️

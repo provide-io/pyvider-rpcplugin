@@ -41,41 +41,46 @@ async def test_generate_server_credentials_success(
     client_cert,
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
+    mock_server_config, # This IS the global rpcplugin_config from the updated fixture
     mock_server_transport,
+    monkeypatch,
 ) -> None:
     # Generate a real, ephemeral server certificate for this test
     ephemeral_server_cert_obj = Certificate(generate_keypair=True, common_name="test-server.example.com")
     valid_server_pem_cert = ephemeral_server_cert_obj.cert
     valid_server_pem_key = ephemeral_server_cert_obj.key
 
-    # Set these valid PEMs into the mock_server_config
-    # This config is used by RPCPluginServer._generate_server_credentials
-    mock_server_config.set("PLUGIN_SERVER_CERT", valid_server_pem_cert)
-    mock_server_config.set("PLUGIN_SERVER_KEY", valid_server_pem_key)
+    # from pyvider.rpcplugin.config import rpcplugin_config # Already imported at file level
 
-    # The client_cert fixture (passed as an argument to the test) is used for the
-    # 'client_cert' argument to _generate_server_credentials for mTLS.
-    # Setting it in config as well is not strictly necessary for this specific method call if already passed.
-    # mock_server_config.set("PLUGIN_CLIENT_CERT", client_cert.cert) # This was in the original, can keep or remove
+    # Use monkeypatch to set these specific values for this test on the global config
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_CERT", valid_server_pem_cert)
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_KEY", valid_server_pem_key)
 
-    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "1") # Keep for server init completeness
-    mock_server_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp") # Keep for server init completeness
+    # The client_cert fixture provides a Certificate object for the client's identity
+    # _generate_server_credentials takes client_cert_pem as a string argument for mTLS.
+    # We also set it in the config here for completeness or if _read_client_cert were called.
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_CLIENT_CERT", client_cert.cert)
+
+    # The mock_server_config fixture already sets some general defaults using monkeypatch.
+    # If this test needs specific overrides for other keys, set them here too.
+    # For example, if the fixture set PLUGIN_PROTOCOL_VERSIONS to [6] but this test needs [1]:
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp"])
+
 
     transport = mock_server_transport
 
+    # RPCPluginServer will use the global rpcplugin_config if its 'config' argument is None,
+    # or the passed config. Since mock_server_config IS the global rpcplugin_config, it's fine.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
+        config=mock_server_config, # This IS the global rpcplugin_config
         transport=transport,
     )
-    # server._server_cert_obj is normally set up during _setup_server or via _generate_server_credentials.
-    # We are testing _generate_server_credentials directly.
-    # The Certificate class is mocked in other tests, but here we test its actual usage.
-    # The dummy PEMs must be parsable enough by the Certificate class.
-    # client_cert.cert from the fixture is a PEM string.
-    creds = server._generate_server_credentials(client_cert.cert) # Pass client cert string
+
+    # The client_cert.cert is the PEM string of the client's certificate for mTLS.
+    creds = server._generate_server_credentials(client_cert.cert)
     assert creds is not None
 
 @pytest.mark.asyncio
