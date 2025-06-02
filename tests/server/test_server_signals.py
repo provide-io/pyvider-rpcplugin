@@ -13,44 +13,48 @@ from tests.conftest import (
 )
 
 from tests.fixtures import *
-from pyvider.rpcplugin.config import rpcplugin_config # Added import
+from pyvider.rpcplugin.config import rpcplugin_config as global_rpc_config # Alias for clarity
+from unittest.mock import patch # unittest.mock.patch is used
+from typing import Any # For type hinting in side_effect function
+from pyvider.telemetry import logger # For diagnostic logging
 
 @pytest.mark.asyncio
-async def test_server_signal_handling(mock_server_transport, mock_server_protocol, monkeypatch) -> None: # Added monkeypatch
-    # Ensure PLUGIN_SERVER_ENDPOINT from os.environ is not used by get_config()
-    monkeypatch.delenv("PLUGIN_SERVER_ENDPOINT", raising=False)
+async def test_server_signal_handling(mock_server_transport, mock_server_protocol, mock_server_config, monkeypatch) -> None: # Keep monkeypatch for now, fixtures might need it
 
-    # Ensure any cached value in the rpcplugin_config singleton is None for this key,
-    # so that RPCPluginServer._setup_server uses "127.0.0.1:0".
-    # This might require rpcplugin_config to be initialized if it's not already.
-    # A safer approach if config might not be loaded is to patch get_config if possible,
-    # or ensure the config fixture used by the server is appropriately modified.
-    # For now, directly try to set if config object exists, assuming it's a dict.
-    if hasattr(rpcplugin_config, 'config') and rpcplugin_config.config is not None:
-        monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_ENDPOINT", None)
-    else:
-        # If rpcplugin_config.config is None (e.g. singleton not yet initialized fully by .instance()),
-        # delenv should suffice, as get_config() would fetch from env.
-        pass
+    # Store the original get method if complex delegation beyond direct dict access was needed
+    # original_get_method = global_rpc_config.get
 
-    transport = mock_server_transport
+    def mock_get_for_endpoint_with_logging(key: str, default: Any = None) -> Any:
+        if key == "PLUGIN_SERVER_ENDPOINT":
+            logger.error(f"DIAGNOSTIC: mock_get_for_endpoint_with_logging called for {key}, RETURNING None") # Prominent log
+            return None
+        # For other keys, delegate to the actual config's dictionary.
+        # This assumes mock_server_config fixture (which yields global_rpc_config) has set up other necessary defaults.
+        # The global_rpc_config.instance().config should be used if RPCPluginConfig.instance() ensures init.
+        # Accessing .config directly is fine if .instance() was called (e.g. by mock_server_config fixture).
+        return global_rpc_config.config.get(key, default)
 
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,  # Use fixture correctly
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-    server._exit_on_stop = False
+    # Patch the 'get' method of the global_rpc_config instance
+    with patch.object(global_rpc_config, 'get', side_effect=mock_get_for_endpoint_with_logging) as patched_get_method:
+        transport = mock_server_transport
 
-    def trigger_shutdown():
-        server._shutdown_requested()
+        server = RPCPluginServer(
+            protocol=mock_server_protocol,
+            handler=mock_server_handler,
+            config=mock_server_config, # This is global_rpc_config via the fixture
+            transport=transport,
+        )
+        server._exit_on_stop = False
 
-    loop = asyncio.get_event_loop()
-    loop.call_later(0.1, trigger_shutdown)
+        def trigger_shutdown():
+            server._shutdown_requested()
 
-    await server.serve()
-    assert server._serving_future.done()
+        loop = asyncio.get_event_loop()
+        loop.call_later(0.1, trigger_shutdown)
+
+        await server.serve()
+
+        assert server._serving_future.done()
 
 @pytest.mark.asyncio
 async def test_register_signal_handlers_success(monkeypatch) -> None:
