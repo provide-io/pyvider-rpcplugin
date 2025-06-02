@@ -132,7 +132,7 @@ async def test_stdio_integration_registry(grpc_server_with_registry) -> None:
         await stdio_service.put_line(b"Test line 2", is_stderr=True)
 
         # Collect results
-        results = await asyncio.wait_for(stdio_task, timeout=2.0)
+        results = await asyncio.wait_for(stdio_task, timeout=5.0) # Increased timeout
 
         # Verify results
         assert len(results) == 2

@@ -77,11 +77,11 @@ class GRPCBrokerService(GRPCBrokerServicer):
         logger.debug(
             "🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream (bidirectional)."
         )
-
-        async for incoming in request_iterator:
-            try:
-                logger.debug(
-                    f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'"
+        try: # Outer try for iterator errors
+            async for incoming in request_iterator:
+                try:
+                    logger.debug(
+                        f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'"
                 )
 
                 if incoming.knock.knock:
@@ -128,11 +128,23 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     f"🔌📡❌ {err_str}", extra={"trace": traceback.format_exc()}
                 )
                 yield ConnInfo(
-                    service_id=0, # Using 0 or incoming.service_id based on context
+                    service_id=getattr(incoming, 'service_id', 0), # Use incoming service_id if available
                     knock=ConnInfo.Knock(knock=False, ack=False, error=err_str),
                 )
+        except Exception as ex_outer: # Catch errors from the request_iterator itself
+            err_str_outer = f"Broker stream error from client iterator: {ex_outer}"
+            logger.error(
+                f"🔌📡❌ {err_str_outer}", extra={"trace": traceback.format_exc()}
+            )
+            try:
+                yield ConnInfo(
+                    service_id=0, # No specific incoming item to get ID from
+                    knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_outer),
+                )
+            except Exception as e_yield_fail:
+                logger.error(f"🔌📡❌ Failed to yield error message after client iterator error: {e_yield_fail}")
 
-        logger.debug("🔌📡🛑 GRPCBrokerService.StartStream => stream closed by client.")
+        logger.debug("🔌📡🛑 GRPCBrokerService.StartStream => stream processing potentially ended.")
 
 
 class GRPCStdioService(GRPCStdioServicer):
@@ -172,19 +184,16 @@ class GRPCStdioService(GRPCStdioServicer):
         logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})") # New log
         while not self._shutdown and not done.is_set():
             try:
-                try:
-                    data_item = await asyncio.wait_for(
-                        self._message_queue.get(), timeout=2.0
-                    )
-                    logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}") # New log
-                    yield data_item
-                except asyncio.TimeoutError:
-                    # This is normal if no messages are in the queue for the timeout period
-                    logger.debug("🔌📝 GRPCStdioService: Queue get timed out, continuing loop.")
-                    continue
-                except asyncio.CancelledError:
-                    logger.debug("🔌📝🛑 StreamStdio task cancelled by client.")
-                    break
+                # Removed asyncio.wait_for and its timeout
+                data_item = await self._message_queue.get()
+                self._message_queue.task_done() # Added task_done
+                logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}")
+                yield data_item
+            # Removed the specific asyncio.TimeoutError catch block as wait_for is removed.
+            # CancelledError should still be caught if the task itself is cancelled.
+            except asyncio.CancelledError:
+                logger.debug("🔌📝🛑 StreamStdio's queue.get() was cancelled or task was cancelled.")
+                break # Exit loop on cancellation
             except Exception as e:
                 logger.error(
                     f"🔌📝❌ Error streaming lines: {e}",

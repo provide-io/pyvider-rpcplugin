@@ -683,18 +683,18 @@ def _load_dotenv_file(path: Path) -> None:
                 continue
 
             key, value = line.split("=", 1)
-                key = key.strip()
-                value = value.strip()
+            key = key.strip()
+            value = value.strip()
 
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                if value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
+            # Remove quotes if present
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1]
+            if value.startswith("'") and value.endswith("'"):
+                value = value[1:-1]
 
-                # Set environment variable
-                os.environ[key] = value
-                logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
+            # Set environment variable
+            os.environ[key] = value
+            logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading .env file: {path}", extra={"error": str(e)})
