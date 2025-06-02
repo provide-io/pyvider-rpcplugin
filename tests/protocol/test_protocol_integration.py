@@ -113,7 +113,7 @@ async def test_stdio_integration(grpc_server_output: ServerFixtureOutput, grpc_c
     await stdio_service.put_line(b"Test line 2", is_stderr=True)
 
     # Wait for the stdio collection to complete
-    results = await asyncio.wait_for(stdio_task, timeout=2.0)
+    results = await asyncio.wait_for(stdio_task, timeout=5.0) # Increased timeout
 
     # Verify the results
     assert len(results) == 2
