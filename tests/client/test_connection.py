@@ -2,6 +2,7 @@
 
 import asyncio
 import gc
+import logging # Added
 import pytest
 
 from pyvider.rpcplugin.client.connection import ClientConnection
@@ -129,21 +130,26 @@ async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog)
 @pytest.mark.asyncio
 async def test_del_warning(caplog, capsys) -> None:
     # Create a ClientConnection without calling close.
-    # Ensure local dummy instances are used here too if this test relies on specific dummy behavior
+    caplog.set_level(logging.WARNING) # Added
+
     local_dummy_writer = DummyWriter()
-    local_dummy_reader = DummyReader() # Or asyncio.StreamReader() if that's more appropriate for this specific test's goal
+    local_dummy_reader = DummyReader()
     
     conn = ClientConnection(
         reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
-    # Do not call close(), so __del__ should log a warning.
-    del conn
-    gc.collect()
 
-    # Check that a warning about not being properly closed was logged.
-    # Try both: either in captured log records or in stdout
-    captured = capsys.readouterr()
-    in_logs = any("was not properly closed" in record.message for record in caplog.records)
-    in_stdout = "was not properly closed" in captured.out
+    # Ensure the connection is not considered closed by its own logic before __del__
+    assert not conn.is_closed, "Connection should not be considered closed before explicit close or __del__ for this test"
+    remote_addr = conn.remote_addr # Store for use in expected message
+
+    del conn
+    conn = None # Explicitly remove local reference
+    gc.collect()
+    await asyncio.sleep(0.01) # Allow event loop/GC a moment
+
+    expected_message = f"Connection to {remote_addr} was not properly closed"
+
+    in_logs = any(expected_message in record.message for record in caplog.records)
     
-    assert in_logs or in_stdout, "No warning about unclosed connection was found"
+    assert in_logs, f"Expected log warning '{expected_message}' not found. Caplog text: {caplog.text}"

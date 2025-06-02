@@ -82,11 +82,15 @@ class TCPSocketTransport(RPCPluginTransport):
             try:
                 sock = self._server.sockets[0]
                 addr = sock.getsockname()
+                # self.host remains what was passed or default '127.0.0.1'
+                # self.port is updated to the actual bound port
                 self.port = addr[1]
+                logger.info(f"🔌✅ TCPSocketTransport: Server socket bound. Host: {self.host}, Actual Port: {self.port}")
                 self.endpoint = f"{self.host}:{self.port}"
+                logger.info(f"🔌✅👍 TCPSocketTransport: Endpoint set to {self.endpoint} (Host: {self.host}, Port: {self.port})")
                 self._running = True
                 self._server_ready.set()
-                logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}")
+                logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}") # This one is slightly redundant now but fine
                 return self.endpoint
             except Exception as e:
                 logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")

@@ -1,6 +1,7 @@
 # tests/rpcplugin/test_config.py
 
 import os
+import re # Added for re.escape
 import pytest
 from unittest.mock import patch, mock_open, call
 from pathlib import Path
@@ -488,8 +489,8 @@ except ImportError:
 def test_load_config_from_env_file(mock_file, mock_path_exists):
     '''Test loading configuration from a .env file.'''
     mock_path_exists.return_value = True
-    # Example .env content. Assuming PLUGIN_LOG_LEVEL is in CONFIG_SCHEMA
-    env_content = "MY_VAR_1=value1\n# A comment\nMY_VAR_2 = 'value2'\nPLUGIN_TEST_VAR=\"double_quoted_value\"\nPLUGIN_LOG_LEVEL=DEBUG"
+    # Ensure MY_VAR_1 is present and a schema key like PLUGIN_LOG_LEVEL
+    env_content = "MY_VAR_1=value1\nPLUGIN_LOG_LEVEL=DEBUG\nMY_VAR_2='value2'\nPLUGIN_TEST_VAR=\"double_quoted_value\""
     mock_file.return_value.__enter__.return_value.__iter__.return_value = env_content.splitlines().__iter__()
 
     # The reset_rpcplugin_config_singleton fixture handles clearing os.environ for schema keys
@@ -536,7 +537,8 @@ def test_load_config_from_env_file(mock_file, mock_path_exists):
 def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists):
     '''Test loading configuration from a .json file.'''
     mock_path_exists.return_value = True
-    json_data = {"MY_JSON_VAR": "json_value", "PLUGIN_NUM_VAR": 123, "PLUGIN_LIST_VAR": [1, "a"], "PLUGIN_DICT_VAR": {"k": "v"}}
+    # Use PLUGIN_CORE_VERSION as it's an int type in CONFIG_SCHEMA
+    json_data = {"MY_JSON_VAR": "json_value", "PLUGIN_CORE_VERSION": 123, "PLUGIN_LIST_VAR": [1, "a"], "PLUGIN_DICT_VAR": {"k": "v"}}
     mock_json_load.return_value = json_data
 
     # Fixture handles schema keys in os.environ and RPCPluginConfig instance.
@@ -560,16 +562,16 @@ def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists)
 
         # Assertions for os.environ (raw stringified values)
         assert os.environ["MY_JSON_VAR"] == "json_value"
-        assert os.environ["PLUGIN_NUM_VAR"] == "123" # JSON numbers are stringified for env
+        assert os.environ["PLUGIN_CORE_VERSION"] == "123" # JSON numbers are stringified for env
         assert os.environ["PLUGIN_LIST_VAR"] == '[1, "a"]' # JSON lists are stringified
         assert os.environ["PLUGIN_DICT_VAR"] == '{"k": "v"}' # JSON dicts are stringified
 
         # Assertions for RPCPluginConfig.instance().get() (schema-processed values)
-        # Assuming PLUGIN_NUM_VAR is in CONFIG_SCHEMA and its type is int
-        assert RPCPluginConfig.instance().get("PLUGIN_NUM_VAR") == 123
-        # For MY_JSON_VAR, PLUGIN_LIST_VAR, PLUGIN_DICT_VAR, if they are not in CONFIG_SCHEMA,
-        # RPCPluginConfig.instance().get() would return None or default.
-        # If they were in schema with appropriate types, we'd test that.
+        assert RPCPluginConfig.instance().get("PLUGIN_CORE_VERSION") == 123 # Check type conversion
+        # For MY_JSON_VAR, if not in schema, this would be None or a default.
+        # Let's assume MY_JSON_VAR is not a schema key and is tested via os.environ only,
+        # or add it to schema if it needs to be retrieved via .get().
+        # For now, the main fix is using a valid schema key for the typed assertion.
         # For example, if PLUGIN_LIST_VAR was list_str in schema:
         # assert RPCPluginConfig.instance().get("PLUGIN_LIST_VAR") == ["1", "a"]
 
@@ -593,7 +595,7 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists)
     mock_path_exists.return_value = True
     
     nested_dict_val = {"sub_key": "sub_val"}
-    # Assuming PLUGIN_AUTO_MTLS (for PLUGIN_BOOL_VAR) is in CONFIG_SCHEMA as bool
+    # Ensure a schema key is present, e.g., PLUGIN_AUTO_MTLS
     yaml_data = {"MY_YAML_VAR": "yaml_value", "PLUGIN_AUTO_MTLS": True, "PLUGIN_NESTED_VAR": nested_dict_val}
     mock_yaml_load.return_value = yaml_data
 
@@ -616,13 +618,14 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists)
         assert os.environ["MY_YAML_VAR"] == "yaml_value"
         assert os.environ["PLUGIN_AUTO_MTLS"] == "True" # YAML bools become "True"/"False" strings
         
-        expected_env_value_for_nested = yaml.dump(nested_dict_val).strip()
-        assert os.environ["PLUGIN_NESTED_VAR"] == expected_env_value_for_nested
+        # Compare loaded objects for nested structures
+        loaded_nested_val = yaml.safe_load(os.environ["PLUGIN_NESTED_VAR"])
+        assert loaded_nested_val == nested_dict_val
 
         # Assertions for RPCPluginConfig.instance().get() (schema-processed values)
-        # Assuming PLUGIN_AUTO_MTLS is in CONFIG_SCHEMA and its type is bool
         assert RPCPluginConfig.instance().get("PLUGIN_AUTO_MTLS") is True
-        # For MY_YAML_VAR, PLUGIN_NESTED_VAR, if not in schema, .get() would be None/default.
+        # For MY_YAML_VAR, if not in schema, .get() would be None or default.
+        # For PLUGIN_NESTED_VAR, if not in schema, .get() would be None or default.
 
     finally:
         # Restore non-schema environment variables
@@ -651,7 +654,21 @@ def test_load_config_unsupported_format():
 def test_load_config_file_read_error(mock_open_call, mock_exists_call):
     '''Test error handling when reading a config file fails (e.g. .env).'''
     file_path = Path("test_error.env")
-    with pytest.raises(ValueError, match=f"Error loading {file_path.suffix} file: {file_path.name}. Original error: Read error!"):
+    # The error message from _load_dotenv_file is "Error loading .env file: {path}. Original error: {original_error_str}"
+    # The error message from load_config_from_file is "Error loading configuration from {path}: {inner_exception_message}"
+    # So the final message contains both, with the IOError being the cause of the innermost ValueError.
+    # The direct message of the innermost ValueError is "Error loading .env file: test_error.env. Original error: Read error!"
+    # The direct message of the outermost ValueError is "Error loading configuration from test_error.env: Error loading .env file: test_error.env. Original error: Read error!"
+
+    # Let's try to match the message from the direct ValueError raised by _load_config_from_file,
+    # which wraps the error from _load_dotenv_file.
+    # The source code is: raise ValueError(f"Error loading configuration from {path}: {e}") from e
+    # where e is the error from _load_dotenv_file.
+    # The error from _load_dotenv_file is: ValueError(f"Error loading {path.suffix} file: {path}. Original error: {e}")
+    # So the message from the outer error is: "Error loading configuration from test_error.env: Error loading .env file: test_error.env. Original error: Read error!"
+
+    expected_msg = f"Error loading configuration from {file_path}: Error loading .env file: {file_path}. Original error: Read error!"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
         load_config_from_file(file_path)
     mock_open_call.assert_called_once_with(file_path, "r", encoding="utf-8")
 

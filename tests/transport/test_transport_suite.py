@@ -35,8 +35,8 @@ async def managed_transport(transport_type: str, **kwargs) -> AsyncGenerator[Tra
             # Generate unique path
             import uuid
             import time
-            # Use tempfile.gettempdir() for better portability
-            path = os.path.join(tempfile.gettempdir(), f"pyvider_test_{time.time()}_{uuid.uuid4().hex[:8]}.sock")
+            # Use tempfile.gettempdir() for better portability and shorter name
+            path = os.path.join(tempfile.gettempdir(), f"pyv_mt_{uuid.uuid4().hex[:6]}.sock")
 
             # Ensure clean state
             if os.path.exists(path):
@@ -93,8 +93,9 @@ async def transport_factory(request, tmp_path: Path): # Use tmp_path
     async def create(transport_type: str, **kwargs) -> TransportT:
         transport: TransportT
         if transport_type == "unix":
-            # Generate a unique path within tmp_path for each Unix transport created
-            socket_path_to_use = tmp_path / f"pyv_tf_{uuid.uuid4().hex[:8]}.sock" # "tf" for transport_factory
+            # Generate a unique, shorter path within system's temp directory
+            short_name = f"pyv_tf_{uuid.uuid4().hex[:6]}.sock" # Shorter name, "tf" for transport_factory
+            socket_path_to_use = Path(tempfile.gettempdir()) / short_name
             
             # Ensure it doesn't exist (it shouldn't if uuid is unique enough for the scope)
             if os.path.exists(socket_path_to_use):
