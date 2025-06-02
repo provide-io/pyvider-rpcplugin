@@ -181,28 +181,59 @@ class GRPCStdioService(GRPCStdioServicer):
         
         context.add_done_callback(on_rpc_done)
         
-        logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})") # New log
+        logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})")
+
+        get_task = None # Initialize task variables
+        done_task = None
+
         while not self._shutdown and not done.is_set():
             try:
-                # Removed asyncio.wait_for and its timeout
-                data_item = await self._message_queue.get()
-                self._message_queue.task_done() # Added task_done
+                # Create tasks for getting from queue and waiting for done event
+                get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
+                done_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
+
+                completed, pending = await asyncio.wait(
+                    [get_task, done_task], return_when=asyncio.FIRST_COMPLETED
+                )
+
+                if done_task in completed:
+                    logger.debug("🔌📝 GRPCStdioService.StreamStdio: 'done' event was set, exiting loop.")
+                    if get_task and not get_task.done(): # If get_task is still pending
+                        get_task.cancel() # Cancel it
+                    break # Exit the while loop
+
+                # If get_task is in completed (it must be, if done_task wasn't)
+                data_item = get_task.result() # Get result from completed get_task
+                self._message_queue.task_done()
                 logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}")
                 yield data_item
-            # Removed the specific asyncio.TimeoutError catch block as wait_for is removed.
-            # CancelledError should still be caught if the task itself is cancelled.
-            except asyncio.CancelledError:
-                logger.debug("🔌📝🛑 StreamStdio's queue.get() was cancelled or task was cancelled.")
-                break # Exit loop on cancellation
+
+            except asyncio.CancelledError: # If the StreamStdio task itself is cancelled
+                logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio task was cancelled.")
+                if get_task and not get_task.done():
+                    get_task.cancel()
+                if done_task and not done_task.done():
+                    done_task.cancel()
+                break
             except Exception as e:
                 logger.error(
-                    f"🔌📝❌ Error streaming lines: {e}",
+                    f"🔌📝❌ Error in StreamStdio loop: {e}", # Changed log message slightly
                     extra={"trace": traceback.format_exc()},
                 )
+                if get_task and not get_task.done(): # Cleanup tasks on other exceptions too
+                    get_task.cancel()
+                if done_task and not done_task.done():
+                    done_task.cancel()
                 break
-            logger.debug(f"🔌📝 GRPCStdioService: Loop continuing (shutdown={self._shutdown}, done={done.is_set()})") # New log after try-except
-        
-        logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => stopping. Reason: shutdown={self._shutdown}, done.is_set()={done.is_set()}") # Modified log
+            finally:
+                # Ensure tasks are cancelled if loop iteration ends for any reason other than break
+                # (e.g. if we added a continue, which we don't have here)
+                # This finally might be redundant if all exit paths (break) handle task cancellation.
+                # However, if we were to await pending tasks here, it could also lead to hangs.
+                # For now, cancellation in except blocks is the primary mechanism.
+                pass
+
+        logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => stopping. Reason: shutdown={self._shutdown}, done.is_set()={done.is_set()}")
 
     def shutdown(self) -> None:
         logger.debug("🔌📝⚠️ GRPCStdioService => marking service as shutdown")
