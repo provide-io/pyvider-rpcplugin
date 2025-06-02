@@ -483,23 +483,24 @@ except ImportError:
     YAML_AVAILABLE = False
 
 
-@pytest.mark.skip(reason="WIP: load_config_from_file tests are incomplete due to previous tool issues.")
-@patch('pyvider.rpcplugin.config.rpcplugin_config') # Mock the global instance
 @patch('pyvider.rpcplugin.config.Path.exists')
 @patch('builtins.open', new_callable=mock_open)
-def test_load_config_from_env_file(mock_file, mock_path_exists, mock_global_config_instance):
+def test_load_config_from_env_file(mock_file, mock_path_exists):
     '''Test loading configuration from a .env file.'''
     mock_path_exists.return_value = True
-    env_content = "MY_VAR_1=value1\n# A comment\nMY_VAR_2 = 'value2'\nPLUGIN_TEST_VAR=\"double_quoted_value\""
-    # For with open(...) as f: for line in f:
+    # Example .env content. Assuming PLUGIN_LOG_LEVEL is in CONFIG_SCHEMA
+    env_content = "MY_VAR_1=value1\n# A comment\nMY_VAR_2 = 'value2'\nPLUGIN_TEST_VAR=\"double_quoted_value\"\nPLUGIN_LOG_LEVEL=DEBUG"
     mock_file.return_value.__enter__.return_value.__iter__.return_value = env_content.splitlines().__iter__()
 
-
-    # Store original os.environ values to restore them later
-    original_environ = os.environ.copy()
-    # Clear potentially conflicting keys before test
-    keys_to_clear = ["MY_VAR_1", "MY_VAR_2", "PLUGIN_TEST_VAR"]
-    for k_to_clear in keys_to_clear:
+    # The reset_rpcplugin_config_singleton fixture handles clearing os.environ for schema keys
+    # and RPCPluginConfig._instance. We only need to manage non-schema keys locally if necessary.
+    original_non_schema_env = {
+        "MY_VAR_1": os.environ.get("MY_VAR_1"),
+        "MY_VAR_2": os.environ.get("MY_VAR_2"),
+        "PLUGIN_TEST_VAR": os.environ.get("PLUGIN_TEST_VAR"),
+    }
+    keys_to_clear_locally = ["MY_VAR_1", "MY_VAR_2", "PLUGIN_TEST_VAR"]
+    for k_to_clear in keys_to_clear_locally:
         if k_to_clear in os.environ:
             del os.environ[k_to_clear]
 
@@ -508,32 +509,45 @@ def test_load_config_from_env_file(mock_file, mock_path_exists, mock_global_conf
 
         mock_path_exists.assert_called_once()
         mock_file.assert_called_once_with(Path("test.env"), "r", encoding="utf-8")
+
+        # Assertions for values set in os.environ (for non-schema keys or raw values)
         assert os.environ["MY_VAR_1"] == "value1"
-        assert os.environ["MY_VAR_2"] == "value2"
+        assert os.environ["MY_VAR_2"] == "value2" # Note: .env loading might strip quotes, check actual behavior
         assert os.environ["PLUGIN_TEST_VAR"] == "double_quoted_value"
+        assert os.environ["PLUGIN_LOG_LEVEL"] == "DEBUG"
 
-        assert mock_global_config_instance.method_calls
-        assert mock_global_config_instance.method_calls[0][0] == 'config='
+        # Assertions for values retrieved via RPCPluginConfig.instance().get() (for schema keys)
+        # This will test the type conversion and validation logic within get_config
+        assert RPCPluginConfig.instance().get("PLUGIN_LOG_LEVEL") == "DEBUG" # Assuming schema type is str for LOG_LEVEL
+
     finally:
-        # Restore environment
-        os.environ.clear()
-        os.environ.update(original_environ)
+        # Restore non-schema environment variables
+        for key, value in original_non_schema_env.items():
+            if value is not None:
+                os.environ[key] = value
+            elif key in os.environ: # If it was set during test but originally None
+                del os.environ[key]
+        # Schema keys are reset by the fixture
 
 
-@pytest.mark.skip(reason="WIP: load_config_from_file tests are incomplete due to previous tool issues.")
-@patch('pyvider.rpcplugin.config.rpcplugin_config')
 @patch('pyvider.rpcplugin.config.Path.exists')
 @patch('builtins.open', new_callable=mock_open)
 @patch('json.load')
-def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists, mock_global_config_instance):
+def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists):
     '''Test loading configuration from a .json file.'''
     mock_path_exists.return_value = True
     json_data = {"MY_JSON_VAR": "json_value", "PLUGIN_NUM_VAR": 123, "PLUGIN_LIST_VAR": [1, "a"], "PLUGIN_DICT_VAR": {"k": "v"}}
     mock_json_load.return_value = json_data
 
-    original_environ = os.environ.copy()
-    keys_to_clear = ["MY_JSON_VAR", "PLUGIN_NUM_VAR", "PLUGIN_LIST_VAR", "PLUGIN_DICT_VAR"]
-    for k_to_clear in keys_to_clear:
+    # Fixture handles schema keys in os.environ and RPCPluginConfig instance.
+    # Manage non-schema keys locally if needed.
+    original_non_schema_env = {
+        "MY_JSON_VAR": os.environ.get("MY_JSON_VAR"),
+        "PLUGIN_LIST_VAR": os.environ.get("PLUGIN_LIST_VAR"), # Assuming these are not in schema
+        "PLUGIN_DICT_VAR": os.environ.get("PLUGIN_DICT_VAR"), # Assuming these are not in schema
+    }
+    keys_to_clear_locally = ["MY_JSON_VAR", "PLUGIN_LIST_VAR", "PLUGIN_DICT_VAR"]
+    for k_to_clear in keys_to_clear_locally:
         if k_to_clear in os.environ:
             del os.environ[k_to_clear]
 
@@ -544,33 +558,51 @@ def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists,
         mock_file.assert_called_once_with(Path("test.json"), "r", encoding="utf-8")
         mock_json_load.assert_called_once_with(mock_file.return_value.__enter__.return_value)
 
+        # Assertions for os.environ (raw stringified values)
         assert os.environ["MY_JSON_VAR"] == "json_value"
-        assert os.environ["PLUGIN_NUM_VAR"] == "123"
-        assert os.environ["PLUGIN_LIST_VAR"] == '[1, "a"]'
-        assert os.environ["PLUGIN_DICT_VAR"] == '{"k": "v"}'
+        assert os.environ["PLUGIN_NUM_VAR"] == "123" # JSON numbers are stringified for env
+        assert os.environ["PLUGIN_LIST_VAR"] == '[1, "a"]' # JSON lists are stringified
+        assert os.environ["PLUGIN_DICT_VAR"] == '{"k": "v"}' # JSON dicts are stringified
 
-        assert mock_global_config_instance.method_calls[0][0] == 'config='
+        # Assertions for RPCPluginConfig.instance().get() (schema-processed values)
+        # Assuming PLUGIN_NUM_VAR is in CONFIG_SCHEMA and its type is int
+        assert RPCPluginConfig.instance().get("PLUGIN_NUM_VAR") == 123
+        # For MY_JSON_VAR, PLUGIN_LIST_VAR, PLUGIN_DICT_VAR, if they are not in CONFIG_SCHEMA,
+        # RPCPluginConfig.instance().get() would return None or default.
+        # If they were in schema with appropriate types, we'd test that.
+        # For example, if PLUGIN_LIST_VAR was list_str in schema:
+        # assert RPCPluginConfig.instance().get("PLUGIN_LIST_VAR") == ["1", "a"]
+
     finally:
-        os.environ.clear()
-        os.environ.update(original_environ)
+        # Restore non-schema environment variables
+        for key, value in original_non_schema_env.items():
+            if value is not None:
+                os.environ[key] = value
+            elif key in os.environ:
+                del os.environ[key]
+        # Schema keys are reset by the fixture
 
-@pytest.mark.skipif(not YAML_AVAILABLE, reason="PyYAML not installed")
-@patch('pyvider.rpcplugin.config.rpcplugin_config')
 @patch('pyvider.rpcplugin.config.Path.exists')
 @patch('builtins.open', new_callable=mock_open)
 @patch('yaml.safe_load')
-def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists, mock_global_config_instance):
+def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists):
     '''Test loading configuration from a .yaml file.'''
-    assert YAML_AVAILABLE, "PyYAML must be installed for this test" # Ensure yaml was imported
+    if not YAML_AVAILABLE:
+        pytest.skip("PyYAML not installed")
+
     mock_path_exists.return_value = True
     
     nested_dict_val = {"sub_key": "sub_val"}
-    yaml_data = {"MY_YAML_VAR": "yaml_value", "PLUGIN_BOOL_VAR": True, "PLUGIN_NESTED_VAR": nested_dict_val}
+    # Assuming PLUGIN_AUTO_MTLS (for PLUGIN_BOOL_VAR) is in CONFIG_SCHEMA as bool
+    yaml_data = {"MY_YAML_VAR": "yaml_value", "PLUGIN_AUTO_MTLS": True, "PLUGIN_NESTED_VAR": nested_dict_val}
     mock_yaml_load.return_value = yaml_data
 
-    original_environ = os.environ.copy()
-    keys_to_clear = ["MY_YAML_VAR", "PLUGIN_BOOL_VAR", "PLUGIN_NESTED_VAR"]
-    for k_to_clear in keys_to_clear:
+    original_non_schema_env = {
+        "MY_YAML_VAR": os.environ.get("MY_YAML_VAR"),
+        "PLUGIN_NESTED_VAR": os.environ.get("PLUGIN_NESTED_VAR"),
+    }
+    keys_to_clear_locally = ["MY_YAML_VAR", "PLUGIN_NESTED_VAR"]
+    for k_to_clear in keys_to_clear_locally:
         if k_to_clear in os.environ:
             del os.environ[k_to_clear]
     try:
@@ -580,18 +612,26 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists,
         mock_file.assert_called_once_with(Path("test.yaml"), "r", encoding="utf-8")
         mock_yaml_load.assert_called_once_with(mock_file.return_value.__enter__.return_value)
 
+        # Assertions for os.environ (raw stringified values)
         assert os.environ["MY_YAML_VAR"] == "yaml_value"
-        assert os.environ["PLUGIN_BOOL_VAR"] == "True"
+        assert os.environ["PLUGIN_AUTO_MTLS"] == "True" # YAML bools become "True"/"False" strings
         
-        # Calculate the expected environment variable value for the nested dictionary
-        # The load_config_from_file uses yaml.dump for dict/list values from yaml/json.
         expected_env_value_for_nested = yaml.dump(nested_dict_val).strip()
         assert os.environ["PLUGIN_NESTED_VAR"] == expected_env_value_for_nested
 
-        assert mock_global_config_instance.method_calls[0][0] == 'config='
+        # Assertions for RPCPluginConfig.instance().get() (schema-processed values)
+        # Assuming PLUGIN_AUTO_MTLS is in CONFIG_SCHEMA and its type is bool
+        assert RPCPluginConfig.instance().get("PLUGIN_AUTO_MTLS") is True
+        # For MY_YAML_VAR, PLUGIN_NESTED_VAR, if not in schema, .get() would be None/default.
+
     finally:
-        os.environ.clear()
-        os.environ.update(original_environ)
+        # Restore non-schema environment variables
+        for key, value in original_non_schema_env.items():
+            if value is not None:
+                os.environ[key] = value
+            elif key in os.environ:
+                del os.environ[key]
+        # Schema keys are reset by the fixture
 
 
 def test_load_config_file_not_found():
@@ -606,7 +646,6 @@ def test_load_config_unsupported_format():
         with pytest.raises(ValueError, match="Unsupported file format: .txt. Supported formats: .env, .json, .yaml, .yml"):
             load_config_from_file(Path("test.txt"))
 
-@pytest.mark.skip(reason="WIP: load_config_from_file tests are incomplete due to previous tool issues.")
 @patch('pyvider.rpcplugin.config.Path.exists', return_value=True)
 @patch('builtins.open', side_effect=IOError("Read error!"))
 def test_load_config_file_read_error(mock_open_call, mock_exists_call):

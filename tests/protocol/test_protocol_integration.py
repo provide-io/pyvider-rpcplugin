@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 import attr # Added import
 
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 import grpc
 from google.protobuf.empty_pb2 import Empty
@@ -150,24 +150,59 @@ async def test_broker_integration(grpc_server_output: ServerFixtureOutput, grpc_
     # Close the stream
     await stream.done_writing()
 
-@pytest.mark.skip # the shutdown is killing the actual tests.
+
+@pytest.mark.asyncio
+async def test_broker_start_stream_error_handling(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None:
+    """Tests error handling in GRPCBrokerService.StartStream when SubchannelConnection.open fails."""
+    broker_service = grpc_server_output.broker_service
+    # broker_service is available if direct interaction is needed later
+
+    stub = GRPCBrokerStub(grpc_channel)
+    stream = stub.StartStream()
+
+    simulated_error_message = "Simulated open error"
+    with patch('pyvider.rpcplugin.protocol.service.SubchannelConnection.open', new_callable=AsyncMock, side_effect=RuntimeError(simulated_error_message)):
+        knock_request = ConnInfo(
+            service_id=123,  # Distinct service_id for this test
+            network="tcp",
+            address="localhost:6789",
+            knock=ConnInfo.Knock(knock=True, ack=False, error="")
+        )
+        await stream.write(knock_request)
+
+        response = await stream.read()
+
+        assert response.knock.ack is False
+        assert simulated_error_message in response.knock.error
+        assert response.service_id == 0  # Expect service_id to be 0 in generic error cases
+
+    await stream.done_writing()
+
+
 async def test_controller_integration(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None: # Changed fixture name
     """Integration test for the controller service."""
     shutdown_event = grpc_server_output.shutdown_event
+    controller_service = grpc_server_output.controller_service
 
     # Create a controller stub
     stub = GRPCControllerStub(grpc_channel)
 
     # Call Shutdown, but patch os.kill to prevent actual termination
-    with patch('os.kill'):
-        with patch('os.getpid', return_value=12345):
-            with patch('sys.exit'):
-                response = await stub.Shutdown(ControllerEmpty())
+    with patch.object(controller_service, '_delayed_shutdown', new_callable=AsyncMock) as mock_delayed_shutdown:
+        with patch('os.kill'):
+            with patch('os.getpid', return_value=12345):
+                with patch('sys.exit'):
+                    response = await stub.Shutdown(ControllerEmpty())
 
-                # Verify the shutdown event was set
-                assert shutdown_event.is_set()
+                    await asyncio.sleep(0.01)  # Allow event loop to schedule the task
 
-                # Verify the response is an Empty
-                assert isinstance(response, ControllerEmpty)
+                    # Verify the shutdown event was set
+                    assert shutdown_event.is_set()
+
+                    # Verify the response is an Empty
+                    assert isinstance(response, ControllerEmpty)
+
+                    # Verify that _delayed_shutdown was called
+                    mock_delayed_shutdown.assert_called_once()
 
 ### 🐍🏗🧪️
