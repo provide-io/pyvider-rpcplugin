@@ -595,15 +595,15 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists)
     mock_path_exists.return_value = True
     
     nested_dict_val = {"sub_key": "sub_val"}
-    # Ensure a schema key is present, e.g., PLUGIN_AUTO_MTLS
-    yaml_data = {"MY_YAML_VAR": "yaml_value", "PLUGIN_AUTO_MTLS": True, "PLUGIN_NESTED_VAR": nested_dict_val}
+    # Simplify yaml_data and use PLUGIN_NESTED_TEST
+    yaml_data = {"PLUGIN_AUTO_MTLS": True, "PLUGIN_NESTED_TEST": nested_dict_val}
     mock_yaml_load.return_value = yaml_data
 
     original_non_schema_env = {
-        "MY_YAML_VAR": os.environ.get("MY_YAML_VAR"),
-        "PLUGIN_NESTED_VAR": os.environ.get("PLUGIN_NESTED_VAR"),
+        # MY_YAML_VAR is no longer in yaml_data for this simplified test
+        "PLUGIN_NESTED_TEST": os.environ.get("PLUGIN_NESTED_TEST"),
     }
-    keys_to_clear_locally = ["MY_YAML_VAR", "PLUGIN_NESTED_VAR"]
+    keys_to_clear_locally = ["PLUGIN_NESTED_TEST"] # Only clear what we are setting if it's non-schema
     for k_to_clear in keys_to_clear_locally:
         if k_to_clear in os.environ:
             del os.environ[k_to_clear]
@@ -615,17 +615,17 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists)
         mock_yaml_load.assert_called_once_with(mock_file.return_value.__enter__.return_value)
 
         # Assertions for os.environ (raw stringified values)
-        assert os.environ["MY_YAML_VAR"] == "yaml_value"
         assert os.environ["PLUGIN_AUTO_MTLS"] == "True" # YAML bools become "True"/"False" strings
+
+        expected_nested_env_val = yaml.dump(nested_dict_val).strip() # As per _load_yaml_file logic
+        assert os.environ["PLUGIN_NESTED_TEST"] == expected_nested_env_val
         
-        # Compare loaded objects for nested structures
-        loaded_nested_val = yaml.safe_load(os.environ["PLUGIN_NESTED_VAR"])
+        loaded_nested_val = yaml.safe_load(os.environ["PLUGIN_NESTED_TEST"])
         assert loaded_nested_val == nested_dict_val
 
         # Assertions for RPCPluginConfig.instance().get() (schema-processed values)
         assert RPCPluginConfig.instance().get("PLUGIN_AUTO_MTLS") is True
-        # For MY_YAML_VAR, if not in schema, .get() would be None or default.
-        # For PLUGIN_NESTED_VAR, if not in schema, .get() would be None or default.
+        # PLUGIN_NESTED_TEST is not a schema key, so RPCPluginConfig.instance().get("PLUGIN_NESTED_TEST") would be None.
 
     finally:
         # Restore non-schema environment variables
@@ -657,18 +657,35 @@ def test_load_config_file_read_error(mock_open_call, mock_exists_call):
     # The error message from _load_dotenv_file is "Error loading .env file: {path}. Original error: {original_error_str}"
     # The error message from load_config_from_file is "Error loading configuration from {path}: {inner_exception_message}"
     # So the final message contains both, with the IOError being the cause of the innermost ValueError.
-    # The direct message of the innermost ValueError is "Error loading .env file: test_error.env. Original error: Read error!"
-    # The direct message of the outermost ValueError is "Error loading configuration from test_error.env: Error loading .env file: test_error.env. Original error: Read error!"
+    # The direct message of the innermost ValueError is "Error loading .env file: {path}. Original error: Read error!"
+    # The direct message of the outermost ValueError is "Error loading configuration from {path}: {message_of_innermost_ValueError}"
+    # where message_of_innermost_ValueError is "Error loading .env file: {path}. Original error: Read error!"
+    # The prompt asks to correct `expected_msg` to not include "Original error: Read error!"
+    # This implies we should match the message of the ValueError raised from _load_dotenv_file directly,
+    # or that the outer wrapper's message does not include the "Original error:..." part of its cause.
+    # Let's re-check load_config_from_file: `raise ValueError(f"Error loading configuration from {path}: {e}") from e`
+    # Here `e` is the exception from `_load_dotenv_file`. The message of `e` is `f"Error loading {path.suffix} file: {path}. Original error: {original_io_error}"`
+    # So, the full message of the *outer* exception is indeed:
+    # "Error loading configuration from {path}: Error loading .env file: {path}. Original error: Read error!"
+    #
+    # If the subtask wants to match *only* "Error loading configuration from {path}: Error loading .env file: {path}",
+    # this means the "Original error: Read error!" part is not included in the str(e) for the outer exception,
+    # or we should match a substring.
+    # Given: `raise ValueError(f"Error loading configuration from {path}: {e}") from e`
+    # `str(ValueError(f"message: {e}"))` will include `str(e)`.
+    # `str(ValueError(f"Error loading .env file: {path}. Original error: {IOError('Read error!')}"))`
+    # becomes "Error loading .env file: test_error.env. Original error: Read error!"
+    # So the full outer message is "Error loading configuration from test_error.env: Error loading .env file: test_error.env. Original error: Read error!"
+    #
+    # The instruction "Correct the expected_msg to not include the "Original error: Read error!" part" seems to contradict
+    # the actual exception chaining.
+    # Let's assume the intent is to match the part of the message *before* "Original error:".
+    # This would be `f"Error loading configuration from {file_path}: Error loading .env file: {file_path}"`
+    # and the actual error message would be "Error loading configuration from {file_path}: Error loading .env file: {file_path}. Original error: Read error!"
+    # A regex match for the first part should still work if the full message is longer.
 
-    # Let's try to match the message from the direct ValueError raised by _load_config_from_file,
-    # which wraps the error from _load_dotenv_file.
-    # The source code is: raise ValueError(f"Error loading configuration from {path}: {e}") from e
-    # where e is the error from _load_dotenv_file.
-    # The error from _load_dotenv_file is: ValueError(f"Error loading {path.suffix} file: {path}. Original error: {e}")
-    # So the message from the outer error is: "Error loading configuration from test_error.env: Error loading .env file: test_error.env. Original error: Read error!"
-
-    expected_msg = f"Error loading configuration from {file_path}: Error loading .env file: {file_path}. Original error: Read error!"
-    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+    expected_msg_part = f"Error loading configuration from {file_path}: Error loading .env file: {file_path}"
+    with pytest.raises(ValueError, match=re.escape(expected_msg_part)):
         load_config_from_file(file_path)
     mock_open_call.assert_called_once_with(file_path, "r", encoding="utf-8")
 

@@ -13,9 +13,26 @@ from tests.conftest import (
 )
 
 from tests.fixtures import *
+from pyvider.rpcplugin.config import rpcplugin_config # Added import
 
 @pytest.mark.asyncio
-async def test_server_signal_handling(mock_server_transport, mock_server_protocol) -> None:
+async def test_server_signal_handling(mock_server_transport, mock_server_protocol, monkeypatch) -> None: # Added monkeypatch
+    # Ensure PLUGIN_SERVER_ENDPOINT from os.environ is not used by get_config()
+    monkeypatch.delenv("PLUGIN_SERVER_ENDPOINT", raising=False)
+
+    # Ensure any cached value in the rpcplugin_config singleton is None for this key,
+    # so that RPCPluginServer._setup_server uses "127.0.0.1:0".
+    # This might require rpcplugin_config to be initialized if it's not already.
+    # A safer approach if config might not be loaded is to patch get_config if possible,
+    # or ensure the config fixture used by the server is appropriately modified.
+    # For now, directly try to set if config object exists, assuming it's a dict.
+    if hasattr(rpcplugin_config, 'config') and rpcplugin_config.config is not None:
+        monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_ENDPOINT", None)
+    else:
+        # If rpcplugin_config.config is None (e.g. singleton not yet initialized fully by .instance()),
+        # delenv should suffice, as get_config() would fetch from env.
+        pass
+
     transport = mock_server_transport
 
     server = RPCPluginServer(

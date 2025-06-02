@@ -2,8 +2,9 @@
 
 import asyncio
 import gc
-import logging # Added
+# import logging # No longer needed for this test
 import pytest
+from unittest.mock import patch # Added
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from tests.fixtures.dummy import DummyReader, DummyWriter # Import added
@@ -128,9 +129,8 @@ async def test_close_writer_error(monkeypatch, connection, dummy_writer, caplog)
     assert connection._closed is True
 
 @pytest.mark.asyncio
-async def test_del_warning(caplog, capsys) -> None:
-    # Create a ClientConnection without calling close.
-    caplog.set_level(logging.WARNING) # Added
+async def test_del_warning() -> None: # Removed caplog, capsys
+    # caplog.set_level(logging.WARNING) # REMOVE
 
     local_dummy_writer = DummyWriter()
     local_dummy_reader = DummyReader()
@@ -138,18 +138,24 @@ async def test_del_warning(caplog, capsys) -> None:
     conn = ClientConnection(
         reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
-
-    # Ensure the connection is not considered closed by its own logic before __del__
-    assert not conn.is_closed, "Connection should not be considered closed before explicit close or __del__ for this test"
-    remote_addr = conn.remote_addr # Store for use in expected message
-
-    del conn
-    conn = None # Explicitly remove local reference
-    gc.collect()
-    await asyncio.sleep(0.01) # Allow event loop/GC a moment
-
-    expected_message = f"Connection to {remote_addr} was not properly closed"
-
-    in_logs = any(expected_message in record.message for record in caplog.records)
     
-    assert in_logs, f"Expected log warning '{expected_message}' not found. Caplog text: {caplog.text}"
+    assert not conn.is_closed, "Connection should not be considered closed before explicit close or __del__ for this test"
+    remote_addr = conn.remote_addr
+
+    # Patch the logger.warning specifically in the module where ClientConnection uses it.
+    # ClientConnection.py does: from pyvider.telemetry import logger
+    # So the target is 'pyvider.rpcplugin.client.connection.logger.warning'.
+    with patch("pyvider.rpcplugin.client.connection.logger.warning") as mock_log_warning:
+        del conn
+        conn = None
+        gc.collect()
+        # For __del__ to be called reliably, especially with asyncio components,
+        # it often needs a bit more than just gc.collect().
+        # Giving the event loop a chance to run any pending tasks that might
+        # be holding onto the object or involved in its cleanup is important.
+        await asyncio.sleep(0.01) # Allow event loop/GC a moment
+
+        expected_message = f"Connection to {remote_addr} was not properly closed"
+
+        # Assert that the mock_log_warning was called
+        mock_log_warning.assert_called_once_with(expected_message)
