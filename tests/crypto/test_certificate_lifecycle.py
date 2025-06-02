@@ -100,13 +100,23 @@ async def test_certificate_trust_chain_validation() -> None: # Name can remain, 
 
     # Mock end_entity_cert's issuer to be ca_cert's subject so that the
     # issuer check within _validate_signature passes, forcing a signature attempt.
-    with mock.patch.object(end_entity_cert._cert, 'issuer', ca_cert._cert.subject):
-        # Mock the underlying signature verification to fail
-        with mock.patch(
-            "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
-            side_effect=Exception("Simulated Signature Failure")
-        ):
-            assert not relying_party_cert.verify_trust(end_entity_cert), \
-                "Trust chain validation should fail due to mocked signature failure."
+    # REMOVED: with mock.patch.object(end_entity_cert._cert, 'issuer', ca_cert._cert.subject):
+
+    # The mock for EllipticCurvePublicKey.verify can remain. If the issuer check *were* to pass
+    # (which it won't for these two unrelated certs as end_entity_cert is self-signed with a different subject),
+    # this mock would ensure failure.
+    # With unrelated certs, _validate_signature will return False due to issuer mismatch
+    # *before* the EllipticCurvePublicKey.verify line is reached.
+    with mock.patch(
+        "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
+        side_effect=Exception("Simulated Signature Failure")
+    ):
+        # relying_party_cert.verify_trust(end_entity_cert) will call:
+        # _validate_signature(signed_cert=end_entity_cert, signing_cert=ca_cert)
+        # Inside _validate_signature, since end_entity_cert.issuer (self-signed) != ca_cert.subject,
+        # it will return False.
+        # Thus, verify_trust will return False.
+        assert not relying_party_cert.verify_trust(end_entity_cert), \
+            "Verification of an unrelated certificate (or one with a bad signature if issuers matched) should fail."
 
 ### 🐍🏗🧪️

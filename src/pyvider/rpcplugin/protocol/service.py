@@ -129,7 +129,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                 )
                 yield ConnInfo(
                     service_id=getattr(incoming, 'service_id', 0), # Use incoming service_id if available
-                    knock=ConnInfo.Knock(knock=False, ack=False, error=err_str),
+                    knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_inner), # Corrected variable
                 )
         except Exception as ex_outer: # Catch errors from the request_iterator itself
             err_str_outer = f"Broker stream error from client iterator: {ex_outer}"
