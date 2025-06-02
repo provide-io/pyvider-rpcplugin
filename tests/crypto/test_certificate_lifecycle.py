@@ -86,18 +86,27 @@ async def test_certificate_extension_addition_failure() -> None:
             cert._create_x509_certificate()
 
 @pytest.mark.asyncio
-async def test_certificate_trust_chain_validation() -> None:
-    """Ensure trust chain verification enforces correct issuer-subject matching."""
-    cert1 = Certificate(generate_keypair=True)
-    cert2 = Certificate(generate_keypair=True)
+async def test_certificate_trust_chain_validation() -> None: # Name can remain, or be more specific
+    """Ensure trust chain verification correctly fails on a mocked signature mismatch."""
+    # Ensure 'mock' is imported from unittest (already imported at file level)
+    # from unittest import mock
 
-    cert1.trust_chain.append(cert2)
+    relying_party_cert = Certificate(generate_keypair=True, common_name="RelyingPartyCert", key_type="ecdsa")
+    ca_cert = Certificate(generate_keypair=True, common_name="TestCACert", key_type="ecdsa")
 
-    # Ensure invalid trust chain fails verification
-    with mock.patch(
-        "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
-        side_effect=Exception("Signature failure")
-    ):
-        assert not cert1.verify_trust(cert2), "Trust chain validation should fail"
+    relying_party_cert.trust_chain = [ca_cert] # relying_party_cert trusts ca_cert
+
+    end_entity_cert = Certificate(generate_keypair=True, common_name="EndEntityToVerify", key_type="ecdsa")
+
+    # Mock end_entity_cert's issuer to be ca_cert's subject so that the
+    # issuer check within _validate_signature passes, forcing a signature attempt.
+    with mock.patch.object(end_entity_cert._cert, 'issuer', ca_cert._cert.subject):
+        # Mock the underlying signature verification to fail
+        with mock.patch(
+            "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
+            side_effect=Exception("Simulated Signature Failure")
+        ):
+            assert not relying_party_cert.verify_trust(end_entity_cert), \
+                "Trust chain validation should fail due to mocked signature failure."
 
 ### 🐍🏗🧪️

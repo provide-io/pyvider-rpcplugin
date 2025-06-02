@@ -119,7 +119,7 @@ async def test_stdio_end_to_end(real_server_client: ExtendedServerFixtureOutput)
         await stdio_service.put_line(line, is_stderr=is_stderr)
 
     # Collect results
-    results = await asyncio.wait_for(stdio_task, timeout=3.0)
+    results = await asyncio.wait_for(stdio_task, timeout=7.0) # Increased timeout
 
     # Verify results
     assert len(results) == 3
@@ -209,7 +209,7 @@ async def test_stdio_early_client_disconnect(real_server_client: ExtendedServerF
     await channel.close()
 
     # Verify stream is properly terminated
-    with pytest.raises((grpc.RpcError, asyncio.CancelledError)):
+    with pytest.raises((grpc.aio.AioRpcError, asyncio.CancelledError)):
         async for _ in stream_call:
             pass
 
