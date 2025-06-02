@@ -79,53 +79,53 @@ class GRPCBrokerService(GRPCBrokerServicer):
         )
         try: # Outer try for iterator errors
             async for incoming in request_iterator:
-                try:
+                try: # Inner try for processing each item
                     logger.debug(
                         f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'"
-                )
+                    )
 
-                if incoming.knock.knock:
-                    sub_id = incoming.service_id
-                    if sub_id in self._subchannels:
-                        logger.debug(
-                            f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels."
+                    if incoming.knock.knock:
+                        sub_id = incoming.service_id
+                        if sub_id in self._subchannels:
+                            logger.debug(
+                                f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels."
+                            )
+                        else:
+                            subchan = SubchannelConnection(sub_id, incoming.address)
+                            self._subchannels[sub_id] = subchan
+                            await subchan.open()
+
+                        outgoing = ConnInfo(
+                            service_id=sub_id,
+                            network=incoming.network,
+                            address=incoming.address,
+                            knock=ConnInfo.Knock(
+                                knock=False,
+                                ack=True,
+                                error="",
+                            ),
                         )
+                        logger.debug(
+                            f"🔌📡✅ Opening subchannel {sub_id}, returning ack. {outgoing}"
+                        )
+                        yield outgoing
+
                     else:
-                        subchan = SubchannelConnection(sub_id, incoming.address)
-                        self._subchannels[sub_id] = subchan
-                        await subchan.open()
+                        sub_id = incoming.service_id
+                        if sub_id in self._subchannels:
+                            logger.debug(f"🔌📡🛑 Closing subchannel {sub_id}.")
+                            await self._subchannels[sub_id].close()
+                            del self._subchannels[sub_id]
+                        outgoing = ConnInfo(
+                            service_id=sub_id,
+                            knock=ConnInfo.Knock(knock=False, ack=True, error=""),
+                        )
+                        yield outgoing
 
-                    outgoing = ConnInfo(
-                        service_id=sub_id,
-                        network=incoming.network,
-                        address=incoming.address,
-                        knock=ConnInfo.Knock(
-                            knock=False,
-                            ack=True,
-                            error="",
-                        ),
-                    )
-                    logger.debug(
-                        f"🔌📡✅ Opening subchannel {sub_id}, returning ack. {outgoing}"
-                    )
-                    yield outgoing
-
-                else:
-                    sub_id = incoming.service_id
-                    if sub_id in self._subchannels:
-                        logger.debug(f"🔌📡🛑 Closing subchannel {sub_id}.")
-                        await self._subchannels[sub_id].close()
-                        del self._subchannels[sub_id]
-                    outgoing = ConnInfo(
-                        service_id=sub_id,
-                        knock=ConnInfo.Knock(knock=False, ack=True, error=""),
-                    )
-                    yield outgoing
-
-            except Exception as ex:
-                err_str = f"Broker error: {ex}"
-                logger.error(
-                    f"🔌📡❌ {err_str}", extra={"trace": traceback.format_exc()}
+                except Exception as ex_inner: # Catch errors processing an item (renamed ex to ex_inner)
+                    err_str_inner = f"Broker error processing item: {ex_inner}"
+                    logger.error(
+                        f"🔌📡❌ {err_str_inner}", extra={"trace": traceback.format_exc()}
                 )
                 yield ConnInfo(
                     service_id=getattr(incoming, 'service_id', 0), # Use incoming service_id if available
