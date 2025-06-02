@@ -1,11 +1,16 @@
-#!/bin/bash
+#
+# env.sh
+#
+# Sets up the development environment for pyvider.
+# Uses 'uv' for fast virtual environment and package management.
+#
 
-ENV_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-echo "env: ${ENV_SCRIPT_DIR}"
-
+# Ensure the script is run from its own directory to correctly locate .venv
+ENV_SCRIPT_DIR=$(dirname "${0}")
 CWD=$(pwd)
 
-cd ${ENV_SCRIPT_DIR}
+echo "ENV_SCRIPT_DIR=${ENV_SCRIPT_DIR}"
+echo "CWD: ${CWD}"
 
 if ! command -v uv >/dev/null 2>&1; then
   echo "🚀 Installing 'uv'..."
@@ -15,22 +20,22 @@ if ! command -v uv >/dev/null 2>&1; then
   uv -V
 fi
 
-uv python pin 3.13 --global
+echo "🐍 Setting up Python virtual environment using uv..."
 
+echo $(pwd)
 uv venv
-uv sync --all-groups --dev
 
+echo "📦 Syncing dependencies using uv..."
+# Ensure all dependency groups, including 'dev', are synced.
+uv sync --all-groups
+uv pip install -e .
+
+echo "🔗 Activating virtual environment..."
 source .venv/bin/activate
 
-export PYTHONPATH=$(pwd)/src:$(pwd)
+export PYTHONPATH="${PWD}/src:${PWD}"
 
-export PLUGIN_MAGIC_COOKIE_KEY=BASIC_PLUGIN
-export PLUGIN_MAGIC_COOKIE_VALUE=hello
-export PLUGIN_MAGIC_COOKIE=hello
-
-export BASIC_PLUGIN=hello
-
-export PLUGIN_AUTO_MTLS=true
+echo "✅ Environment setup complete. PYTHONPATH set to: ${PYTHONPATH}"
 
 # OpenSSL aliases
 alias ossl-client='openssl s_client -connect localhost:50051 \
