@@ -4,6 +4,7 @@ import asyncio
 import pytest
 from unittest import mock
 
+from pyvider.rpcplugin.crypto.certificate import Certificate # Ensure Certificate is imported
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.config import rpcplugin_config
 
@@ -43,20 +44,23 @@ async def test_generate_server_credentials_success(
     mock_server_config,
     mock_server_transport,
 ) -> None:
-    # Using slightly more structured (but still dummy) PEM data
-    dummy_pem_cert = "-----BEGIN CERTIFICATE-----\nMIICdummycertMIIC\n-----END CERTIFICATE-----"
-    dummy_pem_key = "-----BEGIN PRIVATE KEY-----\nMIICdummykeyMIIC\n-----END PRIVATE KEY-----"
+    # Generate a real, ephemeral server certificate for this test
+    ephemeral_server_cert_obj = Certificate(generate_keypair=True, common_name="test-server.example.com")
+    valid_server_pem_cert = ephemeral_server_cert_obj.cert
+    valid_server_pem_key = ephemeral_server_cert_obj.key
 
-    mock_server_config.set("PLUGIN_SERVER_CERT", dummy_pem_cert)
-    mock_server_config.set("PLUGIN_SERVER_KEY", dummy_pem_key)
-    # The original test set PLUGIN_CLIENT_CERT with a client_cert object.
-    # _generate_server_credentials takes the client_cert string as an argument,
-    # it doesn't read it from config. So, this line is not strictly needed here
-    # for this specific method's testing if client_cert.cert.encode() is passed directly.
-    # However, keeping it doesn't harm if other parts of server init were active.
-    mock_server_config.set("PLUGIN_CLIENT_CERT", client_cert.cert) # Store the PEM string
-    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "1") # Keep for completeness
-    mock_server_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp") # Keep for completeness
+    # Set these valid PEMs into the mock_server_config
+    # This config is used by RPCPluginServer._generate_server_credentials
+    mock_server_config.set("PLUGIN_SERVER_CERT", valid_server_pem_cert)
+    mock_server_config.set("PLUGIN_SERVER_KEY", valid_server_pem_key)
+
+    # The client_cert fixture (passed as an argument to the test) is used for the
+    # 'client_cert' argument to _generate_server_credentials for mTLS.
+    # Setting it in config as well is not strictly necessary for this specific method call if already passed.
+    # mock_server_config.set("PLUGIN_CLIENT_CERT", client_cert.cert) # This was in the original, can keep or remove
+
+    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "1") # Keep for server init completeness
+    mock_server_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp") # Keep for server init completeness
 
     transport = mock_server_transport
 

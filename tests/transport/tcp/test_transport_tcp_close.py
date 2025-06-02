@@ -3,7 +3,7 @@
 #
 
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import socket # Added import
@@ -76,23 +76,56 @@ async def test_tcp_socket_transport_close_writer_oserror() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_server_error() -> None:
-    """
-    Test that TCPSocketTransport.close properly handles errors when closing the server.
-    """
+async def test_tcp_transport_close_handles_server_close_method_error() -> None:
+    """Test TCPSocketTransport.close when _server.close() raises an error."""
     transport = TCPSocketTransport(host="127.0.0.1")
-    await transport.listen()
 
-    # Create a mock server that raises an error on close
-    mock_server = AsyncMock()
-    mock_server.close.side_effect = Exception("Mocked server close error")
-    mock_server.wait_closed.side_effect = Exception("Mocked server wait_closed error")
+    # Simulate a listened state without actually listening
+    transport._running = True
+    transport.endpoint = "127.0.0.1:12345" # Dummy endpoint
 
-    # Replace the transport's server with our mock
+    mock_server = AsyncMock(spec=asyncio.AbstractServer)
+    mock_server.is_serving.return_value = True
+    # .close() on asyncio.AbstractServer is synchronous
+    mock_server.close = MagicMock(side_effect=RuntimeError("Simulated server.close() error"))
+    mock_server.wait_closed = AsyncMock() # Should not be called if .close() errors
+
     transport._server = mock_server
 
-    # Should handle the error without propagating
+    # The close method should catch the RuntimeError and log it, not propagate.
     await transport.close()
+
+    mock_server.is_serving.assert_called_once()
+    mock_server.close.assert_called_once()
+    mock_server.wait_closed.assert_not_called() # Because .close() errored
+    assert transport._server is None, "Transport's server should be None after close"
+    assert not transport._running, "Transport should not be running after close"
+
+
+@pytest.mark.asyncio
+async def test_tcp_transport_close_handles_server_wait_closed_error() -> None:
+    """Test TCPSocketTransport.close when _server.wait_closed() raises an error."""
+    transport = TCPSocketTransport(host="127.0.0.1")
+
+    # Simulate a listened state
+    transport._running = True
+    transport.endpoint = "127.0.0.1:54321" # Dummy endpoint
+
+    mock_server = AsyncMock(spec=asyncio.AbstractServer)
+    mock_server.is_serving.return_value = True
+    mock_server.close = MagicMock() # No error on .close()
+    mock_server.wait_closed = AsyncMock(side_effect=RuntimeError("Simulated server.wait_closed() error"))
+
+    transport._server = mock_server
+
+    # The close method should catch the RuntimeError from wait_closed and log it.
+    await transport.close()
+
+    mock_server.is_serving.assert_called_once()
+    mock_server.close.assert_called_once()
+    mock_server.wait_closed.assert_called_once()
+    assert transport._server is None, "Transport's server should be None after close"
+    assert not transport._running, "Transport should not be running after close"
 
 
 @pytest.mark.asyncio

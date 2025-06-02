@@ -37,7 +37,7 @@ async def test_close_with_tasks(client_instance):
     
     async def dummy_task_coro():
         try:
-            await asyncio.sleep(5) # Simulate some work
+            await asyncio.sleep(0.1) # Shorter sleep
         except asyncio.CancelledError:
             # print("Dummy task cancelled") # Optional: for debugging test execution
             raise
@@ -46,18 +46,22 @@ async def test_close_with_tasks(client_instance):
     stdio_task_actual = asyncio.create_task(dummy_task_coro())
     broker_task_actual = asyncio.create_task(dummy_task_coro())
 
-    # Mock their methods for assertions and control
-    # Mock 'done' to control the condition in client.close()
-    # The real .done() would also work but this gives explicit control.
-    stdio_task_actual.done = MagicMock(return_value=False, name="StdioTask.done")
-    # Mock 'cancel' to assert it's called. The real .cancel() will be called by client.close().
-    # We are replacing it with a mock to check the call.
-    # If we needed the task to actually be cancelled for subsequent logic, we'd use side_effect.
-    # For this test, just checking it's called is enough.
-    stdio_task_actual.cancel = MagicMock(name="StdioTask.cancel_mock")
+    # Store original cancel methods before mocking
+    original_stdio_cancel = stdio_task_actual.cancel
+    original_broker_cancel = broker_task_actual.cancel
 
-    broker_task_actual.done = MagicMock(return_value=False, name="BrokerTask.done")
-    broker_task_actual.cancel = MagicMock(name="BrokerTask.cancel_mock")
+    # Define side_effect functions that call the original cancel
+    def exec_stdio_cancel_side_effect(*args, **kwargs):
+        return original_stdio_cancel(*args, **kwargs) # Call real cancel
+
+    def exec_broker_cancel_side_effect(*args, **kwargs):
+        return original_broker_cancel(*args, **kwargs)
+
+    # Apply mocks with side_effect to call the real cancel, but still track calls
+    stdio_task_actual.cancel = MagicMock(side_effect=exec_stdio_cancel_side_effect, name="StdioTask.cancel_mock")
+    broker_task_actual.cancel = MagicMock(side_effect=exec_broker_cancel_side_effect, name="BrokerTask.cancel_mock")
+
+    # Do not mock .done() - we want to check the actual final state.
 
     client_instance._stdio_task = stdio_task_actual
     client_instance._broker_task = broker_task_actual
@@ -86,20 +90,15 @@ async def test_close_with_tasks(client_instance):
 
     # Clean up tasks to prevent them from interfering with other tests if they weren't fully cancelled
     # (though client.close() should handle awaiting them after cancellation)
-    # For safety in testing, explicitly ensure tasks are finished if not already.
-    if not stdio_task_actual.done():
-        # stdio_task_actual.cancel() # This is the MagicMock, not the real cancel.
-                                  # The client.close() called this MagicMock.
-                                  # To actually cancel the task for cleanup, we need to call the real cancel.
-        asyncio.Task.cancel(stdio_task_actual) # Call the static method to ensure actual cancellation
-        with pytest.raises(asyncio.CancelledError): # Expect cancellation
-             await stdio_task_actual
-             
-    if not broker_task_actual.done():
-        # broker_task_actual.cancel() # This is the MagicMock.
-        asyncio.Task.cancel(broker_task_actual) # Call the static method to ensure actual cancellation
-        with pytest.raises(asyncio.CancelledError): # Expect cancellation
-             await broker_task_actual
+
+    # Assertions on actual task state after client.close() handled them
+    assert stdio_task_actual.done(), "Stdio task should be done after client close"
+    assert stdio_task_actual.cancelled(), "Stdio task should be in cancelled state"
+
+    assert broker_task_actual.done(), "Broker task should be done after client close"
+    assert broker_task_actual.cancelled(), "Broker task should be in cancelled state"
+
+    # Old cleanup blocks are removed as client.close() should ensure tasks are awaited.
 
 @pytest.mark.asyncio
 async def test_close_with_errors(client_instance):

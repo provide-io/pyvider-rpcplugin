@@ -175,6 +175,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
                 self._running = True
                 self.endpoint = self.path
+                logger.info(f"📞🕹✅ UnixSocketTransport: Endpoint set to {self.endpoint}")
                 logger.debug(f"📞🕹✅ Server listening on {self.path}")
                 self._server_ready.set()
                 return self.path
