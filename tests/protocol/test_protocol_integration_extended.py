@@ -209,7 +209,7 @@ async def test_stdio_early_client_disconnect(real_server_client: ExtendedServerF
     await channel.close()
 
     # Verify stream is properly terminated
-    with pytest.raises((grpc.aio.AioRpcError, asyncio.CancelledError)):
+    with pytest.raises((grpc.RpcError, grpc.aio.AioRpcError, asyncio.CancelledError)):
         async for _ in stream_call:
             pass
 

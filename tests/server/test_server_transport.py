@@ -205,14 +205,17 @@ async def test_setup_server_exception_1(
 
 @pytest.mark.asyncio
 async def test_setup_server_exception_2(
-    monkeypatch,
-    managed_unix_socket_path, # Changed
+    # monkeypatch, # Not used by this version of the fix if patch is used as context manager
+    managed_unix_socket_path,
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
 ) -> None:
-    """Test properly handling exceptions in server setup."""
-    # Use the managed socket path
+    """Test properly handling exceptions in server setup when gRPC add_port fails."""
+    from unittest import mock # Ensure mock is available
+    from pyvider.rpcplugin.server import GRPCServer # Import for patching target
+    # from tests.fixtures.dummy import DummyGRPCServer # Ensure DummyGRPCServer is importable (from fixtures import *)
+
     socket_path = managed_unix_socket_path
     transport = UnixSocketTransport(path=socket_path)
 
@@ -223,26 +226,34 @@ async def test_setup_server_exception_2(
         transport=transport,
     )
 
-    # Start the transport to create the socket
-    await transport.listen()
-    assert os.path.exists(socket_path), "Socket should exist"
+    await server._negotiate_handshake() # Ensures server._transport is set
 
-    # Create a dummy server instance to patch
-    dummy_server = DummyGRPCServer()
-    server._server = dummy_server
+    dummy_server_instance = DummyGRPCServer()
+    def mock_add_secure_port_on_dummy(*args, **kwargs):
+        raise Exception("Failed to bind to") # The exception test expects
     
-    # Define the mock function that will be used directly
-    def mock_add_secure_port(*args, **kwargs):
-        raise Exception("Failed to bind to")
-        
-    # Apply the mock to the server instance
-    with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
-        # Now try to set up the server, which should fail
+    dummy_server_instance.add_secure_port = mock_add_secure_port_on_dummy
+    # If _setup_server might call add_insecure_port, mock that too:
+    dummy_server_instance.add_insecure_port = mock_add_secure_port_on_dummy
+
+    # Patch the GRPCServer class where it's used in RPCPluginServer._setup_server
+    # This assumes RPCPluginServer._setup_server does 'from grpc.aio import server as GRPCServer'
+    # or 'self._server = GRPCServer(...)' using an imported GRPCServer.
+    # The actual import in RPCPluginServer is 'from grpc.aio import server as GRPCServer'.
+    # So the patch target is 'pyvider.rpcplugin.server.GRPCServer'.
+    with mock.patch('pyvider.rpcplugin.server.GRPCServer', return_value=dummy_server_instance) as mock_grpc_server_class:
         with pytest.raises(Exception, match="Failed to bind to"):
-            await server._setup_server("client_cert")
+            # Passing "client_cert" to ensure it tries to call add_secure_port.
+            # If None were passed and it took the insecure path, mock add_insecure_port.
+            await server._setup_server("client_cert_placeholder_for_secure_path")
     
-    # Clean up
-    await transport.close()
+    # Cleanup: server.stop() would try to stop dummy_server_instance if setup was complete.
+    # Since _setup_server failed, server._server might be dummy_server_instance or None.
+    # The transport used by server._setup_server (server._transport) was listened on.
+    if server._transport and hasattr(server._transport, '_running') and server._transport._running:
+         await server._transport.close()
+    elif hasattr(transport, '_running') and transport._running: # Fallback, though server._transport should be 'transport'
+         await transport.close()
 
 @pytest.mark.skip
 async def test_setup_server_exception_3(
