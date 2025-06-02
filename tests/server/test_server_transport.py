@@ -4,6 +4,7 @@ import os
 import platform
 import pytest
 
+from pyvider.rpcplugin.config import rpcplugin_config # Added import
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
@@ -31,14 +32,28 @@ async def test_setup_server_unix_success_insecure(
         transport=test_transport,
     )
 
+    original_endpoint_config = None
     try:
-        endpoint = await test_transport.listen()
-        await server._setup_server(None)
-        assert server._server is not None
-        assert os.path.exists(endpoint)
+        # Ensure PLUGIN_SERVER_ENDPOINT is None for this test
+        original_endpoint_config = rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT")
+        rpcplugin_config.set("PLUGIN_SERVER_ENDPOINT", None)
+
+        # Call _negotiate_handshake to set server._transport
+        await server._negotiate_handshake()
+
+        # Now call _setup_server. It will use server._transport and call listen() on it.
+        await server._setup_server(None) # client_cert is None for insecure
+
+        assert server._server is not None, "gRPC server object should be created"
+        assert server._transport is not None, "Internal transport should be set"
+        assert server._transport.endpoint is not None, "Endpoint should be set by listen()"
+        assert server._transport.endpoint == managed_unix_socket_path, "Endpoint should match the provided path"
+        assert os.path.exists(server._transport.endpoint), "Socket file should exist"
     finally:
-        await test_transport.close()
-        await server.stop()
+        if original_endpoint_config is not None: # Restore config
+            rpcplugin_config.set("PLUGIN_SERVER_ENDPOINT", original_endpoint_config)
+
+        await server.stop() # server.stop() should handle closing the transport
 
 @pytest.mark.asyncio
 async def test_setup_server_unix_no_socket(

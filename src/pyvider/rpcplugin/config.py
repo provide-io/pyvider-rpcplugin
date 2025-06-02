@@ -693,6 +693,7 @@ def _load_dotenv_file(path: Path) -> None:
 
                 # Set environment variable
                 os.environ[key] = value
+                print(f"DEBUG: Setting os.environ['{key}'] = '{value}'") # Temporary debug print
                 logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
 
     except Exception as e:
