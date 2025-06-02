@@ -15,59 +15,7 @@ from tests.conftest import (
 
 from tests.fixtures import *
 
-@pytest.mark.skip
-async def test_server_starts_insecurely_5(
-    monkeypatch, mock_server_protocol, mock_server_handler,
-    mock_server_config, mock_server_transport
-) -> None:
-    import io
-    
-    transport = mock_server_transport
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-        transport=transport,
-    )
-    
-    # Create a proper stdout mock that captures buffer writes
-    stdout_buffer = io.BytesIO()
-    fake_stdout = type('FakeStdout', (), {
-        'buffer': stdout_buffer,
-        'flush': lambda: None
-    })
-    
-    with mock.patch("sys.stdout", fake_stdout):
-        # Mock other functions to avoid actual server setup
-        async def mock_negotiate(self):
-            self._protocol_version = 1
-            self._transport_name = transport._transport_name
-            self._transport = transport
-        
-        async def mock_setup(self, client_cert):
-            pass
-        
-        async def mock_handshake(*args, **kwargs):
-            return "1|1|tcp|127.0.0.1:12345|grpc|"
-        
-        monkeypatch.setattr(server, "_negotiate_handshake", mock_negotiate.__get__(server, server.__class__))
-        monkeypatch.setattr(server, "_setup_server", mock_setup)
-        monkeypatch.setattr("pyvider.rpcplugin.server.build_handshake_response", mock_handshake)
-        
-        server_task = asyncio.create_task(server.serve())
-        await asyncio.sleep(0.1)
-        
-        server_task.cancel()
-        try:
-            await server_task
-        except asyncio.CancelledError:
-            pass
-        
-    # Check captured output from buffer
-    output = stdout_buffer.getvalue().decode('utf-8')
-    assert output.strip().startswith("1|"), f"Invalid handshake format: {output}"
-
+# test_server_starts_insecurely_5 is removed as per instructions.
 
 @pytest.mark.asyncio
 async def test_read_client_cert_present(monkeypatch, mock_server_transport) -> None:
@@ -88,8 +36,6 @@ async def test_generate_server_credentials_insecure(server_with_mocks) -> None:
     creds = server_with_mocks._generate_server_credentials(None)
     assert creds is None
 
-# Failing with that Unable to load PEM MalformedFrame error. 
-@pytest.mark.skip
 async def test_generate_server_credentials_success(
     client_cert,
     mock_server_protocol,
@@ -97,18 +43,20 @@ async def test_generate_server_credentials_success(
     mock_server_config,
     mock_server_transport,
 ) -> None:
+    # Using slightly more structured (but still dummy) PEM data
+    dummy_pem_cert = "-----BEGIN CERTIFICATE-----\nMIICdummycertMIIC\n-----END CERTIFICATE-----"
+    dummy_pem_key = "-----BEGIN PRIVATE KEY-----\nMIICdummykeyMIIC\n-----END PRIVATE KEY-----"
 
-    mock_server_config.set(
-        "PLUGIN_SERVER_CERT",
-        "-----BEGIN CERTIFICATE-----\ndummy_cert\n-----END CERTIFICATE-----",
-    )
-    mock_server_config.set(
-        "PLUGIN_SERVER_KEY",
-        "-----BEGIN PRIVATE KEY-----\ndummy_key\n-----END PRIVATE KEY-----",
-    )
-    mock_server_config.set("PLUGIN_CLIENT_CERT", client_cert)
-    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "1")
-    mock_server_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp")
+    mock_server_config.set("PLUGIN_SERVER_CERT", dummy_pem_cert)
+    mock_server_config.set("PLUGIN_SERVER_KEY", dummy_pem_key)
+    # The original test set PLUGIN_CLIENT_CERT with a client_cert object.
+    # _generate_server_credentials takes the client_cert string as an argument,
+    # it doesn't read it from config. So, this line is not strictly needed here
+    # for this specific method's testing if client_cert.cert.encode() is passed directly.
+    # However, keeping it doesn't harm if other parts of server init were active.
+    mock_server_config.set("PLUGIN_CLIENT_CERT", client_cert.cert) # Store the PEM string
+    mock_server_config.set("PLUGIN_PROTOCOL_VERSIONS", "1") # Keep for completeness
+    mock_server_config.set("PLUGIN_SERVER_TRANSPORTS", "tcp") # Keep for completeness
 
     transport = mock_server_transport
 
@@ -118,9 +66,12 @@ async def test_generate_server_credentials_success(
         config=mock_server_config,
         transport=transport,
     )
-
-    creds = server._generate_server_credentials(client_cert.cert.encode())
-    # Expect creds to be not None (dummy creds generated successfully)
+    # server._server_cert_obj is normally set up during _setup_server or via _generate_server_credentials.
+    # We are testing _generate_server_credentials directly.
+    # The Certificate class is mocked in other tests, but here we test its actual usage.
+    # The dummy PEMs must be parsable enough by the Certificate class.
+    # client_cert.cert from the fixture is a PEM string.
+    creds = server._generate_server_credentials(client_cert.cert) # Pass client cert string
     assert creds is not None
 
 @pytest.mark.asyncio
@@ -258,7 +209,6 @@ async def test_generate_server_credentials_with_client_cert(
 
 ##########################################################3
 
-@pytest.mark.skip
 async def test_server_starts_insecurely_A_1(
     monkeypatch,
     mock_server_protocol,

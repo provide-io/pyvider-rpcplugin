@@ -6,7 +6,7 @@ import pytest
 import pytest_asyncio
 import grpc
 from google.protobuf.empty_pb2 import Empty
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, AsyncMock
 from attrs import define # Added import
 
 # Service implementations
@@ -161,29 +161,36 @@ async def test_broker_cancellation(real_server_client: ExtendedServerFixtureOutp
     await stream.done_writing()
 
 
-@pytest.mark.skip # this kills the test suite completely.
 async def test_controller_shutdown_with_timeout(real_server_client: ExtendedServerFixtureOutput) -> None: # Updated parameter
     """Test controller shutdown with a timeout."""
     controller_stub = real_server_client.controller_stub
     shutdown_event = real_server_client.shutdown_event
+    controller_service_instance = real_server_client.controller_service
 
     # Patch os.kill and sys.exit to prevent actual process termination
+    # The os.kill/sys.exit patches are for the _delayed_shutdown internal logic,
+    # which we are now mocking externally. They can remain as they won't interfere.
     with patch('os.kill'), patch('sys.exit'), patch('os.getpid', return_value=12345):
-        # Call Shutdown with a timeout
-        try:
-            response = await asyncio.wait_for(
-                controller_stub.Shutdown(ControllerEmpty()),
-                timeout=2.0
-            )
+        with patch.object(controller_service_instance, '_delayed_shutdown', new_callable=AsyncMock) as mock_delayed_shutdown:
+            try:
+                response = await asyncio.wait_for(
+                    controller_stub.Shutdown(ControllerEmpty()),
+                    timeout=2.0
+                )
 
-            # Verify response is an Empty
-            assert isinstance(response, ControllerEmpty)
+                # Verify response is an Empty
+                assert isinstance(response, ControllerEmpty)
 
-            # Verify shutdown event is set
-            assert shutdown_event.is_set()
+                # Verify shutdown event is set
+                assert shutdown_event.is_set()
 
-        except asyncio.TimeoutError:
-            pytest.fail("Controller.Shutdown timed out")
+                # Add assertion for the new mock
+                # Need a small sleep to ensure the task created by Shutdown() gets a chance to run
+                await asyncio.sleep(0.01)
+                mock_delayed_shutdown.assert_called_once()
+
+            except asyncio.TimeoutError:
+                pytest.fail("Controller.Shutdown timed out")
 
 
 @pytest.mark.asyncio

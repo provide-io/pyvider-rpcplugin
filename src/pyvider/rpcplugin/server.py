@@ -307,27 +307,39 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         The method is designed to be idempotent and can be called multiple times safely.
         """
         logger.debug(f"‼️ RPCPluginServer.stop() CALLED. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
-        # traceback.print_stack(file=sys.stdout) # Removed diagnostic
+
+        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
+            self._serving_future.set_result(None)
+            logger.debug("🛎️ Serving future resolved at the beginning of stop().")
+        self._shutdown_event.set()
 
         # Cancel any pending tasks first
+        # Consider if this task cancellation is still needed or if it should be more targeted.
+        # For now, keeping it as it might relate to other plugin activities.
         all_tasks = [task for task in asyncio.all_tasks()
                     if task is not asyncio.current_task() and
                        not task.done() and
-                       task.get_name().startswith('RPCPlugin')]
+                        hasattr(task, 'get_name') and task.get_name().startswith('RPCPlugin')]
 
-        for task in all_tasks:
-            task.cancel()
-
-        try:
-            await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
-        except asyncio.TimeoutError:
-            logger.warning("🛎️ Timed out waiting for tasks to cancel")
+        if all_tasks:
+            logger.debug(f"Cancelling {len(all_tasks)} plugin-related tasks...")
+            for task in all_tasks:
+                task.cancel()
+            try:
+                await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
+                logger.debug("Plugin-related tasks cancelled.")
+            except asyncio.TimeoutError:
+                logger.warning("🛎️ Timed out waiting for plugin-related tasks to cancel.")
+            except asyncio.CancelledError:
+                logger.warning("🛎️ Task cancellation gather itself was cancelled.")
 
         # Stop gRPC server with timeout
         if self._server:
             try:
-                await asyncio.wait_for(self._server.stop(grace=1.0), timeout=2.0)
+                await asyncio.wait_for(self._server.stop(grace=0.5), timeout=1.5)
                 logger.debug("🛎️ gRPC server stopped successfully.")
+            except asyncio.TimeoutError:
+                logger.error("🛎️❌ Timeout stopping gRPC server.")
             except Exception as e:
                 logger.error(f"🛎️❌ Error stopping gRPC server: {e}")
             finally:
@@ -336,18 +348,16 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         # Close transport with timeout
         if self._transport:
             try:
-                await asyncio.wait_for(self._transport.close(), timeout=3.0)
+                await asyncio.wait_for(self._transport.close(), timeout=1.0)
                 logger.debug("🛎️ Transport closed successfully.")
+            except asyncio.TimeoutError:
+                logger.error("🛎️❌ Timeout closing transport.")
             except Exception as e:
                 logger.error(f"🛎️❌ Error closing transport: {e}")
             finally:
                 self._transport = None
 
-        # Ensure serving future completion
-        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
-            self._shutdown_requested()
-
-        logger.debug("🛎️ Server shutdown complete.")
+        logger.debug("🛎️ Server shutdown sequence in stop() complete.")
 
     async def _setup_server(self, client_cert: str | None) -> None:
         """
@@ -589,12 +599,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             *args: Optional arguments passed by signal handlers (ignored)
         """
         logger.info(f"‼️ RPCPluginServer._shutdown_requested() CALLED. Args: {args}. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
-        # traceback.print_stack(file=sys.stdout) # Removed diagnostic
-        if self._server:
-            asyncio.create_task(self.stop())
-        if not self._serving_future.done():
+        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
             self._serving_future.set_result(None)
-            logger.debug("🛎️ Serving future resolved on shutdown request.")
+            logger.debug("🛎️ Serving future resolved by _shutdown_requested.")
+        self._shutdown_event.set()
 
     async def serve(self) -> None:
         """

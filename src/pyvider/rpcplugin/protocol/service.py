@@ -39,12 +39,7 @@ class SubchannelConnection:
     """
     conn_id: int = field()
     address: str = field()
-    is_open: bool = field(init=False) # Restored as per original fix plan
-
-    def __init__(self, conn_id: int, address: str) -> None:
-        self.conn_id = conn_id
-        self.address = address
-        self.is_open = False
+    is_open: bool = field(default=False, init=False)
 
     async def open(self) -> None:
         logger.debug(
