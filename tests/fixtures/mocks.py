@@ -180,22 +180,52 @@ async def mock_server_protocol() -> MockProtocol:
     return proto
 
 
+from pyvider.rpcplugin.config import rpcplugin_config, CONFIG_SCHEMA # Import global instance and schema
+
 @pytest.fixture(scope="function")
-def mock_server_config():
-    """Provides actual RPCPluginConfig instance for testing."""
-    from pyvider.rpcplugin.config import RPCPluginConfig
+def mock_server_config(monkeypatch): # Add monkeypatch
+    '''Provides the global RPCPluginConfig instance, applying temporary test defaults.'''
 
-    # Create a fresh instance for each test
-    config = RPCPluginConfig()
+    # Ensure the global rpcplugin_config.config dictionary is initialized
+    # This happens when RPCPluginConfig.instance() is first called.
+    # If it's already initialized, this does nothing. If not, it initializes.
+    _ = rpcplugin_config.instance() # Ensure .config exists on the singleton
 
-    # Set default test values
-    config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
-    config.set("PLUGIN_MAGIC_COOKIE_VALUE", "hello")
-    config.set("PLUGIN_MAGIC_COOKIE", "hello")
-    config.set("PLUGIN_PROTOCOL_VERSIONS", [1, 2, 3, 4, 5, 6, 7])
-    config.set("PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
+    test_defaults = {
+        "PLUGIN_MAGIC_COOKIE_KEY": "PLUGIN_MAGIC_COOKIE",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello-fixture-mock-TLS", # Distinct value
+        "PLUGIN_MAGIC_COOKIE": "hello-fixture-mock-TLS",
+        "PLUGIN_PROTOCOL_VERSIONS": [6], # Example
+        "PLUGIN_SERVER_TRANSPORTS": ["tcp"], # Example
+        "PLUGIN_SERVER_ENDPOINT": None,
+    }
 
-    return config
+    for key, value in test_defaults.items():
+        # Ensure key is in config if we are setting (it should be if it's a schema key)
+        # monkeypatch.setitem will add it if it's not, which is fine for .config dict
+        if rpcplugin_config.config is not None: # Should be initialized by .instance() above
+            monkeypatch.setitem(rpcplugin_config.config, key, value)
+        else:
+            # This case should ideally not happen if .instance() correctly initializes .config
+            logger.warning(f"rpcplugin_config.config is None in mock_server_config fixture for key {key} during test_defaults application")
+
+    # Ensure critical keys for this test are either set by test or are None via monkeypatch
+    # if not part of test_defaults, to avoid interference from other tests.
+    # This ensures that if a test *doesn't* set these, they default to None, not some stale value.
+    cert_keys_to_ensure_none_if_not_in_defaults = [
+        "PLUGIN_SERVER_CERT",
+        "PLUGIN_SERVER_KEY",
+        "PLUGIN_CLIENT_CERT"
+    ]
+    if rpcplugin_config.config is not None:
+        for cert_key in cert_keys_to_ensure_none_if_not_in_defaults:
+            if cert_key not in test_defaults: # Only if not already set by our specific test_defaults
+                 monkeypatch.setitem(rpcplugin_config.config, cert_key, None)
+    else:
+        logger.warning(f"rpcplugin_config.config is None in mock_server_config fixture when trying to ensure cert keys are None")
+
+    yield rpcplugin_config # Yield the actual global singleton
+    # Teardown of values set by monkeypatch.setitem is automatic.
 
 
 @pytest_asyncio.fixture

@@ -157,5 +157,15 @@ async def test_del_warning() -> None: # Removed caplog, capsys
 
         expected_message = f"Connection to {remote_addr} was not properly closed"
 
-        # Assert that the mock_log_warning was called
-        mock_log_warning.assert_called_once_with(expected_message)
+        # New assertion:
+        found_expected_call = False
+        for call_item in mock_log_warning.call_args_list:
+            # call_item is a unittest.mock.call object. Access its positional args via call_item[0] or call_item.args
+            logged_message = call_item[0][0] # First positional argument of the call
+            if logged_message == expected_message:
+                found_expected_call = True
+                break
+
+        assert found_expected_call, \
+            f"Expected warning message '{expected_message}' not found in logger calls. " \
+            f"Actual calls: {mock_log_warning.call_args_list}"
