@@ -173,8 +173,11 @@ async def test_broker_start_stream_error_handling(grpc_server_output: ServerFixt
         response = await stream.read()
 
         assert response.knock.ack is False
-        assert simulated_error_message in response.knock.error
-        assert response.service_id == 0  # Expect service_id to be 0 in generic error cases
+
+        expected_error_detail = f"Broker error processing item: {simulated_error_message}"
+        assert expected_error_detail in response.knock.error
+
+        assert response.service_id == knock_request.service_id
 
     await stream.done_writing()
 

@@ -183,55 +183,61 @@ class GRPCStdioService(GRPCStdioServicer):
         
         logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})")
 
-        get_task = None # Initialize task variables
-        done_task = None
+        get_task = None
+        done_wait_task = None # Renamed for clarity
 
         while not self._shutdown and not done.is_set():
             try:
-                # Create tasks for getting from queue and waiting for done event
                 get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
-                done_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
+                done_wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
 
                 completed, pending = await asyncio.wait(
-                    [get_task, done_task], return_when=asyncio.FIRST_COMPLETED
+                    [get_task, done_wait_task], return_when=asyncio.FIRST_COMPLETED
                 )
 
-                if done_task in completed:
-                    logger.debug("🔌📝 GRPCStdioService.StreamStdio: 'done' event was set, exiting loop.")
-                    if get_task and not get_task.done(): # If get_task is still pending
-                        get_task.cancel() # Cancel it
-                    break # Exit the while loop
+                # Default to breaking if done_wait_task completed
+                should_break_loop = done_wait_task in completed
 
-                # If get_task is in completed (it must be, if done_task wasn't)
-                data_item = get_task.result() # Get result from completed get_task
-                self._message_queue.task_done()
-                logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}")
-                yield data_item
+                if get_task in completed:
+                    try:
+                        data_item = get_task.result()
+                        self._message_queue.task_done()
+                        logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}")
+                        yield data_item
+                    except asyncio.CancelledError: # If get_task was cancelled by done_wait_task completing first
+                        logger.debug("🔌📝 GRPCStdioService.StreamStdio: get_task was cancelled.")
+                        # If done_wait_task also completed (which it should have to cancel get_task), loop will break
 
-            except asyncio.CancelledError: # If the StreamStdio task itself is cancelled
-                logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio task was cancelled.")
-                if get_task and not get_task.done():
-                    get_task.cancel()
-                if done_task and not done_task.done():
-                    done_task.cancel()
+                # Cancel any pending tasks
+                for task_to_cancel in pending:
+                    task_to_cancel.cancel()
+                    # Optionally, await the cancellation with suppress to ensure cleanup
+                    # try:
+                    #     await task_to_cancel
+                    # except asyncio.CancelledError:
+                    #     pass
+
+                if should_break_loop: # If done_wait_task was the one that completed
+                    logger.debug("🔌📝 GRPCStdioService.StreamStdio: 'done' event was set or task cancelled, exiting loop.")
+                    break
+
+            except asyncio.CancelledError:
+                logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio task itself was cancelled.")
+                if get_task and not get_task.done(): get_task.cancel()
+                if done_wait_task and not done_wait_task.done(): done_wait_task.cancel()
                 break
             except Exception as e:
                 logger.error(
-                    f"🔌📝❌ Error in StreamStdio loop: {e}", # Changed log message slightly
+                    f"🔌📝❌ Error in StreamStdio loop: {e}",
                     extra={"trace": traceback.format_exc()},
                 )
-                if get_task and not get_task.done(): # Cleanup tasks on other exceptions too
-                    get_task.cancel()
-                if done_task and not done_task.done():
-                    done_task.cancel()
+                if get_task and not get_task.done(): get_task.cancel()
+                if done_wait_task and not done_wait_task.done(): done_wait_task.cancel()
                 break
-            finally:
-                # Ensure tasks are cancelled if loop iteration ends for any reason other than break
-                # (e.g. if we added a continue, which we don't have here)
-                # This finally might be redundant if all exit paths (break) handle task cancellation.
-                # However, if we were to await pending tasks here, it could also lead to hangs.
-                # For now, cancellation in except blocks is the primary mechanism.
-                pass
+
+        # Final cleanup of any lingering tasks (defensive)
+        if get_task and not get_task.done(): get_task.cancel()
+        if done_wait_task and not done_wait_task.done(): done_wait_task.cancel()
 
         logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => stopping. Reason: shutdown={self._shutdown}, done.is_set()={done.is_set()}")
 
