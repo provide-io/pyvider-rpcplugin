@@ -134,29 +134,41 @@ async def test_broker_start_stream_close_subchannel(broker_service, mock_context
 
 @pytest.mark.asyncio
 async def test_broker_start_stream_exception(broker_service, mock_context) -> None:
-    """Test StartStream with an exception during processing."""
-    # Create a request that will cause an exception
-    with patch.object(broker_service, '_subchannels', side_effect=Exception("Test exception")):
+    """Test StartStream with an exception during _subchannels dictionary access."""
+
+    # Create a mock dictionary to replace broker_service._subchannels
+    mock_dict = MagicMock(spec=dict)
+
+    simulated_error_message = "Simulated error on _subchannels access"
+    # Simulate an error when 'in' operator is used (which calls __contains__)
+    # This is the first dictionary access on _subchannels in the relevant code path.
+    mock_dict.__contains__.side_effect = Exception(simulated_error_message)
+
+    # Patch broker_service._subchannels to be this mock dictionary
+    # This patch is active only within this 'with' block.
+    with patch.object(broker_service, '_subchannels', mock_dict):
         knock_info = ConnInfo(
-            service_id=1,
+            service_id=1, # This service_id will be used in the __contains__ check
             network="tcp",
             address="localhost:12345",
             knock=ConnInfo.Knock(knock=True, ack=False, error="")
         )
+        request_iterator = MockRequestIterator([knock_info]) # MockRequestIterator is defined in this file
 
-        # Create request iterator with request that will cause exception
-        request_iterator = MockRequestIterator([knock_info])
-
-        # Collect responses
         responses = []
         async for response in broker_service.StartStream(request_iterator, mock_context):
             responses.append(response)
 
-        # Verify error response
-        assert len(responses) == 1
-        assert responses[0].service_id == 0
-        assert responses[0].knock.ack is False
-        assert "error" in responses[0].knock.error
+        # Verify error response from the inner exception handler
+        assert len(responses) == 1, "Should have received one error response"
+
+        # The inner exception handler in StartStream uses getattr(incoming, 'service_id', 0)
+        assert responses[0].service_id == knock_info.service_id, "Service ID in error response should match incoming"
+        assert responses[0].knock.ack is False, "ack should be False for error"
+
+        # The error message from the service is "Broker error processing item: {original_exception_message}"
+        expected_error_detail_fragment = f"Broker error processing item: {simulated_error_message}"
+        assert expected_error_detail_fragment in responses[0].knock.error, "Specific error message fragment not found"
 
 @pytest.fixture
 def stdio_service():
