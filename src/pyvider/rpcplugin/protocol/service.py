@@ -86,55 +86,83 @@ class GRPCBrokerService(GRPCBrokerServicer):
 
                     if incoming.knock.knock:
                         sub_id = incoming.service_id
+                        ack_response = False  # Default ack to False for knock requests
+                        error_message = ""
+
                         if sub_id in self._subchannels:
-                            logger.debug(
-                                f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels."
+                            logger.warning(
+                                f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels. Treating as successful re-knock/ack."
                             )
+                            # If subchannel already exists, this implies successful setup previously or a re-knock.
+                            ack_response = True
                         else:
                             subchan = SubchannelConnection(sub_id, incoming.address)
-                            self._subchannels[sub_id] = subchan
-                            await subchan.open()
+                            try:
+                                await subchan.open()
+                                self._subchannels[sub_id] = subchan # Add to dict ONLY after successful open
+                                ack_response = True
+                                logger.debug(f"🔌📡✅ Successfully opened and registered subchannel {sub_id}.")
+                            except Exception as e_open:
+                                error_message = f"Failed to open subchannel {sub_id}: {str(e_open)}"
+                                logger.error(f"🔌📡❌ {error_message}", extra={"trace": traceback.format_exc()})
+                                # ack_response remains False, error_message is set
 
                         outgoing = ConnInfo(
                             service_id=sub_id,
                             network=incoming.network,
                             address=incoming.address,
                             knock=ConnInfo.Knock(
-                                knock=False,
-                                ack=True,
-                                error="",
+                                knock=False, # This is a response to a knock
+                                ack=ack_response,
+                                error=error_message,
                             ),
                         )
                         logger.debug(
-                            f"🔌📡✅ Opening subchannel {sub_id}, returning ack. {outgoing}"
+                            f"🔌📡✅ Responding to knock for subchannel {sub_id}: ack={ack_response}, error='{error_message}'. Details: {outgoing}"
                         )
                         yield outgoing
-
-                    else:
+                    else: # This is a close request for a subchannel (knock=False implicitly)
                         sub_id = incoming.service_id
+                        closed_ack_response = False
+                        closed_error_message = ""
                         if sub_id in self._subchannels:
                             logger.debug(f"🔌📡🛑 Closing subchannel {sub_id}.")
-                            await self._subchannels[sub_id].close()
-                            del self._subchannels[sub_id]
+                            try:
+                                await self._subchannels[sub_id].close()
+                                closed_ack_response = True # Successfully processed close request
+                            except Exception as e_close:
+                                closed_error_message = f"Error closing subchannel {sub_id}: {str(e_close)}"
+                                logger.error(f"🔌📡❌ {closed_error_message}", extra={"trace": traceback.format_exc()})
+                            finally:
+                                # Remove from tracking regardless of close success, as intent was to close.
+                                del self._subchannels[sub_id]
+                        else:
+                            closed_error_message = f"Attempted to close non-existent subchannel {sub_id}."
+                            logger.warning(f"🔌📡⚠️ {closed_error_message}")
+                            # ack remains False as subchannel wasn't found to be closed.
+
                         outgoing = ConnInfo(
                             service_id=sub_id,
-                            knock=ConnInfo.Knock(knock=False, ack=True, error=""),
+                            knock=ConnInfo.Knock(knock=False, ack=closed_ack_response, error=closed_error_message),
                         )
                         yield outgoing
 
-                except Exception as ex_inner: # Catch errors processing an item (renamed ex to ex_inner)
-                    err_str_inner = f"Broker error processing item: {ex_inner}"
-                    logger.error(
-                        f"🔌📡❌ {err_str_inner}", extra={"trace": traceback.format_exc()}
-                )
-                yield ConnInfo(
-                    service_id=getattr(incoming, 'service_id', 0), # Use incoming service_id if available
-                    knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_inner), # Corrected variable
-                )
-        except Exception as ex_outer: # Catch errors from the request_iterator itself
-            err_str_outer = f"Broker stream error from client iterator: {ex_outer}"
+                except Exception as ex_item_processing:
+                    # This catches unexpected errors during the processing of 'incoming' item,
+                    # outside of the specific open/close logic handled above.
+                    error_str_item = f"Broker error processing incoming item: {str(ex_item_processing)}"
+                    logger.error(f"🔌📡❌ {error_str_item}", extra={"trace": traceback.format_exc()})
+                    # Attempt to yield an error message specific to this failed item processing.
+                    # Ensure 'incoming' is available or handle if not (e.g. if error occurred before 'incoming' was fully received/parsed)
+                    current_service_id = getattr(incoming, 'service_id', 0) # Default to 0 if service_id is not accessible
+                    yield ConnInfo(
+                        service_id=current_service_id,
+                        knock=ConnInfo.Knock(knock=False, ack=False, error=error_str_item),
+                    )
+        except Exception as ex_iterator: # Catch errors from the request_iterator itself (e.g., client disconnects abruptly)
+            error_str_iterator = f"Broker stream error from client iterator: {str(ex_iterator)}"
             logger.error(
-                f"🔌📡❌ {err_str_outer}", extra={"trace": traceback.format_exc()}
+                f"🔌📡❌ {error_str_iterator}", extra={"trace": traceback.format_exc()}
             )
             try:
                 yield ConnInfo(
@@ -238,6 +266,21 @@ class GRPCStdioService(GRPCStdioServicer):
         # Final cleanup of any lingering tasks (defensive)
         if get_task and not get_task.done(): get_task.cancel()
         if done_wait_task and not done_wait_task.done(): done_wait_task.cancel()
+
+        logger.debug("🔌📝 GRPCStdioService: Main loop exited. Attempting to drain remaining queue items.")
+        while True:
+            try:
+                # Use get_nowait() for non-blocking check during drain phase.
+                data_item = self._message_queue.get_nowait()
+                self._message_queue.task_done()
+                logger.debug(f"🔌📝✅ GRPCStdioService: Draining item: {data_item.channel}, {data_item.data[:20]}")
+                yield data_item
+            except asyncio.QueueEmpty:
+                logger.debug("🔌📝 GRPCStdioService: Queue is empty, drain complete.")
+                break
+            except Exception as e_drain:
+                logger.error(f"🔌📝❌ Error during queue drain: {e_drain}", extra={"trace": traceback.format_exc()})
+                break
 
         logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => stopping. Reason: shutdown={self._shutdown}, done.is_set()={done.is_set()}")
 

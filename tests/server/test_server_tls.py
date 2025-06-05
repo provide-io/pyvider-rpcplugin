@@ -271,7 +271,7 @@ async def test_server_starts_insecurely_A_1(
     # Apply mocks
     monkeypatch.setattr("sys.stdout", fake_stdout)
     monkeypatch.setattr(server, "_negotiate_handshake", mock_negotiate.__get__(server, server.__class__))
-    monkeypatch.setattr(server, "_setup_server", mock_setup)
+    monkeypatch.setattr(server, "_setup_server", mock_setup.__get__(server, server.__class__))
     monkeypatch.setattr("pyvider.rpcplugin.server.build_handshake_response", mock_handshake)
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
     
