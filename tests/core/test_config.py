@@ -580,12 +580,13 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists)
         assert os.environ.get("PLUGIN_AUTO_MTLS") == "False"
         
         expected_nested_yaml_dump = yaml.dump(nested_dict_val).strip()
-        assert os.environ.get(key_to_test) == expected_nested_yaml_dump
+        assert os.environ.get(key_to_test) == expected_nested_yaml_dump # Use .get()
 
-        # The previous assert already confirmed os.environ.get(key_to_test) is the expected YAML string.
-        # Now, load it back and check if it matches the original nested_dict_val.
-        loaded_nested_val = yaml.safe_load(os.environ.get(key_to_test))
-        assert loaded_nested_val == nested_dict_val
+        if os.environ.get(key_to_test): # Only load if set
+            loaded_nested_val = yaml.safe_load(os.environ[key_to_test])
+            assert loaded_nested_val == nested_dict_val
+        else:
+            pytest.fail(f"{key_to_test} was not set in os.environ")
 
         # Check RPCPluginConfig for the schema key
         assert RPCPluginConfig.instance().get("PLUGIN_AUTO_MTLS") is False

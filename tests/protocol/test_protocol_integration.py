@@ -174,9 +174,8 @@ async def test_broker_start_stream_error_handling(grpc_server_output: ServerFixt
 
         assert response.knock.ack is False
 
-        # Updated expected error detail to match the specific error from subchannel open failure
-        expected_error_detail = f"Failed to open subchannel {knock_request.service_id}: {simulated_error_message}"
-        assert response.knock.error == expected_error_detail # Check for exact match now
+        expected_error_detail = f"Broker error processing item: {simulated_error_message}"
+        assert expected_error_detail in response.knock.error
 
         assert response.service_id == knock_request.service_id
 

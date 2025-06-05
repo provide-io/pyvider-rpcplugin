@@ -69,20 +69,32 @@ class TCPSocketTransport(RPCPluginTransport):
         """
         async with self._lock:
             if self._running:
-                logger.error("🔌❌⚠: Server is already running (listen called)")
-                raise TransportError("TCP transport is already marked as running.") # Message changed slightly for clarity
+                logger.error("🔌❌⚠: Server is already running")
+                raise TransportError("TCP server is already running")
                 
-            logger.debug(f"🔌🚀🕹: Marking TCP transport as listening on {self.host}:{self.port}. Socket management deferred to gRPC server.")
-            # If port is 0, it's problematic as this method no longer resolves it.
-            # For now, proceed with the configured port. External mechanism must ensure it's valid and available.
-            if self.port == 0:
-                logger.warning(f"🔌⚠️ TCPTransport.listen() called with port 0. Port resolution is now external to this method.")
+            logger.debug("🔌🚀🕹: Starting listen() for TCP server...")
+            try:
+                self._server = await asyncio.start_server(self._handle_client, self.host, self.port)
+            except OSError as e:
+                logger.error(f"🔌❌⚠: Failed to bind TCP server: {e}")
+                raise TransportError(f"Failed to bind TCP server: {e}") from e
 
-            self.endpoint = f"{self.host}:{self.port}"
-            self._running = True # Mark as running
-            self._server_ready.set() # Signal readiness, though no server is started here
-            logger.info(f"🔌✅👍: TCP transport configured to listen at {self.endpoint}. Actual binding/listening is external.")
-            return self.endpoint
+            try:
+                sock = self._server.sockets[0]
+                addr = sock.getsockname()
+                # self.host remains what was passed or default '127.0.0.1'
+                # self.port is updated to the actual bound port
+                self.port = addr[1]
+                logger.info(f"🔌✅ TCPSocketTransport: Server socket bound. Host: {self.host}, Actual Port: {self.port}")
+                self.endpoint = f"{self.host}:{self.port}"
+                logger.info(f"🔌✅👍 TCPSocketTransport: Endpoint set to {self.endpoint} (Host: {self.host}, Port: {self.port})")
+                self._running = True
+                self._server_ready.set()
+                logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}") # This one is slightly redundant now but fine
+                return self.endpoint
+            except Exception as e:
+                logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")
+                raise TransportError(f"Error initializing TCP server: {e}") from e
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -213,30 +225,24 @@ class TCPSocketTransport(RPCPluginTransport):
                     self._writer = None
                     self._reader = None
 
-            # Close server - Removed as self._server is no longer created by listen()
-            # if self._server:
-            #     try:
-            #         if self._server.is_serving():
-            #             self._server.close()
-            #         await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
-            #         logger.info("🔌🔒✅: asyncio server (if any was externally managed) closed successfully logic removed here")
-            #     except asyncio.TimeoutError:
-            #         logger.warning(f"🔌🔒⚠️ Timeout closing asyncio server for endpoint {self.endpoint if self.endpoint else 'unknown'}")
-            #     except Exception as e:
-            #         logger.error(f"🔌🔒❌: Error closing asyncio server: {e}")
-            #     finally:
-            #         self._server = None # Ensure it's None if it was ever set externally
+            # Close server
+            if self._server:
+                try:
+                    if self._server.is_serving(): # Check if it's serving before trying to close
+                        self._server.close() # This is synchronous, initiates closing
+                    
+                    # await self._server.wait_closed() can hang.
+                    await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
+                    logger.info("🔌🔒✅: TCP server closed successfully")
+                except asyncio.TimeoutError:
+                    logger.warning(f"🔌🔒⚠️ Timeout closing TCP server for endpoint {self.endpoint if self.endpoint else 'unknown'}")
+                except Exception as e:
+                    logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
+                finally:
+                    self._server = None
+                    self._running = False
 
-            # Only set _running to False and clear endpoint if this transport instance was marked as running
-            if self._running:
-                self._running = False
-                logger.info(f"🔌🔒✅: TCP transport marked as not running for {self.endpoint}.")
-            else:
-                logger.debug(f"🔌🔒ℹ️: TCP transport close called but was not marked as running for {self.endpoint}.")
-
-            self._server = None # Ensure _server attribute is cleared
-            self.endpoint = None # Clear the endpoint
-
-        logger.debug("🔌🔒✅: TCP socket transport close() finished.")
+        self.endpoint = None
+        logger.debug("🔌🔒✅: TCP socket transport closed completely")
 
 # 🐍🏗️🔌
