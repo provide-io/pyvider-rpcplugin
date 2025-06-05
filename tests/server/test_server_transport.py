@@ -406,7 +406,7 @@ async def test_setup_server_tcp_success(
 ) -> None:
 
     transport = mock_server_transport_tcp
-    # await transport.listen() # Removed: Let RPCPluginServer call listen() during its setup.
+    await transport.listen()
 
     # monkeypatch.setattr(rpcplugin_config, "get",
     #     lambda key, default=None: "tcp:127.0.0.1:0" if key=="PLUGIN_SERVER_ENDPOINT" else default)
@@ -421,16 +421,13 @@ async def test_setup_server_tcp_success(
     )
     #server._server = dummy_server
 
-    #await transport.listen()
-    #await server._setup_server("client_cert")
-
-    #await transport.close()
+    await transport.close()
 
     # TODO: actually check this shit.
 
-    #assert any(
-    #    "127.0.0.1" in port and not port.startswith("unix:")
-    #    for port in server.ports
-    #)
+    assert any(
+        "127.0.0.1" in port and not port.startswith("unix:")
+        for port in server.ports
+    )
 
 ### 🐍🏗🧪️
