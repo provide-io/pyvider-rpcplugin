@@ -12,77 +12,39 @@ def client_cert():
     """Loads the server certificate from the environment variable."""
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-    key = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+    cert_pem_from_env = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+    key_pem_from_env = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
 
-    if not cert:
-        cert = """-----BEGIN CERTIFICATE-----
-MIIB+jCCAYGgAwIBAgIJAPsxOr78BIU0MAoGCCqGSM49BAMEMCgxEjAQBgNVBAoM
-CUhhc2hpQ29ycDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI1MDIwNTIzMTkzN1oX
-DTI2MDIwNTIzMTkzN1owKDESMBAGA1UECgwJSGFzaGlDb3JwMRIwEAYDVQQDDAls
-b2NhbGhvc3QwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARCi3SNYYDpSeScRM52tFYr
-URzsPOE/ad8BzvpvL+mfy1c5oHQhh6KPnxpoo1WyDJGYplwPTGS68DvvWmolrPAt
-C7I7r7spgyJS1358E5fA2NWk9/YPaiUzK2gsyrL9dKajdzB1MA8GA1UdEwEB/wQF
-MAMBAf8wFAYDVR0RBA0wC4IJbG9jYWxob3N0MB0GA1UdJQQWMBQGCCsGAQUFBwMC
-BggrBgEFBQcDATAOBgNVHQ8BAf8EBAMCA6gwHQYDVR0OBBYEFOwuttXPh5kTPSpX
-a2ex0+VKjlpaMAoGCCqGSM49BAMEA2cAMGQCMGbN17Zt1GxZ41cXTaQOKuv/BIQd
-nkaRz51XrITKaULNie4bgW6gT94cTUFQ9SNwEAIwOpmKeZqYG9WHcqol4QEUmMVM
-MY3jxMiLpb9Mt/ysstXmsrQY7UoLu+c6zfKwyTEJ
------END CERTIFICATE-----
-"""
-
-    if not key:
-        key = """-----BEGIN EC PRIVATE KEY-----
-MIGkAgEBBDAkxo19KczdciRiJjOWEKGY5mH9s1D0aUS5XBdvktcaonIOdqNrkCt1
-BC5YjEAVLNWgBwYFK4EEACKhZANiAARCi3SNYYDpSeScRM52tFYrURzsPOE/ad8B
-zvpvL+mfy1c5oHQhh6KPnxpoo1WyDJGYplwPTGS68DvvWmolrPAtC7I7r7spgyJS
-1358E5fA2NWk9/YPaiUzK2gsyrL9dKY=
------END EC PRIVATE KEY-----
-"""
-
-    logger.info(f"Loaded CLIENT_CERT: {cert[:30]}...")
-    logger.info(f"Loaded CLIENT_KEY: {key[:30]}...")
-
-    return Certificate(cert_pem_or_uri=cert, key_pem_or_uri=key)
+    if cert_pem_from_env and key_pem_from_env:
+        logger.info(f"Loading client certificate from environment variables.")
+        logger.info(f"Loaded CLIENT_CERT: {cert_pem_from_env[:30]}...")
+        logger.info(f"Loaded CLIENT_KEY: {key_pem_from_env[:30]}...")
+        return Certificate(cert_pem_or_uri=cert_pem_from_env, key_pem_or_uri=key_pem_from_env)
+    else:
+        logger.info("Environment variables for client certificate not found. Generating new client certificate for fixture.")
+        cert_obj = Certificate(generate_keypair=True, common_name="fixture_client_cert")
+        logger.info(f"Generated fixture CLIENT_CERT: {cert_obj.cert[:30]}...")
+        return cert_obj
 
 
 @pytest.fixture(scope="module")
 def server_cert():
-    """Loads the server certificate from the environment variable."""
+    """Loads the server certificate from the environment variable or generates one."""
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    cert = rpcplugin_config.get("PLUGIN_SERVER_CERT")
-    key = rpcplugin_config.get("PLUGIN_SERVER_KEY")
+    cert_pem_from_env = rpcplugin_config.get("PLUGIN_SERVER_CERT")
+    key_pem_from_env = rpcplugin_config.get("PLUGIN_SERVER_KEY")
 
-    if not cert:
-        cert = """-----BEGIN CERTIFICATE-----
-MIIB+jCCAYGgAwIBAgIJAKrIoEQw7N9LMAoGCCqGSM49BAMEMCgxEjAQBgNVBAoM
-CUhhc2hpQ29ycDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI1MDIwNTIzMTkzN1oX
-DTI2MDIwNTIzMTkzN1owKDESMBAGA1UECgwJSGFzaGlDb3JwMRIwEAYDVQQDDAls
-b2NhbGhvc3QwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAARMxEVmGX3a4IWPOAJ2MX2s
-2Wj3KZ0Io5EwUPMkxknGheO2e55qeHp/tkEFzYt9AH8du1xJLKKFbsGV5q9vipGN
-x5XMbj2RMdH5VXHTAdc/bLFFy9kybQqo300Rv6ViW2KjdzB1MA8GA1UdEwEB/wQF
-MAMBAf8wFAYDVR0RBA0wC4IJbG9jYWxob3N0MB0GA1UdJQQWMBQGCCsGAQUFBwMC
-BggrBgEFBQcDATAOBgNVHQ8BAf8EBAMCA6gwHQYDVR0OBBYEFJy7Iz7whfiALYDB
-TsM+IHXb1E8+MAoGCCqGSM49BAMEA2cAMGQCMFwxBS3lZSUprvrNGfJL83oGVY97
-emQpHy/SEWpHBK8awn1XeTf+ZAwLaxc3K+AKqwIwPwIbIlmstd69zAYMFNHtzceN
-XOzBx35sWRw92gr/hbE4hYeDBqEUwstSFNZ6MZu0
------END CERTIFICATE-----
-"""
-
-    if not key:
-        key = """-----BEGIN EC PRIVATE KEY-----
-MIGkAgEBBDDZ1MORWFVI0HtgKv+zZys/5e1HVmfcs4bwdp3VEsuwS6an3gTwGnSP
-Ce+bI6f/TvGgBwYFK4EEACKhZANiAARMxEVmGX3a4IWPOAJ2MX2s2Wj3KZ0Io5Ew
-UPMkxknGheO2e55qeHp/tkEFzYt9AH8du1xJLKKFbsGV5q9vipGNx5XMbj2RMdH5
-VXHTAdc/bLFFy9kybQqo300Rv6ViW2I=
------END EC PRIVATE KEY-----
-"""
-
-    logger.info(f"Loaded SERVER_CERT: {cert[:30]}...")
-    logger.info(f"Loaded SERVER_KEY: {key[:30]}...")
-
-    return Certificate(cert_pem_or_uri=cert, key_pem_or_uri=key)
+    if cert_pem_from_env and key_pem_from_env:
+        logger.info(f"Loading server certificate from environment variables.")
+        logger.info(f"Loaded SERVER_CERT: {cert_pem_from_env[:30]}...")
+        logger.info(f"Loaded SERVER_KEY: {key_pem_from_env[:30]}...")
+        return Certificate(cert_pem_or_uri=cert_pem_from_env, key_pem_or_uri=key_pem_from_env)
+    else:
+        logger.info("Environment variables for server certificate not found. Generating new server certificate for fixture.")
+        cert_obj = Certificate(generate_keypair=True, common_name="fixture_server_cert")
+        logger.info(f"Generated fixture SERVER_CERT: {cert_obj.cert[:30]}...")
+        return cert_obj
 
 
 @pytest.fixture(scope="module")
