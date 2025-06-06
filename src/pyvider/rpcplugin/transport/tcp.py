@@ -31,7 +31,7 @@ def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
     return port_str.isdigit()
 
 
-@define(frozen=False)
+@define(frozen=False, slots=False) # Explicitly set slots=False
 class TCPSocketTransport(RPCPluginTransport):
     """
     🔌🚀📝  TCP Socket Transport implementing the Transport interface.
@@ -50,12 +50,13 @@ class TCPSocketTransport(RPCPluginTransport):
     _connections: set = field(init=False, factory=set) 
     _running: bool = field(init=False, default=False)
     _connection_attempts: int = field(init=False, default=0)
+    _lock: asyncio.Lock = field(init=False, factory=asyncio.Lock) # Declare _lock
+    _server_ready: asyncio.Event = field(init=False, factory=asyncio.Event) # Declare _server_ready
     _transport_name: str = "tcp" # Class attribute identifying the transport type
 
     def __attrs_post_init__(self) -> None:
-        """Initializes locks and events for managing transport state."""
-        self._lock = asyncio.Lock() # Lock for synchronizing access to shared resources
-        self._server_ready = asyncio.Event() # Event to signal when the server is ready
+        """Initializes transport-specific attributes."""
+        # _lock and _server_ready are now initialized by factory
         logger.debug(f"🔌🚀✅: TCP transport initialized with host={self.host}, port={self.port}")
 
     async def listen(self) -> str:
@@ -113,7 +114,7 @@ class TCPSocketTransport(RPCPluginTransport):
                 if not data:
                     logger.debug(f"🔌🤝🛑: Client {client_info} disconnected")
                     break
-                logger.debug(f"🔌🤝🔍: Received data from {client_info}: {data}")
+                logger.debug(f"🔌🤝🔍: Received data from {client_info}: {data!r}") # Use !r for bytes
                 writer.write(data)
                 await writer.drain()
                 logger.debug(f"🔌🤝✅: Echoed data to {client_info}")
@@ -123,11 +124,12 @@ class TCPSocketTransport(RPCPluginTransport):
             logger.error(f"🔌🤝❌: Error handling client {client_info}: {e}")
         finally:
             try:
-                writer.close()
-                # Check if close() returns a coroutine (e.g. when using an AsyncMock)
-                maybe_coro = writer.close()
-                if asyncio.iscoroutine(maybe_coro):
-                    await maybe_coro
+                if not writer.is_closing():
+                    writer.close()
+                # The above call to writer.close() returns None for standard StreamWriter.
+                # The pattern of checking if maybe_coro is a coroutine was likely
+                # for testing with mocks where close() might be an async method.
+                # For production, just await wait_closed().
                 await writer.wait_closed()
                 logger.info(f"🔌🤝🔒: Closed connection to {client_info}")
             except Exception as e:
