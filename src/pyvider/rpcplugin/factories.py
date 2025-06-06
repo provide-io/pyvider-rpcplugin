@@ -1,9 +1,4 @@
-#
-# pyvider/rpcplugin/factories.py
-#
-
-"""
-Factory Functions for Pyvider RPC Plugin
+"""Factory Functions for Pyvider RPC Plugin
 =======================================
 
 This module provides simple factory functions that serve as the primary entry points
@@ -16,7 +11,8 @@ full power of the underlying implementation for advanced users.
 
 import os
 import asyncio
-from typing import Any, Callable, Optional, Dict
+from typing import Any # Removed Callable, Optional, Dict
+from collections.abc import Callable as AbcCallable # Import Callable from collections.abc
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.client import RPCPluginClient
@@ -31,10 +27,10 @@ def plugin_server(
     protocol: ProtocolT,
     handler: HandlerT,
     transport: str = "unix",
-    transport_path: Optional[str] = None,
+    transport_path: str | None = None,
     host: str = "127.0.0.1",
     port: int = 0,
-    config: Optional[Dict[str, Any]] = None,
+    config: dict[str, Any] | None = None,
 ) -> RPCPluginServer:
     """
     Create a new plugin server with sensible defaults.
@@ -85,11 +81,11 @@ def plugin_server(
 
 def plugin_client(
     server_path: str,
-    protocol: Optional[ProtocolT] = None,
-    env: Optional[Dict[str, str]] = None,
+    protocol: ProtocolT | None = None,
+    env: dict[str, str] | None = None,
     auto_connect: bool = False,
     timeout: float = 10.0,
-    **kwargs
+    **kwargs: Any # Added type hint for kwargs
 ) -> RPCPluginClient:
     """
     Create a new plugin client connected to a server.
@@ -124,7 +120,7 @@ def plugin_client(
         raise PermissionError(f"Server executable not executable: {server_path}")
 
     # Create configuration dictionary
-    config: Dict[str, Any] = {"timeout": timeout}
+    config: dict[str, Any] = {"timeout": timeout} # Modernized Dict to dict
     if env:
         config["env"] = env
     for key, value in kwargs.items():
@@ -149,7 +145,7 @@ def plugin_client(
 def plugin_protocol(
     service_name: str,
     descriptor_module: Any = None,
-    servicer_add_fn: Optional[Callable] = None,
+    servicer_add_fn: AbcCallable | None = None, # Modernized Optional[Callable]
 ) -> RPCPluginProtocol:
     """
     Create a protocol definition for a specific gRPC service.

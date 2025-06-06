@@ -1,21 +1,21 @@
-#
-# pyvider/rpcplugin/crypto/constants.py
-#
+"""
+Cryptographic Constants.
 
+This module defines constants used throughout the crypto package,
+including supported key types, default key sizes, and curve names.
+"""
 
 # Key types
-from typing import List
-
-KEY_TYPE_RSA = "rsa"
-KEY_TYPE_ECDSA = "ecdsa"
+KEY_TYPE_RSA: str = "rsa"
+KEY_TYPE_ECDSA: str = "ecdsa"
 
 # Default parameters
-DEFAULT_RSA_KEY_SIZE = 2048
-DEFAULT_ECDSA_CURVE = "secp521r1"
+DEFAULT_RSA_KEY_SIZE: int = 2048
+DEFAULT_ECDSA_CURVE: str = "secp521r1" # Default curve for ECDSA keys
 
 # Supported algorithms
-SUPPORTED_KEY_TYPES: List[str] = [KEY_TYPE_RSA, KEY_TYPE_ECDSA]
-SUPPORTED_RSA_SIZES = [2048, 3072, 4096]
-SUPPORTED_EC_CURVES = ["secp256r1", "secp384r1", "secp521r1"]
+SUPPORTED_KEY_TYPES: list[str] = [KEY_TYPE_RSA, KEY_TYPE_ECDSA]
+SUPPORTED_RSA_SIZES: list[int] = [2048, 3072, 4096] # Supported RSA key sizes in bits
+SUPPORTED_EC_CURVES: list[str] = ["secp256r1", "secp384r1", "secp521r1"] # Supported ECDSA curves
 
 # 🐍🏗️🔌

@@ -1,9 +1,4 @@
-#
-# pvider/rpcplugin/transport/__init__.py
-#
-
-"""
-Transport Layer for Pyvider RPC Plugin
+"""Transport Layer for Pyvider RPC Plugin
 ======================================
 
 This package provides the network transport abstractions for communication

@@ -1,9 +1,6 @@
-#
-# pyvider/rpcplugin/types.py
-#
+from __future__ import annotations
 
-"""
-Type definitions for the Pyvider RPC plugin system.
+"""Type definitions for the Pyvider RPC plugin system.
 
 This module provides Protocol classes, TypeVars, and type aliases that define
 the interfaces and contracts used throughout the pyvider.rpcplugin package.
@@ -14,12 +11,13 @@ implementing custom protocol handlers will need to implement the Protocol
 interfaces defined here.
 """
 
+from collections.abc import Awaitable, Callable as AbcCallable
+from typing import Any, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
 import grpc
-from typing import Any, Awaitable, Callable, Dict, Optional
-from typing import Protocol as TypeProtocol
-from typing import TypeGuard, TypeVar, Union, runtime_checkable
-
 from pyvider.telemetry import logger
+
+if TYPE_CHECKING:
+    from .config import RPCPluginConfig # For TypeVar bound
 
 
 # Core TypeVars for generic type parameters
@@ -96,7 +94,7 @@ class RPCPluginTransport(TypeProtocol):
     the low-level network communication between RPC plugin components.
     """
 
-    endpoint: Optional[str]
+    endpoint: str | None # Modernized Optional
 
     async def listen(self) -> str:
         """
@@ -132,7 +130,7 @@ class SerializableT(TypeProtocol):
     serialized to and from dictionary representations.
     """
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]: # Modernized Dict
         """
         Convert the object to a dictionary representation.
 
@@ -142,7 +140,7 @@ class SerializableT(TypeProtocol):
         ...
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SerializableT":
+    def from_dict(cls, data: dict[str, Any]) -> "SerializableT": # Modernized Dict
         """
         Create an object from a dictionary representation.
 
@@ -193,16 +191,16 @@ class ConnectionT(TypeProtocol):
 
 
 # Type aliases for gRPC Clients
-GrpcChannelType = Union[grpc.aio.Channel, grpc.Channel]
-GrpcServerType = grpc.aio.Server
-RpcConfigType = Dict[str, Any]
-GrpcCredentialsType = Optional[grpc.ChannelCredentials]
-EndpointType = str
-AddressType = tuple[str, int]
+GrpcChannelType = grpc.aio.Channel | grpc.Channel      # Represents gRPC sync or async channel
+GrpcServerType = grpc.aio.Server                       # Represents gRPC async server type
+RpcConfigType = dict[str, Any]                         # Configuration dictionary type
+GrpcCredentialsType = grpc.ChannelCredentials | None   # gRPC channel credentials, possibly None
+EndpointType = str                                     # Represents an endpoint string
+AddressType = tuple[str, int]                          # Represents a host-port address tuple
 
-# I/O function type aliases
-SendFuncType = Callable[[bytes], Awaitable[None]]
-ReceiveFuncType = Callable[[int], Awaitable[bytes]]
+# I/O function type aliases using collections.abc
+SendFuncType = AbcCallable[[bytes], Awaitable[None]]    # Type for a function that sends bytes
+ReceiveFuncType = AbcCallable[[int], Awaitable[bytes]] # Type for a function that receives bytes
 
 
 @runtime_checkable

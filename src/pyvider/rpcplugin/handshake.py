@@ -1,9 +1,4 @@
-#
-# pyvider/rpcplugin/handshake.py
-#
-
-"""
-This module implements handshake logic for the RPC plugin server.
+"""This module implements handshake logic for the RPC plugin server.
 It includes:
   - HandshakeConfig data classes.
   - Functions for protocol version negotiation, transport validation,
@@ -60,7 +55,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
       A tuple of (transport_name, transport_instance).
 
     Raises:
-      TransportError: If no compatible transport can be negotiated.
+      TransportError: If no compatible transport can be negotiated or an error occurs during negotiation.
     """
     logger.debug(
         f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
@@ -154,6 +149,14 @@ def validate_magic_cookie(
     If a parameter is omitted (i.e. remains as the sentinel),
     its value is read from rpcplugin_config. However, if the caller
     explicitly passes None, that is treated as missing and an error is raised.
+
+    Args:
+        magic_cookie_key: The environment key for the magic cookie.
+        magic_cookie_value: The expected value of the magic cookie.
+        magic_cookie: The actual cookie value provided.
+
+    Raises:
+        HandshakeError: If cookie validation fails.
     """
     logger.debug("🍪🔍 Starting magic cookie validation...")
 
@@ -208,6 +211,21 @@ async def build_handshake_response(
     """
     🤝📝✅ Constructs the handshake response string in the format:
     CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
+
+    Args:
+        plugin_version: The version of the plugin.
+        transport_name: The name of the transport ("tcp" or "unix").
+        transport: The transport instance.
+        server_cert: Optional server certificate for TLS.
+        port: Optional port number, required for TCP transport.
+
+    Returns:
+        The constructed handshake response string.
+
+    Raises:
+        ValueError: If required parameters are missing (e.g., port for TCP).
+        TransportError: If an unsupported transport type is given.
+        Exception: Propagates exceptions from underlying operations.
     """
     logger.debug("🤝📝🔄 Building handshake response...")
 
@@ -270,6 +288,22 @@ def parse_handshake_response(
     """
     (📡🔍 Handshake Parsing) Parses the handshake response string.
     Expected Format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
+
+    Args:
+        response: The handshake response string to parse.
+
+    Returns:
+        A tuple containing:
+            - core_version (int)
+            - plugin_version (int)
+            - network (str)
+            - address (str)
+            - protocol (str)
+            - server_cert (str | None)
+
+    Raises:
+        HandshakeError: If parsing fails or the format is invalid.
+        ValueError: If parts of the handshake string are invalid (e.g., non-integer versions).
     """
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
     try:
@@ -336,14 +370,13 @@ async def read_handshake_response(process) -> str:
     CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
     
     Args:
-        process: The subprocess.Popen instance representing the plugin
+        process: The subprocess.Popen instance representing the plugin.
         
     Returns:
-        The complete handshake response string
+        The complete handshake response string.
         
     Raises:
-        HandshakeError: If handshake fails or times out
-        TimeoutError: If process doesn't respond within timeout
+        HandshakeError: If handshake fails (e.g. process exits early) or times out.
     """
     if not process or not process.stdout:
         raise HandshakeError("No plugin process or stdout stream available")
@@ -450,10 +483,10 @@ async def create_stderr_relay(process):
     Essential for debugging handshake issues, especially with Go plugins.
     
     Args:
-        process: The subprocess.Popen instance with stderr pipe
+        process: The subprocess.Popen instance with stderr pipe.
         
     Returns:
-        The asyncio.Task managing the stderr relay
+        The asyncio.Task managing the stderr relay, or None if stderr is not available.
     """
     if not process or not process.stderr:
         logger.debug("🤝📤⚠️ No process or stderr stream available for relay")

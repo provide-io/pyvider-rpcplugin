@@ -1,6 +1,10 @@
-#
-# pyvider/rpcplugin/protocol/__init__.py
-#
+"""
+Pyvider RPC Plugin Protocol Package.
+
+This package defines the base RPC plugin protocol interface and re-exports
+key components from the gRPC generated protocol code (services, servicers,
+and registration functions) for use by clients and servers.
+"""
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.protocol.service import (
@@ -28,17 +32,21 @@ __all__ = [
     "register_protocol_service",
     "GRPCBroker",
     "GRPCBrokerServicer",
-    "add_GRPCBrokerServicer_to_serve",
+    "add_GRPCBrokerServicer_to_server",  # Corrected typo
     "GRPCController",
     "GRPCControllerServicer",
-    "add_GRPCControllerServicer_to_serve",
-    "StreamStdio",
+    "add_GRPCControllerServicer_to_server", # Corrected typo
+    # "StreamStdio", # Removed as it's not an imported symbol
     "add_GRPCStdioServicer_to_server",
-    "add_GRPCBrokerServicer_to_server",
-    "add_GRPCControllerServicer_to_server",
+    "add_GRPCBrokerServicer_to_server", # Ensure this is not a duplicate if already corrected above (it is)
+    "add_GRPCControllerServicer_to_server", # Ensure this is not a duplicate (it is)
     "GRPCStdio",
     "GRPCStdioServicer",
     "GRPCBrokerService",
 ]
+
+# Consolidate __all__ to remove duplicates from corrections
+__all__ = list(sorted(set(__all__)))
+
 
 # 🐍🏗️🔌

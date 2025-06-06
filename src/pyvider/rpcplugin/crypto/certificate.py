@@ -1,4 +1,11 @@
-# pyvider/rpcplugin/crypto/certificate.py
+"""
+Certificate Generation and Management.
+
+This module provides the `Certificate` class for generating, loading,
+and managing X.509 certificates for use in secure communication within
+the Pyvider RPC Plugin system. It leverages the `cryptography` library
+for underlying cryptographic operations.
+"""
 
 import os
 import traceback
@@ -6,7 +13,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum, auto
 from functools import cached_property
 from pathlib import Path
-from typing import NotRequired, Self, TypedDict
+from typing import NotRequired, Self, TypedDict, cast # Added cast here
 
 # Use attrs imports
 from attrs import Factory, define, field
@@ -212,17 +219,18 @@ class Certificate:
 
                 # Validate self.key_type string and determine KeyType enum
                 normalized_key_type_str = self.key_type.lower()
-                if normalized_key_type_str == "rsa":
-                    gen_key_type = KeyType.RSA
-                elif normalized_key_type_str == "ecdsa":
-                    gen_key_type = KeyType.ECDSA
-                else:
-                    # This will be caught by the general try-except in __attrs_post_init__
-                    # and re-raised as a CertificateError.
-                    raise ValueError(f"Unsupported key_type string: '{self.key_type}'. Must be 'rsa' or 'ecdsa'.")
+                match normalized_key_type_str:
+                    case "rsa":
+                        gen_key_type = KeyType.RSA
+                    case "ecdsa":
+                        gen_key_type = KeyType.ECDSA
+                    case _:
+                        # This will be caught by the general try-except in __attrs_post_init__
+                        # and re-raised as a CertificateError.
+                        raise ValueError(f"Unsupported key_type string: '{self.key_type}'. Must be 'rsa' or 'ecdsa'.")
 
                 # gen_key_type is already set above
-                gen_curve = None
+                gen_curve: CurveType | None = None
                 gen_key_size = None
 
                 if gen_key_type == KeyType.ECDSA:
@@ -274,6 +282,8 @@ class Certificate:
                 self.cert = cert_data # Store raw PEM provided
 
                 # Load the cryptography certificate object
+                logger.debug(f"📜🔑🔍 Attempting to load X.509 certificate from PEM data (first 100 chars): {cert_data[:100]}")
+                logger.debug(f"📜🔑🔍 Full PEM data for cert (len {len(cert_data)}):\n{cert_data}")
                 self._cert = x509.load_pem_x509_certificate(cert_data.encode("utf-8"))
                 logger.debug("📜🔑✅ X.509 certificate object loaded from PEM.")
 
@@ -282,6 +292,8 @@ class Certificate:
                     logger.debug("📜🔑🚀 Loading private key.")
                     key_data = self._load_from_uri_or_pem(self.key_pem_or_uri)
                     self.key = key_data # Store raw PEM provided
+                    logger.debug(f"📜🔑🔍 Attempting to load private key from PEM data (first 100 chars): {key_data[:100]}")
+                    logger.debug(f"📜🔑🔍 Full PEM data for key (len {len(key_data)}):\n{key_data}")
                     self._private_key = load_pem_private_key(
                         key_data.encode("utf-8"), password=None
                     )
@@ -321,6 +333,12 @@ class Certificate:
         """
         Internal helper to build and sign the X.509 certificate object.
         Uses self._base and self._private_key which must be set beforehand.
+
+        Returns:
+            The generated X509Certificate object.
+
+        Raises:
+            CertificateError: If prerequisites are missing or signing fails.
         """
         if not self._private_key: # Defensive check
             raise CertificateError("Cannot sign certificate without a private key.")
@@ -387,7 +405,23 @@ class Certificate:
 
     @staticmethod
     def _load_from_uri_or_pem(data: str) -> str:
-        """Loads PEM data from a file URI ('file://...') or directly."""
+        """
+        Loads PEM data either directly from a string or from a file URI.
+
+        If the `data` string starts with "file://", it's treated as a URI,
+        and the certificate/key data is read from the specified file.
+        Otherwise, the data string itself is assumed to be the PEM content.
+        The method also strips leading/trailing whitespace.
+
+        Args:
+            data: The PEM data string or a file URI (e.g., "file:///path/to/cert.pem").
+
+        Returns:
+            The loaded PEM data as a string.
+
+        Raises:
+            CertificateError: If loading from a file URI fails or the data is invalid.
+        """
         try:
             if data.startswith("file://"):
                 path_str = data.removeprefix("file://")
@@ -429,7 +463,8 @@ class Certificate:
     @cached_property
     def is_valid(self) -> bool:
         """Checks if the certificate is currently valid based on its dates."""
-        if not hasattr(self, '_base'): return False # Check if base exists
+        if not hasattr(self, '_base'): # Check if base exists
+            return False
         now = datetime.now(UTC)
         valid = self._base.not_valid_before <= now <= self._base.not_valid_after
         return valid
@@ -437,7 +472,8 @@ class Certificate:
     @property
     def is_ca(self) -> bool:
         """Checks if the certificate has the Basic Constraints CA flag set to True."""
-        if not hasattr(self, '_cert'): return False # Check if cert obj exists
+        if not hasattr(self, '_cert'): # Check if cert obj exists
+            return False
         try:
             ext = self._cert.extensions.get_extension_for_oid(
                 x509.oid.ExtensionOID.BASIC_CONSTRAINTS
@@ -452,25 +488,29 @@ class Certificate:
     @property
     def subject(self) -> str:
         """Returns the certificate subject as an RFC4514 string."""
-        if not hasattr(self, '_base'): return "SubjectNotInitialized"
+        if not hasattr(self, '_base'):
+            return "SubjectNotInitialized"
         return self._base.subject.rfc4514_string()
 
     @property
     def issuer(self) -> str:
         """Returns the certificate issuer as an RFC4514 string."""
-        if not hasattr(self, '_base'): return "IssuerNotInitialized"
+        if not hasattr(self, '_base'):
+            return "IssuerNotInitialized"
         return self._base.issuer.rfc4514_string()
 
     @property
     def public_key(self) -> PublicKey | None:
         """Returns the public key object from the certificate."""
-        if not hasattr(self, '_base'): return None
+        if not hasattr(self, '_base'):
+            return None
         return self._base.public_key
 
     @property
     def serial_number(self) -> int | None:
          """Returns the certificate serial number."""
-         if not hasattr(self, '_base'): return None
+         if not hasattr(self, '_base'):
+            return None
          return self._base.serial_number
 
     # --- Core Logic Methods ---
@@ -478,8 +518,6 @@ class Certificate:
     def verify_trust(self, other_cert: Self) -> bool:
         """Verifies if the `other_cert` is trusted based on this certificate's trust chain."""
         if other_cert is None:
-            # It's good practice to log before raising, or ensure the error message is descriptive enough.
-            # logger.error("📜🔍❌ Cannot verify trust: other_cert argument is None.") # Optional log
             raise CertificateError("Cannot verify trust: other_cert is None")
         
         # Now it's safe to access other_cert attributes
@@ -540,17 +578,18 @@ class Certificate:
                  logger.error("📜🔍❌ Cannot validate signature: Unknown hash algorithm.")
                  return False
 
-            if isinstance(signing_public_key, rsa.RSAPublicKey):
-                signing_public_key.verify(
-                    signature, tbs_certificate_bytes, padding.PKCS1v15(), signature_hash_algorithm
-                )
-            elif isinstance(signing_public_key, ec.EllipticCurvePublicKey):
-                 signing_public_key.verify(
-                    signature, tbs_certificate_bytes, ec.ECDSA(signature_hash_algorithm)
-                 )
-            else:
-                logger.error(f"📜🔍❌ Unsupported signing public key type: {type(signing_public_key)}")
-                return False
+            match type(signing_public_key):
+                case rsa.RSAPublicKey:
+                    cast(rsa.RSAPublicKey, signing_public_key).verify(
+                        signature, tbs_certificate_bytes, padding.PKCS1v15(), signature_hash_algorithm
+                    )
+                case ec.EllipticCurvePublicKey:
+                    cast(ec.EllipticCurvePublicKey, signing_public_key).verify(
+                        signature, tbs_certificate_bytes, ec.ECDSA(signature_hash_algorithm)
+                    )
+                case _:
+                    logger.error(f"📜🔍❌ Unsupported signing public key type: {type(signing_public_key)}")
+                    return False
 
             return True
 

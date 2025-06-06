@@ -1,9 +1,4 @@
-#
-# pyvider/rpcplugin/client/base.py
-#
-
-"""
-RPCPluginClient module for managing plugin connections and lifecycle.
+"""RPCPluginClient module for managing plugin connections and lifecycle.
 
 This module provides the core client interface for the Pyvider RPC Plugin system,
 enabling secure communication with Terraform-compatible plugin servers through
@@ -43,6 +38,7 @@ import os
 import subprocess
 import sys
 import traceback
+from pathlib import Path # Moved import here
 from typing import Any
 
 from attrs import define, field
@@ -255,7 +251,7 @@ class RPCPluginClient:
             # set the environment variable so the server knows what the clients
             # certificate is.
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
-            cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
+            rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
@@ -290,13 +286,23 @@ class RPCPluginClient:
                 line = self._process.stderr.readline()
                 if not line:
                     break
-                sys.stderr.write(line.decode('utf-8', errors='replace'))  # Decode bytes to str
+                # Use f-string for consistency, though not strictly formatting here
+                sys.stderr.write(f"{line.decode('utf-8', errors='replace')}")
 
         t = threading.Thread(target=read_stderr, daemon=True)
         t.start()
 
     async def _read_raw_handshake_line_from_stdout(self) -> str:
-        """Read a complete handshake line from stdout with robust retry logic."""
+        """
+        Read a complete handshake line from stdout with robust retry logic.
+
+        Returns:
+            The complete handshake line as a string.
+
+        Raises:
+            HandshakeError: If the plugin process exits before sending a complete handshake.
+            TimeoutError: If the handshake times out.
+        """
         loop = asyncio.get_event_loop()
         start_time = loop.time()
         timeout = 10.0  # Increased timeout for handshake
@@ -412,31 +418,46 @@ class RPCPluginClient:
             self._server_cert = server_cert
             self._transport_name = network
 
-            if network == "tcp":
-                self._transport = TCPSocketTransport()
-                logger.debug("*** network is set to tcp")
-            elif network == "unix":
-                # More robust handling of unix: prefix formats
-                logger.debug("*** network is set to unix")
+            match network:
+                case "tcp":
+                    self._transport = TCPSocketTransport()
+                    self._address = address # For TCP, address is usually host:port
+                    logger.debug(f"🤝 TCP transport selected. Address: {self._address}")
+                case "unix":
+                    logger.debug(f"🤝 Unix transport selected. Raw address: {address}")
+                    # Normalize Unix socket path
+                    parsed_address = address
+                    if parsed_address.startswith("unix:"):
+                        parsed_address = parsed_address[5:]
+                    # Remove leading slashes for consistency if not a Windows absolute path starting with //
+                    if not (os.name == 'nt' and parsed_address.startswith("//")):
+                        while parsed_address.startswith("/") and not parsed_address.startswith("//"): # Avoid stripping UNC paths like //./pipe/mypipe
+                            parsed_address = parsed_address[1:]
+                        # Ensure absolute paths on Unix-like systems start with a slash if they are not abstract sockets
+                        if os.name != 'nt' and not parsed_address.startswith("\0") and not Path(parsed_address).is_absolute() and Path("/" + parsed_address).exists():
+                             # This case is tricky; often paths are relative or abstract.
+                             # Defaulting to use it as-is after prefix stripping unless clearly needing a root slash.
+                             pass
 
-                if address.startswith("unix:"):
-                    logger.debug("*** address starts with unix")
-                    self._address = address[5:]  # Remove standard unix: prefix
-                    # Remove leading slashes (but not all slashes)
-                    while self._address.startswith("/") and not self._address.startswith("//"):
-                        self._address = self._address[1:]
 
-                else:
-                    self._address = address
-
-                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}'")
-                self._transport = UnixSocketTransport(path=self._address)
-            else:
-                raise TransportError(f"Unsupported transport: {network}")
+                    self._address = parsed_address # Store the normalized path
+                    logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}'")
+                    self._transport = UnixSocketTransport(path=self._address)
+                case _:
+                    raise TransportError(f"Unsupported transport: {network}")
 
             # Connect the chosen transport
-            await self._transport.connect(address)
-            logger.info(f"🚄 Transport connected via {network} -> {address}")
+            # For TCP, self._address is already host:port.
+            # For Unix, self._transport (UnixSocketTransport) uses self._address (path) internally.
+            # The `connect` method of transports should handle their specific address formats.
+            # The `address` variable from handshake is the original string.
+            # `self._address` is the potentially normalized one for Unix.
+            connect_target = address # Use original handshake address for connect()
+            if network == "unix":
+                connect_target = self._address # Use normalized path for Unix connect
+
+            await self._transport.connect(connect_target)
+            logger.info(f"🚄 Transport connected via {network} -> {connect_target}")
         except Exception as e:
             logger.error(
                 "🤝❌ Error parsing handshake response or connecting transport.",
@@ -461,15 +482,18 @@ class RPCPluginClient:
         """
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
-        # CRITICAL FIX: Use the same address that was established during handshake
-        if isinstance(self._transport, UnixSocketTransport):
-            # For Unix sockets, we must use the exact same socket path from handshake
+        # Use the address established and potentially normalized during handshake
+        if self._transport_name == "unix":
+            # For Unix sockets, self._address is the normalized path.
             target = f"unix:{self._address}"
+        elif self._transport_name == "tcp":
+            # For TCP, self._address is host:port from handshake.
+            target = self._address # Already in host:port format
         else:
-            # For TCP, use standard addressing
-            target = f"{self._transport_name}:{self._address}"
+            # This case should ideally not be reached if handshake validation is robust
+            raise ConnectionError(f"Invalid transport name '{self._transport_name}' for gRPC channel.")
 
-        logger.debug(f"🚢🔍 Creating gRPC channel with target: {target}")
+        logger.debug(f"🚢🔍 Creating gRPC channel with target: '{target}'")
 
         # Rebuild server cert into PEM if needed
         if self._server_cert:
@@ -593,16 +617,17 @@ class RPCPluginClient:
             # We call StreamStdio once. The plugin sends us lines until it shuts down.
             async for chunk in self._stdio_stub.StreamStdio(empty_pb2.Empty()):
                 if chunk.channel == StdioData.STDERR:
+                    # Using f-string for debug consistency
                     logger.debug(f"🔌📝📥 Plugin STDERR: {chunk.data!r}")
                 else:
                     logger.debug(f"🔌📝📥 Plugin STDOUT: {chunk.data!r}")
         except asyncio.CancelledError:
             logger.debug(
-                "🔌📝 read_stdio_logs task cancelled. Shutting down stdio read."
+                "🔌📝 _read_stdio_logs task cancelled. Shutting down stdio read."
             )
         except Exception as e:
             logger.error(
-                f"🔌📝❌ Error reading plugin stdio stream: {e}",
+                f"🔌📝❌ Error reading plugin stdio stream: {e!s}", # Use !s for concise error string
                 extra={"trace": traceback.format_exc()},
             )
 
@@ -632,36 +657,58 @@ class RPCPluginClient:
         )
 
         async def _broker_coroutine() -> None:
+            """Coroutine to handle broker stream for opening a subchannel."""
             # Create a bidirectional streaming call
             call = self._broker_stub.StartStream()
             try:
                 # 1) Send a ConnInfo with knock=True
                 knock_info = ConnInfo(
                     service_id=sub_id,
-                    network="tcp",  # or "unix"
+                    network=self._transport_name if self._transport_name else "tcp", # Use established transport type
                     address=address,
                     knock=ConnInfo.Knock(knock=True, ack=False, error=""),
                 )
                 await call.write(knock_info)
-                await call.done_writing()  # we won't send more messages in this example
+                # Indicate no more messages will be sent from client in this specific interaction
+                # This might be specific to how go-plugin broker expects knock requests.
+                # If continuous communication is needed on this stream after knock, remove this.
+                await call.done_writing()
 
                 async for reply in call:
-                    # The plugin should respond with ack = True
+                    # The plugin should respond with ack = True for a successful knock
                     logger.debug(
                         f"🔌📡 Broker response => service_id={reply.service_id}, "
-                        f"knock.ack={reply.knock.ack}, error={reply.knock.error}"
+                        f"knock.ack={reply.knock.ack}, error='{reply.knock.error}'"
                     )
                     if not reply.knock.ack:
                         logger.error(
-                            f"🔌📡❌ Subchannel open failed: {reply.knock.error}"
+                            f"🔌📡❌ Subchannel open failed for ID {sub_id}: {reply.knock.error}"
                         )
                     else:
-                        logger.info(f"🔌📡✅ Subchannel {sub_id} opened successfully!")
+                        logger.info(f"🔌📡✅ Subchannel {sub_id} at {address} opened successfully via broker!")
+                    # Assuming one reply per knock, break if this is a simple knock-ack.
+                    # If the stream is kept for other purposes, this logic might change.
+                    break
+            except grpc.aio.AioRpcError as rpc_error:
+                logger.error(f"🔌📡❌ RPC error during broker subchannel open: {rpc_error.details()}")
+            except Exception as e:
+                logger.error(f"🔌📡❌ Unexpected error during broker subchannel open: {e!s}",
+                             extra={"trace": traceback.format_exc()})
             finally:
-                logger.debug("🔌📡 Broker subchannel open() streaming call complete.")
-                await call.aclose()
+                logger.debug(f"🔌📡 Broker stream for subchannel {sub_id} concluding.")
+                # Ensure the call is properly closed.
+                # `aclose` is suitable if it's managed like an async context manager in some cases,
+                # but `cancel` might be more direct for typical client calls if it's still active.
+                # Depending on grpc.aio version and usage, one might be preferred.
+                # call.cancel() # Or await call.aclose() if appropriate for the stream's lifecycle
+                if not call.done(): # Check if the call is already terminated
+                    call.cancel()
+
 
         self._broker_task = asyncio.create_task(_broker_coroutine())
+        # Optionally, could await self._broker_task here if open_broker_subchannel
+        # is meant to be a fully blocking operation until the subchannel is confirmed.
+        # Current design runs it in the background.
 
     async def shutdown_plugin(self) -> None:
         """

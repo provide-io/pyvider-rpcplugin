@@ -1,6 +1,10 @@
-#
-# pyvider/rpcplugin/protocol/base.py
-#
+"""
+Base Definitions for RPC Plugin Protocols.
+
+This module provides the abstract base class `RPCPluginProtocol`
+which defines the interface for protocol implementations used within
+the Pyvider RPC Plugin system.
+"""
 
 from abc import ABC, abstractmethod
 from typing import Any, Generic
@@ -27,9 +31,10 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]): # pragma: no cover
     def add_to_server(self, server: ServerT, handler: HandlerT) -> None:
         """
         Adds the protocol implementation to the gRPC server.
+
         Args:
-            server: The gRPC async server instance
-            handler: The handler implementing the RPC methods
+            server: The gRPC async server instance.
+            handler: The handler implementing the RPC methods for this protocol.
         """
         pass
 

@@ -1,6 +1,11 @@
-#
-# pyvider/rpcplugin/transport/unix.py
-#
+"""
+Unix Domain Socket Transport Implementation.
+
+This module provides the `UnixSocketTransport` class, an implementation of the
+`RPCPluginTransport` interface for communication over Unix domain sockets.
+It includes logic for path normalization, socket creation, connection handling,
+and robust cleanup, tailored for interoperability with Go-based plugins.
+"""
 
 import asyncio
 import errno
@@ -79,10 +84,15 @@ class UnixSocketTransport(RPCPluginTransport):
     _closing: bool = field(init=False, default=False)
     _lock: asyncio.Lock = field(init=False, factory=asyncio.Lock)
 
-    _transport_name: str = "unix"
+    _transport_name: str = "unix" # Identifier for this transport type
 
     def __attrs_post_init__(self) -> None:
-        """Initialize transport state and possibly normalize path."""
+        """
+        Post-initialization hook for UnixSocketTransport.
+
+        If a socket path is not provided, it generates an ephemeral path.
+        Otherwise, it normalizes the provided path. Initializes locks and events.
+        """
         if not self.path:
             # Generate ephemeral path if none provided
             import tempfile
@@ -125,7 +135,7 @@ class UnixSocketTransport(RPCPluginTransport):
         finally:
             try:
                 sock.close()
-            except:
+            except Exception: # Changed bare except
                 pass
 
     async def listen(self) -> str:
@@ -250,7 +260,17 @@ class UnixSocketTransport(RPCPluginTransport):
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
-        """Handle client connections with proper tracking."""
+        """
+        Handles an incoming client connection.
+
+        This method is registered as a callback with `asyncio.start_unix_server`.
+        It creates a `ClientConnection` object to manage the connection,
+        tracks active connections, and echoes data received from the client.
+
+        Args:
+            reader: The `asyncio.StreamReader` for reading data from the client.
+            writer: The `asyncio.StreamWriter` for writing data to the client.
+        """
         peer_info = writer.get_extra_info("peername") or "unknown"
         logger.debug(f"📞🤝🚀 New client connection from {peer_info}")
 
@@ -308,10 +328,16 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.debug("📞🔒✅ Writer closed successfully")
         except Exception as e:
             logger.error(f"📞🔒⚠️ Error closing writer: {e}", exc_info=True)
-            # Don't propagate exception to avoid crashing cleanup
+            # Don't propagate exception to avoid crashing cleanup, as this is part of cleanup.
 
     async def close(self) -> None:
-        """Close Unix socket transport with proper cleanup."""
+        """
+        Closes the Unix socket transport.
+
+        This involves closing any active client connections, stopping the server,
+        and removing the socket file from the filesystem.
+        It is designed to be idempotent.
+        """
         logger.debug(f"📞🔒🚀 Closing Unix socket transport at {self.path}")
 
         if self._closing:
