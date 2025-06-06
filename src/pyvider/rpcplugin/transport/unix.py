@@ -83,6 +83,7 @@ class UnixSocketTransport(RPCPluginTransport):
     _running: bool = field(init=False, default=False)
     _closing: bool = field(init=False, default=False)
     _lock: asyncio.Lock = field(init=False, factory=asyncio.Lock)
+    _server_ready: asyncio.Event = field(init=False, factory=asyncio.Event) # Declare _server_ready
 
     _transport_name: str = "unix" # Identifier for this transport type
 
@@ -105,7 +106,7 @@ class UnixSocketTransport(RPCPluginTransport):
             # Normalize path if it has a unix: prefix
             self.path = normalize_unix_path(self.path)
 
-        self._server_ready = asyncio.Event()
+        # self._server_ready is now initialized by factory
         self._connections = set()  # Initialize connection set
         logger.debug(f"📞🚀✅ UnixSocketTransport initialized with path={self.path}")
 

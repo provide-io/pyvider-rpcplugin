@@ -14,7 +14,7 @@ import asyncio
 import os
 import time
 import traceback
-from typing import TypeGuard
+from typing import TypeGuard, Literal # Added Literal
 
 from attrs import define
 
@@ -26,6 +26,7 @@ from pyvider.rpcplugin.transport.types import TransportT
 
 # Use a sentinel value to detect omitted parameters.
 _SENTINEL = object()
+_SentinelType = Literal[_SENTINEL] # Type for the sentinel
 
 
 @define
@@ -139,9 +140,9 @@ def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
 
 def validate_magic_cookie(
-    magic_cookie_key: str | None = _SENTINEL,
-    magic_cookie_value: str | None = _SENTINEL,
-    magic_cookie: str | None = _SENTINEL,
+    magic_cookie_key: str | None | _SentinelType = _SENTINEL,
+    magic_cookie_value: str | None | _SentinelType = _SENTINEL,
+    magic_cookie: str | None | _SentinelType = _SENTINEL,
 ) -> None:
     """
     🍪🔍 Validates the magic cookie.

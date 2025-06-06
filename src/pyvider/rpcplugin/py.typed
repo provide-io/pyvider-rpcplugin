@@ -1,0 +1,11 @@
+create_file_with_block
+src/pyvider/rpcplugin/client/py.typed
+
+create_file_with_block
+src/pyvider/rpcplugin/crypto/py.typed
+
+create_file_with_block
+src/pyvider/rpcplugin/protocol/py.typed
+
+create_file_with_block
+src/pyvider/rpcplugin/transport/py.typed
