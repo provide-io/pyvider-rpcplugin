@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-# pyvider/rpcplugin/config.py
-
-"""
-Configuration management for Pyvider RPC Plugin.
+"""Configuration management for Pyvider RPC Plugin.
 
 This module provides a configuration system for the Pyvider RPC Plugin framework,
 allowing for both environment-based and programmatic configuration. It includes:
@@ -32,7 +28,7 @@ Usage:
 
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Union, cast, get_args
+from typing import Any, Literal, cast, get_args # Removed Dict, List, Optional
 
 
 from pyvider.telemetry import logger
@@ -45,7 +41,7 @@ TRANSPORT_TYPES = Literal["unix", "tcp"]
 
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
 # This provides a single source of truth for all configuration options
-CONFIG_SCHEMA: Dict[str, Dict[str, Any]] = {
+CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
         "default": SUPPORTED_PROTOCOL_VERSIONS,
@@ -178,7 +174,7 @@ CONFIG_SCHEMA: Dict[str, Dict[str, Any]] = {
 }
 
 
-def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
+def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     """
     Fetches and processes an environment variable based on schema metadata.
 
@@ -269,7 +265,7 @@ def fetch_env_variable(key: str, meta: Dict[str, Any]) -> Any:
         raise ValueError(f"Invalid format for {key}. Expected {meta['type']}, got: {value}") from e
 
 
-def validate_config_value(key: str, value: Any, meta: Dict[str, Any]) -> bool:
+def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     """
     Validates a configuration value against schema requirements.
 
@@ -309,7 +305,7 @@ def validate_config_value(key: str, value: Any, meta: Dict[str, Any]) -> bool:
     return True
 
 
-def get_config() -> Dict[str, Any]:
+def get_config() -> dict[str, Any]:
     """
     Retrieves all configuration values from environment, applying defaults and validation.
 
@@ -387,7 +383,7 @@ class RPCPluginConfig:
         logger.debug(f"⚙️📖 Getting config {key} = {value}")
         return value
 
-    def get_list(self, key: str) -> List[Any]:
+    def get_list(self, key: str) -> list[Any]:
         """
         Retrieve a configuration value as a list.
 
@@ -439,41 +435,41 @@ class RPCPluginConfig:
         """
         return cast(str, self.get("PLUGIN_MAGIC_COOKIE_VALUE"))
 
-    def server_transports(self) -> List[str]:
+    def server_transports(self) -> list[str]:
         """
         Get the list of transports supported by the server.
 
         Returns:
             List of transport names
         """
-        return cast(List[str], self.get_list("PLUGIN_SERVER_TRANSPORTS"))
+        return cast(list[str], self.get_list("PLUGIN_SERVER_TRANSPORTS"))
 
-    def server_endpoint(self) -> Optional[str]:
+    def server_endpoint(self) -> str | None:
         """
         Get the server endpoint configuration.
 
         Returns:
             The server endpoint or None
         """
-        return cast(Optional[str], self.get("PLUGIN_SERVER_ENDPOINT"))
+        return cast(str | None, self.get("PLUGIN_SERVER_ENDPOINT"))
 
-    def client_transports(self) -> List[str]:
+    def client_transports(self) -> list[str]:
         """
         Get the list of transports supported by the client.
 
         Returns:
             List of transport names
         """
-        return cast(List[str], self.get_list("PLUGIN_CLIENT_TRANSPORTS"))
+        return cast(list[str], self.get_list("PLUGIN_CLIENT_TRANSPORTS"))
 
-    def client_endpoint(self) -> Optional[str]:
+    def client_endpoint(self) -> str | None:
         """
         Get the client endpoint configuration.
 
         Returns:
             The client endpoint or None
         """
-        return cast(Optional[str], self.get("PLUGIN_CLIENT_ENDPOINT"))
+        return cast(str | None, self.get("PLUGIN_CLIENT_ENDPOINT"))
 
     def auto_mtls_enabled(self) -> bool:
         """
@@ -506,16 +502,16 @@ class RPCPluginConfig:
 rpcplugin_config = RPCPluginConfig.instance()
 
 def configure(
-    magic_cookie: Optional[str] = None,
-    protocol_version: Optional[int] = None,
-    transports: Optional[List[Union[str, TRANSPORT_TYPES]]] = None,
-    auto_mtls: Optional[bool] = None,
-    handshake_timeout: Optional[float] = None,
-    connection_timeout: Optional[float] = None,
-    server_cert: Optional[str] = None,
-    server_key: Optional[str] = None,
-    client_cert: Optional[str] = None,
-    client_key: Optional[str] = None,
+    magic_cookie: str | None = None,
+    protocol_version: int | None = None,
+    transports: list[str | TRANSPORT_TYPES] | None = None,
+    auto_mtls: bool | None = None,
+    handshake_timeout: float | None = None,
+    connection_timeout: float | None = None,
+    server_cert: str | None = None,
+    server_key: str | None = None,
+    client_cert: str | None = None,
+    client_key: str | None = None,
     **kwargs: Any,
 ) -> None:
     """
@@ -616,7 +612,7 @@ def configure(
     logger.debug("⚙️✅ Configuration completed successfully")
 
 
-def load_config_from_file(config_file: Union[str, Path]) -> None:
+def load_config_from_file(config_file: str | Path) -> None:
     """
     Load configuration from a file.
 
@@ -756,13 +752,22 @@ def _load_yaml_file(path: Path) -> None:
             config_data = yaml.safe_load(f)
 
         for key, value in config_data.items():
-            # Convert to string for environment variables
-            if isinstance(value, (list, dict)):
-                os.environ[key] = yaml.dump(value).strip() # Ensure stripped
+            if isinstance(value, list):
+                os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
+                logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
+            elif isinstance(value, dict):
+                # For dicts, keep current behavior but warn if it's a schema-defined key
+                # that isn't usually string-represented this way.
+                # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
+                env_val = yaml.dump(value).strip()
+                os.environ[key] = env_val
+                logger.warning(
+                    f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
+                    f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
+                )
             else:
                 os.environ[key] = str(value)
-
-            logger.debug(f"⚙️📂✅ Set environment variable from YAML: {key}")
+                logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})

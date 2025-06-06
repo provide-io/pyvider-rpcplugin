@@ -1,9 +1,4 @@
-#
-# pyvider/rpcplugin/transport/tcp.py
-#
-
-"""
-pyvider.rpcplugin.transport.tcp
+"""pyvider.rpcplugin.transport.tcp
 --------------------------------
 TCP Socket Transport implementation using asyncio.
 Uses Python 3.11+ features such as TypeGuard and structural pattern matching.
@@ -55,12 +50,12 @@ class TCPSocketTransport(RPCPluginTransport):
     _connections: set = field(init=False, factory=set) 
     _running: bool = field(init=False, default=False)
     _connection_attempts: int = field(init=False, default=0)
-    _transport_name: str = "tcp"
+    _transport_name: str = "tcp" # Class attribute identifying the transport type
 
     def __attrs_post_init__(self) -> None:
-        """Initialize transport state and resources."""
-        self._lock = asyncio.Lock()
-        self._server_ready = asyncio.Event()
+        """Initializes locks and events for managing transport state."""
+        self._lock = asyncio.Lock() # Lock for synchronizing access to shared resources
+        self._server_ready = asyncio.Event() # Event to signal when the server is ready
         logger.debug(f"🔌🚀✅: TCP transport initialized with host={self.host}, port={self.port}")
 
     async def listen(self) -> str:
@@ -100,7 +95,15 @@ class TCPSocketTransport(RPCPluginTransport):
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         """
-        🔌🤝👀  Handle an incoming client connection by echoing received data.
+        Handles an incoming client connection by echoing received data.
+
+        This method is registered as a callback with `asyncio.start_server`.
+        It reads data from the client and writes it back, effectively an echo server,
+        primarily for testing or basic interaction.
+
+        Args:
+            reader: The `asyncio.StreamReader` for reading data from the client.
+            writer: The `asyncio.StreamWriter` for writing data to the client.
         """
         client_info = writer.get_extra_info("peername")
         logger.debug(f"🔌🤝👀: New client connected from {client_info}")
@@ -132,9 +135,18 @@ class TCPSocketTransport(RPCPluginTransport):
 
     async def connect(self, endpoint: str) -> None:
         """
-        🔌🚀🕵️  Connect to a remote TCP endpoint.
-        The endpoint must be in the format 'host:port'.
-        Performs DNS resolution before attempting to connect.
+        Connects to a remote TCP endpoint.
+
+        The endpoint string must be in the format 'host:port'. This method
+        parses the endpoint, performs DNS resolution, and establishes a
+        connection.
+
+        Args:
+            endpoint: The target TCP endpoint string (e.g., "127.0.0.1:12345").
+
+        Raises:
+            TransportError: If the endpoint format is invalid, DNS resolution fails,
+                            or the connection cannot be established (e.g., timeout, refused).
         """
         logger.debug(f"🔌🚀🕵️: Attempting connection to TCP endpoint: {endpoint}")
         if not is_valid_tcp_endpoint(endpoint):
@@ -204,12 +216,14 @@ class TCPSocketTransport(RPCPluginTransport):
             logger.warning(f"🔌🔒⚠️ Timeout closing writer for endpoint {self.endpoint if self.endpoint else 'unknown'}")
         except Exception as e:
             logger.error(f"🔌🔒⚠️ Error closing writer: {e}")
-            # Don't propagate exception to avoid crashing cleanup
+            # Don't propagate exception to avoid crashing cleanup, as this is part of cleanup.
 
     async def close(self) -> None:
         """
-        🔌🔒🛑  Close the TCP transport.
-        Closes both the client connection (if any) and the server.
+        Closes the TCP transport, including any active server or client connections.
+
+        This method is idempotent and ensures that all resources associated with
+        this transport instance are released.
         """
         logger.debug(f"🔌🔒🛑: Closing TCP transport at endpoint {self.endpoint}")
         

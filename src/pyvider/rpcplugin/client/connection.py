@@ -1,17 +1,22 @@
-#
-# pyvider/rpcplugin/client/connection.py
-#
+"""
+Client Connection Management.
+
+This module defines the `ClientConnection` class, responsible for managing
+the state and I/O operations of a single client connection within the
+Pyvider RPC Plugin system. It includes metrics tracking and supports
+dependency injection for I/O functions to facilitate testing.
+"""
 
 import asyncio
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable as AbcCallable # Alias to avoid conflict
 
 from attrs import define, field
 
 from pyvider.telemetry import logger
 
-# Type aliases for dependency-injected I/O functions.
-SendFuncType = Callable[[bytes], Awaitable[None]]
-ReceiveFuncType = Callable[[int], Awaitable[bytes]]
+# Type aliases for dependency-injected I/O functions using collections.abc
+SendFuncType = AbcCallable[[bytes], Awaitable[None]]
+ReceiveFuncType = AbcCallable[[int], Awaitable[bytes]]
 
 
 @define(slots=True, frozen=False)
@@ -44,6 +49,7 @@ class ClientConnection:
     receive_func: ReceiveFuncType | None = field(default=None)
 
     def __attrs_post_init__(self) -> None:
+        """Post-initialization hook to set default I/O functions if not provided."""
         if self.send_func is None:
             self.send_func = self._default_send
         if self.receive_func is None:
@@ -75,6 +81,12 @@ class ClientConnection:
     async def _default_send(self, data: bytes) -> None:
         """
         Default send function: writes data to the writer and updates metrics.
+
+        Args:
+            data: Bytes to send.
+
+        Raises:
+            OSError: If an error occurs during sending.
         """
         try:
             self.writer.write(data)
@@ -90,6 +102,15 @@ class ClientConnection:
     async def _default_receive(self, size: int = 16384) -> bytes:
         """
         Default receive function: reads data from the reader and updates metrics.
+
+        Args:
+            size: Maximum number of bytes to receive.
+
+        Returns:
+            Received data as bytes.
+
+        Raises:
+            OSError: If an error occurs during receiving.
         """
         try:
             data = await self.reader.read(size)

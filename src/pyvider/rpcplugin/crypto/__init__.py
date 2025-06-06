@@ -1,6 +1,10 @@
-#
-# pyvider/rpcplugin/crypto/__init__.py
-#
+"""
+Pyvider RPC Plugin Crypto Package.
+
+This package provides cryptographic utilities for the RPC plugin system,
+including certificate generation, key management, and related type definitions.
+It re-exports key components for easy access.
+"""
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.crypto.constants import (

@@ -1,6 +1,9 @@
-#
-# pyvider/rpcplugin/__init__.py
-#
+"""
+Pyvider RPC Plugin Package.
+
+This package exports the main classes and exceptions for the Pyvider RPC Plugin system,
+making them available for direct import from `pyvider.rpcplugin`.
+"""
 
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config

@@ -1,16 +1,33 @@
-#
-# pyvider/rpcplugin/exception.py
-#
+"""
+Custom Exceptions for Pyvider RPC Plugin System.
+
+This module defines a hierarchy of custom exceptions used throughout the
+Pyvider RPC Plugin system to indicate various error conditions related to
+configuration, handshake, protocol, transport, and security.
+"""
 
 
 class RPCPluginError(Exception):
-    def __init__(self, message: str, code: int = None, hint: str | None = None) -> None:
+    """Base class for all RPC plugin-specific errors."""
+    def __init__(self, message: str, code: int | None = None, hint: str | None = None) -> None:
+        """
+        Initialize RPCPluginError.
+
+        Args:
+            message: The error message.
+            code: An optional error code.
+            hint: An optional hint for resolving the error.
+        """
         super().__init__(message)
         self.code = code
         self.hint = hint
 
     def __str__(self) -> str:
-        return f"{super().__str__()}"  # to implement another day. {self.hint}"
+        """Return a string representation of the error, including the hint if available."""
+        base_message = super().__str__()
+        if self.hint:
+            return f"{base_message} (Hint: {self.hint})"
+        return base_message
 
 
 class ConfigError(RPCPluginError):

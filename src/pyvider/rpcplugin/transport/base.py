@@ -1,6 +1,11 @@
-#
-# pyvider/rpcplugin/transport/base.py
-#
+"""
+Base Abstract Class for RPC Plugin Transports.
+
+This module defines `RPCPluginTransport`, an abstract base class (ABC)
+that outlines the contract for all transport implementations within the
+Pyvider RPC Plugin system. Concrete transport classes (e.g., for TCP or Unix sockets)
+must inherit from this class and implement its abstract methods.
+"""
 
 import abc
 from attrs import define, field
@@ -43,9 +48,32 @@ class RPCPluginTransport(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def connect(self, endpoint: str) -> None: ...       # pragma: no cover
+    async def connect(self, endpoint: str) -> None:       # pragma: no cover
+        """
+        Connect to a remote endpoint.
+
+        Implementations should establish a connection to the specified endpoint
+        address. This is typically used by client components.
+
+        Args:
+            endpoint: The target endpoint address string.
+
+        Raises:
+            TransportError: If the connection cannot be established.
+        """
+        ...
 
     @abc.abstractmethod
-    async def close(self) -> None: ...                       # proagma: no cover
+    async def close(self) -> None:                       # pragma: no cover # Corrected pragma typo
+        """
+        Close the transport and release any associated resources.
+
+        Implementations should ensure that all network resources (like sockets)
+        are properly closed and cleaned up. This method should be idempotent.
+
+        Raises:
+            TransportError: If an error occurs during closing.
+        """
+        ...
 
 # 🐍🏗️🔌
