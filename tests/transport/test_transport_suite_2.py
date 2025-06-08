@@ -18,7 +18,7 @@ from pyvider.rpcplugin.transport.base import RPCPluginTransport as BaseTransport
 
 # Ensure Certificate is available for type hinting, and rpcplugin_config for manipulation
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.crypto.certificate import Certificate 
+from pyvider.rpcplugin.crypto.certificate import Certificate
 from tests.fixtures import *
 
 # Define TransportFactoryType
