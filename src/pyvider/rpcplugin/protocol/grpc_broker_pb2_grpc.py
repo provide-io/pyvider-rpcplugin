@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import grpc_broker_pb2 as grpc__broker__pb2
+from pyvider.rpcplugin.protocol import grpc_broker_pb2 as grpc__broker__pb2
 
 GRPC_GENERATED_VERSION = '1.72.1'
 GRPC_VERSION = grpc.__version__
