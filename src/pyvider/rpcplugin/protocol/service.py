@@ -97,60 +97,62 @@ class GRPCBrokerService(GRPCBrokerServicer):
         )
         try: # Outer try for iterator errors
             async for incoming in request_iterator:
+                sub_id = incoming.service_id # Get sub_id early for use in error messages if needed
                 try: # Inner try for processing each item
                     logger.debug(
-                        f"🔌📡🔍 Received ConnInfo: service_id={incoming.service_id}, network='{incoming.network}', address='{incoming.address}'"
+                        f"🔌📡🔍 Received ConnInfo: service_id={sub_id}, network='{incoming.network}', address='{incoming.address}'"
                     )
 
-                    if incoming.knock.knock:
-                        sub_id = incoming.service_id
-                        if sub_id in self._subchannels:
-                            logger.debug(
-                                f"🔌📡⚠️ Subchannel ID {sub_id} already in _subchannels."
+                    if incoming.knock.knock: # Request to open/ensure channel
+                        if sub_id in self._subchannels and self._subchannels[sub_id].is_open:
+                            logger.debug(f"🔌📡⚠️ Subchannel ID {sub_id} already exists and is open.")
+                            yield ConnInfo(
+                                service_id=sub_id,
+                                network=incoming.network,
+                                address=incoming.address,
+                                knock=ConnInfo.Knock(knock=False, ack=True, error=""),
                             )
-                        else:
+                        else: # New subchannel request or existing but not open
                             subchan = SubchannelConnection(sub_id, incoming.address)
-                            self._subchannels[sub_id] = subchan
-                            await subchan.open()
-
-                        outgoing = ConnInfo(
-                            service_id=sub_id,
-                            network=incoming.network,
-                            address=incoming.address,
-                            knock=ConnInfo.Knock(
-                                knock=False,
-                                ack=True,
-                                error="",
-                            ),
-                        )
-                        logger.debug(
-                            f"🔌📡✅ Opening subchannel {sub_id}, returning ack. {outgoing}"
-                        )
-                        yield outgoing
-
-                    else:
-                        sub_id = incoming.service_id
+                            # Attempt to open the subchannel
+                            await subchan.open() # This might raise BrokerError or other exceptions
+                            self._subchannels[sub_id] = subchan # Add to dict ONLY after successful open
+                            logger.debug(f"🔌📡✅ Opened new subchannel {sub_id}, returning ack.")
+                            yield ConnInfo(
+                                service_id=sub_id,
+                                network=incoming.network,
+                                address=incoming.address,
+                                knock=ConnInfo.Knock(knock=False, ack=True, error=""),
+                            )
+                    else: # Request to close channel (knock=False)
                         if sub_id in self._subchannels:
                             logger.debug(f"🔌📡🛑 Closing subchannel {sub_id}.")
                             await self._subchannels[sub_id].close()
                             del self._subchannels[sub_id]
-                        outgoing = ConnInfo(
-                            service_id=sub_id,
-                            knock=ConnInfo.Knock(knock=False, ack=True, error=""),
-                        )
-                        yield outgoing
-
-                except Exception as ex_inner: # Catch errors processing an item (renamed ex to ex_inner)
-                    err_str_inner = f"Broker error processing item: {ex_inner}"
-                    logger.error(
-                        f"🔌📡❌ {err_str_inner}", extra={"trace": traceback.format_exc()}
-                    )
+                            yield ConnInfo( # Ack the close
+                                service_id=sub_id,
+                                knock=ConnInfo.Knock(knock=False, ack=True, error=""),
+                            )
+                        else:
+                            logger.warning(f"🔌📡⚠️ Request to close non-existent subchannel {sub_id}.")
+                            yield ConnInfo( # Ack the close attempt, even if not found
+                                service_id=sub_id,
+                                knock=ConnInfo.Knock(knock=False, ack=True, error="Channel not found"),
+                            )
+                except Exception as ex_inner:
+                    # 'sub_id' is defined from the line 'sub_id = incoming.service_id' before this try block.
+                    err_str_inner = f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
+                    logger.error(f"🔌📡❌ {err_str_inner}", extra={"trace": traceback.format_exc()})
                     yield ConnInfo(
-                        service_id=getattr(incoming, 'service_id', 0), # Use incoming service_id if available
-                        knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_inner), # Corrected variable
+                        service_id=sub_id,
+                        knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_inner),
                     )
-        except Exception as ex_outer: # Catch errors from the request_iterator itself
-            err_str_outer = f"Broker stream error from client iterator: {ex_outer}"
+                    continue # Crucial to process next item and not fall into ex_outer for this specific error
+        except Exception as ex_outer: # Catch errors from the request_iterator itself (e.g., client disconnect)
+            # Ensure sub_id is defined for the log, default if not (e.g. error before sub_id is parsed)
+            # For ex_outer, sub_id might not be in current scope if error happened early in `async for`
+            outer_error_sub_id = getattr(incoming, 'service_id', 0) if 'incoming' in locals() else 0
+            err_str_outer = f"Broker stream error from client iterator for sub_id {outer_error_sub_id} (outer loop): {ex_outer}"
             logger.error(
                 f"🔌📡❌ {err_str_outer}", extra={"trace": traceback.format_exc()}
             )
@@ -228,6 +230,7 @@ class GRPCStdioService(GRPCStdioServicer):
                         self._message_queue.task_done()
                         logger.debug(f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}")
                         yield data_item
+                        await asyncio.sleep(0) # Allow consumer to process the item
                     except asyncio.CancelledError: # If get_task was cancelled by done_wait_task completing first
                         logger.debug("🔌📝 GRPCStdioService.StreamStdio: get_task was cancelled.")
                         # If done_wait_task also completed (which it should have to cancel get_task), loop will break
@@ -269,7 +272,26 @@ class GRPCStdioService(GRPCStdioServicer):
         if done_wait_task and not done_wait_task.done():
             done_wait_task.cancel()
 
-        logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => stopping. Reason: shutdown={self._shutdown}, done.is_set()={done.is_set()}")
+        logger.debug(f"🔌📝🛑 GRPCStdioService.StreamStdio => exited main loop. shutdown={self._shutdown}, done.is_set()={done.is_set()}")
+
+        # Drain any remaining items from the queue if service was shut down
+        # but client is potentially still connected (or to ensure all sent items are yielded)
+        if self._shutdown or not self._message_queue.empty(): # Drain if shutdown or if items are there
+            logger.debug(f"🔌📝 GRPCStdioService.StreamStdio: Draining remaining {self._message_queue.qsize()} items from queue...")
+            while not self._message_queue.empty():
+                try:
+                    data_item = self._message_queue.get_nowait()
+                    self._message_queue.task_done()
+                    logger.debug(f"🔌📝✅ GRPCStdioService: Draining item: {data_item.channel}, {data_item.data[:20]}")
+                    yield data_item
+                    await asyncio.sleep(0)  # Allow consumer to process
+                except asyncio.QueueEmpty:
+                    logger.debug("🔌📝 GRPCStdioService.StreamStdio: Queue empty during drain.")
+                    break
+                except Exception as e_drain:
+                    logger.error(f"🔌📝❌ Error draining queue: {e_drain}", extra={"trace": traceback.format_exc()})
+                    break
+        logger.debug("🔌📝 GRPCStdioService.StreamStdio: Stream truly ending.")
 
     def shutdown(self) -> None:
         logger.debug("🔌📝⚠️ GRPCStdioService => marking service as shutdown")

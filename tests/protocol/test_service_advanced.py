@@ -40,87 +40,10 @@ async def test_stdio_error_handling_in_put_line(stdio_service_with_error) -> Non
     # Verify put was called
     stdio_service_with_error._message_queue.put.assert_called_once()
 
+# test_stdio_stream_error_handling removed, moved to test_service.py
 
-@pytest.mark.asyncio
-async def test_stdio_stream_error_handling() -> None:
-    """Test that StreamStdio handles errors in the queue."""
-    service = GRPCStdioService()
-
-    # Mock context
-    context = MagicMock()
-    context.add_done_callback = MagicMock()
-
-    # Create a mock queue that raises an exception after one successful get
-    queue = asyncio.Queue()
-    await queue.put(StdioData(channel=StdioData.STDOUT, data=b"test data"))
-
-    original_get = queue.get
-    get_called = False
-
-    async def mock_get():
-        nonlocal get_called
-        if not get_called:
-            get_called = True
-            return await original_get()
-        raise Exception("Queue error")
-
-    queue.get = mock_get
-    service._message_queue = queue
-
-    # Start streaming
-    results = []
-    async for item in service.StreamStdio(Empty(), context):
-        results.append(item)
-        # Force shutdown after first item to avoid infinite loop
-        service.shutdown()
-
-    # Should have one item before error occurred
-    assert len(results) == 1
-    assert results[0].data == b"test data"
-
-
-@pytest.mark.asyncio
-async def test_stdio_stream_cancellation_handling() -> None:
-    """Test handling of cancellation during StreamStdio."""
-    service = GRPCStdioService()
-
-    # Mock context
-    context = MagicMock()
-
-    # Capture the callback
-    callback = None
-    def add_done_callback(cb):
-        nonlocal callback
-        callback = cb
-    context.add_done_callback.side_effect = add_done_callback
-
-    # Start the stream in a task
-    stream_task = asyncio.create_task(collect_stream(service.StreamStdio(Empty(), context)))
-
-    # Wait a bit for the stream to start
-    await asyncio.sleep(0.1)
-
-    # Add some data
-    await service.put_line(b"test data")
-
-    # Trigger the callback to simulate cancellation
-    if callback:
-        callback(MagicMock()) # Pass a mock Call object
-
-    # Wait for the task to complete
-    await asyncio.wait_for(stream_task, timeout=1.0)
-
-
-async def collect_stream(stream):
-    """Helper to collect stream items."""
-    items = []
-    try:
-        async for item in stream:
-            items.append(item)
-    except asyncio.CancelledError:
-        pass
-    return items
-
+# test_stdio_stream_cancellation_handling removed, functionality covered by test_service.py::test_stdio_stream_cancellation
+# MockRequestIterator (if present below this line and only used by removed tests) will be removed later if file becomes empty or it's confirmed unused.
 
 @pytest.mark.asyncio
 async def test_broker_service_exception_handling() -> None:
@@ -159,7 +82,27 @@ async def test_broker_service_exception_handling() -> None:
     # Patch SubchannelConnection
     with patch('pyvider.rpcplugin.protocol.service.SubchannelConnection', MockSubchannelConnection):
         # Create request iterator
-        request_iterator = MockRequestIterator([knock_info])
+        # Assuming MockRequestIterator is defined elsewhere or this test needs it.
+        # If MockRequestIterator was defined in this file and is now unused by other tests, it should be removed.
+        # For now, let's assume it's available or will be handled.
+        # If it was defined above the removed test_stdio_stream_cancellation_handling,
+        # it might still be here.
+        class LocalMockRequestIterator: # Define locally if needed for this test only
+            def __init__(self, requests) -> None:
+                self.requests = requests
+                self.index = 0
+
+            def __aiter__(self) -> "LocalMockRequestIterator":
+                return self
+
+            async def __anext__(self):
+                if self.index < len(self.requests):
+                    request = self.requests[self.index]
+                    self.index += 1
+                    return request
+                raise StopAsyncIteration
+        request_iterator = LocalMockRequestIterator([knock_info])
+
 
         # Collect responses
         responses = []
@@ -172,47 +115,7 @@ async def test_broker_service_exception_handling() -> None:
         assert responses[0].knock.ack is False
         assert "Failed to open subchannel" in responses[0].knock.error or "Broker error" in responses[0].knock.error
 
-
-class MockRequestIterator:
-    """Mock request iterator for broker stream."""
-    def __init__(self, requests) -> None:
-        self.requests = requests
-        self.index = 0
-
-    def __aiter__(self) -> "MockRequestIterator":
-        return self
-
-    async def __anext__(self):
-        if self.index < len(self.requests):
-            request = self.requests[self.index]
-            self.index += 1
-            return request
-        raise StopAsyncIteration
-
-
-@pytest.mark.asyncio
-async def test_controller_delayed_shutdown_signal_handlers() -> None:
-    """Test _delayed_shutdown with various signal handler implementations."""
-    stdio_service = GRPCStdioService()
-    shutdown_event = asyncio.Event()
-    controller = GRPCControllerService(shutdown_event, stdio_service)
-
-    # 1. Test Unix-style signal handling
-    with patch('asyncio.sleep', new_callable=AsyncMock), \
-         patch('os.kill') as mock_kill, \
-         patch('os.getpid', return_value=12345):
-
-        await controller._delayed_shutdown()
-        mock_kill.assert_called_once_with(12345, signal.SIGTERM)
-
-    # 2. Test Windows-style sys.exit fallback (no os.kill)
-    with patch('asyncio.sleep', new_callable=AsyncMock), \
-         patch('os.kill', side_effect=AttributeError("'module' object has no attribute 'kill'")), \
-         patch('sys.exit') as mock_exit:
-
-        await controller._delayed_shutdown()
-        mock_exit.assert_called_once_with(0)
-
+# test_controller_delayed_shutdown_signal_handlers removed, moved to test_service.py
 
 @pytest.mark.asyncio
 async def test_register_protocol_service_with_mocks() -> None:

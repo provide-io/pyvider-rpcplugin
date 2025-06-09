@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 # from pyvider.rpcplugin.config import rpcplugin_config # Unused import
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import CertificateError
-from .types import KeyPairType, PrivateKeyType # Import KeyPairType for key parameter hint
+from .types import PrivateKeyType # Import KeyPairType for key parameter hint
 
 
 def display_cert_details(certificate: x509.Certificate) -> None:
