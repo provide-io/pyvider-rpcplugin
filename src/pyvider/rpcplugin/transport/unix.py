@@ -135,8 +135,8 @@ class UnixSocketTransport(RPCPluginTransport):
         finally:
             try:
                 sock.close()
-            except Exception: # Changed bare except
-                pass
+            except Exception as e:
+                logger.warning(f"📞🔍⚠️ Error closing temporary socket in _check_socket_in_use: {e}")
 
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""
@@ -148,8 +148,11 @@ class UnixSocketTransport(RPCPluginTransport):
             # Check if socket file is in use
             socket_in_use = await self._check_socket_in_use()
             if socket_in_use:
-                logger.error(f"📞🕹❌ Socket {self.path} already in use")
-                raise TransportError(f"Socket {self.path} already in use")
+                logger.error(f"📞🕹❌ Socket {self.path} is already running")
+                raise TransportError(f"Socket {self.path} is already running")
+
+            if self.path is None:
+                raise RuntimeError("self.path was not initialized. This should not happen if __attrs_post_init__ ran correctly.")
 
             # Create directory if needed
             dir_path = os.path.dirname(self.path)
@@ -179,15 +182,29 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
 
-                # Make socket accessible by user, group, and others for test/interop environments
-                os.chmod(self.path, 0o777)
-                logger.debug(f"📞🕹✅ Set permissions to 0777 on {self.path}")
+                # Set permissions for user and group (owner rwx, group rwx)
+                # This is safer than 0o777 and suitable if client/server share a group.
+                # For broader interop where group sharing isn't guaranteed, this might be too restrictive.
+                # However, 0o777 is generally too permissive for production.
+                # Acknowledging the "test/interop environments" comment, 0o770 is a step down.
+                # Ideal solution might involve configurable permissions or group ownership.
+                try:
+                    current_mask = os.umask(0) # Get current umask, set to 0 temporarily
+                    os.umask(current_mask) # Restore original umask
+                    desired_permissions = 0o770 & ~current_mask # Apply umask
+                    os.chmod(self.path, desired_permissions)
+                    logger.debug(f"📞🕹✅ Set permissions to {oct(desired_permissions)} on {self.path} (considering umask {oct(current_mask)})")
+                except Exception as e:
+                    logger.warning(f"📞🕹⚠️ Failed to set permissions on {self.path}: {e}. Proceeding with default permissions.")
+
 
                 self._running = True
                 self.endpoint = self.path
                 logger.info(f"📞🕹✅ UnixSocketTransport: Endpoint set to {self.endpoint}")
                 logger.debug(f"📞🕹✅ Server listening on {self.path}")
                 self._server_ready.set()
+                if self.path is None: # Should be caught by the earlier check, but as a safeguard for return type
+                    raise RuntimeError("self.path became None before returning from listen().")
                 return self.path
 
             except OSError as e:
