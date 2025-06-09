@@ -22,12 +22,20 @@ from pyvider.rpcplugin.crypto import (
 @pytest.mark.asyncio
 async def test_generate_keypair_returns_keypair() -> None:
     """Ensure generate_keypair() returns correct type"""
-    rsa_key = generate_keypair(KEY_TYPE_RSA)
-    ec_key = generate_keypair(KEY_TYPE_ECDSA)
+    rsa_key_pair = generate_keypair(KEY_TYPE_RSA)
+    ec_key_pair = generate_keypair(KEY_TYPE_ECDSA)
 
-    # Check concrete types instead of generics
-    assert isinstance(rsa_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
-    assert isinstance(ec_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey))
+    # Check tuple and key types for RSA
+    assert isinstance(rsa_key_pair, tuple)
+    assert len(rsa_key_pair) == 2
+    assert isinstance(rsa_key_pair[0], rsa.RSAPublicKey)
+    assert isinstance(rsa_key_pair[1], rsa.RSAPrivateKey)
+
+    # Check tuple and key types for ECDSA
+    assert isinstance(ec_key_pair, tuple)
+    assert len(ec_key_pair) == 2
+    assert isinstance(ec_key_pair[0], ec.EllipticCurvePublicKey)
+    assert isinstance(ec_key_pair[1], ec.EllipticCurvePrivateKey)
 
 @pytest.mark.asyncio
 async def test_generate_keypair_invalid_type() -> None:
@@ -38,8 +46,10 @@ async def test_generate_keypair_invalid_type() -> None:
 @pytest.mark.asyncio
 async def test_generate_rsa_keypair() -> None:
     """Test RSA keypair generation with a valid size."""
-    key = generate_rsa_keypair(2048)
-    assert key.key_size == 2048
+    public_key, private_key = generate_rsa_keypair(2048)
+    assert isinstance(public_key, rsa.RSAPublicKey)
+    assert isinstance(private_key, rsa.RSAPrivateKey)
+    assert private_key.key_size == 2048
 
 @pytest.mark.asyncio
 async def test_generate_rsa_keypair_backend_failure() -> None:
@@ -60,13 +70,15 @@ async def test_generate_invalid_rsa_key_size() -> None:
 @pytest.mark.asyncio
 async def test_generate_ec_keypair() -> None:
     """Test ECDSA keypair generation with a valid curve."""
-    key = generate_keypair(key_type=KEY_TYPE_ECDSA, curve_name="secp256r1")
-    assert key.curve.name == "secp256r1"
+    public_key, private_key = generate_keypair(key_type=KEY_TYPE_ECDSA, curve_name="secp256r1")
+    assert isinstance(public_key, ec.EllipticCurvePublicKey)
+    assert isinstance(private_key, ec.EllipticCurvePrivateKey)
+    assert private_key.curve.name == "secp256r1"
 
 @pytest.mark.asyncio
 async def test_generate_ec_keypair_invalid_curve() -> None:
     """Cover error path in generate_ec_keypair"""
-    with pytest.raises(AttributeError):
+    with pytest.raises(ValueError, match="Unsupported EC curve"): # Changed expected exception and added match
         generate_ec_keypair("invalid_curve")
 
 @pytest.mark.asyncio

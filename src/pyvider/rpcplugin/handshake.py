@@ -25,7 +25,14 @@ from pyvider.telemetry import logger
 from pyvider.rpcplugin.transport.types import TransportT
 
 # Use a sentinel value to detect omitted parameters.
-_SENTINEL = object()
+from enum import Enum, auto
+from typing import Literal, cast # Ensure Literal and cast are imported
+
+class _SentinelEnum(Enum):
+    NOT_PASSED = auto()
+
+_SENTINEL_INSTANCE = _SentinelEnum.NOT_PASSED
+_SentinelType = Literal[_SentinelEnum.NOT_PASSED]
 
 
 @define
@@ -79,7 +86,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             )
             from pyvider.rpcplugin.transport import UnixSocketTransport
 
-            return "unix", UnixSocketTransport(path=transport_path)
+            return "unix", cast(TransportT, UnixSocketTransport(path=transport_path))
 
         elif "tcp" in server_transports:
             logger.debug(
@@ -87,7 +94,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             )
             from pyvider.rpcplugin.transport import TCPSocketTransport
 
-            return "tcp", TCPSocketTransport()
+            return "tcp", cast(TransportT, TCPSocketTransport())
         else:
             logger.error(
                 "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
@@ -142,9 +149,9 @@ def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
 
 def validate_magic_cookie(
-    magic_cookie_key: str | None = _SENTINEL,
-    magic_cookie_value: str | None = _SENTINEL,
-    magic_cookie: str | None = _SENTINEL,
+    magic_cookie_key: str | None | _SentinelType = _SENTINEL_INSTANCE,
+    magic_cookie_value: str | None | _SentinelType = _SENTINEL_INSTANCE,
+    magic_cookie: str | None | _SentinelType = _SENTINEL_INSTANCE,
 ) -> None:
     """
     🍪🔍 Validates the magic cookie.
@@ -165,17 +172,17 @@ def validate_magic_cookie(
 
     cookie_key = (
         rpcplugin_config.magic_cookie_key()
-        if magic_cookie_key is _SENTINEL
+        if magic_cookie_key is _SENTINEL_INSTANCE
         else magic_cookie_key
     )
     cookie_value = (
         rpcplugin_config.magic_cookie_value()
-        if magic_cookie_value is _SENTINEL
+        if magic_cookie_value is _SENTINEL_INSTANCE
         else magic_cookie_value
     )
     cookie_provided = (
         rpcplugin_config.get("PLUGIN_MAGIC_COOKIE")
-        if magic_cookie is _SENTINEL
+        if magic_cookie is _SENTINEL_INSTANCE
         else magic_cookie
     )
 

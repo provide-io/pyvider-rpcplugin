@@ -505,11 +505,12 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                     logger.error("🛎️❌ " + error_msg)
                     raise TransportError(error_msg)
                 mode = os.stat(self._transport.path).st_mode
-                if not (
-                    mode & stat.S_IRWXU and mode & stat.S_IRWXG and mode & stat.S_IRWXO
-                ):
+                # Check for owner RWX and group RWX. Corresponds to 0o770 (ignoring 'others').
+                # The transport class now sets permissions to 0o770 (respecting umask).
+                if not ((mode & stat.S_IRWXU) and (mode & stat.S_IRWXG)):
                     error_msg = (
-                        f"Socket file {self._transport.path} has incorrect permissions."
+                        f"Socket file {self._transport.path} has incorrect permissions. "
+                        f"Expected owner and group RWX (e.g., 0o770). Got: {oct(mode & 0o777)}"
                     )
                     logger.error("🛎️❌ " + error_msg)
                     raise TransportError(error_msg)

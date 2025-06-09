@@ -197,7 +197,7 @@ async def test_setup_server_exception_1(
     # Create a new transport with the same path, which should fail
     transport2 = UnixSocketTransport(path=managed_unix_socket_path)
     
-    with pytest.raises(TransportError, match="already in use"):
+    with pytest.raises(TransportError, match=r"Socket .* is already running"): # Updated match pattern
         await transport2.listen()
         
     # Clean up
@@ -425,9 +425,12 @@ async def test_setup_server_tcp_success(
 
     # TODO: actually check this shit.
 
-    assert any(
-        "127.0.0.1" in port and not port.startswith("unix:")
-        for port in server.ports
-    )
+    # Assert that the server's transport endpoint is a TCP one.
+    # server is an RPCPluginServer instance. Its transport is self._transport.
+    # The endpoint is on the transport.
+    transport_endpoint = server._transport.endpoint if server._transport else None
+    assert transport_endpoint is not None, "Server transport endpoint should be set"
+    assert "127.0.0.1" in transport_endpoint and not transport_endpoint.startswith("unix:"), \
+        f"Endpoint {transport_endpoint} is not a valid TCP endpoint as expected."
 
 ### 🐍🏗🧪️
