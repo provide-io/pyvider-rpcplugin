@@ -419,7 +419,8 @@ async def test_transport_error_scenarios(transport_fixture):
     # Then try to listen on the same endpoint
     server2 = factory() # Create a new instance
     try:
-        with pytest.raises(TransportError, match="already in use|Failed to create|Failed to bind"): # Match possible errors
+        # Updated regex to include the new "Socket ... is already running" message for Unix
+        with pytest.raises(TransportError, match=r"already in use|Failed to create|Failed to bind|Socket .* is already running"):
             # Ensure server2 tries to listen on the *same* endpoint server1 is using
             if transport_type == "unix":
                 # For Unix, explicitly set the path

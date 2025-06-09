@@ -71,7 +71,7 @@ async def test_unix_socket_listen_socket_in_use(managed_unix_socket_path) -> Non
         with pytest.raises(TransportError) as excinfo:
             await transport2.listen()
 
-        assert "already in use" in str(excinfo.value)
+        assert "is already running" in str(excinfo.value) # Updated to check for new message
     finally:
         await transport1.close()
         # Add a small delay to ensure cleanup
@@ -82,7 +82,7 @@ async def test_unix_listen_socket_in_use(monkeypatch) -> None:
     # Simulate _check_socket_in_use returning True.
     transport = UnixSocketTransport(path="/tmp/test.sock")
     monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
-    with pytest.raises(TransportError, match="already in use"):
+    with pytest.raises(TransportError, match=r"Socket .* is already running"): # Updated match pattern
         await transport.listen()
 
 @pytest.mark.asyncio

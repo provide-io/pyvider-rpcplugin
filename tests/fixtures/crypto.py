@@ -12,11 +12,18 @@ def client_cert():
     """Loads the server certificate from the environment variable."""
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    cert = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-    key = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+    cert_env_val = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+    key_env_val = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
 
-    if not cert:
-        cert = """-----BEGIN CERTIFICATE-----
+    # Determine if the fetched env values are actual PEMs or placeholders/errors
+    cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith("-----BEGIN CERTIFICATE-----")
+    key_is_pem_like = key_env_val and key_env_val.strip().startswith("-----BEGIN ") # General check for any key type
+
+    cert_to_use = cert_env_val if cert_is_pem_like else None
+    key_to_use = key_env_val if key_is_pem_like else None
+
+    if not cert_to_use:
+        cert_to_use = """-----BEGIN CERTIFICATE-----
 MIIB+jCCAYGgAwIBAgIJAPsxOr78BIU0MAoGCCqGSM49BAMEMCgxEjAQBgNVBAoM
 CUhhc2hpQ29ycDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI1MDIwNTIzMTkzN1oX
 DTI2MDIwNTIzMTkzN1owKDESMBAGA1UECgwJSGFzaGlDb3JwMRIwEAYDVQQDDAls
@@ -31,8 +38,8 @@ MY3jxMiLpb9Mt/ysstXmsrQY7UoLu+c6zfKwyTEJ
 -----END CERTIFICATE-----
 """
 
-    if not key:
-        key = """-----BEGIN EC PRIVATE KEY-----
+    if not key_to_use:
+        key_to_use = """-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDAkxo19KczdciRiJjOWEKGY5mH9s1D0aUS5XBdvktcaonIOdqNrkCt1
 BC5YjEAVLNWgBwYFK4EEACKhZANiAARCi3SNYYDpSeScRM52tFYrURzsPOE/ad8B
 zvpvL+mfy1c5oHQhh6KPnxpoo1WyDJGYplwPTGS68DvvWmolrPAtC7I7r7spgyJS
@@ -40,10 +47,10 @@ zvpvL+mfy1c5oHQhh6KPnxpoo1WyDJGYplwPTGS68DvvWmolrPAtC7I7r7spgyJS
 -----END EC PRIVATE KEY-----
 """
 
-    logger.info(f"Loaded CLIENT_CERT: {cert[:30]}...")
-    logger.info(f"Loaded CLIENT_KEY: {key[:30]}...")
+    logger.info(f"Loaded CLIENT_CERT: {cert_to_use[:30]}...")
+    logger.info(f"Loaded CLIENT_KEY: {key_to_use[:30]}...")
 
-    return Certificate(cert_pem_or_uri=cert, key_pem_or_uri=key)
+    return Certificate(cert_pem_or_uri=cert_to_use, key_pem_or_uri=key_to_use)
 
 
 @pytest.fixture(scope="module")
@@ -51,11 +58,18 @@ def server_cert():
     """Loads the server certificate from the environment variable."""
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    cert = rpcplugin_config.get("PLUGIN_SERVER_CERT")
-    key = rpcplugin_config.get("PLUGIN_SERVER_KEY")
+    cert_env_val = rpcplugin_config.get("PLUGIN_SERVER_CERT")
+    key_env_val = rpcplugin_config.get("PLUGIN_SERVER_KEY")
 
-    if not cert:
-        cert = """-----BEGIN CERTIFICATE-----
+    # Determine if the fetched env values are actual PEMs or placeholders/errors
+    cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith("-----BEGIN CERTIFICATE-----")
+    key_is_pem_like = key_env_val and key_env_val.strip().startswith("-----BEGIN ")
+
+    cert_to_use = cert_env_val if cert_is_pem_like else None
+    key_to_use = key_env_val if key_is_pem_like else None
+
+    if not cert_to_use:
+        cert_to_use = """-----BEGIN CERTIFICATE-----
 MIIB+jCCAYGgAwIBAgIJAKrIoEQw7N9LMAoGCCqGSM49BAMEMCgxEjAQBgNVBAoM
 CUhhc2hpQ29ycDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI1MDIwNTIzMTkzN1oX
 DTI2MDIwNTIzMTkzN1owKDESMBAGA1UECgwJSGFzaGlDb3JwMRIwEAYDVQQDDAls
@@ -70,8 +84,8 @@ XOzBx35sWRw92gr/hbE4hYeDBqEUwstSFNZ6MZu0
 -----END CERTIFICATE-----
 """
 
-    if not key:
-        key = """-----BEGIN EC PRIVATE KEY-----
+    if not key_to_use: # Corrected variable name from key to key_to_use
+        key_to_use = """-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDDZ1MORWFVI0HtgKv+zZys/5e1HVmfcs4bwdp3VEsuwS6an3gTwGnSP
 Ce+bI6f/TvGgBwYFK4EEACKhZANiAARMxEVmGX3a4IWPOAJ2MX2s2Wj3KZ0Io5Ew
 UPMkxknGheO2e55qeHp/tkEFzYt9AH8du1xJLKKFbsGV5q9vipGNx5XMbj2RMdH5
@@ -79,10 +93,10 @@ VXHTAdc/bLFFy9kybQqo300Rv6ViW2I=
 -----END EC PRIVATE KEY-----
 """
 
-    logger.info(f"Loaded SERVER_CERT: {cert[:30]}...")
-    logger.info(f"Loaded SERVER_KEY: {key[:30]}...")
+    logger.info(f"Loaded SERVER_CERT: {cert_to_use[:30]}...") # Corrected log message and used correct variable
+    logger.info(f"Loaded SERVER_KEY: {key_to_use[:30]}...") # Used correct variable
 
-    return Certificate(cert_pem_or_uri=cert, key_pem_or_uri=key)
+    return Certificate(cert_pem_or_uri=cert_to_use, key_pem_or_uri=key_to_use)
 
 
 @pytest.fixture(scope="module")

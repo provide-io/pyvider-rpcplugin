@@ -548,21 +548,19 @@ def test_load_config_from_json_file(mock_json_load, mock_file, mock_path_exists)
 
 @patch('pyvider.rpcplugin.config.Path.exists')
 @patch('builtins.open', new_callable=mock_open)
-@patch('yaml.safe_load')
-def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists):
+# Removed broad @patch('yaml.safe_load')
+def test_load_config_from_yaml_file(mock_file, mock_path_exists): # Removed mock_yaml_load from params
     '''Test loading configuration from a .yaml file.'''
     if not YAML_AVAILABLE:
         pytest.skip("PyYAML not installed")
 
     mock_path_exists.return_value = True
     
-    nested_dict_val = {"sub_key": "sub_val_yaml_v2"} # Make value very distinct
-    # Use a schema key (PLUGIN_AUTO_MTLS) and a distinct test key PLUGIN_NESTED_TEST_KEY
-    yaml_data = {
+    nested_dict_val = {"sub_key": "sub_val_yaml_v2"}
+    yaml_data_source = { # This is what the mocked safe_load (for config loading) will return
         "PLUGIN_AUTO_MTLS": False,
         "PLUGIN_NESTED_TEST_KEY": nested_dict_val
     }
-    mock_yaml_load.return_value = yaml_data
 
     key_to_test = "PLUGIN_NESTED_TEST_KEY"
     original_plugin_nested_test_key_val = os.environ.get(key_to_test)
@@ -570,23 +568,28 @@ def test_load_config_from_yaml_file(mock_yaml_load, mock_file, mock_path_exists)
         del os.environ[key_to_test]
 
     try:
-        load_config_from_file(Path("test.yaml"))
+        # Patch yaml.safe_load only for the duration of load_config_from_file call
+        with patch('yaml.safe_load', return_value=yaml_data_source) as mock_yaml_load_for_function:
+            load_config_from_file(Path("test.yaml"))
+            mock_yaml_load_for_function.assert_called_once_with(mock_file.return_value.__enter__.return_value)
 
         mock_path_exists.assert_called_once()
         mock_file.assert_called_once_with(Path("test.yaml"), "r", encoding="utf-8")
-        mock_yaml_load.assert_called_once_with(mock_file.return_value.__enter__.return_value)
 
         # Check os.environ directly after load_config_from_file
         assert os.environ.get("PLUGIN_AUTO_MTLS") == "False"
         
-        expected_nested_yaml_dump = yaml.dump(nested_dict_val).strip()
-        assert os.environ.get(key_to_test) == expected_nested_yaml_dump # Use .get()
+        # This is what should be in the environment variable: the dict dumped to a YAML string
+        expected_env_var_content = yaml.dump(nested_dict_val).strip()
+        assert os.environ.get(key_to_test) == expected_env_var_content
 
-        if os.environ.get(key_to_test): # Only load if set
-            loaded_nested_val = yaml.safe_load(os.environ[key_to_test])
-            assert loaded_nested_val == nested_dict_val
-        else:
-            pytest.fail(f"{key_to_test} was not set in os.environ")
+        # Now, test that parsing this env var string yields the original dict
+        # This uses the *real* yaml.safe_load, not the mocked one
+        env_var_value = os.environ.get(key_to_test)
+        assert env_var_value is not None, f"{key_to_test} was not set in os.environ as expected"
+
+        loaded_nested_val_from_env = yaml.safe_load(env_var_value)
+        assert loaded_nested_val_from_env == nested_dict_val
 
         # Check RPCPluginConfig for the schema key
         assert RPCPluginConfig.instance().get("PLUGIN_AUTO_MTLS") is False
