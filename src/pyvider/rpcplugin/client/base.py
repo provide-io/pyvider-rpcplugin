@@ -43,7 +43,7 @@ import os
 import subprocess
 import sys
 import traceback
-from typing import Any
+from typing import Any # Removed Generic
 
 from attrs import define, field
 
@@ -62,11 +62,13 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerSt
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.transport.types import TransportT
+# Import TransportT temporarily for the Generic base, will remove if client not generic
+# Also import TransportType for the actual field type
+from pyvider.rpcplugin.transport.types import TransportT, TransportType
 
 
 @define
-class RPCPluginClient:
+class RPCPluginClient: # No longer Generic[TransportT]
     """
     Client interface for interacting with Terraform-compatible plugin servers.
     
@@ -117,10 +119,10 @@ class RPCPluginClient:
 
     # Internal fields
     _process: subprocess.Popen | None = field(init=False, default=None)
-    _transport: TransportT | None = field(init=False, default=None)
+    _transport: TransportType | None = field(init=False, default=None) # Changed to TransportType
     _transport_name: str | None = field(init=False, default=None)
 
-    _address: TransportT | None = field(init=False, default=None)
+    _address: str | None = field(init=False, default=None)
     _protocol_version: int | None = field(init=False, default=None)
     _server_cert: str | None = field(init=False, default=None)
     _channel: grpc.aio.Channel | None = field(init=False, default=None)
@@ -306,9 +308,9 @@ class RPCPluginClient:
 
         while (loop.time() - start_time) < timeout:
             # Check process state
-            if self._process.poll() is not None:
+            if self._process is not None and self._process.poll() is not None:
                 stderr_output = ""
-                if self._process.stderr:
+                if self._process.stderr is not None: # Check stderr is not None
                     stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
                 logger.error(f"🤝 Plugin process exited with code {self._process.returncode}. Stderr: {stderr_output}")
                 raise HandshakeError(f"Plugin process exited with code {self._process.returncode} before handshake.")
@@ -316,10 +318,16 @@ class RPCPluginClient:
             # Try to read a complete line with increased timeout
             try:
                 # First try: direct read with longer timeout
-                line_bytes = await asyncio.wait_for(
-                    loop.run_in_executor(None, lambda: self._process.stdout.readline()),
-                    timeout=2.0  # Longer per-read timeout
-                )
+                if self._process is not None and self._process.stdout is not None: # Check stdout is not None
+                    line_bytes = await asyncio.wait_for(
+                        loop.run_in_executor(None, lambda: self._process.stdout.readline()), # type: ignore[union-attr]
+                        timeout=2.0  # Longer per-read timeout
+                    )
+                else:
+                    # Process or stdout is None, cannot read
+                    await asyncio.sleep(0.1) # Wait briefly and re-check loop condition
+                    continue
+
 
                 if line_bytes:
                     line = line_bytes.decode('utf-8', errors='replace').strip()
@@ -341,20 +349,25 @@ class RPCPluginClient:
             # This might help if the Go server doesn't flush properly or uses different line endings
             if not buffer:  # Only try this if we haven't read anything
                 try:
-                    char_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(None, lambda: self._process.stdout.read(1)),
-                        timeout=1.0
-                    )
-                    if char_bytes:
-                        char = char_bytes.decode('utf-8', errors='replace')
-                        buffer += char
-                        logger.debug(f"🤝 Byte-by-byte read: buffer now: '{buffer}'")
+                    if self._process is not None and self._process.stdout is not None: # Check stdout is not None
+                        char_bytes = await asyncio.wait_for(
+                            loop.run_in_executor(None, lambda: self._process.stdout.read(1)), # type: ignore[union-attr]
+                            timeout=1.0
+                        )
+                        if char_bytes:
+                            char = char_bytes.decode('utf-8', errors='replace')
+                            buffer += char
+                            logger.debug(f"🤝 Byte-by-byte read: buffer now: '{buffer}'")
+                    else:
+                        # Process or stdout is None, cannot read
+                        await asyncio.sleep(0.1) # Wait briefly
+                        continue
                 except asyncio.TimeoutError:
                     pass  # Just continue the outer loop
 
         # If we get here, we've timed out
         stderr_output = ""
-        if self._process.stderr:
+        if self._process is not None and self._process.stderr is not None: # Check stderr is not None
             stderr_output = self._process.stderr.read().decode('utf-8', errors='replace')
         logger.error(f"🤝 Handshake timed out. Stderr output: {stderr_output}")
         raise TimeoutError("Timed out waiting for handshake line. Check if the server is writing to stdout correctly.")
@@ -435,8 +448,12 @@ class RPCPluginClient:
                 raise TransportError(f"Unsupported transport: {network}")
 
             # Connect the chosen transport
-            await self._transport.connect(address)
-            logger.info(f"🚄 Transport connected via {network} -> {address}")
+            if self._transport is not None: # Check transport is not None
+                await self._transport.connect(address)
+                logger.info(f"🚄 Transport connected via {network} -> {address}")
+            else:
+                # This case should ideally not be reached if logic is correct
+                raise HandshakeError("Transport not initialized before connect call.")
         except Exception as e:
             logger.error(
                 "🤝❌ Error parsing handshake response or connecting transport.",
@@ -625,13 +642,17 @@ class RPCPluginClient:
         Raises:
             RuntimeError: If broker stub is not initialized
         """
-        if not self._broker_stub:
-            raise RuntimeError("Broker stub not initialized.")
+        if not self._broker_stub: # Check broker_stub is not None
+            logger.warning("🔌📡 Broker stub not initialized; cannot open subchannel.")
+            return
+
         logger.debug(
             f"🔌📡 Attempting to open subchannel ID {sub_id} at {address} via Broker."
         )
 
         async def _broker_coroutine() -> None:
+            if self._broker_stub is None: # Should be caught by the check above, but for type safety
+                return
             # Create a bidirectional streaming call
             call = self._broker_stub.StartStream()
             try:
@@ -720,7 +741,7 @@ class RPCPluginClient:
         if self._channel:
             logger.debug("🔄 Closing gRPC channel...")
             try:
-                await self._channel.close()
+                await self._channel.close(grace=None) # Added grace=None
                 logger.debug("🔄 gRPC channel closed.")
             except Exception as e:
                 logger.error(f"🔄❌ Error closing gRPC channel: {e}", extra={"trace": traceback.format_exc()})
@@ -733,8 +754,10 @@ class RPCPluginClient:
                 self._process.terminate()
                 logger.debug("🔄 Sent terminate signal to plugin subprocess.")
                 try:
-                    self._process.wait(timeout=7) # should be higher than the server timeout
-                    logger.debug("🔄 Plugin subprocess terminated.")
+                    # Ensure process is not None before calling wait()
+                    if self._process is not None:
+                        self._process.wait(timeout=7) # should be higher than the server timeout
+                        logger.debug("🔄 Plugin subprocess terminated.")
                 except Exception as e: # Catches subprocess.TimeoutExpired and other wait issues
                     logger.error(
                         f"🔄❌ Error waiting for plugin process to terminate: {e}",
@@ -751,7 +774,7 @@ class RPCPluginClient:
         if self._transport:
             logger.debug("🔄 Closing transport socket...")
             try:
-                await self._transport.close()
+                await self._transport.close() # TransportType instances have close()
                 logger.debug("🔄 Transport socket closed.")
             except Exception as e:
                 logger.error(f"🔄❌ Error closing transport socket: {e}", extra={"trace": traceback.format_exc()})

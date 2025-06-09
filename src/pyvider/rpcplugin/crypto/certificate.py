@@ -101,6 +101,7 @@ class CertificateBase:
             )
 
             # Generate the private key
+            private_key: KeyPair # Explicitly type hint private_key
             match config["key_type"]:
                 case KeyType.RSA:
                     key_size = config.get("key_size", 2048)
@@ -566,7 +567,7 @@ class Certificate:
         logger.debug("📜🔍❌ Trust verification failed: Other certificate not identical, not in chain, and not signed by any cert in chain.")
         return False
 
-    def _validate_signature(self, signed_cert: Self, signing_cert: Self) -> bool:
+    def _validate_signature(self, signed_cert: 'Certificate', signing_cert: 'Certificate') -> bool:
         """Internal helper: Validates signature and issuer/subject match."""
         if not hasattr(signed_cert, '_cert') or not hasattr(signing_cert, '_cert'):
              logger.error("📜🔍❌ Cannot validate signature: Certificate object(s) not initialized.")
