@@ -71,8 +71,11 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             logger.debug(
                 "🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available"
             )
+            import tempfile # Ensure tempfile is imported
+            # Use tempfile.gettempdir() for a safer temporary directory
+            temp_dir = os.environ.get("TEMP_DIR") or tempfile.gettempdir()
             transport_path = os.path.join(
-                os.environ.get("TEMP_DIR", "/tmp"), f"pyvider-{os.getpid()}.sock"
+                temp_dir, f"pyvider-{os.getpid()}.sock"
             )
             from pyvider.rpcplugin.transport import UnixSocketTransport
 

@@ -31,9 +31,10 @@ def generate_rsa_keypair(key_size: int) -> KeyPairType:
     # Basic validation, though generate_keypair has more robust checks
     if key_size not in constants.SUPPORTED_RSA_SIZES:
         raise ValueError(f"Unsupported RSA key size: {key_size}. Supported: {constants.SUPPORTED_RSA_SIZES}")
-    return rsa.generate_private_key(
+    private_key = rsa.generate_private_key(
         public_exponent=65537, key_size=key_size, backend=default_backend()
     )
+    return private_key.public_key(), private_key
 
 
 def generate_ec_keypair(curve_name: str) -> KeyPairType:
@@ -55,9 +56,10 @@ def generate_ec_keypair(curve_name: str) -> KeyPairType:
     if curve_name not in constants.SUPPORTED_EC_CURVES:
         raise ValueError(f"Unsupported EC curve: {curve_name}. Supported: {constants.SUPPORTED_EC_CURVES}")
     curve = getattr(ec, curve_name.upper())() # Get curve object e.g. ec.SECP384R1()
-    return ec.generate_private_key(
+    private_key = ec.generate_private_key(
         curve=curve, backend=default_backend()
     )
+    return private_key.public_key(), private_key
 
 # Dictionary mapping key type strings to their respective generator functions.
 KEY_GENERATORS: dict[str, Callable[[int | str], KeyPairType]] = {

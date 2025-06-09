@@ -246,11 +246,15 @@ class Certificate:
                     "organization": self.organization_name,
                     "alt_names": self.alt_names or ["localhost"], # Ensure list
                     "key_type": gen_key_type, # Use the validated gen_key_type
-                    "curve": gen_curve,
-                    "key_size": gen_key_size,
+                    # "curve": gen_curve, # Added conditionally below
+                    # "key_size": gen_key_size, # Added conditionally below
                     "not_valid_before": not_valid_before,
                     "not_valid_after": not_valid_after,
                 }
+                if gen_curve is not None:
+                    conf["curve"] = gen_curve
+                if gen_key_size is not None:
+                    conf["key_size"] = gen_key_size
                 logger.debug(f"📜🔑🚀 Generation config: {conf}")
 
                 # Create base info and private key
@@ -294,10 +298,16 @@ class Certificate:
                     self.key = key_data # Store raw PEM provided
                     logger.debug(f"📜🔑🔍 Attempting to load private key from PEM data (first 100 chars): {key_data[:100]}")
                     logger.debug(f"📜🔑🔍 Full PEM data for key (len {len(key_data)}):\n{key_data}")
-                    self._private_key = load_pem_private_key(
+                    loaded_priv_key = load_pem_private_key(
                         key_data.encode("utf-8"), password=None
                     )
-                    logger.debug("📜🔑✅ Private key object loaded.")
+                    if not isinstance(loaded_priv_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)):
+                        raise CertificateError(
+                            f"Loaded private key is of unsupported type: {type(loaded_priv_key)}. "
+                            "Expected RSA or ECDSA private key."
+                        )
+                    self._private_key = loaded_priv_key
+                    logger.debug("📜🔑✅ Private key object loaded and type validated.")
                 else:
                      self.key = None # Explicitly None if not loaded
 
@@ -310,10 +320,17 @@ class Certificate:
                 if loaded_not_valid_after.tzinfo is None:
                      loaded_not_valid_after = loaded_not_valid_after.replace(tzinfo=UTC)
 
+                cert_public_key = self._cert.public_key()
+                if not isinstance(cert_public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)):
+                    raise CertificateError(
+                        f"Certificate's public key is of unsupported type: {type(cert_public_key)}. "
+                        "Expected RSA or ECDSA public key."
+                    )
+
                 self._base = CertificateBase(
                     subject=self._cert.subject,
                     issuer=self._cert.issuer,
-                    public_key=self._cert.public_key(),
+                    public_key=cert_public_key, # Use validated public key
                     not_valid_before=loaded_not_valid_before,
                     not_valid_after=loaded_not_valid_after,
                     serial_number=self._cert.serial_number,
@@ -358,12 +375,12 @@ class Certificate:
             )
 
             # Add Subject Alternative Names (SANs)
-            san_list = [x509.DNSName(name) for name in self.alt_names if name]
+            san_list = [x509.DNSName(name) for name in (self.alt_names or []) if name]
             if san_list:
                  builder = builder.add_extension(
                     x509.SubjectAlternativeName(san_list), critical=False
                  )
-                 logger.debug(f"📜📝✅ Added SANs: {self.alt_names}")
+                 logger.debug(f"📜📝✅ Added SANs: {self.alt_names or []}")
 
             # --- Add standard extensions ---
             builder = builder.add_extension(

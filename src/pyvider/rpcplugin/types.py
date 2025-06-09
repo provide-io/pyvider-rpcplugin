@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable as AbcCallable
+from typing import Any, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
+import grpc
+from pyvider.telemetry import logger
+
 """Type definitions for the Pyvider RPC plugin system.
 
 This module provides Protocol classes, TypeVars, and type aliases that define
@@ -10,11 +15,6 @@ For most users, these types are used only in type annotations. Advanced users
 implementing custom protocol handlers will need to implement the Protocol
 interfaces defined here.
 """
-
-from collections.abc import Awaitable, Callable as AbcCallable
-from typing import Any, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
-import grpc
-from pyvider.telemetry import logger
 
 if TYPE_CHECKING:
     from .config import RPCPluginConfig # For TypeVar bound

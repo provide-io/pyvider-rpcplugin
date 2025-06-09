@@ -113,7 +113,7 @@ class TCPSocketTransport(RPCPluginTransport):
                 if not data:
                     logger.debug(f"🔌🤝🛑: Client {client_info} disconnected")
                     break
-                logger.debug(f"🔌🤝🔍: Received data from {client_info}: {data}")
+                logger.debug(f"🔌🤝🔍: Received data from {client_info}: {data!r}")
                 writer.write(data)
                 await writer.drain()
                 logger.debug(f"🔌🤝✅: Echoed data to {client_info}")
@@ -123,11 +123,8 @@ class TCPSocketTransport(RPCPluginTransport):
             logger.error(f"🔌🤝❌: Error handling client {client_info}: {e}")
         finally:
             try:
-                writer.close()
-                # Check if close() returns a coroutine (e.g. when using an AsyncMock)
-                maybe_coro = writer.close()
-                if asyncio.iscoroutine(maybe_coro):
-                    await maybe_coro
+                if not writer.is_closing():
+                    writer.close()
                 await writer.wait_closed()
                 logger.info(f"🔌🤝🔒: Closed connection to {client_info}")
             except Exception as e:

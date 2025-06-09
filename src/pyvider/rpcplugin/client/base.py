@@ -255,7 +255,7 @@ class RPCPluginClient:
             # set the environment variable so the server knows what the clients
             # certificate is.
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
-            cert_pem = rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
+            rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
