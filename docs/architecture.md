@@ -1,0 +1,732 @@
+# Architecture Guide - pyvider-rpcplugin
+
+This document provides a comprehensive overview of the `pyvider-rpcplugin` architecture, design patterns, and implementation details.
+
+## Table of Contents
+
+- [System Overview](#system-overview)
+- [Core Architecture](#core-architecture)
+- [Component Design](#component-design)
+- [Transport Layer](#transport-layer)
+- [Protocol Layer](#protocol-layer)
+- [Security Architecture](#security-architecture)
+- [Configuration System](#configuration-system)
+- [Error Handling Strategy](#error-handling-strategy)
+- [Performance Design](#performance-design)
+- [Extension Points](#extension-points)
+
+## System Overview
+
+`pyvider-rpcplugin` is designed as a high-performance, secure RPC plugin framework built on gRPC with a focus on ease of use, type safety, and production readiness.
+
+### Design Principles
+
+1. **Performance First** - Optimized for high-throughput, low-latency communication
+2. **Security by Default** - Built-in mTLS and authentication mechanisms
+3. **Developer Experience** - Simple APIs with comprehensive type annotations
+4. **Production Ready** - Robust error handling, monitoring, and operational features
+5. **Extensible** - Clean interfaces for custom transports and protocols
+
+### Key Features
+
+- **Async-native** - Built on Python's `asyncio` for maximum concurrency
+- **Multi-transport** - Support for Unix sockets and TCP with automatic negotiation
+- **Type-safe** - Complete type annotations with modern Python 3.13+ features
+- **Observable** - Integrated structured logging and metrics collection
+- **Configurable** - Flexible configuration via environment, files, or code
+
+## Core Architecture
+
+```mermaid
+graph TB
+    subgraph "Application Layer"
+        App[User Application]
+        Handler[Service Handlers]
+    end
+    
+    subgraph "pyvider-rpcplugin Framework"
+        subgraph "API Layer"
+            Factory[Factory Functions]
+            Config[Configuration]
+        end
+        
+        subgraph "Core Layer"
+            Server[RPCPluginServer]
+            Client[RPCPluginClient]
+            Protocol[Protocol Layer]
+        end
+        
+        subgraph "Transport Layer"
+            Unix[Unix Socket Transport]
+            TCP[TCP Socket Transport]
+            Base[Transport Base Class]
+        end
+        
+        subgraph "Security Layer"
+            Auth[Authentication]
+            TLS[mTLS Management]
+            Cert[Certificate Utils]
+        end
+        
+        subgraph "Foundation Layer"
+            Exc[Exception System]
+            Log[Logging Integration]
+            Types[Type Definitions]
+        end
+    end
+    
+    subgraph "External Dependencies"
+        gRPC[grpc.aio]
+        Attrs[attrs]
+        Crypto[cryptography]
+        Telemetry[pyvider.telemetry]
+    end
+    
+    App --> Factory
+    Handler --> Server
+    Factory --> Server
+    Factory --> Client
+    Config --> Server
+    Config --> Client
+    Server --> Protocol
+    Client --> Protocol
+    Protocol --> Unix
+    Protocol --> TCP
+    Unix --> Base
+    TCP --> Base
+    Server --> Auth
+    Client --> TLS
+    Auth --> Cert
+    Server --> Log
+    Client --> Log
+    Protocol --> gRPC
+    Config --> Attrs
+    Cert --> Crypto
+    Log --> Telemetry
+```
+
+## Component Design
+
+### Factory Pattern
+
+The framework uses factory functions as the primary API for creating components:
+
+```python
+# High-level factory functions
+server = plugin_server(protocol, handler, transport="tcp")
+client = plugin_client(transport="unix")
+protocol = plugin_protocol(service_name, descriptor_module, servicer_add_fn)
+
+# Lower-level direct instantiation
+server = RPCPluginServer(protocol, handler, config, transport)
+```
+
+**Benefits:**
+- Simplified API for common use cases
+- Sensible defaults with customization options
+- Consistent configuration patterns
+- Easy testing and mocking
+
+### Dependency Injection
+
+Configuration and dependencies flow through the system via dependency injection:
+
+```python
+# Configuration flows down through the stack
+configure(auto_mtls=True, transports=["tcp"])
+server = plugin_server(protocol, handler)  # Inherits global config
+```
+
+### Async Context Management
+
+All resources support proper async lifecycle management:
+
+```python
+async with plugin_client() as client:
+    await client.connect(endpoint)
+    # Automatic cleanup on exit
+```
+
+## Transport Layer
+
+### Transport Abstraction
+
+The transport layer provides a clean abstraction over different communication mechanisms:
+
+```python
+class RPCPluginTransport(ABC):
+    @abstractmethod
+    async def listen(self) -> str:
+        """Start listening and return endpoint."""
+        
+    @abstractmethod  
+    async def connect(self, endpoint: str) -> None:
+        """Connect to remote endpoint."""
+        
+    @abstractmethod
+    async def close(self) -> None:
+        """Close transport and cleanup resources."""
+```
+
+### Unix Socket Transport
+
+Optimized for high-performance local inter-process communication:
+
+```python
+class UnixSocketTransport(RPCPluginTransport):
+    def __init__(self, path: Optional[str] = None):
+        self.path = path or self._generate_socket_path()
+        self._server_socket = None
+        self._running = False
+    
+    async def listen(self) -> str:
+        # Create Unix domain socket
+        # Set appropriate permissions
+        # Return socket path
+        
+    async def connect(self, endpoint: str) -> None:
+        # Validate socket file exists
+        # Create client connection
+        # Handle connection errors
+```
+
+**Features:**
+- Automatic socket path generation
+- Proper file permissions and cleanup
+- High performance (50K+ req/s)
+- Security through filesystem permissions
+
+### TCP Socket Transport
+
+Network communication with support for remote clients:
+
+```python
+class TCPSocketTransport(RPCPluginTransport):
+    def __init__(self, host: str = "127.0.0.1", port: int = 0):
+        self.host = host
+        self.port = port
+        self._server = None
+        
+    async def listen(self) -> str:
+        # Bind to host:port
+        # Handle port auto-assignment
+        # Return actual endpoint
+        
+    async def connect(self, endpoint: str) -> None:
+        # Parse host:port from endpoint
+        # Create TCP connection
+        # Handle network timeouts
+```
+
+**Features:**
+- Automatic port assignment
+- IPv4/IPv6 support
+- Connection timeout handling
+- Network error recovery
+
+### Transport Negotiation
+
+Automatic transport selection based on configuration and availability:
+
+```python
+def negotiate_transport(
+    transports: List[str],
+    endpoint: Optional[str] = None
+) -> RPCPluginTransport:
+    """Select best transport based on availability and performance."""
+    
+    if endpoint:
+        # Use endpoint to determine transport type
+        if endpoint.startswith('/') or endpoint.startswith('unix:'):
+            return UnixSocketTransport(path=endpoint)
+        else:
+            host, port = parse_tcp_endpoint(endpoint)
+            return TCPSocketTransport(host=host, port=port)
+    
+    # Auto-select based on preferences
+    for transport_type in transports:
+        if transport_type == "unix" and unix_sockets_available():
+            return UnixSocketTransport()
+        elif transport_type == "tcp":
+            return TCPSocketTransport()
+    
+    raise TransportError("No suitable transport available")
+```
+
+## Protocol Layer
+
+### gRPC Integration
+
+The protocol layer integrates with gRPC while providing a clean abstraction:
+
+```python
+class RPCPluginProtocol(ABC):
+    @abstractmethod
+    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+        """Return gRPC descriptors and service name."""
+        
+    @abstractmethod
+    async def add_to_server(self, handler: Any, server: grpc.aio.Server) -> None:
+        """Register service handler with gRPC server."""
+```
+
+### Service Registration
+
+Services are registered through a standardized pattern:
+
+```python
+async def add_to_server(self, handler: HandlerT, server: grpc.aio.Server) -> None:
+    """Register handler with gRPC server."""
+    
+    # Validate handler implements required methods
+    self._validate_handler(handler)
+    
+    # Register with gRPC server using generated function
+    self.servicer_add_fn(handler, server)
+    
+    # Register additional protocol services (broker, stdio, controller)
+    register_protocol_service(server, self._shutdown_event)
+```
+
+### Protocol Services
+
+Built-in protocol services provide framework functionality:
+
+- **Broker Service** - Connection management and service discovery
+- **Stdio Service** - Input/output redirection for debugging
+- **Controller Service** - Service lifecycle and health management
+
+## Security Architecture
+
+### mTLS Implementation
+
+Mutual TLS is implemented at the transport layer with certificate management:
+
+```python
+class SecurityManager:
+    def __init__(self, config: SecurityConfig):
+        self.config = config
+        self.ca_cert = None
+        self.server_cert = None
+        self.client_cert = None
+    
+    async def setup_server_credentials(self) -> grpc.ServerCredentials:
+        """Create server credentials with client certificate validation."""
+        
+        # Load server certificate and key
+        server_cert = await self._load_certificate(self.config.server_cert)
+        server_key = await self._load_private_key(self.config.server_key)
+        
+        # Load CA for client validation
+        ca_cert = await self._load_certificate(self.config.ca_cert)
+        
+        # Create mTLS credentials
+        return grpc.ssl_server_credentials(
+            private_key_certificate_chain_pairs=[(server_key, server_cert)],
+            root_certificates=ca_cert,
+            require_client_auth=True
+        )
+    
+    async def setup_client_credentials(self) -> grpc.ChannelCredentials:
+        """Create client credentials for server authentication."""
+        
+        # Load client certificate and key  
+        client_cert = await self._load_certificate(self.config.client_cert)
+        client_key = await self._load_private_key(self.config.client_key)
+        
+        # Load CA for server validation
+        ca_cert = await self._load_certificate(self.config.ca_cert)
+        
+        # Create mTLS credentials
+        return grpc.ssl_channel_credentials(
+            root_certificates=ca_cert,
+            private_key=client_key,
+            certificate_chain=client_cert
+        )
+```
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    participant CA as Certificate Authority
+    
+    Note over C,S: mTLS Handshake
+    C->>S: Client Hello + Client Certificate
+    S->>CA: Validate Client Certificate
+    CA->>S: Certificate Valid
+    S->>C: Server Hello + Server Certificate
+    C->>CA: Validate Server Certificate  
+    CA->>C: Certificate Valid
+    
+    Note over C,S: Secure Channel Established
+    C->>S: Encrypted RPC Request
+    S->>C: Encrypted RPC Response
+```
+
+### Certificate Management
+
+Automated certificate generation and validation:
+
+```python
+class Certificate:
+    @classmethod
+    def generate_ca(cls, common_name: str, validity_days: int = 365) -> Certificate:
+        """Generate self-signed CA certificate."""
+        
+    @classmethod
+    def generate_server_certificate(
+        cls, 
+        ca_cert: Certificate,
+        common_name: str,
+        san_dns: List[str] = None,
+        validity_days: int = 90
+    ) -> Certificate:
+        """Generate server certificate signed by CA."""
+        
+    @classmethod
+    def generate_client_certificate(
+        cls,
+        ca_cert: Certificate, 
+        common_name: str,
+        validity_days: int = 30
+    ) -> Certificate:
+        """Generate client certificate signed by CA."""
+```
+
+## Configuration System
+
+### Hierarchical Configuration
+
+Configuration follows a hierarchical precedence model:
+
+1. **Programmatic** - Direct API calls (highest priority)
+2. **Environment Variables** - Runtime configuration
+3. **Configuration Files** - Persistent settings
+4. **Defaults** - Built-in sensible defaults (lowest priority)
+
+```python
+class RPCPluginConfig:
+    def __init__(self):
+        self.config = {}
+        self._load_defaults()
+        self._load_from_files()
+        self._load_from_environment()
+    
+    def set(self, key: str, value: Any) -> None:
+        """Set configuration value (highest priority)."""
+        self.config[key] = self._validate_and_convert(key, value)
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value with fallback."""
+        return self.config.get(key, default)
+```
+
+### Configuration Schema
+
+Type-safe configuration with validation:
+
+```python
+CONFIG_SCHEMA = {
+    "PLUGIN_MAGIC_COOKIE_VALUE": {
+        "type": "str",
+        "required": True,
+        "default": "rpcplugin-default-cookie",
+        "description": "Authentication cookie for handshake validation"
+    },
+    "PLUGIN_PROTOCOL_VERSIONS": {
+        "type": "list_int", 
+        "required": True,
+        "default": [1],
+        "description": "Supported protocol versions"
+    },
+    "PLUGIN_AUTO_MTLS": {
+        "type": "bool",
+        "required": True,
+        "default": True,
+        "description": "Enable automatic mTLS configuration"
+    }
+}
+```
+
+## Error Handling Strategy
+
+### Exception Hierarchy
+
+Structured exception hierarchy for precise error handling:
+
+```python
+class RPCPluginError(Exception):
+    """Base exception for all RPC plugin errors."""
+
+class TransportError(RPCPluginError):
+    """Transport layer errors (connection, binding, etc.)."""
+
+class ProtocolError(RPCPluginError):
+    """Protocol layer errors (service registration, gRPC)."""
+
+class HandshakeError(RPCPluginError):
+    """Authentication and handshake errors."""
+
+class SecurityError(RPCPluginError):
+    """Security-related errors (certificates, validation)."""
+```
+
+### Error Context
+
+Rich error context for debugging and recovery:
+
+```python
+class ContextualError(RPCPluginError):
+    def __init__(
+        self,
+        message: str,
+        context: Dict[str, Any] = None,
+        cause: Exception = None
+    ):
+        super().__init__(message)
+        self.context = context or {}
+        self.cause = cause
+    
+    def add_context(self, key: str, value: Any) -> 'ContextualError':
+        """Add contextual information to error."""
+        self.context[key] = value
+        return self
+```
+
+### Recovery Patterns
+
+Built-in retry and recovery mechanisms:
+
+```python
+async def with_retry(
+    operation: Callable,
+    max_retries: int = 3,
+    backoff_factor: float = 1.0,
+    exceptions: Tuple[Exception, ...] = (TransportError,)
+) -> Any:
+    """Execute operation with exponential backoff retry."""
+    
+    for attempt in range(max_retries + 1):
+        try:
+            return await operation()
+        except exceptions as e:
+            if attempt == max_retries:
+                raise
+            
+            delay = backoff_factor * (2 ** attempt)
+            await asyncio.sleep(delay)
+```
+
+## Performance Design
+
+### Async Architecture
+
+Full async/await integration for maximum concurrency:
+
+```python
+class RPCPluginServer:
+    async def serve(self) -> None:
+        """Serve requests concurrently."""
+        
+        # Setup transport concurrently
+        await self._setup_transport()
+        
+        # Start gRPC server
+        await self._grpc_server.start()
+        
+        # Handle shutdown signals
+        async with self._shutdown_context():
+            await self._grpc_server.wait_for_termination()
+```
+
+### Connection Pooling
+
+Efficient connection management:
+
+```python
+class ConnectionPool:
+    def __init__(self, max_size: int = 10):
+        self.max_size = max_size
+        self.pool = asyncio.Queue(maxsize=max_size)
+        self.created = 0
+    
+    async def acquire(self) -> RPCPluginClient:
+        """Get client from pool or create new one."""
+        
+        try:
+            return self.pool.get_nowait()
+        except asyncio.QueueEmpty:
+            if self.created < self.max_size:
+                self.created += 1
+                return await self._create_client()
+            else:
+                return await self.pool.get()
+    
+    async def release(self, client: RPCPluginClient) -> None:
+        """Return client to pool."""
+        await self.pool.put(client)
+```
+
+### Memory Management
+
+Efficient resource usage patterns:
+
+- **Lazy initialization** - Components created only when needed
+- **Resource cleanup** - Automatic cleanup via async context managers
+- **Connection reuse** - Pool connections for repeated operations
+- **Streaming support** - Handle large payloads efficiently
+
+## Extension Points
+
+### Custom Transports
+
+Implement custom transport mechanisms:
+
+```python
+class CustomTransport(RPCPluginTransport):
+    async def listen(self) -> str:
+        # Implement custom server listening logic
+        pass
+    
+    async def connect(self, endpoint: str) -> None:
+        # Implement custom client connection logic
+        pass
+    
+    async def close(self) -> None:
+        # Implement cleanup logic
+        pass
+
+# Register custom transport
+server = plugin_server(
+    protocol=protocol,
+    handler=handler,
+    transport=CustomTransport()
+)
+```
+
+### Custom Protocols
+
+Extend protocol functionality:
+
+```python
+class CustomProtocol(RPCPluginProtocol):
+    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+        # Return custom gRPC descriptors
+        return self.descriptor_module, self.service_name
+    
+    async def add_to_server(self, handler: Any, server: grpc.aio.Server) -> None:
+        # Custom service registration logic
+        self.servicer_add_fn(handler, server)
+        
+        # Add custom interceptors
+        await self._add_custom_interceptors(server)
+```
+
+### Middleware Support
+
+Add cross-cutting concerns:
+
+```python
+class LoggingInterceptor(grpc.aio.ServerInterceptor):
+    async def intercept_service(self, continuation, handler_call_details):
+        start_time = time.time()
+        
+        try:
+            response = await continuation(handler_call_details)
+            logger.info("RPC completed", duration=time.time() - start_time)
+            return response
+        except Exception as e:
+            logger.error("RPC failed", error=str(e))
+            raise
+
+# Add to server
+server.add_interceptor(LoggingInterceptor())
+```
+
+## Design Patterns
+
+### Builder Pattern
+
+Complex configuration building:
+
+```python
+class ServerBuilder:
+    def __init__(self):
+        self._protocol = None
+        self._handler = None
+        self._config = {}
+    
+    def with_protocol(self, protocol: ProtocolT) -> 'ServerBuilder':
+        self._protocol = protocol
+        return self
+    
+    def with_handler(self, handler: HandlerT) -> 'ServerBuilder':
+        self._handler = handler
+        return self
+    
+    def with_config(self, **config) -> 'ServerBuilder':
+        self._config.update(config)
+        return self
+    
+    def build(self) -> RPCPluginServer:
+        return RPCPluginServer(
+            protocol=self._protocol,
+            handler=self._handler,
+            config=self._config
+        )
+```
+
+### Observer Pattern
+
+Event-driven architecture:
+
+```python
+class EventManager:
+    def __init__(self):
+        self._listeners = defaultdict(list)
+    
+    def subscribe(self, event_type: str, callback: Callable) -> None:
+        self._listeners[event_type].append(callback)
+    
+    async def publish(self, event_type: str, data: Any) -> None:
+        for callback in self._listeners[event_type]:
+            await callback(data)
+
+# Usage
+events.subscribe("connection.established", log_connection)
+events.subscribe("request.completed", update_metrics)
+```
+
+### Strategy Pattern
+
+Pluggable algorithms:
+
+```python
+class CompressionStrategy(ABC):
+    @abstractmethod
+    def compress(self, data: bytes) -> bytes:
+        pass
+    
+    @abstractmethod
+    def decompress(self, data: bytes) -> bytes:
+        pass
+
+class GzipCompression(CompressionStrategy):
+    def compress(self, data: bytes) -> bytes:
+        return gzip.compress(data)
+    
+    def decompress(self, data: bytes) -> bytes:
+        return gzip.decompress(data)
+
+# Configurable compression
+server = plugin_server(
+    protocol=protocol,
+    handler=handler,
+    compression_strategy=GzipCompression()
+)
+```
+
+This architecture provides a solid foundation for building high-performance, secure, and maintainable RPC-based applications while remaining flexible enough to accommodate diverse use cases and requirements.
