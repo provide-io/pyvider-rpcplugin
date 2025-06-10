@@ -335,8 +335,9 @@ def test_plugin_client_with_options_and_auto_connect(mock_exists, mock_access, m
     # The `iscoroutine` check is a good addition.
 
 
+@patch('pyvider.rpcplugin.factories.logger.error', new_callable=MagicMock)
 @patch('pyvider.rpcplugin.factories.os.path.exists')
-def test_plugin_client_server_not_found(mock_exists):
+def test_plugin_client_server_not_found(mock_exists, mock_logger_error):
     '''Test plugin_client when server executable does not exist.'''
     mock_exists.return_value = False
     server_path = "/nonexistent/server"
@@ -344,6 +345,7 @@ def test_plugin_client_server_not_found(mock_exists):
     with pytest.raises(FileNotFoundError, match=f"Server executable not found: {server_path}"):
         plugin_client(server_path=server_path)
     mock_exists.assert_called_once_with(server_path)
+    mock_logger_error.assert_called_once()
 
 @patch('pyvider.rpcplugin.factories.os.access')
 @patch('pyvider.rpcplugin.factories.os.path.exists')
