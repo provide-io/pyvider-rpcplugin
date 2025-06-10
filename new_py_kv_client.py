@@ -56,24 +56,24 @@ class KVClient:
         start_time = time.time()
         try:
             logger.debug(f"🤝 Creating an RPCPluginClient for server path: {self.server_path}")
-            
+
             if not os.path.exists(self.server_path):
                 logger.error(f"🚨 Server executable not found at {self.server_path}")
                 raise FileNotFoundError(f"Server executable not found at {self.server_path}")
-            
+
             if not os.access(self.server_path, os.X_OK):
                 logger.error(f"🚨 Server executable is not executable: {self.server_path}")
                 raise PermissionError(f"Server executable is not executable: {self.server_path}")
-            
+
             self._client = RPCPluginClient(
-                command=[self.server_path], 
+                command=[self.server_path],
                 config={
                     "plugins": {"kv": KVProtocol()},
                     # Pass the prepared env vars for the server process
                     "env": self.plugin_env_for_server
                 }
             )
-            
+
             logger.debug(f"▶️ Starting the client, timeout={self.connection_timeout}s")
             await asyncio.wait_for(self._client.start(), timeout=self.connection_timeout)
 
@@ -202,18 +202,12 @@ class KVClient:
                 timeout=5.0
             )
 
-            # For a bytes field in proto3 (not explicitly optional),
-            # it will be present as empty bytes if not set.
-            # Accessing it directly is safe. Check its truthiness (non-empty).
-            if response and response.value:
+            if response and response.HasField("value"):
                 value = response.value
                 logger.info(f"🗣️ 📚 Client: Get successful for key='{key}', retrieved {len(value)} bytes.")
                 return value
-            elif response: # Response exists, but response.value is empty (b"")
-                logger.info(f"🗣️ 📚 Client: Get for key='{key}' returned an empty value.")
-                return response.value # Return b""
-            else: # Should ideally not be reached if gRPC error handling is correct
-                logger.warning(f"🗣️ 📚 Client: Get for key='{key}' returned no response (should have been caught by gRPC error).")
+            else:
+                logger.info(f"🗣️ 📚 Client: Get for key='{key}' returned no value (or empty).")
                 return None
         except asyncio.TimeoutError:
             logger.error(f"🗣️ 📚 Client: Get operation timed out for key='{key}'.")
@@ -279,7 +273,7 @@ async def main() -> None:
                         logger.warning(f"Server path {sp_resolved} from PLUGIN_SERVER_PATH exists but is not executable.")
             if not found_env_path:
                  logger.warning(f"⚠️ PLUGIN_SERVER_PATH '{server_path_env}' not found or not executable. Trying defaults.")
-        
+
         if not resolved_server_path_str: # If env var not set or path not valid
             logger.info("Attempting to use default server paths as fallback.")
             if default_go_server_path.exists() and os.access(default_go_server_path, os.X_OK):
@@ -310,7 +304,7 @@ async def main() -> None:
         elif args.command == "get":
             logger.info(f"📚 Executing GET: key='{args.key}'")
             value = await client.get(args.key)
-            if value is not None: # This now correctly handles b"" as a valid (empty) value
+            if value is not None:
                 sys.stdout.buffer.write(value)
                 sys.stdout.buffer.flush()
                 sys.stdout.write("\n")
