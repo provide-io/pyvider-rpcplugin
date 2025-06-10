@@ -57,7 +57,7 @@ func (k *KV) Get(key string) ([]byte, error) {
 
 func main() {
     logger := hclog.New(&hclog.LoggerOptions{
-        Name:       "📡 kv-go-server",
+        Name:       "🐹 S> kv-go-server",
         Level:      hclog.Trace,
         Output:     os.Stderr,
         JSONFormat: false,
