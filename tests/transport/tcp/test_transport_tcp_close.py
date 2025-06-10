@@ -1,8 +1,7 @@
 # tests/transport/tcp/test_transport_tcp_close.py
 
 import asyncio
-import socket
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 

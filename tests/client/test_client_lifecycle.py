@@ -137,7 +137,6 @@ async def test_close_process_wait_timeout(client_instance): # Removed capsys, wi
         mock_transport.close.assert_called_once() # Ensure other cleanup still happens
 
         from io import StringIO
-        import sys
         with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
             # Re-run close to capture its specific stderr, if the instance can be closed multiple times
             # or re-setup the conditions and call close.

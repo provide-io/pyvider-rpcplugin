@@ -8,8 +8,6 @@ import os
 import socket
 import stat # Added
 import tempfile
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 from pathlib import Path
 import uuid
 
@@ -20,7 +18,6 @@ from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import TransportError
 
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.types import TransportT # Keep this for TransportT hint if used by factories
 from pyvider.rpcplugin.transport.base import RPCPluginTransport as BaseTransportT # For factory return type
 
 from pyvider.rpcplugin.server import RPCPluginServer

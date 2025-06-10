@@ -1,8 +1,6 @@
 # tests/transport/test_transport_types_direct.py
 
 from typing import Protocol, runtime_checkable # Keep existing typing imports
-import typing
-import types # Import types for UnionType
 
 from pyvider.rpcplugin.transport.types import (
     TransportType

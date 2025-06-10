@@ -213,7 +213,6 @@ async def test_setup_server_exception_2(
 ) -> None:
     """Test properly handling exceptions in server setup when gRPC add_port fails."""
     from unittest import mock # Ensure mock is available
-    from pyvider.rpcplugin.server import GRPCServer # Import for patching target
     # from tests.fixtures.dummy import DummyGRPCServer # Ensure DummyGRPCServer is importable (from fixtures import *)
 
     socket_path = managed_unix_socket_path

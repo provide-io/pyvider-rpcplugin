@@ -2,7 +2,7 @@
 
 import pytest
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from unittest import mock
 

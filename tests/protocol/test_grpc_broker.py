@@ -2,7 +2,6 @@
 # tests/protocol/test_grpc_broker.py
 
 import pytest
-import importlib
 import os # Added import
 import grpc
 from unittest.mock import patch, MagicMock
