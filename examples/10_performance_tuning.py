@@ -3,14 +3,13 @@
 """Demonstrates performance optimization techniques and benchmarking with pyvider-rpcplugin."""
 
 import asyncio
-import os
 import psutil
 import sys
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass
-from statistics import mean, median
+from statistics import mean
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -21,7 +20,6 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
-    plugin_client,
     create_basic_protocol,
     configure,
 )
@@ -222,13 +220,22 @@ class PerformanceBenchmarker:
             error_count = 0
             
             # Create concurrent clients
-            async def client_worker(client_id: int, requests: int) -> List[float]:
+            async def client_worker(client_id: int, requests: int, actual_server_endpoint: str, transport_type: str) -> List[float]:
                 """Worker function for concurrent client."""
                 
                 client_latencies = []
-                client = plugin_client(transport=server_config.get('transport', 'unix'))
+                # client = plugin_client(transport=server_config.get('transport', 'unix')) # Incorrect factory call
+
+                # Manually create a gRPC channel to the in-process server
+                import grpc # Ensure grpc is imported
+                target = f"{'unix:' if transport_type == 'unix' else ''}{actual_server_endpoint}"
+                channel = None # Define channel here to ensure it's available in finally
                 
                 try:
+                    channel = grpc.aio.insecure_channel(target)
+                    # In a real benchmark, you'd create a stub here, e.g.:
+                    # stub = YourServicePb2Grpc.YourServiceStub(channel)
+
                     for i in range(requests):
                         request_start = time.perf_counter()
                         
@@ -245,13 +252,29 @@ class PerformanceBenchmarker:
                             error_count += 1
                 
                 finally:
-                    await client.close()
+                    # await client.close()
+                    if channel:
+                        await channel.close()
                 
                 return client_latencies
             
-            # Run concurrent clients
+            # actual_server_endpoint and transport_type will be fetched before this
+            # and then passed to client_worker when client_tasks are created.
+            actual_server_endpoint = getattr(server._transport, 'endpoint', None)
+            if not actual_server_endpoint:
+                # Clean up server task if endpoint is not found
+                if server_task and not server_task.done():
+                    server_task.cancel()
+                    try:
+                        await server_task
+                    except asyncio.CancelledError:
+                        logger.warning("Server task cancelled due to missing endpoint.")
+                raise RuntimeError("Server endpoint not available for benchmark.")
+
+            transport_type = server_config.get('transport', 'unix') # Get transport type from server_config
+
             client_tasks = [
-                client_worker(i, requests_per_client)
+                client_worker(i, requests_per_client, actual_server_endpoint, transport_type)
                 for i in range(concurrent_clients)
             ]
             
@@ -858,7 +881,7 @@ async def example_10_memory_optimization():
                     domain="performance",
                     action="memory_checkpoint",
                     status="measured",
-                    requests_processed=i,
+                    # requests_processed=i, # Removed to avoid conflict with key in memory_stats
                     current_memory_mb=round(current_memory, 2),
                     memory_growth_mb=round(current_memory - initial_memory, 2),
                     **memory_stats

@@ -3,9 +3,7 @@
 """Demonstrates different transport options and their performance characteristics with pyvider-rpcplugin."""
 
 import asyncio
-import os
 import sys
-import time
 from pathlib import Path
 
 # Add src to path for examples
@@ -26,25 +24,25 @@ from pyvider.telemetry import logger  # noqa: E402
 
 class BenchmarkHandler:
     """Handler for transport benchmarking."""
-    
+
     def __init__(self, transport_type: str):
         self.transport_type = transport_type
         self.request_count = 0
         self.total_payload_size = 0
-    
+
     async def Echo(self, request, context):
         """Echo service for benchmarking."""
         self.request_count += 1
-        
+
         message = getattr(request, 'message', 'empty')
         self.total_payload_size += len(message)
-        
+
         # Simulate minimal processing time
         await asyncio.sleep(0.001)  # 1ms processing
-        
+
         response_data = f"Echo[{self.transport_type}]: {message}"
         return type('EchoReply', (), {'response': response_data})()
-    
+
     def get_stats(self) -> dict:
         """Get handler statistics."""
         return {
@@ -57,7 +55,7 @@ class BenchmarkHandler:
 async def example_4_unix_socket_performance():
     """
     Example 4A: Demonstrates Unix socket transport performance.
-    
+
     Shows the high-performance characteristics of Unix domain sockets
     for local inter-process communication.
     """
@@ -65,7 +63,7 @@ async def example_4_unix_socket_performance():
     print("⚡ Example 4A: Unix Socket Transport Performance")
     print(" Demonstrates: High-performance local IPC with Unix sockets")
     print("=" * 60)
-    
+
     # Configure for Unix socket optimization
     configure(
         magic_cookie="unix-benchmark-cookie",
@@ -75,7 +73,7 @@ async def example_4_unix_socket_performance():
         handshake_timeout=5.0,
         connection_timeout=30.0
     )
-    
+
     # Create protocol and handler
     protocol = create_basic_protocol()
     handler = BenchmarkHandler("unix")
@@ -86,7 +84,7 @@ async def example_4_unix_socket_performance():
         handler=handler,
         transport="unix"
     )
-    
+
     logger.info(
         "Starting Unix socket performance test",
         domain="transport",
@@ -95,7 +93,7 @@ async def example_4_unix_socket_performance():
         transport="unix",
         optimization="high_performance"
     )
-    
+
     # Start server
     server_task = asyncio.create_task(server.serve())
     await asyncio.sleep(0.5)  # Let server initialize
@@ -105,8 +103,9 @@ async def example_4_unix_socket_performance():
         server_endpoint = getattr(server._transport, 'endpoint', '/tmp/unknown.sock')
 
         # Create client and connect
-        client = plugin_client(transport="unix")
-        
+        # Using placeholder for server_path, as example focuses on simulated benchmark
+        client = plugin_client(server_path="./dummy_server.sh")
+
         # Simulate connection for benchmark
         logger.info(
             "Unix socket connection established",
@@ -116,7 +115,7 @@ async def example_4_unix_socket_performance():
             endpoint=server_endpoint,
             latency_estimate="<0.1ms"
         )
-        
+
         # Simulate benchmark results
         benchmark_results = {
             'transport': 'unix',
@@ -135,14 +134,14 @@ async def example_4_unix_socket_performance():
             status="success",
             **benchmark_results
         )
-        
+
         await client.close()
 
     finally:
         # Cleanup
         await server.stop()
         await server_task
-    
+
     logger.info(
         "Unix socket performance test completed",
         domain="transport",
@@ -155,7 +154,7 @@ async def example_4_unix_socket_performance():
 async def example_4_tcp_socket_performance():
     """
     Example 4B: Demonstrates TCP socket transport performance.
-    
+
     Shows TCP socket characteristics for network communication
     and comparison with Unix sockets.
     """
@@ -163,7 +162,7 @@ async def example_4_tcp_socket_performance():
     print("🌐 Example 4B: TCP Socket Transport Performance")
     print(" Demonstrates: Network-capable TCP transport characteristics")
     print("=" * 60)
-    
+
     # Configure for TCP optimization
     configure(
         magic_cookie="tcp-benchmark-cookie",
@@ -195,7 +194,7 @@ async def example_4_tcp_socket_performance():
         transport="tcp",
         capability="network_communication"
     )
-    
+
     # Start server
     server_task = asyncio.create_task(server.serve())
     await asyncio.sleep(0.5)  # Let server initialize
@@ -206,8 +205,9 @@ async def example_4_tcp_socket_performance():
         server_endpoint = f"127.0.0.1:{server_port}"
 
         # Create client
-        client = plugin_client(transport="tcp")
-        
+        # Using placeholder for server_path
+        client = plugin_client(server_path="./dummy_server.sh")
+
         logger.info(
             "TCP socket connection established",
             domain="transport",
@@ -236,7 +236,7 @@ async def example_4_tcp_socket_performance():
             status="success",
             **benchmark_results
         )
-        
+
         await client.close()
 
     finally:
@@ -256,7 +256,7 @@ async def example_4_tcp_socket_performance():
 async def example_4_transport_comparison():
     """
     Example 4C: Demonstrates side-by-side transport comparison.
-    
+
     Shows direct performance and feature comparison between
     Unix sockets and TCP sockets.
     """
@@ -264,7 +264,7 @@ async def example_4_transport_comparison():
     print("⚖️ Example 4C: Transport Comparison Analysis")
     print(" Demonstrates: Side-by-side transport characteristics")
     print("=" * 60)
-    
+
     # Transport comparison data
     transport_comparison = {
         'unix_socket': {
@@ -314,7 +314,7 @@ async def example_4_transport_comparison():
             ]
         }
     }
-    
+
     # Log detailed comparison
     for transport_name, details in transport_comparison.items():
         logger.info(
@@ -325,7 +325,7 @@ async def example_4_transport_comparison():
             transport=transport_name,
             **details['performance']
         )
-        
+
         logger.info(
             f"Transport characteristics: {transport_name}",
             domain="transport",
@@ -334,7 +334,7 @@ async def example_4_transport_comparison():
             transport=transport_name,
             **details['characteristics']
         )
-        
+
         logger.info(
             f"Use cases: {transport_name}",
             domain="transport",
@@ -343,7 +343,7 @@ async def example_4_transport_comparison():
             transport=transport_name,
             use_cases=details['use_cases']
         )
-    
+
     # Performance recommendations
     recommendations = [
         {
@@ -377,7 +377,7 @@ async def example_4_transport_comparison():
             'reason': 'Load balancing and scaling requirements'
         }
     ]
-    
+
     for rec in recommendations:
         logger.info(
             "Transport recommendation",
@@ -391,7 +391,7 @@ async def example_4_transport_comparison():
 async def example_4_dual_transport_setup():
     """
     Example 4D: Demonstrates dual transport configuration.
-    
+
     Shows how to set up a server that supports both Unix and TCP
     transports with automatic client negotiation.
     """
@@ -399,7 +399,7 @@ async def example_4_dual_transport_setup():
     print("🔄 Example 4D: Dual Transport Configuration")
     print(" Demonstrates: Supporting both Unix and TCP simultaneously")
     print("=" * 60)
-    
+
     # Configure for dual transport
     configure(
         magic_cookie="dual-transport-cookie",
@@ -414,12 +414,16 @@ async def example_4_dual_transport_setup():
     handler = BenchmarkHandler("dual")
 
     # Create server with dual transport support
-    server = plugin_server(
+    # For dual transport, we let the server negotiate by passing transport=None
+    # The `configure()` call above set PLUGIN_SERVER_TRANSPORTS = ['unix', 'tcp']
+    # which will be used by RPCPluginServer's negotiation logic.
+    from pyvider.rpcplugin.server import RPCPluginServer # Import directly
+
+    server = RPCPluginServer(
         protocol=protocol,
         handler=handler,
-        transports=["unix", "tcp"],  # Accept both
-        host="127.0.0.1",
-        port=50051
+        transport=None,  # Crucial for negotiation
+        config={} # Pass empty config or specific if needed
     )
 
     logger.info(
@@ -430,7 +434,7 @@ async def example_4_dual_transport_setup():
         transports=["unix", "tcp"],
         strategy="client_choice"
     )
-    
+
     # Start server
     server_task = asyncio.create_task(server.serve())
     await asyncio.sleep(0.5)
@@ -459,7 +463,7 @@ async def example_4_dual_transport_setup():
                 'reason': 'Load balancing and scaling'
             }
         ]
-        
+
         for scenario in client_scenarios:
             logger.info(
                 f"Client scenario: {scenario['name']}",
@@ -469,7 +473,7 @@ async def example_4_dual_transport_setup():
                 preferred_transport=scenario['transport'],
                 reason=scenario['reason']
             )
-        
+
         # Show transport selection logic
         transport_selection_logic = {
             'local_client': {
@@ -496,14 +500,14 @@ async def example_4_dual_transport_setup():
                 priority_order=selection['priority'],
                 reasoning=selection['reasoning']
             )
-        
+
         logger.info(
             "Dual transport server ready",
             domain="transport",
             action="dual_setup",
             status="success",
             unix_endpoint=getattr(server._transport, 'unix_endpoint', 'available'),
-            tcp_endpoint=f"127.0.0.1:50051",
+            tcp_endpoint="127.0.0.1:50051",
             client_note="Clients can choose optimal transport"
         )
 
@@ -511,7 +515,7 @@ async def example_4_dual_transport_setup():
         # Cleanup
         await server.stop()
         await server_task
-    
+
     logger.info(
         "Dual transport demonstration completed",
         domain="transport",
@@ -525,14 +529,14 @@ async def main():
     """Run all transport comparison examples."""
     print("🚄 pyvider-rpcplugin Transport Options Examples")
     print("===============================================")
-    
+
     try:
         # Run each transport example
         await example_4_unix_socket_performance()
         await example_4_tcp_socket_performance()
         await example_4_transport_comparison()
         await example_4_dual_transport_setup()
-        
+
         print("\n" + "=" * 60)
         print("✅ All Transport Options Examples Completed Successfully!")
         print("=" * 60)
@@ -545,7 +549,7 @@ async def main():
         print("  • See example 05_security_mtls.py for secure transport setup")
         print("  • Try example 10_performance_tuning.py for optimization techniques")
         print("  • Check docs/architecture.md for transport layer details")
-        
+
     except Exception as e:
         logger.error(
             "Transport options example failed",

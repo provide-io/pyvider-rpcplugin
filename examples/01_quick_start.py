@@ -15,8 +15,7 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
-    plugin_client,
-    plugin_protocol,
+    plugin_client, 
     create_basic_protocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
@@ -24,7 +23,7 @@ from pyvider.telemetry import logger  # noqa: E402
 
 class SimpleGreeterHandler:
     """Simple handler that implements a greeting service."""
-
+    
     async def SayHello(self, request, context):
         """Handle SayHello RPC calls."""
         name = getattr(request, 'name', 'Anonymous')
@@ -38,7 +37,7 @@ class SimpleGreeterHandler:
             client_name=name,
             response_length=len(message)
         )
-
+        
         # For this example, we'll return a simple dict-like response
         # In production, this would be a proper protobuf message
         return type('HelloReply', (), {'message': message})()
@@ -47,7 +46,7 @@ class SimpleGreeterHandler:
 async def example_1_basic_server():
     """
     Example 1A: Demonstrates basic RPC server setup.
-
+    
     Shows how to create a minimal RPC server using the factory functions
     with default configuration and a simple handler.
     """
@@ -55,21 +54,21 @@ async def example_1_basic_server():
     print("🛎️ Example 1A: Basic RPC Server Setup")
     print(" Demonstrates: Simple server creation and startup")
     print("=" * 60)
-
+    
     # Create a basic protocol for demonstration
     # In production, you'd use your actual protobuf definitions
     protocol = create_basic_protocol()
-
+    
     # Create handler instance
     handler = SimpleGreeterHandler()
-
+    
     # Create server with default settings (Unix socket transport)
     server = plugin_server(
         protocol=protocol,
         handler=handler,
         transport="unix"  # Use Unix socket for fast local communication
     )
-
+    
     logger.info(
         "Starting RPC server",
         domain="server",
@@ -78,106 +77,106 @@ async def example_1_basic_server():
         transport="unix",
         protocol="basic"
     )
-
+    
     # Start server in background
     server_task = asyncio.create_task(server.serve())
-
+    
     # Let server initialize
     await asyncio.sleep(0.5)
-
+    
     logger.info(
-        "RPC server started successfully",
+        "RPC server started successfully", 
         domain="server",
         action="startup",
         status="success",
         endpoint=getattr(server._transport, 'endpoint', 'unknown')
     )
-
+    
     # Stop server gracefully
     await server.stop()
     await server_task
-
+    
     logger.info(
         "RPC server stopped",
-        domain="server",
+        domain="server", 
         action="shutdown",
         status="success"
     )
 
 
-async def example_1_basic_client():
+async def example_1_basic_client(): # No server_path needed if using dummy executable
     """
     Example 1B: Demonstrates basic RPC client connection.
-
+    
     Shows how to create a client, connect to a server, and make
     basic RPC calls with proper connection management.
+    This version uses a dummy executable for client startup.
     """
     print("\n" + "=" * 60)
-    print("🙋 Example 1B: Basic RPC Client Connection")
-    print(" Demonstrates: Client creation and RPC calls")
+    print("🙋 Example 1B: Basic RPC Client Connection (using dummy server)")
+    print(" Demonstrates: Client creation and RPC calls (simulated)")
     print("=" * 60)
-
-    # For this example, we'll simulate client operations
-    # In a real scenario, the client would connect to a running server
-
+    
     logger.info(
-        "Creating RPC client",
+        "Creating RPC client with dummy server path",
         domain="client",
         action="create",
         status="starting",
-        transport="unix"
+        server_executable="./dummy_server.sh"
     )
     
-    # Create client instance
-    client = plugin_client(transport="unix")
-
+    # plugin_client expects path to an executable
+    client = plugin_client(server_path="./dummy_server.sh") 
+    
     try:
-        # In a real example, this would connect to the server
-        # For demo purposes, we'll just show the connection pattern
+        # Start the client (launches subprocess, handshake)
+        await client.start() # This replaces connect()
         logger.info(
-            "Client connection simulated",
+            "Client started and connected to dummy server process",
             domain="client",
-            action="connect",
-            status="success",
-            connection_type="simulated"
+            action="connect_simulation", # Renamed from "connect"
+            status="success"
         )
-
-        # Simulate making RPC calls
+        
+        # Simulate making an RPC call as direct calls will fail with dummy_server.sh
         logger.info(
-            "Making RPC call",
+            "Simulating RPC call to SayHello",
             domain="client",
-            action="rpc_call",
-            status="starting",
+            action="rpc_call_simulation", # Renamed
+            status="simulating",
             method="SayHello",
-            request_data="World"
+            request_data={"name": "QuickStartClient"}
         )
-
-        # Simulate successful response
+        
+        # Fake response
+        simulated_response_message = "Hello, QuickStartClient! Welcome from dummy server."
         logger.info(
-            "RPC call completed",
+            "Simulated RPC call completed",
             domain="client",
-            action="rpc_call",
+            action="rpc_call_simulation", # Renamed
             status="success",
             method="SayHello",
-            response="Hello, World! Welcome to pyvider-rpcplugin.",
-            duration_ms=12.5
+            response=simulated_response_message,
         )
-
+        
     except Exception as e:
         logger.error(
             "Client operation failed",
             domain="client",
-            action="rpc_call",
+            action="client_lifecycle", # Generic action
             status="error",
             error=str(e)
         )
     finally:
         # Always clean up client resources
-        await client.close()
+        # RPCPluginClient has shutdown_plugin and close
+        if hasattr(client, '_controller_stub') and client._controller_stub: # Check if stubs were created
+            await client.shutdown_plugin() # Gracefully ask server to shutdown
+        await client.close() # Close client-side resources
         logger.info(
             "Client connection closed",
             domain="client",
-            action="disconnect",
+            action="disconnect", # Kept "disconnect" for consistency
             status="success"
         )
 
@@ -196,7 +195,7 @@ async def example_1_full_workflow():
     
     # This demonstrates the conceptual workflow
     # In practice, server and client often run in separate processes
-
+    
     workflow_steps = [
         "🚀 Initialize RPC framework",
         "🛎️ Start RPC server with service handlers", 
@@ -233,12 +232,36 @@ async def main():
     print("🚀 pyvider-rpcplugin Quick Start Examples")
     print("=========================================")
     
+    # Server part: Start a real server.
+    # Client part: Will use plugin_client with dummy_server.sh, so it's independent.
+    
+    # --- Server Setup and Run ---
+    server_protocol = create_basic_protocol()
+    server_handler = SimpleGreeterHandler()
+    actual_server = plugin_server(
+        protocol=server_protocol,
+        handler=server_handler,
+        transport="unix" 
+    )
+    server_task = None
+    
     try:
-        # Run each example in sequence
-        await example_1_basic_server()
-        await example_1_basic_client()
-        await example_1_full_workflow()
+        logger.info("Starting actual server for example...")
+        # The server will print its handshake string to stdout here.
+        # For this example, the client part won't use this server directly,
+        # but it's good to show a server running.
+        server_task = asyncio.create_task(actual_server.serve())
+        await asyncio.sleep(0.5) # Let server initialize
         
+        actual_server_socket_path = getattr(actual_server._transport, 'endpoint', "unknown_socket")
+        logger.info(f"Actual server started, socket path: {actual_server_socket_path}")
+
+        # --- Client Run (uses dummy_server.sh, independent of actual_server) ---
+        await example_1_basic_client() # No longer needs server_path from actual_server
+        
+        # --- Conceptual Workflow ---
+        await example_1_full_workflow() # This logs conceptual steps
+
         print("\n" + "=" * 60)
         print("✅ All Quick Start Examples Completed Successfully!")
         print("=" * 60)
@@ -246,16 +269,44 @@ async def main():
         print("  • Try example 02_server_setup.py for advanced server configuration")
         print("  • See example 03_client_connection.py for robust client patterns")
         print("  • Check out the complete example series in examples/README.md")
-        
+
     except Exception as e:
         logger.error(
             "Quick start example failed",
             domain="examples",
             action="run",
-            status="error", 
+            status="error",
             error=str(e)
         )
+        # Ensure actual_server is stopped in case of an error
+        if actual_server and actual_server._serving_future and not actual_server._serving_future.done():
+            logger.info("Stopping actual_server due to an error in examples...")
+            await actual_server.stop() # Use await server.stop()
+            # The server_task should also be awaited or cancelled
+            if server_task and not server_task.done():
+                server_task.cancel()
+                try:
+                    await server_task
+                except asyncio.CancelledError:
+                    logger.info("Server task cancelled.")
         raise
+    finally:
+        # Ensure actual_server is always stopped cleanly
+        if actual_server and actual_server._serving_future and not actual_server._serving_future.done():
+            logger.info("Stopping actual_server after examples completion...")
+            await actual_server.stop() # Use await server.stop()
+            if server_task and not server_task.done():
+                server_task.cancel()
+                try:
+                    await server_task
+                except asyncio.CancelledError:
+                    logger.info("Server task cancelled during final cleanup.")
+            logger.info("Actual server stopped.")
+        elif server_task and server_task.done():
+             try:
+                 server_task.result() # Retrieve potential exceptions from server task
+             except Exception as task_exc:
+                 logger.error(f"Actual server task finished with an exception: {task_exc}")
 
 
 if __name__ == "__main__":

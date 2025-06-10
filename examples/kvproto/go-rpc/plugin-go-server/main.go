@@ -1,5 +1,6 @@
-
+//
 // pyvider-rpcplugin/examples/kvproto/go-plugin/plugin-go-server/main.go
+//
 
 package main
 

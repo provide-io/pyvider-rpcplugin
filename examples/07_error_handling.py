@@ -25,7 +25,6 @@ from pyvider.rpcplugin import (  # noqa: E402
 from pyvider.rpcplugin.exception import (  # noqa: E402
     RPCPluginError,
     TransportError,
-    HandshakeError,
     ProtocolError,
     SecurityError,
 )
@@ -362,7 +361,7 @@ class CircuitBreaker:
             
             return result
             
-        except Exception as e:
+        except Exception:
             # Handle failure
             self.failure_count += 1
             self.last_failure_time = time.time()
@@ -426,7 +425,10 @@ async def example_7_basic_error_handling():
     await asyncio.sleep(0.5)
     
     try:
-        client = plugin_client(transport="unix")
+        # plugin_client expects a server_path (executable).
+        # Using a placeholder as this example focuses on error handling patterns
+        # with simulated client-side logic rather than actual RPC calls.
+        client = plugin_client(server_path="./dummy_server.sh")
         
         # Test cases for different error scenarios
         test_cases = [

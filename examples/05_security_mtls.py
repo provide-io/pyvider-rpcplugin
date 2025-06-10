@@ -17,7 +17,6 @@ if src_path.exists() and str(src_path) not in sys.path:
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
     plugin_client,
-    plugin_protocol,
     create_basic_protocol,
     configure,
 )
