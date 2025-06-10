@@ -1,7 +1,7 @@
 # tests/transport/tcp/test_transport_tcp_close.py
 
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -29,8 +29,9 @@ async def test_tcp_transport_close_handles_server_close_method_error() -> None:
     transport = TCPSocketTransport()
     # Simulate a server object that errors when close is called
     mock_server = AsyncMock()
-    mock_server.is_serving.return_value = True
-    mock_server.close.side_effect = RuntimeError("Server.close() failed")
+    mock_server.is_serving = MagicMock(return_value=True) # Make is_serving a sync mock
+    mock_server.close = MagicMock(side_effect=RuntimeError("Server.close() failed")) # Make close a sync mock
+    # mock_server.wait_closed will remain an AsyncMock, suitable for awaiting
     transport._server = mock_server # type: ignore
 
     await transport.close() # Should not raise, error should be caught and logged
@@ -43,8 +44,9 @@ async def test_tcp_transport_close_handles_server_wait_closed_error() -> None:
     """Test close handles error when server.wait_closed() errors or times out."""
     transport = TCPSocketTransport()
     mock_server = AsyncMock()
-    mock_server.is_serving.return_value = True
-    mock_server.wait_closed.side_effect = asyncio.TimeoutError # Simulate timeout
+    mock_server.is_serving = MagicMock(return_value=True) # Make is_serving a sync mock
+    mock_server.close = MagicMock() # Make close a sync mock, no specific side effect needed here for it
+    mock_server.wait_closed.side_effect = asyncio.TimeoutError # wait_closed remains AsyncMock
 
     transport._server = mock_server # type: ignore
     await transport.close() # Should not raise

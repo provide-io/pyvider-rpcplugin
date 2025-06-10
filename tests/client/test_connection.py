@@ -145,7 +145,8 @@ async def test_del_warning() -> None: # Removed caplog, capsys
     # Patch the logger.warning specifically in the module where ClientConnection uses it.
     # ClientConnection.py does: from pyvider.telemetry import logger
     # So the target is 'pyvider.rpcplugin.client.connection.logger.warning'.
-    with patch("pyvider.rpcplugin.client.connection.logger.warning") as mock_log_warning:
+    from unittest.mock import MagicMock
+    with patch("pyvider.rpcplugin.client.connection.logger.warning", new_callable=MagicMock) as mock_log_warning:
         del conn
         conn = None
         gc.collect()

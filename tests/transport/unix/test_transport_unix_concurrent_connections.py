@@ -61,6 +61,7 @@ async def test_unix_socket_concurrent_connections() -> None:
         await server_transport.close()
         # server_transport = None # Indicate it's been closed cleanly
 
+        await asyncio.sleep(0) # Give event loop a chance to process
     finally:
         # Clean up remaining clients if any
         for client in client_transports:
@@ -89,6 +90,8 @@ async def test_unix_socket_concurrent_connections() -> None:
             os.rmdir(temp_dir)
         except Exception as e:
             logger.error(f"Error removing temp directory: {e}")
+
+        await asyncio.sleep(0) # Give event loop a chance after all cleanup
 
 @pytest.mark.asyncio
 async def test_unix_socket_connection_tracking() -> None:
