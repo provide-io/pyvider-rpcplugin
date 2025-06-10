@@ -24,6 +24,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "bandit>=1.8.3",
+    "grpc-stubs>=1.53.0.6",
     "grpcio-tools>=1.70.0",
     "hatch>=1.14.0",
     "hypothesis>=6.127.1",
@@ -31,6 +32,7 @@ dev = [
     "pynguin>=0.40.0",
     "pyre-check>=0.9.23",
     "pyre-extensions>=0.0.32",
+    "pyrefly>=0.18.1",
     "pyright>=1.1.394",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
@@ -43,6 +45,7 @@ dev = [
     "sapp>=0.4",
     "tabulate>=0.9.0",
     "ty>=0.0.1a6",
+    "types-grpcio>=1.0.0.20250603",
     "uv>=0.6.5",
     "viztracer>=1.0.2",
 ]
