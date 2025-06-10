@@ -1,4 +1,11 @@
-#!/usr/bin/env -S uv run python3
+#!/app/.venv/bin/python3
+
+import sys
+import os
+# Ensure /app/src and /app are in sys.path for module resolution
+# This is a workaround for potential PYTHONPATH/editable install issues in the test environment
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
 """
 py-kv-server.py
@@ -60,13 +67,13 @@ class KVHandler(kv_pb2_grpc.KVServicer):
     """
 
     def __init__(self) -> None:
-        logger.debug("🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
+        logger.debug("🐍 S> 🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
         # Add explicit logging of certificate parameters
         if hasattr(self, "_server_cert_obj"):
             cert = self._server_cert_obj._cert
             public_key = cert.public_key()
             if isinstance(public_key, ec.EllipticCurvePublicKey):
-                logger.info(f"🔐 Server using curve: {public_key.curve.name}")
+                logger.info(f"🐍 S> 🔐 Server using curve: {public_key.curve.name}")
 
     async def Put(
         self, request: kv_pb2.PutRequest, context: grpc.aio.ServicerContext
@@ -81,22 +88,22 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         """
         try:
             key = request.key
-            logger.info(f"🛎️📡🚀 Put: Received request for key: '{key}'")
+            logger.info(f"🐍 S> 🛎️📡🚀 Put: Received request for key: '{key}'")
             value_str = request.value.decode("utf-8", errors="replace")
             summary = summarize_text(value_str)
             logger.debug(
-                f"🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}"
+                f"🐍 S> 🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}"
             )
             filename = f"/tmp/kv-data-{key}"
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(value_str)
             logger.debug(
-                f"🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'."
+                f"🐍 S> 🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'."
             )
             return kv_pb2.Empty()
         except Exception as e:
             logger.error(
-                f"🛎️📡❌ Put: Error storing key '{request.key}': {e}",
+                f"🐍 S> 🛎️📡❌ Put: Error storing key '{request.key}': {e}",
                 extra={"error": str(e)},
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
@@ -112,24 +119,24 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         """
         try:
             key = request.key
-            logger.info(f"🛎️📡🚀 Get: Received request for key: '{key}'")
+            logger.info(f"🐍 S> 🛎️📡🚀 Get: Received request for key: '{key}'")
             filename = f"/tmp/kv-data-{key}"
-            logger.debug(f"🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'.")
+            logger.debug(f"🐍 S> 🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'.")
             if not os.path.exists(filename):
-                logger.error(
-                    f"🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
+                logger.warning( # Changed from logger.error to logger.warning
+                    f"🐍 S> 🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
                 )
                 await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
             with open(filename, "r", encoding="utf-8") as f:
                 value_str = f.read()
             summary = summarize_text(value_str)
             logger.debug(
-                f"🛎️📡✅ Get: Successfully retrieved key '{key}' with value (summary): {summary}"
+                f"🐍 S> 🛎️📡✅ Get: Successfully retrieved key '{key}' with value (summary): {summary}"
             )
             return kv_pb2.GetResponse(value=value_str.encode("utf-8"))
         except Exception as e:
             logger.error(
-                f"🛎️📡❌ Get: Error retrieving key '{request.key}': {e}",
+                f"🐍 S> 🛎️📡❌ Get: Error retrieving key '{request.key}': {e}",
                 extra={"error": str(e)},
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
@@ -137,12 +144,12 @@ class KVHandler(kv_pb2_grpc.KVServicer):
     async def _log_request_details(self, context: grpc.aio.ServicerContext) -> None:
         """Log request details (peer and auth context) for debugging."""
         try:
-            logger.debug(f"🛎️🧰🔍 Utils: Request from peer: {context.peer()}")
+            logger.debug(f"🐍 S> 🛎️🧰🔍 Utils: Request from peer: {context.peer()}")
             for k, v in context.auth_context().items():
-                logger.debug(f"🛎️🧰🔍 Utils: Auth Context {k}: {v}")
+                logger.debug(f"🐍 S> 🛎️🧰🔍 Utils: Auth Context {k}: {v}")
         except Exception as e:
             logger.error(
-                f"🛎️🧰❌ Utils: Error logging request details: {e}",
+                f"🐍 S> 🛎️🧰❌ Utils: Error logging request details: {e}",
                 extra={"error": str(e)},
             )
 
@@ -151,7 +158,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
 # Server entry point
 # ------------------------------------------------------------------------------
 async def serve() -> None:
-    logger.info("🛎️🚀 Starting KV plugin server...")
+    logger.info("🐍 S> 🛎️🚀 Starting KV plugin server...")
 
     # Create an instance of KVHandler.
     kv_handler = KVHandler()
@@ -162,7 +169,7 @@ async def serve() -> None:
         test_key = "status"
         test_value = "pyvider server listening"
         logger.info(
-            f"🛎️🧪 Self-Test: Executing Put for key '{test_key}' with value '{test_value}'"
+            f"🐍 S> 🛎️🧪 Self-Test: Executing Put for key '{test_key}' with value '{test_value}'"
         )
 
         await kv_handler.Put(
@@ -170,23 +177,23 @@ async def serve() -> None:
             dummy_context,
         )
 
-        logger.info("🛎️🧪 Self-Test: Put executed successfully.")
-        logger.info(f"🛎️🧪 Self-Test: Executing Get for key '{test_key}'")
+        logger.info("🐍 S> 🛎️🧪 Self-Test: Put executed successfully.")
+        logger.info(f"🐍 S> 🛎️🧪 Self-Test: Executing Get for key '{test_key}'")
 
         response = await kv_handler.Get(kv_pb2.GetRequest(key=test_key), dummy_context)
 
         retrieved = response.value.decode("utf-8")
 
-        logger.info(f"🛎️🧪 Self-Test: Get returned: {retrieved}")
+        logger.info(f"🐍 S> 🛎️🧪 Self-Test: Get returned: {retrieved}")
 
     except Exception as e:
         logger.error(
-            f"🛎️🧪 Self-Test: Error during self-test: {e}", extra={"error": str(e)}
+            f"🐍 S> 🛎️🧪 Self-Test: Error during self-test: {e}", extra={"error": str(e)}
         )
 
     try:
         # Create and configure the RPCPluginServer with KVProtocol.
-        logger.debug("🛎️🚀✅ Server: Server started successfully")
+        logger.debug("🐍 S> 🛎️🚀✅ Server: Server started successfully")
         server = RPCPluginServer(
             protocol=KVProtocol(),
             handler=kv_handler,
@@ -197,29 +204,29 @@ async def serve() -> None:
         )
 
         await server.serve()
-        logger.info("🛎️🚀✅ Server: Server started successfully")
+        logger.info("🐍 S> 🛎️🚀✅ Server: Server started successfully")
 
         try:
             await server._serving_future
         except asyncio.CancelledError:
-            logger.info("🛎️🛑 Received shutdown signal")
+            logger.info("🐍 S> 🛎️🛑 Received shutdown signal")
         finally:
             await server.stop()
-            logger.info("🛎️🛑 Server: Server stopped")
+            logger.info("🐍 S> 🛎️🛑 Server: Server stopped")
 
     except Exception as e:
-        logger.error(f"🛎️❗ Fatal error: {e}", extra={"error": str(e)})
+        logger.error(f"🐍 S> 🛎️❗ Fatal error: {e}", extra={"error": str(e)})
         raise
 
 
 if __name__ == "__main__":
-    logger.info("-------------------------------------------------")
-    logger.info(os.environ.get("PLUGIN_CLIENT_CERT"))
-    logger.info("-------------------------------------------------")
+    logger.info("🐍 S> -------------------------------------------------")
+    logger.info(f"🐍 S> {os.environ.get('PLUGIN_CLIENT_CERT')}")
+    logger.info("🐍 S> -------------------------------------------------")
     try:
         asyncio.run(serve())
     except KeyboardInterrupt:
-        logger.info("🛎️🛑 Server: Server stopped by user")
+        logger.info("🐍 S> 🛎️🛑 Server: Server stopped by user")
     except Exception as e:
-        logger.error(f"🛎️❗ Server: Server failed: {e}", extra={"error": str(e)})
+        logger.error(f"🐍 S> 🛎️❗ Server: Server failed: {e}", extra={"error": str(e)})
         raise

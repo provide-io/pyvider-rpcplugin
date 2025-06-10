@@ -1,4 +1,12 @@
-#!/usr/bin/env -S uv run python3
+#!/app/.venv/bin/python3
+
+import sys
+import os
+# Ensure /app/src and /app are in sys.path for module resolution
+# This is a workaround for potential PYTHONPATH/editable install issues in the test environment
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../src')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+
 
 import asyncio
 import logging
@@ -21,8 +29,8 @@ from examples.kvproto.py_rpc.proto import (
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG, # Keep DEBUG for now, can be INFO later
-    format="%(asctime)s.%(msecs)03d [%(levelname)-7s] %(name)s: %(message)s", # Align format a bit
+    level=logging.WARNING, # Default level set here
+    format="%(asctime)s.%(msecs)03d [%(levelname)-7s] %(name)s: 🐍 C> %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 
@@ -233,10 +241,38 @@ async def main() -> None:
     parser.add_argument("command", choices=["get", "put"], help="Command to execute (get or put)")
     parser.add_argument("key", help="The key for the operation")
     parser.add_argument("value", nargs="?", help="The value for the put operation (required for put)")
-    # Add a new argument for specifying server path, overriding PLUGIN_SERVER_PATH
-    parser.add_argument("--server-path", help="Optional path to the server executable. Overrides PLUGIN_SERVER_PATH env var.")
+    parser.add_argument(
+        "--server-path",
+        help="Optional path to the server executable. Overrides PLUGIN_SERVER_PATH env var."
+    )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="WARNING",
+        type=str.upper, # Convert to uppercase for case-insensitive matching
+        help="Set the logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)."
+    )
 
     args = parser.parse_args()
+
+    # Set log level based on command line argument
+    # Get the numeric level (e.g., logging.DEBUG for "DEBUG")
+    numeric_log_level = getattr(logging, args.log_level.upper(), None)
+    if not isinstance(numeric_log_level, int):
+        raise ValueError(f"Invalid log level: {args.log_level}")
+
+    # Get the root logger and set its level.
+    # This will affect all loggers unless they have their own level set explicitly.
+    # The pyvider.telemetry.logger is likely a child of the root logger or configured separately.
+    # For basicConfig to take effect for handlers, it should be called before this.
+    # If pyvider.telemetry.logger is a separate instance/configured independently,
+    # its level might also need to be set if it doesn't propagate from root.
+    # However, standard practice is that child loggers inherit from root or propagate to root's handlers.
+    logging.getLogger().setLevel(numeric_log_level)
+    # Also explicitly set the level for the pyvider.telemetry logger if it's managed separately
+    # from the root logger's basicConfig settings.
+    # from pyvider.telemetry import logger as pyvider_logger # already imported as logger
+    # logger.setLevel(numeric_log_level) # PyviderLogger may not have setLevel, rely on root logger + basicConfig
 
     if args.command == "put" and args.value is None:
         parser.error("For 'put' command, 'value' argument is required.")
