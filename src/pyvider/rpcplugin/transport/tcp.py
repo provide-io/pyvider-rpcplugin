@@ -64,32 +64,37 @@ class TCPSocketTransport(RPCPluginTransport):
         """
         async with self._lock:
             if self._running:
-                logger.error("🔌❌⚠: Server is already running")
-                raise TransportError("TCP server is already running")
-                
-            logger.debug("🔌🚀🕹: Starting listen() for TCP server...")
-            try:
-                self._server = await asyncio.start_server(self._handle_client, self.host, self.port)
-            except OSError as e:
-                logger.error(f"🔌❌⚠: Failed to bind TCP server: {e}")
-                raise TransportError(f"Failed to bind TCP server: {e}") from e
+                logger.error("🔌❌⚠: Server endpoint is already determined and possibly in use by gRPC")
+                # If gRPC is managing, this might be okay if called multiple times,
+                # but for now, let's assume it means endpoint is set.
+                if self.endpoint:
+                    return self.endpoint
+                raise TransportError("TCP transport is already configured with an endpoint but it's None.")
 
-            try:
-                sock = self._server.sockets[0]
-                addr = sock.getsockname()
-                # self.host remains what was passed or default '127.0.0.1'
-                # self.port is updated to the actual bound port
-                self.port = addr[1]
-                logger.info(f"🔌✅ TCPSocketTransport: Server socket bound. Host: {self.host}, Actual Port: {self.port}")
-                self.endpoint = f"{self.host}:{self.port}"
-                logger.info(f"🔌✅👍 TCPSocketTransport: Endpoint set to {self.endpoint} (Host: {self.host}, Port: {self.port})")
-                self._running = True
-                self._server_ready.set()
-                logger.info(f"🔌✅👍: TCP server listening at {self.endpoint}") # This one is slightly redundant now but fine
-                return self.endpoint
-            except Exception as e:
-                logger.error(f"🔌❌⚠: Error initializing TCP server: {e}")
-                raise TransportError(f"Error initializing TCP server: {e}") from e
+            logger.debug("🔌🚀🕹: Determining endpoint for TCP server (gRPC managed)...")
+
+            if self.port == 0:
+                # Find an ephemeral port
+                try:
+                    temp_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    temp_sock.bind((self.host, 0))
+                    self.port = temp_sock.getsockname()[1]
+                    temp_sock.close()
+                    logger.info(f"🔌✅ TCPSocketTransport: Ephemeral port {self.port} selected for host {self.host}")
+                except OSError as e:
+                    logger.error(f"🔌❌⚠: Failed to find an ephemeral port: {e}")
+                    raise TransportError(f"Failed to find an ephemeral port: {e}") from e
+
+            # If self.port was non-zero, we use it directly.
+            self.endpoint = f"{self.host}:{self.port}"
+            self._running = True # Mark as "endpoint determined"
+            self._server_ready.set() # Signal readiness (endpoint is known)
+
+            # self._server remains None as gRPC will handle the actual server lifecycle.
+            self._server = None
+
+            logger.info(f"🔌✅👍: TCP endpoint determined for gRPC: {self.endpoint} (Host: {self.host}, Port: {self.port})")
+            return self.endpoint
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -251,7 +256,10 @@ class TCPSocketTransport(RPCPluginTransport):
                     logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
                 finally:
                     self._server = None
-                    self._running = False
+
+            # This should be set regardless of whether self._server (asyncio server) was active,
+            # as close() means the transport is shutting down.
+            self._running = False
 
         self.endpoint = None
         logger.debug("🔌🔒✅: TCP socket transport closed completely")
