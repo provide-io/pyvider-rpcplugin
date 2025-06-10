@@ -18,6 +18,7 @@ async def test_unix_socket_concurrent_connections() -> None:
 
     # Track created connections
     client_transports = []
+    server_transport = None  # Initialize to None for finally block
 
     try:
         # Create and start server transport
@@ -58,14 +59,23 @@ async def test_unix_socket_concurrent_connections() -> None:
 
         # Close server
         await server_transport.close()
+        # server_transport = None # Indicate it's been closed cleanly
 
     finally:
         # Clean up remaining clients if any
         for client in client_transports:
             try:
-                await client.close()
+                await client.close() # Idempotent
             except Exception as e:
-                logger.error(f"Error closing client: {e}")
+                logger.error(f"Error closing client during finally: {e}")
+
+        # Ensure server_transport is closed if it was initialized
+        if server_transport:
+            try:
+                logger.debug(f"Ensuring server_transport is closed in finally block for {socket_path}")
+                await server_transport.close() # Idempotent
+            except Exception as e:
+                logger.error(f"Error closing server_transport during finally: {e}")
 
         # Clean up socket file if it exists
         if os.path.exists(socket_path):
@@ -86,35 +96,44 @@ async def test_unix_socket_connection_tracking() -> None:
     # Create temporary socket path
     with tempfile.TemporaryDirectory() as temp_dir:
         socket_path = os.path.join(temp_dir, "tracking.sock")
+        server: UnixSocketTransport | None = None
+        client: UnixSocketTransport | None = None
+        try:
+            # Create and start server transport
+            server = UnixSocketTransport(path=socket_path)
+            endpoint = await server.listen()
 
-        # Create and start server transport
-        server = UnixSocketTransport(path=socket_path)
-        endpoint = await server.listen()
+            # Verify initial state
+            assert len(server._connections) == 0, "Should start with 0 connections"
 
-        # Verify initial state
-        assert len(server._connections) == 0, "Should start with 0 connections"
+            # Connect a client
+            client = UnixSocketTransport()
+            await client.connect(endpoint)
 
-        # Connect a client
-        client = UnixSocketTransport()
-        await client.connect(endpoint)
+            # Wait briefly for the connection to be registered
+            await asyncio.sleep(0.1)
 
-        # Wait briefly for the connection to be registered
-        await asyncio.sleep(0.1)
+            # Verify connection was tracked
+            assert len(server._connections) == 1, "Should have 1 connection after client connects"
 
-        # Verify connection was tracked
-        assert len(server._connections) == 1, "Should have 1 connection after client connects"
+            # Close the client
+            await client.close()
+            client = None # Mark as closed by main logic
 
-        # Close the client
-        await client.close()
+            # Wait briefly for the disconnection to be processed
+            await asyncio.sleep(0.2)
 
-        # Wait briefly for the disconnection to be processed
-        await asyncio.sleep(0.2)
+            # Verify connection was removed
+            assert len(server._connections) == 0, "Connection should be removed after client disconnect"
 
-        # Verify connection was removed
-        assert len(server._connections) == 0, "Connection should be removed after client disconnect"
-
-        # Close server
-        await server.close()
+            # Close server
+            await server.close()
+            server = None # Mark as closed by main logic
+        finally:
+            if client: # If client still exists (e.g., error before its explicit close)
+                await client.close()
+            if server: # If server still exists
+                await server.close()
 
 @pytest.mark.asyncio
 async def test_unix_socket_multiple_clients_data_transfer() -> None:
@@ -122,37 +141,50 @@ async def test_unix_socket_multiple_clients_data_transfer() -> None:
     # Create temporary socket path
     with tempfile.TemporaryDirectory() as temp_dir:
         socket_path = os.path.join(temp_dir, "transfer.sock")
+        server: UnixSocketTransport | None = None
+        clients: list[UnixSocketTransport] = []
+        try:
+            # Create and start server transport
+            server = UnixSocketTransport(path=socket_path)
+            endpoint = await server.listen()
 
-        # Create and start server transport
-        server = UnixSocketTransport(path=socket_path)
-        endpoint = await server.listen()
+            # Connect multiple clients
+            num_clients = 5
+            for i in range(num_clients):
+                client_obj = UnixSocketTransport()
+                await client_obj.connect(endpoint)
+                clients.append(client_obj)
 
-        # Connect multiple clients
-        clients = []
-        num_clients = 5
-        for i in range(num_clients):
-            client = UnixSocketTransport()
-            await client.connect(endpoint)
-            clients.append(client)
+            # Wait for connections to be established
+            await asyncio.sleep(0.1)
 
-        # Wait for connections to be established
-        await asyncio.sleep(0.1)
+            # Each client sends unique test data
+            for i, client_obj in enumerate(clients):
+                test_data = f"client-{i}-data".encode()
+                if client_obj._writer: # Ensure writer exists
+                    client_obj._writer.write(test_data)
+                    await client_obj._writer.drain()
 
-        # Each client sends unique test data
-        for i, client in enumerate(clients):
-            test_data = f"client-{i}-data".encode()
-            client._writer.write(test_data)
-            await client._writer.drain()
+            # Give the server time to process and handle the data
+            await asyncio.sleep(0.2)
 
-        # Give the server time to process and handle the data
-        await asyncio.sleep(0.2)
+            # Close all clients in the try block
+            for client_obj in clients:
+                await client_obj.close()
+            # clients list will be iterated in finally, no need to clear yet
 
-        # Close all clients
-        for client in clients:
-            await client.close()
+            # Close the server in the try block
+            await server.close()
+            server = None # Mark as closed
 
-        # Close the server
-        await server.close()
-
-        # Verify the socket file was removed
-        assert not os.path.exists(socket_path), "Socket file should be removed after server closes"
+            # Verify the socket file was removed
+            assert not os.path.exists(socket_path), "Socket file should be removed after server closes"
+        finally:
+            # Ensure all clients are closed if not already
+            for client_obj in clients:
+                try:
+                    await client_obj.close() # Idempotent
+                except Exception as e:
+                    logger.error(f"Error closing a client_obj during finally: {e}")
+            if server: # If server is not None (i.e. wasn't cleanly closed in try)
+                await server.close()

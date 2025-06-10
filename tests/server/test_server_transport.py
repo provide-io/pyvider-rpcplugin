@@ -309,6 +309,10 @@ async def test_setup_server_unix_no_socket_linux_1(
     # Create a path that definitely doesn't exist
     nonexistent_path = str(tmp_path / "nonexistent_dir" / "nosock.sock")
 
+    # Ensure the specific socket path is clear before test using lexists
+    if os.path.lexists(nonexistent_path): # Use lexists to handle symlinks correctly
+        os.unlink(nonexistent_path)
+
     # Create directories but not the socket file
     os.makedirs(os.path.dirname(nonexistent_path), exist_ok=True)
 
@@ -321,20 +325,24 @@ async def test_setup_server_unix_no_socket_linux_1(
         transport=transport,
     )
 
-    # Create a dummy server instance
-    dummy_server = DummyGRPCServer()
-    server._server = dummy_server
-    
-    # Mock the add_secure_port method to simulate Linux binding error
-    def mock_add_secure_port(*args, **kwargs):
-        raise RuntimeError("Failed to bind to address 127.0.0.1:0; set GRPC_VERBOSITY=debug environment variable to see detailed error message.")
-    
-    # Apply platform-specific mocking
-    with mock.patch.object(dummy_server, "add_secure_port", mock_add_secure_port):
-        # Linux behavior will be different, expect a RuntimeError
-        with pytest.raises(RuntimeError, match="Failed to bind to address"):
-            await server._setup_server("client_cert")
+    # Ensure _transport is set by calling _negotiate_handshake
+    await server._negotiate_handshake()
 
+    # Mock GRPCServer instantiation to return our dummy with a failing add_secure_port
+    with mock.patch('pyvider.rpcplugin.server.GRPCServer') as mock_grpc_server_class:
+        dummy_server_instance = DummyGRPCServer()
+        def mock_add_secure_port_on_dummy(*args, **kwargs):
+            # This specific error message is from gRPC when it can't bind,
+            # often because the socket file doesn't exist before bind (for Unix sockets if gRPC creates it).
+            # Or a more generic "Failed to bind"
+            raise RuntimeError("Failed to bind to address")
+        dummy_server_instance.add_secure_port = mock_add_secure_port_on_dummy
+        # Also mock insecure if client_cert was None, though test passes "client_cert"
+        dummy_server_instance.add_insecure_port = mock_add_secure_port_on_dummy
+        mock_grpc_server_class.return_value = dummy_server_instance
+
+        with pytest.raises(RuntimeError, match="Failed to bind to address"):
+            await server._setup_server("client_cert") # Use a non-None client_cert to ensure secure path
 
 # This done need to be evaluated.
 @pytest.mark.skip
@@ -428,9 +436,28 @@ async def test_setup_server_tcp_success(
     # Assert that the server's transport endpoint is a TCP one.
     # server is an RPCPluginServer instance. Its transport is self._transport.
     # The endpoint is on the transport.
-    transport_endpoint = server._transport.endpoint if server._transport else None
+
+    # Instantiate RPCPluginServer
+    server_instance = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=transport,
+    )
+    # Call _setup_server to make it try to bind the gRPC server
+    # Passing None for client_cert to indicate an insecure server setup
+    await server_instance._negotiate_handshake() # Ensure _transport is initialized
+    await server_instance._setup_server(client_cert=None)
+
+    assert server_instance._transport is not None, "Server's transport should be set"
+    transport_endpoint = server_instance._transport.endpoint
     assert transport_endpoint is not None, "Server transport endpoint should be set"
     assert "127.0.0.1" in transport_endpoint and not transport_endpoint.startswith("unix:"), \
         f"Endpoint {transport_endpoint} is not a valid TCP endpoint as expected."
+    assert server_instance._port is not None and server_instance._port > 0, "gRPC server port not assigned"
+
+    # Cleanup
+    await server_instance.stop()
+
 
 ### 🐍🏗🧪️

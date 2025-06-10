@@ -1,9 +1,8 @@
 # tests/fixtures/dummy.py
 
 import pytest
-
 import asyncio
-
+from unittest.mock import MagicMock, AsyncMock # Ensure AsyncMock is imported
 
 class DummyReader:
     def __init__(self, data: bytes = b"") -> None:
@@ -50,7 +49,13 @@ class DummyGRPCServer:
     """A dummy replacement for grpc.aio.Server."""
 
     def __init__(self) -> None:
+        # from unittest.mock import MagicMock, AsyncMock # Already imported at top
         self.ports = []
+        self.add_generic_rpc_handlers = MagicMock()
+        self.add_registered_method_handlers = MagicMock() # Added this
+        self.start = AsyncMock() # Added this
+        self.stop = AsyncMock() # Added this
+        self.wait_for_termination = AsyncMock() # Added this
 
     def add_secure_port(self, address, creds) -> int:
         self.ports.append(address)
@@ -60,14 +65,13 @@ class DummyGRPCServer:
         self.ports.append(address)
         return 12345
 
-    async def start(self) -> None:
-        pass
-
-    async def stop(self, grace) -> None:
-        pass
-
-    async def wait_closed(self) -> None:
-        pass
+    # These were previously simple async defs, converted to AsyncMocks in __init__
+    # async def start(self) -> None:
+    #     pass
+    # async def stop(self, grace) -> None:
+    #     pass
+    # async def wait_closed(self) -> None:
+    #     pass
 
 
 # A dummy asynchronous GRPC server to simulate grpc.aio.Server behavior.

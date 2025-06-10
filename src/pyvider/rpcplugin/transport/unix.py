@@ -112,31 +112,45 @@ class UnixSocketTransport(RPCPluginTransport):
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
         if not self.path or not os.path.exists(self.path):
+            logger.debug(f"📞🔍✅ Socket path {self.path} does not exist or is None, considering available.")
             return False
 
+        # Path exists, check if it's actually a socket and connectable
+        try:
+            mode = os.stat(self.path).st_mode
+            if not stat.S_ISSOCK(mode):
+                logger.debug(f"📞🔍✅ Path {self.path} exists but is not a socket (mode: {oct(mode)}). Considering available.")
+                return False
+        except OSError as e:
+            # Failed to stat path (e.g., permissions, or it disappeared)
+            logger.warning(f"📞🔍⚠️ Could not stat {self.path} ({e}). Assuming available.")
+            return False
+
+        # Path exists and is a socket, now try to connect
+        sock = None  # Initialize sock to None
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.settimeout(0.5)
-
-            logger.debug(f"📞🔍🚀 Checking if socket {self.path} is in use")
+            logger.debug(f"📞🔍🚀 Checking if socket {self.path} is in use by attempting connect.")
             sock.connect(self.path)
-            logger.debug(f"📞🔍❌ Socket {self.path} is in use")
-            sock.close()
+            # If connect succeeds, the socket is in use by another process
+            logger.debug(f"📞🔍❌ Socket {self.path} is in use (connection successful).")
             return True
         except (ConnectionRefusedError, FileNotFoundError):
-            logger.debug(f"📞🔍✅ Socket {self.path} is available")
+            # Connection refused or socket file disappeared: it's available
+            logger.debug(f"📞🔍✅ Socket {self.path} is available (ConnectionRefusedError or FileNotFoundError).")
             return False
         except OSError as e:
-            if e.errno in (errno.ENOENT, errno.ECONNREFUSED):
-                logger.debug(f"📞🔍✅ Socket {self.path} is available (after OSError)")
-                return False
-            logger.error(f"📞🔍❌ Error checking socket: {e}")
+            # Other OSErrors (e.g., timeout, permission issues during connect)
+            # If we can't connect for any other OSError, assume it's not actively listening in a way that would conflict.
+            logger.warning(f"📞🔍⚠️ OSError while connecting to {self.path} ({e}). Assuming available.")
             return False
         finally:
-            try:
-                sock.close()
-            except Exception as e:
-                logger.warning(f"📞🔍⚠️ Error closing temporary socket in _check_socket_in_use: {e}")
+            if sock:
+                try:
+                    sock.close()
+                except Exception as e:
+                    logger.warning(f"📞🔍⚠️ Error closing temporary socket in _check_socket_in_use: {e}")
 
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""

@@ -130,3 +130,35 @@ async def test_perform_handshake_invalid_format(client_instance, mock_process):
     
     # Assert relay was called because handshake starts before parsing fails
     mock_relay.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_perform_handshake_parse_error(client_instance, mock_process):
+    """Test handshake when parse_handshake_response raises an error."""
+    client_instance._process = mock_process
+
+    # Configure process.stdout to return a seemingly valid handshake line
+    mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+
+    with patch('pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background', new_callable=AsyncMock), \
+         patch('pyvider.rpcplugin.client.base.parse_handshake_response', side_effect=ValueError("Simulated parse error")) as mock_parse, \
+         pytest.raises(HandshakeError, match="Handshake parse/connect error: Simulated parse error"):
+
+        await client_instance._perform_handshake()
+        mock_parse.assert_called_once() # Ensure our mock was actually called
+
+@pytest.mark.asyncio
+async def test_perform_handshake_invalid_network_type(client_instance, mock_process):
+    """Test handshake with an invalid network type returned by parser."""
+    client_instance._process = mock_process
+
+    # This line will be parsed by the mocked parse_handshake_response
+    mock_process.stdout.readline.return_value = b"1|1|invalid_net|127.0.0.1:8000|grpc|\n"
+
+    parsed_response_with_invalid_net = (1, 1, "invalid_net", "127.0.0.1:8000", "grpc", None)
+
+    with patch('pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background', new_callable=AsyncMock), \
+         patch('pyvider.rpcplugin.client.base.parse_handshake_response', return_value=parsed_response_with_invalid_net) as mock_parse, \
+         pytest.raises(HandshakeError, match="Unsupported transport: invalid_net"):
+
+        await client_instance._perform_handshake()
+        mock_parse.assert_called_once()

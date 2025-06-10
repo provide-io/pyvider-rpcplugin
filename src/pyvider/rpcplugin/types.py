@@ -53,7 +53,7 @@ class RPCPluginProtocol(TypeProtocol):
     between gRPC services and Pyvider's RPC plugin system.
     """
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]: # Removed Awaitable
         """
         Returns the protobuf descriptor set and service name.
 
@@ -62,7 +62,7 @@ class RPCPluginProtocol(TypeProtocol):
         """
         ...
 
-    async def add_to_server(self, handler: Any, server: Any) -> None:
+    async def add_to_server(self, handler: Any, server: Any) -> None: # Removed Awaitable
         """
         Adds the protocol implementation to the gRPC server.
 

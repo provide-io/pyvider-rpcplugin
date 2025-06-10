@@ -64,7 +64,7 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 # Import TransportT temporarily for the Generic base, will remove if client not generic
 # Also import TransportType for the actual field type
-from pyvider.rpcplugin.transport.types import TransportT, TransportType
+from pyvider.rpcplugin.transport.types import TransportType
 
 
 @define
