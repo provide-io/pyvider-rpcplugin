@@ -219,12 +219,20 @@ async def example_2_dual_transport_server():
     
     # Create server with dual transport support
     # The server will automatically choose the best transport
+
+    # Define default values for transport parameters that plugin_server might use
+    socket_path: str | None = None # Let UnixSocketTransport generate one if used by default
+    host: str = "0.0.0.0"
+    port: int = 50051
+
     server = plugin_server(
         protocol=protocol,
         handler=handler,
-        transport=["unix", "tcp"],  # Accept both transport types
-        host="0.0.0.0",  # Accept connections from any IP
-        port=50051  # Standard gRPC port
+        # transport parameter is omitted, factory defaults to "unix".
+        # The PLUGIN_SERVER_TRANSPORTS config is for handshake negotiation if a client connects.
+        transport_path=socket_path, # Pass None for auto-path for the default "unix"
+        host=host,                  # Will be ignored by factory if transport remains "unix"
+        port=port                   # Will be ignored by factory if transport remains "unix"
     )
     
     logger.info(
