@@ -392,3 +392,4 @@ bin/
 # stupid code coverage result.
 result.json*.bf.txt
 *.log.txt
+.testmondata
