@@ -7,6 +7,7 @@ import os
 import sys
 import time
 from pathlib import Path
+import grpc # Added for grpc.aio.AioRpcError
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -15,14 +16,53 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+# Add demo directory to sys.path to import echo_pb2 and echo_pb2_grpc
+demo_dir = example_dir / "demo"
+if demo_dir.exists() and str(demo_dir) not in sys.path:
+    sys.path.insert(0, str(demo_dir))
+
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
     plugin_client,
     create_basic_protocol,
     configure,
+    plugin_protocol, # Added import
+)
+from pyvider.rpcplugin.exception import (  # noqa: E402
+    TransportError,
+    HandshakeError,
+    RPCPluginError
 )
 from pyvider.telemetry import logger  # noqa: E402
 
+# Attempt to import Echo service definitions
+try:
+    import echo_pb2
+    import echo_pb2_grpc
+except ImportError as e:
+    logger.error(f"Failed to import echo_pb2 or echo_pb2_grpc: {e}")
+    logger.error("Please ensure you've compiled the protobuf definitions in the 'examples/demo' directory.")
+    sys.exit(1)
+
+# Common setup for examples that need a server and client
+SERVER_SCRIPT_PATH = str(example_dir / "demo" / "echo_server.py")
+ECHO_SERVICE_PROTOCOL = plugin_protocol(
+    service_name="EchoService",
+    descriptor_module=echo_pb2,
+    servicer_add_fn=echo_pb2_grpc.add_EchoServiceServicer_to_server
+)
+# Environment variables for the server process launched by the client
+SERVER_ENV_VARS = {
+    "PYTHONUNBUFFERED": "1",
+    "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE",
+    "PLUGIN_MAGIC_COOKIE_VALUE": "standalonesecret", # Server expects this value
+    "ECHO_PLUGIN_COOKIE": "standalonesecret"         # Server's actual cookie value (read via key)
+}
+# Environment variables for the client process (this script)
+CLIENT_ENV_SETTINGS = {
+    "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE", # Client expects server to use this key
+    "PLUGIN_MAGIC_COOKIE": "standalonesecret"       # Client will send this value
+}
 
 class BenchmarkHandler:
     """Handler for transport benchmarking."""
@@ -66,26 +106,20 @@ async def example_4_unix_socket_performance():
     print(" Demonstrates: High-performance local IPC with Unix sockets")
     print("=" * 60)
     
-    # Configure for Unix socket optimization
+    # Configure client-side settings
+    for key, value in CLIENT_ENV_SETTINGS.items():
+        os.environ[key] = value
     configure(
-        magic_cookie="unix-benchmark-cookie",
+        magic_cookie_key=CLIENT_ENV_SETTINGS["PLUGIN_MAGIC_COOKIE_KEY"],
+        magic_cookie=CLIENT_ENV_SETTINGS["PLUGIN_MAGIC_COOKIE"],
         protocol_version=1,
         transports=["unix"],
-        auto_mtls=False,  # Disable mTLS for max performance
+        auto_mtls=True, # Using mTLS for consistency, can be False for pure perf benchmark
         handshake_timeout=5.0,
         connection_timeout=30.0
     )
     
-    # Create protocol and handler
-    protocol = create_basic_protocol()
-    handler = BenchmarkHandler("unix")
-    
-    # Create Unix socket server
-    server = plugin_server(
-        protocol=protocol,
-        handler=handler,
-        transport="unix"
-    )
+    # Server environment will be set by plugin_client using SERVER_ENV_VARS
     
     logger.info(
         "Starting Unix socket performance test",
@@ -96,52 +130,53 @@ async def example_4_unix_socket_performance():
         optimization="high_performance"
     )
     
-    # Start server
-    server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)  # Let server initialize
-    
+    client = None
     try:
-        # Get server endpoint
-        server_endpoint = getattr(server._transport, 'endpoint', '/tmp/unknown.sock')
+        client = plugin_client(
+            server_path=SERVER_SCRIPT_PATH,
+            protocol=ECHO_SERVICE_PROTOCOL,
+            env=SERVER_ENV_VARS,
+            # transport="unix" # Not needed, client will negotiate from handshake
+        )
+        await client.start()
         
-        # Create client and connect
-        client = plugin_client(transport="unix")
-        
-        # Simulate connection for benchmark
         logger.info(
-            "Unix socket connection established",
+            "Unix socket client connected",
             domain="transport",
             action="connection",
             status="success",
-            endpoint=server_endpoint,
-            latency_estimate="<0.1ms"
+            endpoint=getattr(client._transport, 'endpoint', 'N/A')
         )
+
+        if not client._channel:
+            raise RPCPluginError("Client channel not available after start.")
         
-        # Simulate benchmark results
-        benchmark_results = {
-            'transport': 'unix',
-            'requests_per_second': 50000,
-            'avg_latency_ms': 0.05,
-            'p95_latency_ms': 0.1,
-            'p99_latency_ms': 0.2,
-            'throughput_mbps': 800,
-            'cpu_overhead_percent': 2.5
-        }
-        
+        stub = echo_pb2_grpc.EchoServiceStub(client._channel)
+        request = echo_pb2.EchoRequest(message="Unix performance test")
+        start_time = time.perf_counter()
+        num_requests = 100  # Small number for quick test
+        for _ in range(num_requests):
+            await stub.Echo(request)
+        end_time = time.perf_counter()
+        duration = end_time - start_time
+        rps = num_requests / duration if duration > 0 else float('inf')
+
         logger.info(
-            "Unix socket benchmark completed",
+            "Unix socket benchmark snippet executed",
             domain="transport",
             action="benchmark_result",
             status="success",
-            **benchmark_results
+            transport="unix",
+            requests=num_requests,
+            duration_seconds=duration,
+            requests_per_second=rps
         )
         
-        await client.close()
-        
+    except Exception as e:
+        logger.error(f"Unix socket performance test failed: {e}", exc_info=True)
     finally:
-        # Cleanup
-        await server.stop()
-        await server_task
+        if client:
+            await client.close()
     
     logger.info(
         "Unix socket performance test completed",
@@ -164,29 +199,24 @@ async def example_4_tcp_socket_performance():
     print(" Demonstrates: Network-capable TCP transport characteristics")
     print("=" * 60)
     
-    # Configure for TCP optimization
+    # Configure client-side settings
+    for key, value in CLIENT_ENV_SETTINGS.items():
+        os.environ[key] = value
     configure(
-        magic_cookie="tcp-benchmark-cookie",
+        magic_cookie_key=CLIENT_ENV_SETTINGS["PLUGIN_MAGIC_COOKIE_KEY"],
+        magic_cookie=CLIENT_ENV_SETTINGS["PLUGIN_MAGIC_COOKIE"],
         protocol_version=1,
-        transports=["tcp"],
-        auto_mtls=False,  # Disable mTLS for baseline performance
+        transports=["tcp"], # Client prefers TCP for this test
+        auto_mtls=True, # Using mTLS for consistency
         handshake_timeout=10.0,
         connection_timeout=60.0
     )
-    
-    # Create protocol and handler
-    protocol = create_basic_protocol()
-    handler = BenchmarkHandler("tcp")
-    
-    # Create TCP server
-    server = plugin_server(
-        protocol=protocol,
-        handler=handler,
-        transport="tcp",
-        host="127.0.0.1",
-        port=0  # Auto-assign port
-    )
-    
+
+    # Server environment will be set by plugin_client using SERVER_ENV_VARS
+    # We will override the server's transport preference in its env
+    tcp_server_env_vars = SERVER_ENV_VARS.copy()
+    tcp_server_env_vars["PLUGIN_SERVER_TRANSPORTS"] = "tcp" # Force server to offer TCP
+
     logger.info(
         "Starting TCP socket performance test",
         domain="transport",
@@ -196,54 +226,58 @@ async def example_4_tcp_socket_performance():
         capability="network_communication"
     )
     
-    # Start server
-    server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)  # Let server initialize
-    
+    client = None
     try:
-        # Get actual server port
-        server_port = getattr(server._transport, 'port', 'unknown')
-        server_endpoint = f"127.0.0.1:{server_port}"
-        
-        # Create client
-        client = plugin_client(transport="tcp")
+        client = plugin_client(
+            server_path=SERVER_SCRIPT_PATH,
+            protocol=ECHO_SERVICE_PROTOCOL,
+            env=tcp_server_env_vars, # Server must offer TCP
+            # transport="tcp" # Client config already prefers TCP
+        )
+        await client.start()
         
         logger.info(
-            "TCP socket connection established",
+            "TCP socket client connected",
             domain="transport",
             action="connection",
             status="success",
-            endpoint=server_endpoint,
-            network_stack="loopback"
+            endpoint=getattr(client._transport, 'endpoint', 'N/A')
         )
-        
-        # Simulate benchmark results
-        benchmark_results = {
-            'transport': 'tcp',
-            'requests_per_second': 25000,
-            'avg_latency_ms': 0.2,
-            'p95_latency_ms': 0.5,
-            'p99_latency_ms': 1.0,
-            'throughput_mbps': 600,
-            'cpu_overhead_percent': 5.0,
-            'network_capable': True
-        }
-        
+
+        if not client._channel:
+            raise RPCPluginError("Client channel not available after start.")
+
+        stub = echo_pb2_grpc.EchoServiceStub(client._channel)
+        request = echo_pb2.EchoRequest(message="TCP performance test")
+        start_time = time.perf_counter()
+        num_requests = 100  # Small number for quick test
+        for _ in range(num_requests):
+            await stub.Echo(request)
+        end_time = time.perf_counter()
+        duration = end_time - start_time
+        rps = num_requests / duration if duration > 0 else float('inf')
+
         logger.info(
-            "TCP socket benchmark completed",
+            "TCP socket benchmark snippet executed",
             domain="transport",
             action="benchmark_result",
             status="success",
-            **benchmark_results
+            transport="tcp",
+            requests=num_requests,
+            duration_seconds=duration,
+            requests_per_second=rps,
+            network_capable=True
         )
         
-        await client.close()
-        
+    except Exception as e:
+        logger.error(f"TCP socket performance test failed: {e}", exc_info=True)
     finally:
-        # Cleanup
-        await server.stop()
-        await server_task
-    
+        if client:
+            await client.close()
+        # Clean up env var for next test if needed, though configure() should handle it
+        if "PLUGIN_SERVER_TRANSPORTS" in os.environ: # Clean up if we set it globally
+            del os.environ["PLUGIN_SERVER_TRANSPORTS"]
+
     logger.info(
         "TCP socket performance test completed",
         domain="transport",
@@ -400,28 +434,28 @@ async def example_4_dual_transport_setup():
     print(" Demonstrates: Supporting both Unix and TCP simultaneously")
     print("=" * 60)
     
-    # Configure for dual transport
+    # Server configuration (via env vars for the server process)
+    # Server will offer both, client will pick based on its own config
+    dual_server_env_vars = SERVER_ENV_VARS.copy()
+    dual_server_env_vars["PLUGIN_SERVER_TRANSPORTS"] = "unix,tcp" # Server offers both
+    dual_server_env_vars["PLUGIN_MAGIC_COOKIE_VALUE"] = "dual-transport-cookie"
+    dual_server_env_vars["ECHO_PLUGIN_COOKIE"] = "dual-transport-cookie"
+
+
+    # Client configuration (this process)
+    # Client will prefer Unix, then TCP
+    os.environ["PLUGIN_MAGIC_COOKIE_KEY"] = "ECHO_PLUGIN_COOKIE"
+    os.environ["PLUGIN_MAGIC_COOKIE"] = "dual-transport-cookie"
     configure(
+        magic_cookie_key="ECHO_PLUGIN_COOKIE",
         magic_cookie="dual-transport-cookie",
         protocol_version=1,
-        transports=["unix", "tcp"],  # Support both
-        auto_mtls=False,
+        transports=["unix", "tcp"],  # Client supports both, prefers unix first
+        auto_mtls=True,
         handshake_timeout=15.0,
         connection_timeout=120.0
     )
-    
-    protocol = create_basic_protocol()
-    handler = BenchmarkHandler("dual")
-    
-    # Create server with dual transport support
-    server = plugin_server(
-        protocol=protocol,
-        handler=handler,
-        transports=["unix", "tcp"],  # Accept both
-        host="127.0.0.1",
-        port=50051
-    )
-    
+
     logger.info(
         "Starting dual transport server",
         domain="transport",
@@ -431,86 +465,84 @@ async def example_4_dual_transport_setup():
         strategy="client_choice"
     )
     
-    # Start server
-    server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)
-    
+    client = None
     try:
-        # Demonstrate different client connection types
-        client_scenarios = [
-            {
-                'name': 'local_high_performance',
-                'transport': 'unix',
-                'reason': 'Maximum speed for local communication'
-            },
-            {
-                'name': 'network_capable',
-                'transport': 'tcp',
-                'reason': 'Enables remote client connections'
-            },
-            {
-                'name': 'development_testing',
-                'transport': 'unix',
-                'reason': 'Faster iteration cycles'
-            },
-            {
-                'name': 'production_distributed',
-                'transport': 'tcp',
-                'reason': 'Load balancing and scaling'
-            }
-        ]
-        
-        for scenario in client_scenarios:
-            logger.info(
-                f"Client scenario: {scenario['name']}",
-                domain="transport",
-                action="client_scenario",
-                status="demonstration",
-                preferred_transport=scenario['transport'],
-                reason=scenario['reason']
-            )
-        
-        # Show transport selection logic
-        transport_selection_logic = {
-            'local_client': {
-                'priority': ['unix', 'tcp'],
-                'reasoning': 'Prefer Unix for performance, fallback to TCP'
-            },
-            'remote_client': {
-                'priority': ['tcp'],
-                'reasoning': 'TCP required for network communication'
-            },
-            'container_client': {
-                'priority': ['tcp', 'unix'],
-                'reasoning': 'TCP for cross-node, Unix for same-node optimization'
-            }
-        }
-        
-        for client_type, selection in transport_selection_logic.items():
-            logger.info(
-                f"Transport selection for {client_type}",
-                domain="transport",
-                action="selection_logic",
-                status="reference",
-                client_type=client_type,
-                priority_order=selection['priority'],
-                reasoning=selection['reasoning']
-            )
-        
+        # Client configured to prefer Unix, server offers both.
+        # The client should pick Unix.
+        client = plugin_client(
+            server_path=SERVER_SCRIPT_PATH,
+            protocol=ECHO_SERVICE_PROTOCOL,
+            env=dual_server_env_vars
+        )
+        await client.start()
+
         logger.info(
-            "Dual transport server ready",
+            "Dual transport client connected (expected Unix)",
             domain="transport",
-            action="dual_setup",
+            action="dual_connect",
             status="success",
-            unix_endpoint=getattr(server._transport, 'unix_endpoint', 'available'),
-            tcp_endpoint=f"127.0.0.1:50051",
-            client_note="Clients can choose optimal transport"
+            negotiated_transport=client._transport_name, # Accessing internal for demo
+            endpoint=getattr(client._transport, 'endpoint', 'N/A')
         )
         
+        if not client._channel:
+            raise RPCPluginError("Client channel not available after start.")
+
+        stub = echo_pb2_grpc.EchoServiceStub(client._channel)
+        request = echo_pb2.EchoRequest(message="Dual transport (Unix) test")
+        response = await stub.Echo(request)
+        logger.info(f"Dual transport (Unix) response: {response.reply}")
+        
+        await client.close()
+        client = None # Reset for next client
+
+        # Now, configure client to prefer TCP
+        logger.info("Reconfiguring client to prefer TCP for dual transport test...")
+        configure(
+            magic_cookie_key="ECHO_PLUGIN_COOKIE",
+            magic_cookie="dual-transport-cookie",
+            protocol_version=1,
+            transports=["tcp", "unix"],  # Client now prefers TCP
+            auto_mtls=True,
+            handshake_timeout=15.0,
+            connection_timeout=120.0
+        )
+        # Need to set os.environ as well if RPCPluginConfig reads directly at instantiation time
+        os.environ["PLUGIN_CLIENT_TRANSPORTS"] = "tcp,unix"
+
+
+        client = plugin_client(
+            server_path=SERVER_SCRIPT_PATH,
+            protocol=ECHO_SERVICE_PROTOCOL,
+            env=dual_server_env_vars # Server still offers both
+        )
+        await client.start()
+        
+        logger.info(
+            "Dual transport client connected (expected TCP)",
+            domain="transport",
+            action="dual_connect",
+            status="success",
+            negotiated_transport=client._transport_name, # Accessing internal for demo
+            endpoint=getattr(client._transport, 'endpoint', 'N/A')
+        )
+
+        if not client._channel:
+            raise RPCPluginError("Client channel not available after start.")
+
+        stub = echo_pb2_grpc.EchoServiceStub(client._channel)
+        request = echo_pb2.EchoRequest(message="Dual transport (TCP) test")
+        response = await stub.Echo(request)
+        logger.info(f"Dual transport (TCP) response: {response.reply}")
+
+    except Exception as e:
+        logger.error(f"Dual transport setup example failed: {e}", exc_info=True)
     finally:
-        # Cleanup
-        await server.stop()
-        await server_task
+        if client:
+            await client.close()
+        # Reset client transports env var if set
+        if "PLUGIN_CLIENT_TRANSPORTS" in os.environ:
+            del os.environ["PLUGIN_CLIENT_TRANSPORTS"]
     
     logger.info(
         "Dual transport demonstration completed",
