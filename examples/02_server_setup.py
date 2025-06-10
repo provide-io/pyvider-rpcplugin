@@ -66,7 +66,7 @@ async def example_2_unix_socket_server():
     configure(
         magic_cookie="example-unix-cookie",
         protocol_version=1,
-        transports=["unix"],  # Unix socket only
+        transport=["unix"],  # Unix socket only
         auto_mtls=False,  # Disable mTLS for local communication
         handshake_timeout=10.0,
         connection_timeout=60.0
@@ -133,7 +133,7 @@ async def example_2_tcp_server():
     configure(
         magic_cookie="example-tcp-cookie",
         protocol_version=1,
-        transports=["tcp"],  # TCP only
+        transport=["tcp"],  # TCP only
         auto_mtls=False,  # Will enable mTLS in security example
         handshake_timeout=15.0,
         connection_timeout=120.0
@@ -207,7 +207,7 @@ async def example_2_dual_transport_server():
     configure(
         magic_cookie="example-dual-cookie",
         protocol_version=1,
-        transports=["unix", "tcp"],  # Support both transports
+        transport=["unix", "tcp"],  # Support both transports
         auto_mtls=False,
         handshake_timeout=20.0,
         connection_timeout=180.0
@@ -222,7 +222,7 @@ async def example_2_dual_transport_server():
     server = plugin_server(
         protocol=protocol,
         handler=handler,
-        transports=["unix", "tcp"],  # Accept both transport types
+        transport=["unix", "tcp"],  # Accept both transport types
         host="0.0.0.0",  # Accept connections from any IP
         port=50051  # Standard gRPC port
     )
@@ -232,7 +232,7 @@ async def example_2_dual_transport_server():
         domain="server",
         action="startup",
         status="starting",
-        transports=["unix", "tcp"],
+        transport=["unix", "tcp"],
         strategy="auto-negotiation"
     )
     

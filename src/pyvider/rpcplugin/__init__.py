@@ -32,6 +32,7 @@ from pyvider.rpcplugin.factories import (
 __all__ = [
     "RPCPluginConfig",
     "rpcplugin_config",
+    "configure",
     "RPCPluginProtocol",
     "RPCPluginClient",
     "RPCPluginServer",
