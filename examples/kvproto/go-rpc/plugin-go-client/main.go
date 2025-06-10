@@ -1,10 +1,11 @@
-
+//
 // pyvider-rpcplugin/examples/kvproto/go-plugin/plugin-go-client/main.go
+//
 
 package main
 
 import (
-	"flag"
+    "flag"
     "fmt"
     "os"
     "os/exec"
@@ -83,21 +84,21 @@ func run(args []string) error {
 
     logger.Info("🚀 starting KV client application")
 
-	// Determine plugin path: flag overrides environment variable
-	var pluginPath string
-	if serverPathFlag != nil && *serverPathFlag != "" {
-		pluginPath = *serverPathFlag
-		logger.Debug("🔌 using server path from --server-path flag", "path", pluginPath)
-	} else {
-		pluginPath = os.Getenv("PLUGIN_SERVER_PATH")
-		logger.Debug("🔌 using server path from PLUGIN_SERVER_PATH env var", "path", pluginPath)
-	}
+    // Determine plugin path: flag overrides environment variable
+    var pluginPath string
+    if serverPathFlag != nil && *serverPathFlag != "" {
+        pluginPath = *serverPathFlag
+        logger.Debug("🔌 using server path from --server-path flag", "path", pluginPath)
+    } else {
+        pluginPath = os.Getenv("PLUGIN_SERVER_PATH")
+        logger.Debug("🔌 using server path from PLUGIN_SERVER_PATH env var", "path", pluginPath)
+    }
 
     if pluginPath == "" {
-		logger.Error("🔍❌ plugin server path must be set via --server-path flag or PLUGIN_SERVER_PATH environment variable")
-		return fmt.Errorf("plugin server path must be set via --server-path flag or PLUGIN_SERVER_PATH environment variable")
+        logger.Error("🔍❌ plugin server path must be set via --server-path flag or PLUGIN_SERVER_PATH environment variable")
+        return fmt.Errorf("plugin server path must be set via --server-path flag or PLUGIN_SERVER_PATH environment variable")
     }
-	logger.Info("🔌 Using server executable", "path", pluginPath) // Log level changed and message added
+    logger.Info("🔌 Using server executable", "path", pluginPath) // Log level changed and message added
 
     // Verify plugin executable exists
     if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
@@ -112,7 +113,7 @@ func run(args []string) error {
         var err error
         autoMTLS, err = strconv.ParseBool(envAutoMTLS)
         if err != nil {
-            logger.Warn("🔐⚠️ invalid PLUGIN_AUTO_MTLS value, defaulting to enabled", 
+            logger.Warn("🔐⚠️ invalid PLUGIN_AUTO_MTLS value, defaulting to enabled",
                 "value", envAutoMTLS,
                 "error", err)
         }
@@ -217,7 +218,7 @@ logger.Info("🔌✅ RPC client started successfully", // Log level changed
     logger.Debug("✅ type assertion successful")
 
     // Process commands
-	if err := handleCommand(logger, kv, args); err != nil {
+    if err := handleCommand(logger, kv, args); err != nil {
         return err
     }
 
@@ -226,62 +227,62 @@ logger.Info("🔌✅ RPC client started successfully", // Log level changed
 }
 
 func handleCommand(logger hclog.Logger, kv shared.KV, args []string) error { // Added args []string
-	// args now contains only the command and its parameters, after flag parsing.
-	// Example: ["get", "mykey"] or ["put", "mykey", "myvalue"]
+    // args now contains only the command and its parameters, after flag parsing.
+    // Example: ["get", "mykey"] or ["put", "mykey", "myvalue"]
 
-	if len(args) < 1 {
-		// This case should ideally be caught in main() before calling run(),
-		// but as a safeguard / for clarity if handleCommand was called directly.
-		logger.Error("❌ internal error: handleCommand called with no arguments")
-		// flag.Usage() might be more appropriate if this were user-facing,
-		// but this indicates a programming error if reached.
-		return fmt.Errorf("internal error: no command provided to handleCommand")
+    if len(args) < 1 {
+        // This case should ideally be caught in main() before calling run(),
+        // but as a safeguard / for clarity if handleCommand was called directly.
+        logger.Error("❌ internal error: handleCommand called with no arguments")
+        // flag.Usage() might be more appropriate if this were user-facing,
+        // but this indicates a programming error if reached.
+        return fmt.Errorf("internal error: no command provided to handleCommand")
     }
 
-	command := args[0]
-	switch command {
+    command := args[0]
+    switch command {
     case "get":
-		if len(args) != 2 {
-			logger.Error("❌ invalid number of arguments for 'get' operation", "expected_count", 1, "actual_count", len(args)-1, "arguments", args[1:])
-			// Suggest correct usage, flag.Usage() could also be an option if accessible easily.
-			return fmt.Errorf("usage: get <key>")
+        if len(args) != 2 {
+            logger.Error("❌ invalid number of arguments for 'get' operation", "expected_count", 1, "actual_count", len(args)-1, "arguments", args[1:])
+            // Suggest correct usage, flag.Usage() could also be an option if accessible easily.
+            return fmt.Errorf("usage: get <key>")
         }
-		key := args[1]
-		logger.Info("📥 executing get operation", "key", key) // Log level changed
-		result, err := kv.Get(key)
+        key := args[1]
+        logger.Info("📥 executing get operation", "key", key) // Log level changed
+        result, err := kv.Get(key)
         if err != nil {
             logger.Error("📥❌ get operation failed",
-				"key", key,
+                "key", key,
                 "error", err)
-			return fmt.Errorf("error getting value for key '%s': %w", key, err)
+            return fmt.Errorf("error getting value for key '%s': %w", key, err)
         }
         logger.Info("📥✅ get operation successful", // Log level changed
-			"key", key,
+            "key", key,
             "value_length", len(result))
         fmt.Println(string(result))
 
     case "put":
-		if len(args) != 3 {
-			logger.Error("❌ invalid number of arguments for 'put' operation", "expected_count", 2, "actual_count", len(args)-1, "arguments", args[1:])
-			return fmt.Errorf("usage: put <key> <value>")
+        if len(args) != 3 {
+            logger.Error("❌ invalid number of arguments for 'put' operation", "expected_count", 2, "actual_count", len(args)-1, "arguments", args[1:])
+            return fmt.Errorf("usage: put <key> <value>")
         }
-		key := args[1]
-		value := args[2]
+        key := args[1]
+        value := args[2]
         logger.Info("📤 executing put operation", // Log level changed
-			"key", key,
-			"value_length", len(value))
-		if err := kv.Put(key, []byte(value)); err != nil {
+            "key", key,
+            "value_length", len(value))
+        if err := kv.Put(key, []byte(value)); err != nil {
             logger.Error("📤❌ put operation failed",
-				"key", key,
+                "key", key,
                 "error", err)
-			return fmt.Errorf("error putting value for key '%s': %w", key, err)
+            return fmt.Errorf("error putting value for key '%s': %w", key, err)
         }
-		logger.Info("📤✅ successfully put value", "key", key)
+        logger.Info("📤✅ successfully put value", "key", key)
 
     default:
-		logger.Error("❓❌ unknown command", "command", command)
-		// Suggest running with --help for usage details.
-		return fmt.Errorf("unknown command: %q. Expected 'get' or 'put'.\nRun with --help for usage.", command)
+        logger.Error("❓❌ unknown command", "command", command)
+        // Suggest running with --help for usage details.
+        return fmt.Errorf("unknown command: %q. Expected 'get' or 'put'.\nRun with --help for usage.", command)
     }
 
     return nil
@@ -293,41 +294,41 @@ var serverPathFlag *string
 // logLevelFlag is already defined globally
 
 func main() {
-	// Define flags
-	// The serverPathFlag is defined globally so it can be accessed in `run`
-	serverPathFlag = flag.String("server-path", "", "Path to the server executable. Overrides PLUGIN_SERVER_PATH environment variable.")
-	// Define the log-level flag
-	flag.StringVar(&logLevelFlag, "log-level", "WARN", "Set the logging level (TRACE, DEBUG, INFO, WARN, ERROR, OFF)")
+    // Define flags
+    // The serverPathFlag is defined globally so it can be accessed in `run`
+    serverPathFlag = flag.String("server-path", "", "Path to the server executable. Overrides PLUGIN_SERVER_PATH environment variable.")
+    // Define the log-level flag
+    flag.StringVar(&logLevelFlag, "log-level", "WARN", "Set the logging level (TRACE, DEBUG, INFO, WARN, ERROR, OFF)")
 
-	// originalUsage := flag.Usage // This line will be removed
-	flag.Usage = func() {
-		// Using flag.CommandLine.Output() for consistent output channel (defaults to os.Stderr)
-		fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [--server-path <path>] [--log-level <level>] <get|put> <key> [value]\n\n", os.Args[0])
-		fmt.Fprintf(flag.CommandLine.Output(), "Commands:\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  get <key>          Get a value for a key\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "  put <key> <value>  Put a key/value pair\n\n")
-		fmt.Fprintf(flag.CommandLine.Output(), "Flags:\n")
-		flag.PrintDefaults()
-	}
-	flag.Parse()
+    // originalUsage := flag.Usage // This line will be removed
+    flag.Usage = func() {
+        // Using flag.CommandLine.Output() for consistent output channel (defaults to os.Stderr)
+        fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [--server-path <path>] [--log-level <level>] <get|put> <key> [value]\n\n", os.Args[0])
+        fmt.Fprintf(flag.CommandLine.Output(), "Commands:\n")
+        fmt.Fprintf(flag.CommandLine.Output(), "  get <key>          Get a value for a key\n")
+        fmt.Fprintf(flag.CommandLine.Output(), "  put <key> <value>  Put a key/value pair\n\n")
+        fmt.Fprintf(flag.CommandLine.Output(), "Flags:\n")
+        flag.PrintDefaults()
+    }
+    flag.Parse()
 
-	// Get non-flag arguments (the command and its parameters)
-	args := flag.Args()
+    // Get non-flag arguments (the command and its parameters)
+    args := flag.Args()
 
-	// Validate command is present
-	if len(args) < 1 {
-		// Log directly to Stderr as logger might not be initialized if run() isn't called.
-		fmt.Fprintf(os.Stderr, "❌ Error: No command provided. Expected 'get' or 'put'.\n")
-		flag.Usage()
-		os.Exit(1)
-	}
+    // Validate command is present
+    if len(args) < 1 {
+        // Log directly to Stderr as logger might not be initialized if run() isn't called.
+        fmt.Fprintf(os.Stderr, "❌ Error: No command provided. Expected 'get' or 'put'.\n")
+        flag.Usage()
+        os.Exit(1)
+    }
 
-	// Pass non-flag arguments to run
-	if err := run(args); err != nil {
-		// Logger might not be initialized yet, or error happened before logger, so use fmt.Fprintf
-		// The run() function's logger will handle logging for errors within run() itself.
-		// This Fprintf is for errors returned by run() that prevent logger initialization or occur very early.
-		fmt.Fprintf(os.Stderr, "❌ Error executing command: %v\n", err)
+    // Pass non-flag arguments to run
+    if err := run(args); err != nil {
+        // Logger might not be initialized yet, or error happened before logger, so use fmt.Fprintf
+        // The run() function's logger will handle logging for errors within run() itself.
+        // This Fprintf is for errors returned by run() that prevent logger initialization or occur very early.
+        fmt.Fprintf(os.Stderr, "❌ Error executing command: %v\n", err)
         os.Exit(1)
     }
 }

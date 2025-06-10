@@ -6,7 +6,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
-from typing import AsyncGenerator, AsyncContextManager
+from typing import AsyncGenerator
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -19,7 +19,6 @@ from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
     plugin_client,
     create_basic_protocol,
-    configure,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -159,7 +158,10 @@ async def example_6_async_context_managers():
             await asyncio.sleep(0.5)  # Let server initialize
             
             # Create client
-            self.client = plugin_client(transport=self.transport)
+            # plugin_client expects a server_path (executable).
+            # The self.transport argument of AsyncRPCManager is not directly used here
+            # for the client factory in its current form.
+            self.client = plugin_client(server_path="./dummy_server.sh")
             
             logger.info(
                 "Async RPC context ready",

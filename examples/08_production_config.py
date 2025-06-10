@@ -17,13 +17,11 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
-    plugin_client,
     create_basic_protocol,
     configure,
 )
 from pyvider.rpcplugin.config import (  # noqa: E402
     RPCPluginConfig,
-    load_config_from_file,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -548,7 +546,7 @@ async def example_8_monitoring_and_observability():
         "Health status",
         domain="monitoring",
         action="health",
-        status="current",
+        # status="current", # Removed to avoid conflict with status in metrics["health"]
         **metrics["health"]
     )
     

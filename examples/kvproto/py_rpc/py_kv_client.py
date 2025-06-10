@@ -1,4 +1,4 @@
-#!/app/.venv/bin/python3
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -260,12 +260,12 @@ async def main() -> None:
     numeric_log_level = getattr(logging, args.log_level.upper(), None)
     if not isinstance(numeric_log_level, int):
         raise ValueError(f"Invalid log level: {args.log_level}")
-
+    
     # Get the root logger and set its level.
     # This will affect all loggers unless they have their own level set explicitly.
     # The pyvider.telemetry.logger is likely a child of the root logger or configured separately.
     # For basicConfig to take effect for handlers, it should be called before this.
-    # If pyvider.telemetry.logger is a separate instance/configured independently,
+    # If pyvider.telemetry.logger is a separate instance/configured independently, 
     # its level might also need to be set if it doesn't propagate from root.
     # However, standard practice is that child loggers inherit from root or propagate to root's handlers.
     logging.getLogger().setLevel(numeric_log_level)
