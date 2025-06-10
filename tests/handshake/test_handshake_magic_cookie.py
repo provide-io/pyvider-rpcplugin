@@ -64,8 +64,17 @@ def test_validate_magic_cookie_failures(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", magic_cookie_value
     )
 
-    with pytest.raises(HandshakeError, match=expected_error):
-        validate_magic_cookie()
+    if expected_error: # If expected_error is a non-empty string, match it
+        with pytest.raises(HandshakeError, match=expected_error):
+            validate_magic_cookie()
+    else: # If expected_error is "" (or None, though not in this specific param list)
+          # for the case (None, None, ""), it means we expect HandshakeError but don't care about the message
+          # or expect an empty message. Using match=r'^$' for truly empty, or no match for any message.
+          # Pytest warns on match="". If an empty message is truly expected: match=r'^$'
+          # If any message is fine: omit match.
+          # Given the warning, it was match="". Let's assume any message is fine if expected_error is empty.
+        with pytest.raises(HandshakeError):
+            validate_magic_cookie()
 
 
 def test_validate_magic_cookie_missing_still_raises() -> None:

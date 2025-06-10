@@ -18,7 +18,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.types import HandlerT, ProtocolT, TransportT
+from pyvider.rpcplugin.types import HandlerT, ProtocolT, RPCPluginTransport # Changed TransportT to RPCPluginTransport
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.telemetry import logger
 
@@ -56,7 +56,7 @@ def plugin_server(
     """
     logger.debug(f"🧰🚀🔍 Creating plugin server with transport={transport}")
 
-    transport_inst: TransportT
+    transport_inst: RPCPluginTransport # Changed TransportT to RPCPluginTransport
     match transport.lower():
         case "unix":
             logger.debug(f"🧰🚀✅ Creating Unix socket transport, path={transport_path}")
@@ -183,13 +183,14 @@ def plugin_protocol(
             logger.debug(f"🧰📡🔍 Returning gRPC descriptors for service '{service_name}'")
             return descriptor_module, service_name
 
-        async def add_to_server(self, handler: Any, server: Any) -> None:
+        async def add_to_server(self, server: Any, handler: Any) -> None: # Parameter order fixed
             """Adds the protocol implementation to the gRPC server."""
             logger.debug(f"🧰📡🚀 Adding service '{service_name}' to gRPC server")
             if servicer_add_fn:
-                servicer_add_fn(handler, server)
+                servicer_add_fn(handler, server) # Original arg order for call
             else:
                 logger.warning(f"🧰📡⚠️ No servicer_add_fn provided for '{service_name}'")
+            return # Explicit return
 
     logger.debug(f"🧰🚀✅ Created plugin protocol for service '{service_name}'")
     return GeneratedProtocol()
@@ -210,13 +211,14 @@ def create_basic_protocol() -> RPCPluginProtocol:
     class BasicProtocol(RPCPluginProtocol):
         """Minimal protocol implementation for basic connectivity testing."""
 
-        async def get_grpc_descriptors(self) -> tuple[Any, str]:
+        async def get_grpc_descriptors(self) -> tuple[Any, str]: # Return type Awaitable removed
             """Returns placeholder descriptors."""
             return None, "TestService"
 
-        async def add_to_server(self, handler: Any, server: Any) -> None:
+        async def add_to_server(self, server: Any, handler: Any) -> None: # Parameter order fixed, return type Awaitable removed
             """No-op implementation for testing."""
             logger.debug("🧰📡🔍 Basic protocol add_to_server called")
+            return # Explicit return
 
     logger.debug("🧰🚀✅ Created basic test protocol")
     return BasicProtocol()

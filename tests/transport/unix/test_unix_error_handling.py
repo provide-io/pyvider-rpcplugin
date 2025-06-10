@@ -4,7 +4,7 @@
 import asyncio
 import os
 import tempfile
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest
 
@@ -72,8 +72,13 @@ async def test_unix_socket_close_error_handling() -> None:
         await transport.listen()
 
         # Create a mock writer with an error on close
-        mock_writer = AsyncMock()
+        # Use MagicMock with spec for asyncio.StreamWriter to ensure close is sync by default
+        mock_writer = MagicMock(spec=asyncio.StreamWriter)
         mock_writer.close.side_effect = Exception("Mocked writer close error")
+        # mock_writer.is_closing.return_value = True # Or False, depending on desired state
+        # wait_closed needs to be an AsyncMock if it's called and awaited
+        mock_writer.wait_closed = AsyncMock()
+
 
         # Assign it to the transport
         transport._writer = mock_writer

@@ -48,8 +48,8 @@ async def test_create_grpc_channel_with_tls(client_instance):
             
             await client_instance._create_grpc_channel()
             
-            # Verify secure_channel was called correctly
-            mock_ssl_creds.assert_called_once()
+            # Verify TLS-only credentials were used (only root_certificates)
+            mock_ssl_creds.assert_called_once_with(root_certificates=ANY)
             mock_secure_channel.assert_called_once()
             assert client_instance._channel == mock_channel
 

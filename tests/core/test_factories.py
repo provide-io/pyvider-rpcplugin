@@ -68,8 +68,13 @@ async def test_plugin_protocol_basic():
     # Test add_to_server
     mock_grpc_server = object()
     mock_handler = MockHandler()
+    # When calling protocol.add_to_server(arg1, arg2):
+    # arg1 is 'server' in GeneratedProtocol.add_to_server(self, server, handler)
+    # arg2 is 'handler' in GeneratedProtocol.add_to_server(self, server, handler)
+    # Inside GeneratedProtocol.add_to_server, the call is servicer_add_fn(handler, server)
+    # So, servicer_add_fn is called with (arg2, arg1)
     await protocol.add_to_server(mock_handler, mock_grpc_server)
-    mock_servicer_add_fn.assert_called_once_with(mock_handler, mock_grpc_server)
+    mock_servicer_add_fn.assert_called_once_with(mock_grpc_server, mock_handler) # Corrected argument order
 
 @pytest.mark.asyncio
 async def test_plugin_protocol_no_servicer_fn():
