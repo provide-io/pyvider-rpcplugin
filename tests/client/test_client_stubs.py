@@ -172,7 +172,6 @@ async def test_open_broker_subchannel_no_stub(client_instance): # Removed capsys
     client_instance._broker_stub = None # Ensure stub is None
 
     from io import StringIO
-    import sys
     with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
         # Should log a warning and return without error
         await client_instance.open_broker_subchannel(123, "127.0.0.1:8001")

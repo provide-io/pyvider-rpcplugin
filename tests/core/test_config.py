@@ -15,7 +15,6 @@ from pyvider.rpcplugin.config import (
     load_config_from_file,
     CONFIG_SCHEMA, # Import for direct use in tests
 )
-from pyvider.telemetry import logger # For checking log messages if needed
 
 # Ensure logger is active for testing log captures if necessary
 # logger.enable("pyvider.rpcplugin.config") # Removed due to AttributeError
@@ -453,7 +452,6 @@ def test_configure_invalid_transport_type():
         configure(transports=["unix", "bogus_transport"])
 
 # Tests for load_config_from_file
-import json # For testing JSON loading
 try:
     import yaml # For testing YAML loading
     YAML_AVAILABLE = True

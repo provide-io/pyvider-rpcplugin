@@ -3,7 +3,6 @@
 
 import asyncio
 import os
-import tempfile
 
 from contextlib import suppress
 

@@ -9,7 +9,6 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from tests.conftest import (
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
 )
 
 from tests.fixtures import *

@@ -3,9 +3,7 @@
 
 import asyncio
 import io
-import os
 import sys
-import tempfile
 from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
