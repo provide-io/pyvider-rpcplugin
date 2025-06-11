@@ -425,31 +425,35 @@ class RPCPluginClient: # No longer Generic[TransportT]
             self._server_cert = server_cert
             self._transport_name = network
 
-            if network == "tcp":
-                self._transport = TCPSocketTransport()
-                logger.debug("*** network is set to tcp")
-            elif network == "unix":
-                # More robust handling of unix: prefix formats
-                logger.debug("*** network is set to unix")
-
-                if address.startswith("unix:"):
-                    logger.debug("*** address starts with unix")
-                    self._address = address[5:]  # Remove standard unix: prefix
-                    # Remove leading slashes (but not all slashes)
-                    while self._address.startswith("/") and not self._address.startswith("//"):
-                        self._address = self._address[1:]
-
-                else:
+            match network:
+                case "tcp":
+                    self._transport = TCPSocketTransport()
+                    logger.debug("*** network is set to tcp")
+                    # For TCP, the address from handshake is directly used for connect.
+                    # self._address will be set by the transport.connect() if needed,
+                    # or is already the parsed address.
                     self._address = address
+                case "unix":
+                    logger.debug("*** network is set to unix")
+                    # Normalize path for Unix transport construction
+                    normalized_path = address
+                    if address.startswith("unix:"):
+                        logger.debug("*** address starts with unix")
+                        normalized_path = address[5:]
+                        while normalized_path.startswith("/") and not normalized_path.startswith("//"):
+                            normalized_path = normalized_path[1:]
 
-                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}'")
-                self._transport = UnixSocketTransport(path=self._address)
-            else:
-                raise TransportError(f"Unsupported transport: {network}")
+                    self._address = normalized_path # Store the normalized path for consistency
+                    logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}' for transport init.")
+                    self._transport = UnixSocketTransport(path=self._address)
+                case _:
+                    raise TransportError(f"Unsupported transport: {network}")
 
             # Connect the chosen transport
-            if self._transport is not None: # Check transport is not None
-                await self._transport.connect(address)
+            # The 'address' used for connect should be the original one from handshake,
+            # as that's what the server provided. Normalization is for local representation or construction.
+            if self._transport is not None:
+                await self._transport.connect(address) # Use original address from handshake for connect
                 logger.info(f"🚄 Transport connected via {network} -> {address}")
             else:
                 # This case should ideally not be reached if logic is correct

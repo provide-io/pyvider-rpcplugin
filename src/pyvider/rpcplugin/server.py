@@ -86,7 +86,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
     _transport_name: str = field(init=False)
     _server_cert_obj: Certificate | None = field(init=False, default=None)
     _port: int | None = field(init=False, default=None)
-    _serving_future: asyncio.Future = field(init=False, factory=asyncio.Future)
+    _serving_future: asyncio.Future[None] = field(init=False, factory=asyncio.Future)
     _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
 

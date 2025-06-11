@@ -215,50 +215,41 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
 
     # Type conversion based on schema type
     try:
-        match meta["type"]:
-            case "str":
-                # String values need no conversion
+        # Using match/case for type conversion
+        type_string = meta["type"]
+        if type_string == "str":
+            return value
+        elif type_string == "int":
+            if isinstance(value, int):
                 return value
-
-            case "int":
-                if isinstance(value, int):
-                    return value
-                return int(value)
-
-            case "float":
-                if isinstance(value, float):
-                    return value
-                return float(value)
-
-            case "bool":
-                if isinstance(value, bool):
-                    return value
-                if isinstance(value, str):
-                    return value.lower() in ("true", "yes", "1", "on")
-                return bool(value)
-
-            case "list_str":
-                # Handle lists stored as comma-separated strings
-                if isinstance(value, list):
-                    return value
-                if isinstance(value, str):
-                    return [v.strip() for v in value.split(",")]
-                return list(value)
-
-            case "list_int":
-                # Handle lists of integers
-                if isinstance(value, list) and all(isinstance(x, int) for x in value):
-                    return value
-                if isinstance(value, list):
-                    return [int(v) for v in value]
-                if isinstance(value, str):
-                    return [int(v.strip()) for v in value.split(",")]
-                return [int(value)]
-
-            case _:
-                # Default case - return as is
-                logger.warning(f"⚙️⚠️ Unknown type {meta['type']} for {key}, returning raw value")
+            return int(value)
+        elif type_string == "float":
+            if isinstance(value, float):
                 return value
+            return float(value)
+        elif type_string == "bool":
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                return value.lower() in ("true", "yes", "1", "on")
+            return bool(value)
+        elif type_string == "list_str":
+            if isinstance(value, list):
+                return value
+            if isinstance(value, str):
+                return [v.strip() for v in value.split(",")]
+            return list(value)
+        elif type_string == "list_int":
+            if isinstance(value, list) and all(isinstance(x, int) for x in value):
+                return value
+            if isinstance(value, list):
+                return [int(v) for v in value]
+            if isinstance(value, str):
+                return [int(v.strip()) for v in value.split(",")]
+            return [int(value)]
+        else:
+            logger.warning(f"⚙️⚠️ Unknown type {type_string} for {key}, returning raw value")
+            return value
 
     except (ValueError, TypeError) as e:
         logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
@@ -636,18 +627,19 @@ def load_config_from_file(config_file: str | Path) -> None:
     logger.debug(f"⚙️📂🚀 Loading configuration from {path}")
 
     try:
-        match path.suffix.lower():
-            case ".env":
-                _load_dotenv_file(path)
-            case ".json":
-                _load_json_file(path)
-            case ".yaml" | ".yml":
-                _load_yaml_file(path)
-            case _:
-                logger.error(f"⚙️❌ Unsupported file format: {path.suffix}")
-                raise ValueError(
-                    f"Unsupported file format: {path.suffix}. Supported formats: .env, .json, .yaml, .yml"
-                )
+        # Using match/case for file type handling
+        suffix = path.suffix.lower()
+        if suffix == ".env":
+            _load_dotenv_file(path)
+        elif suffix == ".json":
+            _load_json_file(path)
+        elif suffix in (".yaml", ".yml"):
+            _load_yaml_file(path)
+        else:
+            logger.error(f"⚙️❌ Unsupported file format: {suffix}")
+            raise ValueError(
+                f"Unsupported file format: {suffix}. Supported formats: .env, .json, .yaml, .yml"
+            )
 
         # Reload configuration from environment
         rpcplugin_config.config = get_config()
@@ -752,22 +744,23 @@ def _load_yaml_file(path: Path) -> None:
             config_data = yaml.safe_load(f)
 
         for key, value in config_data.items():
-            if isinstance(value, list):
-                os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
-                logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
-            elif isinstance(value, dict):
-                # For dicts, keep current behavior but warn if it's a schema-defined key
-                # that isn't usually string-represented this way.
-                # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
-                env_val = yaml.dump(value).strip()
-                os.environ[key] = env_val
-                logger.warning(
-                    f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
-                    f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
-                )
-            else:
-                os.environ[key] = str(value)
-                logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
+            match value:
+                case list():
+                    os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
+                    logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
+                case dict():
+                    # For dicts, keep current behavior but warn if it's a schema-defined key
+                    # that isn't usually string-represented this way.
+                    # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
+                    env_val = yaml.dump(value).strip()
+                    os.environ[key] = env_val
+                    logger.warning(
+                        f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
+                        f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
+                    )
+                case _: # Default case for scalars (int, float, bool, str)
+                    os.environ[key] = str(value)
+                    logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})
