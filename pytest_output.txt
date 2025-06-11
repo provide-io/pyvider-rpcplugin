@@ -1,0 +1,7 @@
+Pytest execution for `src/pyvider/rpcplugin/` consistently timed out.
+
+Attempts to run `pytest src/pyvider/rpcplugin/` (with and without pytest's internal --timeout) exceeded the allowed execution time for the bash session.
+This prevented obtaining a definitive test pass, fail, or "no tests collected" status.
+
+A broader run of `pytest tests/` also timed out in a previous attempt.
+This suggests an extensive test suite or a slow test discovery/setup phase in this environment.

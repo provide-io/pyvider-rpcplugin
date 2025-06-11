@@ -11,7 +11,7 @@ full power of the underlying implementation for advanced users.
 
 import os
 import asyncio
-from typing import Any # Removed Callable, Optional, Dict
+# Removed Callable, Optional, Dict, Any
 from collections.abc import Callable as AbcCallable # Import Callable from collections.abc
 
 from pyvider.rpcplugin.server import RPCPluginServer
@@ -30,7 +30,7 @@ def plugin_server(
     transport_path: str | None = None,
     host: str = "127.0.0.1",
     port: int = 0,
-    config: dict[str, Any] | None = None,
+    config: dict[str, object] | None = None,
 ) -> RPCPluginServer:
     """
     Create a new plugin server with sensible defaults.
@@ -85,7 +85,7 @@ def plugin_client(
     env: dict[str, str] | None = None,
     auto_connect: bool = False,
     timeout: float = 10.0,
-    **kwargs: Any # Added type hint for kwargs
+    **kwargs: object # Added type hint for kwargs
 ) -> RPCPluginClient:
     """
     Create a new plugin client connected to a server.
@@ -120,7 +120,7 @@ def plugin_client(
         raise PermissionError(f"Server executable not executable: {server_path}")
 
     # Create configuration dictionary
-    config: dict[str, Any] = {"timeout": timeout} # Modernized Dict to dict
+    config: dict[str, object] = {"timeout": timeout} # Modernized Dict to dict
     if env:
         config["env"] = env
     for key, value in kwargs.items():
@@ -144,7 +144,7 @@ def plugin_client(
 
 def plugin_protocol(
     service_name: str,
-    descriptor_module: Any = None,
+    descriptor_module: object = None,
     servicer_add_fn: AbcCallable | None = None, # Modernized Optional[Callable]
 ) -> RPCPluginProtocol:
     """
@@ -178,12 +178,12 @@ def plugin_protocol(
     class GeneratedProtocol(RPCPluginProtocol):
         """Protocol implementation for a specific gRPC service."""
 
-        async def get_grpc_descriptors(self) -> tuple[Any, str]:
+        async def get_grpc_descriptors(self) -> tuple[object, str]:
             """Returns the protobuf descriptor set and service name."""
             logger.debug(f"🧰📡🔍 Returning gRPC descriptors for service '{service_name}'")
             return descriptor_module, service_name
 
-        async def add_to_server(self, server: Any, handler: Any) -> None: # Parameter order fixed
+        async def add_to_server(self, server: object, handler: object) -> None: # Parameter order fixed
             """Adds the protocol implementation to the gRPC server."""
             logger.debug(f"🧰📡🚀 Adding service '{service_name}' to gRPC server")
             if servicer_add_fn:
@@ -211,11 +211,11 @@ def create_basic_protocol() -> RPCPluginProtocol:
     class BasicProtocol(RPCPluginProtocol):
         """Minimal protocol implementation for basic connectivity testing."""
 
-        async def get_grpc_descriptors(self) -> tuple[Any, str]: # Return type Awaitable removed
+        async def get_grpc_descriptors(self) -> tuple[object, str]: # Return type Awaitable removed
             """Returns placeholder descriptors."""
             return None, "TestService"
 
-        async def add_to_server(self, server: Any, handler: Any) -> None: # Parameter order fixed, return type Awaitable removed
+        async def add_to_server(self, server: object, handler: object) -> None: # Parameter order fixed, return type Awaitable removed
             """No-op implementation for testing."""
             logger.debug("🧰📡🔍 Basic protocol add_to_server called")
             return # Explicit return

@@ -6,7 +6,7 @@ the RPC plugin client components, aiding in static analysis and code clarity.
 """
 from __future__ import annotations # Moved to the top
 
-from typing import Any, Protocol, TypeVar, TYPE_CHECKING
+from typing import Protocol, TypeVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .base import RPCPluginClient
@@ -20,7 +20,7 @@ ConnectionT = TypeVar("ConnectionT", bound="ClientConnection") # Represents a Cl
 
 # Type Aliases for gRPC Clients
 type GrpcChannelType = grpc.aio.Channel | grpc.Channel # Represents gRPC channel types (async or sync)
-type RpcConfigType = dict[str, Any] # Represents the structure for RPC configuration dictionaries
+type RpcConfigType = dict[str, object] # Represents the structure for RPC configuration dictionaries
 
 # gRPC Credentials Type (used for TLS setup)
 type GrpcCredentialsType = grpc.ChannelCredentials | None # Represents gRPC channel credentials, possibly None

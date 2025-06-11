@@ -14,8 +14,7 @@ function to add these services to a gRPC server.
 import os
 import asyncio
 import traceback
-from typing import Any # Added for type hinting
-from collections.abc import AsyncIterator # Added for StartStream return type
+from typing import AsyncIterator # Added AsyncIterator
 
 from attrs import define, field
 
@@ -79,7 +78,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         # We hold subchannel references here.
         self._subchannels: dict[int, SubchannelConnection] = {}
 
-    async def StartStream(self, request_iterator: Any, context: Any) -> AsyncIterator[ConnInfo]: # Type hints for gRPC params
+    async def StartStream(self, request_iterator: AsyncIterator[ConnInfo], context: object) -> AsyncIterator[ConnInfo]: # Type hints for gRPC params
         """
         Handles the bidirectional stream for broker connections.
 
@@ -202,7 +201,7 @@ class GRPCStdioService(GRPCStdioServicer):
         done = asyncio.Event()
         
         # FIX: Corrected on_rpc_done signature
-        def on_rpc_done(_ignored_arg: Any): # Accepts one argument
+        def on_rpc_done(_ignored_arg: object): # Accepts one argument
             logger.debug("🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called (client disconnected or call ended).") # Modified log
             done.set()
         
@@ -210,8 +209,8 @@ class GRPCStdioService(GRPCStdioServicer):
         
         logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})")
 
-        get_task: asyncio.Task[StdioData] | None = None
-        done_wait_task: asyncio.Task[bool] | None = None
+        get_task: asyncio.Task | None = None
+        done_wait_task: asyncio.Task | None = None
 
         while not self._shutdown and not done.is_set():
             try:
@@ -321,7 +320,7 @@ class GRPCControllerService(GRPCControllerServicer):
         self._shutdown_event = shutdown_event or asyncio.Event() # Ensure an event is always present
         self._stdio_service = stdio_service
 
-    async def Shutdown(self, request: CEmpty, context: Any) -> CEmpty: # Type hints for gRPC params
+    async def Shutdown(self, request: CEmpty, context: object) -> CEmpty: # Type hints for gRPC params
         """
         Handles the Shutdown RPC request from the client.
 
