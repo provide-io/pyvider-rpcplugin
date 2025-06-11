@@ -185,9 +185,10 @@ async def test_generate_server_credentials_cert_constructor_exception(
         if key == "magic_cookie_value": return "default_value"
         if key == "PLUGIN_SERVER_ENDPOINT": return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
         # For this test, PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY might be called by Certificate()
-        # Let them return what mock_server_config (the global one) would have provided, or None.
-        # The Certificate mock below is the primary thing being tested.
-        return mock_server_config.get_original(key, default) # Use a hypothetical original getter if available or hardcode
+        # Let them return None, as the Certificate class itself is mocked.
+        elif key == "PLUGIN_SERVER_CERT" or key == "PLUGIN_SERVER_KEY":
+            return None
+        return default # Fallback for any other keys
 
     mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
 
@@ -222,8 +223,10 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
         if key == "magic_cookie_key": return "default_key"
         if key == "magic_cookie_value": return "default_value"
         if key == "PLUGIN_SERVER_ENDPOINT": return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
-        # Let PLUGIN_SERVER_CERT/KEY return what they would, Certificate mock controls the key part
-        return mock_server_config.get_original(key, default)
+        # Let PLUGIN_SERVER_CERT/KEY return None, as Certificate class is mocked to control the key part.
+        elif key == "PLUGIN_SERVER_CERT" or key == "PLUGIN_SERVER_KEY":
+            return None
+        return default # Fallback for any other keys
 
     mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
 
