@@ -15,6 +15,7 @@ import os
 import asyncio
 import traceback
 from typing import Any # Added for type hinting
+from collections.abc import AsyncIterator # Added for StartStream return type
 
 from attrs import define, field
 
@@ -78,7 +79,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         # We hold subchannel references here.
         self._subchannels: dict[int, SubchannelConnection] = {}
 
-    async def StartStream(self, request_iterator: Any, context: Any) -> Any: # Type hints for gRPC params
+    async def StartStream(self, request_iterator: Any, context: Any) -> AsyncIterator[ConnInfo]: # Type hints for gRPC params
         """
         Handles the bidirectional stream for broker connections.
 
@@ -209,8 +210,8 @@ class GRPCStdioService(GRPCStdioServicer):
         
         logger.debug(f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})")
 
-        get_task: asyncio.Task | None = None
-        done_wait_task: asyncio.Task | None = None
+        get_task: asyncio.Task[StdioData] | None = None
+        done_wait_task: asyncio.Task[bool] | None = None
 
         while not self._shutdown and not done.is_set():
             try:
