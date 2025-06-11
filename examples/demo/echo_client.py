@@ -37,8 +37,7 @@ class EchoClient:
         # For this example, we set them directly to match the standalone server example.
         self.plugin_env = {
             "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE", # Must match server
-            "PLUGIN_MAGIC_COOKIE_VALUE": "standalonesecret", # Server will expect this value
-            "PLUGIN_MAGIC_COOKIE": "standalonesecret",      # Client will send this value / Server actual value
+            "PLUGIN_MAGIC_COOKIE": "standalonesecret",      # Must match server
             "PLUGIN_PROTOCOL_VERSIONS": "1",                # Must be compatible
             "PLUGIN_TRANSPORTS": "unix,tcp",                # What the client supports
             "PLUGIN_AUTO_MTLS": "true",                     # Use mTLS (recommended)

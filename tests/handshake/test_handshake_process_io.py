@@ -21,6 +21,7 @@ class MockProcess:
         self.stdout = MagicMock()
         self.stderr = MagicMock()
         self.returncode = None
+        self.initial_exit_code = exit_code # Store the intended exit code
         
         # Configure stdout content and behavior
         if isinstance(stdout_content, list):
@@ -39,16 +40,16 @@ class MockProcess:
             self.stderr.readline.return_value = stderr_content.encode('utf-8')
         
         # Configure process exit behavior
-        if exit_code is not None:
+        if self.initial_exit_code is not None: # Check stored exit code
             self._poll_count = 0
-            self._poll_exit_after = 2  # Exit after this many poll calls
+            self._poll_exit_after = 1  # Exit after 1 poll call if exit_code is set
             
     def poll(self):
         """Mock the poll() method to simulate process state."""
-        if hasattr(self, '_poll_count'):
+        if hasattr(self, '_poll_count'): # Check if exit behavior is configured
             self._poll_count += 1
             if self._poll_count >= self._poll_exit_after:
-                self.returncode = self._poll_exit_after
+                self.returncode = self.initial_exit_code # Use the stored exit code
                 return self.returncode
         return None
 
@@ -87,6 +88,22 @@ async def test_read_handshake_response_process_exit():
     with pytest.raises(HandshakeError, match="Plugin process exited with code"):
         await read_handshake_response(process)
 
+@pytest.mark.asyncio
+async def test_read_handshake_response_process_exit_stderr_read_error(mocker):
+    """Test error when process exits and reading its stderr also fails."""
+    process = MockProcess(stdout_content="", exit_code=1)
+    process.stderr = mocker.MagicMock()
+    process.stderr.read.side_effect = OSError("Failed to read stderr")
+
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+
+    with pytest.raises(HandshakeError, match="Error reading stderr: Failed to read stderr"):
+        await read_handshake_response(process)
+
+    mock_logger_error.assert_called_once_with(
+        "🤝📥❌ Plugin process exited with code 1 before handshake"
+    )
+
 
 @pytest.mark.asyncio
 async def test_read_handshake_response_timeout():
@@ -107,6 +124,21 @@ async def test_read_handshake_response_timeout():
         with patch('time.time', side_effect=[0, 11]):  # Exceed the timeout
             with pytest.raises(HandshakeError, match="Timed out waiting for handshake"):
                 await read_handshake_response(process)
+
+@pytest.mark.asyncio
+async def test_read_handshake_response_timeout_stderr_read_error(mocker):
+    """Test timeout while waiting for handshake, and stderr read also fails."""
+    process = MockProcess() # stdout.readline will return b"" by default
+
+    process.stderr = mocker.MagicMock()
+    process.stderr.read.side_effect = OSError("Failed to read stderr on timeout")
+
+    # Patch time.time and asyncio.sleep to make the test run faster and ensure timeout
+    mocker.patch('pyvider.rpcplugin.handshake.asyncio.sleep', new_callable=AsyncMock)
+    mocker.patch('pyvider.rpcplugin.handshake.time.time', side_effect=[0, 2, 4, 6, 8, 10, 12])  # Exceed the 10s timeout
+
+    with pytest.raises(HandshakeError, match="Error reading stderr: Failed to read stderr on timeout"):
+        await read_handshake_response(process)
 
 
 @pytest.mark.asyncio
@@ -141,6 +173,41 @@ async def test_create_stderr_relay():
                 
         # Verify the executor was called for each line
         assert mock_loop.return_value.run_in_executor.call_count > 0
+
+@pytest.mark.asyncio
+async def test_create_stderr_relay_exception_in_reader(mocker):
+    """Test the stderr relay when process.stderr.readline raises an exception."""
+    process = MockProcess() # Process is running, poll returns None initially
+    process.stderr = mocker.MagicMock()
+    process.stderr.readline.side_effect = [b"first line\n", Exception("Read error from stderr"), b""] # Error then stop
+
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+    mock_logger_debug = mocker.patch('pyvider.rpcplugin.handshake.logger.debug') # To check for start/end messages
+
+    relay_task = await create_stderr_relay(process)
+    assert relay_task is not None
+
+    # Allow the task to run and encounter the exception
+    # We can't directly await the task here if it errors internally and loop continues,
+    # but we can give it a moment to process.
+    await asyncio.sleep(0.1)
+
+    # Check for start, error, and end log messages
+    start_logged = any("Starting stderr relay task" in call_args[0][0] for call_args in mock_logger_debug.call_args_list)
+    error_logged = any("Error in stderr relay: Read error from stderr" in call_args[0][0] for call_args in mock_logger_error.call_args_list)
+    # end_logged = any("Stderr relay task ended" in call_args[0][0] for call_args in mock_logger_debug.call_args_list)
+    # Depending on timing, end_logged might not fire if the task truly breaks.
+    # The primary check is that the error was logged.
+
+    assert start_logged
+    assert error_logged
+    # assert end_logged # This might be flaky depending on when the loop breaks
+
+    # Clean up the task if it's still around (it should have exited due to break)
+    if not relay_task.done():
+        relay_task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await relay_task
 
 
 @pytest.mark.parametrize(

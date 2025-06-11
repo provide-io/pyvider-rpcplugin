@@ -17,6 +17,7 @@ if src_path.exists() and str(src_path) not in sys.path:
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
     plugin_client,
+    plugin_protocol,
     create_basic_protocol,
     configure,
 )
@@ -52,156 +53,101 @@ class SecureEchoHandler:
         return type('SecureEchoReply', (), {'response': response})()
 
 
-async def example_5_certificate_generation():
+async def example_5_certificate_generation(cert_path: Path): # Added cert_path argument
     """
     Example 5A: Demonstrates certificate generation for mTLS.
     
     Shows how to generate CA, server, and client certificates
     for mutual TLS authentication in RPC communication.
+
+    Args:
+        cert_path (Path): The directory to save generated certificates.
     """
     print("\n" + "=" * 60)
     print("🔐 Example 5A: Certificate Generation for mTLS")
     print(" Demonstrates: CA, server, and client certificate creation")
     print("=" * 60)
     
-    # Create temporary directory for certificates
-    with tempfile.TemporaryDirectory() as cert_dir:
-        cert_path = Path(cert_dir)
-        
-        logger.info(
-            "Generating certificate authority (CA)",
-            domain="security",
-            action="generate_ca",
-            status="starting",
-            cert_dir=str(cert_path)
-        )
-        
-        # Step 1: Generate Certificate Authority (CA)
-        ca_cert = Certificate.generate_ca(
-            common_name="Example RPC CA",
-            organization="Pyvider Examples",
-            validity_days=365
-        )
-        
-        ca_cert_path = cert_path / "ca.crt"
-        ca_key_path = cert_path / "ca.key"
-        
-        # Save CA certificate and key
-        with open(ca_cert_path, 'w') as f:
-            f.write(ca_cert.certificate_pem)
-        with open(ca_key_path, 'w') as f:
-            f.write(ca_cert.private_key_pem)
-        
-        logger.info(
-            "CA certificate generated",
-            domain="security",
-            action="generate_ca",
-            status="success",
-            ca_cert_path=str(ca_cert_path),
-            validity_days=365
-        )
-        
-        # Step 2: Generate server certificate
-        logger.info(
-            "Generating server certificate",
-            domain="security",
-            action="generate_server_cert",
-            status="starting"
-        )
-        
-        server_cert = Certificate.generate_server_certificate(
-            ca_cert=ca_cert,
-            common_name="localhost",
-            san_dns=["localhost", "127.0.0.1"],
-            validity_days=90
-        )
-        
-        server_cert_path = cert_path / "server.crt"
-        server_key_path = cert_path / "server.key"
-        
-        with open(server_cert_path, 'w') as f:
-            f.write(server_cert.certificate_pem)
-        with open(server_key_path, 'w') as f:
-            f.write(server_cert.private_key_pem)
-        
-        logger.info(
-            "Server certificate generated",
-            domain="security",
-            action="generate_server_cert",
-            status="success",
-            server_cert_path=str(server_cert_path),
-            san_dns=["localhost", "127.0.0.1"]
-        )
-        
-        # Step 3: Generate client certificate
-        logger.info(
-            "Generating client certificate",
-            domain="security",
-            action="generate_client_cert",
-            status="starting"
-        )
-        
-        client_cert = Certificate.generate_client_certificate(
-            ca_cert=ca_cert,
-            common_name="example-client",
-            validity_days=30
-        )
-        
-        client_cert_path = cert_path / "client.crt"
-        client_key_path = cert_path / "client.key"
-        
-        with open(client_cert_path, 'w') as f:
-            f.write(client_cert.certificate_pem)
-        with open(client_key_path, 'w') as f:
-            f.write(client_cert.private_key_pem)
-        
-        logger.info(
-            "Client certificate generated",
-            domain="security",
-            action="generate_client_cert", 
-            status="success",
-            client_cert_path=str(client_cert_path),
-            client_cn="example-client"
-        )
-        
-        # Step 4: Verify certificate chain
-        logger.info(
-            "Verifying certificate chain",
-            domain="security",
-            action="verify_chain",
-            status="starting"
-        )
-        
-        # Verify server certificate against CA
-        server_valid = Certificate.verify_certificate_chain(
-            cert_path=server_cert_path,
-            ca_cert_path=ca_cert_path
-        )
-        
-        # Verify client certificate against CA
-        client_valid = Certificate.verify_certificate_chain(
-            cert_path=client_cert_path,
-            ca_cert_path=ca_cert_path
-        )
-        
-        logger.info(
-            "Certificate chain verification completed",
-            domain="security",
-            action="verify_chain",
-            status="success",
-            server_cert_valid=server_valid,
-            client_cert_valid=client_valid,
-            chain_integrity="verified"
-        )
-        
-        return {
-            'ca_cert': str(ca_cert_path),
-            'ca_key': str(ca_key_path),
-            'server_cert': str(server_cert_path),
-            'server_key': str(server_key_path),
-            'client_cert': str(client_cert_path),
-            'client_key': str(client_key_path)
-        }
+    # Certificates will be saved into the provided cert_path
+    logger.info(
+        "Generating certificate authority (CA)", # This is line 77
+        domain="security",
+        action="generate_ca",
+        status="starting",
+        cert_dir=str(cert_path)
+    )
+
+    # Step 1: Generate "CA" Certificate (self-signed)
+    # The Certificate class generates self-signed certs.
+    # For this example, we'll generate three self-signed certs and use them
+    # in a way that satisfies the configuration structure, though not a true PKI.
+    ca_cert_obj = Certificate(
+        generate_keypair=True,
+        common_name="Example RPC CA (Self-Signed)",
+        organization_name="Pyvider Examples",
+        validity_days=365
+    )
+    ca_cert_path = cert_path / "ca.crt"
+    ca_key_path = cert_path / "ca.key"
+    with open(ca_cert_path, 'w') as f: f.write(ca_cert_obj.cert)
+    with open(ca_key_path, 'w') as f: f.write(ca_cert_obj.key)
+    logger.info("Self-signed 'CA' certificate generated", ca_cert_path=str(ca_cert_path))
+
+    # Step 2: Generate Server Certificate (self-signed)
+    server_cert_obj = Certificate(
+        generate_keypair=True,
+        common_name="localhost",
+        organization_name="Pyvider Examples Server",
+        alt_names=["localhost", "127.0.0.1"],
+        validity_days=90
+    )
+    server_cert_path = cert_path / "server.crt"
+    server_key_path = cert_path / "server.key"
+    with open(server_cert_path, 'w') as f: f.write(server_cert_obj.cert)
+    with open(server_key_path, 'w') as f: f.write(server_cert_obj.key)
+    logger.info("Self-signed Server certificate generated", server_cert_path=str(server_cert_path))
+
+    # Step 3: Generate Client Certificate (self-signed)
+    client_cert_obj = Certificate(
+        generate_keypair=True,
+        common_name="example-client",
+        organization_name="Pyvider Examples Client",
+        validity_days=30
+    )
+    client_cert_path = cert_path / "client.crt"
+    client_key_path = cert_path / "client.key"
+    with open(client_cert_path, 'w') as f: f.write(client_cert_obj.cert)
+    with open(client_key_path, 'w') as f: f.write(client_cert_obj.key)
+    logger.info("Self-signed Client certificate generated", client_cert_path=str(client_cert_path))
+
+    # Step 4: Verification (will be self-verification, not chain)
+    logger.info("Certificate self-verification (not chain)", domain="security")
+
+    # With self-signed certs, verification against a CA is not meaningful in the traditional sense.
+    # We are just checking if they are valid on their own.
+    server_valid = server_cert_obj.is_valid
+    client_valid = client_cert_obj.is_valid
+
+    logger.info(
+        "Self-signed certificate status",
+        domain="security",
+        action="self_verify",
+        status="completed",
+        server_cert_valid=server_valid,
+        client_cert_valid=client_valid,
+        chain_integrity="N/A (self-signed)"
+    )
+
+    return {
+        'ca_cert': str(ca_cert_path),
+        'ca_key': str(ca_key_path),
+        'server_cert': str(server_cert_path),
+        'server_key': str(server_key_path),
+        'client_cert': str(client_cert_path),
+        'client_key': str(client_key_path)
+    }
+# The 'with tempfile.TemporaryDirectory() as cert_dir:' block is removed from here
+# and will be moved to main()
 
 
 async def example_5_mtls_server_setup(cert_paths: dict):
@@ -318,7 +264,9 @@ async def example_5_mtls_client_connection(cert_paths: dict):
     )
     
     # Create secure client
-    client = plugin_client(transport="tcp")
+    # Using placeholder for server_path as this example part mostly simulates connection logic
+    # after mTLS config is set.
+    client = plugin_client(server_path="./dummy_server.sh")
     
     try:
         logger.info(
@@ -460,48 +408,53 @@ async def main():
     print("🔒 pyvider-rpcplugin Security & mTLS Examples")
     print("=============================================")
     
-    try:
-        # Generate certificates for examples
-        cert_paths = await example_5_certificate_generation()
-        
-        # Setup mTLS server
-        server, server_task = await example_5_mtls_server_setup(cert_paths)
+    # Create temporary directory for certificates that lasts for all example parts
+    with tempfile.TemporaryDirectory() as temp_dir_str:
+        cert_path_base = Path(temp_dir_str)
         
         try:
-            # Demonstrate mTLS client connection
-            await example_5_mtls_client_connection(cert_paths)
+            # Generate certificates for examples, passing the persistent cert_path_base
+            cert_paths = await example_5_certificate_generation(cert_path_base)
             
-            # Show certificate rotation patterns
-            await example_5_certificate_rotation()
+            # Setup mTLS server
+            server, server_task = await example_5_mtls_server_setup(cert_paths)
             
-        finally:
-            # Cleanup server
-            await server.stop()
-            await server_task
-        
-        print("\n" + "=" * 60)
-        print("✅ All Security & mTLS Examples Completed Successfully!")
-        print("=" * 60)
-        print("\n🔒 Security Best Practices:")
-        print("  • Always use mTLS in production environments")
-        print("  • Implement certificate rotation automation")
-        print("  • Monitor certificate expiration with alerts")
-        print("  • Use short-lived certificates (30-90 days)")
-        print("  • Test security changes in staging first")
-        print("\n📖 Next Steps:")
-        print("  • See example 08_production_config.py for secure deployment")
-        print("  • Check docs/security.md for comprehensive security guide")
-        print("  • Review example 07_error_handling.py for security error handling")
-        
-    except Exception as e:
-        logger.error(
-            "Security example failed",
+            try:
+                # Demonstrate mTLS client connection
+                await example_5_mtls_client_connection(cert_paths)
+
+                # Show certificate rotation patterns
+                await example_5_certificate_rotation()
+
+            finally:
+                # Cleanup server
+                if server and server_task: # Ensure they exist
+                    await server.stop()
+                    await server_task
+
+            print("\n" + "=" * 60)
+            print("✅ All Security & mTLS Examples Completed Successfully!")
+            print("=" * 60)
+            print("\n🔒 Security Best Practices:")
+            print("  • Always use mTLS in production environments")
+            print("  • Implement certificate rotation automation")
+            print("  • Monitor certificate expiration with alerts")
+            print("  • Use short-lived certificates (30-90 days)")
+            print("  • Test security changes in staging first")
+            print("\n📖 Next Steps:")
+            print("  • See example 08_production_config.py for secure deployment")
+            print("  • Check docs/security.md for comprehensive security guide")
+            print("  • Review example 07_error_handling.py for security error handling")
+
+        except Exception as e:
+            logger.error(
+                "Security example failed",
             domain="examples",
             action="run",
             status="error",
             error=str(e)
         )
-        raise
+            raise e # Explicitly raise the caught exception
 
 
 if __name__ == "__main__":

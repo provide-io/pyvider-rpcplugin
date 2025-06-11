@@ -1,8 +1,9 @@
 # tests/client/test_client_grpc.py
 
 import pytest
+import asyncio # Added
 from unittest.mock import patch, MagicMock, AsyncMock, ANY # ANY added back
-from pyvider.rpcplugin.transport import UnixSocketTransport # Import added
+from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport # Import added
 
 
 @pytest.mark.asyncio
@@ -128,3 +129,67 @@ async def test_create_grpc_channel_unix_socket(client_instance):
         
         # Verify unix prefix was used and no extra args
         mock_insecure_channel.assert_called_once_with("unix:/tmp/test.sock") # Corrected assertion
+
+@pytest.mark.asyncio
+async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
+    """Test channel ready timeout for Unix socket."""
+    client_instance._transport = mocker.MagicMock(spec=UnixSocketTransport)
+    client_instance._transport_name = "unix"
+    client_instance._address = "/tmp/test_timeout.sock" # Actual path used by transport
+    client_instance._server_cert = None # Insecure channel
+
+    mock_channel = AsyncMock()
+    mock_channel.channel_ready = AsyncMock(side_effect=asyncio.TimeoutError("Channel timed out"))
+
+    mocker.patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel', return_value=mock_channel)
+    mocker.patch('os.path.exists', return_value=True) # Assume socket file exists for the diagnostic log
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
+
+    with pytest.raises(ConnectionError, match="Failed to establish gRPC channel to plugin: timeout"):
+        await client_instance._create_grpc_channel()
+
+    mock_logger_error.assert_any_call("🚢❌ gRPC channel failed to become ready (timeout)")
+    mock_logger_error.assert_any_call("🚢❌ Socket diagnostics: path=/tmp/test_timeout.sock, exists=True")
+
+@pytest.mark.asyncio
+async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
+    """Test channel ready timeout for TCP socket."""
+    client_instance._transport = mocker.MagicMock(spec=TCPSocketTransport) # Mock TCP transport
+    client_instance._transport_name = "tcp"
+    client_instance._address = "127.0.0.1:12345"
+    client_instance._server_cert = None # Insecure channel
+
+    mock_channel = AsyncMock()
+    mock_channel.channel_ready = AsyncMock(side_effect=asyncio.TimeoutError("Channel timed out"))
+
+    mocker.patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel', return_value=mock_channel)
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
+
+    with pytest.raises(ConnectionError, match="Failed to establish gRPC channel to plugin: timeout"):
+        await client_instance._create_grpc_channel()
+
+    # Ensure the primary timeout log is there, but not the Unix-specific socket diagnostic
+    mock_logger_error.assert_any_call("🚢❌ gRPC channel failed to become ready (timeout)")
+    # Check that the Unix-specific diagnostic was NOT called
+    for call in mock_logger_error.call_args_list:
+        assert "Socket diagnostics" not in call.args[0]
+
+
+@pytest.mark.asyncio
+async def test_create_grpc_channel_ready_generic_exception(client_instance, mocker):
+    """Test generic exception during channel_ready."""
+    client_instance._transport = mocker.MagicMock(spec=TCPSocketTransport)
+    client_instance._transport_name = "tcp"
+    client_instance._address = "127.0.0.1:12345"
+    client_instance._server_cert = None
+
+    mock_channel = AsyncMock()
+    mock_channel.channel_ready = AsyncMock(side_effect=RuntimeError("Other connection issue"))
+
+    mocker.patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel', return_value=mock_channel)
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
+
+    with pytest.raises(ConnectionError, match="Failed to establish gRPC channel to plugin: Other connection issue"):
+        await client_instance._create_grpc_channel()
+
+    mock_logger_error.assert_any_call("🚢❌ gRPC channel failed: Other connection issue")

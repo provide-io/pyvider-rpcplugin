@@ -63,6 +63,31 @@ async def test_launch_process_error(client_instance):
             await client_instance._launch_process()
 
 @pytest.mark.asyncio
+async def test_launch_process_with_config_env(client_instance, mocker):
+    """Test that _launch_process correctly uses env vars from client config."""
+    client_instance._process = None  # Ensure process is not considered running
+    client_instance.config = {"env": {"MY_VAR": "my_value", "OTHER_VAR": "other_value"}}
+
+    mock_popen = mocker.patch('pyvider.rpcplugin.client.base.subprocess.Popen')
+    mock_process_obj = mocker.MagicMock()
+    mock_popen.return_value = mock_process_obj
+
+    await client_instance._launch_process()
+
+    mock_popen.assert_called_once()
+    args, kwargs = mock_popen.call_args
+
+    # Check that PYTHONUNBUFFERED is still there
+    assert 'PYTHONUNBUFFERED' in kwargs['env']
+    assert kwargs['env']['PYTHONUNBUFFERED'] == '1'
+
+    # Check for custom env vars
+    assert 'MY_VAR' in kwargs['env']
+    assert kwargs['env']['MY_VAR'] == 'my_value'
+    assert 'OTHER_VAR' in kwargs['env']
+    assert kwargs['env']['OTHER_VAR'] == 'other_value'
+
+@pytest.mark.asyncio
 async def test_connect_tcp_transport(client_instance): # Removed mock_transport fixture
     """Test connecting to a TCP transport."""
     mock_tcp_transport = AsyncMock() 

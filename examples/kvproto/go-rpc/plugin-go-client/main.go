@@ -1,17 +1,14 @@
-//
+
 // pyvider-rpcplugin/examples/kvproto/go-plugin/plugin-go-client/main.go
-//
 
 package main
 
 import (
-    "flag"
     "fmt"
     "os"
     "os/exec"
     "strconv"
     "time"
-    "strings" // Required for strings.ToUpper
 
     //"crypto/tls"
     "crypto/x509"
@@ -21,9 +18,6 @@ import (
     "github.com/hashicorp/go-plugin"
     "github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin/shared"
 )
-
-// Global flag variable for log level
-var logLevelFlag string
 
 // DisplayCertificate logs the certificate details.
 func displayCertificate(cert *x509.Certificate) {
@@ -41,36 +35,11 @@ func displayCertificate(cert *x509.Certificate) {
     fmt.Println(string(pemBytes))
 }
 
-func run(args []string) error {
-    // Determine log level from flag
-    parsedLevel := hclog.Warn // Default to WARN
-    switch strings.ToUpper(logLevelFlag) {
-    case "TRACE":
-        parsedLevel = hclog.Trace
-    case "DEBUG":
-        parsedLevel = hclog.Debug
-    case "INFO":
-        parsedLevel = hclog.Info
-    case "WARN":
-        parsedLevel = hclog.Warn
-    case "ERROR":
-        parsedLevel = hclog.Error
-    case "OFF":
-        parsedLevel = hclog.Off
-    default:
-        // This case should ideally not be reached if flag parsing works with a default.
-        // However, if logLevelFlag somehow contains an unexpected value after parsing,
-        // this provides a fallback.
-        // If flag has a default, this message might appear if default is invalid,
-        // or if user provides an invalid value not caught by flag package's own validation (if any).
-        fmt.Fprintf(os.Stderr, "⚠️ Invalid log level '%s' provided. Defaulting to WARN.\n", logLevelFlag)
-        // parsedLevel is already hclog.Warn
-    }
-
-    // Create logger with the determined level
+func run() error {
+    // Create logger with more verbose debugging
     logger := hclog.New(&hclog.LoggerOptions{
-        Name:       "🐿️ C> kv-client",
-        Level:      parsedLevel, // Use parsed level
+        Name:       "🌐 kv-client",
+        Level:      hclog.Trace,
         Output:     os.Stderr,
         JSONFormat: false,
     })
@@ -84,21 +53,13 @@ func run(args []string) error {
 
     logger.Info("🚀 starting KV client application")
 
-    // Determine plugin path: flag overrides environment variable
-    var pluginPath string
-    if serverPathFlag != nil && *serverPathFlag != "" {
-        pluginPath = *serverPathFlag
-        logger.Debug("🔌 using server path from --server-path flag", "path", pluginPath)
-    } else {
-        pluginPath = os.Getenv("PLUGIN_SERVER_PATH")
-        logger.Debug("🔌 using server path from PLUGIN_SERVER_PATH env var", "path", pluginPath)
-    }
-
+    // Validate environment variables
+    pluginPath := os.Getenv("PLUGIN_SERVER_PATH")
     if pluginPath == "" {
-        logger.Error("🔍❌ plugin server path must be set via --server-path flag or PLUGIN_SERVER_PATH environment variable")
-        return fmt.Errorf("plugin server path must be set via --server-path flag or PLUGIN_SERVER_PATH environment variable")
+        logger.Error("🔍❌ PLUGIN_SERVER_PATH environment variable must be set")
+        return fmt.Errorf("PLUGIN_SERVER_PATH environment variable must be set")
     }
-    logger.Info("🔌 Using server executable", "path", pluginPath) // Log level changed and message added
+    logger.Debug("🔍✅ found PLUGIN_SERVER_PATH path", "path", pluginPath)
 
     // Verify plugin executable exists
     if _, err := os.Stat(pluginPath); os.IsNotExist(err) {
@@ -113,7 +74,7 @@ func run(args []string) error {
         var err error
         autoMTLS, err = strconv.ParseBool(envAutoMTLS)
         if err != nil {
-            logger.Warn("🔐⚠️ invalid PLUGIN_AUTO_MTLS value, defaulting to enabled",
+            logger.Warn("🔐⚠️ invalid PLUGIN_AUTO_MTLS value, defaulting to enabled", 
                 "value", envAutoMTLS,
                 "error", err)
         }
@@ -160,7 +121,7 @@ func run(args []string) error {
     }()
 
     // Connect via RPC
-    logger.Info("🤝 attempting to establish RPC connection") // Log level changed
+    logger.Debug("🤝 attempting to establish RPC connection")
     rpcClient, err := client.Client()
     if err != nil {
         logger.Error("🤝❌ failed to create RPC client",
@@ -168,10 +129,10 @@ func run(args []string) error {
             "error_type", fmt.Sprintf("%T", err))
         return fmt.Errorf("error creating RPC client: %w", err)
     }
-    logger.Info("🤝✅ RPC connection established") // Log level changed
+    logger.Debug("🤝✅ RPC connection established")
 
     // Get the RPC address
-    logger.Info("🔌 starting RPC client") // Log level changed
+    logger.Debug("🔌 starting RPC client")
     rpcAddr, err := client.Start()
     if err != nil {
         logger.Error("🔌❌ failed to start RPC client", "error", err)
@@ -182,7 +143,7 @@ func run(args []string) error {
 protocol := client.Protocol()
 version := client.NegotiatedVersion()
 
-logger.Info("🔌✅ RPC client started successfully", // Log level changed
+logger.Debug("🔌✅ RPC client started successfully",
     "network", rpcAddr.Network(),
     "address", rpcAddr.String(),
     "protocol", protocol,
@@ -218,7 +179,7 @@ logger.Info("🔌✅ RPC client started successfully", // Log level changed
     logger.Debug("✅ type assertion successful")
 
     // Process commands
-    if err := handleCommand(logger, kv, args); err != nil {
+    if err := handleCommand(logger, kv); err != nil {
         return err
     }
 
@@ -226,109 +187,58 @@ logger.Info("🔌✅ RPC client started successfully", // Log level changed
     return nil
 }
 
-func handleCommand(logger hclog.Logger, kv shared.KV, args []string) error { // Added args []string
-    // args now contains only the command and its parameters, after flag parsing.
-    // Example: ["get", "mykey"] or ["put", "mykey", "myvalue"]
-
-    if len(args) < 1 {
-        // This case should ideally be caught in main() before calling run(),
-        // but as a safeguard / for clarity if handleCommand was called directly.
-        logger.Error("❌ internal error: handleCommand called with no arguments")
-        // flag.Usage() might be more appropriate if this were user-facing,
-        // but this indicates a programming error if reached.
-        return fmt.Errorf("internal error: no command provided to handleCommand")
+func handleCommand(logger hclog.Logger, kv shared.KV) error {
+    if len(os.Args) < 2 {
+        logger.Error("❌ insufficient command line arguments")
+        return fmt.Errorf("usage: %s [get|put] key [value]", os.Args[0])
     }
 
-    command := args[0]
-    switch command {
+    switch os.Args[1] {
     case "get":
-        if len(args) != 2 {
-            logger.Error("❌ invalid number of arguments for 'get' operation", "expected_count", 1, "actual_count", len(args)-1, "arguments", args[1:])
-            // Suggest correct usage, flag.Usage() could also be an option if accessible easily.
-            return fmt.Errorf("usage: get <key>")
+        if len(os.Args) != 3 {
+            logger.Error("❌ invalid number of arguments for get operation")
+            return fmt.Errorf("usage: %s get key", os.Args[0])
         }
-        key := args[1]
-        logger.Info("📥 executing get operation", "key", key) // Log level changed
-        result, err := kv.Get(key)
+        logger.Debug("📥 executing get operation", "key", os.Args[2])
+        result, err := kv.Get(os.Args[2])
         if err != nil {
             logger.Error("📥❌ get operation failed",
-                "key", key,
+                "key", os.Args[2],
                 "error", err)
-            return fmt.Errorf("error getting value for key '%s': %w", key, err)
+            return fmt.Errorf("error getting value: %w", err)
         }
-        logger.Info("📥✅ get operation successful", // Log level changed
-            "key", key,
+        logger.Debug("📥✅ get operation successful",
+            "key", os.Args[2],
             "value_length", len(result))
         fmt.Println(string(result))
 
     case "put":
-        if len(args) != 3 {
-            logger.Error("❌ invalid number of arguments for 'put' operation", "expected_count", 2, "actual_count", len(args)-1, "arguments", args[1:])
-            return fmt.Errorf("usage: put <key> <value>")
+        if len(os.Args) != 4 {
+            logger.Error("❌ invalid number of arguments for put operation")
+            return fmt.Errorf("usage: %s put key value", os.Args[0])
         }
-        key := args[1]
-        value := args[2]
-        logger.Info("📤 executing put operation", // Log level changed
-            "key", key,
-            "value_length", len(value))
-        if err := kv.Put(key, []byte(value)); err != nil {
+        logger.Debug("📤 executing put operation",
+            "key", os.Args[2],
+            "value_length", len(os.Args[3]))
+        if err := kv.Put(os.Args[2], []byte(os.Args[3])); err != nil {
             logger.Error("📤❌ put operation failed",
-                "key", key,
+                "key", os.Args[2],
                 "error", err)
-            return fmt.Errorf("error putting value for key '%s': %w", key, err)
+            return fmt.Errorf("error putting value: %w", err)
         }
-        logger.Info("📤✅ successfully put value", "key", key)
+        logger.Info("📤✅ successfully put value", "key", os.Args[2])
 
     default:
-        logger.Error("❓❌ unknown command", "command", command)
-        // Suggest running with --help for usage details.
-        return fmt.Errorf("unknown command: %q. Expected 'get' or 'put'.\nRun with --help for usage.", command)
+        logger.Error("❓❌ unknown command", "command", os.Args[1])
+        return fmt.Errorf("unknown command: %q (use 'get' or 'put')", os.Args[1])
     }
 
     return nil
 }
 
-// serverPathFlag is a pointer to the string value of the --server-path flag.
-// It's defined globally so it can be accessed in run() if needed, though primarily used in main.
-var serverPathFlag *string
-// logLevelFlag is already defined globally
-
 func main() {
-    // Define flags
-    // The serverPathFlag is defined globally so it can be accessed in `run`
-    serverPathFlag = flag.String("server-path", "", "Path to the server executable. Overrides PLUGIN_SERVER_PATH environment variable.")
-    // Define the log-level flag
-    flag.StringVar(&logLevelFlag, "log-level", "WARN", "Set the logging level (TRACE, DEBUG, INFO, WARN, ERROR, OFF)")
-
-    // originalUsage := flag.Usage // This line will be removed
-    flag.Usage = func() {
-        // Using flag.CommandLine.Output() for consistent output channel (defaults to os.Stderr)
-        fmt.Fprintf(flag.CommandLine.Output(), "Usage: %s [--server-path <path>] [--log-level <level>] <get|put> <key> [value]\n\n", os.Args[0])
-        fmt.Fprintf(flag.CommandLine.Output(), "Commands:\n")
-        fmt.Fprintf(flag.CommandLine.Output(), "  get <key>          Get a value for a key\n")
-        fmt.Fprintf(flag.CommandLine.Output(), "  put <key> <value>  Put a key/value pair\n\n")
-        fmt.Fprintf(flag.CommandLine.Output(), "Flags:\n")
-        flag.PrintDefaults()
-    }
-    flag.Parse()
-
-    // Get non-flag arguments (the command and its parameters)
-    args := flag.Args()
-
-    // Validate command is present
-    if len(args) < 1 {
-        // Log directly to Stderr as logger might not be initialized if run() isn't called.
-        fmt.Fprintf(os.Stderr, "❌ Error: No command provided. Expected 'get' or 'put'.\n")
-        flag.Usage()
-        os.Exit(1)
-    }
-
-    // Pass non-flag arguments to run
-    if err := run(args); err != nil {
-        // Logger might not be initialized yet, or error happened before logger, so use fmt.Fprintf
-        // The run() function's logger will handle logging for errors within run() itself.
-        // This Fprintf is for errors returned by run() that prevent logger initialization or occur very early.
-        fmt.Fprintf(os.Stderr, "❌ Error executing command: %v\n", err)
+    if err := run(); err != nil {
+        fmt.Fprintf(os.Stderr, "❌ error: %v\n", err)
         os.Exit(1)
     }
 }

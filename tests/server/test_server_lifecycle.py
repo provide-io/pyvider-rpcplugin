@@ -377,4 +377,115 @@ async def test_serve_and_stop_no_unawaited_warning(
     # Success if we made it here without errors
     assert True
 
+
+@pytest.mark.asyncio
+async def test_attrs_post_init_handshake_config_error(mocker):
+    """
+    Test that if HandshakeConfig.from_server_config raises an error during
+    RPCPluginServer instantiation, that error is propagated.
+    """
+    # Mock HandshakeConfig.from_server_config to raise a ValueError
+    mocker.patch(
+        "pyvider.rpcplugin.server.HandshakeConfig",
+        side_effect=ValueError("Test HandshakeConfig error"),
+    )
+
+    with pytest.raises(ValueError, match="Test HandshakeConfig error"):
+        RPCPluginServer(
+            protocol=mock_server_protocol,  # Using a valid mock protocol
+            handler=mock_server_handler,    # Using a valid mock handler
+            config=None,                    # Config can be None
+            transport=None,                 # Transport can be None
+        )
+
+
+@pytest.mark.asyncio
+async def test_del_method_logging_with_endpoint(
+    mock_server_protocol,
+    mock_server_handler,
+    mocker, # Changed from caplog to mocker
+):
+    """Test __del__ logging when _transport.endpoint exists and server not stopped."""
+    mock_logger_warning = mocker.patch("pyvider.rpcplugin.server.logger.warning")
+
+    mock_transport_instance = mocker.MagicMock()
+    mock_transport_instance.endpoint = "unix:/tmp/specific_socket.sock"
+    mock_transport_instance.close = AsyncMock()
+
+    server_instance = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None,
+        transport=mock_transport_instance,
+    )
+    # server_instance._serving_future is not set to done, simulating server not stopped
+
+    del server_instance
+    gc.collect() # Try with gc.collect first
+
+    # Check if any call to logger.warning matches the expected message
+    found_expected_call = False
+    for call_args in mock_logger_warning.call_args_list:
+        args, _ = call_args
+        if "RPCPluginServer for unix:/tmp/specific_socket.sock was not explicitly stopped" in args[0]:
+            found_expected_call = True
+            break
+    assert found_expected_call, \
+        f"Expected log message not found. Actual calls: {mock_logger_warning.call_args_list}"
+
+
+@pytest.mark.asyncio
+async def test_del_method_logging_with_port_only(
+    mock_server_protocol,
+    mock_server_handler,
+    mocker, # Changed from caplog to mocker
+):
+    """Test __del__ logging when _transport.endpoint is None, _port exists, and server not stopped."""
+    mock_logger_warning = mocker.patch("pyvider.rpcplugin.server.logger.warning")
+
+    mock_transport_instance = mocker.MagicMock()
+    mock_transport_instance.endpoint = None # Explicitly None
+    mock_transport_instance.close = AsyncMock()
+
+    server_instance = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None,
+        transport=mock_transport_instance,
+    )
+    server_instance._port = 54321 # Set a port
+    # server_instance._serving_future is not set to done
+
+    del server_instance
+    gc.collect()
+
+    mock_logger_warning.assert_called_once()
+    args, _ = mock_logger_warning.call_args
+    assert "RPCPluginServer for port 54321 was not explicitly stopped" in args[0]
+
+
+@pytest.mark.asyncio
+async def test_del_method_logging_unknown_endpoint(
+    mock_server_protocol,
+    mock_server_handler,
+    mocker, # Changed from caplog to mocker
+):
+    """Test __del__ logging when transport/port are unavailable and server not stopped."""
+    mock_logger_warning = mocker.patch("pyvider.rpcplugin.server.logger.warning")
+
+    server_instance = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None,
+        transport=None, # No transport
+    )
+    # server_instance._serving_future is not set to done
+
+    del server_instance
+    gc.collect()
+
+    mock_logger_warning.assert_called_once()
+    args, _ = mock_logger_warning.call_args
+    assert "RPCPluginServer for unknown endpoint was not explicitly stopped" in args[0]
+
 ### 🐍🏗🧪️

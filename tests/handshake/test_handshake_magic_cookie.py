@@ -149,3 +149,16 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
         validate_magic_cookie(
             magic_cookie_key="KEY", magic_cookie_value="EXPECTED", magic_cookie="WRONG"
         )
+
+def test_validate_magic_cookie_explicit_none_empty_key(mocker):
+    """Test validate_magic_cookie when magic_cookie_key is explicitly None or empty."""
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+
+    with pytest.raises(HandshakeError, match="cookie_key not found"):
+        validate_magic_cookie(magic_cookie_key=None, magic_cookie_value="value", magic_cookie="cookie")
+    mock_logger_error.assert_called_with("🍪🪄❌ cookie_key not found")
+    mock_logger_error.reset_mock()
+
+    with pytest.raises(HandshakeError, match="cookie_key not found"):
+        validate_magic_cookie(magic_cookie_key="", magic_cookie_value="value", magic_cookie="cookie")
+    mock_logger_error.assert_called_with("🍪🪄❌ cookie_key not found")

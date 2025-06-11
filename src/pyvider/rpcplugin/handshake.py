@@ -64,6 +64,8 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
     Raises:
       TransportError: If no compatible transport can be negotiated or an error occurs during negotiation.
     """
+    import tempfile # Ensure tempfile is imported here for use below
+
     logger.debug(
         f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
     )

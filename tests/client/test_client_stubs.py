@@ -2,6 +2,7 @@
 
 import pytest
 import asyncio
+import grpc # Added for grpc.RpcError
 from unittest.mock import patch, MagicMock, AsyncMock, ANY # Keep ANY if other tests need it
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
 try:
@@ -183,3 +184,95 @@ async def test_open_broker_subchannel_no_stub(client_instance): # Removed capsys
     # assert "Broker stub not initialized; cannot open subchannel." in log_output # Commenting out due to capture issues
     # The log message is visually confirmed in pytest's "Captured stderr call" output.
     # The primary functional check here is that _broker_task is None.
+
+@pytest.mark.asyncio
+async def test_read_stdio_logs_stream_exception(client_instance, mocker):
+    """Test _read_stdio_logs when the stdio stream raises an exception."""
+    mock_stdio_stub_instance = AsyncMock()
+    client_instance._stdio_stub = mock_stdio_stub_instance
+
+    # Define an async generator function that raises an error
+    async def mock_stream_generator_with_error(*args, **kwargs):
+        yield MagicMock(channel=1, data=b"some initial log")
+        await asyncio.sleep(0.001) # Ensure it's a generator
+        raise grpc.RpcError("Simulated RPC error in stream")
+
+    mock_stdio_stub_instance.StreamStdio = MagicMock(return_value=mock_stream_generator_with_error())
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+
+    # The method should catch the exception and log it, then exit gracefully.
+    await client_instance._read_stdio_logs()
+
+    mock_stdio_stub_instance.StreamStdio.assert_called_once()
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Error reading plugin stdio stream" in args[0]
+    assert "Simulated RPC error in stream" in kwargs.get("extra", {}).get("trace", "")
+
+@pytest.mark.asyncio
+async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
+    """Test open_broker_subchannel when server replies with knock.ack = False."""
+    mock_broker_stub_instance = AsyncMock()
+    client_instance._broker_stub = mock_broker_stub_instance
+
+    mock_call_object = AsyncMock()
+    mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_call_object)
+
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+
+    async def mock_response_gen_func_error_ack():
+        response_message = MagicMock()
+        response_message.service_id = 456
+        response_message.knock.ack = False
+        response_message.knock.error = "Failed to establish subchannel"
+        response_message = MagicMock()
+        response_message.service_id = 456
+        response_message.knock.ack = False
+        response_message.knock.error = "Failed to establish subchannel"
+        yield response_message
+
+    # Configure the mock_call_object to be an async iterator
+    # mock_call_object.__aiter__.return_value = mock_response_gen_func_error_ack() # Old approach
+
+    # New approach: make mock_call_object the async iterator and mock __anext__
+    mock_call_object.__aiter__ = lambda self: self # Make it its own async iterator
+
+    response_message = MagicMock()
+    response_message.service_id = 456
+    response_message.knock.ack = False
+    response_message.knock.error = "Failed to establish subchannel"
+
+    # __anext__ should yield the message then raise StopAsyncIteration
+    mock_call_object.__anext__.side_effect = [response_message, StopAsyncIteration]
+
+
+    await client_instance.open_broker_subchannel(456, "127.0.0.1:8002")
+    assert client_instance._broker_task is not None # Task created
+    try:
+        await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
+    except asyncio.TimeoutError:
+        pytest.fail("Broker coroutine timed out in knock_ack_false test")
+
+    mock_logger_error.assert_called_once()
+    args, _ = mock_logger_error.call_args
+    assert "Subchannel open failed: Failed to establish subchannel" in args[0]
+
+@pytest.mark.asyncio
+async def test_shutdown_plugin_rpc_error(client_instance, mocker):
+    """Test shutdown_plugin when the RPC call to controller.Shutdown fails."""
+    mock_controller_stub = AsyncMock() # Use AsyncMock for the stub itself
+    client_instance._controller_stub = mock_controller_stub
+
+    # Configure the Shutdown method (which is an AsyncMock itself if generated from AsyncMock stub)
+    # to raise an RpcError
+    mock_controller_stub.Shutdown = AsyncMock(side_effect=grpc.RpcError("Shutdown RPC failed"))
+
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+
+    await client_instance.shutdown_plugin()
+
+    mock_controller_stub.Shutdown.assert_called_once()
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Error calling Shutdown()" in args[0]
+    assert "Shutdown RPC failed" in kwargs.get("extra", {}).get("trace", "")

@@ -28,8 +28,7 @@ uv venv
 echo "📦 Syncing dependencies using uv..."
 # Ensure all dependency groups, including 'dev', are synced.
 uv sync --all-groups
-echo "Attempting editable install with $HOME/.local/bin/uv..."
-$HOME/.local/bin/uv pip install -e .
+uv pip install -e .
 
 echo "🔗 Activating virtual environment..."
 source .venv/bin/activate

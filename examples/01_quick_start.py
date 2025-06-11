@@ -16,6 +16,7 @@ if src_path.exists() and str(src_path) not in sys.path:
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
     plugin_client, 
+    plugin_protocol,
     create_basic_protocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
@@ -126,7 +127,7 @@ async def example_1_basic_client(): # No server_path needed if using dummy execu
     )
     
     # plugin_client expects path to an executable
-    client = plugin_client(server_path="./dummy_server.sh") 
+    client = plugin_client(server_path="./dummy_server.sh")
     
     try:
         # Start the client (launches subprocess, handshake)
@@ -234,17 +235,17 @@ async def main():
     
     # Server part: Start a real server.
     # Client part: Will use plugin_client with dummy_server.sh, so it's independent.
-    
+
     # --- Server Setup and Run ---
     server_protocol = create_basic_protocol()
     server_handler = SimpleGreeterHandler()
     actual_server = plugin_server(
         protocol=server_protocol,
         handler=server_handler,
-        transport="unix" 
+        transport="unix"
     )
     server_task = None
-    
+
     try:
         logger.info("Starting actual server for example...")
         # The server will print its handshake string to stdout here.
@@ -258,7 +259,7 @@ async def main():
 
         # --- Client Run (uses dummy_server.sh, independent of actual_server) ---
         await example_1_basic_client() # No longer needs server_path from actual_server
-        
+
         # --- Conceptual Workflow ---
         await example_1_full_workflow() # This logs conceptual steps
 
