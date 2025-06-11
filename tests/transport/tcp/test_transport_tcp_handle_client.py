@@ -24,12 +24,25 @@ async def test_handle_client_echoes_data():
 
     # Configure reader.read to return specific data then empty bytes to end loop
     test_data = b"hello world"
-    reader.read.side_effect = [test_data, b""]
+
+    async def read_side_effect_func(*args, **kwargs):
+        if not hasattr(read_side_effect_func, 'call_count'):
+            read_side_effect_func.call_count = 0
+
+        read_side_effect_func.call_count += 1
+        if read_side_effect_func.call_count == 1:
+            return test_data
+        else:
+            return b"" # Subsequent calls, including the one that breaks the loop, return empty bytes
+
+    reader.read.side_effect = read_side_effect_func
     writer.get_extra_info.return_value = ("127.0.0.1", 12345) # for logging
 
     await transport._handle_client(reader, writer)
 
-    reader.read.assert_any_call(100)
+    # Check that read was called at least twice (once for data, once for EOF)
+    assert reader.read.call_count >= 2
+    reader.read.assert_any_call(100) # Check if it was called with 100 at least once
     writer.write.assert_called_once_with(test_data)
     writer.drain.assert_called_once()
     writer.close.assert_called_once()

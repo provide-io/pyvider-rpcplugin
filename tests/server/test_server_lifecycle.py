@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+import builtins # Add import for builtins
 import pytest
 from io import StringIO
 import gc
@@ -510,7 +511,8 @@ async def test_wait_for_server_ready_unix_path_none(
 
     # We need to ensure that the match self._transport results in UnixSocketTransport
     # The spec on MagicMock should handle isinstance, but let's be safe
-    mocker.patch('builtins.isinstance', lambda obj, cls: True if cls == UnixSocketTransport else isinstance(obj, cls))
+    original_isinstance = builtins.isinstance
+    mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == UnixSocketTransport else original_isinstance(obj, cls_check))
 
 
     with pytest.raises(TimeoutError, match="Unix socket path not set for readiness check"):
@@ -536,7 +538,8 @@ async def test_wait_for_server_ready_unix_file_not_exists(
 
     mocker.patch('os.path.exists', return_value=False)
     # As before, ensuring isinstance check passes for the match statement
-    mocker.patch('builtins.isinstance', lambda obj, cls: True if cls == UnixSocketTransport else isinstance(obj, cls))
+    original_isinstance = builtins.isinstance
+    mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == UnixSocketTransport else original_isinstance(obj, cls_check))
 
     with pytest.raises(TimeoutError, match="Unix socket file not created"):
         await server.wait_for_server_ready(timeout=0.1)
@@ -563,7 +566,8 @@ async def test_wait_for_server_ready_tcp_port_none(
     server._serving_event.set()
 
     # Ensure isinstance check passes for the match statement
-    mocker.patch('builtins.isinstance', lambda obj, cls: True if cls == TCPSocketTransport else isinstance(obj, cls))
+    original_isinstance = builtins.isinstance
+    mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == TCPSocketTransport else original_isinstance(obj, cls_check))
 
     with pytest.raises(TimeoutError, match="TCP port not available for readiness check"):
         await server.wait_for_server_ready(timeout=0.1)
@@ -592,7 +596,8 @@ async def test_wait_for_server_ready_tcp_connect_fails(
     mock_socket_instance.close = mocker.MagicMock()
 
     mocker.patch('socket.socket', return_value=mock_socket_instance)
-    mocker.patch('builtins.isinstance', lambda obj, cls: True if cls == TCPSocketTransport else isinstance(obj, cls))
+    original_isinstance = builtins.isinstance
+    mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == TCPSocketTransport else original_isinstance(obj, cls_check))
 
     with pytest.raises(TimeoutError, match="TCP socket not connectable: Connection refused by mock"):
         await server.wait_for_server_ready(timeout=0.1) # Short timeout for test speed
@@ -629,8 +634,13 @@ async def test_wait_for_server_ready_unix_connect_fails(
     mock_socket_instance.close = mocker.MagicMock()
 
     mocker.patch('socket.socket', return_value=mock_socket_instance)
-    mocker.patch('builtins.isinstance', lambda obj, cls: True if cls == TCPSocketTransport else isinstance(obj, cls))
-    mocker.patch('builtins.isinstance', lambda obj, cls: True if cls == UnixSocketTransport else isinstance(obj, cls))
+    original_isinstance = builtins.isinstance
+    # This lambda needs to handle both UnixSocketTransport and potentially TCPSocketTransport if it's part of a complex check.
+    # However, the specific problem context is usually one type. If only UnixSocketTransport is relevant for this test's match statement:
+    mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == UnixSocketTransport else original_isinstance(obj, cls_check))
+    # If the code being tested *could* check against TCPSocketTransport as well in the same logic block:
+    # mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check in (UnixSocketTransport, TCPSocketTransport) else original_isinstance(obj, cls_check))
+    # For now, assuming the simpler, more common case where it's checking for one specific type in the match.
 
     with pytest.raises(TimeoutError, match="Unix socket not connectable: Unix connect failed"):
         await server.wait_for_server_ready(timeout=0.1)
