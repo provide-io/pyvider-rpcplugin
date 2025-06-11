@@ -97,5 +97,23 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
     # Verify that the data was echoed back.
     assert fake_writer.data == b"echo"
 
+@pytest.mark.asyncio
+async def test_handle_connection_task_done_exception_logs_error(mocker):
+    """Test _handle_connection_task_done when the task raised an exception."""
+    transport = UnixSocketTransport(path="/tmp/dummy.sock")
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.transport.unix.logger.error')
+
+    mock_task = mocker.MagicMock(spec=asyncio.Task)
+    mock_task.done.return_value = True
+    test_exception = Exception("Client task failed with error")
+    mock_task.exception.return_value = test_exception
+
+    transport._handle_connection_task_done(mock_task)
+
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Client connection task failed" in args[0]
+    assert kwargs.get("exc_info") == test_exception
+
 
 ################################################################################

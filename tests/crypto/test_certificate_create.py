@@ -90,5 +90,47 @@ async def test_create_invalid_key_type() -> None:
     with pytest.raises(CertificateError, match="Unsupported key type: 123"):
         CertificateBase.create(config)
 
+def test_certificate_base_create_unsupported_key_type_str(mocker):
+    """Test CertificateBase.create with an unsupported string for key_type in config."""
+    now = datetime.now(timezone.utc)
+    # Prepare a config with an unsupported key_type string
+    config: CertificateConfig = {
+        "common_name": "test_unsupported",
+        "organization": "Test Org",
+        "alt_names": ["test.unsupported.local"],
+        "key_type": "unsupported_key_type", # This is the invalid part
+        "not_valid_before": now - timedelta(days=1),
+        "not_valid_after": now + timedelta(days=30),
+    }
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.crypto.certificate.logger.error')
+
+    with pytest.raises(CertificateError) as excinfo:
+        CertificateBase.create(config) # type: ignore # Deliberately passing invalid type for key_type
+
+    assert "Internal Error: Unsupported key type: unsupported_key_type" in str(excinfo.value)
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "CertificateBase.create: Failed" in args[0]
+    assert "Unsupported key type: unsupported_key_type" in kwargs.get("extra", {}).get("error", "")
+
+@pytest.mark.asyncio # Keep async if other tests are, though this one is sync
+async def test_certificate_init_invalid_ecdsa_curve(mocker):
+    """Test Certificate instantiation with an invalid ecdsa_curve string."""
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.crypto.certificate.logger.error')
+
+    with pytest.raises(CertificateError) as excinfo:
+        Certificate(
+            generate_keypair=True,
+            key_type="ecdsa",
+            ecdsa_curve="invalid_curve_name"
+        )
+
+    # The ValueError from bad curve is wrapped in CertificateError
+    assert "Unsupported ECDSA curve: invalid_curve_name" in str(excinfo.value.__cause__)
+
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Certificate.__attrs_post_init__: Failed" in args[0]
+    assert "Unsupported ECDSA curve: invalid_curve_name" in kwargs.get("extra", {}).get("error", "")
 
 ### 🐍🏗🧪️

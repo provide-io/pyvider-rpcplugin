@@ -232,6 +232,19 @@ def shutdown_event() -> Event:
 def controller_service(shutdown_event, stdio_service):
     return GRPCControllerService(shutdown_event, stdio_service)
 
+def test_controller_service_init_default_shutdown_event(mocker):
+    """Test GRPCControllerService init with default shutdown_event."""
+    mock_stdio_service = mocker.MagicMock(spec=GRPCStdioService)
+
+    # Instantiate with shutdown_event=None to trigger fallback
+    controller_service = GRPCControllerService(
+        shutdown_event=None, stdio_service=mock_stdio_service
+    )
+
+    assert controller_service._shutdown_event is not None
+    assert isinstance(controller_service._shutdown_event, asyncio.Event)
+    assert not controller_service._shutdown_event.is_set() # New event should not be set
+
 @pytest.mark.asyncio
 async def test_controller_shutdown(controller_service, mock_context, shutdown_event) -> None:
     with patch.object(controller_service, '_delayed_shutdown', new_callable=AsyncMock):

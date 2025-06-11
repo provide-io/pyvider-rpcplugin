@@ -186,4 +186,50 @@ async def test_negotiate_handshake_from_config(
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
 
+@pytest.mark.asyncio
+async def test_negotiate_handshake_transport_is_tuple(
+    mocker, mock_server_protocol, mock_server_handler, mock_server_config
+):
+    """Test _negotiate_handshake when self.transport is a tuple."""
+
+    # Create a server instance. We will manually set its .transport attribute.
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config, # Use the fixture that provides global rpcplugin_config
+        transport=None, # Initial transport is None
+    )
+
+    # Manually set the server's transport to a tuple, as if it was configured that way
+    # This simulates the condition `isinstance(self.transport, tuple) and len(self.transport) >= 2`
+    mock_actual_transport_instance = mocker.MagicMock(spec=TCPSocketTransport) # e.g. a TCPSocketTransport
+    mock_actual_transport_instance.endpoint = "127.0.0.1:1234"
+
+    server.transport = ("tcp", mock_actual_transport_instance) # Set the tuple
+
+    # Mock a callable for supported_transports in HandshakeConfig
+    # This part of the code isn't hit if server.transport is already a tuple.
+    # The code directly uses the tuple:
+    #   if isinstance(self.transport, tuple) and len(self.transport) >= 2:
+    #       self._transport_name, self._transport = self.transport[0], self.transport[1]
+    # So, no need to mock supported_transports or negotiate_transport for this specific path.
+
+    # Mock validate_magic_cookie and negotiate_protocol_version to prevent side effects
+    mocker.patch('pyvider.rpcplugin.handshake.validate_magic_cookie')
+    mocker.patch('pyvider.rpcplugin.handshake.negotiate_protocol_version', return_value=1)
+    mock_logger_debug = mocker.patch('pyvider.rpcplugin.server.logger.debug')
+
+    await server._negotiate_handshake()
+
+    # Assert that the transport name and instance were correctly unpacked from the tuple
+    assert server._transport_name == "tcp"
+    assert server._transport == mock_actual_transport_instance
+
+    # Check for the specific log message
+    found_log = any(
+        "Transport tuple provided; unpacked transport." in call_args[0][0]
+        for call_args in mock_logger_debug.call_args_list
+    )
+    assert found_log, "Log for transport tuple unpacking not found"
+
 ### 🐍🏗🧪️
