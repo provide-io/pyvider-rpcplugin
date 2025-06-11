@@ -317,7 +317,7 @@ class GRPCControllerService(GRPCControllerServicer):
             shutdown_event: An asyncio.Event to signal plugin shutdown.
             stdio_service: The GRPCStdioService instance to also shutdown.
         """
-        self._shutdown_event = shutdown_event
+        self._shutdown_event = shutdown_event or asyncio.Event() # Ensure an event is always present
         self._stdio_service = stdio_service
 
     async def Shutdown(self, request: CEmpty, context: Any) -> CEmpty: # Type hints for gRPC params
