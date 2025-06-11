@@ -32,6 +32,181 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport) -> N
     assert cert == "client_cert"
 
 @pytest.mark.asyncio
+async def test_read_client_cert_from_instance_config(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
+    """Test _read_client_cert when PLUGIN_CLIENT_CERT is in instance config."""
+
+    mock_instance_config = mocker.MagicMock()
+    mock_instance_config.get.return_value = "instance_client_cert_path"
+
+    # Mock global config to ensure instance config is preferred
+    mocker.patch.object(rpcplugin_config, 'get', return_value="global_client_cert_path")
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_instance_config, # Pass the mocked instance config
+        transport=mock_server_transport,
+    )
+
+    cert_path = server._read_client_cert()
+    assert cert_path == "instance_client_cert_path"
+    mock_instance_config.get.assert_called_once_with("PLUGIN_CLIENT_CERT")
+    rpcplugin_config.get.assert_not_called() # Global should not be called if instance config has it
+
+@pytest.mark.asyncio
+async def test_read_client_cert_from_global_config_if_not_in_instance(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
+    """Test _read_client_cert falls back to global if not in instance config, or instance config is None."""
+    mock_instance_config_empty = mocker.MagicMock()
+    mock_instance_config_empty.get.return_value = None # Instance config has no value for the key
+
+    mock_global_get = mocker.patch.object(rpcplugin_config, 'get', return_value="global_client_cert_path")
+
+    # Scenario 1: Instance config exists but returns None for the key
+    server1 = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_instance_config_empty,
+        transport=mock_server_transport,
+    )
+    cert_path1 = server1._read_client_cert()
+    assert cert_path1 == "global_client_cert_path"
+    mock_instance_config_empty.get.assert_called_once_with("PLUGIN_CLIENT_CERT")
+    mock_global_get.assert_called_with("PLUGIN_CLIENT_CERT")
+
+    mock_global_get.reset_mock()
+
+    # Scenario 2: Instance config is None
+    server2 = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None, # Instance config is None
+        transport=mock_server_transport,
+    )
+    cert_path2 = server2._read_client_cert()
+    assert cert_path2 == "global_client_cert_path"
+    mock_global_get.assert_called_with("PLUGIN_CLIENT_CERT")
+
+
+@pytest.mark.asyncio
+async def test_generate_server_credentials_cert_constructor_exception(
+    mocker, mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
+):
+    """Test _generate_server_credentials when Certificate constructor raises a generic Exception (covers line 282)."""
+    # This test assumes PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY are such that
+    # Certificate() is called (e.g., they are not None, or they are None and generate_keypair=True is default).
+    # The mock_server_config fixture might set them to None, leading to generate_keypair=True path.
+    mocker.patch('pyvider.rpcplugin.server.Certificate', side_effect=Exception("Generic cert constructor error"))
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=mock_server_transport,
+    )
+
+    with pytest.raises(Exception, match="Generic cert constructor error"):
+        # Pass a non-None client_cert to ensure the credential generation path is taken
+        server._generate_server_credentials(client_cert="fake_client_cert_pem")
+
+    mock_logger_error.assert_called_once()
+    args, kwargs_log = mock_logger_error.call_args
+    assert "Error generating server credentials" in args[0]
+    assert "Generic cert constructor error" in kwargs_log.get("extra", {}).get("error", "")
+
+@pytest.mark.asyncio
+async def test_generate_server_credentials_cert_obj_key_is_none(
+    mocker, mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
+):
+    """Test _generate_server_credentials when server_cert_obj.key is None (covers lines 296-300)."""
+    mock_cert_instance = mocker.MagicMock(spec=Certificate)
+    mock_cert_instance.cert = "-----BEGIN CERTIFICATE-----\ndummycert\n-----END CERTIFICATE-----"
+    mock_cert_instance.key = None # Simulate key being None after Certificate object is created
+
+    mocker.patch('pyvider.rpcplugin.server.Certificate', return_value=mock_cert_instance)
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_server_config,
+        transport=mock_server_transport,
+    )
+
+    with pytest.raises(ValueError, match="Server certificate private key is None, cannot create credentials."):
+        server._generate_server_credentials(client_cert="fake_client_cert_pem")
+
+    mock_logger_error.assert_called_once()
+    args, kwargs_log = mock_logger_error.call_args
+    assert "Error generating server credentials" in args[0]
+    # The original error is ValueError, which is caught and re-raised by the function's own try-except.
+    # The logger will log the ValueError.
+    assert "Server certificate private key is None" in kwargs_log.get("extra", {}).get("error", "")
+
+
+# This block is a duplicate and will be removed.
+# @pytest.mark.asyncio
+# async def test_generate_server_credentials_cert_generation_exception(
+# ...
+# ):
+# ...
+# @pytest.mark.asyncio
+# async def test_generate_server_credentials_key_is_none(
+# ...
+# ):
+# ...
+
+@pytest.mark.asyncio
+async def test_read_client_cert_returns_none_and_logs(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
+    """Test _read_client_cert returns None and logs if cert not in instance or global config."""
+    mock_instance_config = mocker.MagicMock()
+    mock_instance_config.get.return_value = None # Instance config has no value
+
+    mocker.patch.object(rpcplugin_config, 'get', return_value=None) # Global config also has no value
+    mock_logger_debug = mocker.patch('pyvider.rpcplugin.server.logger.debug')
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_instance_config,
+        transport=mock_server_transport,
+    )
+
+    cert_path = server._read_client_cert()
+    assert cert_path is None
+
+    # Check for the specific log message
+    found_log = any(
+        "No client certificate provided; operating insecurely" in call_args[0][0]
+        for call_args in mock_logger_debug.call_args_list
+    )
+    assert found_log, "Expected debug log for insecure operation not found"
+
+@pytest.mark.asyncio
+async def test_read_client_cert_exception_handling(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
+    """Test _read_client_cert exception handling (lines 236-238)."""
+    mock_instance_config = mocker.MagicMock()
+    # Make instance_config.get raise an exception
+    mock_instance_config.get.side_effect = Exception("Config access error")
+
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=mock_instance_config,
+        transport=mock_server_transport,
+    )
+
+    cert_path = server._read_client_cert()
+    assert cert_path is None # Should return None on error path
+
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Error reading client certificate: Config access error" in args[0]
+
+
+@pytest.mark.asyncio
 async def test_generate_server_credentials_insecure(server_with_mocks) -> None:
     """Test generating server credentials in insecure mode."""
     creds = server_with_mocks._generate_server_credentials(None)
@@ -105,8 +280,8 @@ async def test_generate_server_credentials_failure(
         config=mock_server_config,
         transport=mock_server_transport,
     )
-    with pytest.raises(Exception, match="has no attribute"):
-        server._generate_server_credentials(client_cert.cert.encode())
+    with pytest.raises(Exception, match="Forced failure"): # Corrected match
+        server._generate_server_credentials(client_cert=client_cert.cert) # Pass PEM string
 
 @pytest.mark.asyncio
 async def test_generate_server_credentials_secure(
