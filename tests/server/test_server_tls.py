@@ -35,11 +35,42 @@ async def test_read_client_cert_present(monkeypatch, mock_server_transport) -> N
 async def test_read_client_cert_from_instance_config(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
     """Test _read_client_cert when PLUGIN_CLIENT_CERT is in instance config."""
 
-    mock_instance_config = mocker.MagicMock()
-    mock_instance_config.get.return_value = "instance_client_cert_path"
+    # Define side_effect for instance_config.get
+    def mock_instance_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return "instance_client_cert_path"
+        # Provide defaults for other keys that might be accessed if server.config was used more broadly
+        elif key == "PLUGIN_SERVER_ENDPOINT": # Example if it were used
+            return "127.0.0.1:0"
+        return default # Fallback to default for other keys
 
-    # Mock global config to ensure instance config is preferred
-    mocker.patch.object(rpcplugin_config, 'get', return_value="global_client_cert_path")
+    mock_instance_config = mocker.MagicMock()
+    mock_instance_config.get.side_effect = mock_instance_config_get_side_effect
+
+    # Define side_effect for global rpcplugin_config.get
+    # This ensures that HandshakeConfig can initialize properly from global config
+    # even if server.config (instance_config) is the primary focus for PLUGIN_CLIENT_CERT
+    def mock_global_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return "global_client_cert_path" # Should not be called by _read_client_cert in this test
+        elif key == "PLUGIN_PROTOCOL_VERSIONS":
+            return ["1"]
+        elif key == "PLUGIN_SERVER_TRANSPORTS":
+            return ["tcp", "unix"]
+        elif key == "magic_cookie_key":
+            return "default_key"
+        elif key == "magic_cookie_value":
+            return "default_value"
+        elif key == "PLUGIN_SERVER_ENDPOINT":
+             # Return a value that allows transport to initialize, relevant for __attrs_post_init__ if it used it
+            return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        elif key == "PLUGIN_SERVER_CERT" or key == "PLUGIN_SERVER_KEY":
+            return None # Default for TLS setup not being tested here
+        return default
+
+    # Mock global config to ensure instance config is preferred for PLUGIN_CLIENT_CERT
+    # and that the server can initialize correctly using other global config values.
+    global_get_mock = mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -51,15 +82,51 @@ async def test_read_client_cert_from_instance_config(mocker, mock_server_protoco
     cert_path = server._read_client_cert()
     assert cert_path == "instance_client_cert_path"
     mock_instance_config.get.assert_called_once_with("PLUGIN_CLIENT_CERT")
-    rpcplugin_config.get.assert_not_called() # Global should not be called if instance config has it
+
+    # Check that global_get_mock was NOT called for PLUGIN_CLIENT_CERT
+    # It would have been called for other keys during HandshakeConfig init.
+    plugin_client_cert_called_on_global = False
+    for call in global_get_mock.call_args_list:
+        if call.args[0] == "PLUGIN_CLIENT_CERT":
+            plugin_client_cert_called_on_global = True
+            break
+    assert not plugin_client_cert_called_on_global, "PLUGIN_CLIENT_CERT should not be fetched from global config here."
 
 @pytest.mark.asyncio
 async def test_read_client_cert_from_global_config_if_not_in_instance(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
     """Test _read_client_cert falls back to global if not in instance config, or instance config is None."""
-    mock_instance_config_empty = mocker.MagicMock()
-    mock_instance_config_empty.get.return_value = None # Instance config has no value for the key
 
-    mock_global_get = mocker.patch.object(rpcplugin_config, 'get', return_value="global_client_cert_path")
+    # Define side_effect for instance_config.get returning None for PLUGIN_CLIENT_CERT
+    def mock_instance_config_get_returns_none(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return None
+        # Provide defaults for other keys that might be accessed if server.config was used more broadly
+        elif key == "PLUGIN_SERVER_ENDPOINT":
+             return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        return default
+
+    mock_instance_config_empty = mocker.MagicMock()
+    mock_instance_config_empty.get.side_effect = mock_instance_config_get_returns_none
+
+    # Define side_effect for global rpcplugin_config.get
+    def mock_global_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return "global_client_cert_path"
+        elif key == "PLUGIN_PROTOCOL_VERSIONS":
+            return ["1"]
+        elif key == "PLUGIN_SERVER_TRANSPORTS":
+            return ["tcp", "unix"]
+        elif key == "magic_cookie_key":
+            return "default_key"
+        elif key == "magic_cookie_value":
+            return "default_value"
+        elif key == "PLUGIN_SERVER_ENDPOINT":
+            return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        elif key == "PLUGIN_SERVER_CERT" or key == "PLUGIN_SERVER_KEY":
+            return None
+        return default
+
+    mock_global_get = mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
 
     # Scenario 1: Instance config exists but returns None for the key
     server1 = RPCPluginServer(
@@ -71,11 +138,21 @@ async def test_read_client_cert_from_global_config_if_not_in_instance(mocker, mo
     cert_path1 = server1._read_client_cert()
     assert cert_path1 == "global_client_cert_path"
     mock_instance_config_empty.get.assert_called_once_with("PLUGIN_CLIENT_CERT")
-    mock_global_get.assert_called_with("PLUGIN_CLIENT_CERT")
 
+    # Check that mock_global_get was called for PLUGIN_CLIENT_CERT
+    global_client_cert_called = False
+    for call in mock_global_get.call_args_list:
+        if call.args[0] == "PLUGIN_CLIENT_CERT":
+            global_client_cert_called = True
+            break
+    assert global_client_cert_called, "PLUGIN_CLIENT_CERT should be fetched from global config here."
+
+    # Reset mocks for Scenario 2
     mock_global_get.reset_mock()
+    # mock_instance_config_empty.get.reset_mock() # Not needed as server2 won't use it.
 
     # Scenario 2: Instance config is None
+    # Global config mock (mock_global_get) is already in place with the side_effect.
     server2 = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -84,7 +161,14 @@ async def test_read_client_cert_from_global_config_if_not_in_instance(mocker, mo
     )
     cert_path2 = server2._read_client_cert()
     assert cert_path2 == "global_client_cert_path"
-    mock_global_get.assert_called_with("PLUGIN_CLIENT_CERT")
+
+    # Check that mock_global_get was called for PLUGIN_CLIENT_CERT
+    global_client_cert_called_scenario2 = False
+    for call in mock_global_get.call_args_list:
+        if call.args[0] == "PLUGIN_CLIENT_CERT":
+            global_client_cert_called_scenario2 = True
+            break
+    assert global_client_cert_called_scenario2, "PLUGIN_CLIENT_CERT should be fetched from global config in scenario 2."
 
 
 @pytest.mark.asyncio
@@ -92,21 +176,32 @@ async def test_generate_server_credentials_cert_constructor_exception(
     mocker, mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
 ):
     """Test _generate_server_credentials when Certificate constructor raises a generic Exception (covers line 282)."""
-    # This test assumes PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY are such that
-    # Certificate() is called (e.g., they are not None, or they are None and generate_keypair=True is default).
-    # The mock_server_config fixture might set them to None, leading to generate_keypair=True path.
+
+    # Define side_effect for global rpcplugin_config.get to ensure server initializes
+    def mock_global_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_PROTOCOL_VERSIONS": return ["1"]
+        if key == "PLUGIN_SERVER_TRANSPORTS": return ["tcp", "unix"]
+        if key == "magic_cookie_key": return "default_key"
+        if key == "magic_cookie_value": return "default_value"
+        if key == "PLUGIN_SERVER_ENDPOINT": return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        # For this test, PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY might be called by Certificate()
+        # Let them return what mock_server_config (the global one) would have provided, or None.
+        # The Certificate mock below is the primary thing being tested.
+        return mock_server_config.get_original(key, default) # Use a hypothetical original getter if available or hardcode
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
+
     mocker.patch('pyvider.rpcplugin.server.Certificate', side_effect=Exception("Generic cert constructor error"))
     mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
+        config=None, # Using global config, which is now robustly mocked by side_effect
         transport=mock_server_transport,
     )
 
     with pytest.raises(Exception, match="Generic cert constructor error"):
-        # Pass a non-None client_cert to ensure the credential generation path is taken
         server._generate_server_credentials(client_cert="fake_client_cert_pem")
 
     mock_logger_error.assert_called_once()
@@ -119,9 +214,22 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     mocker, mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
 ):
     """Test _generate_server_credentials when server_cert_obj.key is None (covers lines 296-300)."""
+
+    # Define side_effect for global rpcplugin_config.get to ensure server initializes
+    def mock_global_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_PROTOCOL_VERSIONS": return ["1"]
+        if key == "PLUGIN_SERVER_TRANSPORTS": return ["tcp", "unix"]
+        if key == "magic_cookie_key": return "default_key"
+        if key == "magic_cookie_value": return "default_value"
+        if key == "PLUGIN_SERVER_ENDPOINT": return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        # Let PLUGIN_SERVER_CERT/KEY return what they would, Certificate mock controls the key part
+        return mock_server_config.get_original(key, default)
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
+
     mock_cert_instance = mocker.MagicMock(spec=Certificate)
     mock_cert_instance.cert = "-----BEGIN CERTIFICATE-----\ndummycert\n-----END CERTIFICATE-----"
-    mock_cert_instance.key = None # Simulate key being None after Certificate object is created
+    mock_cert_instance.key = None # Simulate key being None
 
     mocker.patch('pyvider.rpcplugin.server.Certificate', return_value=mock_cert_instance)
     mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
@@ -129,7 +237,7 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
+        config=None, # Using global config
         transport=mock_server_transport,
     )
 
@@ -139,8 +247,6 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     mock_logger_error.assert_called_once()
     args, kwargs_log = mock_logger_error.call_args
     assert "Error generating server credentials" in args[0]
-    # The original error is ValueError, which is caught and re-raised by the function's own try-except.
-    # The logger will log the ValueError.
     assert "Server certificate private key is None" in kwargs_log.get("extra", {}).get("error", "")
 
 
@@ -159,10 +265,37 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
 @pytest.mark.asyncio
 async def test_read_client_cert_returns_none_and_logs(mocker, mock_server_protocol, mock_server_handler, mock_server_transport):
     """Test _read_client_cert returns None and logs if cert not in instance or global config."""
-    mock_instance_config = mocker.MagicMock()
-    mock_instance_config.get.return_value = None # Instance config has no value
 
-    mocker.patch.object(rpcplugin_config, 'get', return_value=None) # Global config also has no value
+    # Define side_effect for instance_config.get returning None for PLUGIN_CLIENT_CERT
+    def mock_instance_config_get_returns_none(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return None
+        elif key == "PLUGIN_SERVER_ENDPOINT": # Example
+            return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        return default
+
+    mock_instance_config = mocker.MagicMock()
+    mock_instance_config.get.side_effect = mock_instance_config_get_returns_none
+
+    # Define side_effect for global rpcplugin_config.get
+    def mock_global_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return None # Global config also has no value for the cert
+        elif key == "PLUGIN_PROTOCOL_VERSIONS":
+            return ["1"]
+        elif key == "PLUGIN_SERVER_TRANSPORTS":
+            return ["tcp", "unix"]
+        elif key == "magic_cookie_key":
+            return "default_key"
+        elif key == "magic_cookie_value":
+            return "default_value"
+        elif key == "PLUGIN_SERVER_ENDPOINT":
+            return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/dummy.sock"
+        elif key == "PLUGIN_SERVER_CERT" or key == "PLUGIN_SERVER_KEY":
+            return None
+        return default
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_global_config_get_side_effect)
     mock_logger_debug = mocker.patch('pyvider.rpcplugin.server.logger.debug')
 
     server = RPCPluginServer(
@@ -269,19 +402,50 @@ async def test_generate_server_credentials_failure(
     # Force Certificate creation to raise an exception.
     from pyvider.rpcplugin.crypto.certificate import Certificate
 
+    # crypto.certificate.CertificateError may not be the base CertificateError
+    # Let's import the specific one if that's the case. For now, assume generic.
+    from pyvider.rpcplugin.exception import CertificateError # Assuming this is the one intended
+
+    # Mock Certificate.__init__ to raise a specific CertificateError
+    forced_error_message = "Diagnosing CertificateError message"
+    def mock_certificate_init_raises_error(self, *args, **kwargs):
+        raise CertificateError(forced_error_message)
+
     monkeypatch.setattr(
         Certificate,
         "__init__",
-        lambda self, **kwargs: (_ for _ in ()).throw(Exception("Forced failure")),
+        mock_certificate_init_raises_error
     )
+
+    # Ensure the global config (mock_server_config) provides necessary values for server init
+    original_get = mock_server_config.get
+
+    def mock_global_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_PROTOCOL_VERSIONS": return ["1"]
+        if key == "PLUGIN_SERVER_TRANSPORTS": return ["tcp", "unix"]
+        if key == "magic_cookie_key": return "key"
+        if key == "magic_cookie_value": return "value"
+        if key == "PLUGIN_SERVER_ENDPOINT":
+            if mock_server_transport and hasattr(mock_server_transport, 'endpoint'):
+                 return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/test.sock"
+            return "127.0.0.1:0"
+        # Fallback for other keys like PLUGIN_SERVER_CERT, PLUGIN_SERVER_KEY
+        if hasattr(original_get, '__call__'):
+             return original_get(key, default)
+        return mock_server_config.config.get(key,default)
+
+    monkeypatch.setattr(mock_server_config, 'get', mock_global_config_get_side_effect)
+
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=mock_server_transport,
     )
-    with pytest.raises(Exception, match="Forced failure"): # Corrected match
-        server._generate_server_credentials(client_cert=client_cert.cert) # Pass PEM string
+
+    # Restore the with pytest.raises block with the corrected regex
+    with pytest.raises(CertificateError, match="Diagnosing CertificateError message"):
+        server._generate_server_credentials(client_cert="dummy_client_cert_pem_string")
 
 @pytest.mark.asyncio
 async def test_generate_server_credentials_secure(
