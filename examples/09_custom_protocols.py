@@ -6,8 +6,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable, Optional, Dict, List, Tuple
-from abc import ABC, abstractmethod
+from typing import Any, List, Tuple
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -18,8 +17,6 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
-    plugin_client,
-    configure,
 )
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
