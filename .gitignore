@@ -393,3 +393,4 @@ bin/
 result.json*.bf.txt
 *.log.txt
 .testmondata
+*.bf.txt

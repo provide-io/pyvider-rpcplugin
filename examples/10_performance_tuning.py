@@ -3,14 +3,13 @@
 """Demonstrates performance optimization techniques and benchmarking with pyvider-rpcplugin."""
 
 import asyncio
-import os
 import psutil
 import sys
 import time
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass
-from statistics import mean, median
+from statistics import mean
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -21,7 +20,6 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
-    plugin_client,
     create_basic_protocol,
     configure,
 )

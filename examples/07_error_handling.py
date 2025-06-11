@@ -25,7 +25,6 @@ from pyvider.rpcplugin import (  # noqa: E402
 from pyvider.rpcplugin.exception import (  # noqa: E402
     RPCPluginError,
     TransportError,
-    HandshakeError,
     ProtocolError,
     SecurityError,
 )
@@ -362,7 +361,7 @@ class CircuitBreaker:
             
             return result
             
-        except Exception as e:
+        except Exception:
             # Handle failure
             self.failure_count += 1
             self.last_failure_time = time.time()

@@ -409,7 +409,7 @@ async def test_del_method_logging_with_endpoint(
 ):
     """Test __del__ logging when _transport.endpoint exists and server not stopped."""
     mock_logger_warning = mocker.patch("pyvider.rpcplugin.server.logger.warning")
-
+    
     mock_transport_instance = mocker.MagicMock()
     mock_transport_instance.endpoint = "unix:/tmp/specific_socket.sock"
     mock_transport_instance.close = AsyncMock()
@@ -499,7 +499,7 @@ async def test_wait_for_server_ready_unix_path_none(
     mock_transport.path = None # Simulate path being None
     # Mock other necessary attributes of the transport if hasattr checks them
     mock_transport.endpoint = "dummy_endpoint_for_hasattr_check" # ensure isinstance check passes if it relies on this
-
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -525,8 +525,8 @@ async def test_wait_for_server_ready_unix_file_not_exists(
     """Test wait_for_server_ready when Unix socket file does not exist."""
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = "/tmp/non_existent_socket.sock"
-    mock_transport.endpoint = mock_transport.path
-
+    mock_transport.endpoint = mock_transport.path 
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -543,7 +543,7 @@ async def test_wait_for_server_ready_unix_file_not_exists(
 
     with pytest.raises(TimeoutError, match="Unix socket file not created"):
         await server.wait_for_server_ready(timeout=0.1)
-
+    
     os.path.exists.assert_called_with("/tmp/non_existent_socket.sock")
 
 @pytest.mark.asyncio
@@ -554,7 +554,7 @@ async def test_wait_for_server_ready_tcp_port_none(
     mock_transport = mocker.MagicMock(spec=TCPSocketTransport)
     mock_transport.host = "127.0.0.1"
     mock_transport.endpoint = "127.0.0.1:0" # Example initial endpoint
-
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -594,7 +594,7 @@ async def test_wait_for_server_ready_tcp_connect_fails(
     mock_socket_instance = mocker.MagicMock()
     mock_socket_instance.connect.side_effect = ConnectionRefusedError("Connection refused by mock")
     mock_socket_instance.close = mocker.MagicMock()
-
+    
     mocker.patch('socket.socket', return_value=mock_socket_instance)
     original_isinstance = builtins.isinstance
     mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == TCPSocketTransport else original_isinstance(obj, cls_check))
@@ -626,13 +626,13 @@ async def test_wait_for_server_ready_unix_connect_fails(
     mocker.patch('os.path.exists', return_value=True) # Socket file exists
     # Mock stat to return S_ISSOCK
     mock_stat_result = mocker.MagicMock()
-    mock_stat_result.st_mode = stat.S_IFSOCK
+    mock_stat_result.st_mode = stat.S_IFSOCK 
     mocker.patch('os.stat', return_value=mock_stat_result)
 
     mock_socket_instance = mocker.MagicMock()
     mock_socket_instance.connect.side_effect = OSError("Unix connect failed")
     mock_socket_instance.close = mocker.MagicMock()
-
+    
     mocker.patch('socket.socket', return_value=mock_socket_instance)
     original_isinstance = builtins.isinstance
     # This lambda needs to handle both UnixSocketTransport and potentially TCPSocketTransport if it's part of a complex check.
@@ -660,9 +660,9 @@ async def test_stop_plugin_task_cancellation_timeout(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config, # mock_server_config is the global rpcplugin_config
-        transport=None,
+        transport=None, 
     )
-
+    
     # Explicitly ensure _serving_future is a valid future, as stop() interacts with it
     # The factory in the class already creates a real asyncio.Future, which is fine.
     # If we want to control its done() state for sure:
@@ -675,11 +675,11 @@ async def test_stop_plugin_task_cancellation_timeout(
     # from pyvider.rpcplugin.types import RPCPluginTransport
     # import grpc
     # For simplicity in this diff, we'll assume these imports are added or use generic AsyncMock
+    
+    server._server = mocker.AsyncMock() 
+    server._server.stop = mocker.AsyncMock(return_value=None) 
 
-    server._server = mocker.AsyncMock()
-    server._server.stop = mocker.AsyncMock(return_value=None)
-
-    server._transport = mocker.AsyncMock()
+    server._transport = mocker.AsyncMock() 
     server._transport.close = mocker.AsyncMock(return_value=None)
 
     # Mock asyncio.all_tasks() to return a mock task
@@ -691,14 +691,14 @@ async def test_stop_plugin_task_cancellation_timeout(
     # Make asyncio.gather time out
     mocker.patch('asyncio.all_tasks', return_value=[mock_plugin_task, asyncio.current_task()])
     mocker.patch('asyncio.gather', side_effect=asyncio.TimeoutError("Gather timed out"))
-
+    
     mock_logger_warning = mocker.patch('pyvider.rpcplugin.server.logger.warning')
     mock_logger_debug = mocker.patch('pyvider.rpcplugin.server.logger.debug') # To check other logs
 
     await server.stop()
 
     mock_plugin_task.cancel.assert_called_once()
-
+    
     # Check for the specific timeout log
     found_timeout_log = any(
         "Timed out waiting for plugin-related tasks to cancel" in call.args[0]
@@ -726,12 +726,12 @@ async def test_serve_setup_server_raises_exception(
     mocker.patch.object(server, '_register_signal_handlers') # Mock to prevent side effects
     mocker.patch.object(server, '_negotiate_handshake', new_callable=AsyncMock) # Mock to prevent side effects
     mocker.patch.object(server, '_read_client_cert', return_value=None) # Assume no client cert for this test
-
+    
     # Make _setup_server raise an error.
     # For diagnostics: Change to MagicMock to see if this provokes an earlier, reportable TypeError.
     mocker.patch.object(server, '_setup_server', new_callable=mocker.MagicMock, side_effect=RuntimeError("Setup failed!"))
     mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
-
+    
     # stop() will be called in finally. Patch it directly on the instance.
     # For diagnostics: Change to MagicMock to see if AsyncMock is an issue
     server.stop = mocker.MagicMock(name="stop_sync_mock")
@@ -762,7 +762,7 @@ async def test_serve_setup_server_raises_exception(
         for call in mock_logger_error.call_args_list
     )
     assert found_log, "Log for setup failure not found or incorrect"
-
+    
     # Ensure stop() was still called from the finally block in serve()
     # This will now assert on the MagicMock
     server.stop.assert_called_once()
@@ -820,7 +820,7 @@ async def test_serve_serving_future_raises_exception(
     # Make the _serving_future raise an error when awaited
     server._serving_future = asyncio.Future()
     server._serving_future.set_exception(RuntimeError("Serving future error!"))
-
+    
     mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
     mocker.patch.object(server, 'stop', new_callable=AsyncMock) # Mock stop to check it's called
 
@@ -834,7 +834,7 @@ async def test_serve_serving_future_raises_exception(
         for call in mock_logger_error.call_args_list
     )
     assert found_log, "Log for serving_future error not found or incorrect"
-
+    
     server.stop.assert_called_once()
 
 @pytest.mark.asyncio
@@ -876,7 +876,7 @@ async def test_serve_stop_in_finally_raises_exception(
     mocker.patch('sys.stdout.buffer.write')
     mocker.patch('sys.stdout.buffer.flush')
     mocker.patch('sys.stdout.flush')
-
+    
     # Make _serving_future complete successfully to proceed to finally block naturally
     # Or, to force entry into finally via an earlier exception that stop() would then also hit:
     # Here, let's assume serving_future completes, and stop() is the one failing.
@@ -884,20 +884,20 @@ async def test_serve_stop_in_finally_raises_exception(
         self._serving_future.set_result(None)
     # We can trigger this by mocking a signal or just letting it proceed if _serving_future is awaited
     # For simplicity, let's assume _serving_future will be awaited and completes.
-
+    
     # Mock server.stop() to raise an error
     mocker.patch.object(server, 'stop', new_callable=AsyncMock, side_effect=RuntimeError("Stop failed!"))
     mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
 
     # The exception from stop() in finally should not be re-raised from serve() if serve() completed its try block.
-    # If serve() itself failed (e.g. _serving_future raised error), then that error is raised,
+    # If serve() itself failed (e.g. _serving_future raised error), then that error is raised, 
     # and the error from stop() is only logged.
     # Let's test the case where the main try block of serve completes.
-
+    
     # To make `await self._serving_future` complete, we need to set its result.
     # This is usually done by `_shutdown_requested` or if the future is managed externally.
     # For this test, we can set it directly after setup.
-
+    
     original_serving_future = server._serving_future
     async def mock_setup_and_complete_future_plus_port(client_cert_arg): # Matches _setup_server signature
         if server._transport_name == "tcp" and not server._port:
