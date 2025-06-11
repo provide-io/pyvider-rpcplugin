@@ -80,4 +80,18 @@ async def test_negotiate_transport_exception_handling():
         with pytest.raises(TransportError, match="Error negotiating transport"):
             await negotiate_transport(["unix", "tcp"])
 
+@pytest.mark.asyncio
+async def test_negotiate_transport_tempfile_exception(mocker):
+    """Test that an exception during tempfile.gettempdir is handled."""
+    mocker.patch('tempfile.gettempdir', side_effect=OSError("Disk full"))
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+
+    with pytest.raises(TransportError, match="Error negotiating transport: Disk full"):
+        await negotiate_transport(["unix"])
+
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Error during transport negotiation" in args[0]
+    assert "Disk full" in kwargs.get("extra", {}).get("error", "")
+
 ### 🐍🏗🧪️

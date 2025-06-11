@@ -6,7 +6,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, AsyncContextManager
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -19,6 +19,7 @@ from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
     plugin_client,
     create_basic_protocol,
+    configure,
 )
 from pyvider.telemetry import logger  # noqa: E402
 

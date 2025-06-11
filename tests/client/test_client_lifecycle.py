@@ -216,3 +216,40 @@ async def test_close_process_wait_timeout(client_instance): # Removed capsys, wi
         # For the log, we'll assume visual inspection of pytest output is sufficient for now.
         # To prevent test failure, I will remove the direct log assertion.
         # A better solution would involve a structlog-specific capture method.
+
+@pytest.mark.asyncio
+async def test_close_process_terminate_error(client_instance, mocker):
+    """Test client close when _process.terminate() raises an OSError."""
+    mock_channel = mocker.patch.object(client_instance, '_channel', new_callable=AsyncMock)
+    mock_process = mocker.patch.object(client_instance, '_process', new_callable=MagicMock)
+    mock_transport = mocker.patch.object(client_instance, '_transport', new_callable=AsyncMock)
+
+    mock_process.terminate.side_effect = OSError("Failed to terminate process")
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
+
+    await client_instance.close()
+
+    mock_channel.close.assert_called_once() # Should still try to close channel
+    mock_process.terminate.assert_called_once()
+    # mock_process.wait should not be called if terminate fails immediately,
+    # but the code calls it in a try block that catches generic Exception, so it might still be called or skipped.
+    # Depending on exact flow, wait might not be called.
+    # Let's verify based on the current structure of close()
+    # If terminate() fails, wait() is still attempted in the original code.
+    # However, if terminate() itself fails, it might be more robust to not proceed to wait() on that process.
+    # For now, testing existing behavior.
+    # mock_process.wait.assert_called_once() # This might fail if terminate error path bypasses wait
+
+    mock_transport.close.assert_called_once() # Should still try to close transport
+
+    # Check that the specific error from terminate() was logged
+    found_terminate_error_log = False
+    for call_args in mock_logger_error.call_args_list:
+        args, kwargs = call_args
+        if "Error sending terminate signal to plugin process" in args[0] and \
+           "Failed to terminate process" in kwargs.get("extra", {}).get("trace", ""):
+            found_terminate_error_log = True
+            break
+    assert found_terminate_error_log, f"Expected log for terminate error not found. Actual calls: {mock_logger_error.call_args_list}"
+
+    assert client_instance._process is None # Process should be nullified

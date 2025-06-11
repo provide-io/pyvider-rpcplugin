@@ -1,6 +1,5 @@
-//
+
 // pyvider-rpcplugin/examples/kvproto/go-plugin/plugin-go-server/main.go
-//
 
 package main
 
@@ -58,7 +57,7 @@ func (k *KV) Get(key string) ([]byte, error) {
 
 func main() {
     logger := hclog.New(&hclog.LoggerOptions{
-        Name:       "🐹 S> kv-go-server",
+        Name:       "📡 kv-go-server",
         Level:      hclog.Trace,
         Output:     os.Stderr,
         JSONFormat: false,

@@ -243,13 +243,17 @@ class TCPSocketTransport(RPCPluginTransport):
 
             # Close server
             if self._server:
+                server_was_serving = self._server.is_serving() # Store initial state
                 try:
-                    if self._server.is_serving(): # Check if it's serving before trying to close
+                    if server_was_serving:
                         self._server.close() # This is synchronous, initiates closing
                     
-                    # await self._server.wait_closed() can hang.
-                    await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
-                    logger.info("🔌🔒✅: TCP server closed successfully")
+                    # Only await wait_closed if close was called or it was serving
+                    if server_was_serving:
+                        await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
+                        logger.info("🔌🔒✅: TCP server closed successfully")
+                    else: # If it wasn't serving, log that no action was needed.
+                        logger.debug("🔌🔒ℹ️: TCP server was not serving, no close/wait action needed.")
                 except asyncio.TimeoutError:
                     logger.warning(f"🔌🔒⚠️ Timeout closing TCP server for endpoint {self.endpoint if self.endpoint else 'unknown'}")
                 except Exception as e:

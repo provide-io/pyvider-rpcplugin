@@ -140,4 +140,41 @@ async def test_shutdown_requested() -> None:
     server._shutdown_requested()
     assert fut.done()
 
+
+@pytest.mark.asyncio
+async def test_register_signal_handlers_exception_logging(
+    mocker,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_transport,
+    # caplog, # No longer using caplog
+):
+    """
+    Test that if add_signal_handler raises an exception, it's caught and logged.
+    """
+    # Patch the logger directly within the server module
+    mocked_logger_exception = mocker.patch("pyvider.rpcplugin.server.logger.exception")
+
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+        config=None,
+        transport=mock_server_transport,
+    )
+
+    # Mock asyncio.get_event_loop().add_signal_handler to raise RuntimeError
+    mock_loop = mocker.MagicMock()
+    mock_loop.add_signal_handler.side_effect = RuntimeError("Test signal registration error")
+    mocker.patch("asyncio.get_event_loop", return_value=mock_loop)
+
+    # Call _register_signal_handlers directly to test its error handling
+    server._register_signal_handlers()
+
+    # Check that logger.exception was called
+    mocked_logger_exception.assert_called_once()
+    # Optionally, check for parts of the message
+    args, kwargs = mocked_logger_exception.call_args
+    assert "Error registering signal handlers" in args[0]
+    assert "Test signal registration error" in kwargs.get("extra", {}).get("error", "")
+
 ### 🐍🏗🧪️
