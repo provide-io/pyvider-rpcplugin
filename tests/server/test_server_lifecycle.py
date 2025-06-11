@@ -656,31 +656,46 @@ async def test_stop_plugin_task_cancellation_timeout(
     # by mocking what __attrs_post_init__ uses from rpcplugin_config via HandshakeConfig
     mocker.patch('pyvider.rpcplugin.server.HandshakeConfig', return_value=mocker.MagicMock())
 
+    # Use config=None to ensure maximum isolation from global state via mock_server_config fixture
+    # The HandshakeConfig mock should handle initialization requirements.
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config, # mock_server_config is the global rpcplugin_config
+        config=None, 
         transport=None, 
     )
     
-    # Explicitly ensure _serving_future is a valid future, as stop() interacts with it
+    # Explicitly set/verify all critical attributes for this test's logic after instantiation
+    # Ensure _serving_future is a valid future, as stop() interacts with it
     # The factory in the class already creates a real asyncio.Future, which is fine.
     # If we want to control its done() state for sure:
     server._serving_future = mocker.create_autospec(asyncio.Future, instance=True)
     server._serving_future.done.return_value = False # Simulate it's running before stop() is called
 
     # Ensure _server and _transport are AsyncMocks with awaitable methods
-    # Using spec helps ensure the mocks behave more like the real objects.
-    # Need to import grpc and RPCPluginTransport for spec
-    # from pyvider.rpcplugin.types import RPCPluginTransport
-    # import grpc
-    # For simplicity in this diff, we'll assume these imports are added or use generic AsyncMock
+    # These are critical for the stop() method.
+    # Using spec can help ensure the mocks behave more like the real objects.
+    # from pyvider.rpcplugin.transport.base import RPCPluginTransport # Example for spec
+    # import grpc # Example for spec for grpc.aio.Server
     
-    server._server = mocker.AsyncMock() 
-    server._server.stop = mocker.AsyncMock(return_value=None) 
+    # Explicitly assign mocks to _server and _transport to prevent them from being None
+    server._server = mocker.AsyncMock(name="_server_mock") 
+    server._server.stop = mocker.AsyncMock(name="_server_stop_mock", return_value=None) 
 
-    server._transport = mocker.AsyncMock() 
-    server._transport.close = mocker.AsyncMock(return_value=None)
+    server._transport = mocker.AsyncMock(name="_transport_mock") 
+    server._transport.close = mocker.AsyncMock(name="_transport_close_mock", return_value=None)
+    
+    # _client_tasks is not an attribute of RPCPluginServer. stop() uses asyncio.all_tasks().
+    # server._client_tasks = [] 
+
+    # _serving_event is created by __attrs_post_init__, ensure it's there or mock if needed
+    if not hasattr(server, '_serving_event') or server._serving_event is None:
+        server._serving_event = mocker.create_autospec(asyncio.Event, instance=True, name="_serving_event_mock")
+    
+    # _shutdown_event is also created by __attrs_post_init__
+    if not hasattr(server, '_shutdown_event') or server._shutdown_event is None:
+        server._shutdown_event = mocker.create_autospec(asyncio.Event, instance=True, name="_shutdown_event_mock")
+
 
     # Mock asyncio.all_tasks() to return a mock task
     mock_plugin_task = mocker.MagicMock(spec=asyncio.Task)
