@@ -1,0 +1,12 @@
+Pytest execution timed out.
+
+Multiple attempts were made to run pytest with coverage for pyvider.rpcplugin,
+even on specific subdirectories of tests (e.g., tests/protocol/).
+Each attempt resulted in a timeout of the bash session (approx 400s).
+A pytest-specific timeout (e.g., --timeout=120) was also attempted but
+the overall session still timed out.
+
+The environment setup (uv, virtualenv, pip install) appears to complete,
+but the test suite seems too extensive or slow for the current execution environment.
+
+This file serves as a placeholder for the requested test output.

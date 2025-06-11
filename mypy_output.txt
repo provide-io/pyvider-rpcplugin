@@ -1,0 +1,4 @@
+src/pyvider/rpcplugin/config.py:302: error: Unsupported right operand type for in ("object")  [operator]
+src/pyvider/rpcplugin/protocol/service.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src/pyvider/rpcplugin/protocol/service.py:213: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Found 1 error in 1 file (checked 31 source files)

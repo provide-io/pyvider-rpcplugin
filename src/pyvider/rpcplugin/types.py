@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable as AbcCallable
-from typing import Any, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
+# Remove 'Any' from this import
+from typing import Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
 import grpc
 from pyvider.telemetry import logger
 
@@ -53,7 +54,8 @@ class RPCPluginProtocol(TypeProtocol):
     between gRPC services and Pyvider's RPC plugin system.
     """
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]: # Removed Awaitable
+    # Changed Any to object
+    async def get_grpc_descriptors(self) -> tuple[object, str]: # Removed Awaitable
         """
         Returns the protobuf descriptor set and service name.
 
@@ -62,7 +64,8 @@ class RPCPluginProtocol(TypeProtocol):
         """
         ...
 
-    async def add_to_server(self, handler: Any, server: Any) -> None: # Removed Awaitable
+    # Changed Any to object
+    async def add_to_server(self, handler: object, server: object) -> None: # Removed Awaitable
         """
         Adds the protocol implementation to the gRPC server.
 
@@ -130,7 +133,8 @@ class SerializableT(TypeProtocol):
     serialized to and from dictionary representations.
     """
 
-    def to_dict(self) -> dict[str, Any]: # Modernized Dict
+    # Changed Any to object
+    def to_dict(self) -> dict[str, object]: # Modernized Dict
         """
         Convert the object to a dictionary representation.
 
@@ -139,8 +143,8 @@ class SerializableT(TypeProtocol):
         """
         ...
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SerializableT": # Modernized Dict
+    @classmethod # Changed Any to object
+    def from_dict(cls, data: dict[str, object]) -> "SerializableT": # Modernized Dict
         """
         Create an object from a dictionary representation.
 
@@ -193,7 +197,8 @@ class ConnectionT(TypeProtocol):
 # Type aliases for gRPC Clients
 GrpcChannelType = grpc.aio.Channel | grpc.Channel      # Represents gRPC sync or async channel
 GrpcServerType = grpc.aio.Server                       # Represents gRPC async server type
-RpcConfigType = dict[str, Any]                         # Configuration dictionary type
+# Changed Any to object
+RpcConfigType = dict[str, object]                         # Configuration dictionary type
 GrpcCredentialsType = grpc.ChannelCredentials | None   # gRPC channel credentials, possibly None
 EndpointType = str                                     # Represents an endpoint string
 AddressType = tuple[str, int]                          # Represents a host-port address tuple
@@ -229,7 +234,8 @@ class SecureRpcClientT(TypeProtocol):
         ...
 
 
-def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
+# Changed Any to object
+def is_valid_handler(obj: object) -> TypeGuard[RPCPluginHandler]:
     """
     TypeGuard that checks if an object implements the RPCPluginHandler protocol.
 
@@ -242,7 +248,8 @@ def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
     logger.debug("🧰🔍✅ Checking if object implements RPCPluginHandler protocol")
     return isinstance(obj, RPCPluginHandler)
 
-def is_valid_protocol(obj: Any) -> TypeGuard[RPCPluginProtocol]:
+# Changed Any to object
+def is_valid_protocol(obj: object) -> TypeGuard[RPCPluginProtocol]:
     """
     TypeGuard that checks if an object implements the RPCPluginProtocol protocol.
 
@@ -255,7 +262,8 @@ def is_valid_protocol(obj: Any) -> TypeGuard[RPCPluginProtocol]:
     logger.debug("🧰🔍✅ Checking if object implements RPCPluginProtocol protocol")
     return isinstance(obj, RPCPluginProtocol)
 
-def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
+# Changed Any to object
+def is_valid_transport(obj: object) -> TypeGuard[RPCPluginTransport]:
     """
     TypeGuard that checks if an object implements the RPCPluginTransport protocol.
 

@@ -43,7 +43,7 @@ import os
 import subprocess
 import sys
 import traceback
-from typing import Any # Removed Generic
+from typing import cast, Optional, Dict # Added cast, Optional, Dict
 
 from attrs import define, field
 
@@ -115,7 +115,7 @@ class RPCPluginClient: # No longer Generic[TransportT]
     """
 
     command: list[str] = field()
-    config: dict[str, Any] | None = field(default=None)
+    config: dict[str, object] | None = field(default=None)
 
     # Internal fields
     _process: subprocess.Popen | None = field(init=False, default=None)
@@ -210,13 +210,17 @@ class RPCPluginClient: # No longer Generic[TransportT]
         auto_mtls: bool = rpcplugin_config.auto_mtls_enabled()
 
         if auto_mtls:
-            cert_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-            key_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+            cert_pem_obj = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+            key_pem_obj = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
 
-            if cert_pem and key_pem:
+            # Cast to Optional[str] as the config might return None or other types from the Union
+            cert_pem = cast(Optional[str], cert_pem_obj)
+            key_pem = cast(Optional[str], key_pem_obj)
+
+            if cert_pem and key_pem: # These are now Optional[str], check for truthiness
                 logger.info("🔐 Using existing client cert/key from config.")
-                self.client_cert = cert_pem
-                self.client_key_pem = key_pem
+                self.client_cert = cert_pem # Assigns str to str | None field
+                self.client_key_pem = key_pem # Assigns str to str | None field
             else:
                 logger.info("🔐 Generating ephemeral self-signed client certificate.")
                 client_cert_obj = Certificate(generate_keypair=True, key_type="ecdsa")
@@ -246,8 +250,8 @@ class RPCPluginClient: # No longer Generic[TransportT]
             return
 
         env = os.environ.copy()
-        if self.config and "env" in self.config:
-            env.update(self.config["env"])
+        if self.config and "env" in self.config and isinstance(self.config["env"], dict):
+            env.update(cast(Dict[str, str], self.config["env"]))
 
         # Force unbuffered output in Python subprocesses
         env["PYTHONUNBUFFERED"] = "1"
@@ -425,35 +429,31 @@ class RPCPluginClient: # No longer Generic[TransportT]
             self._server_cert = server_cert
             self._transport_name = network
 
-            match network:
-                case "tcp":
-                    self._transport = TCPSocketTransport()
-                    logger.debug("*** network is set to tcp")
-                    # For TCP, the address from handshake is directly used for connect.
-                    # self._address will be set by the transport.connect() if needed,
-                    # or is already the parsed address.
-                    self._address = address
-                case "unix":
-                    logger.debug("*** network is set to unix")
-                    # Normalize path for Unix transport construction
-                    normalized_path = address
-                    if address.startswith("unix:"):
-                        logger.debug("*** address starts with unix")
-                        normalized_path = address[5:]
-                        while normalized_path.startswith("/") and not normalized_path.startswith("//"):
-                            normalized_path = normalized_path[1:]
+            if network == "tcp":
+                self._transport = TCPSocketTransport()
+                logger.debug("*** network is set to tcp")
+            elif network == "unix":
+                # More robust handling of unix: prefix formats
+                logger.debug("*** network is set to unix")
 
-                    self._address = normalized_path # Store the normalized path for consistency
-                    logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}' for transport init.")
-                    self._transport = UnixSocketTransport(path=self._address)
-                case _:
-                    raise TransportError(f"Unsupported transport: {network}")
+                if address.startswith("unix:"):
+                    logger.debug("*** address starts with unix")
+                    self._address = address[5:]  # Remove standard unix: prefix
+                    # Remove leading slashes (but not all slashes)
+                    while self._address.startswith("/") and not self._address.startswith("//"):
+                        self._address = self._address[1:]
+
+                else:
+                    self._address = address
+
+                logger.debug(f"🤝🔍 Normalized Unix path from '{address}' to '{self._address}'")
+                self._transport = UnixSocketTransport(path=self._address)
+            else:
+                raise TransportError(f"Unsupported transport: {network}")
 
             # Connect the chosen transport
-            # The 'address' used for connect should be the original one from handshake,
-            # as that's what the server provided. Normalization is for local representation or construction.
-            if self._transport is not None:
-                await self._transport.connect(address) # Use original address from handshake for connect
+            if self._transport is not None: # Check transport is not None
+                await self._transport.connect(address)
                 logger.info(f"🚄 Transport connected via {network} -> {address}")
             else:
                 # This case should ideally not be reached if logic is correct
