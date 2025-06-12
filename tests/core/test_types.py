@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
-from typing import Any # Added import
+# from typing import Any # Removed import
 
 # Assuming RPCPluginHandler, RPCPluginProtocol, RPCPluginTransport are importable
 # from the SUT (System Under Test - types.py)
@@ -101,11 +101,11 @@ def test_is_valid_serializable_true(mocker):
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
     class ValidSerializable(SerializableT):
-        def to_dict(self) -> dict[str, Any]: # Add full annotation
+        def to_dict(self) -> dict[str, object]: # Changed Any to object
             return {"data": "valid"}
 
         @classmethod
-        def from_dict(cls, data: dict[str, Any]) -> 'ValidSerializable': # Add full annotation
+        def from_dict(cls, data: dict[str, object]) -> 'ValidSerializable': # Changed Any to object
             # Create a new instance of cls. If cls has __init__ expecting params, adjust.
             # For this test, a simple instantiation is fine.
             instance = cls()
@@ -140,11 +140,11 @@ def test_is_valid_serializable_false_incorrect_signature(mocker):
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
     class InvalidSerializableSignature(SerializableT): # Inherit to pass isinstance if methods are present
-        def to_dict(self, extra_arg: int) -> dict[str, Any]: # Incorrect signature (1 param)
+        def to_dict(self, extra_arg: int) -> dict[str, object]: # Changed Any to object
             return {"key": extra_arg}
 
         @classmethod
-        def from_dict(cls, data: dict[str, Any], extra_arg: int) -> 'InvalidSerializableSignature': # Incorrect signature (3 params total)
+        def from_dict(cls, data: dict[str, object], extra_arg: int) -> 'InvalidSerializableSignature': # Changed Any to object
             return cls()
 
     instance = InvalidSerializableSignature()
