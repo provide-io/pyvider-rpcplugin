@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio # Added
 import inspect # Added
 from collections.abc import Awaitable, Callable as AbcCallable
 from typing import Any, Callable, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING # Added Callable
@@ -234,49 +235,38 @@ class ConnectionT(TypeProtocol):
 
 
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
-    logger.debug("🧰🔍✅ Checking if object implements ConnectionT protocol (runtime signature check)")
+    logger.debug("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)")
 
-    if not isinstance(obj, ConnectionT):
-        logger.debug("ConnectionT: isinstance check failed (method missing or not async).")
-        return False
+    methods_spec = {
+        "send_data": {"params": 1, "is_async": True},    # Expects 1 param (data)
+        "receive_data": {"params": 1, "is_async": True}, # Expects 1 param (size)
+        "close": {"params": 0, "is_async": True},         # Expects 0 params
+    }
 
-    # Check send_data(self, data: bytes)
-    try:
-        send_data_sig = inspect.signature(obj.send_data)
-        if len(send_data_sig.parameters) != 1: # Expects 'data'
-            logger.debug(f"ConnectionT: send_data signature incorrect. Expected 1 param, got {len(send_data_sig.parameters)}.")
+    for method_name, spec in methods_spec.items():
+        if not hasattr(obj, method_name):
+            logger.debug(f"ConnectionT: Method {method_name} is missing.")
             return False
-        # Parameter 'data' should ideally be type 'bytes'. Runtime check is hard.
-    except (TypeError, ValueError):
-        logger.debug("ConnectionT: Could not inspect send_data signature.")
-        return False
 
-    # Check receive_data(self, size: int = 16384)
-    try:
-        receive_data_sig = inspect.signature(obj.receive_data)
-        if len(receive_data_sig.parameters) != 1: # Expects 'size'
-            logger.debug(f"ConnectionT: receive_data signature incorrect. Expected 1 param, got {len(receive_data_sig.parameters)}.")
+        method = getattr(obj, method_name)
+        if not callable(method):
+            logger.debug(f"ConnectionT: Attribute {method_name} is not callable.")
             return False
-        # Parameter 'size' has a default. inspect.signature captures this.
-        # param_size = receive_data_sig.parameters['size'] # Assuming param is named 'size'
-        # if param_size.default is inspect.Parameter.empty:
-        #     logger.debug("ConnectionT: receive_data 'size' param should have a default.")
-        #     return False
-    except (TypeError, ValueError):
-        logger.debug("ConnectionT: Could not inspect receive_data signature.")
-        return False
 
-    # Check close(self)
-    try:
-        close_sig = inspect.signature(obj.close)
-        if len(close_sig.parameters) != 0: # Expects no params
-            logger.debug(f"ConnectionT: close signature incorrect. Expected 0 params, got {len(close_sig.parameters)}.")
+        if spec["is_async"] and not asyncio.iscoroutinefunction(method):
+            logger.debug(f"ConnectionT: Method {method_name} is not async as expected.")
             return False
-    except (TypeError, ValueError):
-        logger.debug("ConnectionT: Could not inspect close signature.")
-        return False
 
-    logger.debug("ConnectionT: All checks passed.")
+        try:
+            sig = inspect.signature(method)
+            if len(sig.parameters) != spec["params"]:
+                logger.debug(f"ConnectionT: {method_name} signature incorrect. Expected {spec['params']} params, got {len(sig.parameters)}.")
+                return False
+        except (TypeError, ValueError): # Should not happen if callable, but defensive
+            logger.debug(f"ConnectionT: Could not inspect {method_name} signature.")
+            return False
+
+    logger.debug("ConnectionT: All structural and signature checks passed.")
     return True
 
 
@@ -320,31 +310,39 @@ class SecureRpcClientT(TypeProtocol):
 
 
 def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
-    logger.debug("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (runtime signature check)")
+    logger.debug("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)")
 
-    if not isinstance(obj, SecureRpcClientT):
-        logger.debug("SecureRpcClientT: isinstance check failed (method missing or not async).")
-        return False
-
-    methods_to_check = {
-        "_perform_handshake": 0,
-        "_setup_tls": 0,
-        "_create_grpc_channel": 0,
-        "close": 0,
+    methods_spec = {
+        "_perform_handshake": {"params": 0, "is_async": True},
+        "_setup_tls": {"params": 0, "is_async": True},
+        "_create_grpc_channel": {"params": 0, "is_async": True},
+        "close": {"params": 0, "is_async": True},
     }
 
-    for method_name, expected_param_count in methods_to_check.items():
-        try:
-            method = getattr(obj, method_name)
-            sig = inspect.signature(method)
-            if len(sig.parameters) != expected_param_count:
-                logger.debug(f"SecureRpcClientT: {method_name} signature incorrect. Expected {expected_param_count} params, got {len(sig.parameters)}.")
-                return False
-        except (TypeError, ValueError, AttributeError): # AttributeError if method is missing
-            logger.debug(f"SecureRpcClientT: Could not inspect {method_name} signature or method missing.")
+    for method_name, spec in methods_spec.items():
+        if not hasattr(obj, method_name):
+            logger.debug(f"SecureRpcClientT: Method {method_name} is missing.")
             return False
 
-    logger.debug("SecureRpcClientT: All checks passed.")
+        method = getattr(obj, method_name)
+        if not callable(method):
+            logger.debug(f"SecureRpcClientT: Attribute {method_name} is not callable.")
+            return False
+
+        if spec["is_async"] and not asyncio.iscoroutinefunction(method):
+            logger.debug(f"SecureRpcClientT: Method {method_name} is not async as expected.")
+            return False
+
+        try:
+            sig = inspect.signature(method)
+            if len(sig.parameters) != spec["params"]:
+                logger.debug(f"SecureRpcClientT: {method_name} signature incorrect. Expected {spec['params']} params, got {len(sig.parameters)}.")
+                return False
+        except (TypeError, ValueError):
+            logger.debug(f"SecureRpcClientT: Could not inspect {method_name} signature.")
+            return False
+
+    logger.debug("SecureRpcClientT: All structural and signature checks passed.")
     return True
 
 

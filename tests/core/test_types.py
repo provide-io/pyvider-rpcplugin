@@ -100,16 +100,22 @@ def test_is_valid_serializable_true(mocker):
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
     class ValidSerializable(SerializableT):
-        def to_dict(self):
+        def to_dict(self) -> dict[str, Any]: # Add full annotation
             return {"data": "valid"}
 
         @classmethod
-        def from_dict(cls, data):
-            return cls()
+        def from_dict(cls, data: dict[str, Any]) -> 'ValidSerializable': # Add full annotation
+            # Create a new instance of cls. If cls has __init__ expecting params, adjust.
+            # For this test, a simple instantiation is fine.
+            instance = cls()
+            # Optionally, use 'data' to populate the instance if relevant for other tests,
+            # but for this TypeGuard test, structure is key.
+            return instance
 
     instance = ValidSerializable()
     assert is_valid_serializable(instance) is True
-    mock_logger_debug.assert_called_once_with("🧰🔍✅ Checking if object implements SerializableT protocol")
+    # Check for the final success log, as signature checks are now involved
+    mock_logger_debug.assert_any_call("SerializableT: All checks passed (presence, kind, and signatures).")
 
 def test_is_valid_serializable_false_missing_methods(mocker):
     """Test is_valid_serializable with an object missing required methods."""
@@ -121,23 +127,40 @@ def test_is_valid_serializable_false_missing_methods(mocker):
 
     instance = InvalidSerializableMissing()
     assert is_valid_serializable(instance) is False
-    mock_logger_debug.assert_called_once_with("🧰🔍✅ Checking if object implements SerializableT protocol")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)"),
+        mocker.call("SerializableT: isinstance check failed (method missing or wrong kind).")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_serializable_false_incorrect_signature(mocker):
     """Test is_valid_serializable with an object having methods with incorrect signatures."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidSerializableSignature:
-        def to_dict(self, extra_arg): # Incorrect signature
-            return {"data": "invalid"}
+    class InvalidSerializableSignature(SerializableT): # Inherit to pass isinstance if methods are present
+        def to_dict(self, extra_arg: int) -> dict[str, Any]: # Incorrect signature (1 param)
+            return {"key": extra_arg}
 
         @classmethod
-        def from_dict(cls, data, extra_arg): # Incorrect signature
+        def from_dict(cls, data: dict[str, Any], extra_arg: int) -> 'InvalidSerializableSignature': # Incorrect signature (3 params total)
             return cls()
 
     instance = InvalidSerializableSignature()
     assert is_valid_serializable(instance) is False
-    mock_logger_debug.assert_called_once_with("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)")
+    # Determine the exact second log message based on which signature check fails first.
+    # If to_dict is checked first and fails:
+    expected_specific_log = "SerializableT: to_dict signature incorrect. Expected 0 params (after self), got 1."
+    # If from_dict fails (e.g., if to_dict was made correct but from_dict incorrect):
+    # expected_specific_log = "SerializableT: from_dict signature incorrect. Expected 2 params (cls, data), got X."
+    # For the current InvalidSerializableSignature, to_dict has an extra arg.
+
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)"),
+        mocker.call(expected_specific_log)
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 
 # Test for is_valid_connection
@@ -145,7 +168,7 @@ def test_is_valid_connection_true(mocker):
     """Test is_valid_connection with an object that correctly implements ConnectionT."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class ValidConnection(ConnectionT):
+    class ValidConnection: # No longer inherits ConnectionT for manual check testing
         async def send_data(self, data: bytes) -> None:
             pass
         async def receive_data(self, size: int = 16384) -> bytes:
@@ -155,29 +178,38 @@ def test_is_valid_connection_true(mocker):
 
     instance = ValidConnection()
     assert is_valid_connection(instance) is True
-    # Check for the final success log, assuming intermediate checks also log
-    mock_logger_debug.assert_any_call("ConnectionT: All checks passed.")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
+        mocker.call("ConnectionT: All structural and signature checks passed.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_connection_false_missing_method(mocker):
     """Test is_valid_connection with an object missing a required method."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidConnectionMissing(ConnectionT):
+    class InvalidConnectionMissing: # Does not inherit ConnectionT
         async def send_data(self, data: bytes) -> None:
             pass
-        async def receive_data(self, size: int = 16384) -> bytes: # Missing close
+        async def receive_data(self, size: int = 16384) -> bytes:
             return b""
-        # Missing close method implicitly by not defining it from the protocol
+        # Missing close method
 
     instance = InvalidConnectionMissing()
     assert is_valid_connection(instance) is False
-    mock_logger_debug.assert_any_call("ConnectionT: isinstance check failed (method missing or not async).")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
+        mocker.call("ConnectionT: Method close is missing.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_connection_false_send_data_signature(mocker):
     """Test is_valid_connection with incorrect send_data signature."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidConnectionSendDataSig(ConnectionT):
+    class InvalidConnectionSendDataSig: # Does not inherit ConnectionT
         async def send_data(self) -> None: # Missing 'data' param
             pass
         async def receive_data(self, size: int = 16384) -> bytes:
@@ -187,13 +219,18 @@ def test_is_valid_connection_false_send_data_signature(mocker):
 
     instance = InvalidConnectionSendDataSig()
     assert is_valid_connection(instance) is False
-    mock_logger_debug.assert_any_call("ConnectionT: send_data signature incorrect. Expected 1 param, got 0.")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
+        mocker.call("ConnectionT: send_data signature incorrect. Expected 1 param, got 0.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_connection_false_receive_data_signature(mocker):
     """Test is_valid_connection with incorrect receive_data signature."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidConnectionReceiveDataSig(ConnectionT):
+    class InvalidConnectionReceiveDataSig: # Does not inherit ConnectionT
         async def send_data(self, data: bytes) -> None:
             pass
         async def receive_data(self) -> bytes: # Missing 'size' param
@@ -203,13 +240,18 @@ def test_is_valid_connection_false_receive_data_signature(mocker):
 
     instance = InvalidConnectionReceiveDataSig()
     assert is_valid_connection(instance) is False
-    mock_logger_debug.assert_any_call("ConnectionT: receive_data signature incorrect. Expected 1 param, got 0.")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
+        mocker.call("ConnectionT: receive_data signature incorrect. Expected 1 param, got 0.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_connection_false_close_signature(mocker):
     """Test is_valid_connection with incorrect close signature."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidConnectionCloseSig(ConnectionT):
+    class InvalidConnectionCloseSig: # Does not inherit ConnectionT
         async def send_data(self, data: bytes) -> None:
             pass
         async def receive_data(self, size: int = 16384) -> bytes:
@@ -219,13 +261,18 @@ def test_is_valid_connection_false_close_signature(mocker):
 
     instance = InvalidConnectionCloseSig()
     assert is_valid_connection(instance) is False
-    mock_logger_debug.assert_any_call("ConnectionT: close signature incorrect. Expected 0 params, got 1.")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
+        mocker.call("ConnectionT: close signature incorrect. Expected 0 params, got 1.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_connection_false_not_async(mocker):
     """Test is_valid_connection with a method that is not async."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidConnectionNotAsync(ConnectionT):
+    class InvalidConnectionNotAsync: # Does not inherit ConnectionT
         def send_data(self, data: bytes) -> None: # Not async
             pass
         async def receive_data(self, size: int = 16384) -> bytes:
@@ -234,9 +281,13 @@ def test_is_valid_connection_false_not_async(mocker):
             pass
 
     instance = InvalidConnectionNotAsync()
-    # This check is primarily handled by isinstance and @runtime_checkable for async methods
     assert is_valid_connection(instance) is False
-    mock_logger_debug.assert_any_call("ConnectionT: isinstance check failed (method missing or not async).")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
+        mocker.call("ConnectionT: Method send_data is not async as expected.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 
 # Test for is_valid_secure_rpc_client
@@ -244,7 +295,7 @@ def test_is_valid_secure_rpc_client_true(mocker):
     """Test is_valid_secure_rpc_client with an object that correctly implements SecureRpcClientT."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class ValidSecureRpcClient(SecureRpcClientT):
+    class ValidSecureRpcClient: # Does not inherit SecureRpcClientT
         async def _perform_handshake(self) -> None: pass
         async def _setup_tls(self) -> None: pass
         async def _create_grpc_channel(self) -> None: pass
@@ -252,13 +303,18 @@ def test_is_valid_secure_rpc_client_true(mocker):
 
     instance = ValidSecureRpcClient()
     assert is_valid_secure_rpc_client(instance) is True
-    mock_logger_debug.assert_any_call("SecureRpcClientT: All checks passed.")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
+        mocker.call("SecureRpcClientT: All structural and signature checks passed.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_secure_rpc_client_false_missing_method(mocker):
     """Test is_valid_secure_rpc_client with an object missing a required method."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidSecureRpcClientMissing(SecureRpcClientT):
+    class InvalidSecureRpcClientMissing: # Does not inherit SecureRpcClientT
         async def _perform_handshake(self) -> None: pass
         async def _setup_tls(self) -> None: pass
         # Missing _create_grpc_channel
@@ -266,13 +322,18 @@ def test_is_valid_secure_rpc_client_false_missing_method(mocker):
 
     instance = InvalidSecureRpcClientMissing()
     assert is_valid_secure_rpc_client(instance) is False
-    mock_logger_debug.assert_any_call("SecureRpcClientT: isinstance check failed (method missing or not async).")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
+        mocker.call("SecureRpcClientT: Method _create_grpc_channel is missing.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker):
     """Test is_valid_secure_rpc_client with incorrect _perform_handshake signature."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidSecureRpcClientSig(SecureRpcClientT):
+    class InvalidSecureRpcClientSig: # Does not inherit SecureRpcClientT
         async def _perform_handshake(self, extra_arg) -> None: pass # Incorrect signature
         async def _setup_tls(self) -> None: pass
         async def _create_grpc_channel(self) -> None: pass
@@ -280,13 +341,18 @@ def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker):
 
     instance = InvalidSecureRpcClientSig()
     assert is_valid_secure_rpc_client(instance) is False
-    mock_logger_debug.assert_any_call("SecureRpcClientT: _perform_handshake signature incorrect. Expected 0 params, got 1.")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
+        mocker.call("SecureRpcClientT: _perform_handshake signature incorrect. Expected 0 params, got 1.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_secure_rpc_client_false_not_async(mocker):
     """Test is_valid_secure_rpc_client with a method that is not async."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidSecureRpcClientNotAsync(SecureRpcClientT):
+    class InvalidSecureRpcClientNotAsync: # Does not inherit SecureRpcClientT
         async def _perform_handshake(self) -> None: pass
         def _setup_tls(self) -> None: pass # Not async
         async def _create_grpc_channel(self) -> None: pass
@@ -294,4 +360,9 @@ def test_is_valid_secure_rpc_client_false_not_async(mocker):
 
     instance = InvalidSecureRpcClientNotAsync()
     assert is_valid_secure_rpc_client(instance) is False
-    mock_logger_debug.assert_any_call("SecureRpcClientT: isinstance check failed (method missing or not async).")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
+        mocker.call("SecureRpcClientT: Method _setup_tls is not async as expected.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
