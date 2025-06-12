@@ -509,6 +509,7 @@ async def test_wait_for_server_ready_unix_path_none(
         config=mock_server_config,
         transport=mock_transport,
     )
+    server._transport = mock_transport # Added this line
     server._serving_event = asyncio.Event()
     server._serving_event.set() # Ensure the first await passes
 
@@ -536,6 +537,7 @@ async def test_wait_for_server_ready_unix_file_not_exists(
         config=mock_server_config,
         transport=mock_transport,
     )
+    server._transport = mock_transport # Added this line
     server._serving_event = asyncio.Event()
     server._serving_event.set()
 
@@ -564,6 +566,7 @@ async def test_wait_for_server_ready_tcp_port_none(
         config=mock_server_config,
         transport=mock_transport,
     )
+    server._transport = mock_transport # Added this line
     server._port = None # Simulate port not being set
     server._serving_event = asyncio.Event()
     server._serving_event.set()
@@ -590,6 +593,7 @@ async def test_wait_for_server_ready_tcp_connect_fails(
         config=mock_server_config,
         transport=mock_transport,
     )
+    server._transport = mock_transport # Added this line
     server._port = 12345 # Port is set
     server._serving_event = asyncio.Event()
     server._serving_event.set()
@@ -623,6 +627,7 @@ async def test_wait_for_server_ready_unix_connect_fails(
         config=mock_server_config,
         transport=mock_transport,
     )
+    server._transport = mock_transport # Added this line
     server._serving_event = asyncio.Event()
     server._serving_event.set()
 
@@ -684,15 +689,19 @@ async def test_stop_plugin_task_cancellation_timeout(
     # Explicitly assign mocks to _server and _transport to prevent them from being None
     # Use spec to make the mocks behave more like the real objects.
     # grpc.aio.server is imported as GRPCServer in server.py
-    from grpc.aio import server as GrpcAioServerType # Import for spec
-    from pyvider.rpcplugin.types import RPCPluginTransport # Import for spec
+    from grpc.aio import server as GrpcAioServerType # Ensure this import is present
+    from pyvider.rpcplugin.types import RPCPluginTransport # Ensure this import is present
 
     mock_actual_server = mocker.AsyncMock(spec=GrpcAioServerType)
-    mock_actual_server.stop = mocker.AsyncMock(return_value=None) # Ensure stop itself is an awaitable mock
+    # Capture the specific mock for the 'stop' method
+    mock_server_stop_method = mocker.AsyncMock(return_value=None)
+    mock_actual_server.stop = mock_server_stop_method
     server._server = mock_actual_server
 
     mock_actual_transport = mocker.AsyncMock(spec=RPCPluginTransport)
-    mock_actual_transport.close = mocker.AsyncMock(return_value=None) # Ensure close itself is an awaitable mock
+    # Capture the specific mock for the 'close' method
+    mock_transport_close_method = mocker.AsyncMock(return_value=None)
+    mock_actual_transport.close = mock_transport_close_method
     server._transport = mock_actual_transport
     
     # _client_tasks is not an attribute of RPCPluginServer. stop() uses asyncio.all_tasks().
@@ -732,8 +741,8 @@ async def test_stop_plugin_task_cancellation_timeout(
     assert found_timeout_log, "Timeout warning for task cancellation not logged"
 
     # Check that server and transport stop are still attempted
-    server._server.stop.assert_called_once()
-    server._transport.close.assert_called_once()
+    mock_server_stop_method.assert_called_once()
+    mock_transport_close_method.assert_called_once()
 
 @pytest.mark.skip(reason="Test silently hangs/crashes pytest for tcp/unix params, needs deep investigation.")
 @pytest.mark.asyncio

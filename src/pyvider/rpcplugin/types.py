@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import inspect # Added
 from collections.abc import Awaitable, Callable as AbcCallable
-from typing import Any, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
+from typing import Any, Callable, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING # Added Callable
 import grpc
 from pyvider.telemetry import logger
 
@@ -154,17 +155,45 @@ class SerializableT(TypeProtocol):
 
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
-    """
-    TypeGuard that checks if an object implements the SerializableT protocol.
+    logger.debug("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)")
 
-    Args:
-        obj: The object to check
+    # Baseline check for method presence and kind (e.g., classmethod for from_dict)
+    # isinstance with @runtime_checkable handles this well.
+    if not isinstance(obj, SerializableT):
+        logger.debug("SerializableT: isinstance check failed (method missing or wrong kind).")
+        return False
 
-    Returns:
-        True if the object implements SerializableT, False otherwise
-    """
-    logger.debug("🧰🔍✅ Checking if object implements SerializableT protocol")
-    return isinstance(obj, SerializableT)
+    # Check to_dict signature: obj.to_dict() expects no further arguments after 'self'
+    try:
+        # For an instance method like obj.to_dict(), inspect.signature() shows parameters excluding 'self' (it's bound).
+        to_dict_sig = inspect.signature(obj.to_dict)
+        if len(to_dict_sig.parameters) != 0:
+            logger.debug(f"SerializableT: to_dict signature incorrect. Expected 0 params (after self), got {len(to_dict_sig.parameters)}.")
+            return False
+    except (TypeError, ValueError): # Should ideally not happen if isinstance passed, but defensive.
+        logger.debug("SerializableT: Could not inspect to_dict signature.")
+        return False
+
+    # Check from_dict signature: type(obj).from_dict(cls, data) expects one 'data' argument after 'cls'
+    try:
+        # For a classmethod like type(obj).from_dict, inspect.signature() on the method obtained from the class
+        # will show parameters including 'cls'.
+        from_dict_method = getattr(type(obj), 'from_dict')
+        from_dict_sig = inspect.signature(from_dict_method)
+        if len(from_dict_sig.parameters) != 2: # Expecting 'cls' and 'data'
+            logger.debug(f"SerializableT: from_dict signature incorrect. Expected 2 params (cls, data), got {len(from_dict_sig.parameters)}.")
+            return False
+        # Optional: Check parameter names if desired for stricter validation
+        # param_names = list(from_dict_sig.parameters.keys())
+        # if param_names[0] not in ('cls', '_cls') or param_names[1] != 'data':
+        #     logger.debug(f"SerializableT: from_dict parameter names incorrect. Got {param_names}, expected ('cls', 'data').")
+        #     return False
+    except (TypeError, ValueError, AttributeError): # AttributeError if from_dict not on class
+        logger.debug("SerializableT: Could not inspect from_dict signature or method missing on class.")
+        return False
+
+    logger.debug("SerializableT: All checks passed (presence, kind, and signatures).")
+    return True
 
 
 @runtime_checkable
@@ -204,6 +233,53 @@ class ConnectionT(TypeProtocol):
         ...
 
 
+def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
+    logger.debug("🧰🔍✅ Checking if object implements ConnectionT protocol (runtime signature check)")
+
+    if not isinstance(obj, ConnectionT):
+        logger.debug("ConnectionT: isinstance check failed (method missing or not async).")
+        return False
+
+    # Check send_data(self, data: bytes)
+    try:
+        send_data_sig = inspect.signature(obj.send_data)
+        if len(send_data_sig.parameters) != 1: # Expects 'data'
+            logger.debug(f"ConnectionT: send_data signature incorrect. Expected 1 param, got {len(send_data_sig.parameters)}.")
+            return False
+        # Parameter 'data' should ideally be type 'bytes'. Runtime check is hard.
+    except (TypeError, ValueError):
+        logger.debug("ConnectionT: Could not inspect send_data signature.")
+        return False
+
+    # Check receive_data(self, size: int = 16384)
+    try:
+        receive_data_sig = inspect.signature(obj.receive_data)
+        if len(receive_data_sig.parameters) != 1: # Expects 'size'
+            logger.debug(f"ConnectionT: receive_data signature incorrect. Expected 1 param, got {len(receive_data_sig.parameters)}.")
+            return False
+        # Parameter 'size' has a default. inspect.signature captures this.
+        # param_size = receive_data_sig.parameters['size'] # Assuming param is named 'size'
+        # if param_size.default is inspect.Parameter.empty:
+        #     logger.debug("ConnectionT: receive_data 'size' param should have a default.")
+        #     return False
+    except (TypeError, ValueError):
+        logger.debug("ConnectionT: Could not inspect receive_data signature.")
+        return False
+
+    # Check close(self)
+    try:
+        close_sig = inspect.signature(obj.close)
+        if len(close_sig.parameters) != 0: # Expects no params
+            logger.debug(f"ConnectionT: close signature incorrect. Expected 0 params, got {len(close_sig.parameters)}.")
+            return False
+    except (TypeError, ValueError):
+        logger.debug("ConnectionT: Could not inspect close signature.")
+        return False
+
+    logger.debug("ConnectionT: All checks passed.")
+    return True
+
+
 # Type aliases for gRPC Clients
 GrpcChannelType = grpc.aio.Channel | grpc.Channel      # Represents gRPC sync or async channel
 GrpcServerType = grpc.aio.Server                       # Represents gRPC async server type
@@ -241,6 +317,35 @@ class SecureRpcClientT(TypeProtocol):
     async def close(self) -> None:
         """Close the client connection and clean up resources."""
         ...
+
+
+def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
+    logger.debug("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (runtime signature check)")
+
+    if not isinstance(obj, SecureRpcClientT):
+        logger.debug("SecureRpcClientT: isinstance check failed (method missing or not async).")
+        return False
+
+    methods_to_check = {
+        "_perform_handshake": 0,
+        "_setup_tls": 0,
+        "_create_grpc_channel": 0,
+        "close": 0,
+    }
+
+    for method_name, expected_param_count in methods_to_check.items():
+        try:
+            method = getattr(obj, method_name)
+            sig = inspect.signature(method)
+            if len(sig.parameters) != expected_param_count:
+                logger.debug(f"SecureRpcClientT: {method_name} signature incorrect. Expected {expected_param_count} params, got {len(sig.parameters)}.")
+                return False
+        except (TypeError, ValueError, AttributeError): # AttributeError if method is missing
+            logger.debug(f"SecureRpcClientT: Could not inspect {method_name} signature or method missing.")
+            return False
+
+    logger.debug("SecureRpcClientT: All checks passed.")
+    return True
 
 
 def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
