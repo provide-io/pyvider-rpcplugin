@@ -15,7 +15,6 @@ from tests.fixtures import *
 
 ### ✅ BASIC CERTIFICATE PROPERTY TESTS ###
 
-
 @pytest.mark.asyncio
 async def test_certificate_subject(client_cert) -> None:
     """Ensure the subject is correctly extracted."""
@@ -33,9 +32,7 @@ async def test_certificate_issuer(client_cert) -> None:
 
 
 @pytest.mark.asyncio
-async def test_certificate_subject_not_equal_to_issuer_for_non_self_signed(
-    client_cert,
-) -> None:
+async def test_certificate_subject_not_equal_to_issuer_for_non_self_signed(client_cert) -> None:
     """Ensure subject and issuer are different for non-self-signed certificates."""
     if client_cert.subject == client_cert.issuer:
         pytest.skip("Skipping test: Certificate is self-signed.")
@@ -193,7 +190,6 @@ async def test_is_ca_extension_not_found() -> None:
     # Should return False when extension is not found
     assert cert.is_ca is False
 
-
 @pytest.mark.asyncio
 async def test_is_ca_extension_not_found_logs_debug(mocker):
     """Test is_ca property logs debug when BasicConstraints extension is not found."""
@@ -207,25 +203,17 @@ async def test_is_ca_extension_not_found_logs_debug(mocker):
     )
 
     # Patch the logger from the certificate module
-    mock_logger_debug = mocker.patch(
-        "pyvider.rpcplugin.crypto.certificate.logger.debug"
-    )
+    mock_logger_debug = mocker.patch('pyvider.rpcplugin.crypto.certificate.logger.debug')
 
     # Temporarily replace the _cert.extensions on the instance
     # This is a bit invasive, but necessary to simulate the condition for the property
     original_extensions = cert_instance._cert.extensions
-    cert_instance._cert = mocker.MagicMock(
-        spec=x509.Certificate
-    )  # Replace _cert with a mock
-    cert_instance._cert.extensions = (
-        mock_extensions  # Assign mocked extensions to the mocked _cert
-    )
+    cert_instance._cert = mocker.MagicMock(spec=x509.Certificate) # Replace _cert with a mock
+    cert_instance._cert.extensions = mock_extensions # Assign mocked extensions to the mocked _cert
 
-    assert cert_instance.is_ca is False  # is_ca should return False
+    assert cert_instance.is_ca is False # is_ca should return False
 
-    mock_logger_debug.assert_called_once_with(
-        "📜🔍⚠️ is_ca: Basic Constraints extension not found."
-    )
+    mock_logger_debug.assert_called_once_with("📜🔍⚠️ is_ca: Basic Constraints extension not found.")
 
     # Restore original extensions if necessary, though for this test it's fine as instance is local
     # For more complex scenarios, more careful patching/restoration might be needed
@@ -258,6 +246,5 @@ async def test_certificate_hash_collision() -> None:
     cert2._base = cert1._base
 
     assert hash(cert1) == hash(cert2), "Identical serials should hash the same"
-
 
 ### 🐍🏗🧪️

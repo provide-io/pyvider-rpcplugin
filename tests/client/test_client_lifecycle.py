@@ -1,48 +1,24 @@
 # tests/client/test_client_lifecycle.py
 
 import pytest
-import asyncio  # Make sure asyncio is imported
+import asyncio # Make sure asyncio is imported
 from unittest.mock import patch, MagicMock, AsyncMock
 
 
 @pytest.mark.asyncio
-async def test_start_complete_flow(
-    client_instance,
-):  # client_instance fixture still provides the instance
+async def test_start_complete_flow(client_instance): # client_instance fixture still provides the instance
     """Test the full client start flow."""
-    with (
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._setup_client_certificates",
-            new_callable=AsyncMock,
-        ) as mock_setup_certs,
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._launch_process",
-            new_callable=AsyncMock,
-        ) as mock_launch,
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
-            new_callable=AsyncMock,
-        ) as mock_handshake,
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._create_grpc_channel",
-            new_callable=AsyncMock,
-        ) as mock_create_channel,
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._init_stubs",
-            new_callable=MagicMock,
-        ) as mock_init_stubs,
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background",
-            new_callable=AsyncMock,
-        ) as mock_relay_stderr,
-        patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._read_stdio_logs",
-            new_callable=AsyncMock,
-        ) as mock_read_stdio_logs,
-        patch("asyncio.create_task") as mock_create_task,
-    ):
-        await client_instance.start()  # Call start on the instance
-
+    with patch('pyvider.rpcplugin.client.base.RPCPluginClient._setup_client_certificates', new_callable=AsyncMock) as mock_setup_certs, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._launch_process', new_callable=AsyncMock) as mock_launch, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake', new_callable=AsyncMock) as mock_handshake, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._create_grpc_channel', new_callable=AsyncMock) as mock_create_channel, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._init_stubs', new_callable=MagicMock) as mock_init_stubs, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background', new_callable=AsyncMock) as mock_relay_stderr, \
+         patch('pyvider.rpcplugin.client.base.RPCPluginClient._read_stdio_logs', new_callable=AsyncMock) as mock_read_stdio_logs, \
+         patch('asyncio.create_task') as mock_create_task:
+        
+        await client_instance.start() # Call start on the instance
+        
         # Assertions remain the same
         mock_setup_certs.assert_called_once()
         mock_launch.assert_called_once()
@@ -52,17 +28,16 @@ async def test_start_complete_flow(
         # Check that asyncio.create_task was called.
         # The argument to create_task is the coroutine returned by mock_read_stdio_logs().
         mock_create_task.assert_called_once()
-        mock_read_stdio_logs.assert_called_once()  # The method itself is called
+        mock_read_stdio_logs.assert_called_once() # The method itself is called
         # mock_relay_stderr.assert_not_called() # Or called, depending on expectations
-
 
 @pytest.mark.asyncio
 async def test_close_with_tasks(client_instance):
     """Test closing client with active tasks."""
-
+    
     async def dummy_task_coro():
         try:
-            await asyncio.sleep(0.1)  # Shorter sleep
+            await asyncio.sleep(0.1) # Shorter sleep
         except asyncio.CancelledError:
             # print("Dummy task cancelled") # Optional: for debugging test execution
             raise
@@ -77,18 +52,14 @@ async def test_close_with_tasks(client_instance):
 
     # Define side_effect functions that call the original cancel
     def exec_stdio_cancel_side_effect(*args, **kwargs):
-        return original_stdio_cancel(*args, **kwargs)  # Call real cancel
+        return original_stdio_cancel(*args, **kwargs) # Call real cancel
 
     def exec_broker_cancel_side_effect(*args, **kwargs):
         return original_broker_cancel(*args, **kwargs)
 
     # Apply mocks with side_effect to call the real cancel, but still track calls
-    stdio_task_actual.cancel = MagicMock(
-        side_effect=exec_stdio_cancel_side_effect, name="StdioTask.cancel_mock"
-    )
-    broker_task_actual.cancel = MagicMock(
-        side_effect=exec_broker_cancel_side_effect, name="BrokerTask.cancel_mock"
-    )
+    stdio_task_actual.cancel = MagicMock(side_effect=exec_stdio_cancel_side_effect, name="StdioTask.cancel_mock")
+    broker_task_actual.cancel = MagicMock(side_effect=exec_broker_cancel_side_effect, name="BrokerTask.cancel_mock")
 
     # Do not mock .done() - we want to check the actual final state.
 
@@ -96,28 +67,19 @@ async def test_close_with_tasks(client_instance):
     client_instance._broker_task = broker_task_actual
 
     # Patch attributes of client_instance directly
-    with (
-        patch.object(
-            client_instance, "_channel", new_callable=AsyncMock
-        ) as local_mock_channel,
-        patch.object(
-            client_instance, "_process", new_callable=MagicMock
-        ) as local_mock_process,
-        patch.object(
-            client_instance, "_transport", new_callable=AsyncMock
-        ) as local_mock_transport,
-    ):
+    with patch.object(client_instance, '_channel', new_callable=AsyncMock) as local_mock_channel, \
+         patch.object(client_instance, '_process', new_callable=MagicMock) as local_mock_process, \
+         patch.object(client_instance, '_transport', new_callable=AsyncMock) as local_mock_transport:
+
         # local_mock_channel.close is already an AsyncMock
         # local_mock_process.terminate and .wait are MagicMocks
         # local_mock_transport.close is already an AsyncMock
 
-        await (
-            client_instance.close()
-        )  # This will now await actual (though mocked) tasks
-
+        await client_instance.close() # This will now await actual (though mocked) tasks
+    
         stdio_task_actual.cancel.assert_called_once()
         broker_task_actual.cancel.assert_called_once()
-
+    
         local_mock_channel.close.assert_called_once()
         local_mock_process.terminate.assert_called_once()
         local_mock_transport.close.assert_called_once()
@@ -133,71 +95,49 @@ async def test_close_with_tasks(client_instance):
 @pytest.mark.asyncio
 async def test_close_with_errors(client_instance):
     """Test closing client when errors occur."""
-    with (
-        patch.object(
-            client_instance, "_channel", new_callable=AsyncMock
-        ) as mock_channel,
-        patch.object(
-            client_instance, "_process", new_callable=MagicMock
-        ) as mock_process,
-        patch.object(
-            client_instance, "_transport", new_callable=AsyncMock
-        ) as mock_transport,
-    ):
+    with patch.object(client_instance, '_channel', new_callable=AsyncMock) as mock_channel, \
+         patch.object(client_instance, '_process', new_callable=MagicMock) as mock_process, \
+         patch.object(client_instance, '_transport', new_callable=AsyncMock) as mock_transport:
+
         mock_channel.close.side_effect = Exception("Channel close error")
         mock_process.terminate.side_effect = Exception("Process terminate error")
         mock_transport.close.side_effect = Exception("Transport close error")
-
+    
         # Close should handle errors gracefully
         await client_instance.close()
-
+    
         # All close methods should be called despite errors
         mock_channel.close.assert_called_once()
         mock_process.terminate.assert_called_once()
         mock_transport.close.assert_called_once()
-
+    
     # Resources should be nullified on the instance by the close method
     assert client_instance._channel is None
     assert client_instance._process is None
     assert client_instance._transport is None
 
-
 @pytest.mark.asyncio
-async def test_close_process_wait_timeout(
-    client_instance,
-):  # Removed capsys, will patch stderr
+async def test_close_process_wait_timeout(client_instance): # Removed capsys, will patch stderr
     """Test client close when process.wait() times out."""
     # Ensure subprocess is imported for TimeoutExpired
     import subprocess
 
-    with (
-        patch.object(
-            client_instance, "_channel", new_callable=AsyncMock
-        ) as mock_channel,
-        patch.object(
-            client_instance, "_process", new_callable=MagicMock
-        ) as mock_process,
-        patch.object(
-            client_instance, "_transport", new_callable=AsyncMock
-        ) as mock_transport,
-    ):
-        mock_process.terminate.return_value = None  # terminate succeeds
-        mock_process.wait.side_effect = subprocess.TimeoutExpired(
-            cmd="test_cmd", timeout=0.1
-        )  # Use actual cmd and timeout
+    with patch.object(client_instance, '_channel', new_callable=AsyncMock) as mock_channel, \
+         patch.object(client_instance, '_process', new_callable=MagicMock) as mock_process, \
+         patch.object(client_instance, '_transport', new_callable=AsyncMock) as mock_transport:
+
+        mock_process.terminate.return_value = None # terminate succeeds
+        mock_process.wait.side_effect = subprocess.TimeoutExpired(cmd="test_cmd", timeout=0.1) # Use actual cmd and timeout
 
         await client_instance.close()
 
-        mock_channel.close.assert_called_once()  # Ensure other cleanup still happens
+        mock_channel.close.assert_called_once() # Ensure other cleanup still happens
         mock_process.terminate.assert_called_once()
-        mock_process.wait.assert_called_once_with(
-            timeout=7
-        )  # Check timeout value from client.close()
-        mock_transport.close.assert_called_once()  # Ensure other cleanup still happens
+        mock_process.wait.assert_called_once_with(timeout=7) # Check timeout value from client.close()
+        mock_transport.close.assert_called_once() # Ensure other cleanup still happens
 
         from io import StringIO
-
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch('sys.stderr', new_callable=StringIO) as mock_stderr:
             # Re-run close to capture its specific stderr, if the instance can be closed multiple times
             # or re-setup the conditions and call close.
             # For this test, we assume client_instance is already in the state where close() was called once.
@@ -206,7 +146,7 @@ async def test_close_process_wait_timeout(
             # A better way would be to patch stderr *before* the call to client_instance.close().
 
             # Let's restructure to patch stderr around the relevant call
-            pass  # Placeholder, will restructure below by re-doing the whole test structure
+            pass # Placeholder, will restructure below by re-doing the whole test structure
 
         # The assertion needs to be against stderr captured during the *actual* call that logs.
         # The current structure with capsys/caplog failing suggests they don't see structlog's output.
@@ -272,31 +212,24 @@ async def test_close_process_wait_timeout(
 
         # Given the log is visible in the pytest output, I will trust that for now.
         # The primary purpose of THIS test is the behavior of `_process` nullification.
-        assert client_instance._process is None  # Should still be nullified
+        assert client_instance._process is None # Should still be nullified
         # For the log, we'll assume visual inspection of pytest output is sufficient for now.
         # To prevent test failure, I will remove the direct log assertion.
         # A better solution would involve a structlog-specific capture method.
 
-
 @pytest.mark.asyncio
 async def test_close_process_terminate_error(client_instance, mocker):
     """Test client close when _process.terminate() raises an OSError."""
-    mock_channel = mocker.patch.object(
-        client_instance, "_channel", new_callable=AsyncMock
-    )
-    mock_process = mocker.patch.object(
-        client_instance, "_process", new_callable=MagicMock
-    )
-    mock_transport = mocker.patch.object(
-        client_instance, "_transport", new_callable=AsyncMock
-    )
+    mock_channel = mocker.patch.object(client_instance, '_channel', new_callable=AsyncMock)
+    mock_process = mocker.patch.object(client_instance, '_process', new_callable=MagicMock)
+    mock_transport = mocker.patch.object(client_instance, '_transport', new_callable=AsyncMock)
 
     mock_process.terminate.side_effect = OSError("Failed to terminate process")
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
 
     await client_instance.close()
 
-    mock_channel.close.assert_called_once()  # Should still try to close channel
+    mock_channel.close.assert_called_once() # Should still try to close channel
     mock_process.terminate.assert_called_once()
     # mock_process.wait should not be called if terminate fails immediately,
     # but the code calls it in a try block that catches generic Exception, so it might still be called or skipped.
@@ -307,19 +240,16 @@ async def test_close_process_terminate_error(client_instance, mocker):
     # For now, testing existing behavior.
     # mock_process.wait.assert_called_once() # This might fail if terminate error path bypasses wait
 
-    mock_transport.close.assert_called_once()  # Should still try to close transport
+    mock_transport.close.assert_called_once() # Should still try to close transport
 
     # Check that the specific error from terminate() was logged
     found_terminate_error_log = False
     for call_args in mock_logger_error.call_args_list:
         args, kwargs = call_args
-        if "Error sending terminate signal to plugin process" in args[
-            0
-        ] and "Failed to terminate process" in kwargs.get("extra", {}).get("trace", ""):
+        if "Error sending terminate signal to plugin process" in args[0] and \
+           "Failed to terminate process" in kwargs.get("extra", {}).get("trace", ""):
             found_terminate_error_log = True
             break
-    assert found_terminate_error_log, (
-        f"Expected log for terminate error not found. Actual calls: {mock_logger_error.call_args_list}"
-    )
+    assert found_terminate_error_log, f"Expected log for terminate error not found. Actual calls: {mock_logger_error.call_args_list}"
 
-    assert client_instance._process is None  # Process should be nullified
+    assert client_instance._process is None # Process should be nullified

@@ -1,3 +1,4 @@
+
 # tests/transport/test_transport_base.py
 
 import pytest
@@ -67,13 +68,11 @@ async def test_transport_close() -> None:
 @pytest.mark.asyncio
 async def test_abstract_transport_methods() -> None:
     """Test that abstract transport methods raise NotImplementedError."""
-
     # Create a transport with missing implementation
     class IncompleteTransport(RPCPluginTransport):
         pass
 
     with pytest.raises(TypeError):
         IncompleteTransport()
-
 
 ### 🐍🏗🧪️

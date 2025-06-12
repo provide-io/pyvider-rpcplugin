@@ -2,8 +2,7 @@
 
 import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock  # Ensure AsyncMock is imported
-
+from unittest.mock import MagicMock, AsyncMock # Ensure AsyncMock is imported
 
 class DummyReader:
     def __init__(self, data: bytes = b"") -> None:
@@ -53,10 +52,10 @@ class DummyGRPCServer:
         # from unittest.mock import MagicMock, AsyncMock # Already imported at top
         self.ports = []
         self.add_generic_rpc_handlers = MagicMock()
-        self.add_registered_method_handlers = MagicMock()  # Added this
-        self.start = AsyncMock()  # Added this
-        self.stop = AsyncMock()  # Added this
-        self.wait_for_termination = AsyncMock()  # Added this
+        self.add_registered_method_handlers = MagicMock() # Added this
+        self.start = AsyncMock() # Added this
+        self.stop = AsyncMock() # Added this
+        self.wait_for_termination = AsyncMock() # Added this
 
     def add_secure_port(self, address, creds) -> int:
         self.ports.append(address)
@@ -94,7 +93,6 @@ class DummyAioServer:
             asyncio.get_event_loop()
         except RuntimeError:
             pass
-
 
 ################################################################################
 # This is from test_connecion.py
@@ -145,6 +143,5 @@ def dummy_writer() -> DummyWriter:
 def dummy_reader() -> DummyReader:
     # Default dummy reader returns "test data".
     return DummyReader(b"test data")
-
 
 ### 🐍🏗🧪️

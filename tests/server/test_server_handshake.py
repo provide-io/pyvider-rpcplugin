@@ -8,8 +8,8 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 from pyvider.rpcplugin.config import rpcplugin_config
 
 
-from tests.fixtures import *
 
+from tests.fixtures import *
 
 @pytest.mark.asyncio
 async def test_server_handshake_invalid_cookie(
@@ -20,20 +20,16 @@ async def test_server_handshake_invalid_cookie(
     mock_server_transport,
 ) -> None:
     # Set invalid cookie values directly in rpcplugin_config to ensure they're used by validate_magic_cookie
-    monkeypatch.setattr(
-        rpcplugin_config,
-        "config",
-        {
-            "PLUGIN_MAGIC_COOKIE_KEY": "PLUGIN_MAGIC_COOKIE",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "valid_cookie",
-            "PLUGIN_MAGIC_COOKIE": "invalid_cookie",
-            "PLUGIN_PROTOCOL_VERSIONS": [1],
-            "PLUGIN_SERVER_TRANSPORTS": ["tcp", "unix"],
-        },
-    )
-
+    monkeypatch.setattr(rpcplugin_config, "config", {
+        "PLUGIN_MAGIC_COOKIE_KEY": "PLUGIN_MAGIC_COOKIE",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "valid_cookie",
+        "PLUGIN_MAGIC_COOKIE": "invalid_cookie",
+        "PLUGIN_PROTOCOL_VERSIONS": [1],
+        "PLUGIN_SERVER_TRANSPORTS": ["tcp", "unix"]
+    })
+    
     transport = mock_server_transport
-
+    
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -41,17 +37,11 @@ async def test_server_handshake_invalid_cookie(
         transport=transport,
     )
 
-    with pytest.raises(
-        HandshakeError,
-        match=r"Handshake negotiation failed: cookie_provided does not match required cookie_value",
-    ):
+    with pytest.raises(HandshakeError, match="cookie_provided does not match required cookie_value"):
         await server._negotiate_handshake()
 
-
 @pytest.mark.asyncio
-async def test_server_handshake_missing_env(
-    monkeypatch, mock_server_protocol, mock_server_handler
-):
+async def test_server_handshake_missing_env(monkeypatch, mock_server_protocol, mock_server_handler):
     """Test handshake with missing environment variables."""
     # Create a new server instance with default config
     server = RPCPluginServer(
@@ -60,25 +50,21 @@ async def test_server_handshake_missing_env(
         config=None,  # Use None to force using the global config
         transport=None,
     )
-
+    
     # This is the key fix: Reset critical config values
     # We need to directly access and modify the config used by validate_magic_cookie
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.config.rpcplugin_config.config",
-        {
-            # Set the problematic values that should trigger a HandshakeError
-            "PLUGIN_MAGIC_COOKIE_KEY": None,  # This should force the error
-            "PLUGIN_MAGIC_COOKIE_VALUE": "test_value",
-            "PLUGIN_MAGIC_COOKIE": "test_cookie",
-            "PLUGIN_PROTOCOL_VERSIONS": [1, 2],
-            "PLUGIN_SERVER_TRANSPORTS": ["tcp", "unix"],
-        },
-    )
-
+    monkeypatch.setattr("pyvider.rpcplugin.config.rpcplugin_config.config", {
+        # Set the problematic values that should trigger a HandshakeError
+        "PLUGIN_MAGIC_COOKIE_KEY": None,  # This should force the error
+        "PLUGIN_MAGIC_COOKIE_VALUE": "test_value",
+        "PLUGIN_MAGIC_COOKIE": "test_cookie",
+        "PLUGIN_PROTOCOL_VERSIONS": [1, 2],
+        "PLUGIN_SERVER_TRANSPORTS": ["tcp", "unix"]
+    })
+    
     # Now the exception should be raised
     with pytest.raises(HandshakeError):
         await server._negotiate_handshake()
-
 
 @pytest.mark.asyncio
 async def test_negotiate_handshake_with_provided_transport(
@@ -103,7 +89,7 @@ async def test_negotiate_handshake_with_provided_transport(
         self._protocol_version = 1
         self._transport = transport
         self._transport_name = transport._transport_name
-
+        
     # Apply the mock
     monkeypatch.setattr(
         server, "_negotiate_handshake", dummy_negotiate.__get__(server, type(server))
@@ -120,6 +106,7 @@ async def test_negotiate_handshake_via_negotiation(
     mock_server_handler,
     mock_server_transport,
 ) -> None:
+
     # right now this fails if there is Unix. But it works fine
     # with the tests which has a config set.
     transport = mock_server_transport
@@ -142,7 +129,6 @@ async def test_negotiate_handshake_via_negotiation(
 
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
-
 
 @pytest.mark.asyncio
 async def test_negotiate_handshake_provided_tcp_transport(
@@ -173,7 +159,6 @@ async def test_negotiate_handshake_provided_tcp_transport(
     await server._negotiate_handshake()
     assert server._transport_name == "tcp"
 
-
 @pytest.mark.asyncio
 async def test_negotiate_handshake_from_config(
     monkeypatch,
@@ -201,7 +186,6 @@ async def test_negotiate_handshake_from_config(
     await server._negotiate_handshake()
     assert server._transport_name == transport._transport_name
 
-
 @pytest.mark.asyncio
 async def test_negotiate_handshake_transport_is_tuple(
     mocker, mock_server_protocol, mock_server_handler, mock_server_config
@@ -212,18 +196,16 @@ async def test_negotiate_handshake_transport_is_tuple(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,  # Use the fixture that provides global rpcplugin_config
-        transport=None,  # Initial transport is None
+        config=mock_server_config, # Use the fixture that provides global rpcplugin_config
+        transport=None, # Initial transport is None
     )
 
     # Manually set the server's transport to a tuple, as if it was configured that way
     # This simulates the condition `isinstance(self.transport, tuple) and len(self.transport) >= 2`
-    mock_actual_transport_instance = mocker.MagicMock(
-        spec=TCPSocketTransport
-    )  # e.g. a TCPSocketTransport
+    mock_actual_transport_instance = mocker.MagicMock(spec=TCPSocketTransport) # e.g. a TCPSocketTransport
     mock_actual_transport_instance.endpoint = "127.0.0.1:1234"
 
-    server.transport = ("tcp", mock_actual_transport_instance)  # Set the tuple
+    server.transport = ("tcp", mock_actual_transport_instance) # Set the tuple
 
     # Mock a callable for supported_transports in HandshakeConfig
     # This part of the code isn't hit if server.transport is already a tuple.
@@ -233,11 +215,9 @@ async def test_negotiate_handshake_transport_is_tuple(
     # So, no need to mock supported_transports or negotiate_transport for this specific path.
 
     # Mock validate_magic_cookie and negotiate_protocol_version to prevent side effects
-    mocker.patch("pyvider.rpcplugin.handshake.validate_magic_cookie")
-    mocker.patch(
-        "pyvider.rpcplugin.handshake.negotiate_protocol_version", return_value=1
-    )
-    mock_logger_debug = mocker.patch("pyvider.rpcplugin.server.logger.debug")
+    mocker.patch('pyvider.rpcplugin.handshake.validate_magic_cookie')
+    mocker.patch('pyvider.rpcplugin.handshake.negotiate_protocol_version', return_value=1)
+    mock_logger_debug = mocker.patch('pyvider.rpcplugin.server.logger.debug')
 
     await server._negotiate_handshake()
 
@@ -251,6 +231,5 @@ async def test_negotiate_handshake_transport_is_tuple(
         for call_args in mock_logger_debug.call_args_list
     )
     assert found_log, "Log for transport tuple unpacking not found"
-
 
 ### 🐍🏗🧪️

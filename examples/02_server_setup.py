@@ -33,7 +33,7 @@ class EchoServiceHandler:
         """Echo back the received message with metadata."""
         self.request_count += 1
 
-        message = getattr(request, "message", "empty")
+        message = getattr(request, 'message', 'empty')
         response_data = f"Echo[{self.request_count}]: {message}"
 
         logger.info(
@@ -43,10 +43,10 @@ class EchoServiceHandler:
             status="success",
             service_name=self.service_name,
             request_count=self.request_count,
-            message_length=len(message),
+            message_length=len(message)
         )
 
-        return type("EchoReply", (), {"response": response_data})()
+        return type('EchoReply', (), {'response': response_data})()
 
 
 async def example_2_unix_socket_server():
@@ -68,7 +68,7 @@ async def example_2_unix_socket_server():
         transport=["unix"],  # Unix socket only
         auto_mtls=False,  # Disable mTLS for local communication
         handshake_timeout=10.0,
-        connection_timeout=60.0,
+        connection_timeout=60.0
     )
 
     # Create protocol and handler
@@ -80,7 +80,7 @@ async def example_2_unix_socket_server():
         protocol=protocol,
         handler=handler,
         transport="unix",
-        transport_path="/tmp/example_echo.sock",  # Custom socket path
+        transport_path="/tmp/example_echo.sock"  # Custom socket path
     )
 
     logger.info(
@@ -89,7 +89,7 @@ async def example_2_unix_socket_server():
         action="startup",
         status="starting",
         transport="unix",
-        socket_path="/tmp/example_echo.sock",
+        socket_path="/tmp/example_echo.sock"
     )
 
     # Start server and let it initialize
@@ -101,7 +101,7 @@ async def example_2_unix_socket_server():
         domain="server",
         action="startup",
         status="success",
-        performance_note="Unix sockets provide ~2x faster IPC than TCP",
+        performance_note="Unix sockets provide ~2x faster IPC than TCP"
     )
 
     # Graceful shutdown
@@ -112,7 +112,7 @@ async def example_2_unix_socket_server():
         "Unix socket server stopped",
         domain="server",
         action="shutdown",
-        status="success",
+        status="success"
     )
 
 
@@ -135,7 +135,7 @@ async def example_2_tcp_server():
         transport=["tcp"],  # TCP only
         auto_mtls=False,  # Will enable mTLS in security example
         handshake_timeout=15.0,
-        connection_timeout=120.0,
+        connection_timeout=120.0
     )
 
     # Create protocol and handler
@@ -148,7 +148,7 @@ async def example_2_tcp_server():
         handler=handler,
         transport="tcp",
         host="127.0.0.1",  # Bind to localhost
-        port=0,  # Use any available port
+        port=0  # Use any available port
     )
 
     logger.info(
@@ -158,7 +158,7 @@ async def example_2_tcp_server():
         status="starting",
         transport="tcp",
         host="127.0.0.1",
-        port="auto-assigned",
+        port="auto-assigned"
     )
 
     # Start server and let it initialize
@@ -166,7 +166,7 @@ async def example_2_tcp_server():
     await asyncio.sleep(0.5)
 
     # Get the actual port assigned
-    actual_port = getattr(server._transport, "port", "unknown")
+    actual_port = getattr(server._transport, 'port', 'unknown')
 
     logger.info(
         "TCP server running",
@@ -175,7 +175,7 @@ async def example_2_tcp_server():
         status="success",
         host="127.0.0.1",
         port=actual_port,
-        network_note="TCP allows remote client connections",
+        network_note="TCP allows remote client connections"
     )
 
     # Graceful shutdown
@@ -183,7 +183,10 @@ async def example_2_tcp_server():
     await server_task
 
     logger.info(
-        "TCP server stopped", domain="server", action="shutdown", status="success"
+        "TCP server stopped",
+        domain="server",
+        action="shutdown",
+        status="success"
     )
 
 
@@ -206,7 +209,7 @@ async def example_2_dual_transport_server():
         transport=["unix", "tcp"],  # Support both transports
         auto_mtls=False,
         handshake_timeout=20.0,
-        connection_timeout=180.0,
+        connection_timeout=180.0
     )
 
     # Create protocol and handler
@@ -221,7 +224,7 @@ async def example_2_dual_transport_server():
 
     # Note: The plugin_server factory is not used here because it expects
     # a single string for the transport argument.
-    from pyvider.rpcplugin.server import RPCPluginServer  # Import directly
+    from pyvider.rpcplugin.server import RPCPluginServer # Import directly
 
     server_config = {
         # host and port are not directly used by RPCPluginServer constructor
@@ -235,7 +238,7 @@ async def example_2_dual_transport_server():
         protocol=protocol,
         handler=handler,
         transport=None,  # Crucial for negotiation based on config
-        config=server_config,
+        config=server_config
     )
 
     logger.info(
@@ -244,7 +247,7 @@ async def example_2_dual_transport_server():
         action="startup",
         status="starting",
         transport=["unix", "tcp"],
-        strategy="auto-negotiation",
+        strategy="auto-negotiation"
     )
 
     # Start server and let it initialize
@@ -258,7 +261,7 @@ async def example_2_dual_transport_server():
         status="success",
         unix_socket="available",
         tcp_endpoint="0.0.0.0:50051",
-        client_note="Clients can connect via either transport",
+        client_note="Clients can connect via either transport"
     )
 
     # Graceful shutdown
@@ -269,7 +272,7 @@ async def example_2_dual_transport_server():
         "Dual transport server stopped",
         domain="server",
         action="shutdown",
-        status="success",
+        status="success"
     )
 
 
@@ -291,7 +294,7 @@ async def example_2_advanced_configuration():
         domain="config",
         action="setup",
         status="starting",
-        method="programmatic",
+        method="programmatic"
     )
 
     config = RPCPluginConfig()
@@ -302,7 +305,6 @@ async def example_2_advanced_configuration():
 
     # Method 2: Environment variable configuration
     import os
-
     os.environ["PLUGIN_SERVER_TRANSPORTS"] = "unix,tcp"
     os.environ["PLUGIN_AUTO_MTLS"] = "false"
 
@@ -312,7 +314,7 @@ async def example_2_advanced_configuration():
         action="setup",
         status="success",
         methods=["programmatic", "environment_variables"],
-        production_note="Use config files for complex production setups",
+        production_note="Use config files for complex production setups"
     )
 
     # Create server with advanced configuration
@@ -325,8 +327,8 @@ async def example_2_advanced_configuration():
         config={
             "custom_option_1": "advanced_value",
             "custom_option_2": 42,
-            "performance_mode": "high_throughput",
-        },
+            "performance_mode": "high_throughput"
+        }
     )
 
     logger.info(
@@ -335,7 +337,7 @@ async def example_2_advanced_configuration():
         action="create",
         status="success",
         config_complexity="advanced",
-        ready_for="production",
+        ready_for="production"
     )
 
     # Cleanup environment variables
@@ -376,7 +378,7 @@ async def main():
             domain="examples",
             action="run",
             status="error",
-            error=str(e),
+            error=str(e)
         )
         raise
 

@@ -9,10 +9,7 @@ configuration, handshake, protocol, transport, and security.
 
 class RPCPluginError(Exception):
     """Base class for all RPC plugin-specific errors."""
-
-    def __init__(
-        self, message: str, code: int | None = None, hint: str | None = None
-    ) -> None:
+    def __init__(self, message: str, code: int | None = None, hint: str | None = None) -> None:
         """
         Initialize RPCPluginError.
 
@@ -59,6 +56,5 @@ class CertificateError(SecurityError):
 
 class CredentialsError(SecurityError):
     """Credential configuration and validation errors."""
-
 
 # 🐍🏗️🔌

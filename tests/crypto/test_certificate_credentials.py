@@ -1,3 +1,4 @@
+
 # pyvider/rpcplugin/tests/test_certificate_credentials.py
 
 import pytest
@@ -10,7 +11,6 @@ from tests.fixtures import *
 @dataclass
 class MockChannelCredentials:
     """Mock implementation of SSL channel credentials."""
-
     root_certificates: Optional[bytes]
     private_key: Optional[bytes]
     certificate_chain: Optional[bytes]
@@ -19,7 +19,6 @@ class MockChannelCredentials:
 @dataclass
 class MockServerCredentials:
     """Mock implementation of SSL server credentials."""
-
     private_key_certificate_chain_pairs: list[tuple[bytes, bytes]]
     root_certificates: Optional[bytes]
     require_client_auth: bool
@@ -85,9 +84,7 @@ async def test_mock_channel_credentials_with_client_cert(client_cert) -> None:
 
 
 @pytest.mark.asyncio
-async def test_mock_server_credentials_with_server_cert(
-    server_cert, client_cert
-) -> None:
+async def test_mock_server_credentials_with_server_cert(server_cert, client_cert) -> None:
     """Test creating server credentials using server certificate fixture."""
     pairs = [(server_cert.key.encode(), server_cert.cert.encode())]
     creds = mock_ssl_server_credentials(
@@ -121,9 +118,7 @@ async def test_mock_server_credentials_multiple_certs(server_cert, client_cert) 
 
 
 @pytest.mark.asyncio
-async def test_mock_server_credentials_validation_with_certs(
-    server_cert, client_cert
-) -> None:
+async def test_mock_server_credentials_validation_with_certs(server_cert, client_cert) -> None:
     """Test validation rules with real certificates."""
     # Test requiring client auth without root certs
     with pytest.raises(ValueError):
@@ -153,6 +148,5 @@ async def test_mock_channel_credentials_none_values(client_cert) -> None:
     assert isinstance(creds.root_certificates, bytes)
     assert creds.private_key is None
     assert creds.certificate_chain is None
-
 
 ### 🐍🏗🧪️
