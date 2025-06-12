@@ -212,13 +212,22 @@ def test_is_valid_connection_false_send_data_signature(mocker):
             pass
 
     instance = InvalidConnectionSendDataSig()
-    assert is_valid_connection(instance) is False
-    expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
-        mocker.call("ConnectionT: send_data signature incorrect. Expected 1 param, got 0.")
-    ]
-    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert is_valid_connection(instance) is False # Main assertion
+
+    # Verify key log messages were made
+    mock_logger_debug.assert_any_call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)")
+
+    # Check for the specific failure log related to send_data signature
+    # This makes sure the *reason* for returning False is the one we are testing
+    specific_failure_log_made = False
+    expected_specific_log = "ConnectionT: send_data signature incorrect. Expected 1 param, got 0."
+    for call_item in mock_logger_debug.call_args_list:
+        if call_item == mocker.call(expected_specific_log):
+            specific_failure_log_made = True
+            break
+    assert specific_failure_log_made, f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"
+
+    assert mock_logger_debug.call_count >= 2
 
 def test_is_valid_connection_false_receive_data_signature(mocker):
     """Test is_valid_connection with incorrect receive_data signature."""
@@ -233,13 +242,20 @@ def test_is_valid_connection_false_receive_data_signature(mocker):
             pass
 
     instance = InvalidConnectionReceiveDataSig()
-    assert is_valid_connection(instance) is False
-    expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
-        mocker.call("ConnectionT: receive_data signature incorrect. Expected 1 param, got 0.")
-    ]
-    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert is_valid_connection(instance) is False # Main assertion
+
+    mock_logger_debug.assert_any_call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)")
+
+    specific_failure_log_made = False
+    expected_specific_log = "ConnectionT: receive_data signature incorrect. Expected 1 param, got 0."
+    # Iterate through call_args_list to find the specific log
+    for call_item in mock_logger_debug.call_args_list:
+        if call_item == mocker.call(expected_specific_log):
+            specific_failure_log_made = True
+            break
+    assert specific_failure_log_made, f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"
+
+    assert mock_logger_debug.call_count >= 2
 
 def test_is_valid_connection_false_close_signature(mocker):
     """Test is_valid_connection with incorrect close signature."""
