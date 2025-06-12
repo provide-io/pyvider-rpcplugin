@@ -11,6 +11,7 @@ VALID_MAGIC_COOKIE_KEY = "PLUGIN_MAGIC_COOKIE"
 VALID_MAGIC_COOKIE = "hello"
 
 
+
 def test_validate_magic_cookie_valid(monkeypatch) -> None:
     # Make sure config sees valid cookie scenario
     monkeypatch.setitem(
@@ -32,7 +33,7 @@ def test_validate_magic_cookie_invalid(monkeypatch) -> None:
     )
 
     with pytest.raises(
-        HandshakeError, match=r"cookie_provided does not match required cookie_value"
+        HandshakeError, match="cookie_provided does not match required cookie_value"
     ):
         validate_magic_cookie()
 
@@ -43,19 +44,11 @@ def test_validate_magic_cookie_invalid(monkeypatch) -> None:
         (
             "PLUGIN_MAGIC_COOKIE",
             "invalid_cookie",
-            r"cookie_provided does not match required cookie_value",
+            "cookie_provided does not match required cookie_value",
         ),
-        (
-            None,
-            None,
-            "",
-        ),  # This case might need adjustment if empty string for match is an issue
-        (
-            "PLUGIN_MAGIC_COOKIE",
-            None,
-            "cookie not provided",
-        ),  # This regex seems fine as is, not in the list to change
-        (None, "hello", r"cookie_key not found"),
+        (None, None, ""),
+        ("PLUGIN_MAGIC_COOKIE", None, "cookie not provided"),
+        (None, "hello", "cookie_key not found"),
     ],
 )
 def test_validate_magic_cookie_failures(
@@ -71,21 +64,21 @@ def test_validate_magic_cookie_failures(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", magic_cookie_value
     )
 
-    if expected_error:  # If expected_error is a non-empty string, match it
+    if expected_error: # If expected_error is a non-empty string, match it
         with pytest.raises(HandshakeError, match=expected_error):
             validate_magic_cookie()
-    else:  # If expected_error is "" (or None, though not in this specific param list)
-        # for the case (None, None, ""), it means we expect HandshakeError but don't care about the message
-        # or expect an empty message. Using match=r'^$' for truly empty, or no match for any message.
-        # Pytest warns on match="". If an empty message is truly expected: match=r'^$'
-        # If any message is fine: omit match.
-        # Given the warning, it was match="". Let's assume any message is fine if expected_error is empty.
+    else: # If expected_error is "" (or None, though not in this specific param list)
+          # for the case (None, None, ""), it means we expect HandshakeError but don't care about the message
+          # or expect an empty message. Using match=r'^$' for truly empty, or no match for any message.
+          # Pytest warns on match="". If an empty message is truly expected: match=r'^$'
+          # If any message is fine: omit match.
+          # Given the warning, it was match="". Let's assume any message is fine if expected_error is empty.
         with pytest.raises(HandshakeError):
             validate_magic_cookie()
 
 
 def test_validate_magic_cookie_missing_still_raises() -> None:
-    with pytest.raises(HandshakeError, match=r"cookie_key not found"):
+    with pytest.raises(HandshakeError, match="cookie_key not found"):
         validate_magic_cookie(magic_cookie_key=None, magic_cookie_value=None)
 
 
@@ -101,14 +94,14 @@ def test_validate_magic_cookie_missing_still_raises() -> None:
             None,
         ),
         # Missing environment variables
-        (None, None, None, True, r"cookie_key not found"),
+        (None, None, None, True, "cookie_key not found"),
         # Invalid cookie
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
             "some_expected",
             "different_cookie",
             True,
-            r"cookie_provided does not match required cookie_value",
+            "cookie_provided does not match required cookie_value",
         ),
     ],
 )
@@ -151,26 +144,21 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     # Even if config is set, we can override with function args
     # Suppose we pass an invalid cookie to demonstrate mismatch:
     with pytest.raises(
-        HandshakeError, match=r"cookie_provided does not match required cookie_value"
+        HandshakeError, match="cookie_provided does not match required cookie_value"
     ):
         validate_magic_cookie(
             magic_cookie_key="KEY", magic_cookie_value="EXPECTED", magic_cookie="WRONG"
         )
 
-
 def test_validate_magic_cookie_explicit_none_empty_key(mocker):
     """Test validate_magic_cookie when magic_cookie_key is explicitly None or empty."""
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
 
-    with pytest.raises(HandshakeError, match=r"cookie_key not found"):
-        validate_magic_cookie(
-            magic_cookie_key=None, magic_cookie_value="value", magic_cookie="cookie"
-        )
+    with pytest.raises(HandshakeError, match="cookie_key not found"):
+        validate_magic_cookie(magic_cookie_key=None, magic_cookie_value="value", magic_cookie="cookie")
     mock_logger_error.assert_called_with("🍪🪄❌ cookie_key not found")
     mock_logger_error.reset_mock()
 
-    with pytest.raises(HandshakeError, match=r"cookie_key not found"):
-        validate_magic_cookie(
-            magic_cookie_key="", magic_cookie_value="value", magic_cookie="cookie"
-        )
+    with pytest.raises(HandshakeError, match="cookie_key not found"):
+        validate_magic_cookie(magic_cookie_key="", magic_cookie_value="value", magic_cookie="cookie")
     mock_logger_error.assert_called_with("🍪🪄❌ cookie_key not found")

@@ -97,12 +97,11 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
     # Verify that the data was echoed back.
     assert fake_writer.data == b"echo"
 
-
 @pytest.mark.asyncio
 async def test_handle_connection_task_done_exception_logs_error(mocker):
     """Test _handle_connection_task_done when the task raised an exception."""
     transport = UnixSocketTransport(path="/tmp/dummy.sock")
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.transport.unix.logger.error")
+    mock_logger_error = mocker.patch('pyvider.rpcplugin.transport.unix.logger.error')
 
     mock_task = mocker.MagicMock(spec=asyncio.Task)
     mock_task.done.return_value = True
@@ -118,7 +117,7 @@ async def test_handle_connection_task_done_exception_logs_error(mocker):
     # args, kwargs = mock_logger_error.call_args
     # For the purpose of fixing the AttributeError, we comment out subsequent lines that would fail.
     # A full fix would require re-writing the test.
-    pass  # Test will pass vacuously after removing the problematic call.
+    pass # Test will pass vacuously after removing the problematic call.
 
     # mock_logger_error.assert_called_once()
     # args, kwargs = mock_logger_error.call_args

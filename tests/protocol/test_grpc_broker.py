@@ -1,7 +1,8 @@
+
 # tests/protocol/test_grpc_broker.py
 
 import pytest
-import os  # Added import
+import os # Added import
 import grpc
 from unittest.mock import patch, MagicMock
 
@@ -10,23 +11,28 @@ from pyvider.rpcplugin.protocol import (
     grpc_broker_pb2_grpc,
 )
 
-
 @pytest.mark.asyncio
 async def test_grpc_broker_pb2_imports() -> None:
     """Test importing grpc_broker_pb2 and accessing its components."""
     # Access message descriptors
-    assert hasattr(grpc_broker_pb2, "DESCRIPTOR")
+    assert hasattr(grpc_broker_pb2, 'DESCRIPTOR')
 
     # Test creating a ConnInfo message
     conn_info = grpc_broker_pb2.ConnInfo(
-        service_id=1, network="tcp", address="localhost:12345"
+        service_id=1,
+        network="tcp",
+        address="localhost:12345"
     )
     assert conn_info.service_id == 1
     assert conn_info.network == "tcp"
     assert conn_info.address == "localhost:12345"
 
     # Test creating a Knock submessage
-    knock = grpc_broker_pb2.ConnInfo.Knock(knock=True, ack=False, error="")
+    knock = grpc_broker_pb2.ConnInfo.Knock(
+        knock=True,
+        ack=False,
+        error=""
+    )
     assert knock.knock is True
     assert knock.ack is False
     assert knock.error == ""
@@ -42,7 +48,6 @@ async def test_grpc_broker_pb2_imports() -> None:
     assert deserialized.network == conn_info.network
     assert deserialized.address == conn_info.address
 
-
 @pytest.mark.asyncio
 async def test_grpc_broker_pb2_grpc_stub_creation() -> None:
     """Test creating a GRPCBrokerStub."""
@@ -53,8 +58,7 @@ async def test_grpc_broker_pb2_grpc_stub_creation() -> None:
     stub = grpc_broker_pb2_grpc.GRPCBrokerStub(mock_channel)
 
     # Verify methods
-    assert hasattr(stub, "StartStream")
-
+    assert hasattr(stub, 'StartStream')
 
 @pytest.mark.asyncio
 async def test_grpc_broker_servicer_methods() -> None:
@@ -74,26 +78,24 @@ async def test_grpc_broker_servicer_methods() -> None:
     context.set_code.assert_called_once_with(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details.assert_called_once_with("Method not implemented!")
 
-
 @pytest.mark.asyncio
 async def test_broker_pb2_descriptor() -> None:
     """Test that grpc_broker_pb2.DESCRIPTOR is available and has expected properties."""
     assert hasattr(grpc_broker_pb2, "DESCRIPTOR")
     descriptor = grpc_broker_pb2.DESCRIPTOR
-
+    
     # Test specific serialized properties / public API
     assert hasattr(descriptor, "message_types_by_name")
     assert "ConnInfo" in descriptor.message_types_by_name
-
+    
     # Ensure it has a name (check basename)
     assert os.path.basename(descriptor.name) == "grpc_broker.proto"
-
+    
     # Check for a known option if available and stable, e.g. python_package
     # For protobuf 5.x, options are accessed via descriptor.GetOptions()
     # options = descriptor.GetOptions() # Commented out as it's unused now
     # assert options.HasField("python_package") # Commented out due to protoc regeneration issues
     # assert options.python_package == "pyvider.rpcplugin.protocol" # Commented out
-
 
 # @pytest.mark.asyncio
 # async def test_broker_grpc_version_mismatch() -> None:
@@ -103,22 +105,22 @@ async def test_broker_pb2_descriptor() -> None:
 #             importlib.reload(grpc_broker_pb2_grpc)
 #         assert "grpc package installed is at version" in str(excinfo.value)
 
-
 @pytest.mark.asyncio
 async def test_broker_experimental_api() -> None:
     """Direct test for grpc_broker_pb2_grpc experimental API (line 90)."""
     assert hasattr(grpc_broker_pb2_grpc, "GRPCBroker")
     assert hasattr(grpc_broker_pb2_grpc.GRPCBroker, "StartStream")
-
+    
     mock_request_iterator = MagicMock()
     mock_target = MagicMock()
-
+    
     # Call the experimental method directly
-    with patch("grpc.experimental.stream_stream") as mock_stream_stream:
+    with patch('grpc.experimental.stream_stream') as mock_stream_stream:
         grpc_broker_pb2_grpc.GRPCBroker.StartStream(
-            mock_request_iterator, mock_target, metadata={"test": "value"}
+            mock_request_iterator, 
+            mock_target,
+            metadata={"test": "value"}
         )
         mock_stream_stream.assert_called_once()
-
 
 ### 🐍🏗🧪️

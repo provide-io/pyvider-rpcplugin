@@ -29,16 +29,14 @@ async def test_tcp_transport_close_handles_server_close_method_error() -> None:
     transport = TCPSocketTransport()
     # Simulate a server object that errors when close is called
     mock_server = AsyncMock()
-    mock_server.is_serving = MagicMock(return_value=True)  # Make is_serving a sync mock
-    mock_server.close = MagicMock(
-        side_effect=RuntimeError("Server.close() failed")
-    )  # Make close a sync mock
+    mock_server.is_serving = MagicMock(return_value=True) # Make is_serving a sync mock
+    mock_server.close = MagicMock(side_effect=RuntimeError("Server.close() failed")) # Make close a sync mock
     # mock_server.wait_closed will remain an AsyncMock, suitable for awaiting
-    transport._server = mock_server  # type: ignore
+    transport._server = mock_server # type: ignore
 
-    await transport.close()  # Should not raise, error should be caught and logged
+    await transport.close() # Should not raise, error should be caught and logged
 
-    assert transport._server is None  # Should still be reset
+    assert transport._server is None # Should still be reset
 
 
 @pytest.mark.asyncio
@@ -46,16 +44,12 @@ async def test_tcp_transport_close_handles_server_wait_closed_error() -> None:
     """Test close handles error when server.wait_closed() errors or times out."""
     transport = TCPSocketTransport()
     mock_server = AsyncMock()
-    mock_server.is_serving = MagicMock(return_value=True)  # Make is_serving a sync mock
-    mock_server.close = (
-        MagicMock()
-    )  # Make close a sync mock, no specific side effect needed here for it
-    mock_server.wait_closed.side_effect = (
-        asyncio.TimeoutError
-    )  # wait_closed remains AsyncMock
+    mock_server.is_serving = MagicMock(return_value=True) # Make is_serving a sync mock
+    mock_server.close = MagicMock() # Make close a sync mock, no specific side effect needed here for it
+    mock_server.wait_closed.side_effect = asyncio.TimeoutError # wait_closed remains AsyncMock
 
-    transport._server = mock_server  # type: ignore
-    await transport.close()  # Should not raise
+    transport._server = mock_server # type: ignore
+    await transport.close() # Should not raise
 
     assert transport._server is None
 
@@ -69,8 +63,7 @@ async def test_tcp_socket_transport_connect_timeout() -> None:
         # The connect method has a hardcoded 5s timeout for asyncio.wait_for.
         # This test might be slow if it always waits the full 5s.
         # For now, rely on the default.
-        await transport.connect("8.8.8.8:12345")  # Address for connect is more relevant
-
+        await transport.connect("8.8.8.8:12345") # Address for connect is more relevant
 
 @pytest.mark.asyncio
 async def test_tcp_transport_close_writer_timeout(mocker):
@@ -81,7 +74,7 @@ async def test_tcp_transport_close_writer_timeout(mocker):
     mock_writer.close = MagicMock()
     mock_writer.wait_closed.side_effect = asyncio.TimeoutError
 
-    transport._writer = mock_writer  # type: ignore
+    transport._writer = mock_writer # type: ignore
 
     # Call close() which should internally call _close_writer
     await transport.close()
@@ -89,7 +82,6 @@ async def test_tcp_transport_close_writer_timeout(mocker):
     # Assert that writer was closed and reset despite timeout
     mock_writer.close.assert_called_once()
     assert transport._writer is None
-
 
 @pytest.mark.asyncio
 async def test_tcp_transport_close_writer_general_exception(mocker):
@@ -100,12 +92,11 @@ async def test_tcp_transport_close_writer_general_exception(mocker):
     mock_writer.close = MagicMock()
     mock_writer.wait_closed.side_effect = RuntimeError("Something else went wrong")
 
-    transport._writer = mock_writer  # type: ignore
+    transport._writer = mock_writer # type: ignore
     await transport.close()
 
     mock_writer.close.assert_called_once()
     assert transport._writer is None
-
 
 @pytest.mark.asyncio
 async def test_close_with_active_writer():
@@ -140,46 +131,43 @@ async def test_close_with_active_writer():
     await transport.close()
     assert transport._writer is None
     if writer_ref:
-        # Check if close was called on the writer instance
-        # This is a bit tricky as is_closing might be True and wait_closed might have been called.
-        # A direct mock would be better if _close_writer was public & testable.
-        # For now, we assume if transport._writer is None, it was processed by _close_writer.
-        pass
-
+         # Check if close was called on the writer instance
+         # This is a bit tricky as is_closing might be True and wait_closed might have been called.
+         # A direct mock would be better if _close_writer was public & testable.
+         # For now, we assume if transport._writer is None, it was processed by _close_writer.
+         pass
 
 @pytest.mark.asyncio
 async def test_close_writer_already_closing(mocker):
     """Test _close_writer branch where writer.is_closing() is True."""
     transport = TCPSocketTransport()
     mock_writer = AsyncMock(spec=asyncio.StreamWriter)
-    mock_writer.is_closing.return_value = True  # Writer is already closing
-    mock_writer.close = MagicMock()  # Should not be called
-    mock_writer.wait_closed.return_value = None  # Should still be awaited
+    mock_writer.is_closing.return_value = True # Writer is already closing
+    mock_writer.close = MagicMock() # Should not be called
+    mock_writer.wait_closed.return_value = None # Should still be awaited
 
-    transport._writer = mock_writer  # type: ignore
-    await transport.close()  # This calls _close_writer internally
+    transport._writer = mock_writer # type: ignore
+    await transport.close() # This calls _close_writer internally
 
     mock_writer.close.assert_not_called()
-    mock_writer.wait_closed.assert_called_once()  # wait_closed is still awaited
+    mock_writer.wait_closed.assert_called_once() # wait_closed is still awaited
     assert transport._writer is None
-
 
 @pytest.mark.asyncio
 async def test_close_server_not_serving(mocker):
     """Test close() branch where server.is_serving() is False."""
     transport = TCPSocketTransport()
     mock_server = AsyncMock(spec=asyncio.AbstractServer)
-    mock_server.is_serving = MagicMock(return_value=False)  # Server is not serving
-    mock_server.close = MagicMock()  # Should not be called
-    mock_server.wait_closed = AsyncMock()  # Should not be called if close isn't
+    mock_server.is_serving = MagicMock(return_value=False) # Server is not serving
+    mock_server.close = MagicMock() # Should not be called
+    mock_server.wait_closed = AsyncMock() # Should not be called if close isn't
 
-    transport._server = mock_server  # type: ignore
+    transport._server = mock_server # type: ignore
     await transport.close()
 
     mock_server.close.assert_not_called()
     mock_server.wait_closed.assert_not_called()
     assert transport._server is None
-
 
 @pytest.mark.asyncio
 async def test_close_server_wait_closed_generic_exception(mocker):
@@ -188,16 +176,13 @@ async def test_close_server_wait_closed_generic_exception(mocker):
     mock_server = AsyncMock(spec=asyncio.AbstractServer)
     mock_server.is_serving = MagicMock(return_value=True)
     mock_server.close = MagicMock()
-    mock_server.wait_closed.side_effect = RuntimeError(
-        "Simulated server wait_closed error"
-    )
+    mock_server.wait_closed.side_effect = RuntimeError("Simulated server wait_closed error")
 
-    transport._server = mock_server  # type: ignore
-    await transport.close()  # Should catch the error and log
+    transport._server = mock_server # type: ignore
+    await transport.close() # Should catch the error and log
 
     mock_server.close.assert_called_once()
     mock_server.wait_closed.assert_called_once()
     assert transport._server is None
-
 
 ### 🐍🏗🧪️

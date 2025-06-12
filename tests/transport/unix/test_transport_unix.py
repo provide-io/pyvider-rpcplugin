@@ -77,7 +77,6 @@ async def test_unix_socket_connection_metrics(managed_unix_socket_path) -> None:
 #  | | |(_| |  _\  (_|||  ~|~(_)||<_\
 #
 
-
 def test_unix_transport_init_with_relative_path(mocker):
     """Test UnixSocketTransport initialization with a relative path."""
     # normalize_unix_path currently doesn't make paths absolute if they are relative
@@ -87,12 +86,9 @@ def test_unix_transport_init_with_relative_path(mocker):
     relative_path = "relative_socket_name.sock"
     # If normalize_unix_path were to make it absolute, expected_path would be os.path.abspath(relative_path)
     # But as it is, it should remain relative after prefix normalization (if any).
-    expected_normalized_path = relative_path  # Assuming no "unix:" prefix to strip
+    expected_normalized_path = relative_path # Assuming no "unix:" prefix to strip
 
-    mock_normalize = mocker.patch(
-        "pyvider.rpcplugin.transport.unix.normalize_unix_path",
-        return_value=expected_normalized_path,
-    )
+    mock_normalize = mocker.patch('pyvider.rpcplugin.transport.unix.normalize_unix_path', return_value=expected_normalized_path)
 
     transport = UnixSocketTransport(path=relative_path)
 
@@ -101,6 +97,5 @@ def test_unix_transport_init_with_relative_path(mocker):
     # To truly test lines 116-117 if they existed as os.path.abspath:
     # We would need to mock os.path.abspath and check its call if normalize_unix_path didn't return an absolute path.
     # However, those lines are not in the current __attrs_post_init__.
-
 
 ### 🐍🏗🧪️

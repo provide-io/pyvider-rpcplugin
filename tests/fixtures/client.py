@@ -22,7 +22,7 @@ async def client_command() -> list[str]:
 @pytest_asyncio.fixture
 async def client_instance(test_client_command):
     """Base RPCPluginClient instance for testing with required attributes set."""
-    with patch("subprocess.Popen"):
+    with patch('subprocess.Popen'):
         client = RPCPluginClient(command=test_client_command)
         # Set required attributes that tests expect
         client._transport_name = "tcp"  # Default to TCP for most tests
@@ -31,22 +31,21 @@ async def client_instance(test_client_command):
 
         yield client
 
-
-# @@pytest_asyncio.fixture(scope="module")
-# @async def client_instance(client_command, server_instance, handshake_config):
-# @    """
-# @    Async fixture to create and start an RPCPluginClient instance.
-# @    """
-# @    client = RPCPluginClient(command=client_command)
-# @    await client.start()
-# @
-# @    # The handshake/connection can happen in your tests or here:
-# @    # await client.connect()
-# @
-# @    yield client
-# @
-# @    # Now stop the client
-# @    await client.stop()
+#@@pytest_asyncio.fixture(scope="module")
+#@async def client_instance(client_command, server_instance, handshake_config):
+#@    """
+#@    Async fixture to create and start an RPCPluginClient instance.
+#@    """
+#@    client = RPCPluginClient(command=client_command)
+#@    await client.start()
+#@
+#@    # The handshake/connection can happen in your tests or here:
+#@    # await client.connect()
+#@
+#@    yield client
+#@
+#@    # Now stop the client
+#@    await client.stop()
 
 
 @pytest_asyncio.fixture
@@ -56,12 +55,11 @@ async def mock_process():
     process.stdout = MagicMock()
     process.stderr = MagicMock()
     process.poll.return_value = None  # Process is running
-
+    
     # Set up stdout to return a valid handshake response
     process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
-
+    
     return process
-
 
 @pytest_asyncio.fixture
 async def mock_transport():
@@ -72,7 +70,6 @@ async def mock_transport():
     transport.connect = AsyncMock()
     transport.close = AsyncMock()
     return transport
-
 
 @pytest_asyncio.fixture
 async def mock_unix_transport():
@@ -85,7 +82,6 @@ async def mock_unix_transport():
     transport.close = AsyncMock()
     return transport
 
-
 @pytest_asyncio.fixture
 async def mock_grpc_channel():
     """Mock gRPC channel for testing."""
@@ -94,19 +90,16 @@ async def mock_grpc_channel():
     channel.close = AsyncMock()
     return channel
 
-
 @pytest_asyncio.fixture
 async def test_client_command():
     """Test command to launch the plugin process."""
     return ["python", "-m", "dummy_plugin"]
 
-
 @pytest_asyncio.fixture
 async def client_instance(test_client_command):
     """Base RPCPluginClient instance for testing."""
-    with patch("subprocess.Popen"):
+    with patch('subprocess.Popen'):
         client = RPCPluginClient(command=test_client_command)
         yield client
-
 
 ### 🐍🏗🧪️

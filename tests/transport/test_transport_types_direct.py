@@ -1,10 +1,14 @@
 # tests/transport/test_transport_types_direct.py
 
-from typing import Protocol, runtime_checkable  # Keep existing typing imports
+from typing import Protocol, runtime_checkable # Keep existing typing imports
 
-from pyvider.rpcplugin.transport.types import TransportType
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-
+from pyvider.rpcplugin.transport.types import (
+    TransportType
+)
+from pyvider.rpcplugin.transport import (
+    TCPSocketTransport,
+    UnixSocketTransport
+)
 
 # Tests for the ConnectionT Protocol (lines 22-24)
 def test_connection_protocol() -> None:
@@ -17,24 +21,17 @@ def test_connection_protocol() -> None:
         async def close(self) -> None: ...
 
     class ConcreteConnection:
-        async def send_data(self, data: bytes) -> None:
-            pass
-
-        async def receive_data(self, size: int = 16384) -> bytes:
-            return b""
-
-        async def close(self) -> None:
-            pass
+        async def send_data(self, data: bytes) -> None: pass
+        async def receive_data(self, size: int = 16384) -> bytes: return b""
+        async def close(self) -> None: pass
 
     class IncompleteConnection:
-        async def send_data(self, data: bytes) -> None:
-            pass
+        async def send_data(self, data: bytes) -> None: pass
 
     instance = ConcreteConnection()
     assert isinstance(instance, TestConnection)
     incomplete = IncompleteConnection()
     assert not isinstance(incomplete, TestConnection)
-
 
 def test_transport_type() -> None:
     """Test TransportType alias."""
@@ -50,7 +47,7 @@ def test_transport_type() -> None:
         """Accepts a transport instance adhering to TransportType."""
         # In a real scenario, you might do something with transport_instance here.
         # For this test, simply type checking the parameter is sufficient.
-        assert transport_instance is not None  # Basic runtime check
+        assert transport_instance is not None # Basic runtime check
 
     # Call the function with instances of the constituent types
     # These calls should pass static type checking and run without runtime error.
@@ -61,7 +58,6 @@ def test_transport_type() -> None:
     # confirming the type alias works for static analysis as intended.
     # Runtime introspection of `|` type aliases can be complex and version-dependent,
     # so focusing on static type checking and basic runtime assignability is preferred.
-    pass  # Test passes if MyPy is satisfied and runtime calls don't fail
-
+    pass # Test passes if MyPy is satisfied and runtime calls don't fail
 
 # 🐍🏗🧪️

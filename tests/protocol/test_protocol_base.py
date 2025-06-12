@@ -1,3 +1,4 @@
+
 # tests/protocol/test_protocol_base.py
 
 import pytest
@@ -5,7 +6,6 @@ from unittest.mock import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from typing import Tuple
-
 
 class TestConcreteProtocol(RPCPluginProtocol):
     """Concrete implementation of RPCPluginProtocol for testing."""
@@ -17,7 +17,6 @@ class TestConcreteProtocol(RPCPluginProtocol):
         # Just a mock implementation
         pass
 
-
 def test_protocol_get_grpc_descriptors() -> None:
     """Test get_grpc_descriptors returns the expected values."""
     protocol = TestConcreteProtocol()
@@ -25,7 +24,6 @@ def test_protocol_get_grpc_descriptors() -> None:
 
     assert isinstance(descriptors, MagicMock)
     assert service_name == "TestService"
-
 
 @pytest.mark.asyncio
 async def test_protocol_add_to_server() -> None:
@@ -36,6 +34,5 @@ async def test_protocol_add_to_server() -> None:
 
     await protocol.add_to_server(mock_handler, mock_server)
     # Since our implementation is empty, we just verify it doesn't raise an exception
-
 
 ### 🐍🏗🧪️
