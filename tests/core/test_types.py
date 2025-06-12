@@ -100,23 +100,23 @@ def test_is_valid_serializable_true(mocker):
     """Test is_valid_serializable with an object that correctly implements the protocol."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class ValidSerializable(SerializableT):
-        def to_dict(self) -> dict[str, object]: # Changed Any to object
+    class ValidSerializable: # Does NOT inherit SerializableT
+        def to_dict(self) -> dict[str, object]:
             return {"data": "valid"}
 
         @classmethod
-        def from_dict(cls, data: dict[str, object]) -> 'ValidSerializable': # Changed Any to object
-            # Create a new instance of cls. If cls has __init__ expecting params, adjust.
-            # For this test, a simple instantiation is fine.
+        def from_dict(cls, data: dict[str, object]) -> 'ValidSerializable':
             instance = cls()
-            # Optionally, use 'data' to populate the instance if relevant for other tests,
-            # but for this TypeGuard test, structure is key.
             return instance
 
     instance = ValidSerializable()
     assert is_valid_serializable(instance) is True
-    # Check for the final success log, as signature checks are now involved
-    mock_logger_debug.assert_any_call("SerializableT: All checks passed (presence, kind, and signatures).")
+    expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"),
+        mocker.call("SerializableT: All structural and signature checks passed.")
+    ]
+    mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
+    assert mock_logger_debug.call_count == 2
 
 def test_is_valid_serializable_false_missing_methods(mocker):
     """Test is_valid_serializable with an object missing required methods."""
@@ -129,8 +129,8 @@ def test_is_valid_serializable_false_missing_methods(mocker):
     instance = InvalidSerializableMissing()
     assert is_valid_serializable(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)"),
-        mocker.call("SerializableT: isinstance check failed (method missing or wrong kind).")
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"),
+        mocker.call("SerializableT: Method to_dict is missing.")
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2
@@ -139,26 +139,19 @@ def test_is_valid_serializable_false_incorrect_signature(mocker):
     """Test is_valid_serializable with an object having methods with incorrect signatures."""
     mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, 'debug')
 
-    class InvalidSerializableSignature(SerializableT): # Inherit to pass isinstance if methods are present
-        def to_dict(self, extra_arg: int) -> dict[str, object]: # Changed Any to object
+    class InvalidSerializableSignature: # Does NOT inherit SerializableT
+        def to_dict(self, extra_arg: int) -> dict[str, object]:
             return {"key": extra_arg}
 
         @classmethod
-        def from_dict(cls, data: dict[str, object], extra_arg: int) -> 'InvalidSerializableSignature': # Changed Any to object
+        def from_dict(cls, data: dict[str, object], extra_arg: int) -> 'InvalidSerializableSignature':
             return cls()
 
     instance = InvalidSerializableSignature()
     assert is_valid_serializable(instance) is False
-    # Determine the exact second log message based on which signature check fails first.
-    # If to_dict is checked first and fails:
-    expected_specific_log = "SerializableT: to_dict signature incorrect. Expected 0 params (after self), got 1."
-    # If from_dict fails (e.g., if to_dict was made correct but from_dict incorrect):
-    # expected_specific_log = "SerializableT: from_dict signature incorrect. Expected 2 params (cls, data), got X."
-    # For the current InvalidSerializableSignature, to_dict has an extra arg.
-
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)"),
-        mocker.call(expected_specific_log)
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"),
+        mocker.call("SerializableT: to_dict signature incorrect. Expected 0 params, got 1.")
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2

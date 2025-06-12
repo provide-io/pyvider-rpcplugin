@@ -156,44 +156,65 @@ class SerializableT(TypeProtocol):
 
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
-    logger.debug("🧰🔍✅ Checking if object implements SerializableT protocol (runtime signature check)")
+    logger.debug("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)")
 
-    # Baseline check for method presence and kind (e.g., classmethod for from_dict)
-    # isinstance with @runtime_checkable handles this well.
-    if not isinstance(obj, SerializableT):
-        logger.debug("SerializableT: isinstance check failed (method missing or wrong kind).")
+    # Check to_dict method
+    if not hasattr(obj, "to_dict"):
+        logger.debug("SerializableT: Method to_dict is missing.")
         return False
-
-    # Check to_dict signature: obj.to_dict() expects no further arguments after 'self'
+    to_dict_method = getattr(obj, "to_dict")
+    if not callable(to_dict_method):
+        logger.debug("SerializableT: Attribute to_dict is not callable.")
+        return False
+    # Signature for obj.to_dict() should have 0 parameters (after self)
     try:
-        # For an instance method like obj.to_dict(), inspect.signature() shows parameters excluding 'self' (it's bound).
-        to_dict_sig = inspect.signature(obj.to_dict)
+        to_dict_sig = inspect.signature(to_dict_method)
         if len(to_dict_sig.parameters) != 0:
-            logger.debug(f"SerializableT: to_dict signature incorrect. Expected 0 params (after self), got {len(to_dict_sig.parameters)}.")
+            logger.debug(f"SerializableT: to_dict signature incorrect. Expected 0 params, got {len(to_dict_sig.parameters)}.")
             return False
-    except (TypeError, ValueError): # Should ideally not happen if isinstance passed, but defensive.
+    except (TypeError, ValueError):
         logger.debug("SerializableT: Could not inspect to_dict signature.")
         return False
 
-    # Check from_dict signature: type(obj).from_dict(cls, data) expects one 'data' argument after 'cls'
-    try:
-        # For a classmethod like type(obj).from_dict, inspect.signature() on the method obtained from the class
-        # will show parameters including 'cls'.
-        from_dict_method = getattr(type(obj), 'from_dict')
-        from_dict_sig = inspect.signature(from_dict_method)
-        if len(from_dict_sig.parameters) != 2: # Expecting 'cls' and 'data'
-            logger.debug(f"SerializableT: from_dict signature incorrect. Expected 2 params (cls, data), got {len(from_dict_sig.parameters)}.")
-            return False
-        # Optional: Check parameter names if desired for stricter validation
-        # param_names = list(from_dict_sig.parameters.keys())
-        # if param_names[0] not in ('cls', '_cls') or param_names[1] != 'data':
-        #     logger.debug(f"SerializableT: from_dict parameter names incorrect. Got {param_names}, expected ('cls', 'data').")
-        #     return False
-    except (TypeError, ValueError, AttributeError): # AttributeError if from_dict not on class
-        logger.debug("SerializableT: Could not inspect from_dict signature or method missing on class.")
+    # Check from_dict classmethod
+    cls = type(obj)
+    if not hasattr(cls, "from_dict"):
+        logger.debug("SerializableT: Method from_dict is missing from class.")
         return False
 
-    logger.debug("SerializableT: All checks passed (presence, kind, and signatures).")
+    from_dict_method_on_class = getattr(cls, "from_dict")
+    if not callable(from_dict_method_on_class): # Check general callability
+        logger.debug("SerializableT: Attribute from_dict is not callable on class.")
+        return False
+
+    # Check if it's truly a classmethod. inspect.signature works on the descriptor.
+    # A more direct check for classmethod:
+    # Bound classmethod: type(obj).from_dict or Cls.from_dict.
+    # For a class C with @classmethod def M(cls,...): inspect.ismethod(C.M) is true, C.M.__self__ is C.
+    # Let's assume 'callable' and signature check are main focus here, as @runtime_checkable
+    # would have handled the classmethod nature if isinstance was used and worked.
+    # For manual check, ensuring it's callable via the class is a good start.
+    # A full is_classmethod check:
+    # actual_method_obj = cls.__dict__.get('from_dict') # Get the raw descriptor
+    # if not isinstance(actual_method_obj, classmethod):
+    #    logger.debug("SerializableT: from_dict is not a classmethod descriptor.")
+    #    return False
+    # This descriptor check is more robust for ensuring it's a classmethod.
+
+    # Signature for type(obj).from_dict(cls, data) should have 1 parameter after 'cls' is bound
+    try:
+        # from_dict_method_on_class is getattr(type(obj), "from_dict")
+        from_dict_sig = inspect.signature(from_dict_method_on_class)
+        # For a classmethod like Cls.from_dict(cls, data), inspect.signature(Cls.from_dict)
+        # will show 1 parameter ('data') because 'cls' is bound.
+        if len(from_dict_sig.parameters) != 1: # Expecting 1 param ('data')
+            logger.debug(f"SerializableT: from_dict signature incorrect. Expected 1 param (data), got {len(from_dict_sig.parameters)}. Params: {list(from_dict_sig.parameters.keys())}")
+            return False
+    except (TypeError, ValueError):
+        logger.debug("SerializableT: Could not inspect from_dict signature.")
+        return False
+
+    logger.debug("SerializableT: All structural and signature checks passed.")
     return True
 
 
@@ -260,7 +281,8 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
         try:
             sig = inspect.signature(method)
             if len(sig.parameters) != spec["params"]:
-                logger.debug(f"ConnectionT: {method_name} signature incorrect. Expected {spec['params']} params, got {len(sig.parameters)}.")
+                param_str = "param" if spec['params'] == 1 else "params"
+                logger.debug(f"ConnectionT: {method_name} signature incorrect. Expected {spec['params']} {param_str}, got {len(sig.parameters)}.")
                 return False
         except (TypeError, ValueError): # Should not happen if callable, but defensive
             logger.debug(f"ConnectionT: Could not inspect {method_name} signature.")
