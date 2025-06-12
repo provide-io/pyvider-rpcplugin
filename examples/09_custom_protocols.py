@@ -102,7 +102,7 @@ class CustomDataStreamProtocol(RPCPluginProtocol):
         
         return mock_descriptor, self.service_name
     
-    async def add_to_server(self, handler: Any, server: Any) -> None:
+    async def add_to_server(self, server: Any, handler: Any) -> None: # Signature corrected
         """Register data streaming service with gRPC server."""
         
         logger.info(
@@ -247,7 +247,7 @@ class AdaptiveCompressionProtocol(RPCPluginProtocol):
         
         return mock_descriptor, self.service_name
     
-    async def add_to_server(self, handler: Any, server: Any) -> None:
+    async def add_to_server(self, server: Any, handler: Any) -> None: # Signature corrected
         """Register adaptive compression service."""
         
         logger.info(
@@ -349,7 +349,7 @@ class VersionedProtocol(RPCPluginProtocol):
         
         return mock_descriptor, self.service_name
     
-    async def add_to_server(self, handler: Any, server: Any) -> None:
+    async def add_to_server(self, server: Any, handler: Any) -> None: # Signature corrected
         """Register versioned service."""
         
         logger.info(
@@ -817,7 +817,7 @@ async def example_9_protocol_composition():
         
         def __init__(self, service_name: str):
             self.service_name = service_name
-            self.middleware_stack = []
+            self.middleware_stack: list[Any] = [] # Type hint added
             self.features = {
                 'compression': True,
                 'versioning': True,
@@ -850,7 +850,7 @@ async def example_9_protocol_composition():
             
             return mock_descriptor, self.service_name
         
-        async def add_to_server(self, handler: Any, server: Any) -> None:
+        async def add_to_server(self, server: Any, handler: Any) -> None: # Signature corrected
             """Register composite protocol with middleware stack."""
             
             logger.info(

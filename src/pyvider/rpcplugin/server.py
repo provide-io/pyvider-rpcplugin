@@ -15,7 +15,7 @@ import stat
 import sys # Single import
 import traceback
 from abc import ABC
-from typing import Generic, cast, Optional, List, Union # Added cast, Optional, List, Union
+from typing import Generic, cast # Added cast
 
 from attrs import define, field
 import grpc
@@ -86,7 +86,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
     _transport_name: str = field(init=False)
     _server_cert_obj: Certificate | None = field(init=False, default=None)
     _port: int | None = field(init=False, default=None)
-    _serving_future: asyncio.Future = field(init=False, factory=asyncio.Future)
+    _serving_future: asyncio.Future[None] = field(init=False, factory=asyncio.Future)
     _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
 
@@ -110,7 +110,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
                 magic_cookie_key=rpcplugin_config.magic_cookie_key(),
                 magic_cookie_value=rpcplugin_config.magic_cookie_value(),
                 protocol_versions=[
-                    int(cast(Union[str, int], v)) # Cast elements from get_list
+                    int(v)
                     for v in rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")
                 ],
                 supported_transports=rpcplugin_config.server_transports(),
@@ -232,7 +232,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
                 logger.debug("🛎️🔐⚠️ No client certificate provided; operating insecurely.")
                 return None
 
-            return cast(Optional[str], client_cert)
+            return client_cert
         except Exception as e:
             logger.error(f"🛎️🔐❌ Error reading client certificate: {e}")
             return None
@@ -263,15 +263,15 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
                 logger.debug("🛎️ Insecure mode: skipping TLS setup.")
                 return None
 
-            server_cert_conf_obj = rpcplugin_config.get("PLUGIN_SERVER_CERT")
-            server_key_conf_obj = rpcplugin_config.get("PLUGIN_SERVER_KEY")
+            server_cert_conf = rpcplugin_config.get("PLUGIN_SERVER_CERT")
+            server_key_conf = rpcplugin_config.get("PLUGIN_SERVER_KEY")
             self._server_cert_obj = Certificate(
 
                 # Use new keyword names:
-                cert_pem_or_uri=cast(Optional[str], server_cert_conf_obj),
-                key_pem_or_uri=cast(Optional[str], server_key_conf_obj),
+                cert_pem_or_uri=server_cert_conf,
+                key_pem_or_uri=server_key_conf,
                 # Other args remain the same if their names match fields:
-                generate_keypair=not (server_cert_conf_obj and server_key_conf_obj),
+                generate_keypair=not (server_cert_conf and server_key_conf),
                 key_type="ecdsa", # Or get from config if applicable
                 common_name="localhost",
             )
@@ -445,10 +445,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             raise
 
         try:
-            bind_address_obj = (
+            bind_address = (
                 rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT") or "127.0.0.1:0" # Default for TCP if not specified
             )
-            bind_address = cast(str, bind_address_obj) # Ensured to be str by the 'or'
 
             match self._transport:
                 case UnixSocketTransport():
@@ -475,7 +474,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
                 case TCPSocketTransport():
                     # Use bind_address from config if it's specifically for TCP, otherwise transport's own
-                    if bind_address.startswith("tcp:"): # bind_address is now str
+                    if bind_address.startswith("tcp:"):
                         logger.debug(f"🛎️ TCP address from config: {bind_address}")
                         # Potentially parse host/port from bind_address to set on transport if needed
                         # For now, assume transport's host/port are primary if already set,

@@ -205,7 +205,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 try:
                     current_mask = os.umask(0) # Get current umask, set to 0 temporarily
                     os.umask(current_mask) # Restore original umask
-                    desired_permissions = 0o770 & ~current_mask # Apply umask
+                    desired_permissions = 0o660 & ~current_mask # Apply umask, changed from 0o770
                     os.chmod(self.path, desired_permissions)
                     logger.debug(f"📞🕹✅ Set permissions to {oct(desired_permissions)} on {self.path} (considering umask {oct(current_mask)})")
                 except Exception as e:
@@ -411,7 +411,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 # Make multiple attempts with proper error handling
                 for _ in range(3):
                     try:
-                        os.chmod(socket_path, 0o770)  # Set permissive permissions first
+                        os.chmod(socket_path, 0o660)  # Changed from 0o770, to ensure write access if needed for unlinking
                         os.unlink(socket_path)
                         logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
                         break

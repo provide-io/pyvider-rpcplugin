@@ -5,14 +5,12 @@ import sys
 import grpc
 import logging
 from pathlib import Path
+from pyvider.rpcplugin.client import RPCPluginClient # Moved here
 
 # Assuming a basic logger setup (can use logging module directly)
 # from pyvider.telemetry import logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
-
-# Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient
 
 # Import generated code (assuming it's in the same directory or accessible via PYTHONPATH)
 try:

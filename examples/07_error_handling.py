@@ -991,7 +991,7 @@ async def example_7_error_monitoring():
         )
     
     # Demonstrate metrics export (would integrate with monitoring systems)
-    metrics_export = {
+    _metrics_export = {
         'timestamp': time.time(),
         'service': 'pyvider-rpcplugin-example',
         'metrics': error_summary,
