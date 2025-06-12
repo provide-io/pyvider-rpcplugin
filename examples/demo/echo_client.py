@@ -5,11 +5,13 @@ import sys
 import grpc
 import logging
 from pathlib import Path
-from pyvider.rpcplugin.client import RPCPluginClient # Moved here
+from pyvider.rpcplugin.client import RPCPluginClient  # Moved here
 
 # Assuming a basic logger setup (can use logging module directly)
 # from pyvider.telemetry import logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 # Import generated code (assuming it's in the same directory or accessible via PYTHONPATH)
@@ -17,9 +19,12 @@ try:
     import echo_pb2
     import echo_pb2_grpc
 except ImportError:
-    logger.error("Could not import generated echo_pb2/echo_pb2_grpc. "
-                 "Did you generate them using grpc_tools.protoc?")
+    logger.error(
+        "Could not import generated echo_pb2/echo_pb2_grpc. "
+        "Did you generate them using grpc_tools.protoc?"
+    )
     sys.exit(1)
+
 
 # --- Client Logic ---
 class EchoClient:
@@ -34,31 +39,36 @@ class EchoClient:
         # These should ideally be set externally or configured consistently.
         # For this example, we set them directly to match the standalone server example.
         self.plugin_env = {
-            "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE", # Must match server
-            "PLUGIN_MAGIC_COOKIE_VALUE": "standalonesecret", # Server will expect this value
-            "PLUGIN_MAGIC_COOKIE": "standalonesecret",      # Client will send this value / Server actual value
-            "PLUGIN_PROTOCOL_VERSIONS": "1",                # Must be compatible
-            "PLUGIN_TRANSPORTS": "unix,tcp",                # What the client supports
-            "PLUGIN_AUTO_MTLS": "true",                     # Use mTLS (recommended)
-            "PYTHONUNBUFFERED": "1",                        # Good practice for plugins
+            "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE",  # Must match server
+            "PLUGIN_MAGIC_COOKIE_VALUE": "standalonesecret",  # Server will expect this value
+            "PLUGIN_MAGIC_COOKIE": "standalonesecret",  # Client will send this value / Server actual value
+            "PLUGIN_PROTOCOL_VERSIONS": "1",  # Must be compatible
+            "PLUGIN_TRANSPORTS": "unix,tcp",  # What the client supports
+            "PLUGIN_AUTO_MTLS": "true",  # Use mTLS (recommended)
+            "PYTHONUNBUFFERED": "1",  # Good practice for plugins
         }
         # Pass these environment variables TO the server process
         self.client_config = {"env": self.plugin_env}
 
     async def start(self) -> bool:
         """Launch the server, connect, and prepare the stub."""
-        logger.info(f"Attempting to start and connect to server: {self.server_script_path}")
+        logger.info(
+            f"Attempting to start and connect to server: {self.server_script_path}"
+        )
         try:
             # Ensure server script exists and is executable
             if not os.path.exists(self.server_script_path):
-                 logger.error(f"Server script not found: {self.server_script_path}")
-                 return False
+                logger.error(f"Server script not found: {self.server_script_path}")
+                return False
             # Note: Checking execute permissions might be complex across platforms,
             # relying on subprocess to fail if it's not executable.
 
             self._client = RPCPluginClient(
-                command=[sys.executable, self.server_script_path], # Command to launch server
-                config=self.client_config
+                command=[
+                    sys.executable,
+                    self.server_script_path,
+                ],  # Command to launch server
+                config=self.client_config,
             )
 
             # Start the client (launches server, performs handshake, creates channel)
@@ -98,8 +108,8 @@ class EchoClient:
             logger.info(f"Received Echo reply: '{response.reply}'")
             return response.reply
         except asyncio.TimeoutError:
-             logger.error("RPC call to Echo method timed out.")
-             return None
+            logger.error("RPC call to Echo method timed out.")
+            return None
         except grpc.aio.AioRpcError as e:
             logger.error(f"gRPC Error during Echo call: {e.code()} - {e.details()}")
             return None
@@ -130,7 +140,7 @@ class EchoClient:
 async def run_client():
     # Define path to the server script relative to this client script
     client_dir = Path(__file__).parent
-    server_script = client_dir / "echo_server.py" # Assumes server is in same dir
+    server_script = client_dir / "echo_server.py"  # Assumes server is in same dir
 
     client = EchoClient(str(server_script))
 
@@ -160,4 +170,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.info("Client interrupted by user.")
     except Exception as e:
-         logger.error(f"Client run failed: {e}", exc_info=True)
+        logger.error(f"Client run failed: {e}", exc_info=True)

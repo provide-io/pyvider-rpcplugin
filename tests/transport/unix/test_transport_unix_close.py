@@ -71,17 +71,17 @@ async def test_unix_socket_close_connection_active(managed_unix_socket_path) -> 
     # Create a server transport
     transport = UnixSocketTransport(path=str(managed_unix_socket_path))
     endpoint = await transport.listen()
-    
+
     # Create and connect a client
     client_transport = UnixSocketTransport()
     await client_transport.connect(endpoint)
 
     # Close the server - should close client connections too
     await transport.close()
-    
+
     # Socket file should be removed
     assert not os.path.exists(endpoint)
-    
+
     # Cleanup client too to be safe
     await client_transport.close()
 
@@ -149,5 +149,6 @@ async def test_close_writer_exception(monkeypatch) -> None:
     # _close_writer should catch the exception and log an error.
     await transport._close_writer(fake_writer)
     # No exception should propagate.
+
 
 # 🐍🏗🧪️

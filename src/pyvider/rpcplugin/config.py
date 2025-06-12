@@ -28,7 +28,7 @@ Usage:
 
 import os
 from pathlib import Path
-from typing import Any, Literal, cast, get_args # Removed Dict, List, Optional
+from typing import Any, Literal, cast, get_args  # Removed Dict, List, Optional
 
 
 from pyvider.telemetry import logger
@@ -210,7 +210,10 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 value = f.read().strip()
                 logger.debug(f"⚙️📂✅ Successfully read file for {key}")
         except Exception as e:
-            logger.error(f"⚙️📂❌ Failed to read file for {key}: {file_path}", extra={"error": str(e)})
+            logger.error(
+                f"⚙️📂❌ Failed to read file for {key}: {file_path}",
+                extra={"error": str(e)},
+            )
             raise ValueError(f"Failed to read file for {key}: {file_path}") from e
 
     # Type conversion based on schema type
@@ -248,12 +251,16 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 return [int(v.strip()) for v in value.split(",")]
             return [int(value)]
         else:
-            logger.warning(f"⚙️⚠️ Unknown type {type_string} for {key}, returning raw value")
+            logger.warning(
+                f"⚙️⚠️ Unknown type {type_string} for {key}, returning raw value"
+            )
             return value
 
     except (ValueError, TypeError) as e:
         logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
-        raise ValueError(f"Invalid format for {key}. Expected {meta['type']}, got: {value}") from e
+        raise ValueError(
+            f"Invalid format for {key}. Expected {meta['type']}, got: {value}"
+        ) from e
 
 
 def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
@@ -276,7 +283,9 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     # Required check
     if meta.get("required", False) and value is None:
         logger.error(f"⚙️❌ Missing required configuration: {key}")
-        raise ValueError(f"Missing required configuration: {key}. {meta['description']}")
+        raise ValueError(
+            f"Missing required configuration: {key}. {meta['description']}"
+        )
 
     # If value is None, no further validation needed
     if value is None:
@@ -343,7 +352,9 @@ class RPCPluginConfig:
             self.config = get_config()
             logger.debug("⚙️✅ RPCPluginConfig initialized with environment variables")
         except Exception as e:
-            logger.error("⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)})
+            logger.error(
+                "⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)}
+            )
             raise
 
     @classmethod
@@ -489,8 +500,10 @@ class RPCPluginConfig:
         """
         return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
 
+
 # Global singleton instance
 rpcplugin_config = RPCPluginConfig.instance()
+
 
 def configure(
     magic_cookie: str | None = None,
@@ -646,7 +659,9 @@ def load_config_from_file(config_file: str | Path) -> None:
         logger.debug(f"⚙️📂✅ Successfully loaded configuration from {path}")
 
     except Exception as e:
-        logger.error(f"⚙️📂❌ Error loading configuration from {path}", extra={"error": str(e)})
+        logger.error(
+            f"⚙️📂❌ Error loading configuration from {path}", extra={"error": str(e)}
+        )
         raise ValueError(f"Error loading configuration from {path}: {e}") from e
 
 
@@ -665,7 +680,7 @@ def _load_dotenv_file(path: Path) -> None:
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
-        for line in content.splitlines(): # Process lines from full content
+        for line in content.splitlines():  # Process lines from full content
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
@@ -738,7 +753,9 @@ def _load_yaml_file(path: Path) -> None:
             import yaml
         except ImportError:
             logger.error("⚙️📂❌ PyYAML is required for YAML configuration")
-            raise ValueError("PyYAML is required for YAML configuration. Install with 'pip install PyYAML'")
+            raise ValueError(
+                "PyYAML is required for YAML configuration. Install with 'pip install PyYAML'"
+            )
 
         with open(path, "r", encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
@@ -746,8 +763,10 @@ def _load_yaml_file(path: Path) -> None:
         for key, value in config_data.items():
             match value:
                 case list():
-                    os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
-                    logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
+                    os.environ[key] = ",".join(map(str, value))  # Convert list to CSV
+                    logger.debug(
+                        f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'"
+                    )
                 case dict():
                     # For dicts, keep current behavior but warn if it's a schema-defined key
                     # that isn't usually string-represented this way.
@@ -758,9 +777,11 @@ def _load_yaml_file(path: Path) -> None:
                         f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
                         f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
                     )
-                case _: # Default case for scalars (int, float, bool, str)
+                case _:  # Default case for scalars (int, float, bool, str)
                     os.environ[key] = str(value)
-                    logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
+                    logger.debug(
+                        f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'"
+                    )
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})

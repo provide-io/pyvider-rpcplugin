@@ -1,10 +1,9 @@
-
 # tests/protocol/test_protocol_integration.py
 
 import asyncio
 import pytest
 import pytest_asyncio
-import attr # Added import
+import attr  # Added import
 
 from unittest.mock import patch, AsyncMock
 
@@ -26,9 +25,15 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 
 # Servicer adders for server-side
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import add_GRPCStdioServicer_to_server
-from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import add_GRPCBrokerServicer_to_server
-from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import add_GRPCControllerServicer_to_server
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
+    add_GRPCStdioServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
+    add_GRPCBrokerServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
+    add_GRPCControllerServicer_to_server,
+)
 
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 
@@ -44,7 +49,9 @@ class ServerFixtureOutput:
 
 
 @pytest_asyncio.fixture
-async def grpc_server_output() -> ServerFixtureOutput: # Changed fixture name for clarity
+async def grpc_server_output() -> (
+    ServerFixtureOutput
+):  # Changed fixture name for clarity
     """Fixture providing a real gRPC server with our services registered."""
     server = grpc.aio.server()
     shutdown_event = asyncio.Event()
@@ -52,7 +59,9 @@ async def grpc_server_output() -> ServerFixtureOutput: # Changed fixture name fo
     # Instantiate services
     stdio_service = GRPCStdioService()
     broker_service = GRPCBrokerService()
-    controller_service = GRPCControllerService(shutdown_event, stdio_service) # Assuming it needs stdio_service
+    controller_service = GRPCControllerService(
+        shutdown_event, stdio_service
+    )  # Assuming it needs stdio_service
 
     # Register services directly
     add_GRPCStdioServicer_to_server(stdio_service, server)
@@ -60,8 +69,8 @@ async def grpc_server_output() -> ServerFixtureOutput: # Changed fixture name fo
     add_GRPCControllerServicer_to_server(controller_service, server)
 
     # Add an insecure port
-    port = server.add_insecure_port('localhost:0')
-    address = f'localhost:{port}'
+    port = server.add_insecure_port("localhost:0")
+    address = f"localhost:{port}"
 
     # Start the server
     await server.start()
@@ -78,12 +87,14 @@ async def grpc_server_output() -> ServerFixtureOutput: # Changed fixture name fo
     # Cleanup
     await server.stop(grace=0.1)
 
+
 @pytest_asyncio.fixture
-async def grpc_channel(grpc_server_output: ServerFixtureOutput): # Changed fixture name
+async def grpc_channel(grpc_server_output: ServerFixtureOutput):  # Changed fixture name
     """Fixture providing a client channel to the gRPC server."""
     channel = grpc.aio.insecure_channel(grpc_server_output.address)
     yield channel
     await channel.close()
+
 
 # Removed old test_stdio_integration; test_stdio_integration_consolidated is preferred.
 
@@ -92,7 +103,9 @@ from pyvider.telemetry import logger
 
 
 @pytest.mark.asyncio
-async def test_stdio_integration_consolidated(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None:
+async def test_stdio_integration_consolidated(
+    grpc_server_output: ServerFixtureOutput, grpc_channel
+) -> None:
     """
     Consolidated integration test for the stdio service.
     Checks data content and channel type (stdout/stderr).
@@ -101,7 +114,7 @@ async def test_stdio_integration_consolidated(grpc_server_output: ServerFixtureO
     stub = GRPCStdioStub(grpc_channel)
     assert stdio_service is not None
 
-    log_func = logger.debug # Use a standard logger for tests
+    log_func = logger.debug  # Use a standard logger for tests
 
     test_lines_to_send = [
         (b"stdout line 1 from consolidated", False, StdioData.STDOUT),
@@ -114,12 +127,15 @@ async def test_stdio_integration_consolidated(grpc_server_output: ServerFixtureO
     stream_call = stub.StreamStdio(Empty())
 
     client_task_completed_normally = False
+
     async def client_receive_task():
         nonlocal results, client_task_completed_normally
         try:
             log_func("Client: Starting to iterate over stream_call")
             async for data_item in stream_call:
-                log_func(f"Client: Received item: channel={data_item.channel}, data='{data_item.data.decode()[:30]}...'")
+                log_func(
+                    f"Client: Received item: channel={data_item.channel}, data='{data_item.data.decode()[:30]}...'"
+                )
                 results.append(data_item)
                 if len(results) >= num_expected_messages:
                     log_func(f"Client: Received {len(results)} items, breaking loop.")
@@ -130,12 +146,14 @@ async def test_stdio_integration_consolidated(grpc_server_output: ServerFixtureO
             log_func(f"Client stream error: Code={e.code()} Details={e.details()}")
             # Do not fail here for CANCELLED or UNAVAILABLE if server is shutting down
             if e.code() not in [grpc.StatusCode.CANCELLED, grpc.StatusCode.UNAVAILABLE]:
-                 pytest.fail(f"Client stream error: {e.code()} - {e.details()}")
+                pytest.fail(f"Client stream error: {e.code()} - {e.details()}")
         except Exception as e:
             log_func(f"Client receive task error: {type(e).__name__}: {e}")
             pytest.fail(f"Client receive task error: {e}")
         finally:
-            log_func(f"Client: Receive task finally block. Results count: {len(results)}")
+            log_func(
+                f"Client: Receive task finally block. Results count: {len(results)}"
+            )
 
     client_task = asyncio.create_task(client_receive_task())
     await asyncio.sleep(0.2)
@@ -146,36 +164,47 @@ async def test_stdio_integration_consolidated(grpc_server_output: ServerFixtureO
 
     try:
         log_func("Test: Waiting for client_task to complete...")
-        await asyncio.wait_for(client_task, timeout=3.0) # Shorter timeout, should be quick
+        await asyncio.wait_for(
+            client_task, timeout=3.0
+        )  # Shorter timeout, should be quick
         log_func("Test: client_task completed.")
     except asyncio.TimeoutError:
         log_func("Test: Client task timed out. Cancelling stream_call if not done.")
         if not stream_call.done():
             stream_call.cancel()
-        if not client_task_completed_normally: # Only fail if we didn't actually get all messages
-             pytest.fail("Client task timed out waiting for stdio messages.")
+        if (
+            not client_task_completed_normally
+        ):  # Only fail if we didn't actually get all messages
+            pytest.fail("Client task timed out waiting for stdio messages.")
     finally:
         # Ensure client_task is cancelled if it's still running (e.g. due to timeout in wait_for)
         if not client_task.done():
             log_func("Test: Client task not done in finally, cancelling.")
             client_task.cancel()
-            await asyncio.gather(client_task, return_exceptions=True) # Allow cancellation
+            await asyncio.gather(
+                client_task, return_exceptions=True
+            )  # Allow cancellation
 
         # Ensure the RPC call itself is cleaned up from the client side
         if not stream_call.done():
-             log_func("Test: Stream_call not done in finally, cancelling.")
-             stream_call.cancel()
+            log_func("Test: Stream_call not done in finally, cancelling.")
+            stream_call.cancel()
 
-
-    assert len(results) == num_expected_messages, f"Expected {num_expected_messages} messages, got {len(results)}"
+    assert len(results) == num_expected_messages, (
+        f"Expected {num_expected_messages} messages, got {len(results)}"
+    )
     for i, (expected_line, _, expected_channel_enum) in enumerate(test_lines_to_send):
         assert results[i].data == expected_line
         assert results[i].channel == expected_channel_enum
 
+
 # Removed old test_broker_integration; other broker tests are more specific or comprehensive.
 
+
 @pytest.mark.asyncio
-async def test_broker_start_stream_error_handling(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None:
+async def test_broker_start_stream_error_handling(
+    grpc_server_output: ServerFixtureOutput, grpc_channel
+) -> None:
     """Tests error handling in GRPCBrokerService.StartStream when SubchannelConnection.open fails."""
     broker_service = grpc_server_output.broker_service
     # broker_service is available if direct interaction is needed later
@@ -184,19 +213,23 @@ async def test_broker_start_stream_error_handling(grpc_server_output: ServerFixt
     stream = stub.StartStream()
 
     simulated_error_message = "Simulated open error"
-    with patch('pyvider.rpcplugin.protocol.service.SubchannelConnection.open', new_callable=AsyncMock, side_effect=RuntimeError(simulated_error_message)):
+    with patch(
+        "pyvider.rpcplugin.protocol.service.SubchannelConnection.open",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError(simulated_error_message),
+    ):
         knock_request = ConnInfo(
             service_id=123,  # Distinct service_id for this test
             network="tcp",
             address="localhost:6789",
-            knock=ConnInfo.Knock(knock=True, ack=False, error="")
+            knock=ConnInfo.Knock(knock=True, ack=False, error=""),
         )
         await stream.write(knock_request)
 
         response = await stream.read()
 
         # If SubchannelConnection.open fails, ack should be False and error populated.
-        assert response.knock.ack is False # This is the correct assertion
+        assert response.knock.ack is False  # This is the correct assertion
         assert simulated_error_message in response.knock.error
 
         assert response.service_id == knock_request.service_id
@@ -205,7 +238,9 @@ async def test_broker_start_stream_error_handling(grpc_server_output: ServerFixt
 
 
 @pytest.mark.asyncio
-async def test_broker_cancellation_consolidated(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None:
+async def test_broker_cancellation_consolidated(
+    grpc_server_output: ServerFixtureOutput, grpc_channel
+) -> None:
     """Consolidated test for broker service stream cancellation."""
     stub = GRPCBrokerStub(grpc_channel)
     stream = stub.StartStream()
@@ -214,7 +249,7 @@ async def test_broker_cancellation_consolidated(grpc_server_output: ServerFixtur
         service_id=1,
         network="tcp",
         address="localhost:12345",
-        knock=ConnInfo.Knock(knock=True, ack=False, error="")
+        knock=ConnInfo.Knock(knock=True, ack=False, error=""),
     )
     await stream.write(knock_request)
     response = await stream.read()
@@ -224,12 +259,14 @@ async def test_broker_cancellation_consolidated(grpc_server_output: ServerFixtur
     # Attempt cancellation
     cancelled_successfully = False
     try:
-        if hasattr(stream, 'cancel') and callable(stream.cancel):
-            stream.cancel() # Newer gRPC might return a future or be an async call
-            if asyncio.iscoroutine(stream.cancel()): # Handle if it's now async
-                 await stream.cancel()
+        if hasattr(stream, "cancel") and callable(stream.cancel):
+            stream.cancel()  # Newer gRPC might return a future or be an async call
+            if asyncio.iscoroutine(stream.cancel()):  # Handle if it's now async
+                await stream.cancel()
             cancelled_successfully = True
-        elif hasattr(stream, '_cython_call') and hasattr(stream._cython_call, 'cancel'): # Older versions
+        elif hasattr(stream, "_cython_call") and hasattr(
+            stream._cython_call, "cancel"
+        ):  # Older versions
             stream._cython_call.cancel("Client cancelled")
             cancelled_successfully = True
     except Exception as e:
@@ -243,15 +280,21 @@ async def test_broker_cancellation_consolidated(grpc_server_output: ServerFixtur
         await stream.done_writing()
     except grpc.aio.AioRpcError as e:
         # Expecting an error if cancellation was effective (e.g., RpcError with CANCELLED status)
-        assert e.code() == grpc.StatusCode.CANCELLED, f"Expected CANCELLED status, got {e.code()}"
+        assert e.code() == grpc.StatusCode.CANCELLED, (
+            f"Expected CANCELLED status, got {e.code()}"
+        )
     except Exception as e:
         # Other exceptions might indicate issues with done_writing itself
         pytest.fail(f"Unexpected error on done_writing after cancel: {e}")
 
+
 # Removed old test_controller_integration; test_controller_shutdown_with_timeout_consolidated is preferred.
 
+
 @pytest.mark.asyncio
-async def test_stdio_early_client_disconnect_consolidated(grpc_server_output: ServerFixtureOutput) -> None: # Removed grpc_channel fixture
+async def test_stdio_early_client_disconnect_consolidated(
+    grpc_server_output: ServerFixtureOutput,
+) -> None:  # Removed grpc_channel fixture
     """
     Consolidated test for stdio service when client disconnects early.
     Verifies that attempting to read from the stream after channel closure raises an appropriate gRPC error.
@@ -259,7 +302,7 @@ async def test_stdio_early_client_disconnect_consolidated(grpc_server_output: Se
     # Create a new channel specifically for this test, ensuring it's fresh
     temp_channel = grpc.aio.insecure_channel(grpc_server_output.address)
     try:
-        await temp_channel.channel_ready() # Ensure it's ready
+        await temp_channel.channel_ready()  # Ensure it's ready
         stub = GRPCStdioStub(temp_channel)
 
         # Start the stream
@@ -275,7 +318,7 @@ async def test_stdio_early_client_disconnect_consolidated(grpc_server_output: Se
         # Common errors include RpcError with status CANCELLED or UNAVAILABLE.
         # asyncio.CancelledError can also occur if the tasks managing the stream are cancelled.
         raised_expected_error = False
-        try: # Inner try for stream iteration
+        try:  # Inner try for stream iteration
             async for _ in stream_call:
                 # We should not receive any items if channel is closed before server sends anything
                 # or during server sending.
@@ -287,21 +330,27 @@ async def test_stdio_early_client_disconnect_consolidated(grpc_server_output: Se
             if e.code() in [grpc.StatusCode.CANCELLED, grpc.StatusCode.UNAVAILABLE]:
                 raised_expected_error = True
             else:
-                pytest.fail(f"Unexpected grpc.aio.AioRpcError: {e.code()} - {e.details()}")
+                pytest.fail(
+                    f"Unexpected grpc.aio.AioRpcError: {e.code()} - {e.details()}"
+                )
         except asyncio.CancelledError:
             # This can happen if the client's tasks are cancelled due to channel closure.
             raised_expected_error = True
         except Exception as e:
             pytest.fail(f"Unexpected exception type raised: {type(e).__name__} - {e}")
 
-        assert raised_expected_error, "Expected an AioRpcError (Cancelled/Unavailable) or asyncio.CancelledError"
+        assert raised_expected_error, (
+            "Expected an AioRpcError (Cancelled/Unavailable) or asyncio.CancelledError"
+        )
     finally:
         # Ensure the temporary channel is closed if not already
         await temp_channel.close()
 
 
 @pytest.mark.asyncio
-async def test_broker_multiple_clients_consolidated(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None:
+async def test_broker_multiple_clients_consolidated(
+    grpc_server_output: ServerFixtureOutput, grpc_channel
+) -> None:
     """
     Consolidated test for multiple clients connecting to broker service simultaneously.
     """
@@ -324,7 +373,7 @@ async def test_broker_multiple_clients_consolidated(grpc_server_output: ServerFi
                 service_id=service_id,
                 network="tcp",
                 address=f"localhost:{10000 + service_id}",
-                knock=ConnInfo.Knock(knock=True, ack=False, error="")
+                knock=ConnInfo.Knock(knock=True, ack=False, error=""),
             )
             await stream.write(knock_request)
             response = await stream.read()
@@ -334,10 +383,10 @@ async def test_broker_multiple_clients_consolidated(grpc_server_output: ServerFi
 
             # Simulate some activity or just close
             await stream.done_writing()
-            return True # Indicate success
+            return True  # Indicate success
         except Exception as e:
             logger.error(f"Client {service_id} failed: {e}")
-            return False # Indicate failure
+            return False  # Indicate failure
         finally:
             await client_specific_channel.close()
 
@@ -357,14 +406,17 @@ async def test_broker_multiple_clients_consolidated(grpc_server_output: ServerFi
     # this count might be 0 or less than num_clients by the time this check runs.
     # Await a brief moment for all stream processing on server to settle if needed.
     await asyncio.sleep(0.1)
-    assert len(broker_service._subchannels) == num_clients, \
+    assert len(broker_service._subchannels) == num_clients, (
         f"Expected {num_clients} subchannels, found {len(broker_service._subchannels)}"
+    )
     for i in range(num_clients):
         assert (i + 1) in broker_service._subchannels
 
 
 @pytest.mark.asyncio
-async def test_controller_shutdown_with_timeout_consolidated(grpc_server_output: ServerFixtureOutput, grpc_channel) -> None:
+async def test_controller_shutdown_with_timeout_consolidated(
+    grpc_server_output: ServerFixtureOutput, grpc_channel
+) -> None:
     """
     Consolidated test for controller shutdown with a timeout.
     Verifies that the shutdown event is set and internal shutdown logic is called.
@@ -374,19 +426,26 @@ async def test_controller_shutdown_with_timeout_consolidated(grpc_server_output:
     stub = GRPCControllerStub(grpc_channel)
 
     # Patch os.kill and sys.exit to prevent actual process termination during test
-    with patch('os.kill'), \
-         patch('sys.exit'), \
-         patch('os.getpid', return_value=12345): # Mock getpid as it might be used by shutdown logic
-
+    with (
+        patch("os.kill"),
+        patch("sys.exit"),
+        patch("os.getpid", return_value=12345),
+    ):  # Mock getpid as it might be used by shutdown logic
         # Mock the internal _delayed_shutdown method of the specific controller_service instance
-        with patch.object(controller_service, '_delayed_shutdown', new_callable=AsyncMock) as mock_delayed_shutdown_method:
+        with patch.object(
+            controller_service, "_delayed_shutdown", new_callable=AsyncMock
+        ) as mock_delayed_shutdown_method:
             try:
                 response = await asyncio.wait_for(
-                    stub.Shutdown(ControllerEmpty()), # Use ControllerEmpty for controller
-                    timeout=2.0  # Reasonable timeout for the RPC call
+                    stub.Shutdown(
+                        ControllerEmpty()
+                    ),  # Use ControllerEmpty for controller
+                    timeout=2.0,  # Reasonable timeout for the RPC call
                 )
 
-                assert isinstance(response, ControllerEmpty), "Response should be an Empty message"
+                assert isinstance(response, ControllerEmpty), (
+                    "Response should be an Empty message"
+                )
 
                 # Check that the server's shutdown event was set
                 assert shutdown_event.is_set(), "Server's shutdown_event was not set"

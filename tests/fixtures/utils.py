@@ -7,7 +7,6 @@ import asyncio
 import os
 
 
-
 # rom pyvider.rpcplugin.logger import logger
 # from pyvider.rpcplugin.client import RPCPluginClient
 # from pyvider.rpcplugin.protocol import RPCPluginProtocol
@@ -45,6 +44,7 @@ def cleanup_temp_files():
     os.environ.pop("TEMP_DIR", None)  # Remove the environment variable
     logger.debug(f"Removed temporary directory at: {temp_dir}")
 
+
 # @pytest_asyncio.fixture(scope="function", autouse=True)
 # async def cleanup_asyncio():
 #     """Ensure proper cleanup of asyncio resources after each test."""
@@ -55,14 +55,15 @@ def cleanup_temp_files():
 #         for t in asyncio.all_tasks()
 #         if t is not asyncio.current_task() and not t.done()
 #     ]
-# 
+#
 #     if tasks:
 #         for task in tasks:
 #             task.cancel()
 #         await asyncio.gather(*tasks, return_exceptions=True)
-# 
+#
 #     # Allow event loop to process any pending callbacks
 #     await asyncio.sleep(0)
+
 
 @pytest_asyncio.fixture(scope="function", autouse=True)
 async def ensure_asyncio_cleanup():
@@ -77,6 +78,7 @@ async def ensure_asyncio_cleanup():
         except asyncio.CancelledError:
             pass
 
+
 @pytest.fixture(scope="function")
 async def dummy_server(mock_server_protocol, mock_server_handler):
     """Provides a clean DummyGRPCServer instance per test"""
@@ -86,6 +88,7 @@ async def dummy_server(mock_server_protocol, mock_server_handler):
     )
     yield server
     # No async cleanup needed for dummy server
+
 
 @pytest.fixture(scope="function")
 async def clean_socket_dir(tmp_path):
@@ -100,10 +103,12 @@ async def clean_socket_dir(tmp_path):
         except OSError:
             pass
 
+
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
     if len(text) <= 2 * length:
         return text
     return f"{text[:length]} ... {text[-length:]}"
+
 
 ### 🐍🏗🧪️
