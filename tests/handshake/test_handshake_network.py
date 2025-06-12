@@ -1,4 +1,3 @@
-
 # tests/handshake/test_handshake_network.py
 
 from unittest.mock import patch
@@ -36,15 +35,15 @@ async def test_negotiate_transport_unix():
     transport_name, transport = await negotiate_transport(["unix"])
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
-    
+
     # Verify the transport has expected attributes
     assert hasattr(transport, "path")
     assert transport.path is not None
-    
+
     # Verify port attribute
     if hasattr(transport, "_port"):
         assert transport._port is None or isinstance(transport._port, int)
-    
+
     # Clean up (just in case)
     await transport.close()
 
@@ -56,7 +55,7 @@ async def test_negotiate_transport_multiple_options():
     transport_name, transport = await negotiate_transport(["tcp", "unix"])
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
-    
+
     # Clean up
     await transport.close()
 
@@ -72,7 +71,10 @@ async def test_negotiate_transport_invalid_options():
 async def test_negotiate_transport_exception_handling():
     """Test exception handling in transport negotiation."""
     # Mock the transport initialization to raise an exception
-    with patch('pyvider.rpcplugin.transport.UnixSocketTransport', side_effect=Exception("Transport creation failed")):
+    with patch(
+        "pyvider.rpcplugin.transport.UnixSocketTransport",
+        side_effect=Exception("Transport creation failed"),
+    ):
         with pytest.raises(TransportError, match="Error negotiating transport"):
             await negotiate_transport(["unix"])
 
@@ -80,11 +82,12 @@ async def test_negotiate_transport_exception_handling():
         with pytest.raises(TransportError, match="Error negotiating transport"):
             await negotiate_transport(["unix", "tcp"])
 
+
 @pytest.mark.asyncio
 async def test_negotiate_transport_tempfile_exception(mocker):
     """Test that an exception during tempfile.gettempdir is handled."""
-    mocker.patch('tempfile.gettempdir', side_effect=OSError("Disk full"))
-    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+    mocker.patch("tempfile.gettempdir", side_effect=OSError("Disk full"))
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
     with pytest.raises(TransportError, match="Error negotiating transport: Disk full"):
         await negotiate_transport(["unix"])
@@ -93,5 +96,6 @@ async def test_negotiate_transport_tempfile_exception(mocker):
     args, kwargs = mock_logger_error.call_args
     assert "Error during transport negotiation" in args[0]
     assert "Disk full" in kwargs.get("extra", {}).get("error", "")
+
 
 ### 🐍🏗🧪️

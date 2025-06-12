@@ -146,15 +146,16 @@ async def test_build_handshake_response_missing_port() -> None:
             server_cert=None,
         )
 
+
 @pytest.mark.asyncio
 async def test_build_handshake_response_unix_transport_already_running(mocker):
     """Test build_handshake_response with a Unix transport that is already running."""
     mock_transport = AsyncMock()
     mock_transport._running = True  # Simulate transport is already running
     mock_transport.endpoint = "/tmp/existing_socket.sock"
-    mock_transport.listen = AsyncMock() # Should not be called
+    mock_transport.listen = AsyncMock()  # Should not be called
 
-    mock_logger_debug = mocker.patch('pyvider.rpcplugin.handshake.logger.debug')
+    mock_logger_debug = mocker.patch("pyvider.rpcplugin.handshake.logger.debug")
 
     response = await build_handshake_response(
         plugin_version=5,
@@ -170,20 +171,26 @@ async def test_build_handshake_response_unix_transport_already_running(mocker):
     # Check for the specific debug log
     found_log = False
     for call_args in mock_logger_debug.call_args_list:
-        if "Using existing Unix transport endpoint: /tmp/existing_socket.sock" in call_args[0][0]:
+        if (
+            "Using existing Unix transport endpoint: /tmp/existing_socket.sock"
+            in call_args[0][0]
+        ):
             found_log = True
             break
     assert found_log, "Log message for existing endpoint not found"
+
 
 @pytest.mark.asyncio
 async def test_build_handshake_response_generic_exception(mocker):
     """Test that a generic exception during handshake building is caught and re-raised."""
     mock_transport = AsyncMock()
-    mock_transport._running = False # Ensure the 'else' branch with .listen() is taken
+    mock_transport._running = False  # Ensure the 'else' branch with .listen() is taken
     mock_transport.endpoint = None  # Ensure it doesn't use existing endpoint
-    mock_transport.listen = AsyncMock(side_effect=Exception("Unexpected listener error"))
+    mock_transport.listen = AsyncMock(
+        side_effect=Exception("Unexpected listener error")
+    )
 
-    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
     with pytest.raises(Exception, match="Unexpected listener error"):
         await build_handshake_response(
@@ -198,28 +205,43 @@ async def test_build_handshake_response_generic_exception(mocker):
     assert "Handshake response build failed: Unexpected listener error" in args[0]
     assert "Unexpected listener error" in kwargs.get("extra", {}).get("error", "")
 
+
 @pytest.mark.parametrize("invalid_input", [None, 123, b"bytes_not_str"])
 def test_parse_handshake_response_not_string(invalid_input):
     """Test parse_handshake_response with non-string inputs."""
-    with pytest.raises(HandshakeError, match="Failed to parse handshake response: Handshake response is not a string"):
+    with pytest.raises(
+        HandshakeError,
+        match="Failed to parse handshake response: Handshake response is not a string",
+    ):
         parse_handshake_response(invalid_input)
 
-@pytest.mark.parametrize("core_version_config_val, expected_log_part", [
-    (None, "PLUGIN_CORE_VERSION is None"),
-    ("abc", "Could not convert PLUGIN_CORE_VERSION 'abc' to int"),
-])
-def test_parse_handshake_core_version_config_issues(mocker, core_version_config_val, expected_log_part):
+
+@pytest.mark.parametrize(
+    "core_version_config_val, expected_log_part",
+    [
+        (None, "PLUGIN_CORE_VERSION is None"),
+        ("abc", "Could not convert PLUGIN_CORE_VERSION 'abc' to int"),
+    ],
+)
+def test_parse_handshake_core_version_config_issues(
+    mocker, core_version_config_val, expected_log_part
+):
     """Test parsing when PLUGIN_CORE_VERSION from config is None or not an int."""
-    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
-    mocker.patch('pyvider.rpcplugin.handshake.rpcplugin_config.get', return_value=core_version_config_val)
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mocker.patch(
+        "pyvider.rpcplugin.handshake.rpcplugin_config.get",
+        return_value=core_version_config_val,
+    )
 
     # A valid handshake string otherwise, but core version will be compared against fallback 1
     # If core_version in string (e.g., "2") mismatches fallback 1, it will raise HandshakeError
     # If core_version in string is "1", it will pass parsing but log the critical error.
     handshake_str_matching_fallback = "1|1|tcp|127.0.0.1:1234|grpc|"
-    core_v, plugin_v, net, addr, proto, cert = parse_handshake_response(handshake_str_matching_fallback)
+    core_v, plugin_v, net, addr, proto, cert = parse_handshake_response(
+        handshake_str_matching_fallback
+    )
 
-    assert core_v == 1 # Should use fallback
+    assert core_v == 1  # Should use fallback
     mock_logger_error.assert_called_once()
     args, _ = mock_logger_error.call_args
     assert "CRITICAL" in args[0]
@@ -228,11 +250,15 @@ def test_parse_handshake_core_version_config_issues(mocker, core_version_config_
     # Test case where the version in handshake string does NOT match the fallback, causing HandshakeError
     mock_logger_error.reset_mock()
     handshake_str_mismatch_fallback = "2|1|tcp|127.0.0.1:1234|grpc|"
-    with pytest.raises(HandshakeError, match="Unsupported handshake version: 2 \\(expected: 1\\)"):
+    with pytest.raises(
+        HandshakeError, match="Unsupported handshake version: 2 \\(expected: 1\\)"
+    ):
         parse_handshake_response(handshake_str_mismatch_fallback)
 
     # The critical log about config should still have happened before the HandshakeError for version mismatch
-    mock_logger_error.assert_any_call(mocker.ANY, extra=mocker.ANY) # Check it was called
+    mock_logger_error.assert_any_call(
+        mocker.ANY, extra=mocker.ANY
+    )  # Check it was called
     found_critical_log = False
     for call in mock_logger_error.call_args_list:
         args, _ = call
@@ -241,15 +267,21 @@ def test_parse_handshake_core_version_config_issues(mocker, core_version_config_
             break
     assert found_critical_log
 
+
 def test_parse_handshake_response_generic_exception(mocker):
     """Test that a generic exception during parsing is caught and wrapped."""
-    mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
     # Make response.strip().split('|') raise an unexpected error
     mock_response_str = mocker.MagicMock(spec=str)
-    mock_response_str.strip.return_value.split.side_effect = Exception("Unexpected parsing error")
+    mock_response_str.strip.return_value.split.side_effect = Exception(
+        "Unexpected parsing error"
+    )
 
-    with pytest.raises(HandshakeError, match="Failed to parse handshake response: Unexpected parsing error"):
+    with pytest.raises(
+        HandshakeError,
+        match="Failed to parse handshake response: Unexpected parsing error",
+    ):
         parse_handshake_response(mock_response_str)
 
     mock_logger_error.assert_called_once()

@@ -12,10 +12,10 @@ import os
 import signal
 import socket
 import stat
-import sys # Single import
+import sys  # Single import
 import traceback
 from abc import ABC
-from typing import Generic, cast # Added cast
+from typing import Generic, cast  # Added cast
 
 from attrs import define, field
 import grpc
@@ -48,7 +48,9 @@ from pyvider.rpcplugin.types import (
 
 
 @define(slots=False)
-class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, ClientT]): # Added ClientT
+class RPCPluginServer(
+    ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, ClientT]
+):  # Added ClientT
     """
     RPCPluginServer initializes and runs a gRPC server according to negotiated
     handshake parameters.
@@ -124,7 +126,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             raise
         # Ensure each instance has a truly unique future.
         self._serving_future = asyncio.Future()
-        logger.debug(f"🛎️⚙️ RPCPluginServer instance initialized. New _serving_future created (ID: {id(self._serving_future)}).")
+        logger.debug(
+            f"🛎️⚙️ RPCPluginServer instance initialized. New _serving_future created (ID: {id(self._serving_future)})."
+        )
 
     async def wait_for_server_ready(self, timeout: float = 3.14) -> None:
         """
@@ -139,7 +143,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
         Raises:
             TimeoutError: If the server does not become ready within the timeout period
         """
-        logger.info(f"🛎️⏳ RPCPluginServer.wait_for_server_ready: Checking readiness. Transport: {self._transport}, Server Port: {self._port}")
+        logger.info(
+            f"🛎️⏳ RPCPluginServer.wait_for_server_ready: Checking readiness. Transport: {self._transport}, Server Port: {self._port}"
+        )
         try:
             logger.debug("🛎️⏳ Waiting for server ready event...")
 
@@ -148,42 +154,69 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             logger.debug("🛎️✅ Server ready event received.")
 
             # Additional verification: ensure transport endpoint is active and connectable
-            if self._transport and hasattr(self._transport, 'endpoint') and self._transport.endpoint and isinstance(self._transport, (UnixSocketTransport, TCPSocketTransport)): # Added isinstance check
+            if (
+                self._transport
+                and hasattr(self._transport, "endpoint")
+                and self._transport.endpoint
+                and isinstance(
+                    self._transport, (UnixSocketTransport, TCPSocketTransport)
+                )
+            ):  # Added isinstance check
                 match self._transport:
                     case UnixSocketTransport():
                         # For Unix sockets, check file exists and is connectable
                         transport_path = self._transport.path
                         if transport_path is None:
                             logger.error("🛎️❌ Unix socket transport path is None.")
-                            raise TimeoutError("Unix socket path not set for readiness check.")
+                            raise TimeoutError(
+                                "Unix socket path not set for readiness check."
+                            )
                         if not os.path.exists(transport_path):
-                            logger.error(f"🛎️❌ Unix socket file {transport_path} doesn't exist")
+                            logger.error(
+                                f"🛎️❌ Unix socket file {transport_path} doesn't exist"
+                            )
                             raise TimeoutError("Unix socket file not created")
 
                         # Try to connect to verify socket is active
                         try:
-                            logger.info(f"🛎️🔍 RPCPluginServer.wait_for_server_ready (Unix): path={transport_path}")
-                            logger.debug(f"🛎️🔍 Testing Unix socket connection to {transport_path}")
+                            logger.info(
+                                f"🛎️🔍 RPCPluginServer.wait_for_server_ready (Unix): path={transport_path}"
+                            )
+                            logger.debug(
+                                f"🛎️🔍 Testing Unix socket connection to {transport_path}"
+                            )
                             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                             sock.settimeout(1.0)
                             sock.connect(transport_path)
                             sock.close()
                             logger.debug("🛎️✅ Unix socket connection test successful")
                         except Exception as e:
-                            logger.error(f"🛎️❌ Unix socket connection test failed: {e!s}")
+                            logger.error(
+                                f"🛎️❌ Unix socket connection test failed: {e!s}"
+                            )
                             raise TimeoutError(f"Unix socket not connectable: {e!s}")
 
                     case TCPSocketTransport():
                         # For TCP, verify endpoint is reachable
                         # Use self._port (actual bound port) and self._transport.host
-                        actual_server_host = self._transport.host if self._transport.host else "127.0.0.1"
+                        actual_server_host = (
+                            self._transport.host
+                            if self._transport.host
+                            else "127.0.0.1"
+                        )
                         actual_server_port = self._port
                         if actual_server_port is None:
                             logger.error("🛎️❌ TCP port not set after server start.")
-                            raise TimeoutError("TCP port not available for readiness check")
+                            raise TimeoutError(
+                                "TCP port not available for readiness check"
+                            )
 
-                        logger.info(f"🛎️🔍 RPCPluginServer.wait_for_server_ready (TCP): actual_server_host={actual_server_host}, actual_server_port={actual_server_port}, transport_host={getattr(self._transport, 'host', 'N/A')}")
-                        logger.debug(f"🛎️🔍 Testing TCP connection to {actual_server_host}:{actual_server_port}")
+                        logger.info(
+                            f"🛎️🔍 RPCPluginServer.wait_for_server_ready (TCP): actual_server_host={actual_server_host}, actual_server_port={actual_server_port}, transport_host={getattr(self._transport, 'host', 'N/A')}"
+                        )
+                        logger.debug(
+                            f"🛎️🔍 Testing TCP connection to {actual_server_host}:{actual_server_port}"
+                        )
                         try:
                             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                             sock.settimeout(1.0)
@@ -229,7 +262,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             if client_cert:
                 logger.debug("🛎️🔐✅ Client cert found in global config.")
             else:
-                logger.debug("🛎️🔐⚠️ No client certificate provided; operating insecurely.")
+                logger.debug(
+                    "🛎️🔐⚠️ No client certificate provided; operating insecurely."
+                )
                 return None
 
             return client_cert
@@ -266,20 +301,21 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             server_cert_conf = rpcplugin_config.get("PLUGIN_SERVER_CERT")
             server_key_conf = rpcplugin_config.get("PLUGIN_SERVER_KEY")
             self._server_cert_obj = Certificate(
-
                 # Use new keyword names:
                 cert_pem_or_uri=server_cert_conf,
                 key_pem_or_uri=server_key_conf,
                 # Other args remain the same if their names match fields:
                 generate_keypair=not (server_cert_conf and server_key_conf),
-                key_type="ecdsa", # Or get from config if applicable
+                key_type="ecdsa",  # Or get from config if applicable
                 common_name="localhost",
             )
             logger.debug("🛎️ Server certificate loaded/generated successfully.")
 
             # Ensure key is not None before encoding
             if self._server_cert_obj.key is None:
-                raise ValueError("Server certificate private key is None, cannot create credentials.")
+                raise ValueError(
+                    "Server certificate private key is None, cannot create credentials."
+                )
 
             key_bytes = self._server_cert_obj.key.encode()
             # cert is always a string (non-optional field in Certificate)
@@ -287,11 +323,15 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             # client_cert is already checked for None before calling this function
 
             creds = grpc.ssl_server_credentials(
-                private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)], # Now key_bytes is definitely bytes
-                root_certificates=None,       # Temporarily disable client cert verification
-                require_client_auth=False     # Temporarily disable client cert requirement
+                private_key_certificate_chain_pairs=[
+                    (key_bytes, cert_bytes)
+                ],  # Now key_bytes is definitely bytes
+                root_certificates=None,  # Temporarily disable client cert verification
+                require_client_auth=False,  # Temporarily disable client cert requirement
             )
-            logger.debug("🛎️ Server TLS credentials created for server-side TLS only (no mTLS).")
+            logger.debug(
+                "🛎️ Server TLS credentials created for server-side TLS only (no mTLS)."
+            )
             return creds
         except Exception as e:
             logger.error(
@@ -311,9 +351,15 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
         The method is designed to be idempotent and can be called multiple times safely.
         """
-        logger.debug(f"‼️ RPCPluginServer.stop() CALLED. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
+        logger.debug(
+            f"‼️ RPCPluginServer.stop() CALLED. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}"
+        )
 
-        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
+        if (
+            hasattr(self, "_serving_future")
+            and self._serving_future
+            and not self._serving_future.done()
+        ):
             self._serving_future.set_result(None)
             logger.debug("🛎️ Serving future resolved at the beginning of stop().")
         self._shutdown_event.set()
@@ -321,20 +367,28 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
         # Cancel any pending tasks first
         # Consider if this task cancellation is still needed or if it should be more targeted.
         # For now, keeping it as it might relate to other plugin activities.
-        all_tasks = [task for task in asyncio.all_tasks()
-                    if task is not asyncio.current_task() and
-                       not task.done() and
-                        hasattr(task, 'get_name') and task.get_name().startswith('RPCPlugin')]
+        all_tasks = [
+            task
+            for task in asyncio.all_tasks()
+            if task is not asyncio.current_task()
+            and not task.done()
+            and hasattr(task, "get_name")
+            and task.get_name().startswith("RPCPlugin")
+        ]
 
         if all_tasks:
             logger.debug(f"Cancelling {len(all_tasks)} plugin-related tasks...")
             for task in all_tasks:
                 task.cancel()
             try:
-                await asyncio.wait_for(asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0)
+                await asyncio.wait_for(
+                    asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0
+                )
                 logger.debug("Plugin-related tasks cancelled.")
             except asyncio.TimeoutError:
-                logger.warning("🛎️ Timed out waiting for plugin-related tasks to cancel.")
+                logger.warning(
+                    "🛎️ Timed out waiting for plugin-related tasks to cancel."
+                )
             except asyncio.CancelledError:
                 logger.warning("🛎️ Task cancellation gather itself was cancelled.")
 
@@ -389,7 +443,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
             # If server.py:378 (self._server = GRPCServer(...)) error persists, a cast might be needed:
             # from typing import cast
             # self._server = cast(ServerT, GRPCServer(...))
-            temp_server = GRPCServer( # Assign to temp var first
+            temp_server = GRPCServer(  # Assign to temp var first
                 options=[
                     ("grpc.ssl_target_name_override", "localhost"),
                     ("grpc.use_local_subchannel_pool", 1),
@@ -403,7 +457,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
                     ("grpc.http2.min_ping_interval_without_data_ms", 5000),
                 ]
             )
-            self._server = cast(ServerT, temp_server) # Assign to self._server if successful, with cast
+            self._server = cast(
+                ServerT, temp_server
+            )  # Assign to self._server if successful, with cast
             logger.debug("🛎️ gRPC server instance created.")
         except Exception as e:
             logger.error(
@@ -446,30 +502,43 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
         try:
             bind_address = (
-                rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT") or "127.0.0.1:0" # Default for TCP if not specified
+                rpcplugin_config.get("PLUGIN_SERVER_ENDPOINT")
+                or "127.0.0.1:0"  # Default for TCP if not specified
             )
 
             match self._transport:
                 case UnixSocketTransport():
-                    logger.debug("🛎️ Using Unix socket transport; listening on socket...")
-                    logger.info(f"🛎️ RPCPluginServer: About to call listen() on transport: {self._transport}")
-                    await self._transport.listen() # type: ignore[union-attr] # self._transport cannot be None here
-                    logger.info(f"🛎️ RPCPluginServer: Transport listen() called. Transport endpoint: {getattr(self._transport, 'endpoint', 'N/A')}, Transport host: {getattr(self._transport, 'host', 'N/A')}, Transport port: {getattr(self._transport, 'port', 'N/A')}")
+                    logger.debug(
+                        "🛎️ Using Unix socket transport; listening on socket..."
+                    )
+                    logger.info(
+                        f"🛎️ RPCPluginServer: About to call listen() on transport: {self._transport}"
+                    )
+                    await self._transport.listen()  # type: ignore[union-attr] # self._transport cannot be None here
+                    logger.info(
+                        f"🛎️ RPCPluginServer: Transport listen() called. Transport endpoint: {getattr(self._transport, 'endpoint', 'N/A')}, Transport host: {getattr(self._transport, 'host', 'N/A')}, Transport port: {getattr(self._transport, 'port', 'N/A')}"
+                    )
 
-                    transport_path = self._transport.path # type: ignore[union-attr]
+                    transport_path = self._transport.path  # type: ignore[union-attr]
                     if transport_path is None:
-                        raise TransportError("Unix transport path is None after listen.")
+                        raise TransportError(
+                            "Unix transport path is None after listen."
+                        )
                     socket_path = f"unix:{transport_path}"
 
-                    if self._server is not None: # Check _server is not None
-                        port_returned = ( # gRPC returns 0 for unix sockets if successful, or port number for TCP
+                    if self._server is not None:  # Check _server is not None
+                        port_returned = (  # gRPC returns 0 for unix sockets if successful, or port number for TCP
                             self._server.add_secure_port(socket_path, creds)
                             if creds
                             else self._server.add_insecure_port(socket_path)
                         )
-                        logger.debug(f"🛎️ Bound to Unix socket at {socket_path}. gRPC port returned: {port_returned}")
+                        logger.debug(
+                            f"🛎️ Bound to Unix socket at {socket_path}. gRPC port returned: {port_returned}"
+                        )
                     else:
-                        raise TransportError("Server object not initialized before adding port.")
+                        raise TransportError(
+                            "Server object not initialized before adding port."
+                        )
                     # self._port remains None for Unix, as port is not applicable in the same way.
 
                 case TCPSocketTransport():
@@ -479,54 +548,81 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
                         # Potentially parse host/port from bind_address to set on transport if needed
                         # For now, assume transport's host/port are primary if already set,
                         # or that listen() will use a default or configured host/port.
-                        pass # self._transport.listen() below will handle it.
+                        pass  # self._transport.listen() below will handle it.
 
-                    logger.info(f"🛎️ RPCPluginServer: About to call listen() on transport: {self._transport}")
-                    await self._transport.listen() # type: ignore[union-attr] # self._transport cannot be None here
-                    logger.info(f"🛎️ RPCPluginServer: Transport listen() called. Transport endpoint: {getattr(self._transport, 'endpoint', 'N/A')}, Transport host: {getattr(self._transport, 'host', 'N/A')}, Transport port: {getattr(self._transport, 'port', 'N/A')}")
+                    logger.info(
+                        f"🛎️ RPCPluginServer: About to call listen() on transport: {self._transport}"
+                    )
+                    await self._transport.listen()  # type: ignore[union-attr] # self._transport cannot be None here
+                    logger.info(
+                        f"🛎️ RPCPluginServer: Transport listen() called. Transport endpoint: {getattr(self._transport, 'endpoint', 'N/A')}, Transport host: {getattr(self._transport, 'host', 'N/A')}, Transport port: {getattr(self._transport, 'port', 'N/A')}"
+                    )
 
                     # Ensure host and port are not None before forming address
-                    transport_host = self._transport.host # type: ignore[union-attr]
-                    transport_port = self._transport.port # type: ignore[union-attr]
+                    transport_host = self._transport.host  # type: ignore[union-attr]
+                    transport_port = self._transport.port  # type: ignore[union-attr]
                     if transport_host is None or transport_port is None:
-                        raise TransportError("TCP transport host or port is None after listen.")
+                        raise TransportError(
+                            "TCP transport host or port is None after listen."
+                        )
                     actual_bind_address = f"{transport_host}:{transport_port}"
 
-                    logger.debug(f"🛎️ Binding gRPC server to actual_bind_address: {actual_bind_address}")
+                    logger.debug(
+                        f"🛎️ Binding gRPC server to actual_bind_address: {actual_bind_address}"
+                    )
 
-                    if self._server is not None: # Check _server is not None
+                    if self._server is not None:  # Check _server is not None
                         returned_port = (
                             self._server.add_secure_port(actual_bind_address, creds)
                             if creds
                             else self._server.add_insecure_port(actual_bind_address)
                         )
-                        if returned_port == 0 and actual_bind_address != "0.0.0.0:0": # 0 means bind failed unless we asked for any port
-                             raise TransportError(f"gRPC server failed to bind to TCP port: {actual_bind_address}. Returned port 0.")
-                        self._port = returned_port # This is the gRPC chosen port
+                        if (
+                            returned_port == 0 and actual_bind_address != "0.0.0.0:0"
+                        ):  # 0 means bind failed unless we asked for any port
+                            raise TransportError(
+                                f"gRPC server failed to bind to TCP port: {actual_bind_address}. Returned port 0."
+                            )
+                        self._port = returned_port  # This is the gRPC chosen port
                     else:
-                        raise TransportError("Server object not initialized before adding port.")
-                    logger.info(f"🛎️ RPCPluginServer: Server _port (from grpc) set to {self._port}")
+                        raise TransportError(
+                            "Server object not initialized before adding port."
+                        )
+                    logger.info(
+                        f"🛎️ RPCPluginServer: Server _port (from grpc) set to {self._port}"
+                    )
 
                     # Ensure the transport's port and endpoint are updated to the actual bound port by gRPC.
-                    current_transport_port = self._transport.port # type: ignore[union-attr]
-                    if current_transport_port != self._port and self._port != 0: # Port 0 might mean wildcard, gRPC picks one
-                        logger.info(f"🛎️ RPCPluginServer: Updating transport port from {current_transport_port} to gRPC bound port {self._port}")
-                        self._transport.port = self._port # type: ignore[union-attr]
+                    current_transport_port = self._transport.port  # type: ignore[union-attr]
+                    if (
+                        current_transport_port != self._port and self._port != 0
+                    ):  # Port 0 might mean wildcard, gRPC picks one
+                        logger.info(
+                            f"🛎️ RPCPluginServer: Updating transport port from {current_transport_port} to gRPC bound port {self._port}"
+                        )
+                        self._transport.port = self._port  # type: ignore[union-attr]
 
-                    current_transport_host = self._transport.host # type: ignore[union-attr]
-                    current_transport_port_after_update = self._transport.port # type: ignore[union-attr]
+                    current_transport_host = self._transport.host  # type: ignore[union-attr]
+                    current_transport_port_after_update = self._transport.port  # type: ignore[union-attr]
 
-                    if current_transport_host and current_transport_port_after_update is not None:
-                        self._transport.endpoint = f"{current_transport_host}:{current_transport_port_after_update}" # type: ignore[union-attr]
-                    else: # Should ideally not happen if listen() and gRPC bind are successful
-                        self._transport.endpoint = actual_bind_address # type: ignore[union-attr] # Fallback
+                    if (
+                        current_transport_host
+                        and current_transport_port_after_update is not None
+                    ):
+                        self._transport.endpoint = f"{current_transport_host}:{current_transport_port_after_update}"  # type: ignore[union-attr]
+                    else:  # Should ideally not happen if listen() and gRPC bind are successful
+                        self._transport.endpoint = actual_bind_address  # type: ignore[union-attr] # Fallback
 
-                    logger.debug(f"🛎️ Transport details post-update: host={self._transport.host}, port={self._transport.port}, endpoint attribute: {self._transport.endpoint}") # type: ignore[union-attr]
+                    logger.debug(
+                        f"🛎️ Transport details post-update: host={self._transport.host}, port={self._transport.port}, endpoint attribute: {self._transport.endpoint}"
+                    )  # type: ignore[union-attr]
 
-                case _: # Should be caught by earlier transport negotiation, but as a safeguard
-                    raise TransportError(f"Unsupported transport instance type: {type(self._transport)}")
+                case _:  # Should be caught by earlier transport negotiation, but as a safeguard
+                    raise TransportError(
+                        f"Unsupported transport instance type: {type(self._transport)}"
+                    )
 
-            if self._server is not None: # Check _server is not None
+            if self._server is not None:  # Check _server is not None
                 await self._server.start()
                 logger.debug("🛎️ gRPC server started successfully.")
             else:
@@ -595,7 +691,10 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
             if self.transport:
                 if isinstance(self.transport, tuple) and len(self.transport) >= 2:
-                    self._transport_name, self._transport = self.transport[0], self.transport[1]
+                    self._transport_name, self._transport = (
+                        self.transport[0],
+                        self.transport[1],
+                    )
                     logger.debug("🤝 Transport tuple provided; unpacked transport.")
                 else:
                     logger.debug("🤝 Using provided transport instance.")
@@ -660,8 +759,14 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
         Args:
             *args: Optional arguments passed by signal handlers (ignored)
         """
-        logger.info(f"‼️ RPCPluginServer._shutdown_requested() CALLED. Args: {args}. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}")
-        if hasattr(self, '_serving_future') and self._serving_future and not self._serving_future.done():
+        logger.info(
+            f"‼️ RPCPluginServer._shutdown_requested() CALLED. Args: {args}. Current _serving_future done: {self._serving_future.done() if hasattr(self, '_serving_future') else 'N/A'}"
+        )
+        if (
+            hasattr(self, "_serving_future")
+            and self._serving_future
+            and not self._serving_future.done()
+        ):
             self._serving_future.set_result(None)
             logger.debug("🛎️ Serving future resolved by _shutdown_requested.")
         self._shutdown_event.set()
@@ -683,7 +788,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
         Raises:
             Any exception that occurs during setup or serving
         """
-        logger.debug(f"🛎️ Entering serve(); initial _serving_future (ID: {id(self._serving_future)}) done state: {self._serving_future.done()}")
+        logger.debug(
+            f"🛎️ Entering serve(); initial _serving_future (ID: {id(self._serving_future)}) done state: {self._serving_future.done()}"
+        )
         try:
             self._register_signal_handlers()
             await self._negotiate_handshake()
@@ -698,11 +805,13 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
         try:
             if self._transport is None:
-                raise HandshakeError("Transport not initialized before building handshake response.")
+                raise HandshakeError(
+                    "Transport not initialized before building handshake response."
+                )
             response = await build_handshake_response(
                 plugin_version=self._protocol_version,
                 transport_name=self._transport_name,
-                transport=self._transport, # Now checked not to be None
+                transport=self._transport,  # Now checked not to be None
                 server_cert=self._server_cert_obj,
                 port=self._port,
             )
@@ -710,7 +819,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
             # Write directly to stdout in the most unambiguous way
             response_with_newline = response + "\n"
-            response_bytes = response_with_newline.encode('utf-8')
+            response_bytes = response_with_newline.encode("utf-8")
 
             # Try both methods to maximize compatibility
             sys.stdout.buffer.write(response_bytes)
@@ -719,15 +828,21 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
 
             logger.debug("🤝📝✅ Handshake response sent to stdout")
         except Exception as e:
-            logger.error(f"🛎️❌ Error building handshake response: {e}",
-                        extra={"error": str(e), "trace": traceback.format_exc()})
+            logger.error(
+                f"🛎️❌ Error building handshake response: {e}",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
             raise
 
         try:
             self._serving_event.set()
-            logger.debug(f"🛎️ Server running; _serving_future created at {id(self._serving_future)}, done={self._serving_future.done()}. Awaiting shutdown signal...")
+            logger.debug(
+                f"🛎️ Server running; _serving_future created at {id(self._serving_future)}, done={self._serving_future.done()}. Awaiting shutdown signal..."
+            )
             await self._serving_future
-            logger.debug(f"🛎️ Server _serving_future completed. Done state: {self._serving_future.done()}")
+            logger.debug(
+                f"🛎️ Server _serving_future completed. Done state: {self._serving_future.done()}"
+            )
         except asyncio.CancelledError:
             logger.info("🛎️ Serve task explicitly cancelled.")
             raise
@@ -751,26 +866,36 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, Cli
     def __del__(self) -> None:
         # Check if the server was properly shut down via explicit stop()
         # The _serving_future is resolved by stop() or _shutdown_requested()
-        serving_future_exists = hasattr(self, '_serving_future') and self._serving_future
+        serving_future_exists = (
+            hasattr(self, "_serving_future") and self._serving_future
+        )
         server_was_shutdown = serving_future_exists and self._serving_future.done()
 
         if not server_was_shutdown:
             # Determine a representative endpoint for logging, if possible
             endpoint_info = "unknown endpoint"
-            if hasattr(self, '_transport') and self._transport and hasattr(self._transport, 'endpoint') and self._transport.endpoint:
+            if (
+                hasattr(self, "_transport")
+                and self._transport
+                and hasattr(self._transport, "endpoint")
+                and self._transport.endpoint
+            ):
                 endpoint_info = self._transport.endpoint
-            elif hasattr(self, '_port') and self._port is not None: # For TCP if endpoint wasn't formed on transport
+            elif (
+                hasattr(self, "_port") and self._port is not None
+            ):  # For TCP if endpoint wasn't formed on transport
                 endpoint_info = f"port {self._port}"
-            
+
             logger.warning(
                 f"RPCPluginServer for {endpoint_info} was not explicitly stopped before garbage collection. "
                 f"Ensure stop() is called to properly release resources."
             )
 
-        # It's generally unsafe to call async methods or methods that might rely on a 
+        # It's generally unsafe to call async methods or methods that might rely on a
         # running event loop from __del__. Explicit cleanup via stop() is essential.
         # The original attempt to call self._server.close() is also risky here
         # as grpc.aio.Server's own __del__ might handle some synchronous cleanup,
         # but complex operations should be in stop().
+
 
 # 🐍🏗️🔌

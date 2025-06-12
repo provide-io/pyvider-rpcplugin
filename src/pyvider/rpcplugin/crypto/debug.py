@@ -12,7 +12,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 # from pyvider.rpcplugin.config import rpcplugin_config # Unused import
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.exception import CertificateError
-from .types import PrivateKeyType # Import KeyPairType for key parameter hint
+from .types import PrivateKeyType  # Import KeyPairType for key parameter hint
 
 
 def display_cert_details(certificate: x509.Certificate) -> None:
@@ -94,7 +94,9 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                     f"  🔑 Key Usage: {', '.join(usages) if usages else 'None'}"
                 )
             else:
-                logger.debug("  🔑 Key Usage: Value is not a KeyUsage object or not present")
+                logger.debug(
+                    "  🔑 Key Usage: Value is not a KeyUsage object or not present"
+                )
         except x509.ExtensionNotFound:
             logger.debug("  🔑 Key Usage: Not present")
 
@@ -116,7 +118,9 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                     f"  ✨ Extended Key Usage (Name): {', '.join(eku_names) if eku_names else 'None'}"
                 )
             else:
-                logger.debug("  ✨ Extended Key Usage: Value is not an ExtendedKeyUsage object or not present")
+                logger.debug(
+                    "  ✨ Extended Key Usage: Value is not an ExtendedKeyUsage object or not present"
+                )
         except x509.ExtensionNotFound:
             logger.debug("  ✨ Extended Key Usage: Not present")
 
@@ -134,16 +138,20 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                 )
                 logger.debug(f"  ⛓️ Basic Constraints: {ca_info}{path_length}")
             else:
-                logger.debug("  ⛓️ Basic Constraints: Value is not a BasicConstraints object or not present")
+                logger.debug(
+                    "  ⛓️ Basic Constraints: Value is not a BasicConstraints object or not present"
+                )
         except x509.ExtensionNotFound:
             logger.debug("  ⛓️ Basic Constraints: Not present")
 
         # Public Key details.
-        public_key_obj = certificate.public_key() # Renamed to avoid conflict if public_key was a var name
+        public_key_obj = (
+            certificate.public_key()
+        )  # Renamed to avoid conflict if public_key was a var name
         key_type_str: str
         key_size_str: str | int
 
-        match public_key_obj: # Use renamed variable
+        match public_key_obj:  # Use renamed variable
             case rsa.RSAPublicKey():
                 key_type_str = "RSA"
                 key_size_str = public_key_obj.key_size
@@ -155,7 +163,7 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                 key_size_str = "Unknown"
 
         logger.debug(f"  🔑 Public Key: {key_type_str} ({key_size_str})")
-        pem_public_key = public_key_obj.public_bytes( # Use renamed variable
+        pem_public_key = public_key_obj.public_bytes(  # Use renamed variable
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ).decode()
@@ -166,10 +174,11 @@ def display_cert_details(certificate: x509.Certificate) -> None:
         )
     except Exception as e:
         logger.error(
-            f"📜🚨 Could not extract certificate details: {e!s}", # Use !s for concise error
+            f"📜🚨 Could not extract certificate details: {e!s}",  # Use !s for concise error
             extra={"error": str(e)},
         )
         raise CertificateError("Could not extract certificate details") from e
+
 
 def display_key_details(priv_key: PrivateKeyType | None) -> None:
     """
@@ -186,9 +195,7 @@ def display_key_details(priv_key: PrivateKeyType | None) -> None:
       CertificateError: If key details cannot be extracted when a key is provided.
     """
     if priv_key is None:
-        logger.warning(
-            "🔑⚠️ display_key_details: No private key available to display."
-        )
+        logger.warning("🔑⚠️ display_key_details: No private key available to display.")
         return
 
     try:
@@ -205,7 +212,7 @@ def display_key_details(priv_key: PrivateKeyType | None) -> None:
             case ec.EllipticCurvePrivateKey():
                 key_type_str = "ECDSA"
                 key_size_info = priv_key.curve.name
-            case _: # Should not happen if KeyPairType is used correctly
+            case _:  # Should not happen if KeyPairType is used correctly
                 key_type_str = "Unknown"
                 key_size_info = "Unknown"
 
@@ -223,8 +230,10 @@ def display_key_details(priv_key: PrivateKeyType | None) -> None:
         )
     except Exception as e:
         logger.error(
-            f"🔑🚨 Could not extract key details: {e!s}", extra={"error": str(e)} # Use !s for concise error
+            f"🔑🚨 Could not extract key details: {e!s}",
+            extra={"error": str(e)},  # Use !s for concise error
         )
         raise CertificateError("Could not extract key details") from e
+
 
 # 🐍🏗️🔌

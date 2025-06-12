@@ -1,4 +1,3 @@
-
 # tests/protocol/test_protocol_base_completeness.py
 
 import pytest
@@ -63,5 +62,6 @@ async def test_complete_implementation_methods() -> None:
     mock_server = MagicMock()
     mock_handler = MagicMock()
     await protocol.add_to_server(mock_server, mock_handler)
+
 
 ### 🐍🏗🧪️

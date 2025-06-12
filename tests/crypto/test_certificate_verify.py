@@ -20,12 +20,16 @@ from pyvider.rpcplugin.crypto.certificate import (
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
-async def test_verify_single_certificate_in_trust_chain(client_cert, server_cert) -> None:
+async def test_verify_single_certificate_in_trust_chain(
+    client_cert, server_cert
+) -> None:
     """Test basic trust chain verification with a single certificate."""
     # Add server cert to client's trust chain
     client_cert.trust_chain = [server_cert]
     assert client_cert.verify_trust(server_cert)
+
 
 @pytest.mark.asyncio
 async def test_verify_certificate_not_in_trust_chain(client_cert, server_cert) -> None:
@@ -34,10 +38,12 @@ async def test_verify_certificate_not_in_trust_chain(client_cert, server_cert) -
     client_cert.trust_chain = []
     assert not client_cert.verify_trust(server_cert)
 
+
 @pytest.mark.asyncio
 async def test_verify_certificate_chain_error(client_cert, server_cert) -> None:
     """Ensure verification fails for an untrusted certificate."""
     assert not client_cert.verify_trust(server_cert), "Expected verification to fail"
+
 
 @pytest.mark.asyncio
 async def test_verify_trust_chain_ordering(client_cert, server_cert) -> None:
@@ -56,6 +62,7 @@ async def test_verify_trust_chain_ordering(client_cert, server_cert) -> None:
         "Server should not verify client when client is not in server's trust chain"
     )
 
+
 @pytest.mark.asyncio
 async def test_verify_bidirectional_trust_chain(client_cert, server_cert) -> None:
     """Test certificates can be configured to trust each other."""
@@ -67,6 +74,7 @@ async def test_verify_bidirectional_trust_chain(client_cert, server_cert) -> Non
     assert client_cert.verify_trust(server_cert), "Client should verify server"
     assert server_cert.verify_trust(client_cert), "Server should verify client"
 
+
 @pytest.mark.asyncio
 async def test_verify_empty_trust_chain(client_cert, server_cert) -> None:
     """Test verification with empty trust chain."""
@@ -75,12 +83,14 @@ async def test_verify_empty_trust_chain(client_cert, server_cert) -> None:
     assert not client_cert.verify_trust(server_cert)
     assert not server_cert.verify_trust(client_cert)
 
+
 @pytest.mark.asyncio
 async def test_verify_self_trust_chain(client_cert) -> None:
     """Test certificate can verify itself if in its own trust chain."""
     # Add cert to its own trust chain
     client_cert.trust_chain = [client_cert]
     assert client_cert.verify_trust(client_cert)
+
 
 @pytest.mark.asyncio
 async def test_verify_mutual_trust_chain(client_cert, server_cert) -> None:
@@ -92,6 +102,7 @@ async def test_verify_mutual_trust_chain(client_cert, server_cert) -> None:
     # Both should verify against each other
     assert client_cert.verify_trust(server_cert)
     assert server_cert.verify_trust(client_cert)
+
 
 @pytest.mark.asyncio
 async def test_verify_trust_chain_after_modification(client_cert, server_cert) -> None:
@@ -108,8 +119,11 @@ async def test_verify_trust_chain_after_modification(client_cert, server_cert) -
     client_cert.trust_chain.clear()
     assert not client_cert.verify_trust(server_cert)
 
+
 @pytest.mark.asyncio
-async def test_verify_multiple_certificates_in_trust_chain(client_cert, server_cert) -> None:
+async def test_verify_multiple_certificates_in_trust_chain(
+    client_cert, server_cert
+) -> None:
     """Test verification with multiple certificates in trust chain."""
     # Create a trust chain with both certs
     client_cert.trust_chain = [client_cert, server_cert]
@@ -117,6 +131,7 @@ async def test_verify_multiple_certificates_in_trust_chain(client_cert, server_c
     # Should verify against any cert in the chain
     assert client_cert.verify_trust(client_cert)
     assert client_cert.verify_trust(server_cert)
+
 
 @pytest.mark.asyncio
 async def test_verify_subject_issuer_relationship(client_cert, server_cert) -> None:
@@ -130,6 +145,7 @@ async def test_verify_subject_issuer_relationship(client_cert, server_cert) -> N
     # Verify behavior matches self-signed status
     result = client_cert.verify_trust(server_cert)
     assert result == (is_self_signed_server and server_cert in client_cert.trust_chain)
+
 
 @pytest.mark.asyncio
 async def test_verify_public_key_types(client_cert, server_cert) -> None:
@@ -151,6 +167,7 @@ async def test_verify_public_key_types(client_cert, server_cert) -> None:
         "Verification should succeed regardless of key type if in trust chain"
     )
 
+
 @pytest.mark.asyncio
 async def test_verify_self_signed_rsa() -> None:
     """Test verification of RSA self-signed certificate."""
@@ -158,12 +175,14 @@ async def test_verify_self_signed_rsa() -> None:
     cert.trust_chain = [cert]
     assert cert.verify_trust(cert)
 
+
 @pytest.mark.asyncio
 async def test_verify_self_signed_ec() -> None:
     """Test verification of EC self-signed certificate."""
     cert = Certificate(generate_keypair=True, key_type="ecdsa")
     cert.trust_chain = [cert]
     assert cert.verify_trust(cert)
+
 
 @pytest.mark.asyncio
 async def test_verify_unsupported_key_type() -> None:
@@ -175,8 +194,12 @@ async def test_verify_unsupported_key_type() -> None:
     mock_cert._cert = mock.MagicMock()
     mock_cert.public_key = None  # Force unsupported key type
 
-    with pytest.raises(CertificateError, match="Cannot verify trust: Other certificate has no public key."):
+    with pytest.raises(
+        CertificateError,
+        match="Cannot verify trust: Other certificate has no public key.",
+    ):
         cert.verify_trust(mock_cert)
+
 
 @pytest.mark.asyncio
 async def test_self_signed_certificate_verification() -> None:
@@ -190,6 +213,7 @@ async def test_self_signed_certificate_verification() -> None:
         "Self-signed cert should verify itself when in its own trust chain"
     )
 
+
 @pytest.mark.asyncio
 async def test_corrupt_certificate() -> None:
     """Ensure corrupted certificates raise errors."""
@@ -198,12 +222,14 @@ async def test_corrupt_certificate() -> None:
             cert_pem_or_uri="-----BEGIN CERTIFICATE-----\nINVALID DATA\n-----END CERTIFICATE-----"
         )
 
+
 @pytest.mark.asyncio
 async def test_verify_invalid_public_key() -> None:
     """Ensure verification fails when public key is None."""
     cert = Certificate(generate_keypair=True)
     with pytest.raises(CertificateError, match="Cannot verify trust"):
         cert.verify_trust(None)
+
 
 @pytest.mark.asyncio
 async def test_certificate_naive_datetime() -> None:
@@ -221,6 +247,7 @@ async def test_certificate_naive_datetime() -> None:
     assert base.not_valid_before.tzinfo is timezone.utc
     assert base.not_valid_after.tzinfo is timezone.utc
 
+
 @pytest.mark.asyncio
 async def test_certificate_mismatched_issuer() -> None:
     cert1 = Certificate(generate_keypair=True, key_type="rsa", common_name="Cert1")
@@ -230,7 +257,10 @@ async def test_certificate_mismatched_issuer() -> None:
         "Expected verification to fail due to mismatched issuer"
     )
 
-@pytest.mark.xfail(reason="Persistently difficult to mock EllipticCurvePublicKey.verify to test exception handling in _validate_signature")
+
+@pytest.mark.xfail(
+    reason="Persistently difficult to mock EllipticCurvePublicKey.verify to test exception handling in _validate_signature"
+)
 @pytest.mark.asyncio
 async def test_certificate_invalid_signature() -> None:
     """Ensure invalid signatures fail verification."""
@@ -241,6 +271,7 @@ async def test_certificate_invalid_signature() -> None:
     assert not cert._validate_signature(signed_cert=cert, signing_cert=cert), (
         "Invalid signature should fail validation (this test is xfailed)"
     )
+
 
 @pytest.mark.asyncio
 async def test_certificate_key_usage_extension_failure() -> None:
@@ -253,6 +284,7 @@ async def test_certificate_key_usage_extension_failure() -> None:
     ):
         with pytest.raises(CertificateError, match="Failed to create"):
             cert._create_x509_certificate()
+
 
 @pytest.mark.asyncio
 async def test_certificate_equality() -> None:
@@ -267,5 +299,6 @@ async def test_certificate_equality() -> None:
     assert cert1 == cert2, (
         "Certificates with identical serial and subject should be equal"
     )
+
 
 ### 🐍🏗🧪️
