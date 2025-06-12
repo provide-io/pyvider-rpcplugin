@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import MagicMock, patch
+from typing import Any # Added import
 
 # Assuming RPCPluginHandler, RPCPluginProtocol, RPCPluginTransport are importable
 # from the SUT (System Under Test - types.py)
