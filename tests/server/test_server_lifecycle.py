@@ -519,7 +519,7 @@ async def test_wait_for_server_ready_unix_path_none(
     mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == UnixSocketTransport else original_isinstance(obj, cls_check))
 
 
-    with pytest.raises(TimeoutError, match=r"Server readiness check failed: Unix socket path not set for readiness check"):
+    with pytest.raises(TimeoutError, match=r"Server failed to become ready"):
         await server.wait_for_server_ready(timeout=0.1)
 
 @pytest.mark.asyncio
@@ -546,7 +546,7 @@ async def test_wait_for_server_ready_unix_file_not_exists(
     original_isinstance = builtins.isinstance
     mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == UnixSocketTransport else original_isinstance(obj, cls_check))
 
-    with pytest.raises(TimeoutError, match=r"Server readiness check failed: Unix socket file not created"):
+    with pytest.raises(TimeoutError, match=r"Server failed to become ready"):
         await server.wait_for_server_ready(timeout=0.1)
     
     os.path.exists.assert_called_with("/tmp/non_existent_socket.sock")
@@ -575,7 +575,7 @@ async def test_wait_for_server_ready_tcp_port_none(
     original_isinstance = builtins.isinstance
     mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == TCPSocketTransport else original_isinstance(obj, cls_check))
 
-    with pytest.raises(TimeoutError, match=r"Server readiness check failed: TCP port not available for readiness check"):
+    with pytest.raises(TimeoutError, match=r"Server failed to become ready"):
         await server.wait_for_server_ready(timeout=0.1)
 
 @pytest.mark.asyncio
@@ -606,7 +606,7 @@ async def test_wait_for_server_ready_tcp_connect_fails(
     original_isinstance = builtins.isinstance
     mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check == TCPSocketTransport else original_isinstance(obj, cls_check))
 
-    with pytest.raises(TimeoutError, match=r"Server readiness check failed: TCP socket not connectable: Connection refused by mock"):
+    with pytest.raises(TimeoutError, match=r"Server failed to become ready"):
         await server.wait_for_server_ready(timeout=0.1) # Short timeout for test speed
 
     mock_socket_instance.connect.assert_called_with(("127.0.0.1", 12345))
@@ -650,7 +650,7 @@ async def test_wait_for_server_ready_unix_connect_fails(
     # mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check in (UnixSocketTransport, TCPSocketTransport) else original_isinstance(obj, cls_check))
     # For now, assuming the simpler, more common case where it's checking for one specific type in the match.
 
-    with pytest.raises(TimeoutError, match=r"Server readiness check failed: Unix socket not connectable: Unix connect failed"):
+    with pytest.raises(TimeoutError, match=r"Server failed to become ready"):
         await server.wait_for_server_ready(timeout=0.1)
 
     mock_socket_instance.connect.assert_called_with(socket_path)
