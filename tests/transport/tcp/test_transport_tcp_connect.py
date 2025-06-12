@@ -9,6 +9,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_unreachable_address() -> None:
     unreachable = "192.0.2.254:80"
@@ -16,6 +17,7 @@ async def test_tcp_socket_transport_connect_unreachable_address() -> None:
 
     with pytest.raises(TransportError):
         await asyncio.wait_for(transport.listen(), timeout=3.0)
+
 
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_connect_invalid_endpoint() -> None:
@@ -30,6 +32,7 @@ async def test_tcp_socket_transport_connect_invalid_endpoint() -> None:
         # Include a timeout to prevent indefinite hanging
         await asyncio.wait_for(transport.connect("127.0.0.1:65530"), timeout=6.0)
 
+
 @pytest.mark.asyncio
 async def test_tcp_socket_transport_default_host() -> None:
     """
@@ -38,14 +41,19 @@ async def test_tcp_socket_transport_default_host() -> None:
     transport = TCPSocketTransport()
     assert transport.host == "127.0.0.1"
 
+
 @pytest.mark.asyncio
 async def test_listen_already_running_no_endpoint():
     """Test listen() when _running is True but endpoint is None."""
     transport = TCPSocketTransport()
     transport._running = True
     transport.endpoint = None
-    with pytest.raises(TransportError, match="TCP transport is already configured with an endpoint but it's None."):
+    with pytest.raises(
+        TransportError,
+        match="TCP transport is already configured with an endpoint but it's None.",
+    ):
         await transport.listen()
+
 
 @pytest.mark.asyncio
 async def test_listen_specific_port():
@@ -72,31 +80,38 @@ async def test_listen_ephemeral_port_os_error(mocker):
     mock_socket_instance.close = MagicMock()
 
     # When socket.socket() is called, return our mock instance
-    mocker.patch('socket.socket', return_value=mock_socket_instance)
+    mocker.patch("socket.socket", return_value=mock_socket_instance)
 
     with pytest.raises(TransportError, match="Failed to find an ephemeral port"):
         await transport.listen()
+
 
 @pytest.mark.asyncio
 async def test_connect_malformed_endpoint_extra_parts():
     """Test connect() with a malformed endpoint (too many colons)."""
     transport = TCPSocketTransport()
-    with pytest.raises(TransportError, match="Invalid TCP endpoint format: host:port:123"):
+    with pytest.raises(
+        TransportError, match="Invalid TCP endpoint format: host:port:123"
+    ):
         await transport.connect("host:port:123")
+
 
 @pytest.mark.asyncio
 async def test_connect_unresolvable_hostname():
     """Test connect() to an unresolvable hostname."""
     transport = TCPSocketTransport()
     hostname = "unlikely-to-resolve-hostname-for-pyvider-testing.local"
-    with pytest.raises(TransportError, match=f"Address resolution failed for {hostname}:12345"):
+    with pytest.raises(
+        TransportError, match=f"Address resolution failed for {hostname}:12345"
+    ):
         await transport.connect(f"{hostname}:12345")
+
 
 @pytest.mark.asyncio
 async def test_connect_successful():
     """Test successful connect() to a dummy asyncio server."""
     server_host = "127.0.0.1"
-    server_port = 0 # Let OS pick a port for the dummy server
+    server_port = 0  # Let OS pick a port for the dummy server
 
     async def handle_echo(reader, writer):
         writer.close()
@@ -115,14 +130,22 @@ async def test_connect_successful():
         server.close()
         await server.wait_closed()
 
+
 @pytest.mark.asyncio
 async def test_connect_generic_exception_open_connection(mocker):
     """Test connect() when asyncio.open_connection raises a generic Exception."""
     transport = TCPSocketTransport()
     # Mock asyncio.open_connection to raise a generic RuntimeError
-    mocker.patch('asyncio.open_connection', side_effect=RuntimeError("Simulated open_connection error"))
+    mocker.patch(
+        "asyncio.open_connection",
+        side_effect=RuntimeError("Simulated open_connection error"),
+    )
 
-    with pytest.raises(TransportError, match="Failed to connect to TCP endpoint 127.0.0.1:12345: Simulated open_connection error"):
+    with pytest.raises(
+        TransportError,
+        match="Failed to connect to TCP endpoint 127.0.0.1:12345: Simulated open_connection error",
+    ):
         await transport.connect("127.0.0.1:12345")
+
 
 ### 🐍🏗🧪️

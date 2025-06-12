@@ -8,7 +8,10 @@ dependency injection for I/O functions to facilitate testing.
 """
 
 import asyncio
-from collections.abc import Awaitable, Callable as AbcCallable # Alias to avoid conflict
+from collections.abc import (
+    Awaitable,
+    Callable as AbcCallable,
+)  # Alias to avoid conflict
 
 from attrs import define, field
 
@@ -139,7 +142,9 @@ class ClientConnection:
         if self.is_closed:
             raise ConnectionError("Attempted to send data on closed connection")
         if self.send_func is None:
-            raise RuntimeError("send_func was not initialized. This should not happen if __attrs_post_init__ ran correctly.")
+            raise RuntimeError(
+                "send_func was not initialized. This should not happen if __attrs_post_init__ ran correctly."
+            )
         await self.send_func(data)
 
     async def receive_data(self, size: int = 16384) -> bytes:
@@ -158,7 +163,9 @@ class ClientConnection:
         if self.is_closed:
             raise ConnectionError("Attempted to receive data on closed connection")
         if self.receive_func is None:
-            raise RuntimeError("receive_func was not initialized. This should not happen if __attrs_post_init__ ran correctly.")
+            raise RuntimeError(
+                "receive_func was not initialized. This should not happen if __attrs_post_init__ ran correctly."
+            )
         return await self.receive_func(size)
 
     async def close(self) -> None:
@@ -200,5 +207,6 @@ class ClientConnection:
         if not isinstance(other, ClientConnection):
             return NotImplemented
         return id(self) == id(other)
+
 
 # 🐍🏗️🔌

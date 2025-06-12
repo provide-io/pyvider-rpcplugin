@@ -16,8 +16,12 @@ def client_cert():
     key_env_val = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
 
     # Determine if the fetched env values are actual PEMs or placeholders/errors
-    cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith("-----BEGIN CERTIFICATE-----")
-    key_is_pem_like = key_env_val and key_env_val.strip().startswith("-----BEGIN ") # General check for any key type
+    cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith(
+        "-----BEGIN CERTIFICATE-----"
+    )
+    key_is_pem_like = key_env_val and key_env_val.strip().startswith(
+        "-----BEGIN "
+    )  # General check for any key type
 
     cert_to_use = cert_env_val if cert_is_pem_like else None
     key_to_use = key_env_val if key_is_pem_like else None
@@ -62,7 +66,9 @@ def server_cert():
     key_env_val = rpcplugin_config.get("PLUGIN_SERVER_KEY")
 
     # Determine if the fetched env values are actual PEMs or placeholders/errors
-    cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith("-----BEGIN CERTIFICATE-----")
+    cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith(
+        "-----BEGIN CERTIFICATE-----"
+    )
     key_is_pem_like = key_env_val and key_env_val.strip().startswith("-----BEGIN ")
 
     cert_to_use = cert_env_val if cert_is_pem_like else None
@@ -84,7 +90,7 @@ XOzBx35sWRw92gr/hbE4hYeDBqEUwstSFNZ6MZu0
 -----END CERTIFICATE-----
 """
 
-    if not key_to_use: # Corrected variable name from key to key_to_use
+    if not key_to_use:  # Corrected variable name from key to key_to_use
         key_to_use = """-----BEGIN EC PRIVATE KEY-----
 MIGkAgEBBDDZ1MORWFVI0HtgKv+zZys/5e1HVmfcs4bwdp3VEsuwS6an3gTwGnSP
 Ce+bI6f/TvGgBwYFK4EEACKhZANiAARMxEVmGX3a4IWPOAJ2MX2s2Wj3KZ0Io5Ew
@@ -93,8 +99,10 @@ VXHTAdc/bLFFy9kybQqo300Rv6ViW2I=
 -----END EC PRIVATE KEY-----
 """
 
-    logger.info(f"Loaded SERVER_CERT: {cert_to_use[:30]}...") # Corrected log message and used correct variable
-    logger.info(f"Loaded SERVER_KEY: {key_to_use[:30]}...") # Used correct variable
+    logger.info(
+        f"Loaded SERVER_CERT: {cert_to_use[:30]}..."
+    )  # Corrected log message and used correct variable
+    logger.info(f"Loaded SERVER_KEY: {key_to_use[:30]}...")  # Used correct variable
 
     return Certificate(cert_pem_or_uri=cert_to_use, key_pem_or_uri=key_to_use)
 
@@ -155,13 +163,15 @@ def temporary_key_file(tmp_path, client_cert) -> str:
 def dev_root_ca() -> Certificate:
     """Generates a self-signed CA certificate for testing mTLS setups."""
     ca_cert = Certificate(
-        common_name="Test Development CA", # Differentiate from other default certs
+        common_name="Test Development CA",  # Differentiate from other default certs
         generate_keypair=True,
-        key_type="ecdsa" # Default is "ecdsa", explicit for clarity
+        key_type="ecdsa",  # Default is "ecdsa", explicit for clarity
         # No need for basic_constraints_ca or key_usage_extensions here,
         # as the Certificate class currently makes all generated certs CAs by default.
     )
-    logger.info(f"Generated Development Root CA (common_name='Test Development CA'): {ca_cert.cert[:30]}...")
+    logger.info(
+        f"Generated Development Root CA (common_name='Test Development CA'): {ca_cert.cert[:30]}..."
+    )
     return ca_cert
 
 
@@ -187,5 +197,6 @@ AgNJADBGAiEAx1xH/b83/u5t7r29a/THZnFjQ7pvT2N0L4hG4BgGgXACIQD02W2+
 MHB78ZWM+JOgikYj99qD6nLp0nkMyGmkSC7RYg==
 -----END CERTIFICATE-----
 """
+
 
 ### 🐍🏗🧪️

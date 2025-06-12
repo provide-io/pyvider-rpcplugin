@@ -1,4 +1,3 @@
-
 # tests/protocol/test_protocol_base_extended.py
 
 import pytest
@@ -52,15 +51,16 @@ def test_concrete_protocol_instantiation() -> None:
 def test_protocol_type_annotations() -> None:
     """Test that type annotations are correctly used."""
     # This test doesn't instantiate but checks the class structure
-    assert hasattr(RPCPluginProtocol, 'get_grpc_descriptors')
-    assert hasattr(RPCPluginProtocol, 'add_to_server')
+    assert hasattr(RPCPluginProtocol, "get_grpc_descriptors")
+    assert hasattr(RPCPluginProtocol, "add_to_server")
 
     # Check if the class is properly generic
     import inspect
+
     signature = inspect.signature(RPCPluginProtocol.add_to_server)
     params = signature.parameters
-    assert 'server' in params
-    assert 'handler' in params
+    assert "server" in params
+    assert "handler" in params
 
 
 @pytest.mark.asyncio
@@ -72,5 +72,6 @@ async def test_concrete_protocol_add_to_server() -> None:
 
     # Should not raise any exceptions
     await protocol.add_to_server(server_mock, handler_mock)
+
 
 ### 🐍🏗🧪️

@@ -1,18 +1,17 @@
-
 # tests/fixtures/transport.py
 
 import pytest
 import pytest_asyncio
 
 import asyncio
-import os 
+import os
 import socket
-import tempfile # Added
-import uuid # Ensure present
+import tempfile  # Added
+import uuid  # Ensure present
 
-from typing import AsyncGenerator # Ensure present
+from typing import AsyncGenerator  # Ensure present
 
-from pyvider.telemetry import logger # Ensure present
+from pyvider.telemetry import logger  # Ensure present
 
 from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
@@ -122,6 +121,7 @@ class SocketStateMonitor:
             except Exception as e:
                 logger.warning(f"Error cleaning up socket file {self._path}: {e}")
 
+
 @pytest_asyncio.fixture
 async def socket_monitor():
     """Fixture providing socket state monitoring with proper cleanup."""
@@ -152,6 +152,7 @@ async def socket_monitor():
             except Exception as e:
                 logger.error(f"Final cleanup failed for {monitor.path}: {e}")
 
+
 @pytest_asyncio.fixture
 async def unused_tcp_port() -> int:
     """Fixture to get an unused TCP port."""
@@ -159,66 +160,98 @@ async def unused_tcp_port() -> int:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
+
 @pytest_asyncio.fixture
-async def unix_transport(managed_unix_socket_path: str): # Added managed_unix_socket_path
+async def unix_transport(
+    managed_unix_socket_path: str,
+):  # Added managed_unix_socket_path
     logger.debug("unix_transport fixture invoked, now using managed_unix_socket_path.")
-    
+
     sock_path = managed_unix_socket_path
 
     logger.debug(f"Using socket at: {sock_path}")
 
     transport = UnixSocketTransport(path=sock_path)
 
-    await transport.listen() 
+    await transport.listen()
     logger.debug(
         f"DEBUG: Fixture initialized transport at {transport.path}, _server active: {hasattr(transport, '_server') and transport._server is not None}"
     )
 
-    logger.debug(f"DEBUG: Fixture setup complete for unix_transport with path: {transport.path}")
+    logger.debug(
+        f"DEBUG: Fixture setup complete for unix_transport with path: {transport.path}"
+    )
     try:
         yield transport
     finally:
-        logger.debug(f"DEBUG: Starting cleanup for unix_transport with path: {sock_path}")
-        await transport.close() # transport.close() should handle unlinking its own path
+        logger.debug(
+            f"DEBUG: Starting cleanup for unix_transport with path: {sock_path}"
+        )
+        await (
+            transport.close()
+        )  # transport.close() should handle unlinking its own path
         # Double check for safety, as managed_unix_socket_path also has a finalizer.
-        if os.path.exists(sock_path): 
-            logger.warning(f"DEBUG: Socket file {sock_path} still exists after transport.close() in unix_transport. Attempting unlink.")
+        if os.path.exists(sock_path):
+            logger.warning(
+                f"DEBUG: Socket file {sock_path} still exists after transport.close() in unix_transport. Attempting unlink."
+            )
             try:
                 os.unlink(sock_path)
-                logger.debug(f"DEBUG: Successfully unlinked {sock_path} in unix_transport finalizer.")
+                logger.debug(
+                    f"DEBUG: Successfully unlinked {sock_path} in unix_transport finalizer."
+                )
             except OSError as e:
-                logger.error(f"DEBUG: Error unlinking {sock_path} in unix_transport finalizer: {e}")
-        logger.debug(f"DEBUG: Fixture unix_transport cleanup complete for path: {sock_path}")
+                logger.error(
+                    f"DEBUG: Error unlinking {sock_path} in unix_transport finalizer: {e}"
+                )
+        logger.debug(
+            f"DEBUG: Fixture unix_transport cleanup complete for path: {sock_path}"
+        )
+
 
 @pytest_asyncio.fixture(scope="function")
-async def managed_unix_socket_path(request: pytest.FixtureRequest) -> AsyncGenerator[str, None]: # tmp_path removed
+async def managed_unix_socket_path(
+    request: pytest.FixtureRequest,
+) -> AsyncGenerator[str, None]:  # tmp_path removed
     base_temp_dir = tempfile.gettempdir()
     socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"  # Shorter: p_ + 6-char hex + .s
     socket_path = os.path.join(base_temp_dir, socket_filename)
 
-    logger.debug(f"🧪🔌 Providing managed socket path: {socket_path} (based on tempdir: {base_temp_dir})")
+    logger.debug(
+        f"🧪🔌 Providing managed socket path: {socket_path} (based on tempdir: {base_temp_dir})"
+    )
 
     # Ensure the path does not exist before yielding (defensive)
     if os.path.exists(socket_path):
-        logger.warning(f"⚠️ Stale socket path {socket_path} detected before test. Attempting removal.")
+        logger.warning(
+            f"⚠️ Stale socket path {socket_path} detected before test. Attempting removal."
+        )
         try:
             os.unlink(socket_path)
         except OSError as e:
-            logger.error(f"⚠️ Could not remove pre-existing stale socket at {socket_path}: {e}. Test may fail.")
+            logger.error(
+                f"⚠️ Could not remove pre-existing stale socket at {socket_path}: {e}. Test may fail."
+            )
             # Depending on strictness, could raise an error here or let the test proceed.
 
     async def finalizer():
-        logger.debug(f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER: Finalizing managed socket path: {socket_path}") # Existing + emphasis
-        await asyncio.sleep(0.05) 
+        logger.debug(
+            f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER: Finalizing managed socket path: {socket_path}"
+        )  # Existing + emphasis
+        await asyncio.sleep(0.05)
         if os.path.exists(socket_path):
             try:
-                os.chmod(socket_path, 0o777) # Ensure permissions allow unlink
+                os.chmod(socket_path, 0o777)  # Ensure permissions allow unlink
                 os.unlink(socket_path)
                 logger.debug(f"✅ Successfully unlinked socket: {socket_path}")
             except OSError as e:
-                logger.warning(f"⚠️ Error unlinking socket {socket_path} in finalizer: {e}. This might affect subsequent tests if not cleaned.")
+                logger.warning(
+                    f"⚠️ Error unlinking socket {socket_path} in finalizer: {e}. This might affect subsequent tests if not cleaned."
+                )
         else:
-            logger.debug(f"ℹ️ Socket path {socket_path} already cleaned up or never created by this instance.")
+            logger.debug(
+                f"ℹ️ Socket path {socket_path} already cleaned up or never created by this instance."
+            )
 
     request.addfinalizer(lambda: asyncio.ensure_future(finalizer()))
 
@@ -230,5 +263,6 @@ async def transport_cleanup():
     yield
     # Force cleanup of transport resources
     await asyncio.sleep(0.1)  # Allow any pending cleanups
+
 
 ### 🐍🏗🧪️
