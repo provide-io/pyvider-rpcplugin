@@ -72,8 +72,8 @@ class HighPerformanceHandler:
         self.handler_name = handler_name
         self.request_count = 0
         self.total_processing_time = 0.0
-        self.cache = {}
-        self.batch_buffer = []
+        self.cache: dict[str, Any] = {} # Type hint added
+        self.batch_buffer: list[str] = [] # Type hint added, assuming messages are strings
         self.batch_size = 100
     
     async def FastEcho(self, request, context):
@@ -254,7 +254,7 @@ class PerformanceBenchmarker:
                 finally:
                     # await client.close()
                     if channel:
-                        await channel.close()
+                        await channel.close(grace=None) # Added grace=None
                 
                 return client_latencies
             
@@ -897,7 +897,7 @@ async def example_10_memory_optimization():
         
         for i in range(200):
             # Use limited set of messages (high cache hit rate)
-            message_id = i % 10  # Only 10 unique messages
+            _message_id = i % 10  # Only 10 unique messages
             await asyncio.sleep(0.001)
         
         # Final memory analysis

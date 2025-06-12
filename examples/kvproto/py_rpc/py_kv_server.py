@@ -7,6 +7,18 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../src')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
+import asyncio
+import os
+import grpc
+from cryptography.hazmat.primitives.asymmetric import ec
+from pyvider.telemetry import logger
+from pyvider.rpcplugin.server import RPCPluginServer
+from examples.kvproto.py_rpc.proto import (
+    KVProtocol,
+    kv_pb2,
+    kv_pb2_grpc,
+)
+
 """
 py-kv-server.py
 
@@ -18,19 +30,6 @@ On startup, the server performs a self‑test by executing a Put/Get with a key 
 "status" and a value of "pyvider server listening". This validates that the internal
 storage functions work correctly and assists during gRPC debugging.
 """
-
-import asyncio
-import os
-import grpc
-
-from pyvider.telemetry import logger
-from pyvider.rpcplugin.server import RPCPluginServer
-
-from examples.kvproto.py_rpc.proto import (
-    KVProtocol,
-    kv_pb2,
-    kv_pb2_grpc,
-)
 
 
 # ------------------------------------------------------------------------------
@@ -69,10 +68,11 @@ class KVHandler(kv_pb2_grpc.KVServicer):
     def __init__(self) -> None:
         logger.debug("🐍 S> 🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
         # Add explicit logging of certificate parameters
+        # Ensure 'ec' is imported at the top of the file
         if hasattr(self, "_server_cert_obj"):
             cert = self._server_cert_obj._cert
             public_key = cert.public_key()
-            if isinstance(public_key, ec.EllipticCurvePublicKey):
+            if isinstance(public_key, ec.EllipticCurvePublicKey): # F821 here if ec is not imported
                 logger.info(f"🐍 S> 🔐 Server using curve: {public_key.curve.name}")
 
     async def Put(

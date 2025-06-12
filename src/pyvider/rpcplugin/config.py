@@ -28,7 +28,8 @@ Usage:
 
 import os
 from pathlib import Path
-from typing import Literal, cast, get_args, List, Union, Any # Added Any back for specific cast
+from typing import Any, Literal, cast, get_args # Removed Dict, List, Optional
+
 
 from pyvider.telemetry import logger
 
@@ -40,7 +41,7 @@ TRANSPORT_TYPES = Literal["unix", "tcp"]
 
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
 # This provides a single source of truth for all configuration options
-CONFIG_SCHEMA: dict[str, dict[str, object]] = {
+CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
         "default": SUPPORTED_PROTOCOL_VERSIONS,
@@ -173,7 +174,7 @@ CONFIG_SCHEMA: dict[str, dict[str, object]] = {
 }
 
 
-def fetch_env_variable(key: str, meta: dict[str, object]) -> Union[str, int, float, bool, List[str], List[int], None, object]:
+def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     """
     Fetches and processes an environment variable based on schema metadata.
 
@@ -214,57 +215,48 @@ def fetch_env_variable(key: str, meta: dict[str, object]) -> Union[str, int, flo
 
     # Type conversion based on schema type
     try:
-        match meta["type"]:
-            case "str":
-                # String values need no conversion
-                return cast(str, value)
-
-            case "int":
-                if isinstance(value, int):
-                    return value
-                return int(cast(Union[str, int, float], value)) # Cast to types int() can handle
-
-            case "float":
-                if isinstance(value, float):
-                    return value
-                return float(cast(Union[str, int, float], value)) # Cast to types float() can handle
-
-            case "bool":
-                if isinstance(value, bool):
-                    return value
-                if isinstance(value, str):
-                    return value.lower() in ("true", "yes", "1", "on")
-                return bool(value) # bool() can handle most things, object is fine
-
-            case "list_str":
-                # Handle lists stored as comma-separated strings
-                if isinstance(value, list):
-                    return cast(List[str], value)
-                if isinstance(value, str):
-                    return [v.strip() for v in value.split(",")]
-                return list(map(str, cast(list, value))) # Ensure elements are str if it's a list of other things
-
-            case "list_int":
-                # Handle lists of integers
-                if isinstance(value, list) and all(isinstance(x, int) for x in value):
-                    return cast(List[int], value)
-                if isinstance(value, list): # list of non-int, e.g. list of str
-                    return [int(cast(str, v)) for v in value]
-                if isinstance(value, str):
-                    return [int(v.strip()) for v in value.split(",")]
-                return [int(cast(Union[str, int, float], value))] # If value itself is a single number-like thing
-
-            case _:
-                # Default case - return as is, but it's typed as object
-                logger.warning(f"⚙️⚠️ Unknown type {meta['type']} for {key}, returning raw value")
+        # Using match/case for type conversion
+        type_string = meta["type"]
+        if type_string == "str":
+            return value
+        elif type_string == "int":
+            if isinstance(value, int):
                 return value
+            return int(value)
+        elif type_string == "float":
+            if isinstance(value, float):
+                return value
+            return float(value)
+        elif type_string == "bool":
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                return value.lower() in ("true", "yes", "1", "on")
+            return bool(value)
+        elif type_string == "list_str":
+            if isinstance(value, list):
+                return value
+            if isinstance(value, str):
+                return [v.strip() for v in value.split(",")]
+            return list(value)
+        elif type_string == "list_int":
+            if isinstance(value, list) and all(isinstance(x, int) for x in value):
+                return value
+            if isinstance(value, list):
+                return [int(v) for v in value]
+            if isinstance(value, str):
+                return [int(v.strip()) for v in value.split(",")]
+            return [int(value)]
+        else:
+            logger.warning(f"⚙️⚠️ Unknown type {type_string} for {key}, returning raw value")
+            return value
 
     except (ValueError, TypeError) as e:
         logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
         raise ValueError(f"Invalid format for {key}. Expected {meta['type']}, got: {value}") from e
 
 
-def validate_config_value(key: str, value: Union[str, int, float, bool, List[str], List[int], None, object], meta: dict[str, object]) -> bool:
+def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     """
     Validates a configuration value against schema requirements.
 
@@ -291,37 +283,20 @@ def validate_config_value(key: str, value: Union[str, int, float, bool, List[str
         return True
 
     # Check valid_values if defined
-    if "valid_values" in meta:
-        # Ensure value's type is one that we'd expect to find in meta["valid_values"]
-        # meta["valid_values"] typically contains str, or list[str].
-        is_directly_comparable_type = isinstance(value, (str, int, float, bool))
-        is_list_of_str_type = isinstance(value, list) and all(isinstance(i, str) for i in value)
-
-        if is_directly_comparable_type or is_list_of_str_type:
-            # Cast to Any for the 'in' operator, after we've confirmed it's a comparable type.
-            if cast(Any, value) not in meta["valid_values"]:
-                logger.error(
-                    f"⚙️❌ Invalid value for {key}: {value}",
-                    extra={"valid_values": meta["valid_values"]},
-                )
-                raise ValueError(
-                    f"Invalid value for {key}: {value}. Valid values: {meta['valid_values']}"
-                )
-        elif value is not None: # value is not None and not one of the typical comparable types
-            # This implies it's not in valid_values and is of an unexpected type.
-            logger.error(
-                f"⚙️❌ Value for {key} has type {type(value)} which is not directly comparable against valid_values: {meta['valid_values']}",
-                extra={"value": value, "valid_values": meta["valid_values"]},
-            )
-            raise ValueError(
-                f"Value for {key} ({value}) of type {type(value)} is not valid. Valid values: {meta['valid_values']}"
-            )
+    if "valid_values" in meta and value not in meta["valid_values"]:
+        logger.error(
+            f"⚙️❌ Invalid value for {key}: {value}",
+            extra={"valid_values": meta["valid_values"]},
+        )
+        raise ValueError(
+            f"Invalid value for {key}: {value}. Valid values: {meta['valid_values']}"
+        )
 
     # logger.debug(f"⚙️🔍✅ Config {key} validation passed") # lots of logs
     return True
 
 
-def get_config() -> dict[str, Union[str, int, float, bool, List[str], List[int], None, object]]:
+def get_config() -> dict[str, Any]:
     """
     Retrieves all configuration values from environment, applying defaults and validation.
 
@@ -384,7 +359,7 @@ class RPCPluginConfig:
             logger.debug("⚙️🔄 Created new RPCPluginConfig singleton instance")
         return cls._instance
 
-    def get(self, key: str, default: object = None) -> object:
+    def get(self, key: str, default: Any = None) -> Any:
         """
         Retrieve a configuration value.
 
@@ -399,7 +374,7 @@ class RPCPluginConfig:
         logger.debug(f"⚙️📖 Getting config {key} = {value}")
         return value
 
-    def get_list(self, key: str) -> list[object]:
+    def get_list(self, key: str) -> list[Any]:
         """
         Retrieve a configuration value as a list.
 
@@ -415,7 +390,7 @@ class RPCPluginConfig:
         logger.debug(f"⚙️📖 Getting list config {key} = {value}")
         return value
 
-    def set(self, key: str, value: object) -> None:
+    def set(self, key: str, value: Any) -> None:
         """
         Set a configuration value dynamically.
 
@@ -528,7 +503,7 @@ def configure(
     server_key: str | None = None,
     client_cert: str | None = None,
     client_key: str | None = None,
-    **kwargs: object,
+    **kwargs: Any,
 ) -> None:
     """
     Configure Pyvider RPC plugin with simplified options.
@@ -652,18 +627,19 @@ def load_config_from_file(config_file: str | Path) -> None:
     logger.debug(f"⚙️📂🚀 Loading configuration from {path}")
 
     try:
-        match path.suffix.lower():
-            case ".env":
-                _load_dotenv_file(path)
-            case ".json":
-                _load_json_file(path)
-            case ".yaml" | ".yml":
-                _load_yaml_file(path)
-            case _:
-                logger.error(f"⚙️❌ Unsupported file format: {path.suffix}")
-                raise ValueError(
-                    f"Unsupported file format: {path.suffix}. Supported formats: .env, .json, .yaml, .yml"
-                )
+        # Using match/case for file type handling
+        suffix = path.suffix.lower()
+        if suffix == ".env":
+            _load_dotenv_file(path)
+        elif suffix == ".json":
+            _load_json_file(path)
+        elif suffix in (".yaml", ".yml"):
+            _load_yaml_file(path)
+        else:
+            logger.error(f"⚙️❌ Unsupported file format: {suffix}")
+            raise ValueError(
+                f"Unsupported file format: {suffix}. Supported formats: .env, .json, .yaml, .yml"
+            )
 
         # Reload configuration from environment
         rpcplugin_config.config = get_config()
@@ -768,22 +744,23 @@ def _load_yaml_file(path: Path) -> None:
             config_data = yaml.safe_load(f)
 
         for key, value in config_data.items():
-            if isinstance(value, list):
-                os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
-                logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
-            elif isinstance(value, dict):
-                # For dicts, keep current behavior but warn if it's a schema-defined key
-                # that isn't usually string-represented this way.
-                # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
-                env_val = yaml.dump(value).strip()
-                os.environ[key] = env_val
-                logger.warning(
-                    f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
-                    f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
-                )
-            else:
-                os.environ[key] = str(value)
-                logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
+            match value:
+                case list():
+                    os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
+                    logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
+                case dict():
+                    # For dicts, keep current behavior but warn if it's a schema-defined key
+                    # that isn't usually string-represented this way.
+                    # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
+                    env_val = yaml.dump(value).strip()
+                    os.environ[key] = env_val
+                    logger.warning(
+                        f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
+                        f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
+                    )
+                case _: # Default case for scalars (int, float, bool, str)
+                    os.environ[key] = str(value)
+                    logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})

@@ -321,7 +321,7 @@ async def example_2_advanced_configuration():
     protocol = create_basic_protocol()
     handler = EchoServiceHandler("AdvancedConfigService")
 
-    server = plugin_server(
+    plugin_server(
         protocol=protocol,
         handler=handler,
         config={

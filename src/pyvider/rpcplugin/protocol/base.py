@@ -7,7 +7,7 @@ the Pyvider RPC Plugin system.
 """
 
 from abc import ABC, abstractmethod
-from typing import Generic # Removed Awaitable, Any
+from typing import Any, Generic # Removed Awaitable
 
 from pyvider.rpcplugin.types import (
     HandlerT,
@@ -23,7 +23,7 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]): # pragma: no cover
     """
 
     @abstractmethod
-    async def get_grpc_descriptors(self) -> tuple[object, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Returns the protobuf descriptor set and service name."""
         pass
 

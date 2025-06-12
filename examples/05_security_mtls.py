@@ -88,8 +88,14 @@ async def example_5_certificate_generation(cert_path: Path): # Added cert_path a
     )
     ca_cert_path = cert_path / "ca.crt"
     ca_key_path = cert_path / "ca.key"
-    with open(ca_cert_path, 'w') as f: f.write(ca_cert_obj.cert)
-    with open(ca_key_path, 'w') as f: f.write(ca_cert_obj.key)
+    with open(ca_cert_path, 'w') as f:
+        if ca_cert_obj.cert is None:
+            raise ValueError("CA certificate content is None")
+        f.write(ca_cert_obj.cert)
+    with open(ca_key_path, 'w') as f:
+        if ca_cert_obj.key is None:
+            raise ValueError("CA key content is None")
+        f.write(ca_cert_obj.key)
     logger.info("Self-signed 'CA' certificate generated", ca_cert_path=str(ca_cert_path))
 
     # Step 2: Generate Server Certificate (self-signed)
@@ -102,8 +108,14 @@ async def example_5_certificate_generation(cert_path: Path): # Added cert_path a
     )
     server_cert_path = cert_path / "server.crt"
     server_key_path = cert_path / "server.key"
-    with open(server_cert_path, 'w') as f: f.write(server_cert_obj.cert)
-    with open(server_key_path, 'w') as f: f.write(server_cert_obj.key)
+    with open(server_cert_path, 'w') as f:
+        if server_cert_obj.cert is None:
+            raise ValueError("Server certificate content is None")
+        f.write(server_cert_obj.cert)
+    with open(server_key_path, 'w') as f:
+        if server_cert_obj.key is None:
+            raise ValueError("Server key content is None")
+        f.write(server_cert_obj.key)
     logger.info("Self-signed Server certificate generated", server_cert_path=str(server_cert_path))
 
     # Step 3: Generate Client Certificate (self-signed)
@@ -115,8 +127,14 @@ async def example_5_certificate_generation(cert_path: Path): # Added cert_path a
     )
     client_cert_path = cert_path / "client.crt"
     client_key_path = cert_path / "client.key"
-    with open(client_cert_path, 'w') as f: f.write(client_cert_obj.cert)
-    with open(client_key_path, 'w') as f: f.write(client_cert_obj.key)
+    with open(client_cert_path, 'w') as f:
+        if client_cert_obj.cert is None:
+            raise ValueError("Client certificate content is None")
+        f.write(client_cert_obj.cert)
+    with open(client_key_path, 'w') as f:
+        if client_cert_obj.key is None:
+            raise ValueError("Client key content is None")
+        f.write(client_cert_obj.key)
     logger.info("Self-signed Client certificate generated", client_cert_path=str(client_cert_path))
 
     # Step 4: Verification (will be self-verification, not chain)

@@ -231,8 +231,8 @@ async def example_6_async_context_managers():
     # Demonstrate async context manager usage
     async with AsyncRPCManager("unix") as rpc:
         # Use RPC services within context
-        result1 = await rpc.make_call("ProcessData", "sample_data_1")
-        result2 = await rpc.make_call("ProcessData", "sample_data_2")
+        await rpc.make_call("ProcessData", "sample_data_1")
+        await rpc.make_call("ProcessData", "sample_data_2")
         
         logger.info(
             "Context manager example completed",

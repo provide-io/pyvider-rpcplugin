@@ -14,7 +14,7 @@ import asyncio
 import os
 import time
 import traceback
-from typing import TypeGuard, cast, List, Union # Added cast, List, Union
+from typing import TypeGuard
 
 from attrs import define
 
@@ -126,9 +126,7 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     logger.debug(
         f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}"
     )
-    # Provide a default empty list for get and cast the result
-    supported_versions_config = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS", [])
-    SUPPORTED_PROTOCOL_VERSIONS = cast(List[int], supported_versions_config)
+    SUPPORTED_PROTOCOL_VERSIONS = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS")
     for version in sorted(server_versions, reverse=True):
         if version in SUPPORTED_PROTOCOL_VERSIONS:
             logger.info(f"🤝✅ Selected protocol version: {version}")
@@ -343,11 +341,18 @@ def parse_handshake_response(
         protocol = parts[4]
         server_cert = parts[5] if parts[5] else None
 
-        expected_core_version_from_config = rpcplugin_config.get("PLUGIN_CORE_VERSION", "1") # Default to "1"
+        expected_core_version_from_config = rpcplugin_config.get("PLUGIN_CORE_VERSION")
         logger.debug(f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_core_version_from_config} (type: {type(expected_core_version_from_config)})")
 
-        # Cast before converting to int, ensure it's treated as str or int
-        expected_core_version_int = int(cast(Union[str, int], expected_core_version_from_config))
+        if expected_core_version_from_config is None:
+            logger.error("CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1.")
+            expected_core_version_int = 1
+        else:
+            try:
+                expected_core_version_int = int(expected_core_version_from_config)
+            except (ValueError, TypeError) as e:
+                logger.error(f"CRITICAL: Could not convert PLUGIN_CORE_VERSION '{expected_core_version_from_config}' to int. Error: {e}. Falling back to default 1.")
+                expected_core_version_int = 1
         
         if core_version != expected_core_version_int:
             logger.error(f"🤝 Unsupported handshake version: {core_version} (expected: {expected_core_version_int})")
