@@ -1,7 +1,16 @@
 from __future__ import annotations
 
+import asyncio  # Added
+import inspect  # Added
 from collections.abc import Awaitable, Callable as AbcCallable
-from typing import Any, Protocol as TypeProtocol, TypeGuard, TypeVar, runtime_checkable, TYPE_CHECKING
+from typing import (
+    Any,
+    Protocol as TypeProtocol,
+    TypeGuard,
+    TypeVar,
+    runtime_checkable,
+    TYPE_CHECKING,
+)  # Added Callable
 import grpc
 from pyvider.telemetry import logger
 
@@ -17,7 +26,7 @@ interfaces defined here.
 """
 
 if TYPE_CHECKING:
-    from .config import RPCPluginConfig # For TypeVar bound
+    from .config import RPCPluginConfig  # For TypeVar bound
 
 
 # Core TypeVars for generic type parameters
@@ -53,7 +62,7 @@ class RPCPluginProtocol(TypeProtocol):
     between gRPC services and Pyvider's RPC plugin system.
     """
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]: # Removed Awaitable
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Removed Awaitable
         """
         Returns the protobuf descriptor set and service name.
 
@@ -62,7 +71,9 @@ class RPCPluginProtocol(TypeProtocol):
         """
         ...
 
-    async def add_to_server(self, handler: Any, server: Any) -> None: # Removed Awaitable
+    async def add_to_server(
+        self, handler: Any, server: Any
+    ) -> None:  # Removed Awaitable
         """
         Adds the protocol implementation to the gRPC server.
 
@@ -94,7 +105,7 @@ class RPCPluginTransport(TypeProtocol):
     the low-level network communication between RPC plugin components.
     """
 
-    endpoint: str | None # Modernized Optional
+    endpoint: str | None  # Modernized Optional
 
     async def listen(self) -> str:
         """
@@ -130,7 +141,7 @@ class SerializableT(TypeProtocol):
     serialized to and from dictionary representations.
     """
 
-    def to_dict(self) -> dict[str, Any]: # Modernized Dict
+    def to_dict(self) -> dict[str, Any]:  # Modernized Dict
         """
         Convert the object to a dictionary representation.
 
@@ -140,7 +151,7 @@ class SerializableT(TypeProtocol):
         ...
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SerializableT": # Modernized Dict
+    def from_dict(cls, data: dict[str, Any]) -> "SerializableT":  # Modernized Dict
         """
         Create an object from a dictionary representation.
 
@@ -151,6 +162,62 @@ class SerializableT(TypeProtocol):
             New instance of the class
         """
         ...
+
+
+def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
+    logger.debug(
+        "🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"
+    )
+
+    # Check to_dict method
+    if not hasattr(obj, "to_dict"):
+        logger.debug("SerializableT: Method to_dict is missing.")
+        return False
+    to_dict_method = getattr(obj, "to_dict")
+    if not callable(to_dict_method):
+        logger.debug("SerializableT: Attribute to_dict is not callable.")
+        return False
+    # Signature for obj.to_dict() should have 0 parameters (after self)
+    try:
+        to_dict_sig = inspect.signature(to_dict_method)
+        if len(to_dict_sig.parameters) != 0:
+            logger.debug(
+                f"SerializableT: to_dict signature incorrect. Expected 0 params, got {len(to_dict_sig.parameters)}."
+            )
+            return False
+    except (TypeError, ValueError):
+        logger.debug("SerializableT: Could not inspect to_dict signature.")
+        return False
+
+    # Check from_dict classmethod
+    if not hasattr(obj, "from_dict"):  # Check on instance, works for classmethods too
+        logger.debug(
+            "SerializableT: Method from_dict is missing."
+        )  # Unified missing message
+        return False
+
+    from_dict_method = getattr(obj, "from_dict")
+    if not callable(from_dict_method):
+        logger.debug(
+            "SerializableT: Attribute from_dict is not callable."
+        )  # Unified not callable message
+        return False
+
+    # For a classmethod accessed via instance (obj.from_dict), 'cls' is bound.
+    # inspect.signature(obj.from_dict) will show 1 parameter ('data').
+    try:
+        from_dict_sig = inspect.signature(from_dict_method)
+        if len(from_dict_sig.parameters) != 1:  # Expecting 1 param ('data')
+            logger.debug(
+                f"SerializableT: from_dict signature incorrect. Expected 1 param (data), got {len(from_dict_sig.parameters)}."
+            )  # Simpler log
+            return False
+    except (TypeError, ValueError):
+        logger.debug("SerializableT: Could not inspect from_dict signature.")
+        return False
+
+    logger.debug("SerializableT: All structural and signature checks passed.")
+    return True
 
 
 @runtime_checkable
@@ -190,17 +257,66 @@ class ConnectionT(TypeProtocol):
         ...
 
 
+def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
+    logger.debug(
+        "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+    )
+
+    methods_spec = {
+        "send_data": {"params": 1, "is_async": True},  # Expects 1 param (data)
+        "receive_data": {"params": 1, "is_async": True},  # Expects 1 param (size)
+        "close": {"params": 0, "is_async": True},  # Expects 0 params
+    }
+
+    for method_name, spec in methods_spec.items():
+        if not hasattr(obj, method_name):
+            logger.debug(f"ConnectionT: Method {method_name} is missing.")
+            return False
+
+        method = getattr(obj, method_name)
+        if not callable(method):
+            logger.debug(f"ConnectionT: Attribute {method_name} is not callable.")
+            return False
+
+        if spec["is_async"] and not asyncio.iscoroutinefunction(method):
+            logger.debug(f"ConnectionT: Method {method_name} is not async as expected.")
+            return False
+
+        try:
+            sig = inspect.signature(method)
+            if len(sig.parameters) != spec["params"]:
+                param_str = "param" if spec["params"] == 1 else "params"
+                logger.debug(
+                    f"ConnectionT: {method_name} signature incorrect. Expected {spec['params']} {param_str}, got {len(sig.parameters)}."
+                )
+                return False
+        except (TypeError, ValueError):  # Should not happen if callable, but defensive
+            logger.debug(f"ConnectionT: Could not inspect {method_name} signature.")
+            return False
+
+    logger.debug("ConnectionT: All structural and signature checks passed.")
+    return True
+
+
 # Type aliases for gRPC Clients
-GrpcChannelType = grpc.aio.Channel | grpc.Channel      # Represents gRPC sync or async channel
-GrpcServerType = grpc.aio.Server                       # Represents gRPC async server type
-RpcConfigType = dict[str, Any]                         # Configuration dictionary type
-GrpcCredentialsType = grpc.ChannelCredentials | None   # gRPC channel credentials, possibly None
-EndpointType = str                                     # Represents an endpoint string
-AddressType = tuple[str, int]                          # Represents a host-port address tuple
+GrpcChannelType = (
+    grpc.aio.Channel | grpc.Channel
+)  # Represents gRPC sync or async channel
+GrpcServerType = grpc.aio.Server  # Represents gRPC async server type
+RpcConfigType = dict[str, Any]  # Configuration dictionary type
+GrpcCredentialsType = (
+    grpc.ChannelCredentials | None
+)  # gRPC channel credentials, possibly None
+EndpointType = str  # Represents an endpoint string
+AddressType = tuple[str, int]  # Represents a host-port address tuple
 
 # I/O function type aliases using collections.abc
-SendFuncType = AbcCallable[[bytes], Awaitable[None]]    # Type for a function that sends bytes
-ReceiveFuncType = AbcCallable[[int], Awaitable[bytes]] # Type for a function that receives bytes
+SendFuncType = AbcCallable[
+    [bytes], Awaitable[None]
+]  # Type for a function that sends bytes
+ReceiveFuncType = AbcCallable[
+    [int], Awaitable[bytes]
+]  # Type for a function that receives bytes
 
 
 @runtime_checkable
@@ -229,6 +345,51 @@ class SecureRpcClientT(TypeProtocol):
         ...
 
 
+def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
+    logger.debug(
+        "🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"
+    )
+
+    methods_spec = {
+        "_perform_handshake": {"params": 0, "is_async": True},
+        "_setup_tls": {"params": 0, "is_async": True},
+        "_create_grpc_channel": {"params": 0, "is_async": True},
+        "close": {"params": 0, "is_async": True},
+    }
+
+    for method_name, spec in methods_spec.items():
+        if not hasattr(obj, method_name):
+            logger.debug(f"SecureRpcClientT: Method {method_name} is missing.")
+            return False
+
+        method = getattr(obj, method_name)
+        if not callable(method):
+            logger.debug(f"SecureRpcClientT: Attribute {method_name} is not callable.")
+            return False
+
+        if spec["is_async"] and not asyncio.iscoroutinefunction(method):
+            logger.debug(
+                f"SecureRpcClientT: Method {method_name} is not async as expected."
+            )
+            return False
+
+        try:
+            sig = inspect.signature(method)
+            if len(sig.parameters) != spec["params"]:
+                logger.debug(
+                    f"SecureRpcClientT: {method_name} signature incorrect. Expected {spec['params']} params, got {len(sig.parameters)}."
+                )
+                return False
+        except (TypeError, ValueError):
+            logger.debug(
+                f"SecureRpcClientT: Could not inspect {method_name} signature."
+            )
+            return False
+
+    logger.debug("SecureRpcClientT: All structural and signature checks passed.")
+    return True
+
+
 def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
     """
     TypeGuard that checks if an object implements the RPCPluginHandler protocol.
@@ -242,6 +403,7 @@ def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
     logger.debug("🧰🔍✅ Checking if object implements RPCPluginHandler protocol")
     return isinstance(obj, RPCPluginHandler)
 
+
 def is_valid_protocol(obj: Any) -> TypeGuard[RPCPluginProtocol]:
     """
     TypeGuard that checks if an object implements the RPCPluginProtocol protocol.
@@ -254,6 +416,7 @@ def is_valid_protocol(obj: Any) -> TypeGuard[RPCPluginProtocol]:
     """
     logger.debug("🧰🔍✅ Checking if object implements RPCPluginProtocol protocol")
     return isinstance(obj, RPCPluginProtocol)
+
 
 def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
     """

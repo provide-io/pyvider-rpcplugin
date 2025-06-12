@@ -13,6 +13,7 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 
 from tests.fixtures import *
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_listen_and_connect(managed_unix_socket_path) -> None:
     transport = UnixSocketTransport(path=managed_unix_socket_path)
@@ -38,6 +39,7 @@ async def test_unix_socket_listen_and_connect(managed_unix_socket_path) -> None:
         "Socket file was not removed after transport closed."
     )
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_listen_path_creation_failure() -> None:
     """Test that UnixSocketTransport.listen raises TransportError when the socket path cannot be created."""
@@ -46,7 +48,7 @@ async def test_unix_socket_listen_path_creation_failure() -> None:
     try:
         # Make temp dir inaccessible
         os.chmod(temp_dir, 0o000)
-        
+
         # Try to create a socket in the inaccessible directory
         transport = UnixSocketTransport(path=os.path.join(temp_dir, "socket.sock"))
         with pytest.raises(TransportError, match="Failed to create Unix socket"):
@@ -56,9 +58,9 @@ async def test_unix_socket_listen_path_creation_failure() -> None:
         os.chmod(temp_dir, 0o700)
         os.rmdir(temp_dir)
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_listen_socket_in_use(managed_unix_socket_path) -> None:
-
     """Test Unix socket transport handling of a socket already in use."""
     # Ensure the path is a string
     socket_path = str(managed_unix_socket_path)
@@ -71,22 +73,30 @@ async def test_unix_socket_listen_socket_in_use(managed_unix_socket_path) -> Non
         with pytest.raises(TransportError) as excinfo:
             await transport2.listen()
 
-        assert "is already running" in str(excinfo.value) # Updated to check for new message
+        assert "is already running" in str(
+            excinfo.value
+        )  # Updated to check for new message
     finally:
         await transport1.close()
         # Add a small delay to ensure cleanup
         await asyncio.sleep(0.1)
+
 
 @pytest.mark.asyncio
 async def test_unix_listen_socket_in_use(monkeypatch) -> None:
     # Simulate _check_socket_in_use returning True.
     transport = UnixSocketTransport(path="/tmp/test.sock")
     monkeypatch.setattr(transport, "_check_socket_in_use", AsyncMock(return_value=True))
-    with pytest.raises(TransportError, match=r"Socket .* is already running"): # Updated match pattern
+    with pytest.raises(
+        TransportError, match=r"Socket .* is already running"
+    ):  # Updated match pattern
         await transport.listen()
 
+
 @pytest.mark.asyncio
-async def test_unix_socket_listen_unlink_file_not_found(managed_unix_socket_path) -> None:
+async def test_unix_socket_listen_unlink_file_not_found(
+    managed_unix_socket_path,
+) -> None:
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     try:
@@ -100,6 +110,7 @@ async def test_unix_socket_listen_unlink_file_not_found(managed_unix_socket_path
         await transport.close()
         # Allow event loop to clean up
         await asyncio.sleep(0)
+
 
 @pytest.mark.asyncio
 async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
@@ -124,6 +135,7 @@ async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
     endpoint = await transport.listen()
     assert endpoint == sock_path
 
+
 @pytest.mark.asyncio
 async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
     import errno
@@ -145,5 +157,6 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(os, "unlink", fake_unlink)
     with pytest.raises(TransportError, match="Failed to remove"):
         await transport.listen()
+
 
 ### 🐍🏗🧪️

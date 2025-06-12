@@ -11,6 +11,7 @@ import pytest
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
+
 @pytest.mark.asyncio
 async def test_unix_socket_error_handling() -> None:
     """Test comprehensive error handling in Unix socket transport."""
@@ -44,8 +45,10 @@ async def test_unix_socket_error_handling() -> None:
         await transport.listen()
 
         # Patch os.unlink to raise an error during close()
-        with patch('os.unlink', side_effect=PermissionError("Mocked permission error")), \
-             patch('os.path.exists', return_value=True):
+        with (
+            patch("os.unlink", side_effect=PermissionError("Mocked permission error")),
+            patch("os.path.exists", return_value=True),
+        ):
             with pytest.raises(TransportError, match="Failed to remove socket file"):
                 await transport.close()
 
@@ -56,10 +59,13 @@ async def test_unix_socket_error_handling() -> None:
         transport = UnixSocketTransport(path=socket_path)
 
         # Patch asyncio.start_unix_server to raise an error
-        with patch('asyncio.start_unix_server',
-                   side_effect=OSError("Mocked server startup error")):
+        with patch(
+            "asyncio.start_unix_server",
+            side_effect=OSError("Mocked server startup error"),
+        ):
             with pytest.raises(TransportError, match="Failed to create Unix socket"):
                 await transport.listen()
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_close_error_handling() -> None:
@@ -79,7 +85,6 @@ async def test_unix_socket_close_error_handling() -> None:
         # wait_closed needs to be an AsyncMock if it's called and awaited
         mock_writer.wait_closed = AsyncMock()
 
-
         # Assign it to the transport
         transport._writer = mock_writer
 
@@ -88,6 +93,7 @@ async def test_unix_socket_close_error_handling() -> None:
 
         # Socket file should still be removed
         assert not os.path.exists(socket_path)
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_path_normalization() -> None:
@@ -102,8 +108,10 @@ async def test_unix_socket_path_normalization() -> None:
 
     for input_path, expected_path in test_cases:
         transport = UnixSocketTransport(path=input_path)
-        assert transport.path == expected_path, \
+        assert transport.path == expected_path, (
             f"Path normalization failed: expected {expected_path}, got {transport.path}"
+        )
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_connect_timeout() -> None:
@@ -121,9 +129,12 @@ async def test_unix_socket_connect_timeout() -> None:
         transport = UnixSocketTransport()
 
         # Mock open_unix_connection to raise a timeout
-        with patch('asyncio.open_unix_connection',
-                   side_effect=asyncio.TimeoutError("Connection timed out")):
+        with patch(
+            "asyncio.open_unix_connection",
+            side_effect=asyncio.TimeoutError("Connection timed out"),
+        ):
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)
+
 
 # 🐍🏗🧪️

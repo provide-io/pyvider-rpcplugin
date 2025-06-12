@@ -23,12 +23,20 @@ from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.tcp import TCPSocketTransport
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 
-TransportT = TypeVar("TransportT", bound=RPCPluginTransport) # Generic type for any RPCPluginTransport implementation
-TCPSocketT = TypeVar("TCPSocketT", bound=TCPSocketTransport) # Generic type for TCPSocketTransport
-UnixSocketT = TypeVar("UnixSocketT", bound=UnixSocketTransport) # Generic type for UnixSocketTransport
+TransportT = TypeVar(
+    "TransportT", bound=RPCPluginTransport
+)  # Generic type for any RPCPluginTransport implementation
+TCPSocketT = TypeVar(
+    "TCPSocketT", bound=TCPSocketTransport
+)  # Generic type for TCPSocketTransport
+UnixSocketT = TypeVar(
+    "UnixSocketT", bound=UnixSocketTransport
+)  # Generic type for UnixSocketTransport
 
 # Simplified TransportType alias, as TCPSocketT and UnixSocketT are already specific.
-type TransportType = TCPSocketTransport | UnixSocketTransport # Represents either a TCP or Unix socket transport
+type TransportType = (
+    TCPSocketTransport | UnixSocketTransport
+)  # Represents either a TCP or Unix socket transport
 
 
 class ConnectionT(Protocol):

@@ -1,4 +1,3 @@
-
 # tests/handshake/test_handshake_certificate.py
 
 import pytest
@@ -9,6 +8,7 @@ from pyvider.rpcplugin.handshake import build_handshake_response
 
 def test_rebuild_x509_pem():
     """Test rebuilding X509 PEM certificates from base64 data."""
+
     # Define a function that matches the X509 rebuilding logic in the handshake module
     def rebuild_x509_pem(maybe_cert: str) -> str:
         """
@@ -24,25 +24,25 @@ def test_rebuild_x509_pem():
             + "\n-----END CERTIFICATE-----\n"
         )
         return full_pem
-    
+
     # Test with already formatted PEM
     existing_pem = "-----BEGIN CERTIFICATE-----\nABCDEF\n-----END CERTIFICATE-----\n"
     result = rebuild_x509_pem(existing_pem)
     assert result == existing_pem
-    
+
     # Test with base64 data only
     base64_only = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     result = rebuild_x509_pem(base64_only)
     assert "-----BEGIN CERTIFICATE-----" in result
     assert "-----END CERTIFICATE-----" in result
     assert base64_only in result
-    
+
     # Test with long base64 data (should split into lines)
     long_base64 = "A" * 100
     result = rebuild_x509_pem(long_base64)
     assert "-----BEGIN CERTIFICATE-----" in result
     assert "-----END CERTIFICATE-----" in result
-    
+
     # Line length should be reasonable (not one giant line)
     lines = result.strip().split("\n")
     for line in lines[1:-1]:  # Skip header and footer
@@ -54,14 +54,14 @@ async def test_handshake_certificate_stripping():
     """Test that certificate data is properly stripped of PEM headers in handshake."""
     # Create a test certificate
     cert = Certificate(generate_keypair=True)
-    
+
     # Create a mock transport
     class MockTransport:
         async def listen(self):
             return "mock_endpoint"
-    
+
     transport = MockTransport()
-    
+
     # Build handshake with certificate
     response = await build_handshake_response(
         plugin_version=7,
@@ -69,20 +69,20 @@ async def test_handshake_certificate_stripping():
         transport=transport,
         server_cert=cert,
     )
-    
+
     # Parse the response
     parts = response.split("|")
     assert len(parts) == 6
     cert_part = parts[5]
-    
+
     # The certificate part should not contain PEM headers
     assert "-----BEGIN CERTIFICATE-----" not in cert_part
     assert "-----END CERTIFICATE-----" not in cert_part
-    
+
     # Get the PEM body directly from the certificate
     cert_lines = cert.cert.strip().split("\n")
     pem_body = "".join(cert_lines[1:-1])  # Strip header and footer
-    
+
     # The cert part should be this PEM body (ignoring potential padding differences)
     assert cert_part.rstrip("=") == pem_body.rstrip("=")
 
@@ -90,18 +90,19 @@ async def test_handshake_certificate_stripping():
 @pytest.mark.asyncio
 async def test_handshake_with_invalid_certificate():
     """Test error handling when certificate is in invalid format."""
+
     # Create an invalid certificate object
     class InvalidCert:
         def __init__(self):
             self.cert = "Invalid"
-    
+
     # Create a mock transport
     class MockTransport:
         async def listen(self):
             return "mock_endpoint"
-    
+
     transport = MockTransport()
-    
+
     # Try to build handshake with invalid certificate
     with pytest.raises(ValueError, match="Invalid certificate format"):
         await build_handshake_response(
