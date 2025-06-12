@@ -177,38 +177,21 @@ def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
         return False
 
     # Check from_dict classmethod
-    cls = type(obj)
-    if not hasattr(cls, "from_dict"):
-        logger.debug("SerializableT: Method from_dict is missing from class.")
+    if not hasattr(obj, "from_dict"): # Check on instance, works for classmethods too
+        logger.debug("SerializableT: Method from_dict is missing.") # Unified missing message
         return False
 
-    from_dict_method_on_class = getattr(cls, "from_dict")
-    if not callable(from_dict_method_on_class): # Check general callability
-        logger.debug("SerializableT: Attribute from_dict is not callable on class.")
+    from_dict_method = getattr(obj, "from_dict")
+    if not callable(from_dict_method):
+        logger.debug("SerializableT: Attribute from_dict is not callable.") # Unified not callable message
         return False
 
-    # Check if it's truly a classmethod. inspect.signature works on the descriptor.
-    # A more direct check for classmethod:
-    # Bound classmethod: type(obj).from_dict or Cls.from_dict.
-    # For a class C with @classmethod def M(cls,...): inspect.ismethod(C.M) is true, C.M.__self__ is C.
-    # Let's assume 'callable' and signature check are main focus here, as @runtime_checkable
-    # would have handled the classmethod nature if isinstance was used and worked.
-    # For manual check, ensuring it's callable via the class is a good start.
-    # A full is_classmethod check:
-    # actual_method_obj = cls.__dict__.get('from_dict') # Get the raw descriptor
-    # if not isinstance(actual_method_obj, classmethod):
-    #    logger.debug("SerializableT: from_dict is not a classmethod descriptor.")
-    #    return False
-    # This descriptor check is more robust for ensuring it's a classmethod.
-
-    # Signature for type(obj).from_dict(cls, data) should have 1 parameter after 'cls' is bound
+    # For a classmethod accessed via instance (obj.from_dict), 'cls' is bound.
+    # inspect.signature(obj.from_dict) will show 1 parameter ('data').
     try:
-        # from_dict_method_on_class is getattr(type(obj), "from_dict")
-        from_dict_sig = inspect.signature(from_dict_method_on_class)
-        # For a classmethod like Cls.from_dict(cls, data), inspect.signature(Cls.from_dict)
-        # will show 1 parameter ('data') because 'cls' is bound.
+        from_dict_sig = inspect.signature(from_dict_method)
         if len(from_dict_sig.parameters) != 1: # Expecting 1 param ('data')
-            logger.debug(f"SerializableT: from_dict signature incorrect. Expected 1 param (data), got {len(from_dict_sig.parameters)}. Params: {list(from_dict_sig.parameters.keys())}")
+            logger.debug(f"SerializableT: from_dict signature incorrect. Expected 1 param (data), got {len(from_dict_sig.parameters)}.") # Simpler log
             return False
     except (TypeError, ValueError):
         logger.debug("SerializableT: Could not inspect from_dict signature.")

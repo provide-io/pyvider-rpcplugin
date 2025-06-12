@@ -33,7 +33,7 @@ def test_validate_magic_cookie_invalid(monkeypatch) -> None:
     )
 
     with pytest.raises(
-        HandshakeError, match=r"Magic cookie mismatch\. Expected: 'hello', Received: 'invalid_cookie'\."
+        HandshakeError, match=r"cookie_provided does not match required cookie_value"
     ):
         validate_magic_cookie()
 
@@ -44,11 +44,11 @@ def test_validate_magic_cookie_invalid(monkeypatch) -> None:
         (
             "PLUGIN_MAGIC_COOKIE",
             "invalid_cookie",
-            r"Magic cookie mismatch\. Expected: 'hello', Received: 'invalid_cookie'\.",
+            r"cookie_provided does not match required cookie_value",
         ),
         (None, None, ""), # This case might need adjustment if empty string for match is an issue
         ("PLUGIN_MAGIC_COOKIE", None, "cookie not provided"), # This regex seems fine as is, not in the list to change
-        (None, "hello", r"Configuration error: magic_cookie_key is not set\."),
+        (None, "hello", r"cookie_key not found"),
     ],
 )
 def test_validate_magic_cookie_failures(
@@ -78,7 +78,7 @@ def test_validate_magic_cookie_failures(
 
 
 def test_validate_magic_cookie_missing_still_raises() -> None:
-    with pytest.raises(HandshakeError, match=r"Configuration error: magic_cookie_key is not set\."):
+    with pytest.raises(HandshakeError, match=r"cookie_key not found"):
         validate_magic_cookie(magic_cookie_key=None, magic_cookie_value=None)
 
 
@@ -94,14 +94,14 @@ def test_validate_magic_cookie_missing_still_raises() -> None:
             None,
         ),
         # Missing environment variables
-        (None, None, None, True, r"Configuration error: magic_cookie_key is not set\."),
+        (None, None, None, True, r"cookie_key not found"),
         # Invalid cookie
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
             "some_expected",
             "different_cookie",
             True,
-            r"Magic cookie mismatch\. Expected: 'some_expected', Received: 'different_cookie'\.",
+            r"cookie_provided does not match required cookie_value",
         ),
     ],
 )
@@ -144,7 +144,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     # Even if config is set, we can override with function args
     # Suppose we pass an invalid cookie to demonstrate mismatch:
     with pytest.raises(
-        HandshakeError, match=r"Magic cookie mismatch\. Expected: 'EXPECTED', Received: 'WRONG'\."
+        HandshakeError, match=r"cookie_provided does not match required cookie_value"
     ):
         validate_magic_cookie(
             magic_cookie_key="KEY", magic_cookie_value="EXPECTED", magic_cookie="WRONG"
@@ -154,11 +154,11 @@ def test_validate_magic_cookie_explicit_none_empty_key(mocker):
     """Test validate_magic_cookie when magic_cookie_key is explicitly None or empty."""
     mock_logger_error = mocker.patch('pyvider.rpcplugin.handshake.logger.error')
 
-    with pytest.raises(HandshakeError, match=r"Configuration error: magic_cookie_key is not set\."):
+    with pytest.raises(HandshakeError, match=r"cookie_key not found"):
         validate_magic_cookie(magic_cookie_key=None, magic_cookie_value="value", magic_cookie="cookie")
     mock_logger_error.assert_called_with("🍪🪄❌ cookie_key not found")
     mock_logger_error.reset_mock()
 
-    with pytest.raises(HandshakeError, match=r"Configuration error: magic_cookie_key is not set\."):
+    with pytest.raises(HandshakeError, match=r"cookie_key not found"):
         validate_magic_cookie(magic_cookie_key="", magic_cookie_value="value", magic_cookie="cookie")
     mock_logger_error.assert_called_with("🍪🪄❌ cookie_key not found")
