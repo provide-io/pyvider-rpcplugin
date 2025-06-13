@@ -332,19 +332,21 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             # Try to read a complete line with increased timeout
             try:
                 # First try: direct read with longer timeout
-                if (
-                    self._process is not None and self._process.stdout is not None
-                ):  # Check stdout is not None
+                if self._process and self._process.stdout:
+                    current_process_stdout = self._process.stdout # Capture
                     line_bytes = await asyncio.wait_for(
                         loop.run_in_executor(
-                            None, lambda: self._process.stdout.readline()
-                        ),  # type: ignore[union-attr]
+                            None, lambda: current_process_stdout.readline() # Use captured variable
+                        ),
                         timeout=2.0,  # Longer per-read timeout
                     )
                 else:
                     # Process or stdout is None, cannot read
-                    await asyncio.sleep(0.1)  # Wait briefly and re-check loop condition
-                    continue
+                    logger.error("Cannot read handshake line: process or stdout is None during readline attempt.")
+                    # This path should ideally lead to an error or controlled exit from the loop.
+                    # Raising an error here or returning a specific value might be options.
+                    # For now, to satisfy MyPy and make it clear this is an issue:
+                    raise HandshakeError("Process or stdout not available for handshake readline.")
 
                 if line_bytes:
                     line = line_bytes.decode("utf-8", errors="replace").strip()
@@ -368,13 +370,12 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             # This might help if the Go server doesn't flush properly or uses different line endings
             if not buffer:  # Only try this if we haven't read anything
                 try:
-                    if (
-                        self._process is not None and self._process.stdout is not None
-                    ):  # Check stdout is not None
+                    if self._process and self._process.stdout:
+                        current_process_stdout_for_read = self._process.stdout # Capture
                         char_bytes = await asyncio.wait_for(
                             loop.run_in_executor(
-                                None, lambda: self._process.stdout.read(1)
-                            ),  # type: ignore[union-attr]
+                                None, lambda: current_process_stdout_for_read.read(1) # Use captured variable
+                            ),
                             timeout=1.0,
                         )
                         if char_bytes:
@@ -384,9 +385,10 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                                 f"🤝 Byte-by-byte read: buffer now: '{buffer}'"
                             )
                     else:
-                        # Process or stdout is None, cannot read
-                        await asyncio.sleep(0.1)  # Wait briefly
-                        continue
+                        # Process or stdout is None, cannot read byte-by-byte
+                        logger.error("Cannot read handshake byte: process or stdout is None during read(1) attempt.")
+                        # This path also indicates a problem.
+                        raise HandshakeError("Process or stdout not available for handshake read(1).")
                 except asyncio.TimeoutError:
                     pass  # Just continue the outer loop
 

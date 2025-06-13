@@ -161,7 +161,7 @@ def validate_magic_cookie(
     magic_cookie: str | None | _SentinelType = _SENTINEL_INSTANCE,
 ) -> None:
     """
-    Validates the magic cookie.
+    🍪🔍 Validates the magic cookie.
 
     If a parameter is omitted (i.e. remains as the sentinel),
     its value is read from rpcplugin_config. However, if the caller
@@ -175,7 +175,7 @@ def validate_magic_cookie(
     Raises:
         HandshakeError: If cookie validation fails.
     """
-    logger.debug("Starting magic cookie validation...")
+    logger.debug("🍪🔍 Starting magic cookie validation...")
 
     cookie_key = (
         rpcplugin_config.magic_cookie_key()
@@ -193,43 +193,30 @@ def validate_magic_cookie(
         else magic_cookie
     )
 
-    logger.debug(f"cookie_key: {cookie_key}")
-    logger.debug(f"cookie_value (expected): {cookie_value}")
-    logger.debug(f"cookie_provided (received): {cookie_provided}")
+    logger.debug(f"🍪 cookie_key: {cookie_key}")
+    logger.debug(f"🍪 cookie_value: {cookie_value}")
+    logger.debug(f"🍪 cookie_provided: {cookie_provided}")
 
     if cookie_key is None or cookie_key == "":
-        # This case should ideally be caught by config validation earlier
-        logger.error("Configuration error: magic_cookie_key is not set in config.")
-        raise HandshakeError("Configuration error: magic_cookie_key is not set.")
+        logger.error("🍪🪄❌ cookie_key not found")
+        raise HandshakeError("cookie_key not found")
 
     if cookie_value is None or cookie_value == "":
-        # This case should ideally be caught by config validation earlier
-        logger.error("Configuration error: magic_cookie_value (expected) is not set in config.")
-        raise HandshakeError("Configuration error: Expected magic_cookie_value is not set.")
+        logger.error("🍪🪄❌ Magic cookie value not found.")
+        raise HandshakeError("Magic cookie value not found.")
 
     if cookie_provided is None or cookie_provided == "":
-        logger.error(
-            "Magic cookie not provided by the client.",
-            extra={"cookie_key_expected": cookie_key}
-        )
-        raise HandshakeError(
-            f"Magic cookie not provided by the client. "
-            f"Ensure the client (e.g., Terraform) is configured to send the "
-            f"'{cookie_key}' environment variable."
-        )
+        logger.error("🍪🪄❌ Magic cookie not provided.")
+        raise HandshakeError("Magic cookie not provided.")
 
     if cookie_provided != cookie_value:
         logger.error(
-            "Magic cookie mismatch.",
-            extra={"expected": cookie_value, "received": cookie_provided, "cookie_key": cookie_key},
+            "🍪❌ cookie_provided does not match required cookie_value",
+            extra={"expected": cookie_value, "received": cookie_provided},
         )
-        raise HandshakeError(
-            f"Magic cookie mismatch. Expected: '{cookie_value}', Received: '{cookie_provided}'. "
-            f"Check the value of the '{cookie_key}' environment variable provided by the client."
-        )
+        raise HandshakeError("cookie_provided does not match required cookie_value")
 
-    logger.debug("Magic cookie validated successfully.")
-
+    logger.debug("🍪✅ Magic cookie validated successfully.")
 
 
 async def build_handshake_response(
