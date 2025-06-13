@@ -82,8 +82,8 @@ async def test_unix_socket_handle_client_error(managed_unix_socket_path) -> None
         await asyncio.sleep(0)
     finally:
         await transport.close()
-        # Add a small delay for cleanup
-        await asyncio.sleep(0.1)
+        # Add a longer delay for cleanup
+        await asyncio.sleep(0.5)
 
 
 @pytest.mark.asyncio

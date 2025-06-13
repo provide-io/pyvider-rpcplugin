@@ -26,11 +26,24 @@ class RPCPluginError(Exception):
         self.hint = hint
 
     def __str__(self) -> str:
-        """Return a string representation of the error, including the hint if available."""
+        MAX_MSG_LEN = 256  # Max length for the base message part
+        MAX_HINT_LEN = 128 # Max length for the hint part
+
         base_message = super().__str__()
+        if len(base_message) > MAX_MSG_LEN:
+            base_message = base_message[:MAX_MSG_LEN] + "..."
+
+        output_message = f"[{self.__class__.__name__}] {base_message}"
+
+        if self.code is not None:
+            output_message += f" (Code: {self.code})"
+
         if self.hint:
-            return f"{base_message} (Hint: {self.hint})"
-        return base_message
+            hint_str = self.hint
+            if len(hint_str) > MAX_HINT_LEN:
+                hint_str = hint_str[:MAX_HINT_LEN] + "..."
+            output_message += f" (Hint: {hint_str})"
+        return output_message
 
 
 class ConfigError(RPCPluginError):
