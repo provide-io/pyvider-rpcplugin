@@ -39,6 +39,7 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 ### 🔒 **Security-Focused** 
 - **Built-in mTLS** - Mutual TLS authentication with certificate management
+- **Process Isolation** - Plugins run in separate processes, protecting the host application from plugin crashes or resource exhaustion.
 - **Transport encryption** - Secure communication over any network
 - **Magic cookie validation** - Handshake verification for trusted connections
 - **Certificate utilities** - Easy cert generation and rotation
@@ -73,29 +74,69 @@ Create your first RPC plugin in minutes:
 
 ```python
 import asyncio
-from pyvider.rpcplugin import plugin_server, plugin_protocol
+from pyvider.rpcplugin import plugin_server, create_basic_protocol
 
-# Define your service handler
-class GreeterHandler:
-    async def SayHello(self, request, context):
-        return HelloReply(message=f"Hello, {request.name}!")
+# 1. Define your service handler (implement your RPC methods)
+class MyHandler:
+    async def MyMethod(self, request, context):
+        # Process request and return a response object
+        # For this minimal example, we return a simple object.
+        # In practice, this would be a protobuf message.
+        return type("MyResponse", (), {"message": f"Request received: {getattr(request, 'data', 'no data')}"})()
 
-# Create and configure the plugin
+# This is your main async function
 async def main():
-    # Create protocol from your .proto definition
-    protocol = plugin_protocol(
-        service_name="Greeter",
-        descriptor_module=greeter_pb2,
-        servicer_add_fn=add_GreeterServicer_to_server
-    )
-    
-    # Start the server
-    server = plugin_server(protocol=protocol, handler=GreeterHandler())
+    # 2. Create a basic protocol (uses a default service definition)
+    protocol = create_basic_protocol()
+
+    # 3. Create the plugin server with your handler
+    server = plugin_server(protocol=protocol, handler=MyHandler())
+
+    # 4. Start the server (this will run indefinitely until stopped)
+    print("Starting server on default Unix socket...")
+    # To see the socket path, you might need to inspect server.get_status() or logs
+    # For a TCP server: server = plugin_server(..., transport="tcp", host="0.0.0.0", port=50051)
     await server.serve()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("Server shutting down...")
 ```
+
+## 🧩 Core Concepts & Use Cases
+
+### What is a Plugin Architecture?
+A plugin architecture allows you to extend a core application with modular, independently developed components called plugins. These plugins run as separate processes, communicating with the main application via well-defined interfaces (often RPC). Key benefits include:
+- **Modularity**: Features can be developed, deployed, and scaled independently.
+- **Isolation**: A crash in one plugin doesn't necessarily bring down the core application.
+- **Flexibility**: Different plugins can even be written in different languages (though `pyvider.rpcplugin` focuses on Python plugins).
+- **Security**: Plugins can be sandboxed, limiting their access to system resources.
+
+`pyvider.rpcplugin` provides the tools to build and manage the RPC communication layer for such an architecture in Python.
+
+### When to Use `pyvider.rpcplugin`?
+Consider `pyvider.rpcplugin` when:
+- You need to extend your Python application with out-of-process plugins for enhanced modularity or security isolation.
+- You're building a system where components (plugins) communicate via efficient, type-safe RPC, especially if they are on the same machine (leveraging Unix domain sockets) or across a network (using TCP with mTLS).
+- High-performance Inter-Process Communication (IPC) is critical.
+- You value clear service contracts defined via Protocol Buffers (protobufs).
+- End-to-end security with mutual TLS (mTLS) is a requirement for plugin communication.
+- You want to standardize plugin communication with features like magic cookie authentication and common configuration patterns.
+- You prefer an async-native framework that integrates well with Python's `asyncio`.
+
+It simplifies the complexities of setting up and managing gRPC connections, security, and configuration for these scenarios.
+
+### Comparison to Alternatives
+While many RPC and IPC mechanisms exist, `pyvider.rpcplugin` offers a specific set of advantages for plugin architectures:
+- **vs. Direct gRPC**: Building directly with `grpcio` gives you full control but requires significant boilerplate for server/client setup, security handshakes, transport management, and configuration, especially in a plugin context. `pyvider.rpcplugin` automates these, providing pre-configured patterns for mTLS, magic cookie authentication, and transport negotiation, letting you focus on your service logic.
+- **vs. `go-plugin`**: HashiCorp's `go-plugin` is a mature framework for Go that heavily inspired `pyvider.rpcplugin`. `pyvider.rpcplugin` aims to bring a similar level of robustness and ease-of-use to the Python ecosystem, leveraging Python-specific features like `asyncio` and rich type hinting. If you're familiar with `go-plugin`'s concepts, you'll find `pyvider.rpcplugin` follows similar patterns for secure, versioned RPC.
+- **vs. Other Python RPC Libraries (e.g., RPyC, Pyro5, Nameko)**:
+    - Many traditional Python RPC libraries are excellent for general-purpose RPC.
+    - `pyvider.rpcplugin` differentiates itself by being built on gRPC, offering high performance and leveraging Protocol Buffers for service definitions, which is beneficial for type safety and cross-language interop (if the host application isn't Python).
+    - Its primary focus is on the out-of-process, secure plugin model, with built-in mTLS and handshake mechanisms tailored for this.
+    - Some alternatives might be simpler for basic Python-to-Python RPC but may not offer the same level of performance, security features for untrusted plugins, or the strict contract definitions of gRPC.
 
 ### Client Connection
 
@@ -306,10 +347,12 @@ from pyvider.rpcplugin import create_basic_protocol
 protocol = create_basic_protocol()
 
 # Production protocol with custom validation
+# Note: 'service_pb2' and 'add_ServiceServicer_to_server' are typically
+# generated by grpc_tools from a your_service.proto definition.
 protocol = plugin_protocol(
     service_name="ProductionService",
-    descriptor_module=service_pb2,
-    servicer_add_fn=add_ServiceServicer_to_server,
+    descriptor_module=service_pb2, # e.g., from your_service_pb2.py
+    servicer_add_fn=add_ServiceServicer_to_server, # e.g., from your_service_pb2_grpc.py
     validation_enabled=True,
     compression="gzip"
 )

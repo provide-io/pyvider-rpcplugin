@@ -843,5 +843,19 @@ class RPCPluginClient:  # No longer Generic[TransportT]
 
         logger.info("🔄 RPCPluginClient fully closed.")
 
+    async def __aenter__(self):
+        await self.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        # Attempt graceful shutdown of the plugin first
+        if self._controller_stub: # Check if controller is available
+            try:
+                await self.shutdown_plugin()
+            except Exception as e:
+                # Log if shutdown_plugin fails but proceed to close
+                logger.error(f"🔌🛑❌ Error during __aexit__ calling shutdown_plugin(): {e}")
+        await self.close()
+
 
 # 🐍🏗️🔌
