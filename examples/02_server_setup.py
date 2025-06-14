@@ -328,9 +328,6 @@ async def example_2_advanced_configuration():
             "performance_mode": "high_throughput",
         },
     )
-    # Start server, let it initialize briefly, then stop it for cleanup
-    server_task_adv = asyncio.create_task(server_adv.serve())
-    await asyncio.sleep(0.1)  # Brief pause for server to initialize
 
     logger.info(
         "Advanced configuration server created",
@@ -346,16 +343,6 @@ async def example_2_advanced_configuration():
         del os.environ["PLUGIN_SERVER_TRANSPORTS"]
     if "PLUGIN_AUTO_MTLS" in os.environ:
         del os.environ["PLUGIN_AUTO_MTLS"]
-
-    # Graceful shutdown for the advanced config server
-    await server_adv.stop()
-    await server_task_adv
-    logger.info(
-        "Advanced configuration server stopped",
-        domain="server",
-        action="shutdown",
-        status="success",
-    )
 
 
 async def main():

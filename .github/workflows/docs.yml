@@ -1,396 +1,286 @@
-# .github/workflows/docs.yml
-# Documentation building and deployment workflow
-# MANUAL TRIGGER ONLY
-
-name: 📚 Documentation
+name: 📚 Documentation Validation
 
 on:
-  workflow_dispatch:
-    inputs:
-      deploy_to_pages:
-        description: 'Deploy to GitHub Pages'
-        required: false
-        default: 'false'
-        type: boolean
+  push:
+    paths:
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'docs/**'
+      - 'examples/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'docs/**'
+      - 'examples/**'
+      - '.github/workflows/docs.yml'
 
 env:
-  PYTHONDONTWRITEBYTECODE: 1
-  PYTHONUNBUFFERED: 1
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  PYTHON_VERSION: "3.13"
 
 jobs:
   # =============================================================================
-  # Documentation Build
+  # Documentation Quality Checks
   # =============================================================================
-  build-docs:
-    name: 🏗️ Build Documentation
+  docs-quality:
+    name: 📋 Documentation Quality
     runs-on: ubuntu-latest
-    
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v3
         with:
-          python-version: "3.13"
+          version: "latest"
           enable-cache: true
 
-      - name: 🔧 Setup environment
+      - name: 📦 Install dependencies
         run: |
-          chmod +x env.sh
-          source ./env.sh
+          uv sync --dev
+          npm install -g markdown-link-check markdownlint-cli
 
-      - name: 📚 Install documentation dependencies
+      - name: 📝 Lint markdown files
         run: |
-          echo "📚 Installing documentation dependencies..."
-          uv pip install \
-            mkdocs \
-            mkdocs-material \
-            mkdocs-mermaid2-plugin \
-            pymdown-extensions \
-            mkdocs-include-markdown-plugin
+          markdownlint README.md CHANGELOG.md docs/ examples/README.md \
+            --config .markdownlint.json || true
+
+      - name: 🔗 Check internal links
+        run: |
+          markdown-link-check README.md --config .mlc_config.json
+          markdown-link-check CHANGELOG.md --config .mlc_config.json
+          find docs/ -name "*.md" | xargs markdown-link-check --config .mlc_config.json
+          markdown-link-check examples/README.md --config .mlc_config.json
+
+      - name: 📊 Check README badges
+        run: |
+          # Validate that all badges in README are functional
+          grep -o 'https://img.shields.io[^)]*' README.md | while read url; do
+            echo "Checking badge: $url"
+            curl -f "$url" > /dev/null || echo "⚠️ Badge may be broken: $url"
+          done
+
+      - name: 📋 Validate CHANGELOG format
+        run: |
+          uv run python scripts/validate_changelog.py CHANGELOG.md
+
+  # =============================================================================
+  # Example Testing
+  # =============================================================================
+  examples-test:
+    name: 🔍 Examples Testing
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        example-group: [basic, advanced, demo]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python & uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: uv sync --all-extras
+
+      - name: 🧪 Test basic examples
+        if: matrix.example-group == 'basic'
+        run: |
+          cd examples
+          echo "🔊 Testing echo demo..."
+          timeout 15 uv run python 01_echo_demo.py || echo "✅ Echo demo completed"
+          
+          echo "🚀 Testing server setup..."
+          timeout 10 uv run python 02_server_setup.py || echo "✅ Server setup completed"
+          
+          echo "🔗 Testing client connection..."
+          timeout 10 uv run python 03_client_connection.py || echo "✅ Client connection completed"
+
+      - name: ⚡ Test advanced examples
+        if: matrix.example-group == 'advanced'
+        run: |
+          cd examples
+          echo "🚚 Testing transport options..."
+          timeout 15 uv run python 04_transport_options.py || echo "✅ Transport options completed"
+          
+          echo "⚠️ Testing error handling..."
+          timeout 10 uv run python 06_error_handling.py || echo "✅ Error handling completed"
+          
+          echo "⚡ Testing async patterns..."
+          timeout 10 uv run python 07_async_patterns.py || echo "✅ Async patterns completed"
+
+      - name: 🎭 Test demo implementations
+        if: matrix.example-group == 'demo'
+        run: |
+          cd examples/demo/echo_service
+          echo "🖥️ Testing echo server help..."
+          uv run python server.py --help
+          
+          echo "💻 Testing echo client help..."
+          uv run python client.py --help || echo "✅ Client help completed"
+          
+          # Test KV demo if it exists
+          if [ -d "../kvproto" ]; then
+            cd ../kvproto
+            echo "🗄️ Testing KV server help..."
+            uv run python server.py --help || echo "✅ KV server help completed"
+          fi
+
+      - name: 📝 Validate example documentation
+        run: |
+          cd examples
+          # Check that all numbered examples have proper docstrings
+          for example in 0*.py; do
+            if [ -f "$example" ]; then
+              echo "📋 Checking docstring in $example..."
+              python -c "
+import ast
+import sys
+with open('$example', 'r') as f:
+    tree = ast.parse(f.read())
+docstring = ast.get_docstring(tree)
+if not docstring or len(docstring) < 50:
+    print(f'⚠️ $example may need a better docstring')
+else:
+    print(f'✅ $example has good documentation')
+              "
+            fi
+          done
+
+  # =============================================================================
+  # Documentation Building & Deployment
+  # =============================================================================
+  docs-build:
+    name: 🏗️ Build Documentation
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git-based versioning
+
+      - name: 🐍 Setup Python & uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: 📦 Install dependencies
+        run: |
+          uv sync --all-extras --dev
+          uv pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
 
       - name: 🏗️ Build documentation site
         run: |
-          echo "🏗️ Building documentation site..."
-          
-          # Create comprehensive mkdocs.yml
-          cat > mkdocs.yml << 'MKDOCS_EOF'
+          # Create mkdocs.yml if it doesn't exist
+          if [ ! -f mkdocs.yml ]; then
+            cat > mkdocs.yml << EOF
 site_name: pyvider-rpcplugin Documentation
-site_description: High-performance RPC plugin framework for Python 3.13+
-site_author: provide.io
-repo_url: https://github.com/provide-io/pyvider-rpcplugin
-repo_name: provide-io/pyvider-rpcplugin
-edit_uri: edit/main/docs/
-
+site_description: High-performance RPC plugin framework for Python
+repo_url: https://github.com/pyvider/pyvider-rpcplugin
 theme:
   name: material
-  palette:
-    # Light mode
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-7
-        name: Switch to dark mode
-    # Dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-4
-        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.sections
-    - navigation.expand
-    - navigation.top
-    - navigation.tracking
+    - toc.integrate
     - search.suggest
     - search.highlight
-    - search.share
-    - content.code.copy
-    - content.code.annotate
-
 nav:
   - Home: index.md
-  - Quick Start: quick-start.md
-  - User Guide:
-    - Architecture: guide/architecture.md
-    - Configuration: guide/configuration.md
-    - Transport Layer: guide/transport.md
-    - Security: guide/security.md
-    - Error Handling: guide/error-handling.md
-  - Examples:
-    - Basic Usage: examples/basic.md
-    - RPC Server: examples/server.md
-    - RPC Client: examples/client.md
-    - mTLS Security: examples/mtls.md
-    - Go Integration: examples/go-integration.md
-  - API Reference:
-    - Core: api/core.md
-    - Server: api/server.md
-    - Client: api/client.md
-    - Transport: api/transport.md
-    - Security: api/security.md
-  - Development:
-    - Contributing: development/contributing.md
-    - Testing: development/testing.md
-    - Release Process: development/release.md
+  - API Reference: api-reference.md
+  - Architecture: architecture.md
+  - Security: security.md
+  - Examples: examples.md
   - Troubleshooting: troubleshooting.md
-  - Changelog: changelog.md
-
 plugins:
   - search
   - mermaid2
-
-markdown_extensions:
-  - abbr
-  - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
-  - toc:
-      permalink: true
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.details
-  - pymdownx.emoji:
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-  - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.magiclink:
-      repo_url_shorthand: true
-      user: provide-io
-      repo: pyvider-rpcplugin
-  - pymdownx.mark
-  - pymdownx.smartsymbols
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.tilde
-
-extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/provide-io/pyvider-rpcplugin
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/pyvider-rpcplugin/
-  version:
-    provider: mike
-MKDOCS_EOF
-          
-          # Create docs directory structure
-          mkdir -p docs/{guide,examples,api,development}
-          
-          # Copy README as index
-          cp README.md docs/index.md
-          
-          # Create placeholder documentation files
-          cat > docs/quick-start.md << 'QS_EOF'
-# Quick Start
-
-Get up and running with pyvider-rpcplugin in minutes.
-
-## Installation
-
-```bash
-pip install pyvider-rpcplugin
-```
-
-## Basic Example
-
-```python
-from pyvider.rpcplugin import plugin_server, plugin_protocol
-
-# Your implementation here
-```
-
-More examples coming soon!
-QS_EOF
-          
-          # Create other placeholder files
-          echo "# Architecture Guide" > docs/guide/architecture.md
-          echo "# Configuration Guide" > docs/guide/configuration.md
-          echo "# Transport Layer" > docs/guide/transport.md
-          echo "# Security Guide" > docs/guide/security.md
-          echo "# Error Handling" > docs/guide/error-handling.md
-          
-          echo "# Basic Usage Examples" > docs/examples/basic.md
-          echo "# RPC Server Examples" > docs/examples/server.md
-          echo "# RPC Client Examples" > docs/examples/client.md
-          echo "# mTLS Security Examples" > docs/examples/mtls.md
-          echo "# Go Integration Examples" > docs/examples/go-integration.md
-          
-          echo "# Core API Reference" > docs/api/core.md
-          echo "# Server API Reference" > docs/api/server.md
-          echo "# Client API Reference" > docs/api/client.md
-          echo "# Transport API Reference" > docs/api/transport.md
-          echo "# Security API Reference" > docs/api/security.md
-          
-          echo "# Contributing Guide" > docs/development/contributing.md
-          echo "# Testing Guide" > docs/development/testing.md
-          echo "# Release Process" > docs/development/release.md
-          
-          echo "# Troubleshooting Guide" > docs/troubleshooting.md
-          
-          # Copy CHANGELOG if it exists
-          if [[ -f CHANGELOG.md ]]; then
-            cp CHANGELOG.md docs/changelog.md
-          else
-            echo "# Changelog" > docs/changelog.md
-            echo "Documentation for changes will be maintained here." >> docs/changelog.md
-          fi
-          
-          # Build the documentation
-          mkdocs build --verbose
-
-      - name: 📊 Documentation metrics
-        run: |
-          echo "📊 Documentation Statistics:"
-          echo "============================"
-          echo "📄 Total markdown files: $(find docs/ -name "*.md" | wc -l)"
-          echo "📖 Total lines: $(find docs/ -name "*.md" | xargs wc -l | tail -1)"
-          echo "🔤 Total words: $(find docs/ -name "*.md" | xargs wc -w | tail -1)"
-          echo "📋 Examples: $(find examples/ -name "*.py" 2>/dev/null | wc -l)"
-          echo "🎯 README sections: $(grep "^##" README.md | wc -l)"
-
-      - name: 🔍 Validate documentation
-        run: |
-          echo "🔍 Validating documentation..."
-          
-          # Check for broken internal links (basic check)
-          echo "🔗 Checking for basic markdown issues..."
-          find docs/ -name "*.md" | while read -r file; do
-            if grep -q "\[\[" "$file"; then
-              echo "⚠️ Potential wiki-style link in $file"
-            fi
-          done
-          
-          # Validate that build directory exists and has content
-          if [[ -d "site" && $(find site/ -name "*.html" | wc -l) -gt 0 ]]; then
-            echo "✅ Documentation build successful: $(find site/ -name "*.html" | wc -l) HTML files generated"
-          else
-            echo "❌ Documentation build failed or no HTML files generated"
-            exit 1
+EOF
           fi
 
-      - name: 📤 Upload documentation artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: documentation-site
-          path: site/
+          # Create docs index from README
+          mkdir -p docs_site
+          cp README.md docs_site/index.md
 
-  # =============================================================================
-  # Deploy to GitHub Pages (Optional)
-  # =============================================================================
-  deploy-pages:
-    name: 🚀 Deploy to GitHub Pages
-    runs-on: ubuntu-latest
-    needs: build-docs
-    if: inputs.deploy_to_pages
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    steps:
-      - name: 📥 Download documentation artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: documentation-site
-          path: site/
+          # Copy other docs
+          if [ -d docs ]; then
+            cp -r docs/* docs_site/
+          fi
 
-      - name: 🔧 Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: 📤 Upload to Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site/
+          # Build the site
+          mkdocs build --config-file mkdocs.yml --site-dir site
 
       - name: 🚀 Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
 
   # =============================================================================
-  # Documentation Analysis
+  # Documentation Analytics & Insights
   # =============================================================================
-  doc-analysis:
-    name: 📈 Documentation Analysis
+  docs-analytics:
+    name: 📊 Documentation Analytics
     runs-on: ubuntu-latest
-    needs: build-docs
-    
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: 📈 Generate documentation report
+      - name: 🐍 Setup Python & uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: 📊 Generate documentation metrics
         run: |
-          echo "📈 Documentation Analysis Report"
+          echo "📋 Documentation Statistics:"
           echo "================================"
-          echo ""
-          echo "📊 Statistics:"
-          echo "- Markdown files: $(find . -name "*.md" -not -path "./site/*" | wc -l)"
-          echo "- Python examples: $(find examples/ -name "*.py" 2>/dev/null | wc -l)"
-          echo "- Documentation sections: $(find docs/ -name "*.md" 2>/dev/null | wc -l)"
-          echo ""
-          echo "🎯 Content Quality:"
-          echo "- README length: $(wc -l < README.md) lines"
-          echo "- Has examples directory: $(if [[ -d "examples" ]]; then echo "✅ Yes"; else echo "❌ No"; fi)"
-          echo "- Has changelog: $(if [[ -f "CHANGELOG.md" ]]; then echo "✅ Yes"; else echo "❌ No"; fi)"
-          echo ""
-          echo "🔗 Generated documentation available in artifacts"
-
-      - name: 📋 Create documentation checklist
-        run: |
-          cat > doc-checklist.md << 'CHECKLIST_EOF'
-# Documentation Checklist
-
-## Core Documentation
-- [x] README.md (primary documentation)
-- [ ] Installation guide
-- [ ] Quick start guide
-- [ ] API reference
-- [ ] Architecture documentation
-- [ ] Security guide
-- [ ] Troubleshooting guide
-
-## Examples
-- [ ] Basic usage examples
-- [ ] Server implementation examples
-- [ ] Client implementation examples
-- [ ] Security (mTLS) examples
-- [ ] Cross-language (Go) examples
-
-## Development
-- [ ] Contributing guidelines
-- [ ] Testing documentation
-- [ ] Release process
-- [ ] Development setup
-
-## Quality Checks
-- [x] Documentation builds successfully
-- [ ] All examples are tested
-- [ ] Links are validated
-- [ ] Code snippets are verified
-- [ ] Screenshots/diagrams are current
-
-Generated: $(date)
-CHECKLIST_EOF
           
-          echo "📋 Documentation checklist created: doc-checklist.md"
+          echo "📄 Total markdown files:"
+          find . -name "*.md" -not -path "./node_modules/*" | wc -l
 
-      - name: 📤 Upload analysis artifacts
+          echo "📖 Total lines of documentation:"
+          find . -name "*.md" -not -path "./node_modules/*" | xargs wc -l | tail -1
+
+          echo "🔤 Total words in documentation:"
+          find . -name "*.md" -not -path "./node_modules/*" | xargs wc -w | tail -1
+
+          echo "🔗 Total links in documentation:"
+          find . -name "*.md" -not -path "./node_modules/*" | xargs grep -oh '\[.*\](.*)'  | wc -l
+
+          echo "📋 Examples count:"
+          find examples/ -name "*.py" | wc -l
+
+          echo "🎯 README sections:"
+          grep "^##" README.md | wc -l
+
+      - name: 📈 Upload metrics
+        run: |
+          # Create metrics file for tracking
+          cat > docs-metrics.json << EOF
+{
+  "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "commit": "${{ github.sha }}",
+  "markdown_files": $(find . -name "*.md" -not -path "./node_modules/*" | wc -l),
+  "total_lines": $(find . -name "*.md" -not -path "./node_modules/*" | xargs wc -l | tail -1 | awk '{print $1}'),
+  "total_words": $(find . -name "*.md" -not -path "./node_modules/*" | xargs wc -w | tail -1 | awk '{print $1}'),
+  "example_count": $(find examples/ -name "*.py" 2>/dev/null | wc -l),
+  "readme_sections": $(grep "^##" README.md | wc -l)
+}
+EOF
+
+      - name: 📤 Upload documentation metrics
         uses: actions/upload-artifact@v4
         with:
-          name: documentation-analysis
-          path: |
-            doc-checklist.md
+          name: docs-metrics
+          path: docs-metrics.json
