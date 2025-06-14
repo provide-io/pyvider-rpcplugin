@@ -114,7 +114,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         await client.start()
 
         # Use the created channel with protocol-specific stubs
-        provider_stub = MyProviderStub(client._channel)
+        provider_stub = MyProviderStub(client.grpc_channel)
         response = await provider_stub.SomeMethod(request)
 
         # Graceful shutdown

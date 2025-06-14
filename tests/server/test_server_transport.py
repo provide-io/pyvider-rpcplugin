@@ -4,7 +4,7 @@ import os
 import platform
 import pytest
 
-from pyvider.rpcplugin.config import rpcplugin_config  # Added import
+from pyvider.rpcplugin.config import rpcplugin_config, ConfigError  # Added ConfigError
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport

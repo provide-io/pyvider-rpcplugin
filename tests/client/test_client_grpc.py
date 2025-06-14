@@ -52,7 +52,7 @@ async def test_create_grpc_channel_with_tls(client_instance):
             # Verify TLS-only credentials were used (only root_certificates)
             mock_ssl_creds.assert_called_once_with(root_certificates=ANY)
             mock_secure_channel.assert_called_once()
-            assert client_instance._channel == mock_channel
+            assert client_instance.grpc_channel == mock_channel
 
 @pytest.mark.asyncio
 async def test_create_grpc_channel_with_mtls(client_instance):
@@ -109,7 +109,7 @@ async def test_create_grpc_channel_insecure(client_instance):
         
         # Verify insecure_channel was called
         mock_insecure_channel.assert_called_once()
-        assert client_instance._channel == mock_channel
+        assert client_instance.grpc_channel == mock_channel
 
 @pytest.mark.asyncio
 async def test_create_grpc_channel_unix_socket(client_instance):

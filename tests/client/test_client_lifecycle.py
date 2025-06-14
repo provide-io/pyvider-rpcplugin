@@ -113,7 +113,7 @@ async def test_close_with_tasks(client_instance):
     # Patch attributes of client_instance directly
     with (
         patch.object(
-            client_instance, "_channel", new_callable=AsyncMock
+            client_instance, "grpc_channel", new_callable=AsyncMock
         ) as local_mock_channel,
         patch.object(
             client_instance, "_process", new_callable=MagicMock
@@ -150,7 +150,7 @@ async def test_close_with_errors(client_instance):
     """Test closing client when errors occur."""
     with (
         patch.object(
-            client_instance, "_channel", new_callable=AsyncMock
+            client_instance, "grpc_channel", new_callable=AsyncMock
         ) as mock_channel,
         patch.object(
             client_instance, "_process", new_callable=MagicMock
@@ -172,7 +172,7 @@ async def test_close_with_errors(client_instance):
         mock_transport.close.assert_called_once()
 
     # Resources should be nullified on the instance by the close method
-    assert client_instance._channel is None
+    assert client_instance.grpc_channel is None
     assert client_instance._process is None
     assert client_instance._transport is None
 
@@ -187,7 +187,7 @@ async def test_close_process_wait_timeout(
 
     with (
         patch.object(
-            client_instance, "_channel", new_callable=AsyncMock
+            client_instance, "grpc_channel", new_callable=AsyncMock
         ) as mock_channel,
         patch.object(
             client_instance, "_process", new_callable=MagicMock
@@ -297,7 +297,7 @@ async def test_close_process_wait_timeout(
 async def test_close_process_terminate_error(client_instance, mocker):
     """Test client close when _process.terminate() raises an OSError."""
     mock_channel = mocker.patch.object(
-        client_instance, "_channel", new_callable=AsyncMock
+        client_instance, "grpc_channel", new_callable=AsyncMock
     )
     mock_process = mocker.patch.object(
         client_instance, "_process", new_callable=MagicMock

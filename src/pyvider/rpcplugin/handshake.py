@@ -489,6 +489,8 @@ async def read_handshake_response(process) -> str:
                 except Exception as e:
                     stderr_output = f"Error reading stderr: {e}"
 
+            stderr_output_truncated = (stderr_output[:200] + '...') if len(stderr_output) > 200 else stderr_output
+
             logger.error(
                 f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake"
             )
@@ -570,6 +572,7 @@ async def read_handshake_response(process) -> str:
         except Exception as e:
             stderr_output = f"Error reading stderr: {e}"
 
+    stderr_output_truncated = (stderr_output[:200] + '...') if len(stderr_output) > 200 else stderr_output
     raise HandshakeError(
         message=f"Timed out waiting for handshake response from plugin after {timeout} seconds.",
         hint=f"Ensure the plugin starts and prints its handshake string to stdout promptly. Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'" if stderr_output_truncated else f"Ensure the plugin starts and prints its handshake string to stdout promptly. Last buffer: '{buffer}'."
