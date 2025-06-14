@@ -1,7 +1,0 @@
-{
-  "magic_cookie": "json-cookie",
-  "auto_mtls": true,
-  "handshake_timeout": 35.0 # Missing closing brace / or trailing comma
-# No closing brace deliberately
-# If I add a comma after 35.0, it would also be malformed if there's no next element.
-# For maximum clarity of malformation for a parser, a missing brace is a clear syntax error.

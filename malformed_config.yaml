@@ -1,3 +1,0 @@
-magic_cookie: yaml-cookie
-  auto_mtls: false # Incorrect indentation
-handshake_timeout: 40.0
