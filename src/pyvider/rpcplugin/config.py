@@ -739,7 +739,6 @@ def _load_dotenv_file(path: Path) -> None:
             if value.startswith("'") and value.endswith("'"):
                 value = value[1:-1]
 
-            # Original key from .env file
             os.environ[key] = value
             logger.debug(f"⚙️📂✅ Set environment variable from .env: {key}='{value}'")
 
@@ -773,14 +772,15 @@ def _load_json_file(path: Path) -> None:
             config_data = json.load(f)
 
         for key, value in config_data.items():
-            stringified_value = ""
-            # Determine schema key for type-aware stringification if possible
-            # Check direct key match in schema, then check if key is an alias in KEY_MAPPINGS
-            schema_key_for_type_lookup = key
-            if key not in CONFIG_SCHEMA: # If original key is not a direct schema key
-                mapped_key = KEY_MAPPINGS.get(key)
-                if mapped_key and mapped_key in CONFIG_SCHEMA: # Check if it's an alias for a schema key
-                    schema_key_for_type_lookup = mapped_key
+            # Convert to string for environment variables
+            env_value_to_set = "" # Initialize
+            if isinstance(value, (list, dict)):
+                env_value_to_set = json.dumps(value)
+            else:
+                env_value_to_set = str(value) # For MY_JSON_VAR
+
+            logger.debug(f"Attempting to set os.environ['{key}'] = '{env_value_to_set}' from JSON")
+            os.environ[key] = env_value_to_set
 
             if schema_key_for_type_lookup in CONFIG_SCHEMA:
                 meta = CONFIG_SCHEMA[schema_key_for_type_lookup]
@@ -849,52 +849,36 @@ def _load_yaml_file(path: Path) -> None:
         import json
 
         for key, value in config_data.items():
-            stringified_value = ""
-            # Determine schema key for type-aware stringification if possible
-            schema_key_for_type_lookup = key
-            if key not in CONFIG_SCHEMA:
-                mapped_key = KEY_MAPPINGS.get(key)
-                if mapped_key and mapped_key in CONFIG_SCHEMA:
-                    schema_key_for_type_lookup = mapped_key
-
-            if schema_key_for_type_lookup in CONFIG_SCHEMA:
-                meta = CONFIG_SCHEMA[schema_key_for_type_lookup]
-                if meta["type"] == "list_str" or meta["type"] == "list_int":
-                    if isinstance(value, list):
-                        stringified_value = ",".join(map(str, value))
+            match value:
+                case list():
+                    os.environ[key] = ",".join(map(str, value))  # Convert list to CSV
+                    logger.debug(
+                        f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'"
+                    )
+                case dict():
+                    # For dicts, keep current behavior but warn if it's a schema-defined key
+                    # that isn't usually string-represented this way.
+                    # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
+                    env_val = yaml.dump(value).strip()
+                    os.environ[key] = env_val
+                    logger.warning(
+                        f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
+                        f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
+                    )
+                case _:  # Default case for scalars (int, float, bool, str)
+                    env_val_to_set = ""
+                    if isinstance(value, bool):
+                        env_val_to_set = str(value).lower() # CHANGE: "true" or "false"
                     else:
-                        stringified_value = str(value)
-                elif meta["type"] == "bool":
-                    stringified_value = "true" if value else "false"
-                else: # str, int, float
-                    stringified_value = str(value)
-            else: # Key is not in schema, directly or via mapping
-                if isinstance(value, (list, dict)):
-                    stringified_value = json.dumps(value) # Use json.dumps for consistency
-                elif isinstance(value, bool):
-                    stringified_value = "true" if value else "false"
-                else:
-                    stringified_value = str(value)
+                        env_val_to_set = str(value)
 
-            # Set the original key from the YAML file into os.environ
-            os.environ[key] = stringified_value
-            logger.debug(f"⚙️📂✅ Set environment variable from YAML (original key): {key}='{stringified_value}'")
-
-            # Handle mapped schema keys if the original key was an alias
-            mapped_schema_key = KEY_MAPPINGS.get(key)
-            if mapped_schema_key and mapped_schema_key != key and mapped_schema_key in CONFIG_SCHEMA:
-                os.environ[mapped_schema_key] = stringified_value
-                logger.debug(f"⚙️📂✅ Also set mapped schema key from YAML: {mapped_schema_key}='{stringified_value}' for original key '{key}'")
+                    logger.debug(f"Attempting to set os.environ['{key}'] = '{env_val_to_set}' from YAML scalar")
+                    os.environ[key] = env_val_to_set
+                    logger.debug(
+                        f"⚙️📂✅ Set env var from YAML (scalar): {key}='{env_val_to_set}'"
+                    )
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})
         raise ValueError(f"Error loading YAML file: {path}") from e
 
-
-# Initialize all the things
-if __name__ == "__main__":
-    # This branch is not normally executed but can be used for testing
-    config = rpcplugin_config
-    logger.info(f"⚙️ Configuration loaded with {len(config.config)} values")
-    for key, value in sorted(config.config.items()):
-        logger.info(f"⚙️ {key} = {value}")

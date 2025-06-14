@@ -745,4 +745,343 @@ def test_load_config_file_read_error(mock_open_call, mock_exists_call):
     mock_open_call.assert_called_once_with(file_path, "r", encoding="utf-8")
 
 
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+def test_load_config_from_malformed_env_file(mock_file_open, mock_path_constructor):
+    """Test loading configuration from a malformed .env file."""
+    filename_str = "malformed.env" # Changed
+
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".env"
+    mock_path_instance.__str__.return_value = filename_str # Use filename_str for __str__
+
+    malformed_env_content = "VALID_VAR=good_value\nMALFORMED_LINE_NO_EQUALS\nOTHER_VAR=other_value"
+    mock_file_open.return_value.__enter__.return_value.read.return_value = malformed_env_content
+
+    # Use filename_str in the error message
+    expected_error_msg_pattern = re.escape(f"Error loading configuration from {filename_str}: Error loading .env file: {filename_str}")
+
+    with pytest.raises(ValueError, match=expected_error_msg_pattern):
+        load_config_from_file(filename_str) # Pass string
+
+    mock_path_constructor.assert_called_once_with(filename_str) # Constructor called with string
+    mock_path_instance.exists.assert_called_once()
+    mock_file_open.assert_called_once_with(mock_path_instance, "r", encoding="utf-8")
+
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+def test_load_config_from_malformed_json_file(mock_file_open, mock_path_constructor):
+    """Test loading configuration from a malformed JSON file."""
+    filename_str = "malformed.json" # Changed
+
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".json"
+    mock_path_instance.__str__.return_value = filename_str
+
+    malformed_json_content = '{"key": "value", "another_key": "another_value",}'
+    mock_file_open.return_value.__enter__.return_value.read.return_value = malformed_json_content
+
+    expected_error_msg_pattern = re.escape(f"Error loading configuration from {filename_str}: Error loading JSON file: {filename_str}")
+
+    with pytest.raises(ValueError, match=expected_error_msg_pattern):
+        load_config_from_file(filename_str) # Pass string
+
+    mock_path_constructor.assert_called_once_with(filename_str)
+    mock_path_instance.exists.assert_called_once()
+    mock_file_open.assert_called_once_with(mock_path_instance, "r", encoding="utf-8")
+
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+def test_load_config_from_malformed_yaml_file(mock_file_open, mock_path_constructor):
+    """Test loading configuration from a malformed YAML file."""
+    if not YAML_AVAILABLE:
+        pytest.skip("PyYAML not installed, skipping malformed YAML test.")
+
+    filename_str = "malformed.yaml" # Changed
+
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".yaml"
+    mock_path_instance.__str__.return_value = filename_str
+
+    malformed_yaml_content = "key: value\n  bad_indent: another_value\n    deeper_bad_indent: yet_another"
+    mock_file_open.return_value.__enter__.return_value.read.return_value = malformed_yaml_content
+
+    expected_error_msg_pattern = re.escape(f"Error loading configuration from {filename_str}: Error loading YAML file: {filename_str}")
+
+    with pytest.raises(ValueError, match=expected_error_msg_pattern):
+        load_config_from_file(filename_str) # Pass string
+
+    mock_path_constructor.assert_called_once_with(filename_str)
+    mock_path_instance.exists.assert_called_once()
+    mock_file_open.assert_called_once_with(mock_path_instance, "r", encoding="utf-8")
+
+
+# Keys to test for default fallbacks
+DEFAULT_TEST_KEYS = {
+    "PLUGIN_LOG_LEVEL": "INFO",
+    "PLUGIN_HANDSHAKE_TIMEOUT": 10.0,
+    "PLUGIN_AUTO_MTLS": True, # Default in schema is "true", fetched as Python True
+}
+
+def _prepare_env_for_default_tests():
+    """Helper to delete specific keys from os.environ."""
+    for key in DEFAULT_TEST_KEYS:
+        if key in os.environ:
+            del os.environ[key]
+
+def _assert_default_values_loaded():
+    """Helper to assert that default values are loaded into RPCPluginConfig."""
+    config_manager = RPCPluginConfig.instance()
+    assert config_manager.get("PLUGIN_LOG_LEVEL") == DEFAULT_TEST_KEYS["PLUGIN_LOG_LEVEL"]
+    assert config_manager.get("PLUGIN_HANDSHAKE_TIMEOUT") == DEFAULT_TEST_KEYS["PLUGIN_HANDSHAKE_TIMEOUT"]
+    assert config_manager.get("PLUGIN_AUTO_MTLS") == DEFAULT_TEST_KEYS["PLUGIN_AUTO_MTLS"]
+    # Also check a key that might have been set by the minimal file content
+    # This assertion needs to be context-aware of how SOME_OTHER_VAR is set by each file type loader
+    # For .env, it will be in os.environ. For JSON/YAML, it's set to os.environ by _load_json/yaml_file.
+    assert os.environ.get("SOME_OTHER_VAR") == "some_value"
+
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+def test_default_fallback_env_file_missing_keys(mock_file_open, mock_path_constructor):
+    """Test default values are used when keys are missing from .env file."""
+    RPCPluginConfig._instance = None # Ensure fresh config
+    _prepare_env_for_default_tests()
+    # Clear SOME_OTHER_VAR for this specific test if it exists from other tests
+    if "SOME_OTHER_VAR" in os.environ:
+        del os.environ["SOME_OTHER_VAR"]
+
+    filename_str = "missing_keys.env"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".env"
+    mock_path_instance.__str__.return_value = filename_str
+
+    # .env file only sets SOME_OTHER_VAR, omits keys that have defaults
+    env_content = "SOME_OTHER_VAR=some_value\n"
+    mock_file_open.return_value.__enter__.return_value.read.return_value = env_content
+
+    load_config_from_file(filename_str)
+
+    _assert_default_values_loaded() # This will check SOME_OTHER_VAR in os.environ
+    mock_path_constructor.assert_called_once_with(filename_str)
+    mock_path_instance.exists.assert_called_once()
+    mock_file_open.assert_called_once_with(mock_path_instance, "r", encoding="utf-8")
+
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.load") # Mock json.load for this test
+def test_default_fallback_json_file_missing_keys(mock_json_load, mock_file_open, mock_path_constructor):
+    """Test default values are used when keys are missing from JSON file."""
+    RPCPluginConfig._instance = None # Ensure fresh config
+    _prepare_env_for_default_tests()
+    if "SOME_OTHER_VAR" in os.environ:
+        del os.environ["SOME_OTHER_VAR"]
+
+    filename_str = "missing_keys.json"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".json"
+    mock_path_instance.__str__.return_value = filename_str
+
+    # JSON file only sets SOME_OTHER_VAR
+    json_data_source = {"SOME_OTHER_VAR": "some_value"}
+    mock_json_load.return_value = json_data_source
+    mock_file_open.return_value.__enter__.return_value.read.return_value = '{"SOME_OTHER_VAR": "some_value"}'
+
+    load_config_from_file(filename_str)
+
+    _assert_default_values_loaded()
+    mock_path_constructor.assert_called_once_with(filename_str)
+    mock_path_instance.exists.assert_called_once()
+    mock_file_open.assert_called_once_with(mock_path_instance, "r", encoding="utf-8")
+    mock_json_load.assert_called_once_with(mock_file_open.return_value.__enter__.return_value)
+
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+@patch("yaml.safe_load") # Mock yaml.safe_load for this test
+def test_default_fallback_yaml_file_missing_keys(mock_yaml_safe_load, mock_file_open, mock_path_constructor):
+    """Test default values are used when keys are missing from YAML file."""
+    if not YAML_AVAILABLE:
+        pytest.skip("PyYAML not installed, skipping default fallback YAML test.")
+
+    RPCPluginConfig._instance = None # Ensure fresh config
+    _prepare_env_for_default_tests()
+    if "SOME_OTHER_VAR" in os.environ:
+        del os.environ["SOME_OTHER_VAR"]
+
+    filename_str = "missing_keys.yaml"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".yaml"
+    mock_path_instance.__str__.return_value = filename_str
+
+    # YAML file only sets SOME_OTHER_VAR
+    yaml_data_source = {"SOME_OTHER_VAR": "some_value"}
+    mock_yaml_safe_load.return_value = yaml_data_source
+    mock_file_open.return_value.__enter__.return_value.read.return_value = "SOME_OTHER_VAR: some_value\n"
+
+    load_config_from_file(filename_str)
+
+    _assert_default_values_loaded()
+    mock_path_constructor.assert_called_once_with(filename_str)
+    mock_path_instance.exists.assert_called_once()
+    mock_file_open.assert_called_once_with(mock_path_instance, "r", encoding="utf-8")
+    mock_yaml_safe_load.assert_called_once_with(mock_file_open.return_value.__enter__.return_value)
+
+
+def _clear_env_vars_for_validation_tests():
+    """Helper to delete specific keys from os.environ for validation tests."""
+    keys_to_clear = ["PLUGIN_CORE_VERSION", "PLUGIN_LOG_LEVEL"]
+    for key in keys_to_clear:
+        if key in os.environ:
+            del os.environ[key]
+
+# --- Invalid Type Tests ---
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+def test_invalid_type_in_env_file(mock_file_open, mock_path_constructor):
+    """Test ValueError for incorrect type from .env file."""
+    RPCPluginConfig._instance = None
+    _clear_env_vars_for_validation_tests()
+
+    filename_str = "invalid_type.env"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".env"
+    mock_path_instance.__str__.return_value = filename_str
+
+    env_content = "PLUGIN_CORE_VERSION=not-an-integer\n"
+    mock_file_open.return_value.__enter__.return_value.read.return_value = env_content
+
+    expected_msg = "Invalid format for PLUGIN_CORE_VERSION. Expected int, got: not-an-integer"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        load_config_from_file(filename_str)
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.load")
+def test_invalid_type_in_json_file(mock_json_load, mock_file_open, mock_path_constructor):
+    """Test ValueError for incorrect type from JSON file."""
+    RPCPluginConfig._instance = None
+    _clear_env_vars_for_validation_tests()
+
+    filename_str = "invalid_type.json"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".json"
+    mock_path_instance.__str__.return_value = filename_str
+
+    json_data_source = {"PLUGIN_CORE_VERSION": "not-an-integer"}
+    mock_json_load.return_value = json_data_source
+    mock_file_open.return_value.__enter__.return_value.read.return_value = '{"PLUGIN_CORE_VERSION": "not-an-integer"}'
+
+    expected_msg = "Invalid format for PLUGIN_CORE_VERSION. Expected int, got: not-an-integer"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        load_config_from_file(filename_str)
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+@patch("yaml.safe_load")
+def test_invalid_type_in_yaml_file(mock_yaml_safe_load, mock_file_open, mock_path_constructor):
+    """Test ValueError for incorrect type from YAML file."""
+    if not YAML_AVAILABLE:
+        pytest.skip("PyYAML not installed.")
+    RPCPluginConfig._instance = None
+    _clear_env_vars_for_validation_tests()
+
+    filename_str = "invalid_type.yaml"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".yaml"
+    mock_path_instance.__str__.return_value = filename_str
+
+    yaml_data_source = {"PLUGIN_CORE_VERSION": "not-an-integer"} # PyYAML will load "not-an-integer" as a string
+    mock_yaml_safe_load.return_value = yaml_data_source
+    mock_file_open.return_value.__enter__.return_value.read.return_value = "PLUGIN_CORE_VERSION: not-an-integer\n"
+
+    expected_msg = "Invalid format for PLUGIN_CORE_VERSION. Expected int, got: not-an-integer"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        load_config_from_file(filename_str)
+
+# --- Invalid Value (from valid_values) Tests ---
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+def test_invalid_value_in_env_file(mock_file_open, mock_path_constructor):
+    """Test ValueError for value not in valid_values from .env file."""
+    RPCPluginConfig._instance = None
+    _clear_env_vars_for_validation_tests()
+
+    filename_str = "invalid_value.env"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".env"
+    mock_path_instance.__str__.return_value = filename_str
+
+    env_content = "PLUGIN_LOG_LEVEL=TRACE\n"
+    mock_file_open.return_value.__enter__.return_value.read.return_value = env_content
+
+    meta = CONFIG_SCHEMA["PLUGIN_LOG_LEVEL"]
+    expected_msg = f"Invalid value for PLUGIN_LOG_LEVEL: TRACE. Valid values: {meta['valid_values']}"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        load_config_from_file(filename_str)
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.load")
+def test_invalid_value_in_json_file(mock_json_load, mock_file_open, mock_path_constructor):
+    """Test ValueError for value not in valid_values from JSON file."""
+    RPCPluginConfig._instance = None
+    _clear_env_vars_for_validation_tests()
+
+    filename_str = "invalid_value.json"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".json"
+    mock_path_instance.__str__.return_value = filename_str
+
+    json_data_source = {"PLUGIN_LOG_LEVEL": "TRACE"}
+    mock_json_load.return_value = json_data_source
+    mock_file_open.return_value.__enter__.return_value.read.return_value = '{"PLUGIN_LOG_LEVEL": "TRACE"}'
+
+    meta = CONFIG_SCHEMA["PLUGIN_LOG_LEVEL"]
+    expected_msg = f"Invalid value for PLUGIN_LOG_LEVEL: TRACE. Valid values: {meta['valid_values']}"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        load_config_from_file(filename_str)
+
+@patch("pyvider.rpcplugin.config.Path")
+@patch("builtins.open", new_callable=mock_open)
+@patch("yaml.safe_load")
+def test_invalid_value_in_yaml_file(mock_yaml_safe_load, mock_file_open, mock_path_constructor):
+    """Test ValueError for value not in valid_values from YAML file."""
+    if not YAML_AVAILABLE:
+        pytest.skip("PyYAML not installed.")
+    RPCPluginConfig._instance = None
+    _clear_env_vars_for_validation_tests()
+
+    filename_str = "invalid_value.yaml"
+    mock_path_instance = mock_path_constructor.return_value
+    mock_path_instance.exists.return_value = True
+    mock_path_instance.suffix = ".yaml"
+    mock_path_instance.__str__.return_value = filename_str
+
+    yaml_data_source = {"PLUGIN_LOG_LEVEL": "TRACE"}
+    mock_yaml_safe_load.return_value = yaml_data_source
+    mock_file_open.return_value.__enter__.return_value.read.return_value = "PLUGIN_LOG_LEVEL: TRACE\n"
+
+    meta = CONFIG_SCHEMA["PLUGIN_LOG_LEVEL"]
+    expected_msg = f"Invalid value for PLUGIN_LOG_LEVEL: TRACE. Valid values: {meta['valid_values']}"
+    with pytest.raises(ValueError, match=re.escape(expected_msg)):
+        load_config_from_file(filename_str)
+
+
 # 🐍🧪⚙️
