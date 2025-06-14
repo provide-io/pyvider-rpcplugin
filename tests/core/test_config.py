@@ -3,7 +3,7 @@
 import os
 # import re # Removed re
 import pytest
-from unittest.mock import patch # Removed mock_open, call
+from unittest.mock import patch, mock_open, call # Corrected import
 # from pathlib import Path # Removed Path
 
 from pyvider.rpcplugin.config import (
@@ -12,6 +12,7 @@ from pyvider.rpcplugin.config import (
     get_config,
     RPCPluginConfig,
     configure,
+    ConfigError, # Added ConfigError
     # load_config_from_file, # Removed load_config_from_file
     CONFIG_SCHEMA,  # Import for direct use in tests
 )
@@ -131,7 +132,7 @@ def test_fetch_env_variable_file_based_value_read_error(mock_file_open):
     meta = CONFIG_SCHEMA[key]
 
     with pytest.raises(
-        ValueError, match=f"Failed to read file for {key}: {file_path_str}"
+        ConfigError, match=f"Failed to read configuration file specified for '{key}'. Path: {file_path_str}"
     ):
         fetch_env_variable(key, meta)
     mock_file_open.assert_called_once_with(file_path_str, "r", encoding="utf-8")
@@ -144,7 +145,7 @@ def test_fetch_env_variable_invalid_type_conversion():
     meta = CONFIG_SCHEMA[key]
 
     with pytest.raises(
-        ValueError, match=f"Invalid format for {key}. Expected int, got: not-an-int"
+        ConfigError, match=f"Invalid value format for configuration key '{key}'.*Expected type 'int'"
     ):
         fetch_env_variable(key, meta)
 
@@ -173,7 +174,7 @@ def test_validate_config_value_missing_required():
     key = "PLUGIN_MAGIC_COOKIE_KEY"  # Is required
     meta = CONFIG_SCHEMA[key]
     # meta["required"] is True
-    with pytest.raises(ValueError, match=f"Missing required configuration: {key}"):
+    with pytest.raises(ConfigError, match=f"Missing required configuration key: '{key}'"):
         validate_config_value(key, None, meta)
 
 
@@ -191,8 +192,8 @@ def test_validate_config_value_invalid_choice():
     meta = CONFIG_SCHEMA[key]
     invalid_level = "TRACE"
     # Escape special characters in the expected message for regex matching
-    expected_message = f"Invalid value for {key}: {invalid_level}. Valid values: {str(meta['valid_values']).replace('[', '\\[').replace(']', '\\]')}"
-    with pytest.raises(ValueError, match=expected_message):
+    expected_message = f"Invalid value '{invalid_level}' provided for configuration key '{key}'.*Allowed values are:.*{meta['valid_values']}" # Updated regex
+    with pytest.raises(ConfigError, match=expected_message): # Changed to ConfigError and updated regex
         validate_config_value(key, invalid_level, meta)
 
 
@@ -374,8 +375,8 @@ def test_rpcpluginconfig_set_unknown_key_no_prefix_raises_error():
     key = "MY_OTHER_CUSTOM_SETTING"
     value = "another_value"
     with pytest.raises(
-        KeyError, match=f"Unknown configuration key: {key}"
-    ):  # Removed suffix
+        ConfigError, match=f"Attempted to set an unknown configuration key: '{key}'."
+    ):  # Removed suffix, changed to ConfigError
         config_manager.set(key, value)
 
 
@@ -500,8 +501,8 @@ def test_configure_unsupported_protocol_version(mock_log_warning, mock_rpc_set):
 def test_configure_invalid_transport_type():
     """Test configure raises ValueError for invalid transport type."""
     with pytest.raises(
-        ValueError, match="Unknown transport type: bogus_transport. Valid types: .*"
-    ):
+        ConfigError, match=r"Unknown transport type specified: 'bogus_transport'.*Valid transport types are:.*"
+    ): # Changed to ConfigError and updated regex
         configure(transports=["unix", "bogus_transport"])
 
 

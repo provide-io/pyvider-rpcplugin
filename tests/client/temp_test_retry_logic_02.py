@@ -14,12 +14,9 @@ async def client_instance_local(mocker):
     mock_process_obj.poll.return_value = None
     mock_process_obj.returncode = None
     client._process = mock_process_obj
-    # client.__attrs_post_init__() # Not typically needed if Attrs handles it
-
-    try:
-        yield client
-    finally:
-        await client.close()
+    # Manually call __attrs_post_init__ if logger is not being set up
+    # client.__attrs_post_init__() # This might be needed if logger is not there
+    return client
 
 @pytest.mark.asyncio
 async def test_connect_handshake_retry_success_after_failures(client_instance_local, mocker):
@@ -113,46 +110,3 @@ async def test_connect_handshake_retry_success_after_failures(client_instance_lo
     spied_logger_info.assert_any_call("Handshake attempt 3 successful. Endpoint: mock_address_retry, Transport: mock_transport_retry")
     spied_logger_info.assert_any_call("Successfully connected to gRPC endpoint on attempt 3: mock_target_endpoint_retry")
     spied_logger_info.assert_any_call("Client connection and handshake successful on attempt 3.")
-
-@pytest.mark.asyncio
-async def test_connect_handshake_retry_exhausted(client_instance_local, mocker):
-    # TODO: Implement this test case
-    # Setup mocks for config (max_retries, etc.)
-    # Mock _perform_handshake to always fail
-    # Mock _create_grpc_channel (though it might not be reached)
-    # Assert that the appropriate exception (e.g., HandshakeError or a custom retry error) is raised after retries are exhausted
-    # Assert call counts for _perform_handshake and asyncio.sleep to match max_retries
-    # Assert logger warnings for each failed attempt and a final error for exhaustion
-    pass
-
-@pytest.mark.asyncio
-async def test_connect_handshake_total_retry_timeout_exceeded(client_instance_local, mocker):
-    # TODO: Implement this test case
-    # Setup mocks for config (total_retry_timeout_s, initial_backoff_ms, etc.)
-    # Mock _perform_handshake to always fail
-    # Mock asyncio.sleep to simulate time passing and exceeding the total timeout
-    # Assert that the appropriate exception is raised when timeout is exceeded
-    # Assert call counts and logger messages indicating attempts up to the timeout
-    pass
-
-@pytest.mark.asyncio
-async def test_connect_handshake_retries_disabled(client_instance_local, mocker):
-    # TODO: Implement this test case
-    # Setup mocks for config (retry_enabled=false)
-    # Mock _perform_handshake to fail once
-    # Assert that _perform_handshake is called only once
-    # Assert that the initial HandshakeError (or appropriate error) is raised directly without retry attempts
-    # Assert no calls to asyncio.sleep for backoff
-    # Assert logger messages reflect a single attempt
-    pass
-
-@pytest.mark.asyncio
-async def test_connect_handshake_plugin_process_dies_during_retries(client_instance_local, mocker):
-    # TODO: Implement this test case
-    # Setup mocks for config (retry_enabled=true, max_retries, etc.)
-    # Mock _perform_handshake to fail
-    # Mock client._process.poll to return a non-None value (indicating process died) during one of the retry attempts
-    # Assert that an appropriate error (e.g., RPCProcessError or similar) is raised
-    # Assert that retries stop once the process death is detected
-    # Assert logger messages indicating the failure and process termination
-    pass

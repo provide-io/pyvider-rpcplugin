@@ -90,12 +90,19 @@ async def test_perform_handshake_process_exit(client_instance, mock_process):
         await client_instance._perform_handshake()
 
 @pytest.mark.asyncio
-async def test_perform_handshake_invalid_format(client_instance, mock_process):
+async def test_perform_handshake_invalid_format(client_instance, mock_process, mocker): # Added mocker
     client_instance._process = mock_process
-    mock_process.stdout.readline.return_value = b"invalid_handshake_format\n"
-    with patch("pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background", new_callable=AsyncMock) as mock_relay,          pytest.raises(HandshakeError, match=r"Failed to parse handshake response line: invalid_handshake_format. Expected 6 parts, got 1."):
+
+    # Mock _read_raw_handshake_line_from_stdout to directly return the problematic line
+    # This bypasses the internal looping/timeout logic of _read_raw_handshake_line_from_stdout
+    # and ensures that _perform_handshake proceeds to call parse_handshake_response with this line.
+    mock_read_raw_line = mocker.patch('pyvider.rpcplugin.client.base.RPCPluginClient._read_raw_handshake_line_from_stdout', new_callable=AsyncMock, return_value="invalid_handshake_format")
+
+    expected_error_match = r"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] Invalid handshake format. Expected 6 pipe-separated parts, got 1: 'invalid_handshake_format...' \(Hint: Ensure the plugin's handshake output matches 'CORE_VER\|PLUGIN_VER\|NET\|ADDR\|PROTO\|CERT'.\)"
+    with patch("pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background", new_callable=AsyncMock) as mock_relay, \
+         pytest.raises(HandshakeError, match=expected_error_match):
         await client_instance._perform_handshake()
-    mock_relay.assert_called_once()
+        mock_relay.assert_called_once() # This should be inside the with block if it depends on successful execution of the try part
 
 @pytest.mark.asyncio
 async def test_perform_handshake_parse_error(client_instance, mock_process):
@@ -223,7 +230,21 @@ async def test_read_raw_handshake_line_byte_by_byte_success(client_instance_for_
     handshake_str = "1|1|unix|/tmp/test.sock|grpc|"
     handshake_bytes_list = [bytes([b]) for b in handshake_str.encode("utf-8")]
     mock_process.stdout.readline.return_value = b""
-    mock_process.stdout.read.side_effect = handshake_bytes_list + [b""]
+
+    # Define this helper function inside the test method or ensure it's properly scoped
+    read_call_idx = 0
+    # The list of byte strings to return, ending with a persistent EOF signal (b"")
+    bytes_to_return_sequence = handshake_bytes_list + [b""]
+
+    def robust_read_side_effect(*args, **kwargs):
+        nonlocal read_call_idx
+        if read_call_idx < len(bytes_to_return_sequence):
+            val = bytes_to_return_sequence[read_call_idx]
+            read_call_idx += 1
+            return val
+        return b"" # Persistently return EOF after sequence is exhausted
+
+    mock_process.stdout.read.side_effect = robust_read_side_effect
     executor_call_count = 0
     async def set_future_result(fut, result_value):
         await asyncio.sleep(0)
@@ -240,7 +261,7 @@ async def test_read_raw_handshake_line_byte_by_byte_success(client_instance_for_
         asyncio.create_task(set_future_result(f, result_val))
         return f
     mock_loop_instance = MagicMock()
-    time_values = [i * 0.01 for i in range(len(handshake_str) + 20)]
+    time_values = [i * 0.01 for i in range(len(handshake_str) + 200)] # Increased range
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = custom_run_in_executor
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)

@@ -399,7 +399,8 @@ def parse_handshake_response(
             )
         address = parts[3]
         protocol = parts[4]
-        server_cert = parts[5] if parts[5] else None
+        raw_server_cert_part = parts[5] if parts[5] else None
+        server_cert = raw_server_cert_part.strip() if raw_server_cert_part else None # Explicitly strip this part
 
         expected_core_version_from_config = rpcplugin_config.get("PLUGIN_CORE_VERSION")
         logger.debug(
@@ -428,9 +429,11 @@ def parse_handshake_response(
                 f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
             )
 
-        if server_cert:
+        if server_cert: # Now server_cert is stripped
             padding = len(server_cert) % 4
             if padding:
+                # This part of the logic should remain the same,
+                # but it will now operate on a guaranteed stripped string.
                 server_cert += "=" * (4 - padding)
             logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
 
