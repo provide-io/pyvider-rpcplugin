@@ -739,22 +739,15 @@ def _load_dotenv_file(path: Path) -> None:
             if value.startswith("'") and value.endswith("'"):
                 value = value[1:-1]
 
-            # Determine the schema_key
-            schema_key = DOTENV_KEY_MAPPINGS.get(key)
+            # Original key from .env file
+            os.environ[key] = value
+            logger.debug(f"⚙️📂✅ Set environment variable from .env: {key}='{value}'")
 
-            if schema_key: # If key was in DOTENV_KEY_MAPPINGS
-                if schema_key in CONFIG_SCHEMA:
-                    os.environ[schema_key] = value
-                    logger.debug(f"⚙️📂✅ Set environment variable from .env (PYVIDER mapped): {schema_key}='{value}' (original key: '{key}')")
-                else:
-                    # This case should ideally not happen if DOTENV_KEY_MAPPINGS is correct
-                    logger.warning(f"⚙️📂⚠️ Mapped key '{schema_key}' for .env key '{key}' not in CONFIG_SCHEMA. Ignoring.")
-            elif key in CONFIG_SCHEMA: # Allows direct PLUGIN_ prefixed keys in .env
-                os.environ[key] = value
-                logger.debug(f"⚙️📂✅ Set environment variable from .env (direct schema key): {key}='{value}'")
-            else:
-                logger.warning(f"⚙️📂⚠️ Unknown configuration key '{key}' in .env file {path}. Ignoring.")
-
+            # Additionally, if this key is a PYVIDER_ alias, also set the canonical PLUGIN_ version
+            mapped_plugin_key = DOTENV_KEY_MAPPINGS.get(key)
+            if mapped_plugin_key and mapped_plugin_key != key and mapped_plugin_key in CONFIG_SCHEMA:
+                 os.environ[mapped_plugin_key] = value
+                 logger.debug(f"⚙️📂✅ Also set mapped schema key: {mapped_plugin_key}='{value}' for original .env key '{key}'")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading .env file: {path}", extra={"error": str(e)})
@@ -780,29 +773,48 @@ def _load_json_file(path: Path) -> None:
             config_data = json.load(f)
 
         for key, value in config_data.items():
-            schema_key = KEY_MAPPINGS.get(key, key)  # Map to schema key or use key itself
+            stringified_value = ""
+            # Determine schema key for type-aware stringification if possible
+            # Check direct key match in schema, then check if key is an alias in KEY_MAPPINGS
+            schema_key_for_type_lookup = key
+            if key not in CONFIG_SCHEMA: # If original key is not a direct schema key
+                mapped_key = KEY_MAPPINGS.get(key)
+                if mapped_key and mapped_key in CONFIG_SCHEMA: # Check if it's an alias for a schema key
+                    schema_key_for_type_lookup = mapped_key
 
-            if schema_key in CONFIG_SCHEMA:
-                # Convert to string for environment variables, matching schema type expectations
-                # fetch_env_variable will handle type conversion from string.
-                # For lists, CSV is a common way if the schema expects list_str or list_int from string.
-                # For bools, "true"/"false" as strings.
-                meta = CONFIG_SCHEMA[schema_key]
-                env_value = ""
+            if schema_key_for_type_lookup in CONFIG_SCHEMA:
+                meta = CONFIG_SCHEMA[schema_key_for_type_lookup]
                 if meta["type"] == "list_str" or meta["type"] == "list_int":
                     if isinstance(value, list):
-                        env_value = ",".join(map(str, value))
-                    else: # Should ideally be a list from JSON, but handle if not
-                        env_value = str(value)
+                        stringified_value = ",".join(map(str, value))
+                    else:
+                        stringified_value = str(value)
                 elif meta["type"] == "bool":
-                    env_value = "true" if value else "false"
+                    stringified_value = "true" if value else "false"
                 else: # str, int, float
-                    env_value = str(value)
+                    stringified_value = str(value)
+            else: # Key is not in schema, directly or via mapping - use generic stringification
+                if isinstance(value, (list, dict)):
+                    stringified_value = json.dumps(value) # Use json.dumps for lists/dicts not in schema
+                elif isinstance(value, bool):
+                    stringified_value = "true" if value else "false"
+                else:
+                    stringified_value = str(value)
 
-                os.environ[schema_key] = env_value
-                logger.debug(f"⚙️📂✅ Set environment variable from JSON: {schema_key}='{env_value}' (original key: '{key}')")
-            else:
-                logger.warning(f"⚙️📂⚠️ Unknown configuration key '{key}' in JSON file {path}. Ignoring.")
+            # Set the original key from the JSON file into os.environ
+            os.environ[key] = stringified_value
+            logger.debug(f"⚙️📂✅ Set environment variable from JSON (original key): {key}='{stringified_value}'")
+
+            # Handle mapped schema keys if the original key was an alias
+            mapped_schema_key = KEY_MAPPINGS.get(key)
+            if mapped_schema_key and mapped_schema_key != key and mapped_schema_key in CONFIG_SCHEMA:
+                # The stringified_value was already determined based on the target schema type if 'key' mapped to it.
+                # So, we can reuse stringified_value here if schema_key_for_type_lookup was indeed mapped_schema_key.
+                # If 'key' was a direct schema key AND ALSO an alias for a DIFFERENT schema key (unlikely/confusing setup),
+                # then this re-set might use stringification rules of the first schema key found.
+                # For simplicity here, we assume stringified_value is appropriate.
+                os.environ[mapped_schema_key] = stringified_value
+                logger.debug(f"⚙️📂✅ Also set mapped schema key from JSON: {mapped_schema_key}='{stringified_value}' for original key '{key}'")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading JSON file: {path}", extra={"error": str(e)})
@@ -833,26 +845,46 @@ def _load_yaml_file(path: Path) -> None:
         with open(path, "r", encoding="utf-8") as f:
             config_data = yaml.safe_load(f)
 
-        for key, value in config_data.items():
-            schema_key = KEY_MAPPINGS.get(key, key) # Map to schema key or use key itself
+        # Ensure json is imported for json.dumps fallback if not already at the top
+        import json
 
-            if schema_key in CONFIG_SCHEMA:
-                meta = CONFIG_SCHEMA[schema_key]
-                env_value = ""
+        for key, value in config_data.items():
+            stringified_value = ""
+            # Determine schema key for type-aware stringification if possible
+            schema_key_for_type_lookup = key
+            if key not in CONFIG_SCHEMA:
+                mapped_key = KEY_MAPPINGS.get(key)
+                if mapped_key and mapped_key in CONFIG_SCHEMA:
+                    schema_key_for_type_lookup = mapped_key
+
+            if schema_key_for_type_lookup in CONFIG_SCHEMA:
+                meta = CONFIG_SCHEMA[schema_key_for_type_lookup]
                 if meta["type"] == "list_str" or meta["type"] == "list_int":
                     if isinstance(value, list):
-                        env_value = ",".join(map(str, value))
-                    else: # Should ideally be a list from YAML, but handle if not
-                        env_value = str(value)
+                        stringified_value = ",".join(map(str, value))
+                    else:
+                        stringified_value = str(value)
                 elif meta["type"] == "bool":
-                    env_value = "true" if value else "false"
+                    stringified_value = "true" if value else "false"
                 else: # str, int, float
-                    env_value = str(value)
+                    stringified_value = str(value)
+            else: # Key is not in schema, directly or via mapping
+                if isinstance(value, (list, dict)):
+                    stringified_value = json.dumps(value) # Use json.dumps for consistency
+                elif isinstance(value, bool):
+                    stringified_value = "true" if value else "false"
+                else:
+                    stringified_value = str(value)
 
-                os.environ[schema_key] = env_value
-                logger.debug(f"⚙️📂✅ Set environment variable from YAML: {schema_key}='{env_value}' (original key: '{key}')")
-            else:
-                logger.warning(f"⚙️📂⚠️ Unknown configuration key '{key}' in YAML file {path}. Ignoring.")
+            # Set the original key from the YAML file into os.environ
+            os.environ[key] = stringified_value
+            logger.debug(f"⚙️📂✅ Set environment variable from YAML (original key): {key}='{stringified_value}'")
+
+            # Handle mapped schema keys if the original key was an alias
+            mapped_schema_key = KEY_MAPPINGS.get(key)
+            if mapped_schema_key and mapped_schema_key != key and mapped_schema_key in CONFIG_SCHEMA:
+                os.environ[mapped_schema_key] = stringified_value
+                logger.debug(f"⚙️📂✅ Also set mapped schema key from YAML: {mapped_schema_key}='{stringified_value}' for original key '{key}'")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})

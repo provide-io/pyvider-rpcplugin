@@ -656,7 +656,7 @@ def test_load_config_from_yaml_file(
         mock_file.assert_called_once_with(Path("test.yaml"), "r", encoding="utf-8")
 
         # Check os.environ directly after load_config_from_file
-        assert os.environ.get("PLUGIN_AUTO_MTLS") == "False"
+        assert os.environ.get("PLUGIN_AUTO_MTLS") == "false"
 
         # This is what should be in the environment variable: the dict dumped to a YAML string
         expected_env_var_content = yaml.dump(nested_dict_val).strip()
