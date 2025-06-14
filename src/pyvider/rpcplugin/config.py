@@ -38,6 +38,7 @@ class ConfigError(ValueError):
     # Add more context if needed, e.g. error_code, hint
     def __init__(self, message: str, hint: str | None = None, code: int | None = None):
         super().__init__(message)
+        self.message = message # Add this line
         self.hint = hint
         self.code = code
 

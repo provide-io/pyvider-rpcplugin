@@ -4,6 +4,7 @@ import pytest
 import asyncio # Added
 from unittest.mock import patch, MagicMock, AsyncMock, ANY # ANY added back
 from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport # Import added
+from pyvider.rpcplugin.exception import TransportError # Added import
 
 
 @pytest.mark.asyncio
@@ -145,7 +146,7 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
     mocker.patch('os.path.exists', return_value=True) # Assume socket file exists for the diagnostic log
     mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
 
-    with pytest.raises(ConnectionError, match="Failed to establish gRPC channel to plugin: timeout"):
+    with pytest.raises(TransportError, match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to unix:/tmp/test_timeout.sock.*"):
         await client_instance._create_grpc_channel()
 
     mock_logger_error.assert_any_call("🚢❌ gRPC channel failed to become ready (timeout)")
@@ -165,7 +166,7 @@ async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
     mocker.patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel', return_value=mock_channel)
     mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
 
-    with pytest.raises(ConnectionError, match="Failed to establish gRPC channel to plugin: timeout"):
+    with pytest.raises(TransportError, match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to 127.0.0.1:12345.*"):
         await client_instance._create_grpc_channel()
 
     # Ensure the primary timeout log is there, but not the Unix-specific socket diagnostic
@@ -189,7 +190,7 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
     mocker.patch('pyvider.rpcplugin.client.base.grpc.aio.insecure_channel', return_value=mock_channel)
     mock_logger_error = mocker.patch('pyvider.rpcplugin.client.base.logger.error')
 
-    with pytest.raises(ConnectionError, match="Failed to establish gRPC channel to plugin: Other connection issue"):
+    with pytest.raises(TransportError, match=r"\[TransportError\] Failed to establish gRPC channel to plugin at 127.0.0.1:12345: Other connection issue.*Hint: Verify plugin server is running.*"):
         await client_instance._create_grpc_channel()
 
     mock_logger_error.assert_any_call("🚢❌ gRPC channel failed: Other connection issue")

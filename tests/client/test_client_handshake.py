@@ -116,7 +116,7 @@ async def test_perform_handshake_parse_error(client_instance, mock_process):
 async def test_perform_handshake_invalid_network_type(client_instance, mock_process):
     client_instance._process = mock_process
     mock_process.stdout.readline.return_value = b"1|1|invalid_net|127.0.0.1:8000|grpc|\n"
-    with patch("pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background", new_callable=AsyncMock),          pytest.raises(TransportError, match=r"Unsupported transport type 'invalid_net' received in handshake."):
+    with patch("pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background", new_callable=AsyncMock),          pytest.raises(HandshakeError, match=r"\[HandshakeError\] Invalid network type 'invalid_net' in handshake.*Hint: Network type must be 'tcp' or 'unix'\..*"):
         await client_instance._perform_handshake()
 
 @pytest.mark.asyncio
@@ -181,7 +181,7 @@ async def test_read_raw_handshake_line_outer_timeout_with_stderr(client_instance
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_side_effect
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep")
-    with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake line from plugin."):
+    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Timed out waiting for handshake line from plugin\..*Hint: .*Stderr: 'stderr messages on timeout'.*"):
         await client_instance._read_raw_handshake_line_from_stdout()
     client_instance.logger.error.assert_any_call("🤝 Handshake timed out. Stderr output: stderr messages on timeout")
 
@@ -205,7 +205,7 @@ async def test_read_raw_handshake_line_outer_timeout_no_stderr(client_instance_f
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_side_effect
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep")
-    with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake line from plugin."):
+    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Timed out waiting for handshake line from plugin\..*Hint: .*Stderr: ''.*"):
         await client_instance._read_raw_handshake_line_from_stdout()
     client_instance.logger.error.assert_any_call("🤝 Handshake timed out. Stderr output: ")
 
