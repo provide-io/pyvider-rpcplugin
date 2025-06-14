@@ -401,3 +401,12 @@ result.json*.bf.txt
 
 # Ignore example kvproto directory (often contains generated or example-specific code)
 examples/kvproto/
+
+# GitHub Actions
+.github/workflows/*.log
+activate_env.cmd
+doc-checklist.md
+
+# Documentation build
+site/
+docs_temp/
