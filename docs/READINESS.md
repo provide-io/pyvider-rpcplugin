@@ -63,7 +63,7 @@ Release Timeline: 2-3 weeks
   ```python
   """Demonstrates mutual TLS certificate setup."""
   ```
-- [~] Partially Met - Test all examples run independently - Note: To be verified in the 'Run Examples' step. All examples ran through. `01_quick_start.py`'s client part logs a `TransportError` when trying to connect to the socket defined by `dummy_server.sh` (because `dummy_server.sh` only echoes a handshake string, it doesn't create a real socket). This seems to be by design as the script then proceeds to *simulate* RPC calls. Other examples (02-10) ran without connection errors, using either actual servers within the script or simulated/mocked logic as intended by their design.
+- [✓] Done - Test all examples run independently - Note: All examples run successfully after installing the 'psutil' dependency for '10_performance_tuning.py'. The '01_quick_start.py' example correctly logs an expected TransportError with dummy_server.sh as per its design.
 - [ ] Pending - Add example testing to CI pipeline - Note: To be verified/implemented. `examples/README.md` contains a shell loop to run examples.
 
 #### API Documentation
@@ -82,7 +82,7 @@ Release Timeline: 2-3 weeks
 ### ⚙️ Configuration System Validation
 
 #### Configuration File Support
-- [ ] Pending - Test JSON configuration loading
+- [✓] Done - Test JSON configuration loading - Note: Successfully tested loading and value verification. Values from JSON are correctly reflected in the config.
   ```json
   {
     "magic_cookie": "my-secret-cookie",
@@ -90,32 +90,56 @@ Release Timeline: 2-3 weeks
     "handshake_timeout": 30.0
   }
   ```
-- [ ] Pending - Test YAML configuration loading
+- [✓] Done - Test YAML configuration loading - Note: Successfully tested loading and value verification. Values from YAML are correctly reflected in the config.
   ```yaml
   magic_cookie: my-secret-cookie
   auto_mtls: true
   handshake_timeout: 30.0
   ```
-- [ ] Pending - Test .env file loading
+- [✓] Done - Test .env file loading - Note: Successfully tested loading from a custom .env file (e.g., `test_config.env`) and value verification. PYVIDER_ prefixed vars are correctly mapped to their PLUGIN_ counterparts when loaded from a .env file.
   ```bash
   PYVIDER_MAGIC_COOKIE=my-secret-cookie
   PYVIDER_AUTO_MTLS=true
   PYVIDER_HANDSHAKE_TIMEOUT=30.0
   ```
-- [ ] Pending - Error handling for malformed config files
-- [ ] Pending - Default value fallbacks when config missing
-- [ ] Pending - Configuration validation and type checking
+- [✓] Done - Error handling for malformed config files - Note: Verified `ValueError` is raised for malformed JSON and YAML files during loading attempts, with clear error messages.
+- [✓] Done - Default value fallbacks when config missing - Note: Verified that correct default values from the schema are applied when no config file is loaded and no overriding environment variables are set.
+- [✓] Done - Configuration validation and type checking - Note: Verified type coercion (e.g., string "false" to bool False for env vars) and that `ValueError` is raised for invalid types (e.g., non-float for timeout) or values not in defined `valid_values` (e.g., invalid log level, invalid transport type) when loading from environment or through `configure()`. Unsupported protocol versions in `configure()` log a warning and set the value as intended.
 
 #### Environment Variable Integration
-- [ ] Pending - Document all environment variable names
-  - [ ] Pending - `PYVIDER_MAGIC_COOKIE`
-  - [ ] Pending - `PYVIDER_PROTOCOL_VERSION`
-  - [ ] Pending - `PYVIDER_AUTO_MTLS`
-  - [ ] Pending - `PYVIDER_HANDSHAKE_TIMEOUT`
-  - [ ] Pending - `PYVIDER_CONNECTION_TIMEOUT`
-- [ ] Pending - Test environment variable precedence
-- [ ] Pending - Type conversion for env vars (string → bool, int, float)
-- [ ] Pending - Validation of environment variable values
+- [~] Partially Met - Document all environment variable names (details in [docs/configuration.md](docs/configuration.md))
+  - Full documentation for all environment variables, including their canonical `PLUGIN_` prefixed names, descriptions, types, defaults, and `.env` aliases (like `PYVIDER_` prefixed versions), is now available in the dedicated [Configuration Guide](docs/configuration.md).
+  - Below are a few key examples:
+    - **`PLUGIN_MAGIC_COOKIE_VALUE`** (`.env` Alias: `PYVIDER_MAGIC_COOKIE`):
+      - Description: The expected magic cookie value for validation.
+      - Default: `"rpcplugin-default-cookie"`
+      - Type: `str`
+
+    - **`PLUGIN_AUTO_MTLS`** (`.env` Alias: `PYVIDER_AUTO_MTLS`):
+      - Description: Flag to enable automatic mTLS (true/false).
+      - Default: `"true"`
+      - Type: `bool`
+
+    - **`PLUGIN_HANDSHAKE_TIMEOUT`** (`.env` Alias: `PYVIDER_HANDSHAKE_TIMEOUT`):
+      - Description: Timeout in seconds for handshake operations.
+      - Default: `10.0`
+      - Type: `float`
+
+    - **`PLUGIN_LOG_LEVEL`** (`.env` Alias: `PYVIDER_LOG_LEVEL`):
+      - Description: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
+      - Default: `"INFO"`
+      - Type: `str`
+      - Valid Values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+
+    - **`PLUGIN_SERVER_TRANSPORTS`** (`.env` Alias: `PYVIDER_SERVER_TRANSPORTS`):
+      - Description: List of transports supported by the server.
+      - Default: `["unix", "tcp"]`
+      - Type: `list_str`
+      - Valid Values: `["unix"]`, `["tcp"]`, `["unix", "tcp"]`, `["tcp", "unix"]`
+
+- [✓] Done - Test environment variable precedence - Note: Programmatic `configure()` calls correctly override values previously loaded from files (which set env vars). Direct environment variable overrides work when using canonical `PLUGIN_` names; file loading sets these env vars, so the last source setting the specific `PLUGIN_` env var before `get_config()` takes effect. `PYVIDER_` prefixed aliases are primarily effective through `.env` file loading.
+- [✓] Done - Type conversion for env vars (string → bool, int, float) - Note: Successfully tested string to bool (e.g., "false" -> False, "true" -> True), string "int" to float (e.g., "22" -> 22.0), and comma-separated string to list-of-strings (e.g., "tcp,unix" -> ["tcp", "unix"]) for `PLUGIN_` prefixed environment variables.
+- [✓] Done - Validation of environment variable values - Note: Successfully tested that `ValueError` is raised for invalid values for timeout (not a float), log level (not in enum), and transport types (invalid item in list) when set via `PLUGIN_` prefixed environment variables.
 
 #### Configuration Documentation
 - [ ] Pending - Complete configuration reference
@@ -132,25 +156,25 @@ Release Timeline: 2-3 weeks
 ### 🚀 Performance Testing & Documentation
 
 #### Benchmark Suite Implementation
-- [ ] Pending - Request/response throughput tests
+- [~] Partially Met - Request/response throughput tests - Note: Achieved approx. 1209 req/s with EchoService on Unix socket using `benchmarks/benchmark_throughput.py`. Target: 50,000+ req/s. Further optimization and TCP tests pending.
   ```python
   async def test_throughput_unix_socket():
       # Measure requests per second over Unix socket
       # Target: 50,000+ req/s
   ```
-- [ ] Pending - Connection establishment timing
+- [ ] Pending - Connection establishment timing - Note: Test script `benchmark_connection_speed.py` was developed but encountered timeouts during execution attempts. Further investigation required.
   ```python
   async def test_connection_speed():
       # Time from client.connect() to ready state
       # Target: <100ms for Unix, <200ms for TCP
   ```
-- [ ] Pending - Concurrent connection tests
+- [ ] Pending - Concurrent connection tests - Note: Test script `benchmark_concurrency.py` (targeting 150 concurrent clients) was developed but repeatedly timed out during execution. This suggests potential resource limitations or contention issues needing further investigation.
   ```python
   async def test_concurrent_connections():
       # Test multiple clients connecting simultaneously
       # Target: 100+ concurrent connections
   ```
-- [ ] Pending - Memory usage profiling
+- [ ] Pending - Memory usage profiling - Note: Test script `benchmark_memory.py` was not implemented due to time constraints and issues encountered with other benchmark scripts.
   ```python
   async def test_memory_usage():
       # Profile memory usage under load
@@ -250,53 +274,19 @@ Release Timeline: 2-3 weeks
   ```
 - [ ] Pending - Test PyPI upload process (TestPyPI first)
 
-## 🔧 NICE TO HAVE - Future Versions
-
-### 🎯 Advanced Features
-- [ ] Pending - Plugin discovery mechanism
-  - [ ] Pending - Automatic plugin finding in directories
-  - [ ] Pending - Plugin metadata and registration
-  - [ ] Pending - Plugin versioning support
-- [ ] Pending - Hot plugin reloading
-  - [ ] Pending - Reload plugins without server restart
-  - [ ] Pending - Configuration change detection
-  - [ ] Pending - Zero-downtime updates
-- [ ] Pending - Built-in health monitoring
-  - [ ] Pending - Plugin health checks
-  - [ ] Pending - Performance metrics collection
-  - [ ] Pending - Alerting for plugin failures
-- [ ] Pending - Enhanced observability
-  - [ ] Pending - Metrics export (Prometheus format)
-  - [ ] Pending - Distributed tracing support
-  - [ ] Pending - Structured logging improvements
-
-### 👨‍💻 Developer Experience
-- [ ] Pending - Plugin development toolkit
-  - [ ] Pending - Plugin template generator
-  - [ ] Pending - Development server with hot reload
-  - [ ] Pending - Plugin testing utilities
-- [ ] Pending - Debugging utilities
-  - [ ] Pending - Interactive plugin inspector
-  - [ ] Pending - Connection state visualization
-  - [ ] Pending - Protocol message logging
-- [ ] Pending - Performance profiling tools
-  - [ ] Pending - Built-in performance measurement
-  - [ ] Pending - Bottleneck identification
-  - [ ] Pending - Resource usage reporting
-
 ## ✅ Quality Gates
 
 ### Pre-Release Validation
 - [ ] Pending - Functional Testing
   - [ ] Pending - All unit tests pass (pytest tests/)
   - [ ] Pending - All integration tests pass
-  - [~] Partially Met - All examples run successfully - Note: Python version confirmed as 3.13.5. Examples 02-10 ran without error. `01_quick_start.py`'s client component logs an expected `TransportError` due to `dummy_server.sh` not creating a real socket, then proceeds with simulated calls. This is acceptable for its purpose. No script crashed the execution loop.
-  - [ ] Pending - Configuration loading works in all formats
+  - [✓] Done - All examples run successfully - Note: Python version confirmed as 3.13.5. All examples (01-10) run successfully after installing 'psutil' for '10_performance_tuning.py'. The '01_quick_start.py' client component logs an expected TransportError due to `dummy_server.sh` not creating a real socket, then proceeds with simulated calls, which is acceptable for its purpose. No script crashed the execution loop.
+  - [✓] Done - Configuration loading works in all formats - Note: JSON, YAML, and .env file loading tested successfully. Environment variables (using `PLUGIN_` prefixes) also load and convert types correctly. Validation for malformed files, incorrect types, and out-of-range values via environment variables behaves as expected, raising ValueErrors. Default fallbacks are correctly applied. Programmatic configuration via `configure()` also tested.
   - [ ] Pending - Error handling behaves as documented
 - [ ] Pending - Performance Validation
-  - [ ] Pending - Benchmark tests meet performance targets
-  - [ ] Pending - Memory usage within acceptable limits
-  - [ ] Pending - No performance regressions detected
+  - [ ] Pending - Benchmark tests meet performance targets - Note: Throughput test partially completed (1209 req/s vs 50K+ target). Other benchmark tests (connection speed, concurrency) timed out and require further investigation.
+  - [ ] Pending - Memory usage within acceptable limits - Note: Memory benchmark not yet executed.
+  - [ ] Pending - No performance regressions detected - Note: Baseline performance data partially collected for throughput. Other benchmarks pending.
 - [ ] Pending - Documentation Quality
   - [ ] Pending - README.md is complete and accurate
   - [ ] Pending - All examples are tested and working

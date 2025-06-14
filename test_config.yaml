@@ -1,0 +1,4 @@
+magic_cookie: yaml-cookie
+auto_mtls: false
+handshake_timeout: 40.0
+unknown_option: should_be_ignored
