@@ -39,6 +39,50 @@ SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 # Define supported transport types
 TRANSPORT_TYPES = Literal["unix", "tcp"]
 
+# Key mappings for JSON/YAML files to CONFIG_SCHEMA keys
+# This helps use shorter, more user-friendly keys in JSON/YAML
+KEY_MAPPINGS: dict[str, str] = {
+    "magic_cookie": "PLUGIN_MAGIC_COOKIE_VALUE",
+    "magic_cookie_value": "PLUGIN_MAGIC_COOKIE_VALUE", # Allow full name too
+    "auto_mtls": "PLUGIN_AUTO_MTLS",
+    "handshake_timeout": "PLUGIN_HANDSHAKE_TIMEOUT",
+    "connection_timeout": "PLUGIN_CONNECTION_TIMEOUT",
+    "log_level": "PLUGIN_LOG_LEVEL",
+    "server_transports": "PLUGIN_SERVER_TRANSPORTS",
+    "client_transports": "PLUGIN_CLIENT_TRANSPORTS",
+    "server_endpoint": "PLUGIN_SERVER_ENDPOINT",
+    "client_endpoint": "PLUGIN_CLIENT_ENDPOINT",
+    "server_cert": "PLUGIN_SERVER_CERT",
+    "server_key": "PLUGIN_SERVER_KEY",
+    "server_root_certs": "PLUGIN_SERVER_ROOT_CERTS",
+    "client_cert": "PLUGIN_CLIENT_CERT",
+    "client_key": "PLUGIN_CLIENT_KEY",
+    "client_root_certs": "PLUGIN_CLIENT_ROOT_CERTS",
+    "protocol_versions": "PLUGIN_PROTOCOL_VERSIONS",
+    "show_emoji_matrix": "PLUGIN_SHOW_EMOJI_MATRIX",
+    # Direct CONFIG_SCHEMA keys can also be used in files, so this map is for convenience
+}
+
+DOTENV_KEY_MAPPINGS: dict[str, str] = {
+    "PYVIDER_MAGIC_COOKIE": "PLUGIN_MAGIC_COOKIE_VALUE",
+    "PYVIDER_AUTO_MTLS": "PLUGIN_AUTO_MTLS",
+    "PYVIDER_HANDSHAKE_TIMEOUT": "PLUGIN_HANDSHAKE_TIMEOUT",
+    "PYVIDER_CONNECTION_TIMEOUT": "PLUGIN_CONNECTION_TIMEOUT",
+    "PYVIDER_LOG_LEVEL": "PLUGIN_LOG_LEVEL",
+    "PYVIDER_SERVER_TRANSPORTS": "PLUGIN_SERVER_TRANSPORTS",
+    "PYVIDER_CLIENT_TRANSPORTS": "PLUGIN_CLIENT_TRANSPORTS",
+    "PYVIDER_SERVER_ENDPOINT": "PLUGIN_SERVER_ENDPOINT",
+    "PYVIDER_CLIENT_ENDPOINT": "PLUGIN_CLIENT_ENDPOINT",
+    "PYVIDER_SERVER_CERT": "PLUGIN_SERVER_CERT",
+    "PYVIDER_SERVER_KEY": "PLUGIN_SERVER_KEY",
+    "PYVIDER_SERVER_ROOT_CERTS": "PLUGIN_SERVER_ROOT_CERTS",
+    "PYVIDER_CLIENT_CERT": "PLUGIN_CLIENT_CERT",
+    "PYVIDER_CLIENT_KEY": "PLUGIN_CLIENT_KEY",
+    "PYVIDER_CLIENT_ROOT_CERTS": "PLUGIN_CLIENT_ROOT_CERTS",
+    "PYVIDER_PROTOCOL_VERSIONS": "PLUGIN_PROTOCOL_VERSIONS",
+    "PYVIDER_SHOW_EMOJI_MATRIX": "PLUGIN_SHOW_EMOJI_MATRIX",
+}
+
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
 # This provides a single source of truth for all configuration options
 CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
@@ -695,9 +739,22 @@ def _load_dotenv_file(path: Path) -> None:
             if value.startswith("'") and value.endswith("'"):
                 value = value[1:-1]
 
-            # Set environment variable
-            os.environ[key] = value
-            logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
+            # Determine the schema_key
+            schema_key = DOTENV_KEY_MAPPINGS.get(key)
+
+            if schema_key: # If key was in DOTENV_KEY_MAPPINGS
+                if schema_key in CONFIG_SCHEMA:
+                    os.environ[schema_key] = value
+                    logger.debug(f"⚙️📂✅ Set environment variable from .env (PYVIDER mapped): {schema_key}='{value}' (original key: '{key}')")
+                else:
+                    # This case should ideally not happen if DOTENV_KEY_MAPPINGS is correct
+                    logger.warning(f"⚙️📂⚠️ Mapped key '{schema_key}' for .env key '{key}' not in CONFIG_SCHEMA. Ignoring.")
+            elif key in CONFIG_SCHEMA: # Allows direct PLUGIN_ prefixed keys in .env
+                os.environ[key] = value
+                logger.debug(f"⚙️📂✅ Set environment variable from .env (direct schema key): {key}='{value}'")
+            else:
+                logger.warning(f"⚙️📂⚠️ Unknown configuration key '{key}' in .env file {path}. Ignoring.")
+
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading .env file: {path}", extra={"error": str(e)})
@@ -723,13 +780,29 @@ def _load_json_file(path: Path) -> None:
             config_data = json.load(f)
 
         for key, value in config_data.items():
-            # Convert to string for environment variables
-            if isinstance(value, (list, dict)):
-                os.environ[key] = json.dumps(value)
-            else:
-                os.environ[key] = str(value)
+            schema_key = KEY_MAPPINGS.get(key, key)  # Map to schema key or use key itself
 
-            logger.debug(f"⚙️📂✅ Set environment variable from JSON: {key}")
+            if schema_key in CONFIG_SCHEMA:
+                # Convert to string for environment variables, matching schema type expectations
+                # fetch_env_variable will handle type conversion from string.
+                # For lists, CSV is a common way if the schema expects list_str or list_int from string.
+                # For bools, "true"/"false" as strings.
+                meta = CONFIG_SCHEMA[schema_key]
+                env_value = ""
+                if meta["type"] == "list_str" or meta["type"] == "list_int":
+                    if isinstance(value, list):
+                        env_value = ",".join(map(str, value))
+                    else: # Should ideally be a list from JSON, but handle if not
+                        env_value = str(value)
+                elif meta["type"] == "bool":
+                    env_value = "true" if value else "false"
+                else: # str, int, float
+                    env_value = str(value)
+
+                os.environ[schema_key] = env_value
+                logger.debug(f"⚙️📂✅ Set environment variable from JSON: {schema_key}='{env_value}' (original key: '{key}')")
+            else:
+                logger.warning(f"⚙️📂⚠️ Unknown configuration key '{key}' in JSON file {path}. Ignoring.")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading JSON file: {path}", extra={"error": str(e)})
@@ -761,27 +834,25 @@ def _load_yaml_file(path: Path) -> None:
             config_data = yaml.safe_load(f)
 
         for key, value in config_data.items():
-            match value:
-                case list():
-                    os.environ[key] = ",".join(map(str, value))  # Convert list to CSV
-                    logger.debug(
-                        f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'"
-                    )
-                case dict():
-                    # For dicts, keep current behavior but warn if it's a schema-defined key
-                    # that isn't usually string-represented this way.
-                    # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
-                    env_val = yaml.dump(value).strip()
-                    os.environ[key] = env_val
-                    logger.warning(
-                        f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
-                        f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
-                    )
-                case _:  # Default case for scalars (int, float, bool, str)
-                    os.environ[key] = str(value)
-                    logger.debug(
-                        f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'"
-                    )
+            schema_key = KEY_MAPPINGS.get(key, key) # Map to schema key or use key itself
+
+            if schema_key in CONFIG_SCHEMA:
+                meta = CONFIG_SCHEMA[schema_key]
+                env_value = ""
+                if meta["type"] == "list_str" or meta["type"] == "list_int":
+                    if isinstance(value, list):
+                        env_value = ",".join(map(str, value))
+                    else: # Should ideally be a list from YAML, but handle if not
+                        env_value = str(value)
+                elif meta["type"] == "bool":
+                    env_value = "true" if value else "false"
+                else: # str, int, float
+                    env_value = str(value)
+
+                os.environ[schema_key] = env_value
+                logger.debug(f"⚙️📂✅ Set environment variable from YAML: {schema_key}='{env_value}' (original key: '{key}')")
+            else:
+                logger.warning(f"⚙️📂⚠️ Unknown configuration key '{key}' in YAML file {path}. Ignoring.")
 
     except Exception as e:
         logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})
