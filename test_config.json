@@ -1,6 +1,0 @@
-{
-  "magic_cookie": "json-cookie",
-  "auto_mtls": true,
-  "handshake_timeout": 35.0,
-  "unknown_option": "should_be_ignored"
-}
