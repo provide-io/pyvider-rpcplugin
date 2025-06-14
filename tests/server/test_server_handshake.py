@@ -43,7 +43,7 @@ async def test_server_handshake_invalid_cookie(
 
     with pytest.raises(
         HandshakeError,
-        match=r"Handshake negotiation failed: cookie_provided does not match required cookie_value",
+        match=r"Expected: 'valid_cookie', Received: 'invalid_cookie'",
     ):
         await server._negotiate_handshake()
 
