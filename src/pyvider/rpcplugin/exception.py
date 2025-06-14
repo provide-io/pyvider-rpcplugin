@@ -27,7 +27,7 @@ class RPCPluginError(Exception):
 
     def __str__(self) -> str:
         MAX_MSG_LEN = 256  # Max length for the base message part
-        MAX_HINT_LEN = 128  # Max length for the hint part
+        MAX_HINT_LEN = 128 # Max length for the hint part
 
         base_message = super().__str__()
         if len(base_message) > MAX_MSG_LEN:
