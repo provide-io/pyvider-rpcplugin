@@ -205,20 +205,27 @@ Release Timeline: 2-3 weeks
 ### 🛠️ Error Experience Enhancement
 
 #### Error Message Improvements
-- [ ] Pending - Standardize error message format
+- [✓] Done - Standardize error message format
+  - Note: Custom exceptions (`RPCPluginError` subclasses) are now consistently used in `config.py`, `handshake.py`, `client/base.py`, and `server.py`. Messages include class names, specific details, and often error codes/hints as per the base `RPCPluginError.__str__` method.
   ```python
   # Before: "Connection failed"
   # After: "Failed to connect to plugin server at unix:///tmp/plugin.sock: Connection refused.
   #        Ensure the plugin server is running and accessible."
   ```
-- [ ] Pending - Add context and debugging information
-  - [ ] Pending - Include relevant configuration values
-  - [ ] Pending - Suggest common solutions
-  - [ ] Pending - Provide troubleshooting steps
-- [ ] Pending - User-friendly error categories
-  - [ ] Pending - Connection errors with network troubleshooting
-  - [ ] Pending - Authentication errors with certificate help
-  - [ ] Pending - Configuration errors with validation guidance
+- [✓] Done - Add context and debugging information
+  - Note: Error messages now include more contextual details (e.g., problematic values, paths). The `hint` parameter in custom exceptions is now populated with actionable suggestions and troubleshooting advice.
+  - [~] Partially Met - Include relevant configuration values
+    - Note: Error messages often include the specific configuration key or value that caused the issue. More comprehensive inclusion of related config state could be a future enhancement if needed.
+  - [✓] Done - Suggest common solutions
+  - [✓] Done - Provide troubleshooting steps
+- [✓] Done - User-friendly error categories
+  - Note: Existing categories (`ConfigError`, `HandshakeError`, `TransportError`, `ProtocolError`, `SecurityError`, `CertificateError`) are now more consistently applied. `CredentialsError` was consolidated into `CertificateError` for clarity.
+  - [✓] Done - Connection errors with network troubleshooting
+    - Note: `TransportError` instances now generally include hints related to network issues, server status, and endpoint checks.
+  - [✓] Done - Authentication errors with certificate help
+    - Note: `SecurityError` and `CertificateError` instances provide hints related to certificate/key issues and mTLS setup.
+  - [✓] Done - Configuration errors with validation guidance
+    - Note: `ConfigError` instances (especially from `config.py`) now provide detailed messages and hints for validation issues, missing keys, and incorrect formats.
 
 #### Error Recovery Mechanisms
 - [ ] Pending - Automatic retry for transient failures

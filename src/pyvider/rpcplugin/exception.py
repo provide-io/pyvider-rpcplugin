@@ -67,11 +67,7 @@ class SecurityError(RPCPluginError):
 
 
 class CertificateError(SecurityError):
-    """Credential configuration and validation errors."""
-
-
-class CredentialsError(SecurityError):
-    """Credential configuration and validation errors."""
+    """Errors related to security certificates, private keys, or other credential validation and management issues."""
 
 
 # 🐍🏗️🔌

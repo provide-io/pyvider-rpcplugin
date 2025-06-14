@@ -75,7 +75,10 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         logger.error(
             "🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided"
         )
-        raise TransportError("No transport options provided")
+        raise TransportError(
+            message="No transport options were provided by the server for negotiation.",
+            hint="Ensure the server configuration specifies at least one supported transport (e.g., 'unix', 'tcp')."
+        )
     try:
         # Reverse the preference - prioritize Unix sockets first
         if "unix" in server_transports:
@@ -103,13 +106,16 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
                 "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
                 extra={"server_transports": server_transports},
             )
-            raise TransportError(f"Unsupported transports: {server_transports}")
+            raise TransportError(
+                message=f"No compatible transport found. Server offered: {server_transports}.",
+                hint=f"Ensure the client supports at least one of the server's offered transports. Client supports: {rpcplugin_config.client_transports() if rpcplugin_config else 'config not loaded'}."
+            )
     except Exception as e:
         logger.error(
             "🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
             extra={"error": str(e)},
         )
-        raise TransportError(f"Error negotiating transport: {e}") from e
+        raise TransportError(message=f"An unexpected error occurred during transport negotiation: {e}", hint="Check server logs for more details on transport setup.") from e
 
 
 def negotiate_protocol_version(server_versions: list[int]) -> int:
@@ -139,8 +145,8 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
         f"Server supports: {server_versions}, Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
     )
     raise ProtocolError(
-        f"No mutually supported protocol version found. Server supports: {server_versions}, "
-        f"Client supports: {SUPPORTED_PROTOCOL_VERSIONS}"
+        message=f"No mutually supported protocol version. Server supports: {server_versions}, Client supports: {SUPPORTED_PROTOCOL_VERSIONS}",
+        hint="Ensure client and server configurations for 'PLUGIN_PROTOCOL_VERSIONS' and 'SUPPORTED_PROTOCOL_VERSIONS' have at least one common version."
     )
 
 
@@ -198,14 +204,18 @@ def validate_magic_cookie(
     logger.debug(f"cookie_provided (received): {cookie_provided}")
 
     if cookie_key is None or cookie_key == "":
-        # This case should ideally be caught by config validation earlier
         logger.error("Configuration error: magic_cookie_key is not set in config.")
-        raise HandshakeError("Configuration error: magic_cookie_key is not set.")
+        raise HandshakeError(
+            message="Magic cookie key is not configured.",
+            hint="Ensure 'PLUGIN_MAGIC_COOKIE_KEY' is defined in the application configuration."
+            )
 
     if cookie_value is None or cookie_value == "":
-        # This case should ideally be caught by config validation earlier
         logger.error("Configuration error: magic_cookie_value (expected) is not set in config.")
-        raise HandshakeError("Configuration error: Expected magic_cookie_value is not set.")
+        raise HandshakeError(
+            message="Expected magic cookie value is not configured.",
+            hint="Ensure 'PLUGIN_MAGIC_COOKIE_VALUE' is defined in the application configuration."
+            )
 
     if cookie_provided is None or cookie_provided == "":
         logger.error(
@@ -213,9 +223,8 @@ def validate_magic_cookie(
             extra={"cookie_key_expected": cookie_key}
         )
         raise HandshakeError(
-            f"Magic cookie not provided by the client. "
-            f"Ensure the client (e.g., Terraform) is configured to send the "
-            f"'{cookie_key}' environment variable."
+            message=f"Magic cookie not provided by the client. Expected via environment variable '{cookie_key}'.",
+            hint=f"Ensure the client process (e.g., Terraform or other plugin host) is configured to send the '{cookie_key}' environment variable with the correct magic cookie value."
         )
 
     if cookie_provided != cookie_value:
@@ -224,8 +233,8 @@ def validate_magic_cookie(
             extra={"expected": cookie_value, "received": cookie_provided, "cookie_key": cookie_key},
         )
         raise HandshakeError(
-            f"Magic cookie mismatch. Expected: '{cookie_value}', Received: '{cookie_provided}'. "
-            f"Check the value of the '{cookie_key}' environment variable provided by the client."
+            message=f"Magic cookie mismatch. Expected: '{cookie_value}', Received: '{cookie_provided}'.",
+            hint=f"Verify that the environment variable '{cookie_key}' set by the client matches the server's expected 'PLUGIN_MAGIC_COOKIE_VALUE'."
         )
 
     logger.debug("Magic cookie validated successfully.")
@@ -263,8 +272,11 @@ async def build_handshake_response(
     try:
         if transport_name == "tcp":
             if port is None:
-                logger.error("🤝📝❌ TCP transport requires a valid port.")
-                raise ValueError("TCP transport requires a valid port.")
+                logger.error("🤝📝❌ TCP transport requires a valid port for handshake response.")
+                raise HandshakeError( # Changed from ValueError
+                    message="TCP transport requires a port number to build handshake response.",
+                    hint="Ensure the port is correctly passed to build_handshake_response for TCP transport."
+                )
             endpoint = f"127.0.0.1:{port}"
             logger.debug(f"🤝📝✅ TCP endpoint set: {endpoint}")
 
@@ -283,8 +295,11 @@ async def build_handshake_response(
                 endpoint = await transport.listen()
                 logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
         else:
-            logger.error(f"🤝📝❌ Unsupported transport type: {transport_name}")
-            raise TransportError(f"Unsupported transport: {transport_name}")
+            logger.error(f"🤝📝❌ Unsupported transport type for handshake response: {transport_name}")
+            raise TransportError(
+                message=f"Unsupported transport type specified for handshake response: '{transport_name}'.",
+                hint=f"Valid transport types are 'unix' or 'tcp'."
+            )
 
         response_parts = [
             str(rpcplugin_config.get("PLUGIN_CORE_VERSION")),
@@ -299,9 +314,12 @@ async def build_handshake_response(
         if server_cert:
             logger.debug("🤝🔐🔄 Processing server certificate...")
             cert_lines = server_cert.cert.strip().split("\n")
-            if len(cert_lines) < 3:
-                logger.error("🤝🔐❌ Invalid certificate format.")
-                raise ValueError("Invalid certificate format")
+            if len(cert_lines) < 3: # Basic check, actual PEM validation is more complex
+                logger.error("🤝🔐❌ Server certificate appears to be in an invalid PEM format (too few lines).")
+                raise HandshakeError(
+                    message="Invalid server certificate format provided for handshake response.",
+                    hint="Ensure the server certificate is a valid PEM-encoded X.509 certificate."
+                )
             # Remove header and footer, then remove trailing '=' characters.
             cert_body = "".join(cert_lines[1:-1]).rstrip("=")
             response_parts[-1] = cert_body
@@ -317,7 +335,7 @@ async def build_handshake_response(
         logger.error(
             f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)}
         )
-        raise
+        raise HandshakeError(message=f"Failed to build handshake response: {e}", hint="Review server logs for details on the failure.") from e
 
 
 def parse_handshake_response(
@@ -346,23 +364,39 @@ def parse_handshake_response(
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
     try:
         if not isinstance(response, str):
-            raise ValueError("Handshake response is not a string")
+            raise HandshakeError(
+                message="Handshake response is not a string.",
+                hint="Ensure the plugin process outputs a valid string for handshake."
+            )
         parts = response.strip().split("|")
         logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
         if not is_valid_handshake_parts(parts):
             logger.error(
-                f"📡❌ Invalid handshake response format. Expected 6 parts, got {len(parts)}",
+                f"📡❌ Invalid handshake response format. Expected 6 parts with numeric versions, got {len(parts)} parts.",
                 extra={"parts": parts},
             )
-            raise ValueError(f"Expected 6 parts, got {len(parts)}")
-        core_version = int(parts[0])
-        plugin_version = int(parts[1])
+            raise HandshakeError(
+                message=f"Invalid handshake format. Expected 6 pipe-separated parts, got {len(parts)}: '{response[:100]}...'",
+                hint="Ensure the plugin's handshake output matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."
+            )
+        try:
+            core_version = int(parts[0])
+            plugin_version = int(parts[1])
+        except ValueError as e_ver:
+            raise HandshakeError(
+                message=f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'.",
+                hint="Core and plugin versions in handshake must be integers."
+            ) from e_ver
+
         network = parts[2]
         if network not in ("tcp", "unix"):
             logger.error(
-                f"📡❌ Invalid network type: {network}", extra={"network": network}
+                f"📡❌ Invalid network type in handshake: {network}", extra={"network": network}
             )
-            raise ValueError(f"Invalid network type: {network}")
+            raise HandshakeError(
+                message=f"Invalid network type '{network}' in handshake.",
+                hint="Network type must be 'tcp' or 'unix'."
+            )
         address = parts[3]
         protocol = parts[4]
         server_cert = parts[5] if parts[5] else None
@@ -428,7 +462,10 @@ async def read_handshake_response(process) -> str:
         HandshakeError: If handshake fails (e.g. process exits early) or times out.
     """
     if not process or not process.stdout:
-        raise HandshakeError("No plugin process or stdout stream available")
+        raise HandshakeError(
+            message="Plugin process or its stdout stream is not available for handshake.",
+            hint="Ensure the plugin process started correctly and is accessible."
+        )
 
     logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
 
@@ -453,8 +490,9 @@ async def read_handshake_response(process) -> str:
                 f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake"
             )
             raise HandshakeError(
-                f"Plugin process exited with code {process.returncode} before completing handshake. "
-                f"Stderr: {stderr_output}"
+                message=f"Plugin process exited prematurely with code {process.returncode} before completing handshake.",
+                hint=f"Check plugin logs or stderr for details. Stderr captured: '{stderr_output_truncated}'" if stderr_output_truncated else "Check plugin logs for errors.",
+                code=process.returncode
             )
 
         # Read strategies
@@ -530,8 +568,8 @@ async def read_handshake_response(process) -> str:
             stderr_output = f"Error reading stderr: {e}"
 
     raise HandshakeError(
-        f"Timed out waiting for handshake after {timeout}s. "
-        f"Buffer so far: '{buffer}'. Stderr: {stderr_output}"
+        message=f"Timed out waiting for handshake response from plugin after {timeout} seconds.",
+        hint=f"Ensure the plugin starts and prints its handshake string to stdout promptly. Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'" if stderr_output_truncated else f"Ensure the plugin starts and prints its handshake string to stdout promptly. Last buffer: '{buffer}'."
     )
 
 
@@ -605,31 +643,44 @@ async def parse_and_validate_handshake(
                 f"🤝🔍❌ Invalid handshake format: expected 6 parts, got {len(parts)}"
             )
             raise HandshakeError(
-                f"Invalid handshake format: expected 6 parts, got {len(parts)}"
+                message=f"Invalid handshake format: expected 6 pipe-separated parts, got {len(parts)}.",
+                hint=f"Received: '{handshake_line[:100]}...'. Ensure plugin output matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."
             )
 
         # Extract and validate individual parts
         try:
             core_version = int(parts[0])
             plugin_version = int(parts[1])
-        except ValueError:
-            logger.error("🤝🔍❌ Invalid version numbers in handshake")
-            raise HandshakeError("Invalid version numbers in handshake")
+        except ValueError as e_ver:
+            logger.error(f"🤝🔍❌ Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'")
+            raise HandshakeError(
+                message=f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'.",
+                hint="Core and plugin versions in the handshake string must be integers."
+            ) from e_ver
 
         network = parts[2]
         if network not in ("tcp", "unix"):
-            logger.error(f"🤝🔍❌ Invalid network type: {network}")
-            raise HandshakeError(f"Invalid network type: {network}")
+            logger.error(f"🤝🔍❌ Invalid network type in handshake: '{network}'")
+            raise HandshakeError(
+                message=f"Invalid network type '{network}' received in handshake.",
+                hint="Network type must be 'tcp' or 'unix'."
+            )
 
         address = parts[3]
-        if not address:
-            logger.error("🤝🔍❌ Empty address in handshake")
-            raise HandshakeError("Empty address in handshake")
+        if not address: # Address can be complex, further validation might be transport-specific
+            logger.error("🤝🔍❌ Empty address received in handshake")
+            raise HandshakeError(
+                message="Empty address received in handshake string.",
+                hint="The plugin must provide a valid network address (socket path or host:port)."
+            )
 
         protocol = parts[4]
-        if protocol != "grpc":
-            logger.error(f"🤝🔍❌ Unsupported protocol: {protocol}")
-            raise HandshakeError(f"Unsupported protocol: {protocol}")
+        if protocol != "grpc": # Currently, only grpc is supported
+            logger.error(f"🤝🔍❌ Unsupported protocol '{protocol}' in handshake")
+            raise HandshakeError(
+                message=f"Unsupported protocol '{protocol}' received in handshake.",
+                hint="Currently, only 'grpc' is supported as the sub-protocol."
+            )
 
         server_cert = parts[5] if parts[5] else None
 
