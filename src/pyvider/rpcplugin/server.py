@@ -120,10 +120,13 @@ class RPCPluginServer(
             logger.debug(f"🛎️⚙️ HandshakeConfig set: {self._handshake_config}")
         except Exception as e:
             logger.error(
-                "🛎️⚙️❌ Failed to initialize handshake configuration",
-                extra={"error": str(e)},
+                f"🛎️⚙️❌ Failed to initialize handshake configuration from rpcplugin_config: {e}", # Corrected logging
+                extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise
+            raise ConfigError(
+                message=f"Failed to initialize handshake configuration: {e}",
+                hint="Check rpcplugin_config settings related to 'PLUGIN_PROTOCOL_VERSIONS', 'PLUGIN_SERVER_TRANSPORTS', and magic cookie values."
+            ) from e
         # Ensure each instance has a truly unique future.
         self._serving_future = asyncio.Future()
         logger.debug(
@@ -168,14 +171,18 @@ class RPCPluginServer(
                         transport_path = self._transport.path
                         if transport_path is None:
                             logger.error("🛎️❌ Unix socket transport path is None.")
-                            raise TimeoutError(
-                                "Unix socket path not set for readiness check."
+                            raise TransportError( # Changed from TimeoutError
+                                message="Unix socket path not set for server readiness check.",
+                                hint="Ensure the Unix socket transport was properly initialized and its path is set before checking readiness."
                             )
                         if not os.path.exists(transport_path):
                             logger.error(
-                                f"🛎️❌ Unix socket file {transport_path} doesn't exist"
+                                f"🛎️❌ Unix socket file {transport_path} doesn't exist for readiness check."
                             )
-                            raise TimeoutError("Unix socket file not created")
+                            raise TransportError( # Changed from TimeoutError
+                                message=f"Unix socket file {transport_path} does not exist.",
+                                hint="Ensure the server has started and created the socket file. Check file system permissions."
+                            )
 
                         # Try to connect to verify socket is active
                         try:
@@ -192,9 +199,12 @@ class RPCPluginServer(
                             logger.debug("🛎️✅ Unix socket connection test successful")
                         except Exception as e:
                             logger.error(
-                                f"🛎️❌ Unix socket connection test failed: {e!s}"
+                                f"🛎️❌ Unix socket connection test failed for {transport_path}: {e!s}"
                             )
-                            raise TimeoutError(f"Unix socket not connectable: {e!s}")
+                            raise TransportError( # Changed from TimeoutError
+                                message=f"Unix socket at {transport_path} is not connectable: {e!s}",
+                                hint="Verify the server process is running and listening on the socket. Check for other processes locking the socket."
+                            ) from e
 
                     case TCPSocketTransport():
                         # For TCP, verify endpoint is reachable
@@ -206,9 +216,10 @@ class RPCPluginServer(
                         )
                         actual_server_port = self._port
                         if actual_server_port is None:
-                            logger.error("🛎️❌ TCP port not set after server start.")
-                            raise TimeoutError(
-                                "TCP port not available for readiness check"
+                            logger.error("🛎️❌ TCP port not set after server start for readiness check.")
+                            raise TransportError( # Changed from TimeoutError
+                                message="TCP port not available for server readiness check.",
+                                hint="Ensure the server started correctly and the TCP port was successfully bound and recorded."
                             )
 
                         logger.info(
@@ -224,17 +235,28 @@ class RPCPluginServer(
                             sock.close()
                             logger.debug("🛎️✅ TCP connection test successful")
                         except Exception as e:
-                            logger.error(f"🛎️❌ TCP connection test failed: {e!s}")
-                            raise TimeoutError(f"TCP socket not connectable: {e!s}")
-        except asyncio.TimeoutError:
+                            logger.error(f"🛎️❌ TCP connection test failed for {actual_server_host}:{actual_server_port}: {e!s}")
+                            raise TransportError( # Changed from TimeoutError
+                                message=f"TCP socket at {actual_server_host}:{actual_server_port} is not connectable: {e!s}",
+                                hint="Verify the server process is running, listening on the port, and firewall rules allow connection."
+                            ) from e
+        except asyncio.TimeoutError: # This is the outer timeout for _serving_event.wait()
             logger.error(
-                "🛎️❌ Server did not become ready within timeout.",
-                extra={"timeout": timeout},
+                f"🛎️❌ Server did not become ready (serving event not set) within timeout ({timeout}s).",
+                extra={"timeout": timeout, "trace": traceback.format_exc()},
             )
-            raise TimeoutError("Server failed to become ready")
+            raise TransportError( # Changed from TimeoutError
+                message=f"Server failed to signal readiness via event within the {timeout}s timeout.",
+                hint="Check server logs for startup errors. Increase timeout if server initialization is expected to be slow."
+            ) from e # from asyncio.TimeoutError
+        except TransportError: # Re-raise if already a TransportError from inner checks
+            raise
         except Exception as e:
-            logger.error(f"🛎️❌ Error during server readiness check: {e!s}")
-            raise TimeoutError(f"Server readiness check failed: {e!s}")
+            logger.error(f"🛎️❌ Unexpected error during server readiness check: {e!s}", extra={"trace": traceback.format_exc()})
+            raise TransportError( # Changed from TimeoutError
+                message=f"An unexpected error occurred during server readiness check: {e!s}",
+                hint="Review server logs for details on the failure."
+            ) from e
 
     # get_instance class method removed.
 
@@ -313,8 +335,10 @@ class RPCPluginServer(
 
             # Ensure key is not None before encoding
             if self._server_cert_obj.key is None:
-                raise ValueError(
-                    "Server certificate private key is None, cannot create credentials."
+                logger.error("🛎️🔐❌ Server certificate private key is None.")
+                raise SecurityError( # Changed from ValueError
+                    message="Server certificate private key is missing.",
+                    hint="Ensure the server certificate object includes a valid private key, or that key generation was successful."
                 )
 
             key_bytes = self._server_cert_obj.key.encode()
@@ -335,9 +359,12 @@ class RPCPluginServer(
             return creds
         except Exception as e:
             logger.error(
-                "🛎️❌ Error generating server credentials", extra={"error": str(e)}
+                f"🛎️❌ Error generating server credentials: {e}", extra={"error": str(e), "trace": traceback.format_exc()} # Corrected logging
             )
-            raise
+            raise SecurityError(
+                message=f"Failed to generate server credentials: {e}",
+                hint="Check certificate paths, permissions, and formats. Ensure OpenSSL is correctly installed if generation is involved."
+            ) from e
 
     async def stop(self) -> None:
         """
@@ -463,10 +490,13 @@ class RPCPluginServer(
             logger.debug("🛎️ gRPC server instance created.")
         except Exception as e:
             logger.error(
-                "🛎️❌ gRPC server setup failed",
+                f"🛎️❌ gRPC server instance creation failed: {e}", # Corrected logging
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise
+            raise TransportError(
+                message=f"Failed to create gRPC server instance: {e}",
+                hint="This may indicate an issue with the gRPC library or system resources."
+            ) from e
 
         try:
             logger.debug("🛎️ Registering protocol service to gRPC server...")
@@ -485,9 +515,14 @@ class RPCPluginServer(
             logger.debug("🛎️ Protocol service registered successfully.")
         except Exception as e:
             logger.error(
-                "🛎️❌ Failed to register protocol service", extra={"error": str(e)}
+                f"🛎️❌ Failed to register protocol service with handler {self.handler.__class__.__name__} for protocol {self.protocol.__class__.__name__}: {e}", extra={"error": str(e), "trace": traceback.format_exc()} # Corrected logging
             )
-            raise RuntimeError(f"Protocol service registration failed: {e}") from e
+            if isinstance(e, AttributeError):
+                 raise RuntimeError(f"Protocol service registration failed due to AttributeError: {e}. Ensure protocol has 'add_to_server'.") from e
+            raise ProtocolError(
+                message=f"Failed to register protocol service: {e}",
+                hint="Ensure the protocol and handler are correctly implemented and compatible."
+            ) from e
 
         try:
             if client_cert:
@@ -496,9 +531,14 @@ class RPCPluginServer(
             else:
                 creds = None
                 logger.debug("🛎️ Insecure mode – no TLS credentials used.")
-        except Exception as e:
-            logger.error("🛎️❌ Error during mTLS configuration", extra={"error": str(e)})
+        except SecurityError:
             raise
+        except Exception as e:
+            logger.error(f"🛎️❌ Error during mTLS configuration or credential generation: {e}", extra={"error": str(e), "trace": traceback.format_exc()})
+            raise SecurityError(
+                message=f"Failed to configure TLS/mTLS credentials: {e}",
+                hint="This could be due to issues with certificate loading, generation, or gRPC credential setup."
+            ) from e
 
         try:
             bind_address = (
@@ -629,10 +669,13 @@ class RPCPluginServer(
                 raise TransportError("Server object not initialized before start.")
         except Exception as e:
             logger.error(
-                "🛎️❌ gRPC server failed to start",
+                f"🛎️❌ gRPC server failed to start on configured transport: {e}", # Corrected logging
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise
+            raise TransportError(
+                message=f"gRPC server failed to start: {e}",
+                hint="Check logs for details on binding or server start issues. Ensure the address is not already in use."
+            ) from e
 
         try:
             if isinstance(self._transport, UnixSocketTransport):
@@ -658,10 +701,15 @@ class RPCPluginServer(
                 )
         except Exception as e:
             logger.error(
-                "🛎️❌ Server setup post-check failed",
+                f"🛎️❌ Server setup post-check (e.g. socket permissions) failed: {e}", # Corrected logging
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise
+            if isinstance(e, TransportError):
+                raise
+            raise TransportError(
+                message=f"Server setup post-verification failed: {e}",
+                hint="This often relates to file system permissions for Unix sockets or other post-start checks."
+            ) from e
 
     async def _negotiate_handshake(self) -> bool | None:
         """
@@ -796,12 +844,21 @@ class RPCPluginServer(
             await self._negotiate_handshake()
             client_cert = self._read_client_cert()
             await self._setup_server(client_cert)
-        except Exception as e:
+        except (ConfigError, HandshakeError, TransportError, SecurityError, ProtocolError) as e:
             logger.error(
-                "🛎️❌ Serve() failed during setup",
-                extra={"error": str(e), "trace": traceback.format_exc()},
+                f"🛎️❌ Serve() failed during setup phase due to {e.__class__.__name__}: {e.message}",
+                extra={"error": str(e), "trace": traceback.format_exc(), "hint": e.hint, "code": e.code},
             )
             raise
+        except Exception as e:
+            logger.error(
+                f"🛎️❌ Serve() failed during setup with an unexpected error: {e}",
+                extra={"error": str(e), "trace": traceback.format_exc()},
+            )
+            raise ConfigError(
+                message=f"An unexpected error occurred during server setup: {e}",
+                hint="Review server logs for detailed diagnostics. This might involve issues with configuration, system resources, or permissions."
+            ) from e
 
         try:
             if self._transport is None:
@@ -829,10 +886,13 @@ class RPCPluginServer(
             logger.debug("🤝📝✅ Handshake response sent to stdout")
         except Exception as e:
             logger.error(
-                f"🛎️❌ Error building handshake response: {e}",
+                f"🛎️❌ Error building or sending handshake response: {e}", # Corrected logging
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise
+            raise HandshakeError(
+                message=f"Failed to build or send handshake response: {e}",
+                hint="Ensure transport is correctly initialized and stdout is accessible for writing."
+            ) from e
 
         try:
             self._serving_event.set()
@@ -848,10 +908,13 @@ class RPCPluginServer(
             raise
         except Exception as e:
             logger.error(
-                "🛎️❌ Serve() encountered an error during run",
+                f"🛎️❌ Serve() encountered an unexpected error during main execution loop: {e}", # Corrected logging
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
-            raise
+            raise TransportError(
+                message=f"An unexpected error occurred while server was running: {e}",
+                hint="Check server logs for details. This could be a gRPC internal error, resource issue, or unhandled exception in a service implementation."
+            ) from e
         finally:
             logger.debug("🛎️ Exiting serve(); initiating shutdown...")
             try:

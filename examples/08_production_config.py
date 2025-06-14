@@ -202,168 +202,9 @@ async def example_8_environment_configuration():
                 os.environ[key] = original_value
 
 
-async def example_8_file_based_configuration():
-    """
-    Example 8B: Demonstrates file-based configuration.
-    
-    Shows how to use configuration files (.env, .json, .yaml)
-    for managing complex production settings.
-    """
-    print("\n" + "=" * 60)
-    print("📄 Example 8B: File-Based Configuration")
-    print(" Demonstrates: Config files for production deployment")
-    print("=" * 60)
-    
-    with tempfile.TemporaryDirectory() as temp_dir:
-        config_dir = Path(temp_dir)
-        
-        # Create .env configuration file
-        env_config_path = config_dir / "production.env"
-        env_content = """
-# Production RPC Plugin Configuration
-PLUGIN_MAGIC_COOKIE_VALUE=prod-cookie-2024-secure
-PLUGIN_LOG_LEVEL=INFO
-PLUGIN_SERVER_TRANSPORTS=tcp
-PLUGIN_AUTO_MTLS=true
-PLUGIN_HANDSHAKE_TIMEOUT=30.0
-PLUGIN_CONNECTION_TIMEOUT=600.0
-
-# Security Configuration
-PLUGIN_SERVER_CERT=file:///etc/ssl/certs/rpc-server.crt
-PLUGIN_SERVER_KEY=file:///etc/ssl/private/rpc-server.key
-PLUGIN_CLIENT_CERT=file:///etc/ssl/certs/rpc-client.crt
-PLUGIN_CLIENT_KEY=file:///etc/ssl/private/rpc-client.key
-
-# Pyvider Telemetry Configuration
-PYVIDER_SERVICE_NAME=production-rpc-plugin
-PYVIDER_LOG_LEVEL=INFO
-PYVIDER_LOG_FORMAT=json
-"""
-        
-        with open(env_config_path, 'w') as f:
-            f.write(env_content.strip())
-        
-        logger.info(
-            "Created .env configuration file",
-            domain="config",
-            action="file_create",
-            status="success",
-            file_type=".env",
-            file_path=str(env_config_path)
-        )
-        
-        # Create JSON configuration file
-        json_config_path = config_dir / "production.json"
-        json_content = {
-            "PLUGIN_MAGIC_COOKIE_VALUE": "prod-json-cookie-2024",
-            "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_SERVER_TRANSPORTS": ["tcp"],
-            "PLUGIN_AUTO_MTLS": True,
-            "PLUGIN_HANDSHAKE_TIMEOUT": 30.0,
-            "PLUGIN_CONNECTION_TIMEOUT": 600.0,
-            "PLUGIN_PERFORMANCE_MODE": "high_throughput",
-            "PLUGIN_MAX_CONCURRENT_CONNECTIONS": 1000,
-            "PLUGIN_METRICS_ENABLED": True
-        }
-        
-        import json
-        with open(json_config_path, 'w') as f:
-            json.dump(json_content, f, indent=2)
-        
-        logger.info(
-            "Created JSON configuration file",
-            domain="config",
-            action="file_create",
-            status="success",
-            file_type=".json",
-            file_path=str(json_config_path),
-            config_keys=list(json_content.keys())
-        )
-        
-        # Create YAML configuration file
-        yaml_config_path = config_dir / "production.yaml"
-        yaml_content = """
-# Production RPC Plugin Configuration (YAML)
-plugin:
-  magic_cookie_value: "prod-yaml-cookie-2024"
-  log_level: "INFO"
-  server_transports: ["tcp"]
-  auto_mtls: true
-  handshake_timeout: 30.0
-  connection_timeout: 600.0
-
-security:
-  server_cert: "/etc/ssl/certs/rpc-server.crt"
-  server_key: "/etc/ssl/private/rpc-server.key"
-  client_cert: "/etc/ssl/certs/rpc-client.crt"
-  client_key: "/etc/ssl/private/rpc-client.key"
-
-performance:
-  max_workers: 32
-  connection_pool_size: 100
-  request_timeout: 30.0
-  
-monitoring:
-  metrics_enabled: true
-  health_check_interval: 60
-  log_sampling_rate: 0.1
-"""
-        
-        with open(yaml_config_path, 'w') as f:
-            f.write(yaml_content.strip())
-        
-        logger.info(
-            "Created YAML configuration file",
-            domain="config",
-            action="file_create",
-            status="success",
-            file_type=".yaml",
-            file_path=str(yaml_config_path)
-        )
-        
-        # Demonstrate loading different config file types
-        config_files = [
-            (env_config_path, ".env"),
-            (json_config_path, ".json"),
-            (yaml_config_path, ".yaml")
-        ]
-        
-        for config_path, file_type in config_files:
-            try:
-                logger.info(
-                    f"Loading {file_type} configuration",
-                    domain="config",
-                    action="file_load",
-                    status="starting",
-                    file_type=file_type,
-                    file_path=str(config_path)
-                )
-                
-                # Note: In real usage, you'd call load_config_from_file(config_path)
-                # For this example, we'll just demonstrate the pattern
-                
-                logger.info(
-                    f"{file_type} configuration loaded successfully",
-                    domain="config",
-                    action="file_load",
-                    status="success",
-                    file_type=file_type
-                )
-                
-            except Exception as e:
-                logger.error(
-                    f"Failed to load {file_type} configuration",
-                    domain="config",
-                    action="file_load",
-                    status="error",
-                    file_type=file_type,
-                    error=str(e)
-                )
-
-
 async def example_8_production_server_deployment():
     """
-    Example 8C: Demonstrates production server deployment patterns.
+    Example 8B: Demonstrates production server deployment patterns.
     
     Shows how to deploy an RPC server with production-grade
     configuration, monitoring, and operational features.
@@ -621,7 +462,7 @@ async def main():
     try:
         # Run each production configuration example
         await example_8_environment_configuration()
-        await example_8_file_based_configuration()
+        # await example_8_file_based_configuration() # Removed
         await example_8_production_server_deployment()
         await example_8_monitoring_and_observability()
         
@@ -630,7 +471,7 @@ async def main():
         print("=" * 60)
         print("\n🏭 Production Checklist:")
         print("  • Environment-based configuration for different stages")
-        print("  • File-based config management (.env, .json, .yaml)")
+        # print("  • File-based config management (.env, .json, .yaml)") # Removed
         print("  • mTLS security enabled for all environments")
         print("  • Comprehensive monitoring and alerting")
         print("  • Health checks and graceful shutdown procedures")
