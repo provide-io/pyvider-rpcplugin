@@ -22,6 +22,7 @@ class RPCPluginError(Exception):
             hint: An optional hint for resolving the error.
         """
         super().__init__(message)
+        self.message = message  # Add this line
         self.code = code
         self.hint = hint
 
