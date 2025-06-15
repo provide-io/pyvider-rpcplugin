@@ -154,26 +154,26 @@ async def mock_server_transport_tcp() -> TransportT:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def mock_server_transport_unix(unique_socket_path) -> TransportT:
+async def mock_server_transport_unix(managed_unix_socket_path) -> TransportT:
     """Fixture providing a properly configured Unix transport with unique path."""
-    transport = UnixSocketTransport(path=unique_socket_path)
+    transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     try:
         # Early startup to verify it works
         await transport.listen()
-        logger.debug(f"🧪✅ Unix transport initialized at {unique_socket_path}")
+        logger.debug(f"🧪✅ Unix transport initialized at {managed_unix_socket_path}")
         yield transport
     finally:
         # Ensure proper cleanup
         try:
             await transport.close()
-            logger.debug(f"🧪🧹 Transport closed for {unique_socket_path}")
+            logger.debug(f"🧪🧹 Transport closed for {managed_unix_socket_path}")
 
             # Double-check for stale socket file
-            if os.path.exists(unique_socket_path):
-                os.chmod(unique_socket_path, 0o770)
-                os.unlink(unique_socket_path)
-                logger.debug(f"🧪🧹 Manually removed socket file {unique_socket_path}")
+            if os.path.exists(managed_unix_socket_path):
+                os.chmod(managed_unix_socket_path, 0o770)
+                os.unlink(managed_unix_socket_path)
+                logger.debug(f"🧪🧹 Manually removed socket file {managed_unix_socket_path}")
         except Exception as e:
             logger.error(f"🧪❌ Error cleaning transport: {e}")
 

@@ -117,6 +117,7 @@ async def test_generate_unsupported_key_type() -> None:
         generate_keypair(key_type="unsupported_type")
 
 
+# long-running
 @pytest.mark.asyncio
 async def test_key_generation_performance() -> None:
     start_time = time.time()

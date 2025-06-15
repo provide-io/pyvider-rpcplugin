@@ -82,7 +82,7 @@ async def test_read_handshake_response_multiple_attempts(mocker):
 
     # Mock time to control loop iterations
     # Needs enough time for initial readline attempt + multiple chunk reads + sleeps
-    time_values = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    time_values = [i * 0.1 for i in range(200)] # Simulate up to 20 seconds
     mocker.patch("time.time", side_effect=time_values)
     mocker.patch("asyncio.sleep", new_callable=AsyncMock) # Mock sleep to run fast
 
@@ -206,7 +206,8 @@ async def test_create_stderr_relay_exception_in_reader(mocker):
         if isinstance(effect, Exception):
             raise effect
         return effect
-    mocker.patch("asyncio.get_event_loop").run_in_executor = mock_run_in_executor
+        mock_loop = mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop").return_value
+        mock_loop.run_in_executor.side_effect = mock_run_in_executor
 
 
     await create_stderr_relay(mock_process)
