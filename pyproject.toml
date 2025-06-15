@@ -87,6 +87,10 @@ asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 
+markers = [
+    "long_running: marks tests as long_running (deselect with -m \"not long_running\")"
+]
+
 filterwarnings = [
     "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",

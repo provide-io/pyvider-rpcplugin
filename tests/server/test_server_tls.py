@@ -323,7 +323,7 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
 
     mock_logger_error.assert_called_once()
     args, kwargs_log = mock_logger_error.call_args
-        assert args[0] == "🛎️🔐❌ Server certificate private key is None."
+    assert args[0] == "🛎️🔐❌ Server certificate private key is None."
     assert "Server certificate private key is None" in kwargs_log.get("extra", {}).get(
         "error", ""
     )
