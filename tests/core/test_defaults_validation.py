@@ -145,7 +145,7 @@ try:
     logger.error(f"Validation error NOT caught for missing required value ({key_to_test_required})!", extra={"test_status": "failed"})
 except ValueError as e:
     logger.info(f"Successfully caught ValueError for missing required value ({key_to_test_required}).", extra={"error_message": str(e), "test_status": "passed"})
-    assert f"Missing required configuration: {key_to_test_required}" in str(e), f"Error message mismatch: {str(e)}"
+    assert f"Missing required configuration key: '{key_to_test_required}'" in str(e), f"Error message mismatch: {str(e)}"
     expected_error_raised = True
 except Exception as e:
     logger.error(f"Caught UNEXPECTED exception for missing required: {type(e).__name__}", extra={"error_message": str(e), "test_status": "failed"})

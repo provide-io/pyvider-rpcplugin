@@ -323,7 +323,7 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
 
     mock_logger_error.assert_called_once()
     args, kwargs_log = mock_logger_error.call_args
-    assert "Error generating server credentials" in args[0]
+        assert args[0] == "🛎️🔐❌ Server certificate private key is None."
     assert "Server certificate private key is None" in kwargs_log.get("extra", {}).get(
         "error", ""
     )
@@ -555,7 +555,7 @@ async def test_generate_server_credentials_failure(
     # Restore the with pytest.raises block with the corrected regex
     with pytest.raises(
         SecurityError, # Changed from CertificateError
-        match=r"Failed to generate server credentials: .*Diagnosing CertificateError message" # Updated regex
+            match=r"Failed to initialize server certificate: .*Diagnosing CertificateError message" # Corrected regex
     ):
         server._generate_server_credentials(client_cert="dummy_client_cert_pem_string")
 

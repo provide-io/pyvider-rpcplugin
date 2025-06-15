@@ -257,10 +257,13 @@ async def test_read_raw_handshake_line_byte_by_byte_success(client_instance_for_
         f = asyncio.Future()
         executor_call_count += 1
         result_val = b""
-        if executor_call_count == 1: result_val = mock_process.stdout.readline()
-        else:
-            try: result_val = func_to_run()
-            except StopIteration: result_val = b""
+        if executor_call_count == 1: # Simulates initial readline() call
+            result_val = mock_process.stdout.readline()
+        else: # Simulates subsequent read(1) calls
+            try:
+                result_val = func_to_run() # This is mock_process.stdout.read(1)
+            except StopIteration: # This is the key!
+                result_val = b""
         asyncio.create_task(set_future_result(f, result_val))
         return f
     mock_loop_instance = MagicMock()
@@ -328,6 +331,7 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(client_instance
         else: pass # For read(1) calls, let custom_wait_for handle the timeout
         return f
     mock_loop_instance = MagicMock()
+    handshake_str = "dummy_handshake_data_for_time_values_length" # Defined to resolve NameError
     # THIS IS A VERY SPECIFIC COMMENT TO MAKE THE SEARCH UNIQUE
     time_values = [i * 0.01 for i in range(len(handshake_str) + 500)] # Increased range significantly
     mock_loop_instance.time.side_effect = time_values

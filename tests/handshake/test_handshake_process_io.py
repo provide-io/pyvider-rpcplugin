@@ -78,7 +78,7 @@ async def test_read_handshake_response_multiple_attempts(mocker):
     """Test reading handshake that requires multiple read attempts (chunked)."""
     process = MockProcess()
     # Simulate chunked reading
-    process.stdout.readline.side_effect = None # Disable readline for this test
+    process.stdout.readline.return_value = b"" # Simulate readline returning empty, forcing chunk reads
     process.stdout.read.side_effect = [b"1|1|tcp|", b"127.0.0.1:1234", b"|grpc|\n", b""]
 
     # Mock time to control loop iterations
@@ -202,20 +202,29 @@ async def test_create_stderr_relay_exception_in_reader(mocker):
 
     mocker.patch("asyncio.create_task", side_effect=run_coro_immediately)
 
-    async def mock_run_in_executor(*args, **kwargs):
-        effect = mock_process.stderr.readline.side_effect.pop(0)
-        if isinstance(effect, Exception):
-            raise effect
-        return effect
-        mock_loop = mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop").return_value
-        mock_loop.run_in_executor.side_effect = mock_run_in_executor
+    # New / Corrected mocking for run_in_executor:
+    async def mock_run_in_executor_for_stderr(executor, func_to_run, *args):
+        # func_to_run is expected to be mock_process.stderr.readline
+        # Ensure there's a side_effect list to pop from
+        if hasattr(mock_process.stderr.readline, 'side_effect') and            isinstance(mock_process.stderr.readline.side_effect, list) and            len(mock_process.stderr.readline.side_effect) > 0:
+            effect = mock_process.stderr.readline.side_effect.pop(0)
+            if isinstance(effect, Exception):
+                raise effect
+            return effect
+        # Fallback if side_effect is exhausted or not a list
+        return b""
 
+    # Patch where _stderr_reader will call it:
+    # Get the return_value of the first patch (the mock loop)
+    # and set the side_effect on its run_in_executor method.
+    mock_loop_instance = mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop").return_value
+    mock_loop_instance.run_in_executor.side_effect = mock_run_in_executor_for_stderr
 
     await create_stderr_relay(mock_process)
 
     found_log = False
     for call_arg in mock_logger_error.call_args_list:
-        if "Error in stderr relay: stderr read error" in call_arg[0][0]:
+        if len(call_arg[0]) > 0 and "Error in stderr relay: stderr read error" in str(call_arg[0][0]):
             found_log = True
             break
     assert found_log, "stderr read error was not logged by relay"
