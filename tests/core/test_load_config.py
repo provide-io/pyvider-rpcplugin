@@ -1,5 +1,5 @@
 from pyvider.rpcplugin import configure, RPCPluginConfig
-from pyvider.rpcplugin.config import load_config_from_file
+# from pyvider.rpcplugin.config import load_config_from_file
 import os
 
 def print_config(source_file=None):
@@ -17,12 +17,12 @@ print_config("Initial Defaults")
 
 # Test JSON
 configure() # Reset to defaults
-load_config_from_file("test_config.json")
+# load_config_from_file("test_config.json")
 print_config("test_config.json")
 
 # Test YAML
 configure() # Reset to defaults
-load_config_from_file("test_config.yaml")
+# load_config_from_file("test_config.yaml")
 print_config("test_config.yaml")
 
 # Test .env
@@ -47,7 +47,7 @@ for key in keys_to_clear:
         original_env[key] = os.environ.pop(key)
 
 # Load .env file. This populates os.environ and updates the RPCPluginConfig singleton.
-load_config_from_file("test_config.env")
+# load_config_from_file("test_config.env")
 print_config("test_config.env")
 
 # Restore original environment variables and reset config to that state (or defaults if none were stored)

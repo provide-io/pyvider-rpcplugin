@@ -102,7 +102,7 @@ try:
     logger.error("Validation error NOT caught for invalid log level enum (PLUGIN_LOG_LEVEL)!", extra={"test_status": "failed"})
 except ValueError as e:
     logger.info(f"Successfully caught ValueError for invalid log level enum (PLUGIN_LOG_LEVEL).", extra={"error_message": str(e), "test_status": "passed"})
-    assert "Invalid value for PLUGIN_LOG_LEVEL" in str(e), f"Error message mismatch: {str(e)}"
+    assert "Invalid value 'NOT_A_VALID_LOG_LEVEL' provided for configuration key 'PLUGIN_LOG_LEVEL'. Hint: The value 'NOT_A_VALID_LOG_LEVEL' is not a valid option for 'PLUGIN_LOG_LEVEL'." in str(e), f"Error message mismatch: {str(e)}"
     expected_error_raised = True
 except Exception as e:
     logger.error(f"Caught UNEXPECTED exception for invalid enum: {type(e).__name__}", extra={"error_message": str(e), "test_status": "failed"})
