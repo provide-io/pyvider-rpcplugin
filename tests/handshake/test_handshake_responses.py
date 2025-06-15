@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/handshake/test_handshake_responses.py
 
 import pytest
-import re # Added import re
 
 from unittest.mock import AsyncMock
 
@@ -59,7 +58,7 @@ async def test_build_handshake_response_invalid_transport(monkeypatch) -> None:
     # transport = AsyncMock()
     # transport.listen = AsyncMock(return_value=None)
 
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] TCP transport requires a port number.*Hint:.*"):
+    with pytest.raises(ValueError, match="TCP transport requires a valid port."):
         await build_handshake_response(
             plugin_version=6,
             transport_name="tcp",
@@ -103,35 +102,35 @@ def test_parse_handshake_response_without_tls() -> None:
 def test_parse_handshake_response_invalid_format() -> None:
     """Test parsing an invalid handshake response format."""
     response = "invalid|response"
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Invalid handshake format.*"):
+    with pytest.raises(HandshakeError, match="Failed to parse handshake response."):
         parse_handshake_response(response)
 
 
 def test_parse_handshake_response_missing_fields() -> None:
     """Test parsing a handshake response with missing fields."""
     response = f"{1}|6|tcp"
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Invalid handshake format.*"):
+    with pytest.raises(HandshakeError, match="Failed to parse handshake response."):
         parse_handshake_response(response)
 
 
 def test_parse_handshake_response_empty() -> None:
     """Test parsing an empty handshake response."""
     response = ""
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Invalid handshake format.*"):
+    with pytest.raises(HandshakeError, match="Failed to parse handshake response."):
         parse_handshake_response(response)
 
 
 def test_parse_handshake_response_excessive_fields() -> None:
     """Test parsing a handshake response with too many fields."""
     response = f"{1}|6|tcp|127.0.0.1:12345|grpc|cert|extra_field"
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Invalid handshake format.*"):
+    with pytest.raises(HandshakeError, match="Failed to parse handshake response."):
         parse_handshake_response(response)
 
 
 def test_parse_handshake_response_invalid_protocol_version() -> None:
     """Test parsing a handshake response with an invalid protocol version."""
     response = "1|99|tcp|127.0.0.1:12345|"
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Unsupported handshake version.*"):
+    with pytest.raises(HandshakeError, match="Failed to parse handshake response."):
         parse_handshake_response(response)
 
 
@@ -139,7 +138,7 @@ def test_parse_handshake_response_invalid_protocol_version() -> None:
 async def test_build_handshake_response_missing_port() -> None:
     """Test building handshake response for TCP transport without a port."""
     transport = AsyncMock()
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] TCP transport requires a port number.*Hint:.*"):
+    with pytest.raises(ValueError, match="TCP transport requires a valid port."):
         await build_handshake_response(
             plugin_version=6,
             transport_name="tcp",
@@ -212,7 +211,7 @@ def test_parse_handshake_response_not_string(invalid_input):
     """Test parse_handshake_response with non-string inputs."""
     with pytest.raises(
         HandshakeError,
-        match=r"\[HandshakeError\] Failed to parse handshake response:.*Handshake response is not a string.*Hint:.*",
+        match="Failed to parse handshake response: Handshake response is not a string",
     ):
         parse_handshake_response(invalid_input)
 
@@ -252,7 +251,7 @@ def test_parse_handshake_core_version_config_issues(
     mock_logger_error.reset_mock()
     handshake_str_mismatch_fallback = "2|1|tcp|127.0.0.1:1234|grpc|"
     with pytest.raises(
-        HandshakeError, match=r"\[HandshakeError\] Unsupported handshake version: 2 \(expected: 1\).*"
+        HandshakeError, match="Unsupported handshake version: 2 \\(expected: 1\\)"
     ):
         parse_handshake_response(handshake_str_mismatch_fallback)
 
@@ -281,7 +280,7 @@ def test_parse_handshake_response_generic_exception(mocker):
 
     with pytest.raises(
         HandshakeError,
-        match=r"\[HandshakeError\] Failed to parse handshake response: Unexpected parsing error.*Hint:.*",
+        match="Failed to parse handshake response: Unexpected parsing error",
     ):
         parse_handshake_response(mock_response_str)
 

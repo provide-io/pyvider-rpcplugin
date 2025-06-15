@@ -107,7 +107,7 @@ async def test_client_integration(test_client_command):
             # Verify client initialized correctly
             assert client._process == mock_process
             assert client.client_cert == "test-cert"
-            assert client.grpc_channel == mock_channel
+            assert client._channel == mock_channel
 
         # Test broker subchannel
         await client.open_broker_subchannel(123, "127.0.0.1:8001")
@@ -123,6 +123,6 @@ async def test_client_integration(test_client_command):
         await client.close()
 
         # Verify resources cleaned up
-        assert client.grpc_channel is None
+        assert client._channel is None
         assert client._process is None
         assert client._transport is None

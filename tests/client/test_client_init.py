@@ -18,7 +18,7 @@ def test_client_initialization(test_client_command):
     assert client._address is None
     assert client._protocol_version is None
     assert client._server_cert is None
-    assert client.grpc_channel is None
+    assert client._channel is None
     assert client.client_cert is None
     assert client.client_key_pem is None
 
