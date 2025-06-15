@@ -25,13 +25,6 @@ classifiers = [
     "Typing :: Typed"
 ]
 license = {text = "Apache-2.0"}
-
-[project.urls]
-Homepage = "https://github.com/provide-io/pyvider-rpcplugin"
-Repository = "https://github.com/provide-io/pyvider-rpcplugin"
-Documentation = "https://github.com/provide-io/pyvider-rpcplugin/tree/main/docs"
-Changelog = "https://github.com/provide-io/pyvider-rpcplugin/blob/main/CHANGELOG.md" # Assuming a CHANGELOG might exist or be added
-
 dependencies = [
     "attrs>=25.1.0",
     "cryptography>=44.0.1",
@@ -41,6 +34,12 @@ dependencies = [
     "pyvider-telemetry>=0.0.4",
     "structlog>=25.1.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/provide-io/pyvider-rpcplugin"
+Repository = "https://github.com/provide-io/pyvider-rpcplugin"
+Documentation = "https://github.com/provide-io/pyvider-rpcplugin/tree/main/docs"
+Changelog = "https://github.com/provide-io/pyvider-rpcplugin/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [

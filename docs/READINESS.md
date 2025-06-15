@@ -150,10 +150,11 @@ Release Timeline: 2-3 weeks
 
 #### Benchmark Suite Implementation
 - [🚧] In Progress - Request/response throughput tests
-  - Note:
-    - Unix: Script `tests/benchmarks/benchmark_throughput_unix.py` (client `batch_size=500`) achieved approx. 3583 req/s. This script is run in CI.
-    - TCP: Script `tests/benchmarks/benchmark_throughput_tcp.py` (client `batch_size=500`) achieved approx. 2667.48 req/s.
-    - Both results are below target (50,000+ req/s). Further optimization needed. Both scripts use concurrent client batches.
+  - Note: Verified results from manual run (Python 3.13.5):
+    - Unix: Script `tests/benchmarks/benchmark_throughput_unix.py` (client `batch_size=500`) achieved **2854.24 RPS**. (Previous CI note: ~3583 req/s).
+    - TCP: Script `tests/benchmarks/benchmark_throughput_tcp.py` (client `batch_size=500`) achieved **3085.57 RPS**. (Previous note: ~2667.48 req/s).
+    - Both results are significantly below target (50,000+ req/s). Further optimization needed. Both scripts use concurrent client batches.
+    - _Execution Note:_ A `pyproject.toml` parsing issue required reordering the `dependencies` list to enable benchmark execution. This file should be reviewed for correctness.
   ```python
   async def test_throughput_unix_socket():
       # Measure requests per second over Unix socket
@@ -179,12 +180,12 @@ Release Timeline: 2-3 weeks
   ```
 
 #### Performance Documentation
-- [🚧] In Progress - Performance characteristics table - Note: Structure defined. Results pending completion of benchmark tests.
-  | Metric     | Unix Socket | TCP Socket      | Target/Observed |
-  |------------|-------------|-----------------|-----------------|
-  | Throughput | _TBD_ req/s | _TBD_ req/s     | >50K+ / _Current_ |
-  | Latency    | _TBD_ ms    | _TBD_ ms        | <1ms / _Current_  |
-  | Memory     | _TBD_ MB    | _TBD_ MB        | <10MB / _Current_ |
+- [🚧] In Progress - Performance characteristics table - Note: Structure defined. Throughput results updated from manual benchmark runs. Other results pending.
+  | Metric     | Unix Socket   | TCP Socket    | Target/Observed      |
+  |------------|---------------|---------------|----------------------|
+  | Throughput | **2854.24 RPS** | **3085.57 RPS** | >50K+ / _See values_ |
+  | Latency    | _TBD_ ms      | _TBD_ ms      | <1ms / _Current_     |
+  | Memory     | _TBD_ MB      | _TBD_ MB      | <10MB / _Current_    |
 - [🚧] In Progress - Scaling recommendations - Note: To be detailed once performance characteristics are established.
   - [🚧] In Progress - Connection limits per process - Note: _Details pending further testing._
   - [🚧] In Progress - Resource usage guidelines - Note: _Details pending further testing._
