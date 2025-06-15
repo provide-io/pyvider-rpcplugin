@@ -78,7 +78,7 @@ async def test_read_handshake_response_multiple_attempts(mocker):
     """Test reading handshake that requires multiple read attempts (chunked)."""
     process = MockProcess()
     # Simulate chunked reading
-    process.stdout.readline.return_value = b"" # Simulate readline returning empty, forcing chunk reads
+    process.stdout.readline.side_effect = asyncio.TimeoutError("Simulated readline timeout to force chunk strategy")
     process.stdout.read.side_effect = [b"1|1|tcp|", b"127.0.0.1:1234", b"|grpc|\n", b""]
 
     # Mock time to control loop iterations
