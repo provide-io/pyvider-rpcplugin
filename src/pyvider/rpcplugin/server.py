@@ -335,8 +335,11 @@ class RPCPluginServer(
 
             # Ensure key is not None before encoding
             if self._server_cert_obj.key is None:
-                logger.error("🛎️🔐❌ Server certificate private key is None.")
-                raise SecurityError( # Changed from ValueError
+                logger.error(
+                    "🛎️🔐❌ Server certificate private key is None.",
+                    extra={"error": "Server certificate private key is None."} # Added extra
+                )
+                raise SecurityError(
                     message="Server certificate private key is missing.",
                     hint="Ensure the server certificate object includes a valid private key, or that key generation was successful."
                 )
