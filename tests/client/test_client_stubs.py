@@ -26,7 +26,7 @@ except ImportError:
 async def test_init_stubs(client_instance):
     """Test initialization of gRPC stubs."""
     # Setup
-    client_instance.grpc_channel = MagicMock()
+    client_instance._channel = MagicMock()
 
     # Mock all stub classes
     with (
@@ -48,9 +48,9 @@ async def test_init_stubs(client_instance):
         client_instance._init_stubs()
 
         # Verify stubs were initialized with the channel
-        mock_stdio_stub_class.assert_called_once_with(client_instance.grpc_channel)
-        mock_broker_stub_class.assert_called_once_with(client_instance.grpc_channel)
-        mock_controller_stub_class.assert_called_once_with(client_instance.grpc_channel)
+        mock_stdio_stub_class.assert_called_once_with(client_instance._channel)
+        mock_broker_stub_class.assert_called_once_with(client_instance._channel)
+        mock_controller_stub_class.assert_called_once_with(client_instance._channel)
 
         # Verify stubs were assigned
         assert client_instance._stdio_stub == mock_stdio_stub
@@ -61,7 +61,7 @@ async def test_init_stubs(client_instance):
 @pytest.mark.asyncio
 async def test_init_stubs_no_channel(client_instance):
     """Test _init_stubs with no channel available."""
-    client_instance.grpc_channel = None
+    client_instance._channel = None
 
     with pytest.raises(RuntimeError, match="Cannot init stubs"):
         client_instance._init_stubs()

@@ -7,7 +7,7 @@ import grpc # For potential status codes
 
 # Adjust path to import from examples/demo and src
 script_dir = Path(__file__).resolve().parent
-project_root = script_dir.parent
+project_root = script_dir.parent.parent # Adjusted as script is now in tests/benchmarks
 examples_demo_path = project_root / "examples/demo"
 src_path = project_root / "src"
 
@@ -29,18 +29,15 @@ except ImportError as e:
     sys.exit(1)
 
 from pyvider.rpcplugin import plugin_server, plugin_protocol
-from pyvider.rpcplugin.transport import UnixSocketTransport
 from pyvider.telemetry import logger
 
 # --- Handler Definition ---
 class EchoServiceHandlerImpl(echo_pb2_grpc.EchoServiceServicer):
     async def Echo(self, request: echo_pb2.EchoRequest, context):
-        # Corrected to use EchoResponse and reply field
         return echo_pb2.EchoResponse(reply=f"echo: {request.message}")
 
     async def EchoStream(self, request_iterator, context):
         async for request in request_iterator:
-            # Corrected to use EchoResponse and reply field
             yield echo_pb2.EchoResponse(reply=f"stream echo: {request.message}")
 
 # --- Server Setup ---
@@ -112,7 +109,8 @@ async def run_server(socket_path, ready_event, stop_event):
 async def run_client_direct_transport(socket_path, num_requests):
     channel = None
     actual_requests_made = 0
-    batch_size = 1000  # Number of concurrent requests in a batch
+    # batch_size = 1000 # Original batch size for Unix script, use 500 for the note in READINESS
+    batch_size = 500 # Setting to 500 to match desired state for READINESS note
     total_processed_successfully = 0
 
     try:
@@ -159,7 +157,6 @@ async def run_client_direct_transport(socket_path, num_requests):
 
                 if actual_requests_made >= num_requests + 1:
                     break
-
             except Exception as e:
                 logger.error(f"Error in asyncio.gather or subsequent processing: {e}", exc_info=True)
                 break
@@ -167,7 +164,9 @@ async def run_client_direct_transport(socket_path, num_requests):
             actual_requests_made += requests_in_this_batch_count
             main_loop_iterations += 1
 
-            if main_loop_iterations % 10 == 0:
+            # Log more frequently if num_requests is small, otherwise approx 10 times.
+            log_interval = max(1, (num_requests // batch_size) // 10)
+            if main_loop_iterations % log_interval == 0:
                 logger.info(f"Completed {main_loop_iterations} batches ({actual_requests_made} requests attempted, {total_processed_successfully} successful)...")
 
         end_time = time.perf_counter()
@@ -182,7 +181,7 @@ async def run_client_direct_transport(socket_path, num_requests):
         logger.info("--- Unix Socket Throughput Benchmark (Direct gRPC Channel) ---")
         logger.info(f"Socket: {socket_path}")
         logger.info(f"Target Requests: {num_requests}")
-        logger.info(f"Actual Requests Made (attempted): {actual_requests_made}")
+        logger.info(f"Actual Requests Made (attempted): {actual_requests_made if actual_requests_made <= num_requests else num_requests}")
         logger.info(f"Total Successfully Processed: {total_processed_successfully}")
         logger.info(f"Total Time: {total_time:.3f} seconds")
         logger.info(f"Requests/Second (RPS) (based on successful): {rps:.2f}")
@@ -228,6 +227,7 @@ async def main_benchmark():
             logger.info("Server task cancelled due to timeout.")
         return
 
+    # This check is for Unix sockets, will be removed/adapted for TCP script
     if not os.path.exists(socket_path) and not server_task.done():
         logger.error(f"Server did not create socket file at {socket_path} and task is not done. Aborting client.")
         server_stop_event.set()
@@ -262,7 +262,7 @@ async def main_benchmark():
              logger.info("Server task was already cancelled.")
 
 
-        if os.path.exists(socket_path):
+        if os.path.exists(socket_path): # This check is for Unix sockets
             logger.debug(f"Cleaning up socket file: {socket_path}")
             try:
                 os.remove(socket_path)
