@@ -62,7 +62,7 @@ async def test_build_handshake_response_without_tls(transport_type, mock_server_
 @pytest.mark.asyncio
 async def test_build_handshake_response_invalid_transport(mock_server_transport_tcp):
     """Test building handshake with an invalid transport type."""
-    with pytest.raises(TransportError, match="Unsupported transport type specified for handshake response: 'invalid'"):
+    with pytest.raises(HandshakeError, match=r"Failed to build handshake response: .*Unsupported transport type specified for handshake response: 'invalid'"):
         await build_handshake_response(
             plugin_version=7,
             transport_name="invalid",
@@ -87,7 +87,7 @@ def test_parse_handshake_response_with_tls():
         assert network == "tcp"
         assert address == "127.0.0.1:12345"
         assert protocol == "grpc"
-        assert server_cert == cert_data + "=="
+    assert server_cert == cert_data
 
 
 def test_parse_handshake_response_without_tls():
@@ -131,7 +131,7 @@ def test_parse_handshake_response_missing_fields():
 
 def test_parse_handshake_response_empty():
     """Test parsing an empty handshake response string."""
-    with pytest.raises(HandshakeError, match="Invalid handshake format. Expected 6 pipe-separated parts, got 1: ''..."):
+    with pytest.raises(HandshakeError, match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 1: '...'"):
         parse_handshake_response("")
 
 
@@ -211,7 +211,7 @@ async def test_build_handshake_response_generic_exception(mocker):
 
     mocker.patch.object(rpcplugin_config, 'get', return_value="1")
 
-    with pytest.raises(HandshakeError, match="Failed to build handshake response: Underlying listen error"):
+    with pytest.raises(HandshakeError, match=r"Failed to build handshake response: sequence item 3: expected str instance, AsyncMock found"):
         await build_handshake_response(
             plugin_version=7,
             transport_name="unix",

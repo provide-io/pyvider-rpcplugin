@@ -264,7 +264,7 @@ async def test_read_raw_handshake_line_byte_by_byte_success(client_instance_for_
         asyncio.create_task(set_future_result(f, result_val))
         return f
     mock_loop_instance = MagicMock()
-    time_values = [i * 0.01 for i in range(len(handshake_str) + 200)] # Increased range
+        time_values = [i * 0.01 for i in range(len(handshake_str) + 500)] # Increased range significantly
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = custom_run_in_executor
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)

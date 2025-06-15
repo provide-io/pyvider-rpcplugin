@@ -398,6 +398,15 @@ def parse_handshake_response(
                 hint="Network type must be 'tcp' or 'unix'."
             )
         address = parts[3]
+            if network == "tcp" and not address:
+                logger.error(
+                    f"📡❌ Empty address received for TCP transport in handshake: {response}",
+                    extra={"address": address}
+                )
+                raise HandshakeError(
+                    message="Empty address received in handshake string for TCP transport.",
+                    hint="TCP transport requires a valid address (host:port)."
+                )
         protocol = parts[4]
         raw_server_cert_part = parts[5] if parts[5] else None
         if raw_server_cert_part:

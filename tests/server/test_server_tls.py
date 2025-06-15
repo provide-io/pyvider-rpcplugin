@@ -316,8 +316,8 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     )
 
     with pytest.raises(
-        ValueError,
-        match="Server certificate private key is None, cannot create credentials.",
+        SecurityError, # Changed from ValueError
+        match="Server certificate private key is missing.", # Changed message
     ):
         server._generate_server_credentials(client_cert="fake_client_cert_pem")
 
@@ -553,7 +553,10 @@ async def test_generate_server_credentials_failure(
     )
 
     # Restore the with pytest.raises block with the corrected regex
-    with pytest.raises(CertificateError, match="Diagnosing CertificateError message"):
+    with pytest.raises(
+        SecurityError, # Changed from CertificateError
+        match=r"Failed to generate server credentials: .*Diagnosing CertificateError message" # Updated regex
+    ):
         server._generate_server_credentials(client_cert="dummy_client_cert_pem_string")
 
 

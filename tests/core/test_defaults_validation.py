@@ -83,7 +83,7 @@ try:
     logger.error("Validation error NOT caught for invalid float type (PLUGIN_HANDSHAKE_TIMEOUT)!", extra={"test_status": "failed"})
 except ValueError as e:
     logger.info(f"Successfully caught ValueError for invalid float type (PLUGIN_HANDSHAKE_TIMEOUT).", extra={"error_message": str(e), "test_status": "passed"})
-    assert "Invalid format for PLUGIN_HANDSHAKE_TIMEOUT" in str(e), f"Error message mismatch: {str(e)}"
+    assert "Invalid value format for configuration key 'PLUGIN_HANDSHAKE_TIMEOUT'" in str(e), f"Error message mismatch: {str(e)}"
     expected_error_raised = True
 except Exception as e:
     logger.error(f"Caught UNEXPECTED exception for invalid float type: {type(e).__name__}", extra={"error_message": str(e), "test_status": "failed"})
