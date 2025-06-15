@@ -31,7 +31,7 @@ async def test_negotiate_protocol_version_no_common_version() -> None:
     """Test protocol version negotiation when no common version exists."""
     server_versions = [99, 100]  # Versions not supported by the client
     with pytest.raises(
-        ProtocolError, match="No mutually supported protocol version found"
+        ProtocolError, match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*"
     ):
         negotiate_protocol_version(server_versions)
 
@@ -41,7 +41,7 @@ async def test_negotiate_protocol_version_empty_list() -> None:
     """Test protocol version negotiation when the server provides no versions."""
     server_versions = []  # Server provides no versions
     with pytest.raises(
-        ProtocolError, match="No mutually supported protocol version found"
+        ProtocolError, match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*"
     ):
         negotiate_protocol_version(server_versions)
 
@@ -65,14 +65,14 @@ async def test_negotiate_transport_valid_unix() -> None:
 @pytest.mark.asyncio
 async def test_negotiate_transport_no_common_transport() -> None:
     """Test transport negotiation when no common transport exists."""
-    with pytest.raises(TransportError, match="Unsupported transports"):
+    with pytest.raises(TransportError, match=r"\[TransportError\] No compatible transport found.*Hint:.*"):
         await negotiate_transport(["invalid_transport"])
 
 
 @pytest.mark.asyncio
 async def test_negotiate_transport_empty_list() -> None:
     """Test transport negotiation when no transports are provided."""
-    with pytest.raises(TransportError, match="No transport options provided"):
+    with pytest.raises(TransportError, match=r"\[TransportError\] No transport options were provided.*Hint:.*"):
         await negotiate_transport([])
 
 

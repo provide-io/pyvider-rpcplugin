@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock
 from grpc.aio import server as GrpcAioServerType
 from pyvider.rpcplugin.types import RPCPluginTransport
 
+from pyvider.rpcplugin.config import ConfigError # Added import
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 
