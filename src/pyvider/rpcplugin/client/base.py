@@ -114,7 +114,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         await client.start()
 
         # Use the created channel with protocol-specific stubs
-        provider_stub = MyProviderStub(client.grpc_channel)
+        provider_stub = MyProviderStub(client._channel)
         response = await provider_stub.SomeMethod(request)
 
         # Graceful shutdown
@@ -161,15 +161,13 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     _handshake_failed_event: asyncio.Event = field(factory=asyncio.Event, init=False)
     is_started: bool = field(default=False, init=False)
     _stubs: dict[str, Any] = field(factory=dict, init=False) # To hold initialized stubs
-    logger: Any = field(init=False) # Declare logger as an attrs field
 
 
     def __attrs_post_init__(self) -> None:
         """
         Initialize client state after attributes are set.
         """
-        self.logger = logger  # Assign the global logger to an instance attribute
-        self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
+        logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
         # Events are initialized by attrs factory
 
     async def _connect_and_handshake_with_retry(self) -> None:
@@ -367,12 +365,10 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             await self.close()
             raise # Re-raise the exception to the caller
 
-        # The second call to create_task for _read_stdio_logs was redundant.
-        # logger.info("✅ RPC plugin client started and ready.") # This log was also redundant if the one in try block executed.
-        # If the intention was for this to always run, it should be structured differently,
-        # but given the test expects one call, removing the duplicate is the fix.
-        # The logger.info call here is also removed as the one in the try block should suffice if successful.
-        # If the try block fails, an error is logged, and then this part wouldn't be reached due to the raise.
+        # 6) Optionally start a background task to read plugin logs from stdio
+        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+
+        logger.info("✅ RPC plugin client started and ready.")
 
     async def _setup_client_certificates(self) -> None:
         """

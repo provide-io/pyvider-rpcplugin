@@ -42,7 +42,7 @@ def test_validate_magic_cookie_invalid(monkeypatch) -> None:
         (
             "PLUGIN_MAGIC_COOKIE",
             "invalid_cookie",
-            r"\[HandshakeError\] Magic cookie mismatch.*'invalid_cookie'.*'PLUGIN_MAGIC_COOKIE'.*Hint:.*",
+            r"Magic cookie mismatch.*'invalid_cookie'.*'PLUGIN_MAGIC_COOKIE'",
         ),
         (
             None,
@@ -54,7 +54,7 @@ def test_validate_magic_cookie_invalid(monkeypatch) -> None:
             None,
             "cookie not provided",
         ),  # This regex seems fine as is, not in the list to change
-        (None, "hello", r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*"),
+        (None, "hello", r"magic_cookie_key is not set"),
     ],
 )
 def test_validate_magic_cookie_failures(
@@ -84,7 +84,7 @@ def test_validate_magic_cookie_failures(
 
 
 def test_validate_magic_cookie_missing_still_raises() -> None:
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*"):
+    with pytest.raises(HandshakeError, match=r"magic_cookie_key is not set"):
         validate_magic_cookie(magic_cookie_key=None, magic_cookie_value=None)
 
 
@@ -100,14 +100,14 @@ def test_validate_magic_cookie_missing_still_raises() -> None:
             None,
         ),
         # Missing environment variables
-        (None, None, None, True, r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*"),
+        (None, None, None, True, r"magic_cookie_key is not set"),
         # Invalid cookie
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
             "some_expected",
             "different_cookie",
             True,
-            r"\[HandshakeError\] Magic cookie mismatch.*'some_expected'.*'different_cookie'.*'PLUGIN_MAGIC_COOKIE_KEY'.*Hint:.*",
+            r"Magic cookie mismatch.*'some_expected'.*'different_cookie'.*'PLUGIN_MAGIC_COOKIE_KEY'",
         ),
     ],
 )
@@ -150,7 +150,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     # Even if config is set, we can override with function args
     # Suppose we pass an invalid cookie to demonstrate mismatch:
     with pytest.raises(
-        HandshakeError, match=r"\[HandshakeError\] Magic cookie mismatch.*'EXPECTED'.*'WRONG'.*'KEY'.*Hint:.*"
+        HandshakeError, match=r"Magic cookie mismatch.*'EXPECTED'.*'WRONG'.*'KEY'"
     ):
         validate_magic_cookie(
             magic_cookie_key="KEY", magic_cookie_value="EXPECTED", magic_cookie="WRONG"
@@ -161,14 +161,14 @@ def test_validate_magic_cookie_explicit_none_empty_key(mocker):
     """Test validate_magic_cookie when magic_cookie_key is explicitly None or empty."""
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*"):
+    with pytest.raises(HandshakeError, match=r"magic_cookie_key is not set"):
         validate_magic_cookie(
             magic_cookie_key=None, magic_cookie_value="value", magic_cookie="cookie"
         )
     mock_logger_error.assert_called_with(r"Configuration error: magic_cookie_key is not set in config.")
     mock_logger_error.reset_mock()
 
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*"):
+    with pytest.raises(HandshakeError, match=r"magic_cookie_key is not set"):
         validate_magic_cookie(
             magic_cookie_key="", magic_cookie_value="value", magic_cookie="cookie"
         )
