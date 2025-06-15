@@ -147,7 +147,7 @@ async def test_read_raw_handshake_line_process_stdout_becomes_none(client_instan
         await original_asyncio_sleep(0.0001)
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", side_effect=sleep_side_effect)
     mock_loop_instance = MagicMock()
-    time_values = [i * 0.1 for i in range(105)]
+    time_values = [i * 0.1 for i in range(105)] # Ensure enough time for multiple attempts
     mock_loop_instance.time.side_effect = time_values
     async def set_future_empty_result(fut):
         await asyncio.sleep(0)
@@ -264,7 +264,7 @@ async def test_read_raw_handshake_line_byte_by_byte_success(client_instance_for_
         asyncio.create_task(set_future_result(f, result_val))
         return f
     mock_loop_instance = MagicMock()
-        time_values = [i * 0.01 for i in range(len(handshake_str) + 500)] # Increased range significantly
+    time_values = [i * 0.01 for i in range(len(handshake_str) + 500)] # Increased range significantly
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = custom_run_in_executor
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)
@@ -328,7 +328,8 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(client_instance
         else: pass # For read(1) calls, let custom_wait_for handle the timeout
         return f
     mock_loop_instance = MagicMock()
-    time_values = [i * 0.1 for i in range(105)] # Ensure enough time for multiple attempts
+    # THIS IS A VERY SPECIFIC COMMENT TO MAKE THE SEARCH UNIQUE
+    time_values = [i * 0.01 for i in range(len(handshake_str) + 500)] # Increased range significantly
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_for_inner_timeout
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)

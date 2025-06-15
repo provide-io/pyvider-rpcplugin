@@ -357,6 +357,8 @@ class RPCPluginServer(
                 "🛎️ Server TLS credentials created for server-side TLS only (no mTLS)."
             )
             return creds
+        except SecurityError: # Re-raise SecurityErrors directly without re-logging the generic message
+            raise
         except Exception as e:
             logger.error(
                 f"🛎️❌ Error generating server credentials: {e}", extra={"error": str(e), "trace": traceback.format_exc()} # Corrected logging
