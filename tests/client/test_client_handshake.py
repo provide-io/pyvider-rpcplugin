@@ -331,9 +331,13 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(client_instance
         else: pass # For read(1) calls, let custom_wait_for handle the timeout
         return f
     mock_loop_instance = MagicMock()
-    handshake_str = "dummy_handshake_data_for_time_values_length" # Defined to resolve NameError
-    # THIS IS A VERY SPECIFIC COMMENT TO MAKE THE SEARCH UNIQUE
-    time_values = [i * 0.01 for i in range(len(handshake_str) + 500)] # Increased range significantly
+    # Define time_values to correctly simulate passing the 10s timeout
+    # The timeout in _read_raw_handshake_line_from_stdout is 10.0 seconds.
+    simulated_timeout_duration = 10.0
+    time_step = 0.1  # Advance time by 0.1s per call to loop.time()
+    # Add enough steps to go past the timeout plus a small buffer
+    num_steps = int(simulated_timeout_duration / time_step) + 5
+    time_values = [i * time_step for i in range(num_steps)]
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_for_inner_timeout
     mocker.patch("pyvider.rpcplugin.client.base.asyncio.get_event_loop", return_value=mock_loop_instance)
