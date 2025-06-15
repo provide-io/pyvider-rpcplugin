@@ -7,7 +7,7 @@ from pathlib import Path
 
 # Ensure examples directory and examples/demo are in path
 benchmarks_dir = Path(__file__).resolve().parent
-project_root = benchmarks_dir.parent
+project_root = benchmarks_dir.parent.parent # Corrected path to /app
 examples_path = project_root / "examples"
 demo_path = examples_path / "demo"
 
@@ -19,6 +19,14 @@ if str(project_root) not in sys.path: # /app
     sys.path.insert(0, str(project_root))
 
 from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
+from pyvider.rpcplugin.exception import ( # Corrected module name
+    ConfigError,
+    HandshakeError,
+    TransportError,
+    SecurityError,
+    ProtocolError,
+    RPCPluginError, # Adding base error just in case
+)
 import echo_pb2
 import echo_pb2_grpc
 

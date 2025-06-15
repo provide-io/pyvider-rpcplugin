@@ -160,19 +160,19 @@ Release Timeline: 2-3 weeks
       # Measure requests per second over Unix socket
       # Target: 50,000+ req/s
   ```
-- [🚧] In Progress - Connection establishment timing - Note: Script `benchmarks/latency_benchmark.py` (assumed to cover this) runs in CI. Original note mentioned `benchmark_connection_speed.py` timed out; status of that specific script unclear if different. Target: <100ms Unix, <200ms TCP.
+- [❌] Blocked - Connection establishment timing - Note: Attempted to run `tests/benchmarks/benchmark_connection_speed.py`. The run was blocked by a persistent environment error ("Failed to compute affected file count and total size after command execution. All changes to the repo have been rolled back."), even after several necessary code fixes were identified and attempted during the subtask. The script `benchmarks/latency_benchmark.py` (potentially the same or similar) is noted as running in CI, but its current status and relationship to `benchmark_connection_speed.py` needs verification. Original target: <100ms Unix, <200ms TCP.
   ```python
   async def test_connection_speed():
       # Time from client.connect() to ready state
       # Target: <100ms for Unix, <200ms for TCP
   ```
-- [❌] Pending - Concurrent connection tests - Note: Test script `benchmark_concurrency.py` (targeting 150 concurrent clients) was developed but reportedly timed out during execution. Not found in CI. Needs investigation.
+- [🚧] In Progress - Concurrent connection tests - Note: Attempted to run `tests/benchmarks/benchmark_concurrency.py` (targeting 100+ concurrent connections, previously noted target 150). Code errors preventing its execution were fixed. The script ran but timed out after ~400 seconds, consistent with previous reports. No data on the number of successful concurrent connections was obtained. The environment rollback error was *not* encountered, so applied code fixes persisted. Further investigation into the timeout is needed. Not found in CI.
   ```python
   async def test_concurrent_connections():
       # Test multiple clients connecting simultaneously
       # Target: 100+ concurrent connections
   ```
-- [❌] Pending - Memory usage profiling - Note: Test script `benchmark_memory.py` was not implemented due to time constraints and issues encountered with other benchmark scripts.
+- [❌] Pending - Memory usage profiling - Note: Verified that `tests/benchmarks/benchmark_memory.py` does not exist, confirming the previous note that it was not implemented due to time constraints and issues with other benchmark scripts. Execution is not possible until the script is created. Target: <10MB base memory per connection.
   ```python
   async def test_memory_usage():
       # Profile memory usage under load
@@ -180,12 +180,12 @@ Release Timeline: 2-3 weeks
   ```
 
 #### Performance Documentation
-- [🚧] In Progress - Performance characteristics table - Note: Structure defined. Throughput results updated from manual benchmark runs. Other results pending.
-  | Metric     | Unix Socket   | TCP Socket    | Target/Observed      |
-  |------------|---------------|---------------|----------------------|
-  | Throughput | **2854.24 RPS** | **3085.57 RPS** | >50K+ / _See values_ |
-  | Latency    | _TBD_ ms      | _TBD_ ms      | <1ms / _Current_     |
-  | Memory     | _TBD_ MB      | _TBD_ MB      | <10MB / _Current_    |
+- [🚧] In Progress - Performance characteristics table - Note: Structure defined. Throughput results updated from manual benchmark runs. Latency tests currently blocked. Memory profiling script not yet implemented. Other results pending.
+  | Metric     | Unix Socket   | TCP Socket    | Target/Observed            |
+  |------------|---------------|---------------|----------------------------|
+  | Throughput | **2854.24 RPS** | **3085.57 RPS** | >50K+ / _See values_       |
+  | Latency    | _Blocked_     | _Blocked_     | <1ms / _Blocked_           |
+  | Memory     | _Script N/A_  | _Script N/A_  | <10MB / _Script N/A_       |
 - [🚧] In Progress - Scaling recommendations - Note: To be detailed once performance characteristics are established.
   - [🚧] In Progress - Connection limits per process - Note: _Details pending further testing._
   - [🚧] In Progress - Resource usage guidelines - Note: _Details pending further testing._

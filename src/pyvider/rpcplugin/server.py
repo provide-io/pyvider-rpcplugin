@@ -24,7 +24,7 @@ from grpc.aio import server as GRPCServer
 from pyvider.rpcplugin.client.types import ClientT
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.exception import HandshakeError, TransportError, ConfigError, SecurityError, ProtocolError # Added missing exceptions
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     build_handshake_response,
