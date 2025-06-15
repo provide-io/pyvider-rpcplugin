@@ -2,15 +2,15 @@
 
 import pytest
 import asyncio
-import grpc  # Added for grpc.RpcError
+import grpc
 from unittest.mock import (
     patch,
     MagicMock,
     AsyncMock,
     ANY,
-)  # Keep ANY if other tests need it
+)
 
-from pyvider.rpcplugin.exception import ProtocolError # <--- ADD THIS IMPORT
+from pyvider.rpcplugin.exception import ProtocolError, TransportError # Added TransportError
 
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
 try:
@@ -65,7 +65,7 @@ async def test_init_stubs_no_channel(client_instance):
     """Test _init_stubs with no channel available."""
     client_instance.grpc_channel = None
 
-    with pytest.raises(ProtocolError, match="Cannot initialize gRPC stubs; gRPC channel is not available."): # <--- CHANGE THIS LINE
+    with pytest.raises(ProtocolError, match="Cannot initialize gRPC stubs; gRPC channel is not available."):
         client_instance._init_stubs()
 
 
@@ -199,11 +199,6 @@ async def test_open_broker_subchannel_no_stub(client_instance):  # Removed capsy
         log_output = mock_stderr.getvalue()
 
     assert client_instance._broker_task is None  # No task should be created
-    # Check for the specific log message in captured stderr
-    # print(f"Captured stderr for test_open_broker_subchannel_no_stub: {log_output}") # Debug line
-    # assert "Broker stub not initialized; cannot open subchannel." in log_output # Commenting out due to capture issues
-    # The log message is visually confirmed in pytest's "Captured stderr call" output.
-    # The primary functional check here is that _broker_task is None.
 
 
 @pytest.mark.asyncio
@@ -255,22 +250,15 @@ async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
         response_message.knock.error = "Failed to establish subchannel"
         yield response_message
 
-    # Configure the mock_call_object to be an async iterator
-    # mock_call_object.__aiter__.return_value = mock_response_gen_func_error_ack() # Old approach
-
-    # New approach: make mock_call_object the async iterator and mock __anext__
-    mock_call_object.__aiter__ = lambda self: self  # Make it its own async iterator
-
+    mock_call_object.__aiter__ = lambda self: self
     response_message = MagicMock()
     response_message.service_id = 456
     response_message.knock.ack = False
     response_message.knock.error = "Failed to establish subchannel"
-
-    # __anext__ should yield the message then raise StopAsyncIteration
     mock_call_object.__anext__.side_effect = [response_message, StopAsyncIteration]
 
     await client_instance.open_broker_subchannel(456, "127.0.0.1:8002")
-    assert client_instance._broker_task is not None  # Task created
+    assert client_instance._broker_task is not None
     try:
         await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
     except asyncio.TimeoutError:
@@ -284,21 +272,34 @@ async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
 @pytest.mark.asyncio
 async def test_shutdown_plugin_rpc_error(client_instance, mocker):
     """Test shutdown_plugin when the RPC call to controller.Shutdown fails."""
-    mock_controller_stub = AsyncMock()  # Use AsyncMock for the stub itself
+    mock_controller_stub = AsyncMock()
     client_instance._controller_stub = mock_controller_stub
 
-    # Configure the Shutdown method (which is an AsyncMock itself if generated from AsyncMock stub)
-    # to raise an RpcError
-    mock_controller_stub.Shutdown = AsyncMock(
-        side_effect=grpc.RpcError("Shutdown RPC failed")
-    )
+    original_rpc_error = grpc.RpcError("Shutdown RPC failed")
+    # Configure the Shutdown method of the AsyncMock instance
+    mock_controller_stub.Shutdown = AsyncMock(side_effect=original_rpc_error)
+
 
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
-    await client_instance.shutdown_plugin()
+    # Expect TransportError and match its message
+    # For a vanilla RpcError("Shutdown RPC failed"), details() is "Shutdown RPC failed"
+    # The TransportError message is f"gRPC error during plugin shutdown: {error_details_str}"
+    expected_transport_error_msg = r"\[TransportError\] gRPC error during plugin shutdown: Shutdown RPC failed"
 
-    mock_controller_stub.Shutdown.assert_called_once()
-    mock_logger_error.assert_called_once()
+    with pytest.raises(TransportError, match=expected_transport_error_msg):
+        await client_instance.shutdown_plugin()
+
+    # Assertions about logging and mock calls
+    mock_controller_stub.Shutdown.assert_called_once() # Verify Shutdown was called
+    mock_logger_error.assert_called_once() # Verify logger.error was called
+
     args, kwargs = mock_logger_error.call_args
-    assert "Error calling Shutdown()" in args[0]
+    # The logged message in shutdown_plugin is:
+    # f"🔌🛑❌ gRPC error calling Shutdown(): {actual_code_for_log} - {error_details_str}"
+    # actual_code_for_log becomes "UNKNOWN"
+    # error_details_str becomes "Shutdown RPC failed" (from str(e) on a vanilla RpcError)
+    assert "gRPC error calling Shutdown(): UNKNOWN - Shutdown RPC failed" in args[0]
+
+    # The trace in the log's 'extra' should contain the original RpcError's string representation
     assert "Shutdown RPC failed" in kwargs.get("extra", {}).get("trace", "")
