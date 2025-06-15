@@ -22,42 +22,43 @@ if str(src_path) not in sys.path:
 try:
     import echo_pb2
     import echo_pb2_grpc
+    # create_servicer_class is not found, so it will be removed.
+    # We will make the handler inherit from the gRPC servicer directly.
 except ImportError as e:
     print(f"Error importing demo protocol files or pyvider.rpcplugin: {e}")
     print(f"Please ensure examples/demo content (echo_pb2.py, echo_pb2_grpc.py) is available at {examples_demo_path}")
     print(f"and pyvider.rpcplugin is available at {src_path}.")
     sys.exit(1)
 
-from pyvider.rpcplugin import plugin_server, plugin_protocol
+from pyvider.rpcplugin import plugin_server, plugin_protocol # Import plugin_protocol
 from pyvider.rpcplugin.transport import UnixSocketTransport
-from pyvider.telemetry import logger
+from pyvider.telemetry import logger # Removed setup_logging
 
 # --- Handler Definition ---
+# The handler should inherit from the generated gRPC Servicer class
 class EchoServiceHandlerImpl(echo_pb2_grpc.EchoServiceServicer):
     async def Echo(self, request: echo_pb2.EchoRequest, context):
-        # Corrected to use EchoResponse and reply field
-        return echo_pb2.EchoResponse(reply=f"echo: {request.message}")
+        return echo_pb2.EchoReply(message=f"echo: {request.message}")
 
     async def EchoStream(self, request_iterator, context):
         async for request in request_iterator:
-            # Corrected to use EchoResponse and reply field
-            yield echo_pb2.EchoResponse(reply=f"stream echo: {request.message}")
+            yield echo_pb2.EchoReply(message=f"stream echo: {request.message}")
 
 # --- Server Setup ---
 async def run_server(socket_path, ready_event, stop_event):
     handler_instance = EchoServiceHandlerImpl()
 
     protocol_instance = plugin_protocol(
-        service_name="EchoService",
-        descriptor_module=echo_pb2,
+        service_name="EchoService", # Matches the service name in echo.proto
+        descriptor_module=echo_pb2, # For service reflection/descriptors
         servicer_add_fn=echo_pb2_grpc.add_EchoServiceServicer_to_server
     )
 
     server_instance = plugin_server(
         protocol=protocol_instance,
         handler=handler_instance,
-        transport="unix",
-        transport_path=socket_path
+        transport="unix", # Correct argument for transport type
+        transport_path=socket_path # Correct argument for Unix socket path
     )
 
     logger.info(f"Server starting on {socket_path}")
@@ -67,6 +68,7 @@ async def run_server(socket_path, ready_event, stop_event):
         async def serve_wrapper():
             nonlocal server_ready_event_set_internally
             try:
+                # Attempt to set ready just before blocking serve call
                 if not ready_event.is_set():
                     ready_event.set()
                     server_ready_event_set_internally = True
@@ -76,13 +78,14 @@ async def run_server(socket_path, ready_event, stop_event):
                 logger.info("Server serve_wrapper task explicitly cancelled.")
             except Exception as e:
                 logger.error(f"Server serve_wrapper error: {e}", exc_info=True)
-                if not ready_event.is_set():
+                if not ready_event.is_set(): # If error before ready, signal it too
                     ready_event.set()
             finally:
                 logger.info("Server serve_wrapper stopped.")
 
         server_task = asyncio.create_task(serve_wrapper())
 
+        # Backup signal if server starts/fails extremely fast
         await asyncio.sleep(0.05)
         if not ready_event.is_set() and not server_ready_event_set_internally :
             ready_event.set()
@@ -94,11 +97,11 @@ async def run_server(socket_path, ready_event, stop_event):
     except Exception as e:
         logger.error(f"Outer server run error: {e}", exc_info=True)
         if not ready_event.is_set():
-            ready_event.set()
+            ready_event.set() # Ensure client part is unblocked if server fails to start
     finally:
         if server_task and not server_task.done():
             logger.info("Requesting server_instance.stop()")
-            await server_instance.stop()
+            await server_instance.stop() # Graceful stop
             logger.info("Cancelling server_task.")
             server_task.cancel()
             try:
@@ -112,80 +115,50 @@ async def run_server(socket_path, ready_event, stop_event):
 async def run_client_direct_transport(socket_path, num_requests):
     channel = None
     actual_requests_made = 0
-    batch_size = 1000  # Number of concurrent requests in a batch
-    total_processed_successfully = 0
-
     try:
         channel = grpc.aio.insecure_channel(f"unix://{socket_path}")
-        await asyncio.wait_for(channel.channel_ready(), timeout=2.0)
+        await asyncio.wait_for(channel.channel_ready(), timeout=2.0) # Wait for channel to be ready
         stub = echo_pb2_grpc.EchoServiceStub(channel)
-        logger.info(f"Client connected to {socket_path} via direct gRPC channel. Batch size: {batch_size}")
+        logger.info(f"Client connected to {socket_path} via direct gRPC channel")
 
         start_time = time.perf_counter()
 
-        main_loop_iterations = 0
-        while actual_requests_made < num_requests:
-            tasks = []
-            requests_in_this_batch_count = 0
-
-            remaining_requests = num_requests - actual_requests_made
-            current_batch_size = min(batch_size, remaining_requests)
-
-            for i in range(current_batch_size):
-                request_index = actual_requests_made + i
-                request = echo_pb2.EchoRequest(message=f"hello {request_index}")
-                tasks.append(stub.Echo(request, timeout=2.0))
-                requests_in_this_batch_count += 1
-
-            if not tasks:
-                break
-
+        for i in range(num_requests):
+            actual_requests_made = i + 1
+            request = echo_pb2.EchoRequest(message=f"hello {i}")
             try:
-                responses = await asyncio.gather(*tasks, return_exceptions=True)
-                for res_item in responses:
-                    if isinstance(res_item, echo_pb2.EchoResponse) and res_item.reply:
-                        total_processed_successfully += 1
-                    elif isinstance(res_item, grpc.aio.AioRpcError):
-                        e = res_item
-                        logger.error(f"RPC error in batch: {e.details()} (code: {e.code()})")
-                        if e.code() in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.INTERNAL):
-                             logger.critical(f"Critical RPC error {e.code()}, stopping client.")
-                             actual_requests_made = num_requests + 1
-                             break
-                    elif isinstance(res_item, Exception):
-                        logger.error(f"Non-RPC exception in batch processing: {res_item}", exc_info=res_item)
-                    else:
-                        logger.warning(f"Received unexpected response type: {type(res_item)}")
-
-                if actual_requests_made >= num_requests + 1:
+                response = await stub.Echo(request, timeout=0.5) # Short timeout for individual req
+                if not response or not response.message:
+                    logger.warning(f"Received empty/invalid response for request {i}")
+            except grpc.aio.AioRpcError as e:
+                logger.error(f"RPC error on request {i}: {e.details()} (code: {e.code()})")
+                if e.code() in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.DEADLINE_EXCEEDED):
+                    logger.error("Server seems unavailable or request timed out. Stopping client benchmark.")
                     break
 
-            except Exception as e:
-                logger.error(f"Error in asyncio.gather or subsequent processing: {e}", exc_info=True)
-                break
-
-            actual_requests_made += requests_in_this_batch_count
-            main_loop_iterations += 1
-
-            if main_loop_iterations % 10 == 0:
-                logger.info(f"Completed {main_loop_iterations} batches ({actual_requests_made} requests attempted, {total_processed_successfully} successful)...")
+            if (i + 1) % 10000 == 0:
+                logger.info(f"Sent {i + 1} requests...")
 
         end_time = time.perf_counter()
-        total_time = end_time - start_time
 
+        total_time = end_time - start_time
         rps = 0
+        # Calculate RPS based on actual requests made, especially if loop broke early
+        requests_processed = actual_requests_made
         if total_time > 0:
-            rps = total_processed_successfully / total_time
-        elif total_processed_successfully > 0:
-            rps = float('inf')
+            rps = requests_processed / total_time
+        elif requests_processed > 0 : # Avoid division by zero if time is too small
+            rps = float('inf') # Effectively infinite if time was zero for some requests
+        else: # No requests and no time
+            rps = 0
+
 
         logger.info("--- Unix Socket Throughput Benchmark (Direct gRPC Channel) ---")
         logger.info(f"Socket: {socket_path}")
         logger.info(f"Target Requests: {num_requests}")
-        logger.info(f"Actual Requests Made (attempted): {actual_requests_made}")
-        logger.info(f"Total Successfully Processed: {total_processed_successfully}")
+        logger.info(f"Actual Requests Made: {actual_requests_made}")
         logger.info(f"Total Time: {total_time:.3f} seconds")
-        logger.info(f"Requests/Second (RPS) (based on successful): {rps:.2f}")
+        logger.info(f"Requests/Second (RPS): {rps:.2f}")
 
         return rps
     except asyncio.TimeoutError:
@@ -212,7 +185,7 @@ async def main_benchmark():
             logger.warning(f"Could not remove old socket {socket_path}: {e}.")
 
     server_ready_event = asyncio.Event()
-    server_stop_event = asyncio.Event()
+    server_stop_event = asyncio.Event() # Event to signal server to stop
 
     server_task = asyncio.create_task(run_server(socket_path, server_ready_event, server_stop_event))
 
@@ -228,10 +201,10 @@ async def main_benchmark():
             logger.info("Server task cancelled due to timeout.")
         return
 
-    if not os.path.exists(socket_path) and not server_task.done():
+    if not os.path.exists(socket_path) and not server_task.done(): # Check if server task is already done (e.g. crashed)
         logger.error(f"Server did not create socket file at {socket_path} and task is not done. Aborting client.")
-        server_stop_event.set()
-        await asyncio.sleep(0.1)
+        server_stop_event.set() # Try to signal server to stop
+        await asyncio.sleep(0.1) # Give a moment for stop signal
         if not server_task.done():
             server_task.cancel()
         try: await server_task
@@ -254,12 +227,12 @@ async def main_benchmark():
             await asyncio.wait_for(server_task, timeout=5.0)
         except asyncio.TimeoutError:
             logger.warning("Server did not stop gracefully in time. Forcibly cancelling task.")
-            if not server_task.done():
+            if not server_task.done(): # Check if not already cancelled
                 server_task.cancel()
                 try: await server_task
                 except asyncio.CancelledError: pass
         except asyncio.CancelledError:
-             logger.info("Server task was already cancelled.")
+             logger.info("Server task was already cancelled (e.g. from inner exception).")
 
 
         if os.path.exists(socket_path):
@@ -277,6 +250,10 @@ async def main_benchmark():
 
 if __name__ == "__main__":
     log_level_env = os.getenv("PYVIDER_BENCHMARK_LOG_LEVEL", "INFO").upper()
-    logger.info(f"Starting Unix Domain Socket Throughput Benchmark with effective log level (influenced by Pyvider global config)...")
+    # setup_logging is removed. The logger should work with default config
+    # and respect PLUGIN_LOG_LEVEL or PYVIDER_LOG_LEVEL if set,
+    # or use its own default (likely INFO).
+    # The pyvider.telemetry.logger is already configured by the library's __init__ or when config is loaded.
+    logger.info(f"Starting Unix Domain Socket Throughput Benchmark with log level {log_level_env} (Note: effective level depends on Pyvider global config)...")
     asyncio.run(main_benchmark())
     logger.info("Benchmark finished.")

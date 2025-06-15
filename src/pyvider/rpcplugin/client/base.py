@@ -114,7 +114,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         await client.start()
 
         # Use the created channel with protocol-specific stubs
-        provider_stub = MyProviderStub(client._channel)
+        provider_stub = MyProviderStub(client.grpc_channel)
         response = await provider_stub.SomeMethod(request)
 
         # Graceful shutdown
@@ -161,14 +161,14 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     _handshake_failed_event: asyncio.Event = field(factory=asyncio.Event, init=False)
     is_started: bool = field(default=False, init=False)
     _stubs: dict[str, Any] = field(factory=dict, init=False) # To hold initialized stubs
-    logger: Any = field(init=False, default=None) # Declare logger as a field
+    logger: Any = field(init=False) # Declare logger as an attrs field
 
 
     def __attrs_post_init__(self) -> None:
         """
         Initialize client state after attributes are set.
         """
-        self.logger = logger # Assign global logger directly
+        self.logger = logger  # Assign the global logger to an instance attribute
         self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
         # Events are initialized by attrs factory
 
@@ -367,10 +367,12 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             await self.close()
             raise # Re-raise the exception to the caller
 
-        # 6) Optionally start a background task to read plugin logs from stdio
-        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
-
-        logger.info("✅ RPC plugin client started and ready.")
+        # The second call to create_task for _read_stdio_logs was redundant.
+        # logger.info("✅ RPC plugin client started and ready.") # This log was also redundant if the one in try block executed.
+        # If the intention was for this to always run, it should be structured differently,
+        # but given the test expects one call, removing the duplicate is the fix.
+        # The logger.info call here is also removed as the one in the try block should suffice if successful.
+        # If the try block fails, an error is logged, and then this part wouldn't be reached due to the raise.
 
     async def _setup_client_certificates(self) -> None:
         """
@@ -563,12 +565,17 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                             logger.debug(
                                 f"🤝 Byte-by-byte read: buffer now: '{buffer}'"
                             )
+                            # Check for complete handshake after adding char to buffer
+                            if "|" in buffer and buffer.count("|") >= 5:
+                                logger.debug("🤝 Byte-by-byte path found complete handshake in buffer")
+                                return buffer # Return if complete
                     else:
                         # Process or stdout is None, cannot read
                         await asyncio.sleep(0.1)  # Wait briefly
                         continue
                 except asyncio.TimeoutError:
-                    pass  # Just continue the outer loop
+                    logger.debug("🤝 Timeout on byte-by-byte read(1) attempt, continuing outer loop.")
+                    pass # Continue the outer timeout loop
 
         # If we get here, we've timed out
         stderr_output = ""
@@ -999,13 +1006,27 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             await self._controller_stub.Shutdown(ControllerEmpty())
             logger.info("🔌🛑 Plugin acknowledged shutdown request.")
         except grpc.RpcError as e:
+            error_code_obj = e.code() if hasattr(e, 'code') and callable(e.code) else None
+            error_details_str = e.details() if hasattr(e, 'details') and callable(e.details) else str(e)
+
+            actual_code_for_log = "UNKNOWN"
+            if error_code_obj is not None and hasattr(error_code_obj, 'name'): # grpc.StatusCode enum has 'name'
+                actual_code_for_log = error_code_obj.name
+            elif error_code_obj is not None: # Fallback if it's not a full StatusCode enum
+                actual_code_for_log = str(error_code_obj)
+
             logger.error(
-                f"🔌🛑❌ gRPC error calling Shutdown(): {e.code()} - {e.details()}",
+                f"🔌🛑❌ gRPC error calling Shutdown(): {actual_code_for_log} - {error_details_str}",
                 extra={"trace": traceback.format_exc()},
             )
+
+            code_int_val = None
+            if error_code_obj is not None and hasattr(error_code_obj, 'value') and isinstance(error_code_obj.value, tuple) and len(error_code_obj.value) > 0:
+                code_int_val = error_code_obj.value[0]
+
             raise TransportError(
-                message=f"gRPC error during plugin shutdown: {e.details()}",
-                code=e.code().value[0] if hasattr(e.code(), 'value') else None, # type: ignore
+                message=f"gRPC error during plugin shutdown: {error_details_str}",
+                code=code_int_val,
                 hint="The plugin's Shutdown RPC failed. This could be due to network issues or an error within the plugin's shutdown logic. Check plugin logs."
             ) from e
         except Exception as e:

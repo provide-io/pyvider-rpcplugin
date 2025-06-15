@@ -8,7 +8,8 @@ from pyvider.rpcplugin.crypto.certificate import (
     Certificate,
 )  # Ensure Certificate is imported
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.config import rpcplugin_config, ConfigError # Added ConfigError
+from pyvider.rpcplugin.exception import SecurityError # Added SecurityError
 
 from tests.conftest import (
     mock_server_protocol,

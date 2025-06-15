@@ -10,6 +10,8 @@ from unittest.mock import (
     ANY,
 )  # Keep ANY if other tests need it
 
+from pyvider.rpcplugin.exception import ProtocolError # <--- ADD THIS IMPORT
+
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
 try:
     from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
@@ -26,7 +28,7 @@ except ImportError:
 async def test_init_stubs(client_instance):
     """Test initialization of gRPC stubs."""
     # Setup
-    client_instance._channel = MagicMock()
+    client_instance.grpc_channel = MagicMock()
 
     # Mock all stub classes
     with (
@@ -48,9 +50,9 @@ async def test_init_stubs(client_instance):
         client_instance._init_stubs()
 
         # Verify stubs were initialized with the channel
-        mock_stdio_stub_class.assert_called_once_with(client_instance._channel)
-        mock_broker_stub_class.assert_called_once_with(client_instance._channel)
-        mock_controller_stub_class.assert_called_once_with(client_instance._channel)
+        mock_stdio_stub_class.assert_called_once_with(client_instance.grpc_channel)
+        mock_broker_stub_class.assert_called_once_with(client_instance.grpc_channel)
+        mock_controller_stub_class.assert_called_once_with(client_instance.grpc_channel)
 
         # Verify stubs were assigned
         assert client_instance._stdio_stub == mock_stdio_stub
@@ -61,9 +63,9 @@ async def test_init_stubs(client_instance):
 @pytest.mark.asyncio
 async def test_init_stubs_no_channel(client_instance):
     """Test _init_stubs with no channel available."""
-    client_instance._channel = None
+    client_instance.grpc_channel = None
 
-    with pytest.raises(RuntimeError, match="Cannot init stubs"):
+    with pytest.raises(ProtocolError, match="Cannot initialize gRPC stubs; gRPC channel is not available."): # <--- CHANGE THIS LINE
         client_instance._init_stubs()
 
 

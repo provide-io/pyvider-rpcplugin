@@ -8,7 +8,7 @@ from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 # Add demo directory to sys.path to find echo_pb2 and echo_pb2_grpc
 # Ensure examples directory and examples/demo are in path
 benchmarks_dir = Path(__file__).resolve().parent
-project_root = benchmarks_dir.parent.parent # Corrected path to /app
+project_root = benchmarks_dir.parent
 examples_path = project_root / "examples"
 demo_path = examples_path / "demo"
 
