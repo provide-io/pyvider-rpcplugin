@@ -28,20 +28,20 @@ from pyvider.telemetry import logger  # noqa: E402
 
 class ProductionServiceHandler:
     """Production-grade service handler with comprehensive logging and metrics."""
-    
+
     def __init__(self, service_name: str = "ProductionService"):
         self.service_name = service_name
         self.request_count = 0
         self.error_count = 0
         self.start_time = asyncio.get_event_loop().time()
-    
+
     async def ProcessRequest(self, request, context):
         """Handle production requests with full observability."""
         request_id = f"req_{self.request_count + 1}"
         self.request_count += 1
-        
+
         start_time = asyncio.get_event_loop().time()
-        
+
         logger.info(
             "Processing production request",
             domain="service",
@@ -51,18 +51,18 @@ class ProductionServiceHandler:
             request_id=request_id,
             total_requests=self.request_count
         )
-        
+
         try:
             # Simulate request processing
             message = getattr(request, 'message', 'production_request')
             processing_time = 0.05  # Simulate 50ms processing
             await asyncio.sleep(processing_time)
-            
+
             response_data = f"Production Response [{request_id}]: {message}"
-            
+
             end_time = asyncio.get_event_loop().time()
             duration_ms = (end_time - start_time) * 1000
-            
+
             logger.info(
                 "Request processed successfully",
                 domain="service",
@@ -72,7 +72,7 @@ class ProductionServiceHandler:
                 duration_ms=round(duration_ms, 2),
                 response_size=len(response_data)
             )
-            
+
             # Log metrics for monitoring
             uptime_seconds = end_time - self.start_time
             logger.info(
@@ -86,12 +86,12 @@ class ProductionServiceHandler:
                 error_rate=self.error_count / self.request_count if self.request_count > 0 else 0,
                 avg_response_time_ms=round(duration_ms, 2)
             )
-            
+
             return type('ProductionReply', (), {'response': response_data})()
-            
+
         except Exception as e:
             self.error_count += 1
-            
+
             logger.error(
                 "Request processing failed",
                 domain="service",
@@ -107,7 +107,7 @@ class ProductionServiceHandler:
 async def example_8_environment_configuration():
     """
     Example 8A: Demonstrates environment-based configuration.
-    
+
     Shows how to configure RPC plugins using environment variables
     for different deployment environments (dev, staging, production).
     """
@@ -115,7 +115,7 @@ async def example_8_environment_configuration():
     print("🌍 Example 8A: Environment-Based Configuration")
     print(" Demonstrates: Configuration via environment variables")
     print("=" * 60)
-    
+
     # Save original environment
     original_env = {}
     env_vars_to_set = {
@@ -129,13 +129,13 @@ async def example_8_environment_configuration():
         'PYVIDER_SERVICE_NAME': 'production-rpc-service',
         'PYVIDER_LOG_LEVEL': 'INFO'
     }
-    
+
     try:
         # Set production environment variables
         for key, value in env_vars_to_set.items():
             original_env[key] = os.environ.get(key)
             os.environ[key] = value
-        
+
         logger.info(
             "Production environment configured",
             domain="config",
@@ -144,15 +144,15 @@ async def example_8_environment_configuration():
             environment="production",
             config_vars=list(env_vars_to_set.keys())
         )
-        
+
         # Load configuration from environment
         config = RPCPluginConfig.instance()
-        
+
         # Verify configuration values
         magic_cookie = config.get("PLUGIN_MAGIC_COOKIE_VALUE")
         transports = config.get("PLUGIN_SERVER_TRANSPORTS")
         auto_mtls = config.get("PLUGIN_AUTO_MTLS")
-        
+
         logger.info(
             "Configuration loaded from environment",
             domain="config",
@@ -163,7 +163,7 @@ async def example_8_environment_configuration():
             mtls_enabled=auto_mtls,
             security_level="production"
         )
-        
+
         # Demonstrate different environment profiles
         env_profiles = {
             "development": {
@@ -182,7 +182,7 @@ async def example_8_environment_configuration():
                 "PLUGIN_SERVER_TRANSPORTS": "tcp"
             }
         }
-        
+
         for env_name, env_config in env_profiles.items():
             logger.info(
                 f"Environment profile: {env_name}",
@@ -192,7 +192,7 @@ async def example_8_environment_configuration():
                 profile=env_name,
                 config=env_config
             )
-        
+
     finally:
         # Restore original environment
         for key, original_value in original_env.items():
@@ -205,7 +205,7 @@ async def example_8_environment_configuration():
 async def example_8_production_server_deployment():
     """
     Example 8B: Demonstrates production server deployment patterns.
-    
+
     Shows how to deploy an RPC server with production-grade
     configuration, monitoring, and operational features.
     """
@@ -213,7 +213,7 @@ async def example_8_production_server_deployment():
     print("🏭 Example 8C: Production Server Deployment")
     print(" Demonstrates: Production-ready server with monitoring")
     print("=" * 60)
-    
+
     # Production configuration
     configure(
         magic_cookie="production-server-2024",
@@ -223,7 +223,7 @@ async def example_8_production_server_deployment():
         handshake_timeout=30.0,
         connection_timeout=600.0,  # 10 minutes for long-running operations
     )
-    
+
     logger.info(
         "Configuring production server",
         domain="deployment",
@@ -232,11 +232,11 @@ async def example_8_production_server_deployment():
         environment="production",
         security_level="mtls_required"
     )
-    
+
     # Create production protocol and handler
     protocol = create_basic_protocol()
     handler = ProductionServiceHandler("ProductionRPCService")
-    
+
     # Create production server
     server = plugin_server(
         protocol=protocol,
@@ -253,7 +253,7 @@ async def example_8_production_server_deployment():
             "compression": "gzip"
         }
     )
-    
+
     logger.info(
         "Starting production server",
         domain="deployment",
@@ -263,13 +263,13 @@ async def example_8_production_server_deployment():
         max_workers=32,
         max_connections=1000
     )
-    
+
     # Start server in background
     server_task = asyncio.create_task(server.serve())
-    
+
     # Simulate server initialization time
     await asyncio.sleep(0.5)
-    
+
     logger.info(
         "Production server started successfully",
         domain="deployment",
@@ -279,11 +279,11 @@ async def example_8_production_server_deployment():
         ready_for_traffic=True,
         health_status="healthy"
     )
-    
+
     # Simulate health monitoring
     for i in range(3):
         await asyncio.sleep(0.2)
-        
+
         logger.info(
             f"Health check {i + 1}",
             domain="monitoring",
@@ -295,7 +295,7 @@ async def example_8_production_server_deployment():
             cpu_usage_percent=15 + (i * 5),
             active_connections=10 + (i * 3)
         )
-    
+
     # Graceful shutdown
     logger.info(
         "Initiating graceful shutdown",
@@ -304,10 +304,10 @@ async def example_8_production_server_deployment():
         status="starting",
         reason="example_completion"
     )
-    
+
     await server.stop()
     await server_task
-    
+
     logger.info(
         "Production server shutdown completed",
         domain="deployment",
@@ -320,7 +320,7 @@ async def example_8_production_server_deployment():
 async def example_8_monitoring_and_observability():
     """
     Example 8D: Demonstrates monitoring and observability patterns.
-    
+
     Shows how to implement comprehensive monitoring, metrics,
     and observability for production RPC services.
     """
@@ -328,7 +328,7 @@ async def example_8_monitoring_and_observability():
     print("📊 Example 8D: Monitoring & Observability")
     print(" Demonstrates: Production monitoring and metrics")
     print("=" * 60)
-    
+
     # Simulate production metrics collection
     metrics = {
         "service_info": {
@@ -358,7 +358,7 @@ async def example_8_monitoring_and_observability():
             "deployment_version": "v1.2.3"
         }
     }
-    
+
     logger.info(
         "Service information",
         domain="monitoring",
@@ -366,7 +366,7 @@ async def example_8_monitoring_and_observability():
         status="current",
         **metrics["service_info"]
     )
-    
+
     logger.info(
         "Performance metrics",
         domain="monitoring",
@@ -374,7 +374,7 @@ async def example_8_monitoring_and_observability():
         status="current",
         **metrics["performance"]
     )
-    
+
     logger.info(
         "Resource utilization",
         domain="monitoring",
@@ -382,7 +382,7 @@ async def example_8_monitoring_and_observability():
         status="current",
         **metrics["resources"]
     )
-    
+
     logger.info(
         "Health status",
         domain="monitoring",
@@ -390,7 +390,7 @@ async def example_8_monitoring_and_observability():
         # status="current", # Removed to avoid conflict with status in metrics["health"]
         **metrics["health"]
     )
-    
+
     # Simulate alerting thresholds
     alert_conditions = [
         {
@@ -400,7 +400,7 @@ async def example_8_monitoring_and_observability():
             "status": "ok"
         },
         {
-            "metric": "cpu_usage_percent", 
+            "metric": "cpu_usage_percent",
             "threshold": 80.0,
             "current": metrics["resources"]["cpu_usage_percent"],
             "status": "ok"
@@ -418,10 +418,10 @@ async def example_8_monitoring_and_observability():
             "status": "ok"
         }
     ]
-    
+
     for condition in alert_conditions:
         is_alert = condition["current"] > condition["threshold"]
-        
+
         logger.info(
             f"Alert condition check: {condition['metric']}",
             domain="alerting",
@@ -432,7 +432,7 @@ async def example_8_monitoring_and_observability():
             threshold=condition["threshold"],
             alert_triggered=is_alert
         )
-    
+
     # Demonstrate operational best practices
     best_practices = [
         "📊 Monitor key metrics: RPS, latency, error rate, resource usage",
@@ -444,7 +444,7 @@ async def example_8_monitoring_and_observability():
         "🔄 Set up automated deployment and rollback procedures",
         "💾 Implement persistent logging and metrics storage"
     ]
-    
+
     logger.info(
         "Production monitoring best practices",
         domain="monitoring",
@@ -458,20 +458,18 @@ async def main():
     """Run all production configuration examples."""
     print("🏭 pyvider-rpcplugin Production Configuration Examples")
     print("====================================================")
-    
+
     try:
         # Run each production configuration example
         await example_8_environment_configuration()
-        # await example_8_file_based_configuration() # Removed
         await example_8_production_server_deployment()
         await example_8_monitoring_and_observability()
-        
+
         print("\n" + "=" * 60)
         print("✅ All Production Configuration Examples Completed Successfully!")
         print("=" * 60)
         print("\n🏭 Production Checklist:")
         print("  • Environment-based configuration for different stages")
-        # print("  • File-based config management (.env, .json, .yaml)") # Removed
         print("  • mTLS security enabled for all environments")
         print("  • Comprehensive monitoring and alerting")
         print("  • Health checks and graceful shutdown procedures")
@@ -480,7 +478,7 @@ async def main():
         print("  • Review docs/architecture.md for system design patterns")
         print("  • Check docs/security.md for production security guidelines")
         print("  • See example 10_performance_tuning.py for optimization")
-        
+
     except Exception as e:
         logger.error(
             "Production configuration example failed",

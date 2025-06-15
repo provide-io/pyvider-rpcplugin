@@ -399,8 +399,7 @@ def parse_handshake_response(
             )
         address = parts[3]
         protocol = parts[4]
-        raw_server_cert_part = parts[5] if parts[5] else None
-        server_cert = raw_server_cert_part.strip() if raw_server_cert_part else None # Explicitly strip this part
+        server_cert = parts[5] if parts[5] else None
 
         expected_core_version_from_config = rpcplugin_config.get("PLUGIN_CORE_VERSION")
         logger.debug(
@@ -429,11 +428,9 @@ def parse_handshake_response(
                 f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
             )
 
-        if server_cert: # Now server_cert is stripped
+        if server_cert:
             padding = len(server_cert) % 4
             if padding:
-                # This part of the logic should remain the same,
-                # but it will now operate on a guaranteed stripped string.
                 server_cert += "=" * (4 - padding)
             logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
 
@@ -488,8 +485,6 @@ async def read_handshake_response(process) -> str:
                     )
                 except Exception as e:
                     stderr_output = f"Error reading stderr: {e}"
-
-            stderr_output_truncated = (stderr_output[:200] + '...') if len(stderr_output) > 200 else stderr_output
 
             logger.error(
                 f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake"
@@ -572,7 +567,6 @@ async def read_handshake_response(process) -> str:
         except Exception as e:
             stderr_output = f"Error reading stderr: {e}"
 
-    stderr_output_truncated = (stderr_output[:200] + '...') if len(stderr_output) > 200 else stderr_output
     raise HandshakeError(
         message=f"Timed out waiting for handshake response from plugin after {timeout} seconds.",
         hint=f"Ensure the plugin starts and prints its handshake string to stdout promptly. Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'" if stderr_output_truncated else f"Ensure the plugin starts and prints its handshake string to stdout promptly. Last buffer: '{buffer}'."

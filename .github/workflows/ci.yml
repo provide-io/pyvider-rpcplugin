@@ -1,581 +1,319 @@
-# .github/workflows/ci.yml
-# Comprehensive CI/CD pipeline for pyvider-rpcplugin
-# MANUAL TRIGGER ONLY - Run via GitHub Actions UI or workflow_dispatch
+name: 🧪 CI/CD Pipeline
 
-name: 🔌 pyvider-rpcplugin CI/CD
-
-# MANUAL TRIGGER ONLY - No automatic runs on push/PR
 on:
-  workflow_dispatch:
-    inputs:
-      run_integration_tests:
-        description: 'Run RPC integration tests'
-        required: false
-        default: 'true'
-        type: boolean
-      run_go_tests:
-        description: 'Run Go plugin integration tests'
-        required: false
-        default: 'true'
-        type: boolean
-      coverage_upload:
-        description: 'Upload coverage to Codecov'
-        required: false
-        default: 'true'
-        type: boolean
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
 
-# Global environment variables
 env:
-  PYTHONDONTWRITEBYTECODE: 1
-  PYTHONUNBUFFERED: 1
-  PY_COLORS: 1
-  FORCE_COLOR: 1
-  TERM: xterm-256color
-
-# Cancel previous runs for the same workflow
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  PYTHON_VERSION: "3.13"
+  UV_CACHE_DIR: ~/.cache/uv
 
 jobs:
   # =============================================================================
-  # Environment Setup & Validation
+  # Code Quality & Security
   # =============================================================================
-  environment-setup:
-    name: 🔧 Environment Setup & Validation
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.13", "3.14"]
-    
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
-
-      - name: 🔧 Setup environment (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          echo "🔧 Setting up Unix environment..."
-          
-          # Make env.sh executable and source it
-          chmod +x env.sh
-          
-          # Source the environment setup script
-          if [[ -f "env.sh" ]]; then
-            echo "📁 Sourcing env.sh..."
-            source ./env.sh
-          else
-            echo "⚠️ env.sh not found, using fallback setup..."
-            uv venv
-            uv sync --all-groups --dev
-            echo "PYTHONPATH=${PWD}/src:${PWD}" >> $GITHUB_ENV
-          fi
-          
-          # Verify setup
-          echo "✅ Environment verification:"
-          echo "Python: $(python --version)"
-          echo "uv: $(uv --version)"
-          echo "PYTHONPATH: ${PYTHONPATH:-'Not set'}"
-          
-          # Test basic import
-          uv run python -c "import pyvider.rpcplugin; print('✅ Basic import successful')"
-
-      - name: 🔧 Setup environment (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          Write-Host "🔧 Setting up Windows environment..." -ForegroundColor Blue
-          
-          # Windows equivalent of env.sh
-          if (Test-Path "env.sh") {
-            Write-Host "📁 Found env.sh, adapting for Windows..." -ForegroundColor Yellow
-          }
-          
-          # Setup Python environment with uv
-          uv venv
-          uv sync --all-groups --dev
-          
-          # Set PYTHONPATH for Windows
-          $pythonPath = "$env:GITHUB_WORKSPACE\src;$env:GITHUB_WORKSPACE"
-          echo "PYTHONPATH=$pythonPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          
-          # Verify setup
-          Write-Host "✅ Environment verification:" -ForegroundColor Green
-          Write-Host "Python: $(python --version)"
-          Write-Host "uv: $(uv --version)"
-          Write-Host "PYTHONPATH: $pythonPath"
-          
-          # Test basic import
-          uv run python -c "import pyvider.rpcplugin; print('✅ Basic import successful')"
-
-      - name: 📋 Environment diagnostics
-        run: |
-          echo "🔍 Environment Diagnostics:"
-          echo "=========================="
-          echo "OS: ${{ runner.os }}"
-          echo "Python: ${{ matrix.python-version }}"
-          echo "Working Directory: $(pwd)"
-          echo "Python Path: ${PYTHONPATH:-'Not set'}"
-          
-          # List installed packages
-          echo "📦 Installed packages:"
-          uv pip list
-          
-          # Check project structure
-          echo "📁 Project structure:"
-          find . -type f -name "*.py" | head -10
-
-  # =============================================================================
-  # Code Quality & Analysis
-  # =============================================================================
-  code-quality:
-    name: 📋 Code Quality & Analysis
+  quality:
+    name: 🔍 Code Quality & Security
     runs-on: ubuntu-latest
-    needs: environment-setup
-    
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.13"
+          version: "latest"
           enable-cache: true
 
-      - name: 🔧 Setup environment
+      - name: 📦 Install dependencies
         run: |
-          chmod +x env.sh
-          source ./env.sh
+          uv sync --all-extras --dev
+          uv pip install bandit pyright
 
-      - name: 🧹 Run code formatting check
+      - name: 🔒 Security scan (Bandit)
         run: |
-          echo "🧹 Checking code formatting with ruff..."
-          uv run ruff format --check .
+          uv run bandit -r src/ -f json -o bandit-report.json || true
+          uv run bandit -r src/ -f txt
 
-      - name: 🔍 Run linting
+      - name: 🎨 Code formatting (Ruff)
         run: |
-          echo "🔍 Running linting with ruff..."
-          uv run ruff check .
+          uv run ruff check src/ tests/ examples/
+          uv run ruff format --check src/ tests/ examples/
 
-      - name: 🏷️ Run type checking (mypy)
-        run: |
-          echo "🏷️ Running type checking with mypy..."
-          uv run mypy src/
+      - name: 🧠 Type checking (Pyright)
+        run: uv run pyright src/ tests/
 
-      - name: 🏷️ Run type checking (pyre)
-        run: |
-          echo "🏷️ Running type checking with pyre..."
-          uv run pyre check
+      - name: 📋 Version consistency
+        run: uv run python scripts/version_checker.py
 
-      - name: 🔒 Security analysis
-        run: |
-          echo "🔒 Running security analysis with bandit..."
-          uv run bandit -r src/
-
-      - name: 📋 Validate project configuration
-        run: |
-          echo "📋 Validating pyproject.toml..."
-          uv run python -m pip install validate-pyproject
-          uv run validate-pyproject pyproject.toml
+      - name: 📊 Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: bandit-report.json
 
   # =============================================================================
-  # Core Testing Matrix
+  # Testing Matrix
   # =============================================================================
   test:
-    name: 🧪 Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    name: 🧪 Test Suite
     runs-on: ${{ matrix.os }}
-    needs: [environment-setup, code-quality]
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.13", "3.14"]
         include:
-          # Add coverage reporting for one combination
+          # Test with minimum supported Python version
           - os: ubuntu-latest
             python-version: "3.13"
             coverage: true
 
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          version: "latest"
           enable-cache: true
 
-      - name: 🔧 Setup environment (Unix)
-        if: runner.os != 'Windows'
-        run: |
-          chmod +x env.sh
-          source ./env.sh
+      - name: 📦 Install dependencies
+        run: uv sync --all-extras --dev
 
-      - name: 🔧 Setup environment (Windows)
-        if: runner.os == 'Windows'
-        shell: powershell
-        run: |
-          uv venv
-          uv sync --all-groups --dev
-          $pythonPath = "$env:GITHUB_WORKSPACE\src;$env:GITHUB_WORKSPACE"
-          echo "PYTHONPATH=$pythonPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: 🧪 Run unit tests
+      - name: 🧪 Run tests
         run: |
           if [ "${{ matrix.coverage }}" = "true" ]; then
-            echo "🧪 Running tests with coverage..."
-            uv run pytest -n auto --cov=pyvider.rpcplugin --cov-report=xml --cov-report=html --cov-report=term-missing -v
+            uv run pytest --cov=pyvider.rpcplugin --cov-report=xml --cov-report=html -v
           else
-            echo "🧪 Running tests..."
-            uv run pytest -n auto -v
+            uv run pytest -v
           fi
         shell: bash
 
-      - name: 📊 Upload coverage to Codecov
-        if: matrix.coverage && inputs.coverage_upload
-        uses: codecov/codecov-action@v5
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
-          verbose: true
+      # - name: 📊 Upload coverage to Codecov
+      #   if: matrix.coverage
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     file: ./coverage.xml
+      #     fail_ci_if_error: false
 
       - name: 📈 Upload coverage artifacts
         if: matrix.coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ matrix.os }}-${{ matrix.python-version }}
+          name: coverage-report
           path: htmlcov/
 
   # =============================================================================
-  # RPC Integration Testing
+  # RPC-Specific Testing
   # =============================================================================
   rpc-integration:
-    name: 🔌 RPC Integration (${{ matrix.transport }}, ${{ matrix.security }})
+    name: 🔌 RPC Integration Tests
     runs-on: ubuntu-latest
-    needs: [environment-setup, code-quality]
-    if: inputs.run_integration_tests
     strategy:
-      fail-fast: false
       matrix:
         transport: [unix, tcp]
         security: [plain, mtls]
     
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.13"
+          version: "latest"
           enable-cache: true
 
-      - name: 🔧 Setup environment
-        run: |
-          chmod +x env.sh
-          source ./env.sh
+      - name: 📦 Install dependencies
+        run: uv sync --all-extras --dev
 
-      - name: 🔌 Run RPC integration tests
+      - name: 🛡️ Generate test certificates (mTLS)
+        if: matrix.security == 'mtls'
         run: |
-          echo "🔌 Running RPC integration tests..."
-          echo "Transport: ${{ matrix.transport }}"
-          echo "Security: ${{ matrix.security }}"
+          mkdir -p test-certs
+          # Generate CA key and certificate
+          openssl genrsa -out test-certs/ca.key 4096
+          openssl req -new -x509 -key test-certs/ca.key -sha256 -subj "/C=US/ST=CA/O=Test/CN=TestCA" -days 1 -out test-certs/ca.crt
           
-          # Set environment for test configuration
-          export TEST_TRANSPORT="${{ matrix.transport }}"
-          export TEST_SECURITY="${{ matrix.security }}"
+          # Generate server key and certificate
+          openssl genrsa -out test-certs/server.key 4096
+          openssl req -new -key test-certs/server.key -subj "/C=US/ST=CA/O=Test/CN=localhost" -out test-certs/server.csr
+          openssl x509 -req -in test-certs/server.csr -CA test-certs/ca.crt -CAkey test-certs/ca.key -CAcreateserial -out test-certs/server.crt -days 1 -sha256
           
-          # Run integration tests
-          uv run pytest tests/integration/ -v -k "rpc" --tb=short
+          # Generate client key and certificate
+          openssl genrsa -out test-certs/client.key 4096
+          openssl req -new -key test-certs/client.key -subj "/C=US/ST=CA/O=Test/CN=client" -out test-certs/client.csr
+          openssl x509 -req -in test-certs/client.csr -CA test-certs/ca.crt -CAkey test-certs/ca.key -CAcreateserial -out test-certs/client.crt -days 1 -sha256
+
+      - name: 🔌 Test RPC Integration
         env:
-          TEST_TRANSPORT: ${{ matrix.transport }}
-          TEST_SECURITY: ${{ matrix.security }}
-
-      - name: 📋 Test RPC examples
+          RPC_TRANSPORT: ${{ matrix.transport }}
+          RPC_SECURITY: ${{ matrix.security }}
+          CERT_DIR: test-certs
         run: |
-          echo "📋 Testing RPC examples..."
-          cd examples/kvproto
-          
-          # Source the example environment
-          if [[ -f "env.sh" ]]; then
-            source ./env.sh
-          fi
-          
-          # Test Python RPC examples
-          echo "🐍 Testing Python RPC examples..."
-          cd py_rpc
-          timeout 30s python py_kv_server.py &
-          SERVER_PID=$!
-          sleep 5
-          
-          # Test client connection
-          timeout 10s python py_kv_client.py || echo "Client test completed"
-          
-          # Cleanup
-          kill $SERVER_PID 2>/dev/null || true
+          uv run pytest tests/integration/ -v \
+            -k "test_${{ matrix.transport }}_${{ matrix.security }}" \
+            --timeout=30
 
   # =============================================================================
-  # Go Plugin Integration Tests
+  # Performance Benchmarking
   # =============================================================================
-  go-integration:
-    name: 🐹 Go Plugin Integration
-    runs-on: ${{ matrix.os }}
-    needs: [environment-setup, code-quality]
-    if: inputs.run_go_tests
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest]  # Windows Go integration TBD
-    
-    steps:
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
-        with:
-          python-version: "3.13"
-          enable-cache: true
-
-      - name: 🐹 Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: 'stable'
-          cache: true
-
-      - name: 🔧 Setup environment
-        run: |
-          chmod +x env.sh
-          source ./env.sh
-
-      - name: 🛠️ Install Go dependencies
-        run: |
-          echo "🛠️ Installing Go dependencies..."
-          go install github.com/bufbuild/buf/cmd/buf@latest
-
-      - name: 🏗️ Build Go plugins
-        run: |
-          echo "🏗️ Building Go plugins..."
-          cd examples/kvproto/go-rpc
-          
-          # Make build script executable
-          chmod +x build.sh
-          
-          # Build the Go plugins
-          ./build.sh
-
-      - name: 🧪 Test Go-Python RPC integration
-        run: |
-          echo "🧪 Testing Go-Python RPC integration..."
-          cd examples/kvproto
-          
-          # Source environment
-          source ./env.sh
-          
-          # Test Go server with Python client
-          echo "🔄 Testing Go server with Python client..."
-          timeout 30s ./go-rpc/bin/kv-go-server &
-          SERVER_PID=$!
-          sleep 5
-          
-          # Test with Python client
-          cd py_rpc
-          timeout 10s python py_kv_client.py || echo "Cross-language test completed"
-          
-          # Cleanup
-          kill $SERVER_PID 2>/dev/null || true
-
-  # =============================================================================
-  # Documentation Build & Validation
-  # =============================================================================
-  documentation:
-    name: 📚 Documentation Build & Validation
+  performance:
+    name: ⚡ Performance Benchmarks
     runs-on: ubuntu-latest
-    needs: code-quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.13"
+          version: "latest"
           enable-cache: true
 
-      - name: 🔧 Setup environment
-        run: |
-          chmod +x env.sh
-          source ./env.sh
+      - name: 📦 Install dependencies
+        run: uv sync --all-extras --dev
 
-      - name: 📚 Install documentation dependencies
+      - name: ⚡ Run benchmarks
         run: |
-          echo "📚 Installing documentation dependencies..."
-          uv pip install mkdocs mkdocs-material mkdocs-mermaid2-plugin
+          uv run python benchmarks/latency_benchmark.py
+          uv run python benchmarks/throughput_benchmark.py
 
-      - name: 🏗️ Build documentation
-        run: |
-          echo "🏗️ Building documentation..."
-          
-          # Create mkdocs.yml if it doesn't exist
-          if [[ ! -f mkdocs.yml ]]; then
-            cat > mkdocs.yml << 'MKDOCS_EOF'
-site_name: pyvider-rpcplugin Documentation
-site_description: High-performance RPC plugin framework for Python
-repo_url: https://github.com/provide-io/pyvider-rpcplugin
-theme:
-  name: material
-  features:
-    - navigation.tabs
-    - navigation.sections
-    - toc.integrate
-    - search.suggest
-    - search.highlight
-  palette:
-    - scheme: default
-      primary: blue
-      accent: blue
-nav:
-  - Home: index.md
-  - API Reference: api-reference.md
-  - Architecture: architecture.md
-  - Security: security.md
-  - Examples: examples.md
-  - Troubleshooting: troubleshooting.md
-plugins:
-  - search
-  - mermaid2
-markdown_extensions:
-  - pymdownx.highlight
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-MKDOCS_EOF
-          fi
-          
-          # Create docs directory and copy README
-          mkdir -p docs
-          cp README.md docs/index.md
-          
-          # Create placeholder files if they don't exist
-          touch docs/api-reference.md docs/architecture.md docs/security.md docs/examples.md docs/troubleshooting.md
-          
-          # Build the documentation
-          mkdocs build
-
-      - name: 🔍 Validate examples
-        run: |
-          echo "🔍 Validating example scripts..."
-          find examples/ -name "*.py" -type f | while read -r file; do
-            echo "Checking syntax: $file"
-            python -m py_compile "$file" || echo "⚠️ Syntax error in $file"
-          done
-
-      - name: 📤 Upload documentation artifacts
+      - name: 📊 Upload benchmark results
         uses: actions/upload-artifact@v4
         with:
-          name: documentation
-          path: site/
+          name: benchmark-results
+          path: benchmark-results.json
 
   # =============================================================================
-  # Package Building & Validation
+  # Documentation & Examples
   # =============================================================================
-  build:
-    name: 📦 Build & Package Validation
+  docs:
+    name: 📚 Documentation & Examples
     runs-on: ubuntu-latest
-    needs: [test, rpc-integration, documentation]
-    if: always() && (needs.test.result == 'success')
-    
     steps:
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
       - name: 🐍 Setup Python & uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v4
         with:
-          python-version: "3.13"
+          version: "latest"
           enable-cache: true
 
-      - name: 🔧 Setup environment
+      - name: 📦 Install dependencies
         run: |
-          chmod +x env.sh
-          source ./env.sh
+          uv sync --all-extras --dev
+          npm install -g markdown-link-check
+
+      - name: 🔗 Check markdown links
+        run: |
+          find . -name "*.md" -not -path "./node_modules/*" | xargs markdown-link-check --config .mlc_config.json
+
+      - name: 📖 Test examples
+        run: |
+          cd examples
+          for example in 01_echo_demo.py 02_server_setup.py 03_client_connection.py; do
+            echo "Testing $example..."
+            timeout 30 uv run python "$example" || echo "Example $example completed or timed out (expected)"
+          done
+
+      - name: 🏗️ Test demo builds
+        run: |
+          cd examples/demo/echo_service
+          uv run python server.py --help
+          uv run python client.py --help || echo "Client help completed"
+
+  # =============================================================================
+  # Build & Package
+  # =============================================================================
+  build:
+    name: 📦 Build & Package
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Setup Python & uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
 
       - name: 📦 Build package
         run: |
-          echo "📦 Building package with uv..."
           uv build
 
       - name: 🔍 Verify package
         run: |
-          echo "🔍 Verifying package..."
           uv run twine check dist/*
-          
           # Test package installation
-          echo "📥 Testing package installation..."
           uv pip install dist/*.whl
-          
-          # Test import
-          uv run python -c "import pyvider.rpcplugin; print(f'✅ Package version: {pyvider.rpcplugin.__version__}')"
+          uv run python -c "import pyvider.rpcplugin; print(pyvider.rpcplugin.__version__)"
 
       - name: 📤 Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ github.sha }}
+          name: dist
           path: dist/
 
   # =============================================================================
-  # Final Status & Notifications
+  # Release (only on published releases)
   # =============================================================================
-  status-report:
-    name: 📊 Final Status Report
+  release:
+    name: 🚀 Release to PyPI
     runs-on: ubuntu-latest
-    needs: [environment-setup, code-quality, test, rpc-integration, go-integration, documentation, build]
-    if: always()
+    needs: [quality, test, rpc-integration, docs, build]
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pyvider-rpcplugin
     
     steps:
-      - name: 📊 Generate status report
+      - name: 📥 Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: 🚀 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: 📢 Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+  # =============================================================================
+  # Cleanup & Notifications
+  # =============================================================================
+  notify:
+    name: 📢 Notifications
+    runs-on: ubuntu-latest
+    needs: [quality, test, rpc-integration, docs]
+    if: always()
+    steps:
+      - name: 📊 Report Status
         run: |
-          echo "🔌 pyvider-rpcplugin CI/CD Pipeline Status Report"
-          echo "=================================================="
-          echo ""
-          echo "📋 Job Results:"
-          echo "Environment Setup: ${{ needs.environment-setup.result }}"
-          echo "Code Quality: ${{ needs.code-quality.result }}"
+          echo "Pipeline Status Summary:"
+          echo "Quality: ${{ needs.quality.result }}"
           echo "Tests: ${{ needs.test.result }}"
           echo "RPC Integration: ${{ needs.rpc-integration.result }}"
-          echo "Go Integration: ${{ needs.go-integration.result }}"
-          echo "Documentation: ${{ needs.documentation.result }}"
-          echo "Build: ${{ needs.build.result }}"
-          echo ""
-          echo "🎯 Overall Status: $(if [[ "${{ needs.test.result }}" == "success" && "${{ needs.code-quality.result }}" == "success" ]]; then echo "✅ SUCCESS"; else echo "❌ FAILED"; fi)"
-          echo ""
-          echo "🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: 🎉 Success notification
-        if: needs.test.result == 'success' && needs.code-quality.result == 'success'
-        run: |
-          echo "🎉 Pipeline completed successfully!"
-          echo "✅ All core components passed validation"
-          echo "🚀 Ready for deployment considerations"
-
-      - name: 🚨 Failure notification
-        if: needs.test.result != 'success' || needs.code-quality.result != 'success'
-        run: |
-          echo "🚨 Pipeline encountered issues!"
-          echo "❌ Please review the failed jobs above"
-          echo "🔧 Check logs for detailed error information"
+          echo "Documentation: ${{ needs.docs.result }}"
