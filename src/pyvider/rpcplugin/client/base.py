@@ -161,13 +161,15 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     _handshake_failed_event: asyncio.Event = field(factory=asyncio.Event, init=False)
     is_started: bool = field(default=False, init=False)
     _stubs: dict[str, Any] = field(factory=dict, init=False) # To hold initialized stubs
+    logger: Any = field(init=False, default=None) # Declare logger as a field
 
 
     def __attrs_post_init__(self) -> None:
         """
         Initialize client state after attributes are set.
         """
-        logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
+        self.logger = logger # Assign global logger directly
+        self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
         # Events are initialized by attrs factory
 
     async def _connect_and_handshake_with_retry(self) -> None:
