@@ -2,6 +2,7 @@
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
+import re # Added import
 
 import pytest
 
@@ -81,7 +82,7 @@ async def test_read_handshake_response_process_exit():
     process = MockProcess(stdout_content="", exit_code=1)
     process.stderr.read.return_value = b"Error in plugin initialization"
 
-    with pytest.raises(HandshakeError, match="Plugin process exited with code"):
+    with pytest.raises(HandshakeError, match=r"Plugin process exited prematurely with code .* before completing handshake"):
         await read_handshake_response(process)
 
 
@@ -95,7 +96,7 @@ async def test_read_handshake_response_process_exit_stderr_read_error(mocker):
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
     with pytest.raises(
-        HandshakeError, match="Error reading stderr: Failed to read stderr"
+        HandshakeError, match=r"Plugin process exited prematurely with code .* Hint: .*Error reading stderr: Failed to read stderr"
     ):
         await read_handshake_response(process)
 
@@ -121,7 +122,7 @@ async def test_read_handshake_response_timeout():
     # Patch time.time and asyncio.sleep to make the test run faster
     with patch("asyncio.sleep", new_callable=AsyncMock):
         with patch("time.time", side_effect=[0, 11]):  # Exceed the timeout
-            with pytest.raises(HandshakeError, match="Timed out waiting for handshake"):
+            with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake response from plugin after .* seconds"):
                 await read_handshake_response(process)
 
 
@@ -140,7 +141,7 @@ async def test_read_handshake_response_timeout_stderr_read_error(mocker):
     )  # Exceed the 10s timeout
 
     with pytest.raises(
-        HandshakeError, match="Error reading stderr: Failed to read stderr on timeout"
+        HandshakeError, match=r"Timed out waiting for handshake response from plugin after .* seconds.* Hint: .*Error reading stderr: Failed to read stderr on timeout"
     ):
         await read_handshake_response(process)
 
@@ -252,9 +253,9 @@ async def test_parse_and_validate_handshake_valid(handshake_line, expected):
 
 
 @pytest.mark.parametrize(
-    "handshake_line, error_pattern",
+    "handshake_line, error_message_core", # Renamed error_pattern to error_message_core
     [
-        ("", "Failed to parse handshake"),
+        ("", "Failed to parse handshake"), # Original patterns
         ("1|2|3", "Invalid handshake format"),
         ("1|2|invalid|127.0.0.1:8000|grpc|", "Invalid network type"),
         ("1|2|tcp||grpc|", "Empty address in handshake"),
@@ -262,7 +263,10 @@ async def test_parse_and_validate_handshake_valid(handshake_line, expected):
     ],
 )
 @pytest.mark.asyncio
-async def test_parse_and_validate_handshake_invalid(handshake_line, error_pattern):
+async def test_parse_and_validate_handshake_invalid(handshake_line, error_message_core): # Use error_message_core
     """Test parsing and validating handshake with invalid inputs."""
-    with pytest.raises(HandshakeError, match=error_pattern):
+    # Construct the full regex pattern to include [HandshakeError] and optional Hint
+    # This regex tries to match the core message, allowing for prefixes and suffixes.
+    flexible_pattern = rf".*\[HandshakeError\] {re.escape(error_message_core)}.*"
+    with pytest.raises(HandshakeError, match=flexible_pattern):
         await parse_and_validate_handshake(handshake_line)

@@ -2,6 +2,7 @@
 
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
+from pyvider.rpcplugin.exception import TransportError # Added import
 
 
 @pytest.mark.asyncio
@@ -62,7 +63,8 @@ async def test_launch_process_error(client_instance):
     with patch("pyvider.rpcplugin.client.base.subprocess.Popen") as mock_popen:
         mock_popen.side_effect = OSError("Failed to launch")
 
-        with pytest.raises(OSError, match="Failed to launch"):
+        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Failed to launch"
+        with pytest.raises(TransportError, match=expected_msg_regex):
             await client_instance._launch_process()
 
 

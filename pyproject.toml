@@ -10,21 +10,7 @@ readme = "README.md"
 authors = [
     {name = "Tim Perkins", email = "code@tim.life"}
 ]
-keywords = ["rpc", "plugin", "grpc", "ipc", "mtls", "asyncio", "python3"]
-classifiers = [
-    "Development Status :: 4 - Beta", # Assuming Beta for a preview release
-    "Intended Audience :: Developers",
-    "Topic :: Software Development :: Libraries :: Python Modules",
-    "Topic :: System :: Networking",
-    "Topic :: System ::Distributed Computing",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.13",
-    "Operating System :: OS Independent",
-    "Framework :: AsyncIO",
-    "Typing :: Typed"
-]
-license = {text = "Apache-2.0"}
+
 dependencies = [
     "attrs>=25.1.0",
     "cryptography>=44.0.1",
@@ -34,12 +20,6 @@ dependencies = [
     "pyvider-telemetry>=0.0.4",
     "structlog>=25.1.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/provide-io/pyvider-rpcplugin"
-Repository = "https://github.com/provide-io/pyvider-rpcplugin"
-Documentation = "https://github.com/provide-io/pyvider-rpcplugin/tree/main/docs"
-Changelog = "https://github.com/provide-io/pyvider-rpcplugin/blob/main/CHANGELOG.md"
 
 [dependency-groups]
 dev = [

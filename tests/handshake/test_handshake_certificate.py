@@ -4,6 +4,7 @@ import pytest
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.handshake import build_handshake_response
+from pyvider.rpcplugin.exception import HandshakeError # Added import
 
 
 def test_rebuild_x509_pem():
@@ -103,8 +104,11 @@ async def test_handshake_with_invalid_certificate():
 
     transport = MockTransport()
 
-    # Try to build handshake with invalid certificate
-    with pytest.raises(ValueError, match="Invalid certificate format"):
+    expected_msg_regex = (
+        r"\[HandshakeError\] Failed to build handshake response: "
+        r"\[HandshakeError\] Invalid server certificate format provided for handshake response.*"
+    )
+    with pytest.raises(HandshakeError, match=expected_msg_regex):
         await build_handshake_response(
             plugin_version=7,
             transport_name="unix",

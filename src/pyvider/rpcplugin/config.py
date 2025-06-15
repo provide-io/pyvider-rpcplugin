@@ -32,6 +32,23 @@ from typing import Any, Literal, cast, get_args  # Removed Dict, List, Optional
 
 from pyvider.telemetry import logger
 
+
+class ConfigError(ValueError):
+    """Custom exception for configuration-related errors."""
+    # Add more context if needed, e.g. error_code, hint
+    def __init__(self, message: str, hint: str | None = None, code: int | None = None):
+        super().__init__(message)
+        self.message = message # Add this line
+        self.hint = hint
+        self.code = code
+
+    def __str__(self) -> str:
+        base_message = super().__str__()
+        if self.hint:
+            return f"{base_message} Hint: {self.hint}"
+        return base_message
+
+
 # Define supported protocol versions
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 
