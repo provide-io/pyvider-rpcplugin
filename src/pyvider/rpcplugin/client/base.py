@@ -546,36 +546,36 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 logger.debug("🤝 Timeout on read attempt, retrying...")
                 await asyncio.sleep(0.5)  # Longer backoff
 
-            # Fallback to byte-by-byte reading if line reading doesn't work
+            # Fallback to byte-by-byte reading if line reading doesn't work or didn't complete
             # This might help if the Go server doesn't flush properly or uses different line endings
-            if not buffer:  # Only try this if we haven't read anything
-                try:
-                    if (
-                        self._process is not None and self._process.stdout is not None
-                    ):  # Check stdout is not None
-                        char_bytes = await asyncio.wait_for(
-                            loop.run_in_executor(
-                                None, lambda: self._process.stdout.read(1)
-                            ),  # type: ignore[union-attr]
-                            timeout=1.0,
+            # The 'if not buffer:' condition was removed.
+            try:
+                if (
+                    self._process is not None and self._process.stdout is not None
+                ):  # Check stdout is not None
+                    char_bytes = await asyncio.wait_for(
+                        loop.run_in_executor(
+                            None, lambda: self._process.stdout.read(1)
+                        ),  # type: ignore[union-attr]
+                        timeout=1.0,
+                    )
+                    if char_bytes:
+                        char = char_bytes.decode("utf-8", errors="replace")
+                        buffer += char
+                        logger.debug(
+                            f"🤝 Byte-by-byte read: buffer now: '{buffer}'"
                         )
-                        if char_bytes:
-                            char = char_bytes.decode("utf-8", errors="replace")
-                            buffer += char
-                            logger.debug(
-                                f"🤝 Byte-by-byte read: buffer now: '{buffer}'"
-                            )
-                            # Check for complete handshake after adding char to buffer
-                            if "|" in buffer and buffer.count("|") >= 5:
-                                logger.debug("🤝 Byte-by-byte path found complete handshake in buffer")
-                                return buffer # Return if complete
-                    else:
-                        # Process or stdout is None, cannot read
-                        await asyncio.sleep(0.1)  # Wait briefly
-                        continue
-                except asyncio.TimeoutError:
-                    logger.debug("🤝 Timeout on byte-by-byte read(1) attempt, continuing outer loop.")
-                    pass # Continue the outer timeout loop
+                        # Check for complete handshake after adding char to buffer
+                        if "|" in buffer and buffer.count("|") >= 5:
+                            logger.debug("🤝 Byte-by-byte path found complete handshake in buffer")
+                            return buffer # Return if complete
+                else:
+                    # Process or stdout is None, cannot read
+                    await asyncio.sleep(0.1)  # Wait briefly
+                    # continue # Removed continue, let the while loop condition re-evaluate naturally or timeout
+            except asyncio.TimeoutError:
+                logger.debug("🤝 Timeout on byte-by-byte read(1) attempt, continuing outer loop.")
+                pass # Continue the outer timeout loop
 
         # If we get here, we've timed out
         stderr_output = ""
