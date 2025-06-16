@@ -12,7 +12,6 @@ from unittest.mock import AsyncMock, MagicMock # Added MagicMock for ProtocolWit
 from grpc.aio import server as GrpcAioServerType
 from pyvider.rpcplugin.types import RPCPluginTransport
 from pyvider.rpcplugin.exception import TransportError, ProtocolError # Ensure ProtocolError is imported
-from pyvider.rpcplugin.config import ConfigError # Added import
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 # Assuming TCPSocketTransport and UnixSocketTransport are imported from somewhere, e.g.
@@ -834,7 +833,7 @@ async def test_stop_plugin_task_cancellation_timeout(
     mocker.patch("asyncio.gather", side_effect=asyncio.TimeoutError("Gather timed out"))
 
     mock_logger_warning = mocker.patch("pyvider.rpcplugin.server.logger.warning")
-    mock_logger_debug = mocker.patch(
+    mocker.patch(
         "pyvider.rpcplugin.server.logger.debug"
     )  # To check other logs
 

@@ -206,7 +206,6 @@ async def test_broker_start_stream_error_handling(
     grpc_server_output: ServerFixtureOutput, grpc_channel
 ) -> None:
     """Tests error handling in GRPCBrokerService.StartStream when SubchannelConnection.open fails."""
-    broker_service = grpc_server_output.broker_service
     # broker_service is available if direct interaction is needed later
 
     stub = GRPCBrokerStub(grpc_channel)

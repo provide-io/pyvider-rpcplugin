@@ -240,7 +240,7 @@ class RPCPluginServer(
                                 message=f"TCP socket at {actual_server_host}:{actual_server_port} is not connectable: {e!s}",
                                 hint="Verify the server process is running, listening on the port, and firewall rules allow connection."
                             ) from e
-        except asyncio.TimeoutError: # This is the outer timeout for _serving_event.wait()
+        except asyncio.TimeoutError as e: # This is the outer timeout for _serving_event.wait()
             logger.error(
                 f"🛎️❌ Server did not become ready (serving event not set) within timeout ({timeout}s).",
                 extra={"timeout": timeout, "trace": traceback.format_exc()},

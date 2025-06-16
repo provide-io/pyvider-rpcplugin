@@ -155,7 +155,7 @@ def plugin_client(
 def plugin_protocol(
     service_name: str,
     descriptor_module: Any = None,
-    servicer_add_fn: AbcCallable | None = None,  # Modernized Optional[Callable]
+    servicer_add_fn: AbcCallable | None = None,  # Modernized Callable | None
 ) -> RPCPluginProtocol:
     """
     Create a protocol definition for a specific gRPC service.

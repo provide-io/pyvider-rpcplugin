@@ -397,7 +397,7 @@ async def test_connection_refused_consolidated(
     finally:
         await client.close()
 
-
+# long-running
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_transport_error_scenarios_consolidated(

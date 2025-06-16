@@ -11,9 +11,9 @@ from tests.fixtures import *
 class MockChannelCredentials:
     """Mock implementation of SSL channel credentials."""
 
-    root_certificates: Optional[bytes]
-    private_key: Optional[bytes]
-    certificate_chain: Optional[bytes]
+    root_certificates: bytes | None
+    private_key: bytes | None
+    certificate_chain: bytes | None
 
 
 @dataclass
@@ -21,15 +21,15 @@ class MockServerCredentials:
     """Mock implementation of SSL server credentials."""
 
     private_key_certificate_chain_pairs: list[tuple[bytes, bytes]]
-    root_certificates: Optional[bytes]
+    root_certificates: bytes | None
     require_client_auth: bool
 
 
 # Convert async functions to regular functions since they don't need to be async
 def mock_ssl_channel_credentials(
-    root_certificates: Optional[bytes] = None,
-    private_key: Optional[bytes] = None,
-    certificate_chain: Optional[bytes] = None,
+    root_certificates: bytes | None = None,
+    private_key: bytes | None = None,
+    certificate_chain: bytes | None = None,
 ) -> MockChannelCredentials:
     """Mock implementation of grpc.ssl_channel_credentials."""
     return MockChannelCredentials(
@@ -41,7 +41,7 @@ def mock_ssl_channel_credentials(
 
 def mock_ssl_server_credentials(
     private_key_certificate_chain_pairs: list[tuple[bytes, bytes]],
-    root_certificates: Optional[bytes] = None,
+    root_certificates: bytes | None = None,
     require_client_auth: bool = False,
 ) -> MockServerCredentials:
     """Mock implementation of grpc.ssl_server_credentials."""

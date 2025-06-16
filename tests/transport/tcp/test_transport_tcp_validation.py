@@ -56,11 +56,11 @@ def test_is_valid_tcp_endpoint_valid_port_range():
     """Test that port numbers are validated as digits, not their range."""
     # The function currently only checks `isdigit()`, not the valid port range (0-65535).
     # This test documents current behavior.
-    assert is_valid_tcp_endpoint("localhost:65535") == True  # Valid
-    assert is_valid_tcp_endpoint("localhost:0") == True  # Valid
+    assert is_valid_tcp_endpoint("localhost:65535")  # Valid
+    assert is_valid_tcp_endpoint("localhost:0")  # Valid
     # The following would be invalid ports in practice, but pass isdigit()
-    assert is_valid_tcp_endpoint("localhost:65536") == True
-    assert is_valid_tcp_endpoint("localhost:123456") == True
+    assert is_valid_tcp_endpoint("localhost:65536")
+    assert is_valid_tcp_endpoint("localhost:123456")
 
 
 def test_is_valid_tcp_endpoint_empty_host_specific():

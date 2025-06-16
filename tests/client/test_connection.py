@@ -173,7 +173,6 @@ async def test_del_warning() -> None:  # Removed caplog, capsys
         "pyvider.rpcplugin.client.connection.logger.warning", new_callable=MagicMock
     ) as mock_log_warning:
         del conn
-        conn = None
         gc.collect()
         # For __del__ to be called reliably, especially with asyncio components,
         # it often needs a bit more than just gc.collect().

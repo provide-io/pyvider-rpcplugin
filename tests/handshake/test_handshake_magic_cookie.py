@@ -1,7 +1,5 @@
 # tests/handshake/test_handshake_magic_cookie.py
 import pytest
-import re
-from unittest.mock import patch
 
 from pyvider.rpcplugin.handshake import validate_magic_cookie
 from pyvider.rpcplugin.exception import HandshakeError

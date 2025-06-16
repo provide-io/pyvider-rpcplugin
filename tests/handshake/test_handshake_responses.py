@@ -1,15 +1,13 @@
 # tests/handshake/test_handshake_responses.py
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock # Added AsyncMock
-import re # For escaping regex
 
 from pyvider.rpcplugin.handshake import (
     build_handshake_response,
     parse_handshake_response,
-    is_valid_handshake_parts,
 )
 from pyvider.rpcplugin.crypto import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, TransportError, ProtocolError
+from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.config import rpcplugin_config
 
 
@@ -160,7 +158,6 @@ def test_parse_handshake_response_invalid_protocol_version() -> None:
         response_bad_core_ver = "abc|7|tcp|127.0.0.1:12345|grpc|"
         # This fails the is_valid_handshake_parts check first, leading to "Invalid handshake format".
         # The error is then wrapped.
-        expected_regex_bad_core = r"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] Invalid handshake format.*parts\[0\].*not digits.*Core: 'abc'"
         # For a more precise match on the *actual* error thrown due to 'abc':
         # The is_valid_handshake_parts logs "version parts not both digits. Core: 'abc', Plugin: '7'"
         # and then "Invalid handshake format" is raised. The test should check for the raised error.

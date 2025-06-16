@@ -28,7 +28,7 @@ Usage:
 
 import os
 # from pathlib import Path # Removed Path
-from typing import Any, Literal, cast, get_args  # Removed Dict, List, Optional
+from typing import Any, Callable, Literal, cast, get_args  # Added Callable back
 
 from pyvider.telemetry import logger
 

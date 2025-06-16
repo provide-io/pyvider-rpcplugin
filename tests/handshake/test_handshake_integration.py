@@ -166,7 +166,7 @@ async def test_server_handshake_integration(
     # Patch sys.stdout to capture handshake output
     with (
         patch("sys.stdout.buffer.write") as mock_write,
-        patch("sys.stdout.buffer.flush") as mock_flush,
+        patch("sys.stdout.buffer.flush"),
         patch("pyvider.rpcplugin.server.GRPCServer") as mock_grpc_server,
     ):
         # Setup mocks

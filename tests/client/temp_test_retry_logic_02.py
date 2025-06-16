@@ -1,8 +1,7 @@
 import pytest
-import asyncio
 import subprocess # Import subprocess
-from unittest.mock import patch, MagicMock, AsyncMock
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from unittest.mock import MagicMock, AsyncMock
+from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.client.base import RPCPluginClient
 
 @pytest.fixture
