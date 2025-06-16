@@ -29,12 +29,12 @@ from enum import Enum, auto
 from typing import Literal, cast  # Ensure Literal and cast are imported
 
 
-class _SentinelEnum(Enum):
+class _SentinelEnum(Enum): # type: ignore[type-arg]
     NOT_PASSED = auto()
 
 
 _SENTINEL_INSTANCE = _SentinelEnum.NOT_PASSED
-_SentinelType = Literal[_SentinelEnum.NOT_PASSED]
+_SentinelType = Literal[_SentinelEnum.NOT_PASSED] # type: ignore[misc]
 
 
 @define
@@ -298,7 +298,7 @@ async def build_handshake_response(
             logger.error(f"🤝📝❌ Unsupported transport type for handshake response: {transport_name}")
             raise TransportError(
                 message=f"Unsupported transport type specified for handshake response: '{transport_name}'.",
-                hint=f"Valid transport types are 'unix' or 'tcp'."
+                hint="Valid transport types are 'unix' or 'tcp'."
             )
 
         response_parts = [

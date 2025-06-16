@@ -34,7 +34,7 @@ async def test_start_complete_flow(
         patch(
             "pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background",
             new_callable=AsyncMock,
-        ) as mock_relay_stderr,
+        ),
         patch(
             "pyvider.rpcplugin.client.base.RPCPluginClient._read_stdio_logs",
             new_callable=AsyncMock,
@@ -215,7 +215,7 @@ async def test_close_process_wait_timeout(
 
         from io import StringIO
 
-        with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
+        with patch("sys.stderr", new_callable=StringIO):
             # Re-run close to capture its specific stderr, if the instance can be closed multiple times
             # or re-setup the conditions and call close.
             # For this test, we assume client_instance is already in the state where close() was called once.

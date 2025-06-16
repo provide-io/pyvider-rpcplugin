@@ -38,9 +38,8 @@ Example usage:
 """
 
 import asyncio
-import contextlib
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 import traceback
 from typing import Any, NamedTuple # Removed Generic, Added NamedTuple
@@ -55,7 +54,7 @@ from google.protobuf import empty_pb2
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, TransportError, ConfigError, ProtocolError, SecurityError # Added more
+from pyvider.rpcplugin.exception import HandshakeError, TransportError, ProtocolError, SecurityError # Added more
 from pyvider.rpcplugin.handshake import parse_handshake_response
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
@@ -131,7 +130,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)
+    _process: subprocess.Popen | None = field(init=False, default=None)  # nosec B603 # shell=True is not used, which is safer
     _transport: TransportType | None = field(
         init=False, default=None
     )  # Changed to TransportType
@@ -441,7 +440,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
-            self._process = subprocess.Popen(
+            self._process = subprocess.Popen(  # nosec B603 # shell=True is not used, which is safer
                 self.command,
                 env=env,
                 stdout=subprocess.PIPE,

@@ -196,7 +196,7 @@ async def test_open_broker_subchannel_no_stub(client_instance):  # Removed capsy
     with patch("sys.stderr", new_callable=StringIO) as mock_stderr:
         # Should log a warning and return without error
         await client_instance.open_broker_subchannel(123, "127.0.0.1:8001")
-        log_output = mock_stderr.getvalue()
+        mock_stderr.getvalue()
 
     assert client_instance._broker_task is None  # No task should be created
 

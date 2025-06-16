@@ -37,7 +37,7 @@ async def test_client_integration(test_client_command):
         patch(
             "pyvider.rpcplugin.client.base.TCPSocketTransport"
         ) as mock_transport_class,
-        patch("threading.Thread") as mock_thread,
+        patch("threading.Thread"),
     ):  # Corrected target for threading.Thread
         mock_read_handshake_line.return_value = "1|1|tcp|127.0.0.1:8000|grpc|"
 

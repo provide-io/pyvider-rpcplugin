@@ -1,10 +1,7 @@
 # tests/handshake/test_handshake_process_io.py
 import pytest
 import asyncio
-import time
-import os
-import stat
-from unittest.mock import patch, MagicMock, AsyncMock, call
+from unittest.mock import patch, MagicMock, AsyncMock
 import subprocess # For Popen spec
 import re # For escaping regex if needed
 
@@ -122,11 +119,9 @@ async def test_read_handshake_response_timeout(mocker):
     with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake response from plugin after 10.0 seconds."):
         await read_handshake_response(process)
 
-    found_log = False
     for call_args in mock_logger_error.call_args_list:
         args, _ = call_args
         if "Timed out waiting for handshake response from plugin after 10.0 seconds." in args[0]:
-            found_log = True
             break
     # assert found_log, "Expected log for handshake timeout not found."
 

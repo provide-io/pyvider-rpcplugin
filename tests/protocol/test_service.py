@@ -325,7 +325,7 @@ async def test_controller_delayed_shutdown_signal_handlers(controller_service) -
             lambda obj, name: False
             if name == "kill" and obj == os
             else original_hasattr(obj, name),
-        ) as mock_hasattr_check,
+        ),
         patch("sys.exit") as mock_exit,
     ):
         await controller_service._delayed_shutdown()

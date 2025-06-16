@@ -5,7 +5,7 @@ import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 import subprocess # Added for spec=subprocess.Popen
 
-from pyvider.rpcplugin.exception import HandshakeError, TransportError, ProtocolError, SecurityError # Added ProtocolError, SecurityError
+from pyvider.rpcplugin.exception import HandshakeError # Added ProtocolError, SecurityError
 from pyvider.rpcplugin.client.base import RPCPluginClient
 
 
@@ -96,7 +96,7 @@ async def test_perform_handshake_invalid_format(client_instance, mock_process, m
     # Mock _read_raw_handshake_line_from_stdout to directly return the problematic line
     # This bypasses the internal looping/timeout logic of _read_raw_handshake_line_from_stdout
     # and ensures that _perform_handshake proceeds to call parse_handshake_response with this line.
-    mock_read_raw_line = mocker.patch('pyvider.rpcplugin.client.base.RPCPluginClient._read_raw_handshake_line_from_stdout', new_callable=AsyncMock, return_value="invalid_handshake_format")
+    mocker.patch('pyvider.rpcplugin.client.base.RPCPluginClient._read_raw_handshake_line_from_stdout', new_callable=AsyncMock, return_value="invalid_handshake_format")
 
     expected_error_match = r"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] Invalid handshake format. Expected 6 pipe-separated parts, got 1: 'invalid_handshake_format...' \(Hint: Ensure the plugin's handshake output matches 'CORE_VER\|PLUGIN_VER\|NET\|ADDR\|PROTO\|CERT'.\)"
     with patch("pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background", new_callable=AsyncMock) as mock_relay, \
@@ -310,6 +310,7 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(client_instance_
     with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake line"):
         await client_instance._read_raw_handshake_line_from_stdout()
 
+# long-running
 @pytest.mark.asyncio
 async def test_read_raw_handshake_line_byte_by_byte_read_timeout(client_instance_for_retry_tests, mocker):
     client_instance = client_instance_for_retry_tests

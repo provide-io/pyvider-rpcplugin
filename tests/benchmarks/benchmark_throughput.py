@@ -65,7 +65,7 @@ async def run_client_throughput(protocol_for_client, num_requests, dummy_server_
     try:
         print(f"Client starting with dummy handshaker '{dummy_server_script_path}' for throughput test...")
         await client.start()
-        print(f"Client connected (handshake via dummy, actual transport to server's socket).")
+        print("Client connected (handshake via dummy, actual transport to server's socket).")
 
         if client._channel is None:
             raise RuntimeError("Client channel is None after start(). Cannot create stub.")

@@ -1,7 +1,6 @@
 from pyvider.rpcplugin import configure, RPCPluginConfig
 # from pyvider.rpcplugin.config import load_config_from_file # rpcplugin_config is already an instance
 from pyvider.telemetry import logger # Assuming logger is accessible for checking logs if needed
-import os
 
 # Get the global singleton instance for direct use if needed, or rely on RPCPluginConfig.instance()
 # For consistency with how it's used in config.py, direct import might be less representative
@@ -37,7 +36,7 @@ try:
     raise ValueError("Simulated error: Malformed JSON content")
     logger.error("Malformed JSON did not raise an error!", extra={"test_status": "failed"})
 except ValueError as e:
-    logger.info(f"Successfully caught expected ValueError for malformed JSON.", extra={"error_message": str(e), "test_status": "passed"})
+    logger.info("Successfully caught expected ValueError for malformed JSON.", extra={"error_message": str(e), "test_status": "passed"})
 except Exception as e:
     logger.error(f"Caught unexpected exception for malformed JSON: {type(e).__name__}", extra={"error_message": str(e), "test_status": "failed"})
 print_current_config_state("Configuration after attempting malformed JSON")
@@ -50,7 +49,7 @@ try:
     raise ValueError("Simulated error: Malformed YAML content")
     logger.error("Malformed YAML did not raise an error!", extra={"test_status": "failed"})
 except ValueError as e:
-    logger.info(f"Successfully caught expected ValueError for malformed YAML.", extra={"error_message": str(e), "test_status": "passed"})
+    logger.info("Successfully caught expected ValueError for malformed YAML.", extra={"error_message": str(e), "test_status": "passed"})
 except Exception as e:
     logger.error(f"Caught unexpected exception for malformed YAML: {type(e).__name__}", extra={"error_message": str(e), "test_status": "failed"})
 print_current_config_state("Configuration after attempting malformed YAML")
@@ -68,7 +67,7 @@ try:
     # The current _load_dotenv_file will raise ValueError on line.split("=", 1) if no "=" is present.
     logger.error("Malformed .env did not raise an error as expected by this test design!", extra={"test_status": "failed"})
 except ValueError as e:
-    logger.info(f"Successfully caught expected ValueError for malformed .env.", extra={"error_message": str(e), "test_status": "passed"})
+    logger.info("Successfully caught expected ValueError for malformed .env.", extra={"error_message": str(e), "test_status": "passed"})
 except Exception as e:
     logger.error(f"Caught unexpected exception for malformed .env: {type(e).__name__}", extra={"error_message": str(e), "test_status": "failed"})
 print_current_config_state("Configuration after attempting malformed .env")

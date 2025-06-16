@@ -1,0 +1,93 @@
+Run started:2025-06-15 18:30:55.745247
+
+Test results:
+>> Issue: [B404:blacklist] Consider possible security implications associated with the subprocess module.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/blacklists/blacklist_imports.html#b404-import-subprocess
+   Location: src/pyvider/rpcplugin/client/base.py:42:0
+41	import os
+42	import subprocess
+43	import sys
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/pyvider/rpcplugin/client/base.py:251:20
+250	                        await self.grpc_channel.close(grace=0.1)
+251	                    except Exception:
+252	                        pass # Ignore errors during cleanup
+253	                    self.grpc_channel = None
+
+--------------------------------------------------
+>> Issue: [B110:try_except_pass] Try, Except, Pass detected.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b110_try_except_pass.html
+   Location: src/pyvider/rpcplugin/client/base.py:260:20
+259	                        await self._transport.close()
+260	                    except Exception:
+261	                        pass # Ignore errors during cleanup
+262	                self._transport = None # Will be re-initialized by _perform_handshake
+
+--------------------------------------------------
+>> Issue: [B311:blacklist] Standard pseudo-random generators are not suitable for security/cryptographic purposes.
+   Severity: Low   Confidence: High
+   CWE: CWE-330 (https://cwe.mitre.org/data/definitions/330.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/blacklists/blacklist_calls.html#b311-random
+   Location: src/pyvider/rpcplugin/client/base.py:300:48
+299
+300	                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms)
+301	                delay_ms = min(delay_ms, max_backoff_ms) # Cap at max_backoff_ms
+
+--------------------------------------------------
+>> Issue: [B603:subprocess_without_shell_equals_true] subprocess call - check for execution of untrusted input.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b603_subprocess_without_shell_equals_true.html
+   Location: src/pyvider/rpcplugin/client/base.py:443:28
+442	        try:
+443	            self._process = subprocess.Popen(
+444	                self.command,
+445	                env=env,
+446	                stdout=subprocess.PIPE,
+447	                stderr=subprocess.PIPE,
+448	                text=False,
+449	                bufsize=0,  # Disable buffering
+450	                universal_newlines=False,
+451	            )
+452	            logger.info("🖥️ Plugin subprocess started successfully.")
+
+--------------------------------------------------
+>> Issue: [B103:set_bad_file_permissions] Chmod setting a permissive mask 0o660 on file (socket_path).
+   Severity: Medium   Confidence: High
+   CWE: CWE-732 (https://cwe.mitre.org/data/definitions/732.html)
+   More Info: https://bandit.readthedocs.io/en/1.8.3/plugins/b103_set_bad_file_permissions.html
+   Location: src/pyvider/rpcplugin/transport/unix.py:467:24
+466	                    try:
+467	                        os.chmod(
+468	                            socket_path, 0o660
+469	                        )  # Changed from 0o770, to ensure write access if needed for unlinking
+470	                        os.unlink(socket_path)
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 6103
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 5
+		Medium: 1
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 0
+		High: 6
+Files skipped (0):

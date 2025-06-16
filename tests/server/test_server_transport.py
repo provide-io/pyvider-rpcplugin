@@ -4,7 +4,7 @@ import os
 import platform
 import pytest
 
-from pyvider.rpcplugin.config import rpcplugin_config, ConfigError
+from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
@@ -157,7 +157,7 @@ async def test_setup_server_exception_1(
     mock_server_config,
 ) -> None:
     transport = UnixSocketTransport(path=managed_unix_socket_path)
-    server = RPCPluginServer(
+    RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,

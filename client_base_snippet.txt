@@ -1,0 +1,21 @@
+                    self.logger.error(f"Maximum retry attempts ({max_retries +1}) reached for connection/handshake. Last error: {last_exception}")
+                    self._handshake_failed_event.set()
+                    raise last_exception # Re-raise the last critical exception
+
+                # Check overall timeout before sleeping
+                if time.monotonic() - overall_start_time + (current_backoff_ms / 1000) > total_timeout_s:
+                    self.logger.error(f"Next retry would exceed total timeout. Aborting. Last error: {last_exception}")
+                    self._handshake_failed_event.set()
+                    raise last_exception
+
+                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms)
+                delay_ms = min(delay_ms, max_backoff_ms) # Cap at max_backoff_ms
+                delay_ms = max(delay_ms, 0.0) # Ensure non-negative
+
+                self.logger.info(f"Retrying connection/handshake in {delay_ms / 1000:.2f} seconds...")
+                await asyncio.sleep(delay_ms / 1000)
+
+                current_backoff_ms = min(current_backoff_ms * 2, max_backoff_ms) # Exponential backoff
+                attempts += 1
+
+            except Exception as e: # Catch-all for truly unexpected errors

@@ -213,7 +213,6 @@ async def test_is_ca_extension_not_found_logs_debug(mocker):
 
     # Temporarily replace the _cert.extensions on the instance
     # This is a bit invasive, but necessary to simulate the condition for the property
-    original_extensions = cert_instance._cert.extensions
     cert_instance._cert = mocker.MagicMock(
         spec=x509.Certificate
     )  # Replace _cert with a mock

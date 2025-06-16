@@ -30,7 +30,6 @@ async def server_instance(
 ):
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    transport = mock_server_transport
 
     try:
         # Set environment variables

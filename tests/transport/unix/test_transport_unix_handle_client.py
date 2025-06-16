@@ -101,8 +101,8 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
 @pytest.mark.asyncio
 async def test_handle_connection_task_done_exception_logs_error(mocker):
     """Test _handle_connection_task_done when the task raised an exception."""
-    transport = UnixSocketTransport(path="/tmp/dummy.sock")
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.transport.unix.logger.error")
+    UnixSocketTransport(path="/tmp/dummy.sock")
+    mocker.patch("pyvider.rpcplugin.transport.unix.logger.error")
 
     mock_task = mocker.MagicMock(spec=asyncio.Task)
     mock_task.done.return_value = True

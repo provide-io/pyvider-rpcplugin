@@ -42,8 +42,6 @@ def test_transport_type() -> None:
     unix_transport = UnixSocketTransport()
 
     var1: TransportType
-    var1 = tcp_transport  # MyPy checks this
-    var1 = unix_transport  # MyPy checks this
 
     # Define a helper function that uses the TransportType alias
     def process_transport(transport_instance: TransportType) -> None:

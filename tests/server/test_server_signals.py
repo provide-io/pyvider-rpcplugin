@@ -42,7 +42,7 @@ async def test_server_signal_handling(
     # Patch the 'get' method of the global_rpc_config instance
     with patch.object(
         global_rpc_config, "get", side_effect=mock_get_for_endpoint_with_logging
-    ) as patched_get_method:
+    ):
         transport = mock_server_transport
 
         server = RPCPluginServer(
