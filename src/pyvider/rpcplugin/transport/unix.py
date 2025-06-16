@@ -231,7 +231,7 @@ class UnixSocketTransport(RPCPluginTransport):
                     desired_permissions = (
                         0o660 & ~current_mask
                     )  # Apply umask, changed from 0o770
-                    os.chmod(self.path, desired_permissions)  # nosec B103 # Group access presumed intentional
+                    os.chmod(self.path, desired_permissions)  # nosec B103
                     logger.debug(
                         f"📞🕹✅ Set permissions to {oct(desired_permissions)} on {self.path} (considering umask {oct(current_mask)})"
                     )

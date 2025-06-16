@@ -75,13 +75,13 @@ class EchoClient:
             # Use a reasonable timeout
             await asyncio.wait_for(self._client.start(), timeout=15.0)
 
-            if not self._client._channel:
+            if not self._client.grpc_channel:
                 logger.error("gRPC channel was not established after client start.")
                 await self.close()
                 return False
 
             # Create the gRPC stub using the established channel
-            self._stub = echo_pb2_grpc.EchoServiceStub(self._client._channel)
+            self._stub = echo_pb2_grpc.EchoServiceStub(self._client.grpc_channel)
             logger.info("Client started and connected successfully.")
             return True
 
