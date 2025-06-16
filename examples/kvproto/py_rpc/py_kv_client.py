@@ -100,7 +100,7 @@ class KVClient:
             # Wait a bit for server to be fully ready, especially if it's slow to init
             await asyncio.sleep(0.5)
 
-            self._stub = kv_pb2_grpc.KVStub(self._client._channel)
+            self._stub = kv_pb2_grpc.KVStub(self._client.grpc_channel)
             logger.info(f"✅ Connected to KV server successfully in {time.time() - start_time:.3f}s")
 
         except asyncio.TimeoutError:
