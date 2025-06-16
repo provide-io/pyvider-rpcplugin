@@ -7,7 +7,8 @@ from unittest.mock import patch
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.transport import unix_transport, managed_unix_socket_path
 
 
 @pytest.mark.asyncio
@@ -41,7 +42,7 @@ async def test_unix_socket_transport_close_oserror(managed_unix_socket_path) -> 
     try:
         if os.path.exists(managed_unix_socket_path):
             os.unlink(managed_unix_socket_path)
-    except:
+    except Exception:  # Replaced bare except
         pass
 
 
@@ -129,7 +130,7 @@ async def test_unix_socket_close_oserror(managed_unix_socket_path) -> None:
     try:
         if os.path.exists(managed_unix_socket_path):
             os.unlink(managed_unix_socket_path)
-    except:
+    except Exception:
         pass
 
 

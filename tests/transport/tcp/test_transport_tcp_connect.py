@@ -7,7 +7,7 @@ import pytest
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
-from tests.fixtures import *
+from unittest.mock import MagicMock
 
 
 @pytest.mark.asyncio

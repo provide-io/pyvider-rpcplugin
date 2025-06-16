@@ -146,6 +146,7 @@ class RPCPluginServer(
         Raises:
             TimeoutError: If the server does not become ready within the timeout period
         """
+        print("DEBUG: Entering wait_for_server_ready") # DEBUG
         logger.info(
             f"🛎️⏳ RPCPluginServer.wait_for_server_ready: Checking readiness. Transport: {self._transport}, Server Port: {self._port}"
         )
@@ -155,6 +156,7 @@ class RPCPluginServer(
             # First wait for the internal event to be set
             await asyncio.wait_for(self._serving_event.wait(), timeout)
             logger.debug("🛎️✅ Server ready event received.")
+            print(f"DEBUG: _serving_event received. Transport type: {type(self._transport)}") # DEBUG
 
             # Additional verification: ensure transport endpoint is active and connectable
             if (
@@ -165,17 +167,23 @@ class RPCPluginServer(
                     self._transport, (UnixSocketTransport, TCPSocketTransport)
                 )
             ):  # Added isinstance check
+                print(f"DEBUG: Transport is valid and has endpoint. Type: {type(self._transport)}") # DEBUG
                 match self._transport:
                     case UnixSocketTransport():
+                        print("DEBUG: Matched UnixSocketTransport") # DEBUG
                         # For Unix sockets, check file exists and is connectable
                         transport_path = self._transport.path
+                        print(f"DEBUG: transport_path is {transport_path}") # DEBUG
                         if transport_path is None:
+                            print("DEBUG: transport_path is None, raising TransportError") # DEBUG
                             logger.error("🛎️❌ Unix socket transport path is None.")
                             raise TransportError( # Changed from TimeoutError
                                 message="Unix socket path not set for server readiness check.",
                                 hint="Ensure the Unix socket transport was properly initialized and its path is set before checking readiness."
                             )
+                        print(f"DEBUG: Checking os.path.exists for {transport_path}") # DEBUG
                         if not os.path.exists(transport_path):
+                            print(f"DEBUG: {transport_path} does not exist, raising TransportError") # DEBUG
                             logger.error(
                                 f"🛎️❌ Unix socket file {transport_path} doesn't exist for readiness check."
                             )

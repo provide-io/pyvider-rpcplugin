@@ -17,7 +17,9 @@ from tests.conftest import (
     mock_server_config,
 )
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.mocks import mock_server_transport
+# from tests.fixtures.crypto import client_cert
 
 # test_server_starts_insecurely_5 is removed as per instructions.
 
@@ -640,16 +642,73 @@ async def test_read_client_cert_absent(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_generate_server_credentials_with_client_cert(
-    monkeypatch, mock_server_protocol, mock_server_handler, mock_server_config
 ) -> None:
     """Test generating server credentials with a client certificate."""
-    # Create minimal cert data
-    dummy_cert = "-----BEGIN CERTIFICATE-----\ndummy\n-----END CERTIFICATE-----"
-    dummy_key = "-----BEGIN PRIVATE KEY-----\ndummy\n-----END PRIVATE KEY-----"
+    from cryptography.hazmat.primitives.asymmetric import rsa
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.x509.oid import NameOID
+    import cryptography.x509 as x509
+    from datetime import datetime, timedelta, timezone
+
+    # 1. Generate a new RSA private key
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+    dummy_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    ).decode('utf-8')
+
+    # 2. Create a self-signed certificate
+    subject = issuer = x509.Name([
+        x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
+        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
+        x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
+        x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Test Org"),
+        x509.NameAttribute(NameOID.COMMON_NAME, u"testserver.com"),
+    ])
+    builder = (
+        x509.CertificateBuilder()
+        .subject_name(subject)
+        .issuer_name(issuer)
+        .public_key(private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=1))
+        .add_extension(
+            x509.BasicConstraints(ca=True, path_length=None), critical=True
+        )
+    )
+    certificate = builder.sign(private_key, hashes.SHA256())
+    dummy_cert_pem = certificate.public_bytes(
+        encoding=serialization.Encoding.PEM
+    ).decode('utf-8')
+
+    # Generate a client certificate PEM for the 'client_cert' argument
+    client_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    client_subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, u"testclient.com")])
+    client_builder = (
+        x509.CertificateBuilder()
+        .subject_name(client_subject)
+        .issuer_name(client_subject) # Self-signed for simplicity
+        .public_key(client_private_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
+        .not_valid_after(datetime.now(timezone.utc) + timedelta(days=1))
+        .add_extension(
+            x509.BasicConstraints(ca=False, path_length=None), critical=True
+        )
+    )
+    client_certificate = client_builder.sign(client_private_key, hashes.SHA256())
+    client_cert_pem_str = client_certificate.public_bytes(
+        encoding=serialization.Encoding.PEM
+    ).decode('utf-8')
 
     # Set up config
-    mock_server_config.set("PLUGIN_SERVER_CERT", dummy_cert)
-    mock_server_config.set("PLUGIN_SERVER_KEY", dummy_key)
+    mock_server_config.set("PLUGIN_SERVER_CERT", dummy_cert_pem)
+    mock_server_config.set("PLUGIN_SERVER_KEY", dummy_key_pem)
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -760,45 +819,48 @@ async def test_server_starts_insecurely_A_1(
     assert output.startswith("1|"), f"Invalid handshake format: {output}"
 
 
-@pytest.mark.asyncio
-async def test_generate_server_credentials_with_client_cert(
-    monkeypatch, mock_server_protocol, mock_server_handler, mock_server_config
-) -> None:
-    """Test generating server credentials with a client certificate."""
-    # Create minimal cert data
-    dummy_cert = "-----BEGIN CERTIFICATE-----\nMIIBhDCCASugAwIBAgIJAJH2GteCDuVkMA0GCSqGSIb3DQEBCwUAMCExHzAdBgNV\nBAMMFmR1bW15IGNlcnQgZm9yIHRlc3RpbmcwHhcNMjUwMzE4MTU0NzQ3WhcNMjYw\nMzE4MTU0NzQ3WjAhMR8wHQYDVQQDDBZkdW1teSBjZXJ0IGZvciB0ZXN0aW5nMFww\nDQYJKoZIhvcNAQEBBQADSwAwSAJBAMLlipuLCTE7EtMpWRXHR0QJrJpCDtRctRUz\nBBLm9+EjkIp+LD9Ov5lO/pB4qwb7PTgUqUCTk1Cm1GCKnpYz6lcCAwEAAaNQME4w\nEwYDVR0lBAwwCgYIKwYBBQUHAwEwHQYDVR0OBBYEFMyBGGKKsL9SlQy+IrZj5ty5\nMQZ8MB8GA1UdIwQYMBaAFMyBGGKKsL9SlQy+IrZj5ty5MQZ8MA0GCSqGSIb3DQEB\nCwUAA0EAk2FZb7mYskYwslcKBfQA3uDZ2HRQqeM0uDO4UV0MQVF8p5+BVq8UTiWk\n9wYTp8WJD+Z/mCpzUEt0pviuZhG1Qg==\n-----END CERTIFICATE-----"
-    dummy_key = "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAwuWKm4sJMTsS0ylZ\nFcdHRAmsmkIO1Fy1FTMEEub34SOQin4sP06/mU7+kHirBvs9OBSpQJOTUKbUYIqe\nljPqVwIDAQABAkBZeaNoKnRmZH1fQ1s1x+QGhm9VCnlVAWH6MKdh7LuFN26Fzamq\nrqxvAf1McTimGzHFe0e5CYuujYFU8f+LZ7wBAiEA9RZV8y5c+7hXy3y2vTdHpxpX\nNymQKmWYpbM0oYCGzjECIQDL05H4cNGKCmYaBs0apVsJ9ipO786QxXQnh+XWxS9d\nVwIgCGgTnRNEr3xVBvxLecs5V+aVLvHgGJONTZ8ap5cRTiECIQCzV0utmfjiwmEF\n67cTZdgNGnrZpBX9OFU0XS4r9PEPSQIgbTEZbg/RcgfEQV8q+XdA6T+vQmB4bvGY\ngzPvUzjR74Y=\n-----END PRIVATE KEY-----"
-
-    # Set up config
-    mock_server_config.set("PLUGIN_SERVER_CERT", dummy_cert)
-    mock_server_config.set("PLUGIN_SERVER_KEY", dummy_key)
-
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        config=mock_server_config,
-    )
-
-    # Mock Certificate to avoid actual certificate operations
-    with mock.patch("pyvider.rpcplugin.server.Certificate") as mock_cert:
-        # Set up mock certificate instance
-        mock_cert_instance = mock.MagicMock()
-        mock_cert_instance.cert = dummy_cert
-        mock_cert_instance.key = dummy_key
-        mock_cert.return_value = mock_cert_instance
-
-        # Mock ssl_server_credentials to avoid actual TLS setup
-        with mock.patch(
-            "pyvider.rpcplugin.server.grpc.ssl_server_credentials"
-        ) as mock_creds:
-            mock_creds.return_value = "mock_credentials"
-
-            # Test the method
-            creds = server._generate_server_credentials("client_cert")
-
-            # Verify Certificate was called and creds were returned
-            mock_cert.assert_called_once()
-            assert creds == "mock_credentials"
+# This test was marked as a redefinition and seems to be a duplicate or older version
+# of the test_generate_server_credentials_with_client_cert fixture defined earlier in the file (around line 644)
+# Removing this one to resolve F811.
+# @pytest.mark.asyncio
+# async def test_generate_server_credentials_with_client_cert(
+#     monkeypatch, mock_server_protocol, mock_server_handler, mock_server_config
+# ) -> None:
+#     """Test generating server credentials with a client certificate."""
+#     # Create minimal cert data
+#     dummy_cert = "-----BEGIN CERTIFICATE-----\nMIIBhDCCASugAwIBAgIJAJH2GteCDuVkMA0GCSqGSIb3DQEBCwUAMCExHzAdBgNV\nBAMMFmR1bW15IGNlcnQgZm9yIHRlc3RpbmcwHhcNMjUwMzE4MTU0NzQ3WhcNMjYw\nMzE4MTU0NzQ3WjAhMR8wHQYDVQQDDBZkdW1teSBjZXJ0IGZvciB0ZXN0aW5nMFww\nDQYJKoZIhvcNAQEBBQADSwAwSAJBAMLlipuLCTE7EtMpWRXHR0QJrJpCDtRctRUz\nBBLm9+EjkIp+LD9Ov5lO/pB4qwb7PTgUqUCTk1Cm1GCKnpYz6lcCAwEAAaNQME4w\nEwYDVR0lBAwwCgYIKwYBBQUHAwEwHQYDVR0OBBYEFMyBGGKKsL9SlQy+IrZj5ty5\nMQZ8MB8GA1UdIwQYMBaAFMyBGGKKsL9SlQy+IrZj5ty5MQZ8MA0GCSqGSIb3DQEB\nCwUAA0EAk2FZb7mYskYwslcKBfQA3uDZ2HRQqeM0uDO4UV0MQVF8p5+BVq8UTiWk\n9wYTp8WJD+Z/mCpzUEt0pviuZhG1Qg==\n-----END CERTIFICATE-----"
+#     dummy_key = "-----BEGIN PRIVATE KEY-----\nMIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAwuWKm4sJMTsS0ylZ\nFcdHRAmsmkIO1Fy1FTMEEub34SOQin4sP06/mU7+kHirBvs9OBSpQJOTUKbUYIqe\nljPqVwIDAQABAkBZeaNoKnRmZH1fQ1s1x+QGhm9VCnlVAWH6MKdh7LuFN26Fzamq\nrqxvAf1McTimGzHFe0e5CYuujYFU8f+LZ7wBAiEA9RZV8y5c+7hXy3y2vTdHpxpX\nNymQKmWYpbM0oYCGzjECIQDL05H4cNGKCmYaBs0apVsJ9ipO786QxXQnh+XWxS9d\nVwIgCGgTnRNEr3xVBvxLecs5V+aVLvHgGJONTZ8ap5cRTiECIQCzV0utmfjiwmEF\n67cTZdgNGnrZpBX9OFU0XS4r9PEPSQIgbTEZbg/RcgfEQV8q+XdA6T+vQmB4bvGY\ngzPvUzjR74Y=\n-----END PRIVATE KEY-----"
+#
+#     # Set up config
+#     mock_server_config.set("PLUGIN_SERVER_CERT", dummy_cert)
+#     mock_server_config.set("PLUGIN_SERVER_KEY", dummy_key)
+#
+#     server = RPCPluginServer(
+#         protocol=mock_server_protocol,
+#         handler=mock_server_handler,
+#         config=mock_server_config,
+#     )
+#
+#     # Mock Certificate to avoid actual certificate operations
+#     with mock.patch("pyvider.rpcplugin.server.Certificate") as mock_cert:
+#         # Set up mock certificate instance
+#         mock_cert_instance = mock.MagicMock()
+#         mock_cert_instance.cert = dummy_cert
+#         mock_cert_instance.key = dummy_key
+#         mock_cert.return_value = mock_cert_instance
+#
+#         # Mock ssl_server_credentials to avoid actual TLS setup
+#         with mock.patch(
+#             "pyvider.rpcplugin.server.grpc.ssl_server_credentials"
+#         ) as mock_creds:
+#             mock_creds.return_value = "mock_credentials"
+#
+#             # Test the method
+#             creds = server._generate_server_credentials("client_cert")
+#
+#             # Verify Certificate was called and creds were returned
+#             mock_cert.assert_called_once()
+#             assert creds == "mock_credentials"
 
 
 @pytest.mark.asyncio
@@ -858,5 +920,6 @@ async def test_generate_server_credentials_success_A_2(
             assert mock_cert.call_count > 0, "Certificate constructor should be called"
             assert creds == "mock_credentials"
 
+# Removing the duplicated test function below as it causes F811
 
 ### 🐍🏗🧪️

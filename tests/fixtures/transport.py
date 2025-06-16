@@ -17,8 +17,6 @@ from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
 
-from ..fixtures import *
-
 
 class SocketStateMonitor:
     """Utility for monitoring socket state."""

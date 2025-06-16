@@ -5,7 +5,6 @@
 import asyncio
 import os
 import sys
-import tempfile
 from pathlib import Path
 
 # Add src to path for examples

@@ -2,9 +2,9 @@
 
 import pytest
 from dataclasses import dataclass
-from typing import Optional
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.crypto import client_cert, server_cert
 
 
 @dataclass

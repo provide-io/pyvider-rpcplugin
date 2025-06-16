@@ -32,23 +32,6 @@ async def client_instance(test_client_command):
         yield client
 
 
-# @@pytest_asyncio.fixture(scope="module")
-# @async def client_instance(client_command, server_instance, handshake_config):
-# @    """
-# @    Async fixture to create and start an RPCPluginClient instance.
-# @    """
-# @    client = RPCPluginClient(command=client_command)
-# @    await client.start()
-# @
-# @    # The handshake/connection can happen in your tests or here:
-# @    # await client.connect()
-# @
-# @    yield client
-# @
-# @    # Now stop the client
-# @    await client.stop()
-
-
 @pytest_asyncio.fixture
 async def mock_process():
     """Mock subprocess.Popen instance for testing."""
@@ -99,14 +82,6 @@ async def mock_grpc_channel():
 async def test_client_command():
     """Test command to launch the plugin process."""
     return ["python", "-m", "dummy_plugin"]
-
-
-@pytest_asyncio.fixture
-async def client_instance(test_client_command):
-    """Base RPCPluginClient instance for testing."""
-    with patch("subprocess.Popen"):
-        client = RPCPluginClient(command=test_client_command)
-        yield client
 
 
 ### 🐍🏗🧪️

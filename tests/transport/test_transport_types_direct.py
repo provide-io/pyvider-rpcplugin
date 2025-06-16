@@ -41,8 +41,6 @@ def test_transport_type() -> None:
     tcp_transport = TCPSocketTransport()
     unix_transport = UnixSocketTransport()
 
-    var1: TransportType
-
     # Define a helper function that uses the TransportType alias
     def process_transport(transport_instance: TransportType) -> None:
         """Accepts a transport instance adhering to TransportType."""

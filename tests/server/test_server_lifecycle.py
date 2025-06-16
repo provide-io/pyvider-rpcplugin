@@ -3,6 +3,7 @@
 import asyncio
 import sys
 import builtins  # Add import for builtins
+import os  # Added import for os
 import pytest
 from io import StringIO
 import gc
@@ -19,9 +20,11 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 # For now, let's ensure they are defined if not imported, for the sake of completeness for the test.
 # These might come from fixtures.py or conftest.py in a real scenario.
 if 'TCPSocketTransport' not in globals():
-    class TCPSocketTransport: pass # type: ignore
+    class TCPSocketTransport:
+        pass # type: ignore
 if 'UnixSocketTransport' not in globals():
-    class UnixSocketTransport: pass # type: ignore
+    class UnixSocketTransport:
+        pass # type: ignore
 
 
 from tests.conftest import (
@@ -32,7 +35,9 @@ from tests.conftest import (
     DummyGRPCServer,
 )
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.mocks import mock_server_transport
+# from tests.fixtures.transport import managed_unix_socket_path
 
 
 class MockBytesIO:
@@ -186,6 +191,7 @@ async def test_serve_error(
     managed_unix_socket_path,  # Use unique path
 ) -> None:
     # Create fresh transport with unique path
+    from pyvider.rpcplugin.transport import UnixSocketTransport # Import directly
     test_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     server = RPCPluginServer(
@@ -223,6 +229,7 @@ async def test_wait_for_server_ready(
     managed_unix_socket_path,  # Use unique path
 ) -> None:
     # Create fresh transport with unique path
+    from pyvider.rpcplugin.transport import UnixSocketTransport # Import directly
     test_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # Don't actually listen on the socket here
@@ -285,6 +292,7 @@ async def test_stop_handles_exceptions(
     managed_unix_socket_path,  # Use a unique path fixture
 ) -> None:
     # Create a fresh transport with unique path for this test
+    from pyvider.rpcplugin.transport import UnixSocketTransport # Import directly
     dummy_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # Don't actually listen on the transport to avoid socket creation

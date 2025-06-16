@@ -1,22 +1,23 @@
-import asyncio
-import time
-import os
 import sys
 from pathlib import Path
 
 # Ensure examples directory and examples/demo are in path
+# THIS BLOCK MUST BE AT THE VERY TOP OF THE FILE
 benchmarks_dir = Path(__file__).resolve().parent
 project_root = benchmarks_dir.parent
 examples_path = project_root / "examples"
 demo_path = examples_path / "demo"
-
 if str(demo_path) not in sys.path:
     sys.path.insert(0, str(demo_path))
 if str(examples_path) not in sys.path:
     sys.path.insert(0, str(examples_path))
 if str(project_root) not in sys.path: # /app
     sys.path.insert(0, str(project_root))
+# END OF SYS.PATH MANIPULATION
 
+import asyncio
+import time
+import os
 from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 import echo_pb2
 import echo_pb2_grpc

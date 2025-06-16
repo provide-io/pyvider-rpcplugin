@@ -8,7 +8,9 @@ from pyvider.rpcplugin.transport import TCPSocketTransport
 from pyvider.rpcplugin.config import rpcplugin_config
 
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.mocks import mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport
+# from tests.fixtures.transport import managed_unix_socket_path
 
 
 @pytest.mark.asyncio

@@ -10,8 +10,6 @@ from unittest.mock import patch  # Added
 from pyvider.rpcplugin.client.connection import ClientConnection
 from tests.fixtures.dummy import DummyReader, DummyWriter  # Import added
 
-from tests.fixtures import *  # Keep for other fixtures if used by other tests
-
 
 @pytest.fixture
 def connection(dummy_reader, dummy_writer):
