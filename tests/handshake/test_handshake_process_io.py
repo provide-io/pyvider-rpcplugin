@@ -184,47 +184,86 @@ async def test_create_stderr_relay(mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_stderr_relay_exception_in_reader(mocker):
+async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_loop):
     """Test stderr relay handles exceptions during stderr read."""
+    event_loop = _function_event_loop # Use the correct fixture name
+
+    event_loop = _function_event_loop
+
+    # Define mock_process and its attributes first
     mock_process = MagicMock(spec=subprocess.Popen)
     mock_process.stderr = MagicMock()
-    mock_process.stderr.readline.side_effect = [b"line1\n", Exception("stderr read error"), b""]
+    mock_process.stderr.readline = MagicMock() # This specific mock instance will be func_to_run
     mock_process.poll.return_value = None
 
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
-    async def run_coro_immediately(coro):
-        await coro
-        return MagicMock()
+    # This handler is specifically for the sequence of calls we expect in the test
+    mock_readline_handler = MagicMock(
+        side_effect=[
+            b"line1\n",
+            Exception("stderr read error"),
+            b"",
+        ]
+    )
 
-    mocker.patch("asyncio.create_task", side_effect=run_coro_immediately)
+    # custom_run_in_executor now uses the correctly defined mock_process
+    def custom_run_in_executor(executor, func_to_run, *args):
+        if func_to_run == mock_process.stderr.readline: # Comparison with the mock attribute
+            value_or_exc = mock_readline_handler()
 
-    # New / Corrected mocking for run_in_executor:
-    async def mock_run_in_executor_for_stderr(executor, func_to_run, *args):
-        # func_to_run is expected to be mock_process.stderr.readline
-        # Ensure there's a side_effect list to pop from
-        if hasattr(mock_process.stderr.readline, 'side_effect') and            isinstance(mock_process.stderr.readline.side_effect, list) and            len(mock_process.stderr.readline.side_effect) > 0:
-            effect = mock_process.stderr.readline.side_effect.pop(0)
-            if isinstance(effect, Exception):
-                raise effect
-            return effect
-        # Fallback if side_effect is exhausted or not a list
-        return b""
+            future = event_loop.create_future()
+            if isinstance(value_or_exc, Exception):
+                future.set_exception(value_or_exc)
+            else:
+                future.set_result(value_or_exc)
+            return future
+        else:
+            # Fallback for any other unexpected calls to run_in_executor
+            # This part should ideally not be reached if the test is specific enough.
+            # For robustness, one might call the original method, but that's complex to get here.
+            # Raising an error helps identify if unexpected calls occur.
+            raise NotImplementedError(
+                f"custom_run_in_executor called with unexpected func_to_run: {func_to_run}"
+            )
 
-    # Patch where _stderr_reader will call it:
-    # Get the return_value of the first patch (the mock loop)
-    # and set the side_effect on its run_in_executor method.
-    mock_loop_instance = mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop").return_value
-    mock_loop_instance.run_in_executor.side_effect = mock_run_in_executor_for_stderr
+    # Patching asyncio.get_event_loop first ensures that any internal calls
+    # to get_event_loop() within the handshake module receive our test's event_loop.
+    mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop", return_value=event_loop)
 
-    await create_stderr_relay(mock_process)
+    # Then, patch the run_in_executor method of this specific event_loop instance.
+    mocker.patch.object(event_loop, 'run_in_executor', side_effect=custom_run_in_executor)
+
+    # Task creation mocking
+    tasks_created_by_mock = []
+    def mock_side_effect_for_create_task(coro_to_schedule, name=None):
+        task = event_loop.create_task(coro_to_schedule, name=name) # Use the test's event_loop
+        tasks_created_by_mock.append(task)
+        return task
+
+    mocker.patch("pyvider.rpcplugin.handshake.asyncio.create_task", side_effect=mock_side_effect_for_create_task)
+
+    task_object = await create_stderr_relay(mock_process) # This will now use all the above mocks
+
+    assert task_object is tasks_created_by_mock[0], "Mismatch in returned task and stored task"
+    assert isinstance(task_object, asyncio.Task), f"Expected a Task, got {type(task_object)}"
+
+    if task_object:
+        try:
+            print(f"Test: Awaiting task {task_object!r}")
+            await task_object
+            print(f"Test: Task {task_object!r} completed.")
+        except Exception as e_task:
+            print(f"Test: Task {task_object!r} raised an exception during await: {e_task!r}")
+    else:
+        print("Test: No task object was created or returned.")
 
     found_log = False
     for call_arg in mock_logger_error.call_args_list:
         if len(call_arg[0]) > 0 and "Error in stderr relay: stderr read error" in str(call_arg[0][0]):
             found_log = True
             break
-    assert found_log, "stderr read error was not logged by relay"
+    assert found_log, "stderr read error was not logged by relay. Logs: {}".format(mock_logger_error.call_args_list)
 
 
 @pytest.mark.parametrize(
