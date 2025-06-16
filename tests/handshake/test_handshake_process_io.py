@@ -194,10 +194,7 @@ async def test_create_stderr_relay_exception_in_reader(mocker):
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
     async def run_coro_immediately(coro):
-        try:
-            await coro
-        except Exception:
-            pass
+        await coro
         return MagicMock()
 
     mocker.patch("asyncio.create_task", side_effect=run_coro_immediately)
