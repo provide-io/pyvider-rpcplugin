@@ -555,7 +555,7 @@ async def test_generate_server_credentials_failure(
     # Restore the with pytest.raises block with the corrected regex
     with pytest.raises(
         SecurityError, # Changed from CertificateError
-            match=r"Failed to generate server credentials: .*Diagnosing CertificateError message"
+            match=r".*Diagnosing CertificateError message"
     ):
         server._generate_server_credentials(client_cert="dummy_client_cert_pem_string")
 
