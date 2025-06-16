@@ -1,19 +1,21 @@
+# tests/conftest.py
 import sys # Added sys
 import os # os was already here, ensure it's at the top with sys
 
 # Add the project root to sys.path to allow 'from tests.fixtures import *'
 # This ensures that 'tests' package can be found from the project root.
+# THIS BLOCK MUST BE AT THE VERY TOP OF THE FILE
 _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if _project_root not in sys.path:
     sys.path.insert(0, _project_root)
-
-# tests/conftest.py
+# END OF SYS.PATH MANIPULATION
 
 import pytest
-# import os # Moved to top
 from pyvider.rpcplugin.config import RPCPluginConfig, CONFIG_SCHEMA
-
 from tests.fixtures import *
+
+# import os # Moved to top
+
 
 @pytest.fixture(autouse=True, scope="function")
 def reset_rpcplugin_config_singleton():

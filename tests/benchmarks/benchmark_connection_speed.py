@@ -1,23 +1,24 @@
-import asyncio
-import time
-import os
 import sys
-import statistics
+import statistics # Moved here
 from pathlib import Path
 
 # Ensure examples directory and examples/demo are in path
+# THIS BLOCK MUST BE AT THE VERY TOP OF THE FILE
 benchmarks_dir = Path(__file__).resolve().parent
 project_root = benchmarks_dir.parent
 examples_path = project_root / "examples"
 demo_path = examples_path / "demo"
-
 if str(demo_path) not in sys.path:
     sys.path.insert(0, str(demo_path))
 if str(examples_path) not in sys.path:
     sys.path.insert(0, str(examples_path))
 if str(project_root) not in sys.path: # /app
     sys.path.insert(0, str(project_root))
+# END OF SYS.PATH MANIPULATION
 
+import asyncio
+import time
+import os
 from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 import echo_pb2
 import echo_pb2_grpc
@@ -44,7 +45,8 @@ async def run_server_async(protocol, handler, address_url, ready_event, actual_s
         await server.serve()
     except asyncio.CancelledError:
         print(f"Server at {address_url} stopping...")
-        if hasattr(server, 'stop'): await server.stop() # Ensure graceful shutdown
+        if hasattr(server, 'stop'):
+            await server.stop() # Ensure graceful shutdown
         print(f"Server at {address_url} stopped.")
         raise
     except Exception as e:
@@ -98,8 +100,10 @@ async def main_test_address(protocol, handler, address_url, actual_socket_path_o
     os.chmod(dummy_handshaker_script_path, 0o755)
 
     if address_url.startswith("unix://") and os.path.exists(str(actual_socket_path_or_port)):
-        try: os.remove(str(actual_socket_path_or_port))
-        except OSError: pass # Ignore if already removed or not found
+        try:
+            os.remove(str(actual_socket_path_or_port))
+        except OSError:
+            pass # Ignore if already removed or not found
 
     server_ready_event = asyncio.Event()
     server_task = asyncio.create_task(run_server_async(protocol, handler, address_url, server_ready_event, actual_socket_path_or_port))
@@ -127,11 +131,17 @@ async def main_test_address(protocol, handler, address_url, actual_socket_path_o
                 print(f"Server task for {address_url} was cancelled as expected.")
 
         if address_url.startswith("unix://") and os.path.exists(str(actual_socket_path_or_port)):
-            try: os.remove(str(actual_socket_path_or_port)); print(f"Cleaned up socket: {actual_socket_path_or_port}")
-            except OSError as e: print(f"Error removing socket file {actual_socket_path_or_port}: {e}")
+            try:
+                os.remove(str(actual_socket_path_or_port))
+                print(f"Cleaned up socket: {actual_socket_path_or_port}")
+            except OSError as e:
+                print(f"Error removing socket file {actual_socket_path_or_port}: {e}")
         if os.path.exists(dummy_handshaker_script_path):
-            try: os.remove(dummy_handshaker_script_path); print(f"Cleaned up dummy handshaker: {dummy_handshaker_script_path}")
-            except OSError as e: print(f"Error removing dummy handshaker {dummy_handshaker_script_path}: {e}")
+            try:
+                os.remove(dummy_handshaker_script_path)
+                print(f"Cleaned up dummy handshaker: {dummy_handshaker_script_path}")
+            except OSError as e:
+                print(f"Error removing dummy handshaker {dummy_handshaker_script_path}: {e}")
 
 
     if connection_timings:

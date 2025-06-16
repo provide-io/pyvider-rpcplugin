@@ -151,7 +151,8 @@ async def test_read_raw_handshake_line_process_stdout_becomes_none(client_instan
     mock_loop_instance.time.side_effect = time_values
     async def set_future_empty_result(fut):
         await asyncio.sleep(0)
-        if not fut.done(): fut.set_result(b"")
+        if not fut.done():
+            fut.set_result(b"")
     def run_in_executor_empty_readline(loop, func):
         fut = asyncio.Future()
         asyncio.create_task(set_future_empty_result(fut))
@@ -173,7 +174,8 @@ async def test_read_raw_handshake_line_outer_timeout_with_stderr(client_instance
     mock_loop_instance.time.side_effect = [i * 1.0 for i in range(12)]
     async def set_future_result_empty(fut):
         await asyncio.sleep(0)
-        if not fut.done(): fut.set_result(b"")
+        if not fut.done():
+            fut.set_result(b"")
     def run_in_executor_side_effect(loop, func):
         fut = asyncio.Future()
         asyncio.create_task(set_future_result_empty(fut))
@@ -199,7 +201,8 @@ async def test_read_raw_handshake_line_outer_timeout_no_stderr(client_instance_f
     mock_loop_instance.time.side_effect = [i * 1.0 for i in range(12)]
     async def set_future_result_empty(fut):
         await asyncio.sleep(0)
-        if not fut.done(): fut.set_result(b"")
+        if not fut.done():
+            fut.set_result(b"")
     def run_in_executor_side_effect(loop, func):
         fut = asyncio.Future()
         asyncio.create_task(set_future_result_empty(fut))
@@ -251,7 +254,8 @@ async def test_read_raw_handshake_line_byte_by_byte_success(client_instance_for_
     executor_call_count = 0
     async def set_future_result(fut, result_value):
         await asyncio.sleep(0)
-        if not fut.done(): fut.set_result(result_value)
+        if not fut.done():
+            fut.set_result(result_value)
     def custom_run_in_executor(loop, func_to_run):
         nonlocal executor_call_count
         f = asyncio.Future()
@@ -301,10 +305,13 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(client_instance_
     def run_in_executor_wrapper(loop, func_to_run):
         f = asyncio.Future()
         try:
-            if client_instance._process.stdout: result = func_to_run()
-            else: result = b""
+            if client_instance._process.stdout:
+                result = func_to_run()
+            else:
+                result = b""
             f.set_result(result)
-        except Exception as e: f.set_exception(e)
+        except Exception as e:
+            f.set_exception(e)
         return f
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_wrapper
     with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake line"):
@@ -329,8 +336,10 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(client_instance
     def run_in_executor_for_inner_timeout(loop, func):
         f = asyncio.Future()
         is_readline_call = 'readline' in getattr(func, '__qualname__', '')
-        if is_readline_call: f.set_result(b"")
-        else: pass # For read(1) calls, let custom_wait_for handle the timeout
+        if is_readline_call:
+            f.set_result(b"")
+        else:
+            pass # For read(1) calls, let custom_wait_for handle the timeout
         return f
     mock_loop_instance = MagicMock()
     # Define time_values to correctly simulate passing the 10s timeout

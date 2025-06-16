@@ -11,11 +11,16 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 
 from unittest import mock # Corrected import
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.transport import managed_unix_socket_path
+# from tests.fixtures.mocks import mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport_tcp
+# from tests.fixtures.crypto import client_cert
+from tests.fixtures.dummy import DummyGRPCServer # Re-added specific import
 
 # If TCPSocketTransport is used implicitly via fixtures, ensure it's defined for type hints if strict
 if 'TCPSocketTransport' not in globals():
-    class TCPSocketTransport: pass # type: ignore
+    class TCPSocketTransport:
+        pass # type: ignore
 
 
 @pytest.mark.asyncio
@@ -144,7 +149,7 @@ async def test_setup_server_unix_success_secure(
             try:
                 os.chmod(sock_path, 0o777)
                 os.unlink(sock_path)
-            except:
+            except Exception:  # Replaced bare except
                 pass
 
 

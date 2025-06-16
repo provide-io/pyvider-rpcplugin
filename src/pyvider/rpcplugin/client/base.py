@@ -229,7 +229,8 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             if time.monotonic() - overall_start_time > total_timeout_s:
                 self.logger.error(f"Client connection/handshake retry sequence timed out after {total_timeout_s}s. Last error: {last_exception if last_exception else 'N/A'}")
                 self._handshake_failed_event.set()
-                if last_exception: raise last_exception
+                if last_exception:
+                    raise last_exception
                 raise HandshakeError(message="Retry sequence timed out.", hint="Increase PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S or check server responsiveness.")
 
             # Ensure process is still running before attempting
@@ -316,7 +317,8 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         # This part should ideally not be reached if logic is correct (either success or re-raise from loop)
         self.logger.error(f"Exited retry loop without success. Max attempts: {max_retries + 1}. Last error: {last_exception if last_exception else 'N/A'}")
         self._handshake_failed_event.set()
-        if last_exception: raise last_exception
+        if last_exception:
+            raise last_exception
         raise HandshakeError(message="Failed to connect and handshake after all retries.", hint="Check client and server logs.")
         # --- End of inserted retry loop logic ---
 

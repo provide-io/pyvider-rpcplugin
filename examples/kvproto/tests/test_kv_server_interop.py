@@ -19,8 +19,6 @@ from pyvider.telemetry import logger
 
 from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
 
-from tests.fixtures import *
-
 TEST_DIR: Path = Path(__file__).parent
 
 DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../py_rpc" / "py_kv_server.py")
@@ -343,7 +341,7 @@ async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int
         # Process ran too long, kill it
         try:
             process.kill()
-        except:
+        except Exception:
             pass
         return None, "", "Process timed out"
 
@@ -469,7 +467,7 @@ async def test_client_connection_timeout() -> None:
         # Clean up
         try:
             await client.close()
-        except:
+        except Exception:
             pass
 
 
@@ -576,7 +574,7 @@ async def test_connection_with_debugging() -> None:
         # Ensure clean up on failure
         try:
             await client.close()
-        except:
+        except Exception:
             pass
 
         pytest.fail(f"Client connection failed: {e}")

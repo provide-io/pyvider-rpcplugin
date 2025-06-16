@@ -20,8 +20,8 @@ from pyvider.rpcplugin.transport import (
 )
 
 from pyvider.rpcplugin.types import TransportT, HandlerT
+from pyvider.rpcplugin.config import rpcplugin_config # Import global instance
 
-from ..fixtures import *
 from typing import Tuple
 
 
@@ -190,9 +190,6 @@ async def mock_server_protocol() -> MockProtocol:
     """Fixture to provide a mock protocol class."""
     proto = MockProtocol()
     return proto
-
-
-from pyvider.rpcplugin.config import rpcplugin_config  # Import global instance
 
 
 @pytest.fixture(scope="function")

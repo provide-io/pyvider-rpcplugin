@@ -14,7 +14,8 @@ from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError
 
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.crypto import client_cert, server_cert
 
 
 @pytest.mark.asyncio

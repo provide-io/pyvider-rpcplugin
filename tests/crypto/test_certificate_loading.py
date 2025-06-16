@@ -7,7 +7,8 @@ from unittest import mock
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.crypto import client_cert, temporary_cert_file, valid_cert_pem, temporary_key_file, invalid_cert_pem, malformed_cert_pem, empty_cert
 
 
 @pytest.mark.asyncio
@@ -51,7 +52,7 @@ async def test_load_key_value_error(valid_cert_pem) -> None:
 
 
 @pytest.mark.asyncio
-async def test_load_key_type_error() -> None:
+async def test_load_key_type_error(valid_cert_pem) -> None: # Added valid_cert_pem fixture
     """Test TypeError in private key loading."""
     with mock.patch(
         "cryptography.hazmat.primitives.serialization.load_pem_private_key",

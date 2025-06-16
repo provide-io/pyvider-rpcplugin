@@ -1,25 +1,25 @@
 # Corrected content for /app/benchmarks/benchmark_concurrency.py
-import asyncio
-import os
 import sys
 from pathlib import Path # Import Path
-from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 
 # Add demo directory to sys.path to find echo_pb2 and echo_pb2_grpc
 # Ensure examples directory and examples/demo are in path
+# THIS BLOCK MUST BE AT THE VERY TOP OF THE FILE
 benchmarks_dir = Path(__file__).resolve().parent
 project_root = benchmarks_dir.parent
 examples_path = project_root / "examples"
 demo_path = examples_path / "demo"
-
-# Add paths to sys.path if not already present, prioritizing more specific paths
 if str(demo_path) not in sys.path:
     sys.path.insert(0, str(demo_path))
 if str(examples_path) not in sys.path:
     sys.path.insert(0, str(examples_path))
 if str(project_root) not in sys.path: # /app
     sys.path.insert(0, str(project_root))
+# END OF SYS.PATH MANIPULATION
 
+import asyncio
+import os
+from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 import echo_pb2
 import echo_pb2_grpc
 
@@ -99,10 +99,14 @@ async def client_task(client_id, protocol_def, dummy_handshaker_path, server_con
         # print(f"Client {client_id}: Shutting down...")
         if hasattr(client, 'is_started') and client.is_started:
             if hasattr(client, "_controller_stub") and client._controller_stub:
-                try: await client.shutdown_plugin()
-                except Exception: pass
-            try: await client.close()
-            except Exception: pass
+                try:
+                    await client.shutdown_plugin()
+                except Exception:
+                    pass
+            try:
+                await client.close()
+            except Exception:
+                pass
         # print(f"Client {client_id}: Closed.")
 
 async def main():
@@ -180,8 +184,11 @@ async def main():
                 print(f"Exception during server task await after cancel: {e_srv_stop}")
 
         if os.path.exists(socket_path):
-            try: os.remove(socket_path); print(f"Cleaned up socket: {socket_path}")
-            except OSError as e: print(f"Error removing socket file {socket_path}: {e}")
+            try:
+                os.remove(socket_path)
+                print(f"Cleaned up socket: {socket_path}")
+            except OSError as e:
+                print(f"Error removing socket file {socket_path}: {e}")
         # dummy_echo_handshaker.sh is reused, so not deleting it here.
 
     print("\n--- Benchmark Concurrency Results ---")

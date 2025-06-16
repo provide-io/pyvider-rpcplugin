@@ -25,7 +25,7 @@ from pyvider.rpcplugin.transport.base import (
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.config import rpcplugin_config  # Added for config manipulation
 
-from tests.fixtures import *  # Assumes SocketStateMonitor, MockProtocol, MockHandler are here
+from tests.fixtures.mocks import MockProtocol, MockHandler # Assumes SocketStateMonitor, MockProtocol, MockHandler are here
 
 # managed_transport context manager seems unused by current tests, can be reviewed later.
 

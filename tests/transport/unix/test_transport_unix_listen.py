@@ -11,7 +11,8 @@ import pytest
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.transport import managed_unix_socket_path
 
 
 @pytest.mark.asyncio

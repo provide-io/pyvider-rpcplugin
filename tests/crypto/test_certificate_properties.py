@@ -11,7 +11,8 @@ from cryptography.hazmat.primitives.asymmetric import rsa, ec
 from pyvider.rpcplugin.exception import CertificateError
 from pyvider.rpcplugin.crypto.certificate import Certificate
 
-from tests.fixtures import *
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.crypto import client_cert, server_cert
 
 ### ✅ BASIC CERTIFICATE PROPERTY TESTS ###
 

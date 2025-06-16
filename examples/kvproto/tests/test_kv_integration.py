@@ -14,7 +14,6 @@ from pyvider.telemetry import logger
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
-from tests.fixtures import *
 from examples.kvproto.py_rpc.proto import KVProtocol, kv_pb2, kv_pb2_grpc
 
 def summarize_text(text: str, length: int = 32) -> str:
@@ -80,7 +79,7 @@ async def kv_handler() -> TestKVHandler:
     return handler
 
 @pytest_asyncio.fixture(params=["tcp", "unix"])
-async def transport_fixture(request, unique_transport_path):
+async def transport_fixture(request, managed_unix_socket_path):
     """Parameterized fixture for different transport types."""
     transport_type = request.param
     transport = None
@@ -90,8 +89,8 @@ async def transport_fixture(request, unique_transport_path):
             transport = TCPSocketTransport(host="127.0.0.1")
             logger.debug("🔌🚀✅ Created TCP transport")
         else:
-            transport = UnixSocketTransport(path=unique_transport_path)
-            logger.debug(f"🔌🚀✅ Created Unix transport at {unique_transport_path}")
+            transport = UnixSocketTransport(path=managed_unix_socket_path)
+            logger.debug(f"🔌🚀✅ Created Unix transport at {managed_unix_socket_path}")
 
         yield transport_type, transport
     finally:

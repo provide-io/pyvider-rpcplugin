@@ -36,6 +36,8 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
 )
 
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+from pyvider.telemetry import logger
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -97,9 +99,6 @@ async def grpc_channel(grpc_server_output: ServerFixtureOutput):  # Changed fixt
 
 
 # Removed old test_stdio_integration; test_stdio_integration_consolidated is preferred.
-
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.telemetry import logger
 
 
 @pytest.mark.asyncio
