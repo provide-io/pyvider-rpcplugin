@@ -346,85 +346,128 @@ class RPCPluginServer(
             logger.error(f"🛎️🔐❌ Error reading client certificate: {e}")
             return None
 
-    def _generate_server_credentials(
-        self, client_cert: str | None
-    ) -> grpc.ServerCredentials | None:
+    def _generate_server_credentials(self) -> grpc.ServerCredentials:
         """
         Generates gRPC server TLS credentials using the Certificate API.
 
         This method creates the necessary TLS credentials for secure communication:
-        1. Loads or generates a server certificate
-        2. Creates gRPC server credentials with the certificate
-        3. Optionally configures mutual TLS (mTLS) with client verification
-
-        Args:
-            client_cert: The client certificate for mTLS validation, or None for regular TLS
+        1. Loads or generates a server certificate and key.
+        2. If mTLS is enabled, loads client root CA certificates.
+        3. Creates gRPC server credentials.
 
         Returns:
-            gRPC server credentials object, or None for insecure operation
+            gRPC server credentials object.
 
         Raises:
-            Exception: If credential generation fails
+            SecurityError: If essential configuration for TLS/mTLS is missing or invalid.
         """
-        logger.debug("🛎️ Generating server credentials using Certificate API.")
+        logger.debug("🛎️🔐 Generating server credentials using Certificate API.")
         try:
-            if not client_cert:
-                logger.debug("🛎️ Insecure mode: skipping TLS setup.")
-                return None
-
             server_cert_conf = rpcplugin_config.get("PLUGIN_SERVER_CERT")
             server_key_conf = rpcplugin_config.get("PLUGIN_SERVER_KEY")
+
+            if not server_cert_conf or not server_key_conf:
+                # This case is primarily for when auto_mtls_enabled is true but server certs are not set.
+                # If only PLUGIN_SERVER_CERT is set (for server-auth TLS), this check ensures both are present.
+                if rpcplugin_config.auto_mtls_enabled():
+                     # If auto_mtls is on, server certs are implicitly required.
+                    logger.error(
+                        "🛎️🔐❌ Server certificate (PLUGIN_SERVER_CERT) and key (PLUGIN_SERVER_KEY) are required when auto-mTLS is enabled or server TLS is used."
+                    )
+                    raise SecurityError(
+                        message="Server certificate or key not configured for mTLS/TLS.",
+                        hint="Ensure PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY are set in the configuration.",
+                    )
+                else:
+                    # This state (only one of cert/key set, and mTLS not on) is ambiguous.
+                    # However, the calling logic in _setup_server now only calls this if
+                    # auto_mtls_enabled OR PLUGIN_SERVER_CERT is set.
+                    # If PLUGIN_SERVER_CERT is set, we assume TLS, so both must be set.
+                    logger.error(
+                        "🛎️🔐❌ Both PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY must be provided if one is set for server-side TLS."
+                    )
+                    raise SecurityError(
+                        message="Server certificate or key is partially configured for TLS.",
+                        hint="Ensure both PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY are set if server-side TLS is intended (without mTLS).",
+                    )
+
+
             self._server_cert_obj = Certificate(
-                # Use new keyword names:
                 cert_pem_or_uri=server_cert_conf,
                 key_pem_or_uri=server_key_conf,
-                # Other args remain the same if their names match fields:
-                generate_keypair=not (server_cert_conf and server_key_conf),
-                key_type="ecdsa",  # Or get from config if applicable
-                common_name="localhost",
+                generate_keypair=False, # Explicitly false, paths must be valid
             )
-            logger.debug("🛎️ Server certificate loaded/generated successfully.")
+            logger.debug("🛎️🔐 Server certificate and key loaded successfully.")
 
-            # Ensure key is not None before encoding
-            if self._server_cert_obj.key is None:
-                logger.error(
-                    "🛎️🔐❌ Server certificate private key is None.",
-                    extra={
-                        "error": "Server certificate private key is None."
-                    },  # Added extra
-                )
+            if self._server_cert_obj.key is None or self._server_cert_obj.cert is None:
+                # This should ideally be caught by Certificate class if paths are invalid,
+                # but double-check here.
                 raise SecurityError(
-                    message="Server certificate private key is missing.",
-                    hint="Ensure the server certificate object includes a valid private key, or that key generation was successful.",
+                    message="Server certificate or private key content is missing after loading.",
+                    hint="Verify the certificate and key files specified by PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY are valid and contain PEM-encoded data.",
                 )
 
             key_bytes = self._server_cert_obj.key.encode()
-            # cert is always a string (non-optional field in Certificate)
             cert_bytes = self._server_cert_obj.cert.encode()
-            # client_cert is already checked for None before calling this function
+
+            client_ca_pem_bytes = None
+            require_auth = False
+
+            if rpcplugin_config.auto_mtls_enabled():
+                logger.debug("🛎️🔐 mTLS is enabled. Configuring client certificate validation.")
+                require_auth = True
+                client_root_certs_path_or_pem = rpcplugin_config.get(
+                    "PLUGIN_CLIENT_ROOT_CERTS"
+                )
+
+                if client_root_certs_path_or_pem:
+                    if client_root_certs_path_or_pem.startswith("file://"):
+                        ca_path = client_root_certs_path_or_pem[len("file://") :]
+                        try:
+                            with open(ca_path, "rb") as f: # Read as bytes
+                                client_ca_pem_bytes = f.read()
+                            logger.info(
+                                f"🛎️🔐 Loaded client root CAs for mTLS from {ca_path}."
+                            )
+                        except Exception as e:
+                            raise SecurityError(
+                                message=f"Failed to load client root CAs from file: {ca_path}",
+                                hint=f"Ensure the file exists and is readable. Error: {e}",
+                            ) from e
+                    else: # Assume it's a PEM string
+                        client_ca_pem_bytes = client_root_certs_path_or_pem.encode()
+                        logger.info(
+                            "🛎️🔐 Loaded client root CAs for mTLS from configuration string."
+                        )
+                else:
+                    err_msg = "PLUGIN_CLIENT_ROOT_CERTS is required when mTLS (PLUGIN_AUTO_MTLS=true) is enabled but not provided."
+                    logger.error(f"🛎️🔐❌ {err_msg}")
+                    raise SecurityError(
+                        message=err_msg,
+                        hint="Set PLUGIN_CLIENT_ROOT_CERTS to the path of the client CA certificate(s) or the PEM string itself for mTLS.",
+                    )
+                logger.info("🛎️🔐✅ mTLS configured with client certificate authentication required.")
+            else:
+                logger.info("🛎️🔐 Server-only TLS configured (mTLS is not enabled). Client certificates will not be required by server.")
+
 
             creds = grpc.ssl_server_credentials(
-                private_key_certificate_chain_pairs=[
-                    (key_bytes, cert_bytes)
-                ],  # Now key_bytes is definitely bytes
-                root_certificates=None,  # Temporarily disable client cert verification
-                require_client_auth=False,  # Temporarily disable client cert requirement
+                private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
+                root_certificates=client_ca_pem_bytes, # This can be None for server-only TLS
+                require_client_auth=require_auth,
             )
-            logger.debug(
-                "🛎️ Server TLS credentials created for server-side TLS only (no mTLS)."
-            )
+
+            if require_auth:
+                logger.debug("🛎️🔐✅ mTLS server credentials created successfully.")
+            else:
+                logger.debug("🛎️🔐✅ Server-only TLS credentials created successfully.")
             return creds
-        except (
-            SecurityError
-        ):  # Re-raise SecurityErrors directly without re-logging the generic message
+        except SecurityError: # Re-raise SecurityErrors directly
             raise
         except Exception as e:
             logger.error(
-                f"🛎️❌ Error generating server credentials: {e}",
-                extra={
-                    "error": str(e),
-                    "trace": traceback.format_exc(),
-                },  # Corrected logging
+                f"🛎️🔐❌ Error generating server credentials: {e}",
+                extra={"error": str(e), "trace": traceback.format_exc()},
             )
             raise SecurityError(
                 message=f"Failed to generate server credentials: {e}",
@@ -596,15 +639,16 @@ class RPCPluginServer(
             ) from e
 
         try:
-            if client_cert:
-                logger.debug("🛎️ mTLS enabled – configuring TLS credentials.")
-                creds = self._generate_server_credentials(client_cert)
+            # Determine if secure credentials are required
+            creds = None
+            if rpcplugin_config.auto_mtls_enabled() or rpcplugin_config.get("PLUGIN_SERVER_CERT"):
+                logger.debug("🛎️🔐 Secure mode (mTLS or TLS) enabled – configuring TLS credentials.")
+                creds = self._generate_server_credentials() # No longer takes client_cert argument
             else:
-                creds = None
-                logger.debug("🛎️ Insecure mode – no TLS credentials used.")
-        except SecurityError:
+                logger.debug("🛎️🔐 Insecure mode – no TLS credentials used.")
+        except SecurityError: # Let SecurityErrors from _generate_server_credentials propagate
             raise
-        except Exception as e:
+        except Exception as e: # Catch other unexpected errors during credential decision/call
             logger.error(
                 f"🛎️❌ Error during mTLS configuration or credential generation: {e}",
                 extra={"error": str(e), "trace": traceback.format_exc()},

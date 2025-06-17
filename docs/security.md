@@ -44,15 +44,29 @@ from pyvider.rpcplugin import configure, plugin_server, plugin_client
 
 # Enable mTLS with auto-configuration
 configure(
-    PLUGIN_AUTO_MTLS=True,
-    PLUGIN_SERVER_CERT="file:///etc/ssl/certs/rpc-server.crt",
-    PLUGIN_SERVER_KEY="file:///etc/ssl/private/rpc-server.key",
-    PLUGIN_CLIENT_CERT="file:///etc/ssl/certs/rpc-client.crt",
-    PLUGIN_CLIENT_KEY="file:///etc/ssl/private/rpc-client.key"
-    # PLUGIN_CLIENT_ROOT_CERTS or PLUGIN_SERVER_ROOT_CERTS might be needed for CA
+    PLUGIN_AUTO_MTLS=True,  # Enables mTLS if other certs are correctly set
+
+    # Server-side configuration for its own identity
+    PLUGIN_SERVER_CERT="file:///path/to/your/ca_signed_server.crt",
+    PLUGIN_SERVER_KEY="file:///path/to/your/server.key",
+
+    # Server-side configuration for validating clients
+    # This tells the server which CA to trust for client certificates.
+    PLUGIN_CLIENT_ROOT_CERTS="file:///path/to/your/ca.crt",
+
+    # Client-side configuration for its own identity (if the client is also a pyvider-rpcplugin based executable)
+    PLUGIN_CLIENT_CERT="file:///path/to/your/ca_signed_client.crt",
+    PLUGIN_CLIENT_KEY="file:///path/to/your/client.key",
+
+    # Client-side configuration for validating the server
+    # This tells the client which CA to trust for the server's certificate.
+    PLUGIN_SERVER_ROOT_CERTS="file:///path/to/your/ca.crt"
 )
 
 # Server automatically uses mTLS
+# When PLUGIN_AUTO_MTLS=True, the server will require client certificates
+# if PLUGIN_CLIENT_ROOT_CERTS is also configured. The server uses PLUGIN_SERVER_CERT
+# and PLUGIN_SERVER_KEY for its identity.
 # server = plugin_server(protocol=my_protocol, handler=my_handler)
 
 # Client automatically uses mTLS (if it's an executable plugin)
@@ -66,29 +80,35 @@ print("Note: server/client examples are conceptual in this section.")
 For advanced scenarios, configure mTLS manually:
 
 ```python
-from pyvider.rpcplugin.crypto.certificate import Certificate
 import grpc
 
-# Load certificates
-server_cert = Certificate.load_from_file("/path/to/server.crt")
-server_key = Certificate.load_private_key("/path/to/server.key")
-ca_cert = Certificate.load_from_file("/path/to/ca.crt")
+# Assume certificate and key PEM strings are read from files:
+# Example:
+# with open("/path/to/ca.crt", "rb") as f: ca_pem_bytes = f.read()
+# with open("/path/to/server.crt", "rb") as f: server_cert_pem_bytes = f.read()
+# with open("/path/to/server.key", "rb") as f: server_key_pem_bytes = f.read()
+# with open("/path/to/client.crt", "rb") as f: client_cert_pem_bytes = f.read()
+# with open("/path/to/client.key", "rb") as f: client_key_pem_bytes = f.read()
+
+# For demonstration, using placeholder PEM byte strings:
+ca_pem_bytes = b"-----BEGIN CERTIFICATE-----\n..." # Content of your CA certificate
+server_cert_pem_bytes = b"-----BEGIN CERTIFICATE-----\n..." # Content of your server certificate (signed by CA)
+server_key_pem_bytes = b"-----BEGIN PRIVATE KEY-----\n..." # Content of your server private key
+client_cert_pem_bytes = b"-----BEGIN CERTIFICATE-----\n..." # Content of your client certificate (signed by CA)
+client_key_pem_bytes = b"-----BEGIN PRIVATE KEY-----\n..." # Content of your client private key
 
 # Create server credentials
 server_credentials = grpc.ssl_server_credentials(
-    private_key_certificate_chain_pairs=[(server_key.private_key_pem, server_cert.certificate_pem)],
-    root_certificates=ca_cert.certificate_pem,
-    require_client_auth=True
+    private_key_certificate_chain_pairs=[(server_key_pem_bytes, server_cert_pem_bytes)],
+    root_certificates=ca_pem_bytes,  # Server uses CA cert to verify client certs
+    require_client_auth=True         # Enforce client authentication
 )
 
 # Create client credentials  
-client_cert = Certificate.load_from_file("/path/to/client.crt")
-client_key = Certificate.load_private_key("/path/to/client.key")
-
 client_credentials = grpc.ssl_channel_credentials(
-    root_certificates=ca_cert.certificate_pem,
-    private_key=client_key.private_key_pem,
-    certificate_chain=client_cert.certificate_pem
+    root_certificates=ca_pem_bytes,     # Client uses CA cert to verify server's cert
+    private_key=client_key_pem_bytes,   # Client's own private key
+    certificate_chain=client_cert_pem_bytes # Client's own certificate
 )
 ```
 
@@ -97,60 +117,113 @@ client_credentials = grpc.ssl_channel_credentials(
 Configure mTLS via environment variables for containerized deployments:
 
 ```bash
-# Server certificate configuration
+# --- Server-Side Configuration ---
+# Server's own certificate and key (signed by your CA)
 export PLUGIN_SERVER_CERT="file:///etc/ssl/certs/server.crt"
 export PLUGIN_SERVER_KEY="file:///etc/ssl/private/server.key"
+# CA certificate(s) the server uses to verify client certificates
+export PLUGIN_CLIENT_ROOT_CERTS="file:///etc/ssl/certs/ca.crt"
 
-# Client certificate configuration
+# --- Client-Side Configuration (for a client executable plugin) ---
+# Client's own certificate and key (signed by your CA)
 export PLUGIN_CLIENT_CERT="file:///etc/ssl/certs/client.crt"  
 export PLUGIN_CLIENT_KEY="file:///etc/ssl/private/client.key"
+# CA certificate(s) the client uses to verify the server's certificate
+export PLUGIN_SERVER_ROOT_CERTS="file:///etc/ssl/certs/ca.crt"
 
-# CA certificate for validation
-export PLUGIN_CA_CERT="file:///etc/ssl/certs/ca.crt"
-
-# Enable mTLS
+# Enable mTLS (applies to both client and server if they use this config)
 export PLUGIN_AUTO_MTLS="true"
+# If PLUGIN_AUTO_MTLS="true", the server will require client certificates if
+# PLUGIN_CLIENT_ROOT_CERTS is set. The client will send its certificate if
+# PLUGIN_CLIENT_CERT and PLUGIN_CLIENT_KEY are set, and validate the server
+# using PLUGIN_SERVER_ROOT_CERTS.
 ```
 
 ## Certificate Management
 
 ### Certificate Generation
 
-Generate a complete certificate chain:
+Generate a complete certificate chain using a central Certificate Authority (CA). This involves creating a CA, and then using the CA to sign server and client certificates.
 
 ```python
 from pyvider.rpcplugin.crypto.certificate import Certificate
+from pathlib import Path # Recommended for path management
 
-# Step 1: Generate Certificate Authority
-ca_cert = Certificate.generate_ca(
-    common_name="RPC Service CA",
-    organization="Your Organization",
-    validity_days=365  # 1 year CA validity
+# Define a directory to store certificates (ensure this directory exists and is secure)
+# For example purposes, we use a relative path. In production, use absolute, secure paths.
+cert_dir = Path("./example_certs_output")
+cert_dir.mkdir(exist_ok=True)
+
+# Step 1: Create a Root CA
+# This CA certificate is self-signed and will be used to sign other certificates.
+# Its private key should be very securely stored.
+ca_cert_obj = Certificate.create_ca(
+    common_name="My Example Corp CA",
+    organization_name="My Example Corp",
+    validity_days=1095  # e.g., 3 years for a root CA
 )
 
-# Step 2: Generate server certificate
-server_cert = Certificate.generate_server_certificate(
-    ca_cert=ca_cert,
-    common_name="rpc-server.yourdomain.com",
-    san_dns=[
-        "rpc-server.yourdomain.com",
-        "localhost",
-        "127.0.0.1"
-    ],
-    validity_days=90  # Short-lived server cert
+# Save the CA certificate and its private key
+ca_cert_path = cert_dir / "ca.crt"
+ca_key_path = cert_dir / "ca.key"
+with open(ca_cert_path, "w", encoding="utf-8") as f:
+    f.write(ca_cert_obj.cert)
+with open(ca_key_path, "w", encoding="utf-8") as f:
+    if ca_cert_obj.key: # Key will be present for generated CA
+        f.write(ca_cert_obj.key)
+print(f"CA certificate saved to: {ca_cert_path}")
+print(f"CA private key saved to: {ca_key_path} (KEEP THIS KEY VERY SECURE!)")
+
+
+# Step 2: Create a Server Certificate signed by the CA
+# The server certificate is used by the RPC server to identify itself to clients.
+server_cert_obj = Certificate.create_signed_certificate(
+    ca_certificate=ca_cert_obj,  # The CA object created above
+    common_name="rpc-server.example.com",  # Primary domain name of the server
+    organization_name="My Example Corp Servers",
+    validity_days=90,  # Shorter validity for end-entity certificates
+    alt_names=["rpc-server.internal.example.com", "localhost", "127.0.0.1"], # Subject Alternative Names
+    is_client_cert=False  # This is a server certificate
 )
 
-# Step 3: Generate client certificate
-client_cert = Certificate.generate_client_certificate(
-    ca_cert=ca_cert,
-    common_name="rpc-client-001",
-    validity_days=30  # Very short-lived client cert
+# Save the server certificate and its private key
+server_cert_path = cert_dir / "server.crt"
+server_key_path = cert_dir / "server.key"
+with open(server_cert_path, "w", encoding="utf-8") as f:
+    f.write(server_cert_obj.cert)
+with open(server_key_path, "w", encoding="utf-8") as f:
+    if server_cert_obj.key:
+        f.write(server_cert_obj.key)
+print(f"Server certificate saved to: {server_cert_path}")
+print(f"Server private key saved to: {server_key_path}")
+
+
+# Step 3: Create a Client Certificate signed by the CA
+# The client certificate is used by RPC clients to identify themselves to the server.
+client_cert_obj = Certificate.create_signed_certificate(
+    ca_certificate=ca_cert_obj,  # The CA object created above
+    common_name="client-id-007",  # Unique identifier for the client
+    organization_name="My Example Corp Clients",
+    validity_days=30,  # Can be shorter for clients, or match operational needs
+    is_client_cert=True  # This is a client certificate
+    # alt_names can be added if the client might also act as a server or needs SANs
 )
 
-# Save certificates securely
-ca_cert.save_to_file("/secure/path/ca.crt", "/secure/path/ca.key")
-server_cert.save_to_file("/secure/path/server.crt", "/secure/path/server.key")
-client_cert.save_to_file("/secure/path/client.crt", "/secure/path/client.key")
+# Save the client certificate and its private key
+client_cert_path = cert_dir / "client.crt"
+client_key_path = cert_dir / "client.key"
+with open(client_cert_path, "w", encoding="utf-8") as f:
+    f.write(client_cert_obj.cert)
+with open(client_key_path, "w", encoding="utf-8") as f:
+    if client_cert_obj.key:
+        f.write(client_cert_obj.key)
+print(f"Client certificate saved to: {client_cert_path}")
+print(f"Client private key saved to: {client_key_path}")
+
+# Now you have a set of certificates for mTLS:
+# - ca.crt: The CA certificate, used by both client and server to verify each other.
+# - server.crt, server.key: The server's certificate and private key.
+# - client.crt, client.key: The client's certificate and private key.
 ```
 
 ### Certificate Validation
