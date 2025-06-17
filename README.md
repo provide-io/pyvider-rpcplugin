@@ -93,9 +93,9 @@ async def main():
     server = plugin_server(protocol=protocol, handler=MyHandler())
 
     # 4. Start the server (this will run indefinitely until stopped)
-    print("Starting server on default Unix socket...")
-    # To see the socket path, you might need to inspect server.get_status() or logs
-    # For a TCP server: server = plugin_server(..., transport="tcp", host="0.0.0.0", port=50051)
+    # Forcing a known socket path for the client example to connect to
+    server = plugin_server(protocol=protocol, handler=MyHandler(), transport="unix", transport_path="/tmp/pyvider_quickstart.sock")
+    print("Starting server on /tmp/pyvider_quickstart.sock")
     await server.serve()
 
 if __name__ == "__main__":
@@ -140,19 +140,63 @@ While many RPC and IPC mechanisms exist, `pyvider.rpcplugin` offers a specific s
 
 ### Client Connection
 
+Connecting to the server (running from the script above):
+
+```python
+import asyncio
+import grpc
+
+async def run_client():
+    socket_path = "/tmp/pyvider_quickstart.sock" # Same path as in server
+    target = f"unix:{socket_path}"
+    channel = None
+    try:
+        print(f"Attempting to connect to server at {target}...")
+        # For a server script not launched by the client, connect directly using grpc.aio
+        channel = grpc.aio.insecure_channel(target)
+
+        await asyncio.wait_for(channel.channel_ready(), timeout=5.0)
+        print(f"Successfully connected to {target}")
+
+        # Note: The BasicProtocol used by the Quick Start server is for connectivity tests.
+        # It doesn't expose 'MyMethod' via standard gRPC stubs.
+        # To call custom methods, define a .proto file and use generated stubs.
+        # For this example, just connecting successfully demonstrates the server is up.
+
+    except asyncio.TimeoutError:
+        print(f"Timeout: Failed to connect to {target} within 5 seconds.")
+    except grpc.aio.AioRpcError as e:
+        print(f"gRPC Error during connection: {e.code()} - {e.details()}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if channel:
+            print("Closing gRPC channel.")
+            await channel.close()
+
+if __name__ == "__main__":
+    asyncio.run(run_client())
+```
+
+For connecting to a plugin that is an **executable binary/script** (the more common use case for `plugin_client`):
 ```python
 from pyvider.rpcplugin import plugin_client
+# Assuming YourService_pb2_grpc and YourService_pb2 are generated from your .proto
+# from your_service_pb2_grpc import YourServiceStub
+# from your_service_pb2 import YourRequest
 
-async def call_service():
-    client = plugin_client(transport="unix")
-    await client.connect("/tmp/greeter.sock")
+async def call_executable_plugin():
+    # client = plugin_client(server_path="./path_to_your_plugin_executable")
+    # await client.start() # Launches and connects
     
-    # Make RPC calls
-    stub = GreeterStub(client.channel)
-    response = await stub.SayHello(HelloRequest(name="World"))
-    print(f"Response: {response.message}")
-    
-    await client.close()
+    # try:
+    #     # stub = YourServiceStub(client.grpc_channel)
+    #     # response = await stub.YourMethod(YourRequest(data="..."))
+    #     # print(f"Response: {response.message}")
+    #     print("Conceptual example: client connected and RPC call made.")
+    # finally:
+    #     await client.close()
+    print("Note: The above client for executables is conceptual until a full executable example is provided.")
 ```
 
 ## 🎯 Key Features
@@ -166,8 +210,9 @@ server = plugin_server(protocol, handler, transport="unix")
 # TCP Sockets (network communication)  
 server = plugin_server(protocol, handler, transport="tcp", host="0.0.0.0", port=50051)
 
-# Automatic transport negotiation
-server = plugin_server(protocol, handler, transports=["unix", "tcp"])
+# The server will listen on the specified transport.
+# Client-side configuration can then specify its preferred transports to connect with.
+# (Refer to HandshakeConfig and client configuration for details on negotiation)
 ```
 
 ### 🔐 **mTLS Security Made Simple**
@@ -177,14 +222,17 @@ from pyvider.rpcplugin import configure
 
 # Configure mTLS with certificates
 configure(
-    auto_mtls=True,
-    server_cert="path/to/server.crt",
-    server_key="path/to/server.key", 
-    client_cert="path/to/client.crt",
-    client_key="path/to/client.key"
+    PLUGIN_AUTO_MTLS=True,
+    PLUGIN_SERVER_CERT="path/to/server.crt",
+    PLUGIN_SERVER_KEY="path/to/server.key",
+    PLUGIN_CLIENT_CERT="path/to/client.crt",
+    PLUGIN_CLIENT_KEY="path/to/client.key"
 )
 
-# Certificates are automatically validated and rotated
+# Certificates are automatically validated during TLS handshakes.
+# Secure rotation of certificates is a complex operational process that typically
+# involves out-of-band updates to certificate files and graceful restarts;
+# this library focuses on using the configured certificates for mTLS.
 ```
 
 ### ⚙️ **Flexible Configuration**
@@ -308,15 +356,19 @@ server = plugin_server(
     transport="unix",  # Fastest for local IPC
     config={
         "PLUGIN_CONNECTION_TIMEOUT": 60.0,
-        "PLUGIN_HANDSHAKE_TIMEOUT": 10.0,
-        "GRPC_MAX_WORKERS": 32  # Scale with CPU cores
+        "PLUGIN_HANDSHAKE_TIMEOUT": 10.0
+        # Note: Detailed gRPC server options (like max workers) are typically
+        # configured directly on the grpc.aio.server if not exposed by RPCPluginServer.
     }
 )
 
-# Use connection pooling for clients
-async with plugin_client(transport="unix", pool_size=10) as client:
-    # Reuse connections for multiple calls
-    await client.call_multiple(requests)
+# For client-side optimization, manage client instances appropriately.
+# If connecting to multiple different plugin executables, create separate
+# RPCPluginClient instances for each.
+# client = plugin_client(server_path="./path_to_your_plugin_executable")
+# await client.start()
+# # ... use client ...
+# await client.close()
 ```
 
 ## 🔧 Advanced Usage
@@ -335,7 +387,10 @@ class CustomTransport(RPCPluginTransport):
         # Implement custom client connection logic  
         pass
 
-server = plugin_server(protocol, handler, transport=CustomTransport())
+# To use a custom transport, instantiate RPCPluginServer directly:
+# custom_transport_instance = CustomTransport()
+# server = RPCPluginServer(protocol=protocol, handler=handler, transport=custom_transport_instance)
+# rather than using the plugin_server() factory.
 ```
 
 ### Protocol Factories
@@ -352,9 +407,7 @@ protocol = create_basic_protocol()
 protocol = plugin_protocol(
     service_name="ProductionService",
     descriptor_module=service_pb2, # e.g., from your_service_pb2.py
-    servicer_add_fn=add_ServiceServicer_to_server, # e.g., from your_service_pb2_grpc.py
-    validation_enabled=True,
-    compression="gzip"
+    servicer_add_fn=add_ServiceServicer_to_server # e.g., from your_service_pb2_grpc.py
 )
 ```
 
@@ -365,17 +418,21 @@ from pyvider.rpcplugin import configure
 
 # Production-ready setup
 configure(
-    magic_cookie="production-secret-key",
-    protocol_version=1,
-    transports=["unix", "tcp"],
-    auto_mtls=True,
-    handshake_timeout=30.0,
-    connection_timeout=300.0,
+    PLUGIN_MAGIC_COOKIE_VALUE="production-secret-key", # Or PLUGIN_MAGIC_COOKIE
+    PLUGIN_PROTOCOL_VERSIONS=[1], # Server announces its supported versions
+    # For server transport capabilities (server announces what it can do):
+    PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
+    # For client transport preferences (client announces what it prefers):
+    # PLUGIN_CLIENT_TRANSPORTS=["unix"],
+    PLUGIN_AUTO_MTLS=True,
+    PLUGIN_HANDSHAKE_TIMEOUT=30.0,
+    PLUGIN_CONNECTION_TIMEOUT=300.0,
     # Certificate paths for mTLS
-    server_cert="/etc/ssl/certs/server.crt",
-    server_key="/etc/ssl/private/server.key",
-    client_cert="/etc/ssl/certs/client.crt", 
-    client_key="/etc/ssl/private/client.key"
+    PLUGIN_SERVER_CERT="/etc/ssl/certs/server.crt",
+    PLUGIN_SERVER_KEY="/etc/ssl/private/server.key",
+    PLUGIN_CLIENT_CERT="/etc/ssl/certs/client.crt",
+    PLUGIN_CLIENT_KEY="/etc/ssl/private/client.key"
+    # Ensure these paths are accessible by the plugin process
 )
 ```
 

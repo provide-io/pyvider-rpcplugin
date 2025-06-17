@@ -13,7 +13,7 @@ To run any example:
 
 2. **Run the desired example**:
    ```bash
-   python 01_echo_demo.py
+   python 01_quick_start.py
    ```
 
 Each script automatically configures the Python path to find the `pyvider` modules from the project's `src` directory.
@@ -24,8 +24,8 @@ Each script automatically configures the Python path to find the `pyvider` modul
 
 | File | Description | Complexity | Prerequisites |
 |------|-------------|------------|---------------|
-| **`01_echo_demo.py`** | 🔊 Basic echo service - **Featured in README** | Beginner | None |
-| **`02_server_setup.py`** | 🚀 Server configuration patterns | Beginner | Basic Python async |
+| **`01_quick_start.py`** | 🚀 Basic server/client setup - **Featured in README** | Beginner | None |
+| **`02_server_setup.py`** | ⚙️ Server configuration patterns | Beginner | Basic Python async |
 | **`03_client_connection.py`** | 🔗 Client implementation examples | Beginner | Understanding of 02 |
 | **`04_transport_options.py`** | 🚚 Unix socket vs TCP configuration | Intermediate | Basic networking |
 | **`05_security_mtls.py`** | 🔒 mTLS certificate setup | Advanced | PKI knowledge |
@@ -86,8 +86,8 @@ export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
 
 ### **Running Individual Examples**
 ```bash
-# Basic echo demo (great starting point)
-python 01_echo_demo.py
+# Basic quick start demo (great starting point)
+python 01_quick_start.py
 
 # Server configuration examples
 python 02_server_setup.py
@@ -124,7 +124,7 @@ python client.py
 ## 📚 Learning Path
 
 ### **For Beginners**
-1. Start with `01_echo_demo.py` - Understand basic concepts
+1. Start with `01_quick_start.py` - Understand basic concepts
 2. Explore `02_server_setup.py` - Learn server configuration
 3. Try `03_client_connection.py` - Understand client patterns
 4. Run the complete `demo/echo_service/` - See everything together
@@ -163,12 +163,11 @@ server = plugin_server(
     handler=handler,
     transport="tcp",
     config={
-        "security": {
-            "mtls": True,
-            "cert_file": "/path/to/server.crt",
-            "key_file": "/path/to/server.key",
-            "ca_file": "/path/to/ca.crt"
-        }
+        "PLUGIN_AUTO_MTLS": True, # Use actual config keys
+        "PLUGIN_SERVER_CERT": "/path/to/server.crt",
+        "PLUGIN_SERVER_KEY": "/path/to/server.key",
+        "PLUGIN_CLIENT_ROOT_CERTS": "/path/to/ca.crt" # For server to verify client
+        # Ensure client also has its cert/key and the CA to verify server
     }
 )
 ```
@@ -199,10 +198,13 @@ client = plugin_client(server_path, timeout=30.0)
 ```
 
 ### **Debugging**
-Enable detailed logging:
+Enable detailed logging via configuration:
 ```python
-from pyvider.telemetry import configure_logging
-configure_logging(level="DEBUG")
+from pyvider.rpcplugin import configure
+configure(PLUGIN_LOG_LEVEL="DEBUG")
+
+# Alternatively, set the environment variable:
+# export PLUGIN_LOG_LEVEL="DEBUG"
 ```
 
 ## 🤝 Contributing
@@ -218,8 +220,9 @@ Found an issue or want to add an example?
 
 - **Main Documentation**: See project README.md
 - **API Reference**: Check `docs/api-reference.md`
-- **Production Guide**: Review `docs/production-deployment.md`
+- **Configuration Guide**: Review `docs/configuration.md`
+- **Security Guide**: Review `docs/security.md`
 
 ---
 
-**🎯 Start with `01_echo_demo.py` and work your way up!**
+**🎯 Start with `01_quick_start.py` and work your way up!**

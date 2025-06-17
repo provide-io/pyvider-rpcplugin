@@ -44,18 +44,21 @@ from pyvider.rpcplugin import configure, plugin_server, plugin_client
 
 # Enable mTLS with auto-configuration
 configure(
-    auto_mtls=True,
-    server_cert="file:///etc/ssl/certs/rpc-server.crt",
-    server_key="file:///etc/ssl/private/rpc-server.key",
-    client_cert="file:///etc/ssl/certs/rpc-client.crt", 
-    client_key="file:///etc/ssl/private/rpc-client.key"
+    PLUGIN_AUTO_MTLS=True,
+    PLUGIN_SERVER_CERT="file:///etc/ssl/certs/rpc-server.crt",
+    PLUGIN_SERVER_KEY="file:///etc/ssl/private/rpc-server.key",
+    PLUGIN_CLIENT_CERT="file:///etc/ssl/certs/rpc-client.crt",
+    PLUGIN_CLIENT_KEY="file:///etc/ssl/private/rpc-client.key"
+    # PLUGIN_CLIENT_ROOT_CERTS or PLUGIN_SERVER_ROOT_CERTS might be needed for CA
 )
 
 # Server automatically uses mTLS
-server = plugin_server(protocol=my_protocol, handler=my_handler)
+# server = plugin_server(protocol=my_protocol, handler=my_handler)
 
-# Client automatically uses mTLS
-client = plugin_client()
+# Client automatically uses mTLS (if it's an executable plugin)
+# client = plugin_client(server_path="/path/to/executable_plugin")
+# await client.start()
+print("Note: server/client examples are conceptual in this section.")
 ```
 
 ### Manual mTLS Configuration
@@ -380,13 +383,13 @@ def validate_magic_cookie(provided_cookie: str, expected_cookie: str) -> bool:
     import secrets
     return secrets.compare_digest(provided_cookie, expected_cookie)
 
-# Configure magic cookie
+# Configure magic cookie (using correct PLUGIN_ prefixed keys)
 configure(
-    magic_cookie="your-super-secret-cookie-value-2024",
-    protocol_version=1
+    PLUGIN_MAGIC_COOKIE_VALUE="your-super-secret-cookie-value-2024",
+    PLUGIN_PROTOCOL_VERSIONS=[1] # Protocol versions should be a list
 )
 
-# Magic cookie validation happens automatically during handshake
+# Magic cookie validation happens automatically during handshake if server/client use this config
 ```
 
 ### Role-Based Access Control (RBAC)
@@ -679,10 +682,11 @@ class VaultSecretManager:
 vault = VaultSecretManager("https://vault.company.com", vault_token)
 
 configure(
-    server_cert=vault.get_certificate("secret/rpc/server-cert"),
-    server_key=vault.get_private_key("secret/rpc/server-key"),
-    client_cert=vault.get_certificate("secret/rpc/client-cert"),
-    client_key=vault.get_private_key("secret/rpc/client-key")
+    PLUGIN_SERVER_CERT=vault.get_certificate("secret/rpc/server-cert"),
+    PLUGIN_SERVER_KEY=vault.get_private_key("secret/rpc/server-key"),
+    PLUGIN_CLIENT_CERT=vault.get_certificate("secret/rpc/client-cert"),
+    PLUGIN_CLIENT_KEY=vault.get_private_key("secret/rpc/client-key")
+    # Potentially PLUGIN_CLIENT_ROOT_CERTS or PLUGIN_SERVER_ROOT_CERTS for CAs
 )
 ```
 
