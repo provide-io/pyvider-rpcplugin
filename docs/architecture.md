@@ -306,6 +306,90 @@ Built-in protocol services provide framework functionality:
 
 ## Security Architecture
 
+### Plugin Startup and Handshake Sequence
+
+The initial startup and handshake process between the host (e.g., a Go application using `go-plugin`) and the Python plugin (`RPCPluginServer`) is critical for establishing communication. Here's a step-by-step breakdown:
+
+1.  **Host Configuration (Magic Cookie):**
+    *   The host application is configured with a `PLUGIN_MAGIC_COOKIE_KEY` (e.g., "FOO_PLUGIN_MAGIC_COOKIE") and a corresponding `PLUGIN_MAGIC_COOKIE_VALUE` (e.g., "BAR"). These are secrets shared between the host and the plugin.
+
+2.  **Host Launches Plugin:**
+    *   The host launches the plugin executable.
+    *   Crucially, it sets an environment variable for the plugin process. The *name* of this environment variable is the value of `PLUGIN_MAGIC_COOKIE_KEY` (e.g., `FOO_PLUGIN_MAGIC_COOKIE`), and its *value* is the `PLUGIN_MAGIC_COOKIE_VALUE` (e.g., "BAR").
+
+3.  **Plugin (`RPCPluginServer`) Startup:**
+    *   **Magic Cookie Validation:** The `RPCPluginServer` instance, upon initialization, calls `validate_magic_cookie()`. This function reads its *own* environment variable (whose name is specified by its *own* configuration, also `PLUGIN_MAGIC_COOKIE_KEY`) and compares its value to its *own* configured `PLUGIN_MAGIC_COOKIE_VALUE`. This step verifies that the plugin was launched by a legitimate host that knows the shared secret.
+    *   **Protocol & Transport Negotiation:** The server determines the protocol version and transport type (Unix socket or TCP) it will use, based on its configuration and capabilities.
+    *   **Address & Certificate Preparation:** It sets up its listening address. If TLS is configured, it prepares its server certificate.
+    *   **Handshake String Output:** The server prints a specific handshake string to its standard output (stdout). The format is:
+        `CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|CERT`
+        *   `CORE_VERSION`: Core protocol version (e.g., "1").
+        *   `PLUGIN_VERSION`: Plugin-specific protocol version.
+        *   `NETWORK`: "unix" or "tcp".
+        *   `ADDRESS`: The socket path (for unix) or "127.0.0.1:PORT" (for tcp). The `127.0.0.1` is standard for same-host plugin communication.
+        *   `PROTOCOL`: Typically "grpc".
+        *   `CERT`: Server's public certificate (PEM format, base64 encoded, newlines removed), if TLS is enabled. Otherwise, this part is empty.
+
+4.  **Host (`RPCPluginClient`) Reads Handshake String:**
+    *   The host application captures and parses this handshake string from the plugin's stdout.
+
+5.  **Host Connects to Plugin:**
+    *   Using the `NETWORK` and `ADDRESS` from the parsed handshake string, the host (via `RPCPluginClient`) initiates a connection to the plugin server.
+
+6.  **TLS/mTLS Handshake (if applicable):**
+    *   If the handshake string indicated TLS (by providing a `CERT`), a standard TLS handshake occurs over the established connection.
+    *   **Server Authentication:** The client validates the server's certificate. This might involve using the `CERT` from the handshake string directly (if the host trusts it by virtue of launching the plugin) or validating it against a set of configured Certificate Authorities (CAs).
+    *   **Client Authentication (mTLS):** If mutual TLS (mTLS) is configured on the server (`PLUGIN_AUTO_MTLS=true`), the server will request and validate the client's certificate against its own configured `PLUGIN_CLIENT_ROOT_CERTS`.
+
+7.  **Secure gRPC Channel Established:**
+    *   Once all handshakes (plugin handshake and TLS/mTLS handshake) are complete, a secure gRPC channel is established, and RPC communication can begin.
+
+**Sequence Diagram:**
+
+```plantuml
+@startuml
+title Plugin Startup and Handshake Sequence
+
+participant "Host Application (go-plugin)" as Host
+participant "Plugin Executable (Python)" as PluginProcess
+participant "RPCPluginServer" as Server
+participant "RPCPluginClient" as Client
+
+Host -> PluginProcess: Launch(env[MAGIC_COOKIE_KEY]=MAGIC_COOKIE_VALUE)
+activate PluginProcess
+
+PluginProcess -> Server: Initialize
+activate Server
+Server -> Server: validate_magic_cookie()
+Server -> Server: Negotiate protocol & transport
+Server -> Server: Determine listening address & cert
+Server --> PluginProcess: Prints Handshake String to stdout
+deactivate Server
+
+Host <-- PluginProcess: Reads Handshake String from stdout
+deactivate PluginProcess
+
+Host -> Client: Initialize with handshake info
+activate Client
+Client -> Server: Connect to (NETWORK, ADDRESS)
+
+opt TLS/mTLS Enabled
+    Client -> Server: TLS ClientHello (+ Client Cert if mTLS)
+    activate Server
+    Server -> Client: TLS ServerHello + Server Cert
+    deactivate Server
+    Client -> Client: Validate Server Cert
+    opt mTLS
+        Server -> Server: Validate Client Cert
+    end
+end
+deactivate Client
+
+Host <-> PluginProcess: Secure gRPC Channel Established
+
+@enduml
+```
+
 ### mTLS Implementation
 
 Mutual TLS is implemented at the transport layer with certificate management:
@@ -353,23 +437,30 @@ class SecurityManager:
         )
 ```
 
-### Authentication Flow
+### mTLS Handshake Details
+
+This diagram focuses on the specifics of the Mutual TLS (mTLS) handshake that occurs *after* the initial plugin handshake (where the handshake string is exchanged) and the host has connected to the network address provided by the plugin.
 
 ```mermaid
 sequenceDiagram
-    participant C as Client
-    participant S as Server
-    participant CA as Certificate Authority
+    participant C as Client (Host Application)
+    participant S as Plugin Server (RPCPluginServer)
+    participant CA as Certificate Authority (trusted by both)
     
-    Note over C,S: mTLS Handshake
-    C->>S: Client Hello + Client Certificate
-    S->>CA: Validate Client Certificate
-    CA->>S: Certificate Valid
-    S->>C: Server Hello + Server Certificate
-    C->>CA: Validate Server Certificate  
-    CA->>C: Certificate Valid
+    Note over C,S: TCP/Unix Connection Established (from initial handshake)
+    Note over C,S: mTLS Handshake Begins
+    C->>S: ClientHello + Client Certificate
+    S->>CA: Validate Client Certificate (using its PLUGIN_CLIENT_ROOT_CERTS)
+    activate CA
+    CA-->>S: Certificate Valid / Invalid
+    deactivate CA
+    S->>C: ServerHello + Server Certificate (from its PLUGIN_SERVER_CERT)
+    C->>CA: Validate Server Certificate (using its configured CAs or CERT from handshake)
+    activate CA
+    CA-->>C: Certificate Valid / Invalid
+    deactivate CA
     
-    Note over C,S: Secure Channel Established
+    Note over C,S: Secure Channel Established (if both certs valid)
     C->>S: Encrypted RPC Request
     S->>C: Encrypted RPC Response
 ```

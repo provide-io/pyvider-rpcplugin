@@ -66,11 +66,11 @@ async def example_4_unix_socket_performance():
 
     # Configure for Unix socket optimization
     configure(
-        magic_cookie="unix-benchmark-cookie",
-        protocol_version=1,
-        transports=["unix"],
-        auto_mtls=False,  # Disable mTLS for max performance
-        handshake_timeout=5.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="unix-benchmark-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["unix"], # Correct key
+        PLUGIN_AUTO_MTLS=False,  # Disable mTLS for max performance
+        PLUGIN_HANDSHAKE_TIMEOUT=5.0,
         connection_timeout=30.0,
     )
 
@@ -161,11 +161,11 @@ async def example_4_tcp_socket_performance():
 
     # Configure for TCP optimization
     configure(
-        magic_cookie="tcp-benchmark-cookie",
-        protocol_version=1,
-        transports=["tcp"],
-        auto_mtls=False,  # Disable mTLS for baseline performance
-        handshake_timeout=10.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="tcp-benchmark-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["tcp"], # Correct key
+        PLUGIN_AUTO_MTLS=False,  # Disable mTLS for baseline performance
+        PLUGIN_HANDSHAKE_TIMEOUT=10.0,
         connection_timeout=60.0,
     )
 
@@ -398,11 +398,11 @@ async def example_4_dual_transport_setup():
 
     # Configure for dual transport
     configure(
-        magic_cookie="dual-transport-cookie",
-        protocol_version=1,
-        transports=["unix", "tcp"],  # Support both
-        auto_mtls=False,
-        handshake_timeout=15.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="dual-transport-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],  # Correct key
+        PLUGIN_AUTO_MTLS=False,
+        PLUGIN_HANDSHAKE_TIMEOUT=15.0,
         connection_timeout=120.0,
     )
 

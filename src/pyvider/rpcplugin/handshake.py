@@ -259,6 +259,11 @@ async def build_handshake_response(
     🤝📝✅ Constructs the handshake response string in the format:
     CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
 
+    Note: For TCP transport, the ADDRESS `127.0.0.1` is standard for same-host
+    plugin communication, ensuring the plugin host connects to the plugin
+    locally. The actual listening interface might be broader (e.g., `0.0.0.0`),
+    but the handshake communicates `127.0.0.1` for the host to connect to.
+
     Args:
         plugin_version: The version of the plugin.
         transport_name: The name of the transport ("tcp" or "unix").
@@ -670,6 +675,11 @@ async def parse_and_validate_handshake(
 ) -> tuple[int, int, str, str, str, str | None]:
     """
     Parses and validates a handshake response, checking correct format and values.
+    Parses and validates a handshake response string. This function is primarily
+    intended for utility use or direct testing of handshake strings.
+    The core `RPCPluginClient` uses `parse_handshake_response` (via `read_handshake_response`)
+    for its handshake process.
+
     Expected format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
 
     Args:

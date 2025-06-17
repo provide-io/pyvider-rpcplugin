@@ -430,12 +430,12 @@ async def example_10_baseline_performance():
 
     # Configure for baseline measurement
     configure(
-        magic_cookie="perf-baseline-cookie",
-        protocol_version=1,
-        transports=["unix"],
-        auto_mtls=False,  # Disable for baseline
-        handshake_timeout=5.0,
-        connection_timeout=30.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="perf-baseline-cookie",
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["unix"],
+        PLUGIN_AUTO_MTLS=False,  # Disable for baseline
+        PLUGIN_HANDSHAKE_TIMEOUT=5.0,
+        PLUGIN_CONNECTION_TIMEOUT=30.0,
     )
 
     logger.info(
@@ -651,9 +651,9 @@ async def example_10_concurrency_tuning():
             handler=handler,
             transport="unix",
             config={
-                "max_workers": concurrent_clients * 2,  # Scale workers with clients
-                "connection_pool_size": concurrent_clients,
-                "keepalive_timeout": 60,
+                # "max_workers": concurrent_clients * 2,  # Conceptual: gRPC options not set this way
+                # "connection_pool_size": concurrent_clients, # Conceptual
+                "app_concurrency_setting": concurrent_clients # Example of app-specific config
             },
         )
 
@@ -872,9 +872,9 @@ async def example_10_memory_optimization():
         handler=handler,
         transport="unix",
         config={
-            "max_connections": 100,  # Limit concurrent connections
-            "connection_timeout": 30,  # Close idle connections
-            "keepalive_timeout": 60,
+                # "max_connections": 100,  # Conceptual: gRPC options not set this way
+                # "connection_timeout": 30, # This is a PLUGIN_ key, not for direct gRPC option
+                "app_resource_profile": "optimized" # Example of app-specific config
         },
     )
 

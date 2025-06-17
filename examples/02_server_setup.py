@@ -63,11 +63,11 @@ async def example_2_unix_socket_server():
 
     # Configure for Unix socket communication
     configure(
-        magic_cookie="example-unix-cookie",
-        protocol_version=1,
-        transport=["unix"],  # Unix socket only
-        auto_mtls=False,  # Disable mTLS for local communication
-        handshake_timeout=10.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="example-unix-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["unix"],  # Correct key for server transports
+        PLUGIN_AUTO_MTLS=False,  # Disable mTLS for local communication
+        PLUGIN_HANDSHAKE_TIMEOUT=10.0,
         connection_timeout=60.0,
     )
 
@@ -130,11 +130,11 @@ async def example_2_tcp_server():
 
     # Configure for TCP communication
     configure(
-        magic_cookie="example-tcp-cookie",
-        protocol_version=1,
-        transport=["tcp"],  # TCP only
-        auto_mtls=False,  # Will enable mTLS in security example
-        handshake_timeout=15.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="example-tcp-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["tcp"],  # Correct key for server transports
+        PLUGIN_AUTO_MTLS=False,  # Will enable mTLS in security example
+        PLUGIN_HANDSHAKE_TIMEOUT=15.0,
         connection_timeout=120.0,
     )
 
@@ -201,11 +201,11 @@ async def example_2_dual_transport_server():
 
     # Configure for dual transport support
     configure(
-        magic_cookie="example-dual-cookie",
-        protocol_version=1,
-        transport=["unix", "tcp"],  # Support both transports
-        auto_mtls=False,
-        handshake_timeout=20.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="example-dual-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],  # Correct key for server transports
+        PLUGIN_AUTO_MTLS=False,
+        PLUGIN_HANDSHAKE_TIMEOUT=20.0,
         connection_timeout=180.0,
     )
 
