@@ -199,7 +199,10 @@ class RobustServiceHandler:
 
 
 class RetryPolicy:
-    """Configurable retry policy for RPC operations."""
+    """Example implementation of a retry policy for demonstration purposes.
+
+    Configurable retry policy for RPC operations.
+    """
 
     def __init__(
         self,
@@ -303,7 +306,10 @@ class RetryPolicy:
 
 
 class CircuitBreaker:
-    """Circuit breaker pattern for preventing cascade failures."""
+    """Example implementation of the circuit breaker pattern for demonstration purposes.
+
+    Circuit breaker pattern for preventing cascade failures.
+    """
 
     def __init__(
         self,

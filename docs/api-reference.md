@@ -40,7 +40,9 @@ def plugin_server(
 - `transport_path` - Custom Unix socket path (optional, for "unix" transport)
 - `host` - TCP bind address (default: `"127.0.0.1"`, for "tcp" transport)
 - `port` - TCP port number (default: 0 for auto-assignment)
-- `config` - Additional configuration options
+- `config` - Optional dictionary for application-specific configuration.
+  This dictionary is primarily intended for passing application-specific configuration that your custom handlers or protocol implementations might utilize. Currently, it is not used to pass low-level tuning options (e.g., `max_workers`, gRPC channel arguments) to the underlying gRPC server instance created by `RPCPluginServer`. Standard plugin configurations (like `PLUGIN_MAGIC_COOKIE_VALUE`, `PLUGIN_AUTO_MTLS`, etc.) should be set via environment variables, `load_config_from_file()`, or the global `configure()` function to be recognized by the core framework.
+  One specific framework interaction is that if `PLUGIN_CLIENT_CERT` is present in this `config` dict, it can be used by the server's `_read_client_cert()` method as an override for identifying client CA roots (though `PLUGIN_CLIENT_ROOT_CERTS` is the more direct way to configure this globally for mTLS).
 
 **Returns:** Configured `RPCPluginServer` instance
 
@@ -142,10 +144,16 @@ class RPCPluginServer:
         self,
         protocol: ProtocolT,
         handler: HandlerT,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None, # Updated type hint
         transport: Optional[TransportT] = None,
     )
 ```
+**Attributes:**
+- `protocol: ProtocolT` - The protocol implementation.
+- `handler: HandlerT` - The service handler instance.
+- `config: Optional[dict[str, Any]]` - A dictionary for application-specific configuration. This is passed from the `plugin_server` factory or directly during instantiation. The framework itself makes limited use of this dictionary (e.g., `_read_client_cert()` might check it for a `PLUGIN_CLIENT_CERT` value). It does not directly configure detailed gRPC server options like worker threads or specific channel arguments; these are managed internally by `RPCPluginServer` with default values. For core framework settings (security, timeouts, etc.), use global configuration methods (env vars, `load_config_from_file`, or `configure()`).
+- `transport: Optional[TransportT]` - An optional pre-configured transport instance. If not provided, the server will create one based on global configuration.
+
 
 #### Methods
 
@@ -193,6 +201,35 @@ async def get_status(self) -> Dict[str, Any]
 ### `RPCPluginClient`
 
 Client class for connecting to RPC services.
+
+Instances of `RPCPluginClient` support the asynchronous context management protocol. When used with `async with`, `client.start()` is automatically called upon entering the context, and `client.shutdown_plugin()` (if applicable) followed by `client.close()` are automatically called upon exiting the context.
+
+#### Async Context Manager Example
+```python
+# from pyvider.rpcplugin import plugin_client, RPCPluginError, logger # Assuming these are imported
+# import asyncio
+
+# client_instance = plugin_client(server_path="./my_plugin_executable")
+# async def manage_client():
+#     try:
+#         async with client_instance as client:
+#             # client.start() has been called by __aenter__
+#             # Now you can use client.grpc_channel, for example:
+#             # stub = YourServiceStub(client.grpc_channel)
+#             # response = await stub.YourMethod(YourRequest())
+#             logger.info(f"Client connected to target: {client.target_endpoint}") # Assuming target_endpoint exists
+#             # Simulate some work
+#             await asyncio.sleep(0.1)
+#     # client.shutdown_plugin() (if applicable) and client.close()
+#     # are automatically called by __aexit__
+#     except RPCPluginError as e:
+#         logger.error(f"An error occurred with the plugin client: {e}")
+#     except Exception as e: # Catch any other unexpected errors
+#         logger.error(f"An unexpected error occurred: {e}")
+
+# asyncio.run(manage_client())
+print("Note: RPCPluginClient async with example is conceptual until full executable context is shown elsewhere.")
+```
 
 #### Constructor
 
@@ -648,5 +685,5 @@ configure(
 
 - [Architecture Guide](architecture.md) - System design and patterns
 - [Security Guide](security.md) - mTLS setup and best practices
-- [Performance Guide](performance.md) - Optimization recommendations
+- [Performance Overview](../README.md#performance) - Optimization recommendations
 - [Examples](../examples/) - Complete working examples

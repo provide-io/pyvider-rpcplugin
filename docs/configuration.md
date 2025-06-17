@@ -24,9 +24,24 @@ This method is common for containerized environments and CI/CD pipelines.
 
 ### 2. Configuration Files
 
-Configuration can also be loaded from files using the `load_config_from_file()` function. This function reads values from the specified file, sets them as environment variables (mapping keys as needed), and then reloads the internal configuration state from the environment. This means the behavior is similar to setting environment variables directly, but managed via a file.
+Configuration can be loaded from files using the `load_config_from_file(config_file_path: str)` function. This is a powerful way to manage settings for different environments or to centralize configuration.
 
-**Note on Key Mappings:** For JSON and YAML files, common shorter keys (e.g., `magic_cookie`) are mapped to their canonical `PLUGIN_` prefixed environment variable names (e.g., `PLUGIN_MAGIC_COOKIE_VALUE`). For `.env` files, `PYVIDER_` prefixed keys are similarly mapped (e.g., `PYVIDER_MAGIC_COOKIE` maps to `PLUGIN_MAGIC_COOKIE_VALUE`). You can also use the canonical `PLUGIN_` prefixed keys directly in any file type.
+**Behavior of `load_config_from_file()`:**
+1.  **File Reading**: It accepts a path to a configuration file. Supported formats are:
+    *   `.env`: Standard dotenv file format.
+    *   `.json`: JSON formatted configuration.
+    *   `.yaml` or `.yml`: YAML formatted configuration. (Requires `PyYAML` to be installed).
+2.  **Parsing and Key Mapping**:
+    *   **`.env` files**: Parsed line by line. Lines starting with `#` or empty lines are ignored. `KEY=VALUE` pairs are processed. Keys prefixed with `PYVIDER_` are mapped to their corresponding `PLUGIN_` equivalents (e.g., `PYVIDER_LOG_LEVEL` becomes `PLUGIN_LOG_LEVEL`). Other keys are used as-is. Values can optionally be quoted (quotes are stripped).
+    *   **`.json` and `.yaml`/`.yml` files**: Parsed using standard library `json` or `PyYAML` (if available). Keys from these files are mapped from common shorter names to their `PLUGIN_` prefixed environment variable names (e.g., a top-level JSON key `log_level` becomes `PLUGIN_LOG_LEVEL`). Refer to `KEY_MAPPING_JSON_YAML` in `config.py` for the specific mappings. Unmapped keys are typically uppercased and used directly.
+3.  **Environment Variable Setting**:
+    *   For each key-value pair derived from the file (after key mapping), an environment variable is set using `os.environ[key] = str(value)`.
+    *   If a value from a JSON or YAML file is a list, it's converted into a comma-separated string before being set as an environment variable (e.g., `["unix", "tcp"]` becomes `"unix,tcp"`).
+4.  **Configuration Reload**: After processing the entire file and setting all corresponding environment variables, the function calls `RPCPluginConfig.instance().reload()`. This forces the singleton configuration object to re-read all its values from the (now updated) environment variables and schema defaults.
+
+**YAML Support Note**: If you intend to use `.yaml` or `.yml` configuration files, you must have the `PyYAML` library installed in your Python environment (`pip install pyyaml`). If `PyYAML` is not found when `load_config_from_file()` attempts to process a YAML file, a warning will be logged, and the processing of that specific YAML file will be skipped. Other file types will still be processed if specified.
+
+**Note on Key Mappings (Conceptual):** The system uses internal mappings like `KEY_MAPPING_JSON_YAML` (for JSON/YAML short keys to `PLUGIN_` keys) and `KEY_MAPPING_DOTENV` (for `PYVIDER_` to `PLUGIN_` keys). While you don't interact with these mappings directly, understanding they exist helps clarify how file keys translate to environment variables. You can always use the canonical `PLUGIN_` prefixed keys directly in any file type if you prefer to bypass the mapping.
 
 #### a. JSON File
 
@@ -117,10 +132,36 @@ The configuration system applies values in the following general order, with lat
 3.  **Configuration Files (`load_config_from_file`)**: When a file is loaded:
     a.  Values from the file are read.
     b.  These values are used to set/overwrite corresponding environment variables (using key mappings).
-    c.  The internal `RPCPluginConfig` state is then entirely reloaded based on the current state of all environment variables (reflecting changes from the loaded file) and schema defaults for anything not in the environment. If multiple files are loaded, the environment variables set by the last-loaded file for a given key will take precedence during the subsequent config reload.
-4.  **Programmatic `configure()` Calls**: Values passed to `configure()` directly update the in-memory `RPCPluginConfig` state, overriding any values loaded from previous steps. `configure()` does *not* change environment variables.
+    c.  The internal `RPCPluginConfig` state is then entirely reloaded by `RPCPluginConfig.instance().reload()`. This reload process uses the current state of all environment variables (which now includes changes from the loaded file) and applies schema defaults for any settings not found in the environment.
+    d.  If multiple files are loaded sequentially using `load_config_from_file()`, the environment variables set by the last-loaded file for a given key will take precedence during that file's subsequent config reload.
+4.  **Programmatic `configure()` Calls**: Values passed to `configure()` directly update the in-memory `RPCPluginConfig` state, overriding any values loaded from previous steps (defaults, initial environment, or file-loaded environment variables). `configure()` does *not* change environment variables themselves.
 
-It's important to note that `load_config_from_file` modifies the environment variables, which can then affect subsequent re-initializations or reloads of the `RPCPluginConfig`. The `configure()` function, however, only modifies the current in-memory state of the configuration singleton.
+It's crucial to understand that `load_config_from_file()` ultimately works by **modifying the environment variables**, and then triggering a reload of the `RPCPluginConfig` from this updated environment. This makes its behavior consistent with how environment variables are prioritized. The `configure()` function, in contrast, directly modifies the live configuration object without altering the environment.
+
+## Magic Cookie Authentication Flow
+
+The "magic cookie" is a shared secret used to verify that the plugin executable was indeed launched by a trusted host application and not by some other means. It's a basic authentication mechanism. Here's how the related configuration variables interact:
+
+*   The **Host Application (Server)**, when preparing to launch a plugin, configures two main variables for itself:
+    *   `PLUGIN_MAGIC_COOKIE_KEY`: This defines the *name* of the environment variable the server expects the plugin to have set. For example, if `PLUGIN_MAGIC_COOKIE_KEY` is set to `"MY_PLUGIN_AUTH_TOKEN"`, the server will look for an environment variable named `MY_PLUGIN_AUTH_TOKEN` in the plugin's environment. The default is `"PLUGIN_MAGIC_COOKIE"`.
+    *   `PLUGIN_MAGIC_COOKIE_VALUE`: This defines the *expected secret value* of that environment variable. For example, `"supersecretvalue123"`.
+
+*   When the **Host Application launches a Plugin Executable**:
+    *   It is the host's responsibility to ensure that the plugin process is started with an environment variable set correctly. The name of this environment variable must match the host's `PLUGIN_MAGIC_COOKIE_KEY`, and its value must match the host's `PLUGIN_MAGIC_COOKIE_VALUE`.
+    *   Example: If the server is configured with `PLUGIN_MAGIC_COOKIE_KEY="AUTH_TOKEN"` and `PLUGIN_MAGIC_COOKIE_VALUE="secretXYZ"`, then the plugin executable must be launched with `AUTH_TOKEN="secretXYZ"` in its environment. The `plugin_client()` factory (if used to prepare the command to launch a plugin) automatically sets the environment variable named by `PLUGIN_MAGIC_COOKIE_KEY` to the value of `PLUGIN_MAGIC_COOKIE_VALUE` from its own configuration when launching the plugin subprocess.
+
+*   **Server-Side Validation** (performed by `validate_magic_cookie` in `handshake.py` which is called by `RPCPluginServer`):
+    1.  The server retrieves the expected secret value from its own `PLUGIN_MAGIC_COOKIE_VALUE` configuration.
+    2.  It retrieves the name of the key it expects the plugin to provide from its own `PLUGIN_MAGIC_COOKIE_KEY` configuration.
+    3.  The validation logic then attempts to get the actual cookie value provided by the plugin. This is typically done by reading the environment variable whose name was specified by `PLUGIN_MAGIC_COOKIE_KEY` *from the plugin's environment*. (In `pyvider-rpcplugin`, this check is performed by the server based on its configuration, assuming the plugin's environment variable was set by the launching mechanism).
+    4.  **Fallback**: If the environment variable specified by `PLUGIN_MAGIC_COOKIE_KEY` is *not found* (e.g., `os.getenv(server_config.magic_cookie_key())` returns `None`), the server-side validation logic will then use the value of its own `PLUGIN_MAGIC_COOKIE` configuration setting as the "cookie provided by the plugin".
+    5.  This "provided cookie" (either from the plugin's environment via `PLUGIN_MAGIC_COOKIE_KEY` or from the server's `PLUGIN_MAGIC_COOKIE` as a fallback) is then compared against the server's expected `PLUGIN_MAGIC_COOKIE_VALUE`. If they match, the handshake continues.
+
+*   **Simplified Configuration (`configure()` helper)**:
+    *   When you use `configure(magic_cookie="some_value")`, this helper function sets both `PLUGIN_MAGIC_COOKIE_VALUE` and `PLUGIN_MAGIC_COOKIE` to `"some_value"` in the configuration of the Python process where `configure()` was called.
+    *   This is convenient for scenarios where the same application instance might conceptually act as both a host and a plugin (e.g., in tests, or if the plugin is a Python script run via `subprocess` where its environment is directly controllable), or to ensure the fallback mechanism works as expected if the primary environment variable (`PLUGIN_MAGIC_COOKIE_KEY`) isn't set for the plugin.
+
+For robust security, ensure `PLUGIN_MAGIC_COOKIE_VALUE` is a strong, unique secret, and that the plugin executable's environment is correctly populated with this secret under the variable name specified by `PLUGIN_MAGIC_COOKIE_KEY`.
 
 ## Detailed Environment Variable List
 
@@ -189,21 +230,21 @@ Below is a detailed list of all supported environment variables, their purposes,
 - **`.env` Alias**: `PYVIDER_LOG_LEVEL`
 - **Valid Values**: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 
-### `PLUGIN_MAGIC_COOKIE`
-- **Description**: The actual cookie provided by the client.
-- **Type**: `str`
-- **Default**: `"rpcplugin-default-cookie"`
-
 ### `PLUGIN_MAGIC_COOKIE_KEY`
-- **Description**: Environment variable name for the magic cookie value.
+- **Description**: Specifies the **name** of the environment variable that the plugin host (e.g., your main application using `RPCPluginServer`) expects the plugin executable to provide. The actual secret cookie value will be read by the server from the environment variable with this name in the plugin's runtime environment.
 - **Type**: `str`
-- **Default**: `"PLUGIN_MAGIC_COOKIE"`
+- **Default**: `"PLUGIN_MAGIC_COOKIE"` (This implies the host should set an environment variable literally named `PLUGIN_MAGIC_COOKIE` for the plugin executable, containing the secret value.)
 
 ### `PLUGIN_MAGIC_COOKIE_VALUE`
-- **Description**: The expected magic cookie value for validation.
+- **Description**: Specifies the **secret value** that the plugin host (server) expects for authentication. This value is compared against the value provided by the plugin executable (which the server obtains by reading the environment variable named by `PLUGIN_MAGIC_COOKIE_KEY` from the plugin's environment, or by using the fallback `PLUGIN_MAGIC_COOKIE`).
 - **Type**: `str`
 - **Default**: `"rpcplugin-default-cookie"`
-- **`.env` Alias**: `PYVIDER_MAGIC_COOKIE`
+- **`.env` Alias**: `PYVIDER_MAGIC_COOKIE`, `PYVIDER_MAGIC_COOKIE_VALUE` (Note: `PYVIDER_MAGIC_COOKIE` is often used as a shorthand for setting this expected value in `.env` files, which then maps to `PLUGIN_MAGIC_COOKIE_VALUE`.)
+
+### `PLUGIN_MAGIC_COOKIE`
+- **Description**: This variable serves as a **fallback value** for the cookie provided by the plugin executable. During server-side validation, if the environment variable specified by `PLUGIN_MAGIC_COOKIE_KEY` (e.g., `PLUGIN_MAGIC_COOKIE`) is *not found* in the plugin's environment, the value of this `PLUGIN_MAGIC_COOKIE` variable (from the server's own configuration) will be used as the 'provided cookie' for comparison against `PLUGIN_MAGIC_COOKIE_VALUE`. Typically, the primary mechanism should be the host setting the correct environment variable for the plugin as specified by `PLUGIN_MAGIC_COOKIE_KEY`.
+- **Type**: `str`
+- **Default**: `"rpcplugin-default-cookie"`
 
 ### `PLUGIN_PROTOCOL_VERSIONS`
 - **Description**: List of supported protocol versions.

@@ -110,6 +110,7 @@ async def example_3_connection_retry_logic():
     Shows how to implement retry logic with exponential backoff
     for handling temporary connection failures.
     """
+    # This function demonstrates an example of application-level retry logic.
     print("\n" + "=" * 60)
     print("🔁 Example 3B: Connection Retry Logic")
     print(" Demonstrates: Retry patterns with exponential backoff")
@@ -197,6 +198,7 @@ async def example_3_connection_pooling():
     Shows how to manage multiple client connections efficiently
     for applications that need high concurrency.
     """
+    # This function demonstrates a conceptual application-level pattern for managing multiple client instances (pooling).
     print("\n" + "=" * 60)
     print("🏊 Example 3C: Connection Pooling")
     print(" Demonstrates: Multiple client connections for high throughput")
@@ -309,8 +311,10 @@ async def example_3_async_context_manager():
     print(" Demonstrates: Automatic resource management with async context")
     print("=" * 60)
 
-    # Note: This shows the pattern that would be implemented
-    # The actual plugin_client would need to implement __aenter__ and __aexit__
+    # This `MockAsyncClient` illustrates the async context manager pattern.
+    # The actual `RPCPluginClient` (returned by `plugin_client()`) also supports
+    # this pattern directly, automatically managing `start()` and `close()`/`shutdown_plugin()` calls.
+    # See docs/api-reference.md for an example using `RPCPluginClient` with `async with`.
 
     class MockAsyncClient:
         """Mock client demonstrating async context manager pattern."""

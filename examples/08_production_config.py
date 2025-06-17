@@ -238,6 +238,11 @@ async def example_8_production_server_deployment():
     protocol = create_basic_protocol()
     handler = ProductionServiceHandler("ProductionRPCService")
 
+    # Note: The 'max_workers', 'max_connections', etc., keys in this config dict
+    # are illustrative of potential gRPC server settings. Currently, RPCPluginServer
+    # uses a set of hardcoded default gRPC options and does not dynamically
+    # apply these specific keys from the passed 'config' dictionary for gRPC server tuning.
+    # This dictionary is primarily for application-specific settings.
     # Create production server
     server = plugin_server(
         protocol=protocol,
