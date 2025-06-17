@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 
-import sys
 import os
+import sys
+
 # Ensure /app/src and /app are in sys.path for module resolution
 # This is a workaround for potential PYTHONPATH/editable install issues in the test environment
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../src')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src"))
+)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 import asyncio
 import os
+
 import grpc
 from cryptography.hazmat.primitives.asymmetric import ec
-from pyvider.telemetry import logger
-from pyvider.rpcplugin.server import RPCPluginServer
+
 from examples.kvproto.py_rpc.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,
 )
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.telemetry import logger
 
 """
 py-kv-server.py
@@ -72,7 +77,9 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         if hasattr(self, "_server_cert_obj"):
             cert = self._server_cert_obj._cert
             public_key = cert.public_key()
-            if isinstance(public_key, ec.EllipticCurvePublicKey): # F821 here if ec is not imported
+            if isinstance(
+                public_key, ec.EllipticCurvePublicKey
+            ):  # F821 here if ec is not imported
                 logger.info(f"🐍 S> 🔐 Server using curve: {public_key.curve.name}")
 
     async def Put(
@@ -94,7 +101,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             logger.debug(
                 f"🐍 S> 🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}"
             )
-            filename = f"/tmp/kv-data-{key}" # nosec B108 # Example code, /tmp is acceptable here.
+            filename = f"/tmp/kv-data-{key}"  # nosec B108 # Example code, /tmp is acceptable here.
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(value_str)
             logger.debug(
@@ -120,10 +127,12 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         try:
             key = request.key
             logger.info(f"🐍 S> 🛎️📡🚀 Get: Received request for key: '{key}'")
-            filename = f"/tmp/kv-data-{key}" # nosec B108 # Example code, /tmp is acceptable here.
-            logger.debug(f"🐍 S> 🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'.")
+            filename = f"/tmp/kv-data-{key}"  # nosec B108 # Example code, /tmp is acceptable here.
+            logger.debug(
+                f"🐍 S> 🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'."
+            )
             if not os.path.exists(filename):
-                logger.warning( # Changed from logger.error to logger.warning
+                logger.warning(  # Changed from logger.error to logger.warning
                     f"🐍 S> 🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
                 )
                 await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
@@ -201,7 +210,7 @@ async def serve() -> None:
         server: RPCPluginServer = RPCPluginServer(
             protocol=KVProtocol(),
             handler=kv_handler,
-            config=None, # Changed from dict to None
+            config=None,  # Changed from dict to None
         )
 
         await server.serve()

@@ -7,10 +7,6 @@ and registration functions) for use by clients and servers.
 """
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.protocol.service import (
-    GRPCBrokerService,
-    register_protocol_service,
-)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
     GRPCBroker,
     GRPCBrokerServicer,
@@ -25,6 +21,10 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
     GRPCStdio,
     GRPCStdioServicer,
     add_GRPCStdioServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.service import (
+    GRPCBrokerService,
+    register_protocol_service,
 )
 
 __all__ = [

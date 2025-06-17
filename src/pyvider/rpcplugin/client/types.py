@@ -7,7 +7,7 @@ the RPC plugin client components, aiding in static analysis and code clarity.
 
 from __future__ import annotations  # Moved to the top
 
-from typing import Any, Protocol, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
 if TYPE_CHECKING:
     from .base import RPCPluginClient

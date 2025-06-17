@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import asyncio
+import logging
 import os
 import sys
-import grpc
-import logging
 from pathlib import Path
+
+import grpc
+
 from pyvider.rpcplugin.client import RPCPluginClient  # Moved here
 
 # Assuming a basic logger setup (can use logging module directly)
@@ -14,10 +16,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Import generated code (assuming it's in the same directory or accessible via PYTHONPATH)
+# Import generated code
 try:
-    import echo_pb2
-    import echo_pb2_grpc
+    from examples.demo import echo_pb2
+    from examples.demo import echo_pb2_grpc
 except ImportError:
     logger.error(
         "Could not import generated echo_pb2/echo_pb2_grpc. "

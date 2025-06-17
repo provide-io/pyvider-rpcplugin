@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import asyncio  # Added
 import inspect  # Added
-from collections.abc import Awaitable, Callable as AbcCallable
+from collections.abc import Awaitable
+from collections.abc import Callable as AbcCallable
 from typing import (
+    TYPE_CHECKING,
     Any,
-    Protocol as TypeProtocol,
     TypeGuard,
     TypeVar,
     runtime_checkable,
-    TYPE_CHECKING,
 )  # Added Callable
+from typing import (
+    Protocol as TypeProtocol,
+)
+
 import grpc
+
 from pyvider.telemetry import logger
 
 """Type definitions for the Pyvider RPC plugin system.

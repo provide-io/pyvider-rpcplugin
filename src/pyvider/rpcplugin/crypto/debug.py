@@ -9,9 +9,11 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
+from pyvider.rpcplugin.exception import CertificateError
+
 # from pyvider.rpcplugin.config import rpcplugin_config # Unused import
 from pyvider.telemetry import logger
-from pyvider.rpcplugin.exception import CertificateError
+
 from .types import PrivateKeyType  # Import KeyPairType for key parameter hint
 
 

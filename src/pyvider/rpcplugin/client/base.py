@@ -39,24 +39,26 @@ Example usage:
 
 import asyncio
 import os
+import random  # Added for retry
 import subprocess  # nosec B404
 import sys
+import time  # Added for retry
 import traceback
-from typing import Any, NamedTuple # Removed Generic, Added NamedTuple
-
-import time # Added for retry
-import random # Added for retry
-
-from attrs import define, field
+from typing import Any, NamedTuple  # Removed Generic, Added NamedTuple
 
 import grpc
+from attrs import define, field
 from google.protobuf import empty_pb2
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
-from pyvider.rpcplugin.exception import HandshakeError, TransportError, ProtocolError, SecurityError # Added more
+from pyvider.rpcplugin.exception import (
+    HandshakeError,
+    ProtocolError,
+    SecurityError,
+    TransportError,
+)  # Added more
 from pyvider.rpcplugin.handshake import parse_handshake_response
-from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
@@ -68,6 +70,8 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 # Import TransportT temporarily for the Generic base, will remove if client not generic
 # Also import TransportType for the actual field type
 from pyvider.rpcplugin.transport.types import TransportType
+from pyvider.telemetry import logger
+
 
 # Define HandshakeData (as it's used in the prompt's retry logic)
 # Based on current _perform_handshake, it sets instance attributes.
@@ -130,17 +134,31 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)  # shell=True is not used, which is safer
+    _process: subprocess.Popen | None = field(
+        init=False, default=None
+    )  # shell=True is not used, which is safer
     _transport: TransportType | None = field(
         init=False, default=None
     )  # Changed to TransportType
-    _transport_name: str | None = field(init=False, default=None) # Will be set by _perform_handshake
+    _transport_name: str | None = field(
+        init=False, default=None
+    )  # Will be set by _perform_handshake
 
-    _address: str | None = field(init=False, default=None) # Will be set by _perform_handshake
-    _protocol_version: int | None = field(init=False, default=None) # Set by _perform_handshake
-    _server_cert: str | None = field(init=False, default=None) # Set by _perform_handshake
-    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None) # Renamed from _channel for clarity
-    target_endpoint: str | None = field(init=False, default=None) # To store the endpoint used for channel creation
+    _address: str | None = field(
+        init=False, default=None
+    )  # Will be set by _perform_handshake
+    _protocol_version: int | None = field(
+        init=False, default=None
+    )  # Set by _perform_handshake
+    _server_cert: str | None = field(
+        init=False, default=None
+    )  # Set by _perform_handshake
+    grpc_channel: grpc.aio.Channel | None = field(
+        init=False, default=None
+    )  # Renamed from _channel for clarity
+    target_endpoint: str | None = field(
+        init=False, default=None
+    )  # To store the endpoint used for channel creation
 
     # Generated or loaded client certificate
     client_cert: str | None = field(init=False, default=None)
@@ -159,16 +177,19 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     _handshake_complete_event: asyncio.Event = field(factory=asyncio.Event, init=False)
     _handshake_failed_event: asyncio.Event = field(factory=asyncio.Event, init=False)
     is_started: bool = field(default=False, init=False)
-    _stubs: dict[str, Any] = field(factory=dict, init=False) # To hold initialized stubs
-    logger: Any = field(init=False) # Declare logger as an attrs field
-
+    _stubs: dict[str, Any] = field(
+        factory=dict, init=False
+    )  # To hold initialized stubs
+    logger: Any = field(init=False)  # Declare logger as an attrs field
 
     def __attrs_post_init__(self) -> None:
         """
         Initialize client state after attributes are set.
         """
         self.logger = logger  # Assign the global logger to an instance attribute
-        self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
+        self.logger.debug(
+            "🔧 RPCPluginClient.__attrs_post_init__: Client object created."
+        )
         # Events are initialized by attrs factory
 
     async def _connect_and_handshake_with_retry(self) -> None:
@@ -183,7 +204,9 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         retry_enabled = str(retry_enabled_str).lower() == "true"
 
         if not retry_enabled:
-            self.logger.info("Client retries disabled. Attempting connection and handshake once.")
+            self.logger.info(
+                "Client retries disabled. Attempting connection and handshake once."
+            )
             try:
                 self._handshake_complete_event.clear()
                 self._handshake_failed_event.clear()
@@ -194,132 +217,205 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 await self._perform_handshake()
                 # Use instance attributes set by _perform_handshake
                 if not self._address or not self._transport_name:
-                    raise HandshakeError("Handshake completed but critical endpoint data (address/transport_name) not set.")
-                self.logger.info(f"Handshake successful. Endpoint: {self._address}, Transport: {self._transport_name}")
+                    raise HandshakeError(
+                        "Handshake completed but critical endpoint data (address/transport_name) not set."
+                    )
+                self.logger.info(
+                    f"Handshake successful. Endpoint: {self._address}, Transport: {self._transport_name}"
+                )
 
-                self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
+                self.logger.debug(
+                    f"Creating gRPC channel to {self._address} ({self._transport_name})..."
+                )
                 # _create_grpc_channel sets: self.grpc_channel, self.target_endpoint
-                await self._create_grpc_channel() # Uses self._address, self._transport_name, self._server_cert
-                self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
+                await (
+                    self._create_grpc_channel()
+                )  # Uses self._address, self._transport_name, self._server_cert
+                self.logger.info(
+                    f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
+                )
 
                 self.is_started = True
                 self._handshake_complete_event.set()
             except Exception as e:
-                self.logger.error(f"Failed to connect and handshake with plugin (retries disabled): {e}", exc_info=True)
+                self.logger.error(
+                    f"Failed to connect and handshake with plugin (retries disabled): {e}",
+                    exc_info=True,
+                )
                 self._handshake_failed_event.set()
-                raise # Re-raise to allow start() to handle it or propagate
+                raise  # Re-raise to allow start() to handle it or propagate
             return
         # --- End of single attempt logic ---
 
         # --- Start of inserted retry loop logic ---
         max_retries = int(rpcplugin_config.get("PLUGIN_CLIENT_MAX_RETRIES", 3))
-        initial_backoff_ms = float(rpcplugin_config.get("PLUGIN_CLIENT_INITIAL_BACKOFF_MS", 500))
-        max_backoff_ms = float(rpcplugin_config.get("PLUGIN_CLIENT_MAX_BACKOFF_MS", 5000))
+        initial_backoff_ms = float(
+            rpcplugin_config.get("PLUGIN_CLIENT_INITIAL_BACKOFF_MS", 500)
+        )
+        max_backoff_ms = float(
+            rpcplugin_config.get("PLUGIN_CLIENT_MAX_BACKOFF_MS", 5000)
+        )
         jitter_ms = float(rpcplugin_config.get("PLUGIN_CLIENT_RETRY_JITTER_MS", 100))
-        total_timeout_s = float(rpcplugin_config.get("PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S", 60))
+        total_timeout_s = float(
+            rpcplugin_config.get("PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S", 60)
+        )
 
         attempts = 0
         current_backoff_ms = initial_backoff_ms
         overall_start_time = time.monotonic()
         last_exception: Exception | None = None
 
-        self.logger.info(f"Starting connection/handshake sequence with retries enabled (max_retries={max_retries}, total_timeout={total_timeout_s}s).")
+        self.logger.info(
+            f"Starting connection/handshake sequence with retries enabled (max_retries={max_retries}, total_timeout={total_timeout_s}s)."
+        )
 
         while attempts <= max_retries:
             if time.monotonic() - overall_start_time > total_timeout_s:
-                self.logger.error(f"Client connection/handshake retry sequence timed out after {total_timeout_s}s. Last error: {last_exception if last_exception else 'N/A'}")
+                self.logger.error(
+                    f"Client connection/handshake retry sequence timed out after {total_timeout_s}s. Last error: {last_exception if last_exception else 'N/A'}"
+                )
                 self._handshake_failed_event.set()
                 if last_exception:
                     raise last_exception
-                raise HandshakeError(message="Retry sequence timed out.", hint="Increase PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S or check server responsiveness.")
+                raise HandshakeError(
+                    message="Retry sequence timed out.",
+                    hint="Increase PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S or check server responsiveness.",
+                )
 
             # Ensure process is still running before attempting
             if self._process and self._process.poll() is not None:
-                self.logger.error(f"Plugin process exited with code {self._process.returncode} during retry attempt {attempts + 1}. Aborting retries.")
+                self.logger.error(
+                    f"Plugin process exited with code {self._process.returncode} during retry attempt {attempts + 1}. Aborting retries."
+                )
                 self._handshake_failed_event.set()
-                raise HandshakeError(message=f"Plugin process exited (code {self._process.returncode}) during retry sequence.", hint="Check plugin logs.")
-
+                raise HandshakeError(
+                    message=f"Plugin process exited (code {self._process.returncode}) during retry sequence.",
+                    hint="Check plugin logs.",
+                )
 
             try:
                 self._handshake_complete_event.clear()
                 self._handshake_failed_event.clear()
 
                 if self.grpc_channel:
-                    self.logger.debug(f"Cleaning up existing gRPC channel before attempt {attempts + 1}.")
+                    self.logger.debug(
+                        f"Cleaning up existing gRPC channel before attempt {attempts + 1}."
+                    )
                     # Attempt to gracefully close existing channel if any
                     try:
                         await self.grpc_channel.close(grace=0.1)
                     except Exception:
-                        pass # nosec B110 # Ignoring errors during cleanup of channel/transport in retry logic.
+                        pass  # nosec B110 # Ignoring errors during cleanup of channel/transport in retry logic.
                     self.grpc_channel = None
                     self._stubs = {}
 
                 # Also reset transport if it exists and has a close method, as it might be in a bad state
-                if self._transport and hasattr(self._transport, 'close') and callable(self._transport.close):
+                if (
+                    self._transport
+                    and hasattr(self._transport, "close")
+                    and callable(self._transport.close)
+                ):
                     try:
                         await self._transport.close()
                     except Exception:
-                        pass # nosec B110 # Ignoring errors during cleanup of channel/transport in retry logic.
-                self._transport = None # Will be re-initialized by _perform_handshake
+                        pass  # nosec B110 # Ignoring errors during cleanup of channel/transport in retry logic.
+                self._transport = None  # Will be re-initialized by _perform_handshake
 
                 self.is_started = False
 
-                self.logger.info(f"Attempt {attempts + 1} of {max_retries + 1} to connect and handshake...")
+                self.logger.info(
+                    f"Attempt {attempts + 1} of {max_retries + 1} to connect and handshake..."
+                )
 
                 # _perform_handshake sets: self._protocol_version, self._server_cert,
                 # self._transport_name, self._address, self._transport
                 await self._perform_handshake()
                 if not self._address or not self._transport_name:
-                    raise HandshakeError("Handshake completed but critical endpoint data (address/transport_name) not set.")
-                self.logger.info(f"Handshake attempt {attempts + 1} successful. Endpoint: {self._address}, Transport: {self._transport_name}")
+                    raise HandshakeError(
+                        "Handshake completed but critical endpoint data (address/transport_name) not set."
+                    )
+                self.logger.info(
+                    f"Handshake attempt {attempts + 1} successful. Endpoint: {self._address}, Transport: {self._transport_name}"
+                )
 
-                self.logger.debug(f"Creating gRPC channel (attempt {attempts + 1}) to {self._address} ({self._transport_name})...")
+                self.logger.debug(
+                    f"Creating gRPC channel (attempt {attempts + 1}) to {self._address} ({self._transport_name})..."
+                )
                 # _create_grpc_channel sets: self.grpc_channel, self.target_endpoint
-                await self._create_grpc_channel() # Uses self._address, self._transport_name, self._server_cert
-                self.logger.info(f"Successfully connected to gRPC endpoint on attempt {attempts + 1}: {self.target_endpoint}")
+                await (
+                    self._create_grpc_channel()
+                )  # Uses self._address, self._transport_name, self._server_cert
+                self.logger.info(
+                    f"Successfully connected to gRPC endpoint on attempt {attempts + 1}: {self.target_endpoint}"
+                )
 
                 self.is_started = True
                 self._handshake_complete_event.set()
-                self.logger.info(f"Client connection and handshake successful on attempt {attempts + 1}.")
+                self.logger.info(
+                    f"Client connection and handshake successful on attempt {attempts + 1}."
+                )
                 return
 
             except (HandshakeError, TransportError, ProtocolError, SecurityError) as e:
                 last_exception = e
-                self.logger.warning(f"Attempt {attempts + 1} failed: {e.message if hasattr(e, 'message') else e}")
+                self.logger.warning(
+                    f"Attempt {attempts + 1} failed: {e.message if hasattr(e, 'message') else e}"
+                )
 
-                if attempts >= max_retries: # Changed to >= to ensure max_retries is the final attempt count
-                    self.logger.error(f"Maximum retry attempts ({max_retries +1}) reached for connection/handshake. Last error: {last_exception}")
+                if (
+                    attempts >= max_retries
+                ):  # Changed to >= to ensure max_retries is the final attempt count
+                    self.logger.error(
+                        f"Maximum retry attempts ({max_retries + 1}) reached for connection/handshake. Last error: {last_exception}"
+                    )
                     self._handshake_failed_event.set()
-                    raise last_exception # Re-raise the last critical exception
+                    raise last_exception  # Re-raise the last critical exception
 
                 # Check overall timeout before sleeping
-                if time.monotonic() - overall_start_time + (current_backoff_ms / 1000) > total_timeout_s:
-                    self.logger.error(f"Next retry would exceed total timeout. Aborting. Last error: {last_exception}")
+                if (
+                    time.monotonic() - overall_start_time + (current_backoff_ms / 1000)
+                    > total_timeout_s
+                ):
+                    self.logger.error(
+                        f"Next retry would exceed total timeout. Aborting. Last error: {last_exception}"
+                    )
                     self._handshake_failed_event.set()
                     raise last_exception
 
-                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms) # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
-                delay_ms = min(delay_ms, max_backoff_ms) # Cap at max_backoff_ms
-                delay_ms = max(delay_ms, 0.0) # Ensure non-negative
+                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms)  # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
+                delay_ms = min(delay_ms, max_backoff_ms)  # Cap at max_backoff_ms
+                delay_ms = max(delay_ms, 0.0)  # Ensure non-negative
 
-                self.logger.info(f"Retrying connection/handshake in {delay_ms / 1000:.2f} seconds...")
+                self.logger.info(
+                    f"Retrying connection/handshake in {delay_ms / 1000:.2f} seconds..."
+                )
                 await asyncio.sleep(delay_ms / 1000)
 
-                current_backoff_ms = min(current_backoff_ms * 2, max_backoff_ms) # Exponential backoff
+                current_backoff_ms = min(
+                    current_backoff_ms * 2, max_backoff_ms
+                )  # Exponential backoff
                 attempts += 1
 
-            except Exception as e: # Catch-all for truly unexpected errors
+            except Exception as e:  # Catch-all for truly unexpected errors
                 last_exception = e
-                self.logger.error(f"Unexpected error during connection/handshake attempt {attempts + 1}: {e}", exc_info=True)
+                self.logger.error(
+                    f"Unexpected error during connection/handshake attempt {attempts + 1}: {e}",
+                    exc_info=True,
+                )
                 self._handshake_failed_event.set()
-                raise # Re-raise unexpected error immediately
+                raise  # Re-raise unexpected error immediately
 
         # This part should ideally not be reached if logic is correct (either success or re-raise from loop)
-        self.logger.error(f"Exited retry loop without success. Max attempts: {max_retries + 1}. Last error: {last_exception if last_exception else 'N/A'}")
+        self.logger.error(
+            f"Exited retry loop without success. Max attempts: {max_retries + 1}. Last error: {last_exception if last_exception else 'N/A'}"
+        )
         self._handshake_failed_event.set()
         if last_exception:
             raise last_exception
-        raise HandshakeError(message="Failed to connect and handshake after all retries.", hint="Check client and server logs.")
+        raise HandshakeError(
+            message="Failed to connect and handshake after all retries.",
+            hint="Check client and server logs.",
+        )
         # --- End of inserted retry loop logic ---
 
     async def start(self) -> None:
@@ -353,10 +449,12 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             await self._launch_process()
 
             # 3) Perform handshake and create gRPC channel (with retries)
-            await self._connect_and_handshake_with_retry() # This now handles handshake and channel creation
+            await (
+                self._connect_and_handshake_with_retry()
+            )  # This now handles handshake and channel creation
 
             # 4) Initialize stubs for Stdio / Broker / Controller
-            self._init_stubs() # Uses self.grpc_channel set by _create_grpc_channel via retry method
+            self._init_stubs()  # Uses self.grpc_channel set by _create_grpc_channel via retry method
 
             # 5) Optionally start a background task to read plugin logs from stdio
             self._stdio_task = asyncio.create_task(self._read_stdio_logs())
@@ -366,7 +464,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             logger.error(f"💥 Client failed to start: {e}", exc_info=True)
             # Ensure cleanup if start fails significantly
             await self.close()
-            raise # Re-raise the exception to the caller
+            raise  # Re-raise the exception to the caller
 
         # The second call to create_task for _read_stdio_logs was redundant.
         # logger.info("✅ RPC plugin client started and ready.") # This log was also redundant if the one in try block executed.
@@ -459,7 +557,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             )
             raise TransportError(
                 message=f"Failed to launch plugin subprocess for command: '{self.command}'. Error: {e}",
-                hint="Ensure the plugin executable path is correct, it has execute permissions, and any required dependencies are available."
+                hint="Ensure the plugin executable path is correct, it has execute permissions, and any required dependencies are available.",
             ) from e
 
     async def _relay_stderr_background(self) -> None:
@@ -509,19 +607,19 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 raise HandshakeError(
                     message=f"Plugin process exited prematurely (code {self._process.returncode}) before handshake.",
                     hint="Check plugin logs or stderr for startup errors. Ensure the plugin is compatible and outputs a handshake string.",
-                    code=self._process.returncode
+                    code=self._process.returncode,
                 )
 
             # Try to read a complete line with increased timeout
             try:
                 # First try: direct read with longer timeout
-                if (
-                    self._process is not None and self._process.stdout is not None
-                ):  # Check stdout is not None
+                process = self._process
+                if process is not None and process.stdout is not None:
+                    stdout = process.stdout
                     line_bytes = await asyncio.wait_for(
                         loop.run_in_executor(
-                            None, lambda: self._process.stdout.readline()
-                        ),  # type: ignore[union-attr]
+                            None, lambda: stdout.readline()
+                        ),
                         timeout=2.0,  # Longer per-read timeout
                     )
                 else:
@@ -551,32 +649,34 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             # This might help if the Go server doesn't flush properly or uses different line endings
             # The 'if not buffer:' condition was removed.
             try:
-                if (
-                    self._process is not None and self._process.stdout is not None
-                ):  # Check stdout is not None
+                process = self._process
+                if process is not None and process.stdout is not None:
+                    stdout = process.stdout
                     char_bytes = await asyncio.wait_for(
                         loop.run_in_executor(
-                            None, lambda: self._process.stdout.read(1)
-                        ),  # type: ignore[union-attr]
+                            None, lambda: stdout.read(1)
+                        ),
                         timeout=1.0,
                     )
                     if char_bytes:
                         char = char_bytes.decode("utf-8", errors="replace")
                         buffer += char
-                        logger.debug(
-                            f"🤝 Byte-by-byte read: buffer now: '{buffer}'"
-                        )
+                        logger.debug(f"🤝 Byte-by-byte read: buffer now: '{buffer}'")
                         # Check for complete handshake after adding char to buffer
                         if "|" in buffer and buffer.count("|") >= 5:
-                            logger.debug("🤝 Byte-by-byte path found complete handshake in buffer")
-                            return buffer # Return if complete
+                            logger.debug(
+                                "🤝 Byte-by-byte path found complete handshake in buffer"
+                            )
+                            return buffer  # Return if complete
                 else:
                     # Process or stdout is None, cannot read
                     await asyncio.sleep(0.1)  # Wait briefly
                     # continue # Removed continue, let the while loop condition re-evaluate naturally or timeout
             except asyncio.TimeoutError:
-                logger.debug("🤝 Timeout on byte-by-byte read(1) attempt, continuing outer loop.")
-                pass # Continue the outer timeout loop
+                logger.debug(
+                    "🤝 Timeout on byte-by-byte read(1) attempt, continuing outer loop."
+                )
+                pass  # Continue the outer timeout loop
 
         # If we get here, we've timed out
         stderr_output = ""
@@ -587,9 +687,9 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 "utf-8", errors="replace"
             )
         logger.error(f"🤝 Handshake timed out. Stderr output: {stderr_output}")
-        raise HandshakeError( # Changed from TimeoutError
+        raise HandshakeError(  # Changed from TimeoutError
             message="Timed out waiting for handshake line from plugin.",
-            hint=f"Ensure the plugin command '{self.command}' starts correctly and outputs the handshake string to stdout within {timeout} seconds. Last buffer: '{buffer}'. Stderr: '{stderr_output}'"
+            hint=f"Ensure the plugin command '{self.command}' starts correctly and outputs the handshake string to stdout within {timeout} seconds. Last buffer: '{buffer}'. Stderr: '{stderr_output}'",
         )
 
     async def _perform_handshake(self) -> None:
@@ -612,7 +712,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         if not self._process or not self._process.stdout:
             raise HandshakeError(
                 message="Plugin process or its stdout stream is not available for handshake.",
-                hint="This typically indicates an issue with launching the plugin subprocess. Check prior logs."
+                hint="This typically indicates an issue with launching the plugin subprocess. Check prior logs.",
             )
 
         # Start stderr relay immediately to see any error output
@@ -624,20 +724,27 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         try:
             line = await self._read_raw_handshake_line_from_stdout()
             logger.debug(f"🤝 Received handshake response: {line[:60]}...")
-        except TimeoutError as e_timeout: # Keep specific TimeoutError if it's from asyncio.wait_for
+        except (
+            TimeoutError
+        ) as e_timeout:  # Keep specific TimeoutError if it's from asyncio.wait_for
             logger.error("🤝 Handshake timed out while reading from plugin stdout.")
             raise HandshakeError(
                 message="Handshake timed out waiting for response from plugin.",
-                hint="The plugin did not provide a handshake string within the expected time. Check plugin logs."
+                hint="The plugin did not provide a handshake string within the expected time. Check plugin logs.",
             ) from e_timeout
-        except HandshakeError: # Re-raise HandshakeErrors from _read_raw_handshake_line_from_stdout
+        except (
+            HandshakeError
+        ):  # Re-raise HandshakeErrors from _read_raw_handshake_line_from_stdout
             raise
         except Exception as e_read:
             logger.error(
                 "🤝❌ Unexpected error reading handshake line.",
                 extra={"trace": traceback.format_exc()},
             )
-            raise HandshakeError(message=f"An unexpected error occurred while reading handshake line: {e_read}", hint="Review client and plugin logs for more details.") from e_read
+            raise HandshakeError(
+                message=f"An unexpected error occurred while reading handshake line: {e_read}",
+                hint="Review client and plugin logs for more details.",
+            ) from e_read
 
         # Parse handshake
         try:
@@ -683,7 +790,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 case _:
                     raise TransportError(
                         message=f"Unsupported transport type '{network}' received in handshake.",
-                        hint="Ensure the plugin outputs a supported transport type ('tcp' or 'unix') in its handshake string."
+                        hint="Ensure the plugin outputs a supported transport type ('tcp' or 'unix') in its handshake string.",
                     )
 
             # Connect the chosen transport
@@ -698,18 +805,21 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 # This case should ideally not be reached if logic is correct
                 raise HandshakeError(
                     message="Internal error: Transport was not initialized before attempting to connect.",
-                    hint="This indicates an issue within the client's handshake logic."
+                    hint="This indicates an issue within the client's handshake logic.",
                 )
-        except HandshakeError: # Re-raise if parse_handshake_response or transport.connect raised HandshakeError
+        except HandshakeError:  # Re-raise if parse_handshake_response or transport.connect raised HandshakeError
             raise
-        except TransportError: # Re-raise if transport.connect raised TransportError
+        except TransportError:  # Re-raise if transport.connect raised TransportError
             raise
         except Exception as e:
             logger.error(
                 "🤝❌ Error parsing handshake response or connecting transport.",
                 extra={"trace": traceback.format_exc()},
             )
-            raise HandshakeError(message=f"Failed to process handshake response or establish transport connection: {e}", hint="Ensure handshake string is valid and network is configured correctly.") from e
+            raise HandshakeError(
+                message=f"Failed to process handshake response or establish transport connection: {e}",
+                hint="Ensure handshake string is valid and network is configured correctly.",
+            ) from e
 
     async def _create_grpc_channel(self) -> None:
         """
@@ -745,24 +855,29 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         logger.debug("🚢 Attempting to create gRPC channel to plugin...")
 
         if not self._address or not self._transport_name:
-            raise ProtocolError( # Or ConfigError, depending on how _address/_transport_name are meant to be set
+            raise ProtocolError(  # Or ConfigError, depending on how _address/_transport_name are meant to be set
                 message="Cannot create gRPC channel: endpoint address or transport type not determined.",
-                hint="Ensure handshake was successful and set the _address and _transport_name attributes."
+                hint="Ensure handshake was successful and set the _address and _transport_name attributes.",
             )
 
         # CRITICAL FIX: Use the same address that was established during handshake
-        if self._transport_name == "unix": # Assuming _transport_name is 'unix' or 'tcp'
+        if (
+            self._transport_name == "unix"
+        ):  # Assuming _transport_name is 'unix' or 'tcp'
             # For Unix sockets, we must use the exact same socket path from handshake
             target = f"unix:{self._address}"
         elif self._transport_name == "tcp":
             # For TCP, use standard addressing (address should be host:port)
-            target = self._address # _address from handshake should be host:port for TCP
+            target = (
+                self._address
+            )  # _address from handshake should be host:port for TCP
         else:
-            raise TransportError(f"Unsupported transport name '{self._transport_name}' for channel creation.")
-
+            raise TransportError(
+                f"Unsupported transport name '{self._transport_name}' for channel creation."
+            )
 
         logger.debug(f"🚢🔍 Creating gRPC channel with target: {target}")
-        self.target_endpoint = target # Store the actual target
+        self.target_endpoint = target  # Store the actual target
 
         # Rebuild server cert into PEM if needed
         if self._server_cert:
@@ -785,7 +900,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 )
 
             # Create the secure channel
-            self.grpc_channel = grpc.aio.secure_channel( # Changed from self._channel
+            self.grpc_channel = grpc.aio.secure_channel(  # Changed from self._channel
                 target,
                 credentials,
                 options=[
@@ -799,15 +914,22 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         else:
             # Fall back to insecure channel if no cert
             logger.info("🚢 No server certificate. Using insecure channel.")
-            self.grpc_channel = grpc.aio.insecure_channel(target) # Changed from self._channel
+            self.grpc_channel = grpc.aio.insecure_channel(
+                target
+            )  # Changed from self._channel
 
         logger.debug("🚢 gRPC channel created successfully.")
 
         # Wait for the channel to be ready with timeout
         try:
             if not self.grpc_channel:
-                 raise TransportError("gRPC channel not initialized before checking readiness.")
-            await asyncio.wait_for(self.grpc_channel.channel_ready(), timeout=rpcplugin_config.get("PLUGIN_CONNECTION_TIMEOUT", 5.0))
+                raise TransportError(
+                    "gRPC channel not initialized before checking readiness."
+                )
+            await asyncio.wait_for(
+                self.grpc_channel.channel_ready(),
+                timeout=rpcplugin_config.get("PLUGIN_CONNECTION_TIMEOUT", 5.0),
+            )
             logger.debug("🚢✅ gRPC channel ready and connected.")
         except asyncio.TimeoutError:
             socket_path = (
@@ -818,15 +940,15 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 logger.error(
                     f"🚢❌ Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path)}"
                 )
-            raise TransportError( # Changed from ConnectionError
+            raise TransportError(  # Changed from ConnectionError
                 message="Failed to establish gRPC channel to plugin: timeout.",
-                hint=f"Check network connectivity to {target}. Ensure plugin server is responsive. Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path) if socket_path else 'N/A'}"
+                hint=f"Check network connectivity to {target}. Ensure plugin server is responsive. Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path) if socket_path else 'N/A'}",
             )
         except Exception as e:
             logger.error(f"🚢❌ gRPC channel creation failed: {e}")
-            raise TransportError( # Changed from ConnectionError
+            raise TransportError(  # Changed from ConnectionError
                 message=f"Failed to establish gRPC channel to plugin at {target}: {e}",
-                hint="Verify plugin server is running and network is accessible. Check for TLS/mTLS configuration mismatches if applicable."
+                hint="Verify plugin server is running and network is accessible. Check for TLS/mTLS configuration mismatches if applicable.",
             ) from e
 
     def _rebuild_x509_pem(self, maybe_cert: str) -> str:
@@ -870,25 +992,30 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         Raises:
             RuntimeError: If called before the gRPC channel is established
         """
-        if not self.grpc_channel: # Changed from self._channel
+        if not self.grpc_channel:  # Changed from self._channel
             raise ProtocolError(
                 message="Cannot initialize gRPC stubs; gRPC channel is not available.",
-                hint="This indicates an internal issue where the client proceeded without a valid communication channel."
+                hint="This indicates an internal issue where the client proceeded without a valid communication channel.",
             )
 
         logger.debug(
             "🔌 Creating GRPCStdioStub, GRPCBrokerStub, GRPCControllerStub from channel."
         )
         # Store stubs in the _stubs dictionary
-        self._stubs["stdio"] = GRPCStdioStub(self.grpc_channel) # Changed from self._channel
-        self._stubs["broker"] = GRPCBrokerStub(self.grpc_channel) # Changed from self._channel
-        self._stubs["controller"] = GRPCControllerStub(self.grpc_channel) # Changed from self._channel
+        self._stubs["stdio"] = GRPCStdioStub(
+            self.grpc_channel
+        )  # Changed from self._channel
+        self._stubs["broker"] = GRPCBrokerStub(
+            self.grpc_channel
+        )  # Changed from self._channel
+        self._stubs["controller"] = GRPCControllerStub(
+            self.grpc_channel
+        )  # Changed from self._channel
 
         # For direct attribute access if still desired (though _stubs dict is more scalable)
         self._stdio_stub = self._stubs["stdio"]
         self._broker_stub = self._stubs["broker"]
         self._controller_stub = self._stubs["controller"]
-
 
     async def _read_stdio_logs(self) -> None:
         """
@@ -1007,13 +1134,21 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             await self._controller_stub.Shutdown(ControllerEmpty())
             logger.info("🔌🛑 Plugin acknowledged shutdown request.")
         except grpc.RpcError as e:
-            error_code_obj = e.code() if hasattr(e, 'code') and callable(e.code) else None
-            error_details_str = e.details() if hasattr(e, 'details') and callable(e.details) else str(e)
+            error_code_obj = (
+                e.code() if hasattr(e, "code") and callable(e.code) else None
+            )
+            error_details_str = (
+                e.details() if hasattr(e, "details") and callable(e.details) else str(e)
+            )
 
             actual_code_for_log = "UNKNOWN"
-            if error_code_obj is not None and hasattr(error_code_obj, 'name'): # grpc.StatusCode enum has 'name'
+            if error_code_obj is not None and hasattr(
+                error_code_obj, "name"
+            ):  # grpc.StatusCode enum has 'name'
                 actual_code_for_log = error_code_obj.name
-            elif error_code_obj is not None: # Fallback if it's not a full StatusCode enum
+            elif (
+                error_code_obj is not None
+            ):  # Fallback if it's not a full StatusCode enum
                 actual_code_for_log = str(error_code_obj)
 
             logger.error(
@@ -1022,13 +1157,18 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             )
 
             code_int_val = None
-            if error_code_obj is not None and hasattr(error_code_obj, 'value') and isinstance(error_code_obj.value, tuple) and len(error_code_obj.value) > 0:
+            if (
+                error_code_obj is not None
+                and hasattr(error_code_obj, "value")
+                and isinstance(error_code_obj.value, tuple)
+                and len(error_code_obj.value) > 0
+            ):
                 code_int_val = error_code_obj.value[0]
 
             raise TransportError(
                 message=f"gRPC error during plugin shutdown: {error_details_str}",
                 code=code_int_val,
-                hint="The plugin's Shutdown RPC failed. This could be due to network issues or an error within the plugin's shutdown logic. Check plugin logs."
+                hint="The plugin's Shutdown RPC failed. This could be due to network issues or an error within the plugin's shutdown logic. Check plugin logs.",
             ) from e
         except Exception as e:
             logger.error(
@@ -1041,7 +1181,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             # For now, let's assume it's a TransportError if not an RpcError.
             raise TransportError(
                 message=f"Unexpected error during plugin shutdown call: {e}",
-                hint="Review client and plugin logs for more details."
+                hint="Review client and plugin logs for more details.",
             ) from e
 
     async def close(self) -> None:
@@ -1066,20 +1206,22 @@ class RPCPluginClient:  # No longer Generic[TransportT]
         if self._broker_task and not self._broker_task.done():
             tasks_to_cancel.append(self._broker_task)
 
-        if tasks_to_cancel: # Check if list is not empty
+        if tasks_to_cancel:  # Check if list is not empty
             for t in tasks_to_cancel:
                 t.cancel()
             try:
-                await asyncio.wait_for(asyncio.gather(*tasks_to_cancel, return_exceptions=True), timeout=2.0)
+                await asyncio.wait_for(
+                    asyncio.gather(*tasks_to_cancel, return_exceptions=True),
+                    timeout=2.0,
+                )
                 logger.debug("Background tasks cancelled.")
             except asyncio.TimeoutError:
                 logger.warning("Timed out waiting for background tasks to cancel.")
         self._stdio_task = None
         self._broker_task = None
 
-
         # Close gRPC channel
-        if self.grpc_channel: # Changed from self._channel
+        if self.grpc_channel:  # Changed from self._channel
             logger.debug("🔄 Closing gRPC channel...")
             try:
                 await self.grpc_channel.close(grace=0.5)  # Use a small grace period
@@ -1089,11 +1231,13 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                     f"🔄❌ Error closing gRPC channel: {e}",
                     extra={"trace": traceback.format_exc()},
                 )
-            self.grpc_channel = None # Changed from self._channel
-            self._stubs = {} # Clear stubs
+            self.grpc_channel = None  # Changed from self._channel
+            self._stubs = {}  # Clear stubs
 
         # Terminate plugin process
-        if self._process and self._process.poll() is None: # Check if process exists and is running
+        if (
+            self._process and self._process.poll() is None
+        ):  # Check if process exists and is running
             logger.debug("🔄 Terminating plugin subprocess...")
             try:
                 self._process.terminate()
@@ -1140,12 +1284,14 @@ class RPCPluginClient:  # No longer Generic[TransportT]
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         # Attempt graceful shutdown of the plugin first
-        if self._controller_stub: # Check if controller is available
+        if self._controller_stub:  # Check if controller is available
             try:
                 await self.shutdown_plugin()
             except Exception as e:
                 # Log if shutdown_plugin fails but proceed to close
-                logger.error(f"🔌🛑❌ Error during __aexit__ calling shutdown_plugin(): {e}")
+                logger.error(
+                    f"🔌🛑❌ Error during __aexit__ calling shutdown_plugin(): {e}"
+                )
         await self.close()
 
 

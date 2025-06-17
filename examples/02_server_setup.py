@@ -14,9 +14,9 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
-    plugin_server,
-    create_basic_protocol,
     configure,
+    create_basic_protocol,
+    plugin_server,
 )
 from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
@@ -89,7 +89,7 @@ async def example_2_unix_socket_server():
         action="startup",
         status="starting",
         transport="unix",
-        socket_path="/tmp/example_echo.sock", # nosec B108 # Example code, /tmp is acceptable here.
+        socket_path="/tmp/example_echo.sock",  # nosec B108 # Example code, /tmp is acceptable here.
     )
 
     # Start server and let it initialize

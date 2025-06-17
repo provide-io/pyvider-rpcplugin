@@ -641,8 +641,7 @@ async def test_read_client_cert_absent(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_generate_server_credentials_with_client_cert(
-) -> None:
+async def test_generate_server_credentials_with_client_cert(mock_server_config) -> None:
     """Test generating server credentials with a client certificate."""
     from cryptography.hazmat.primitives.asymmetric import rsa
     from cryptography.hazmat.primitives import hashes, serialization
@@ -717,11 +716,11 @@ async def test_generate_server_credentials_with_client_cert(
     )
 
     # Mock Certificate to avoid actual certificate operations
-    with mock.patch("pyvider.rpcplugin.crypto.certificate.Certificate") as mock_cert:
+    with mock.patch("pyvider.rpcplugin.server.Certificate") as mock_cert:
         # Set up mock certificate instance
         mock_cert_instance = mock.MagicMock()
-        mock_cert_instance.cert = dummy_cert
-        mock_cert_instance.key = dummy_key
+        mock_cert_instance.cert = dummy_cert_pem
+        mock_cert_instance.key = dummy_key_pem
         mock_cert.return_value = mock_cert_instance
 
         # Mock ssl_server_credentials to avoid actual TLS setup
@@ -729,7 +728,7 @@ async def test_generate_server_credentials_with_client_cert(
             mock_creds.return_value = "mock_credentials"
 
             # Test the method
-            creds = server._generate_server_credentials("client_cert")
+            creds = server._generate_server_credentials(client_cert_pem_str)
 
             # Verify Certificate was called and creds were returned
             mock_cert.assert_called_once()
