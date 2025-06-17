@@ -162,7 +162,7 @@ async def example_6_async_context_managers():
             # plugin_client expects a server_path (executable).
             # The self.transport argument of AsyncRPCManager is not directly used here
             # for the client factory in its current form.
-            self.client = plugin_client(server_path="./dummy_server.sh")
+            self.client = plugin_client(server_path=example_dir / "dummy_server.sh")
 
             logger.info(
                 "Async RPC context ready",

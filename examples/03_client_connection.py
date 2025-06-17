@@ -39,11 +39,11 @@ async def example_3_basic_client_connection():
 
     # Configure client settings
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="client-example-cookie", # Use PLUGIN_ prefixed keys
-        PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_CLIENT_TRANSPORTS=["unix"], # Correct key for client transport preferences
-        PLUGIN_CONNECTION_TIMEOUT=30.0,
-        PLUGIN_HANDSHAKE_TIMEOUT=10.0,
+        magic_cookie="client-example-cookie",
+        protocol_version=1,
+        transports=["unix"],
+        connection_timeout=30.0,
+        handshake_timeout=10.0,
     )
 
     logger.info(
@@ -58,7 +58,7 @@ async def example_3_basic_client_connection():
     # The plugin_client factory expects a server_path (executable)
     # Using a placeholder here as this example focuses on client patterns,
     # not actual server interaction with a specific executable.
-    client = plugin_client(server_path="./dummy_server.sh")
+    client = plugin_client(server_path=example_dir / "dummy_server.sh")
 
     try:
         # Simulate connection lifecycle
@@ -134,7 +134,7 @@ async def example_3_connection_retry_logic():
 
             # Create new client for each attempt
             # Using a placeholder for server_path.
-            client = plugin_client(server_path="./dummy_server.sh")
+            client = plugin_client(server_path=example_dir / "dummy_server.sh")
 
             # Simulate connection attempt
             # In reality: await client.connect(endpoint)
@@ -217,7 +217,7 @@ async def example_3_connection_pooling():
         # Create pool of client connections
         for i in range(pool_size):
             # Using a placeholder for server_path.
-            client = plugin_client(server_path="./dummy_server.sh")
+            client = plugin_client(server_path=example_dir / "dummy_server.sh")
             clients.append(client)
 
             logger.debug(
