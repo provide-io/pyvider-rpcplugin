@@ -98,11 +98,12 @@ You can configure the system directly in your Python code using the `configure()
 from pyvider.rpcplugin import configure
 
 configure(
-    magic_cookie="programmatic-cookie-example", # Short names used as arguments
-    auto_mtls=True,
-    handshake_timeout=25.0,
-    log_level="DEBUG",
-    transports=["unix"] # This sets both server and client transports
+    PLUGIN_MAGIC_COOKIE_VALUE="programmatic-cookie-example", # Use PLUGIN_ prefixed keys
+    PLUGIN_AUTO_MTLS=True,
+    PLUGIN_HANDSHAKE_TIMEOUT=25.0,
+    PLUGIN_LOG_LEVEL="DEBUG",
+    PLUGIN_SERVER_TRANSPORTS=["unix"], # Example: configure server transports
+    PLUGIN_CLIENT_TRANSPORTS=["unix"]  # Example: configure client transports
 )
 # The RPCPluginConfig singleton is now updated.
 ```

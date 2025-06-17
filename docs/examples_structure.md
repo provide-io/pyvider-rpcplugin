@@ -3,7 +3,7 @@
 ```
 examples/
 ├── README.md                     # Examples overview and setup instructions
-├── 01_echo_demo.py              # Basic echo service (PRIMARY README DEMO)
+├── 01_quick_start.py            # Basic server/client setup (PRIMARY README DEMO)
 ├── 02_server_setup.py           # Server configuration patterns
 ├── 03_client_connection.py      # Client implementation examples
 ├── 04_transport_options.py      # Unix socket vs TCP configuration
@@ -29,7 +29,7 @@ examples/
 ## Priority Implementation Order
 
 ### **IMMEDIATE (Pre-Release)**
-1. **01_echo_demo.py** - This becomes the primary README demo
+1. **01_quick_start.py** - This is the primary README demo
 2. **examples/demo/echo_service/** - Complete working echo service
 3. **examples/README.md** - Setup and running instructions
 

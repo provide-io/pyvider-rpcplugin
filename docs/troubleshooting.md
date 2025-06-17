@@ -123,12 +123,10 @@ async def health_check():
     
     # 5. Client Connection Check
     try:
-        client = plugin_client(transport="tcp")
-        # Note: In real scenario, would connect to running server
-        # For health check, just test client creation
-        await client.close()
-        
-        logger.info("Client creation check passed")
+        # client = plugin_client(server_path="./dummy_server.sh") # Example for an executable
+        # await client.start() # This would attempt to connect
+        # await client.close()
+        logger.info("Client creation check (conceptual: use with an actual executable)")
         results["client_connect"] = True
         
     except Exception as e:
@@ -293,15 +291,19 @@ async def diagnose_handshake_timeout():
     print(f"Handshake timeout: {timeout} seconds")
     
     # Check magic cookie configuration
-    client_cookie = config.get("PLUGIN_MAGIC_COOKIE")
-    server_cookie = config.get("PLUGIN_MAGIC_COOKIE_VALUE")
-    
-    if client_cookie != server_cookie:
-        print("❌ Magic cookie mismatch!")
-        print(f"Client cookie: {client_cookie}")
-        print(f"Server cookie: {server_cookie}")
-    else:
-        print("✅ Magic cookies match")
+    # PLUGIN_MAGIC_COOKIE is what the host provides (client behavior for this lib)
+    # PLUGIN_MAGIC_COOKIE_VALUE is what the server expects
+    # For a server checking a client, it would get PLUGIN_MAGIC_COOKIE from env
+    # and compare it to its own PLUGIN_MAGIC_COOKIE_VALUE.
+    # This diagnostic is a bit simplified.
+    expected_cookie = config.get("PLUGIN_MAGIC_COOKIE_VALUE")
+    provided_cookie_env_var_name = config.get("PLUGIN_MAGIC_COOKIE_KEY")
+    # In a real scenario, the host (e.g. Terraform) sets env[PLUGIN_MAGIC_COOKIE_KEY]
+    # For this check, we assume it's about self-consistency of server config
+    print(f"Server expects cookie value: {expected_cookie}")
+    print(f"Server expects cookie to be in env var named: {provided_cookie_env_var_name}")
+    # To truly test, you'd simulate how a host provides the cookie.
+    # For now, this part of the diagnostic is illustrative.
     
     # Check certificate configuration (if mTLS enabled)
     auto_mtls = config.get("PLUGIN_AUTO_MTLS", False)
@@ -318,20 +320,23 @@ async def diagnose_handshake_timeout():
 **Solutions:**
 1. **Increase timeout:**
    ```python
-   configure(handshake_timeout=30.0)
+   configure(PLUGIN_HANDSHAKE_TIMEOUT=30.0)
    ```
 
 2. **Fix magic cookie mismatch:**
    ```python
-   configure(magic_cookie="same-cookie-for-client-and-server")
+   # Ensure server's PLUGIN_MAGIC_COOKIE_VALUE matches what client sends
+   # via environment variable named by PLUGIN_MAGIC_COOKIE_KEY.
+   configure(PLUGIN_MAGIC_COOKIE_VALUE="same-cookie-for-client-and-server")
    ```
 
 3. **Verify mTLS configuration:**
    ```python
    configure(
-       auto_mtls=True,
-       server_cert="file:///path/to/server.crt",
-       client_cert="file:///path/to/client.crt"
+       PLUGIN_AUTO_MTLS=True,
+       PLUGIN_SERVER_CERT="file:///path/to/server.crt", # For server
+       PLUGIN_CLIENT_CERT="file:///path/to/client.crt"  # For client
+       # Also check PLUGIN_SERVER_ROOT_CERTS and PLUGIN_CLIENT_ROOT_CERTS for CAs
    )
    ```
 
@@ -545,12 +550,12 @@ TransportError: Unix socket not found: /tmp/rpc.sock
 1. **Check socket creation:**
    ```python
    # Ensure socket is created before client connects
-   server = plugin_server(protocol, handler, transport="unix")
-   await server._setup_transport()  # Creates socket
-   
-   # Now client can connect
-   client = plugin_client(transport="unix")
-   await client.connect(server.transport.endpoint)
+   # server = plugin_server(protocol, handler, transport="unix")
+   # Server must be running for client to connect.
+   # Client (for executable) would be:
+   # client = plugin_client(server_path="/path/to/executable")
+   # await client.start()
+   print("Note: Client connection requires a running server or executable.")
    ```
 
 2. **Use absolute paths:**
@@ -651,17 +656,19 @@ async def measure_rpc_latency(client, num_requests: int = 100):
 2. **Optimize serialization:**
    ```python
    # Use smaller message sizes
-   # Enable compression for large messages
-   configure(compression="gzip")
+   # Enable compression for large messages (Note: compression is a gRPC channel arg, not a top-level configure key)
+   # Example: channel = grpc.aio.secure_channel(target, credentials, compression=grpc.Compression.Gzip)
+   print("Note: Compression is a gRPC channel option, not directly via rpcplugin.configure.")
    ```
 
 3. **Connection pooling:**
    ```python
-   # Reuse connections instead of creating new ones
-   async with ConnectionPool(max_size=10) as pool:
-       client = await pool.acquire()
-       # Use client
-       await pool.release(client)
+   # Connection pooling is a client-side application pattern.
+   # RPCPluginClient itself manages a single connection to a plugin executable.
+   # If you need to talk to multiple plugin instances or manage multiple
+   # connections, your application would manage multiple RPCPluginClient instances.
+   # (Conceptual example of managing multiple clients was in README.md)
+   print("Note: Connection pooling is an application-level pattern.")
    ```
 
 ### Memory Leaks
@@ -700,24 +707,33 @@ async def monitor_memory_usage(duration_seconds: int = 60):
 1. **Ensure proper cleanup:**
    ```python
    # Always close clients and servers
-   try:
-       await client.connect(endpoint)
-       # Use client
-   finally:
-       await client.close()
+   # For RPCPluginClient (executable plugins):
+   # client = plugin_client(server_path="...")
+   # try:
+   #     await client.start()
+   #     # Use client
+   # finally:
+   #     await client.close()
    
-   # Use context managers
-   async with plugin_client() as client:
-       await client.connect(endpoint)
-       # Automatic cleanup
+   # Use context managers for RPCPluginClient
+   # async with plugin_client(server_path="...") as client: # This syntax for factory is conceptual
+       # await client.start() # Start would need to be part of __aenter__ or called after
+       # # Use client
+   # A correct usage of async with client instance:
+   # client_instance = plugin_client(server_path="...")
+   # async with client_instance:
+   #    # client.start() might be called by __aenter__ or you call it here
+   #    # use client
+   print("Note: Ensure client.close() is called, or use async with on an RPCPluginClient instance.")
    ```
 
 2. **Monitor connection pools:**
    ```python
-   # Set maximum pool sizes
-   configure(max_connections=100)
+   # If implementing application-level pooling of RPCPluginClient instances:
+   # configure(...) does not have a 'max_connections' key for this.
+   # Monitoring would be part of your custom pool logic.
    
-   # Monitor pool usage
+   # Monitor pool usage (conceptual)
    logger.info("Connection pool status", 
               active=pool.active_connections,
               max=pool.max_connections)
@@ -776,9 +792,9 @@ diagnose_config_issue()
 3. **Programmatic configuration:**
    ```python
    configure(
-       magic_cookie="your-secret-cookie",
-       protocol_version=1,
-       transports=["unix", "tcp"]
+       PLUGIN_MAGIC_COOKIE_VALUE="your-secret-cookie",
+       PLUGIN_PROTOCOL_VERSIONS=[1],
+       PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"] # Or PLUGIN_CLIENT_TRANSPORTS
    )
    ```
 
@@ -802,23 +818,13 @@ diagnose_config_issue()
 Enable debug logging for detailed troubleshooting:
 
 ```python
-from pyvider.telemetry import setup_telemetry, TelemetryConfig, LoggingConfig
+from pyvider.rpcplugin import configure
 
 # Enable debug logging
-setup_telemetry(TelemetryConfig(
-    logging=LoggingConfig(
-        default_level="DEBUG",
-        console_formatter="json",
-        module_levels={
-            "pyvider.rpcplugin": "DEBUG",
-            "grpc": "DEBUG"
-        }
-    )
-))
+configure(PLUGIN_LOG_LEVEL="DEBUG")
 
-# Or via environment variables
-os.environ["PYVIDER_LOG_LEVEL"] = "DEBUG"
-os.environ["PLUGIN_LOG_LEVEL"] = "DEBUG"
+# Or set the environment variable before running your application:
+# export PLUGIN_LOG_LEVEL="DEBUG"
 ```
 
 ## Debugging Tools

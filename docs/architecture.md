@@ -114,7 +114,7 @@ The framework uses factory functions as the primary API for creating components:
 ```python
 # High-level factory functions
 server = plugin_server(protocol, handler, transport="tcp")
-client = plugin_client(transport="unix")
+# client = plugin_client(server_path="./path_to_executable") # Corrected
 protocol = plugin_protocol(service_name, descriptor_module, servicer_add_fn)
 
 # Lower-level direct instantiation
@@ -133,18 +133,26 @@ Configuration and dependencies flow through the system via dependency injection:
 
 ```python
 # Configuration flows down through the stack
-configure(auto_mtls=True, transports=["tcp"])
+configure(PLUGIN_AUTO_MTLS=True, PLUGIN_SERVER_TRANSPORTS=["tcp"]) # Corrected
 server = plugin_server(protocol, handler)  # Inherits global config
 ```
 
 ### Async Context Management
 
-All resources support proper async lifecycle management:
+Core client and server classes support async context management for resource cleanup:
 
 ```python
-async with plugin_client() as client:
-    await client.connect(endpoint)
-    # Automatic cleanup on exit
+# For RPCPluginClient (assuming 'client' is an instance from plugin_client factory)
+# async with client: # client is already an instance, not a factory call
+#     await client.start() # Start is typically called explicitly
+#     # ... use client ...
+# Automatic client.close() on exit of the block if client.start() was successful.
+
+# Example for RPCPluginServer (if used directly)
+# server = RPCPluginServer(...)
+# async with server: # Conceptual, direct server usage with 'async with' is not standard pattern
+#    await server.serve()
+print("Note: Async context management for client is via RPCPluginClient instance.")
 ```
 
 ## Transport Layer
@@ -600,11 +608,10 @@ class CustomTransport(RPCPluginTransport):
         pass
 
 # Register custom transport
-server = plugin_server(
-    protocol=protocol,
-    handler=handler,
-    transport=CustomTransport()
-)
+# To use a custom transport, instantiate RPCPluginServer directly:
+# custom_transport_instance = CustomTransport()
+# server = RPCPluginServer(protocol=protocol, handler=handler, transport=custom_transport_instance)
+# rather than using the plugin_server() factory.
 ```
 
 ### Custom Protocols

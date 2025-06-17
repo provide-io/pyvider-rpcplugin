@@ -36,9 +36,9 @@ def plugin_server(
 **Parameters:**
 - `protocol` - The RPC protocol definition (from `plugin_protocol()` or `create_basic_protocol()`)
 - `handler` - Service handler instance implementing the RPC methods
-- `transport` - Transport type: `"unix"`, `"tcp"`, or list of transports
-- `transport_path` - Custom Unix socket path (optional)
-- `host` - TCP bind address (default: `"127.0.0.1"`)
+- `transport` - Transport type: `"unix"` or `"tcp"`
+- `transport_path` - Custom Unix socket path (optional, for "unix" transport)
+- `host` - TCP bind address (default: `"127.0.0.1"`, for "tcp" transport)
 - `port` - TCP port number (default: 0 for auto-assignment)
 - `config` - Additional configuration options
 
@@ -62,25 +62,32 @@ Creates a configured RPC plugin client instance.
 
 ```python
 def plugin_client(
-    transport: str = "unix",
-    host: str = "127.0.0.1", 
-    port: int = 50051,
-    config: Optional[Dict[str, Any]] = None,
+    server_path: str,
+    protocol: Optional[ProtocolT] = None, # Assuming ProtocolT is defined
+    env: Optional[Dict[str, str]] = None,
+    auto_connect: bool = False, # Note: if True, client.start() is called
+    timeout: float = 10.0,
+    **kwargs: Any,
 ) -> RPCPluginClient
 ```
 
 **Parameters:**
-- `transport` - Transport type: `"unix"` or `"tcp"`
-- `host` - TCP connection host (default: `"127.0.0.1"`)
-- `port` - TCP connection port (default: 50051)
-- `config` - Additional configuration options
+- `server_path` - Path to the plugin server executable.
+- `protocol` - Optional custom protocol implementation.
+- `env` - Environment variables to pass to the server process.
+- `auto_connect` - If True, `client.start()` is called implicitly (not generally recommended to await in factory).
+- `timeout` - Connection timeout for some internal operations if/when `auto_connect` leads to connection attempts.
+- `**kwargs` - Additional configuration options passed to `RPCPluginClient`.
 
-**Returns:** Configured `RPCPluginClient` instance
+**Returns:** Configured `RPCPluginClient` instance.
 
 **Example:**
 ```python
-client = plugin_client(transport="unix")
-await client.connect("/tmp/my_service.sock")
+# client = plugin_client(server_path="./my_plugin_executable")
+# await client.start() # Typically called after instantiation
+# # ... use client.grpc_channel ...
+# await client.close()
+print("Note: plugin_client is for executable plugins.")
 ```
 
 ### `plugin_protocol()`
@@ -193,31 +200,28 @@ Client class for connecting to RPC services.
 class RPCPluginClient:
     def __init__(
         self,
-        transport: Optional[TransportT] = None,
+        command: List[str], # typically [server_path, arg1, ...]
         config: Optional[Dict[str, Any]] = None,
     )
 ```
 
 #### Methods
 
-##### `connect()`
+##### `start()`
 
-Connect to an RPC server.
+Launch the plugin subprocess, perform handshake, and establish connection.
 
 ```python
-async def connect(self, endpoint: str) -> None
+async def start(self) -> None
 ```
 
-**Parameters:**
-- `endpoint` - Server endpoint (Unix socket path or TCP address)
-
 **Raises:**
-- `TransportError` - If connection fails
-- `HandshakeError` - If authentication fails
+- `HandshakeError` - If the handshake fails
+- `TransportError` - If the transport encounters an error or connection cannot be established
 
 ##### `close()`
 
-Close the connection and cleanup resources.
+Clean up all resources and connections, including terminating the plugin subprocess.
 
 ```python
 async def close(self) -> None
@@ -234,47 +238,52 @@ def channel(self) -> grpc.aio.Channel
 
 **Example:**
 ```python
-client = plugin_client()
-await client.connect("127.0.0.1:50051")
-
-stub = MyServiceStub(client.channel)
-response = await stub.MyMethod(request)
+# client = plugin_client(server_path="./my_plugin_executable")
+# await client.start()
+# if client.grpc_channel:
+#     # stub = MyServiceStub(client.grpc_channel)
+#     # response = await stub.MyMethod(MyRequest())
+#     print("Conceptual: Client started, channel available for stubs.")
+# await client.close()
+print("Note: plugin_client example is conceptual for executable plugins.")
 ```
 
 ## Configuration
 
 ### `configure()`
 
-Configure global RPC plugin settings.
+Configure global RPC plugin settings using `PLUGIN_` prefixed keys.
 
 ```python
 def configure(
-    magic_cookie: Optional[str] = None,
-    protocol_version: Optional[int] = None,
-    transports: Optional[List[str]] = None,
-    auto_mtls: Optional[bool] = None,
-    handshake_timeout: Optional[float] = None,
-    connection_timeout: Optional[float] = None,
-    server_cert: Optional[str] = None,
-    server_key: Optional[str] = None,
-    client_cert: Optional[str] = None,
-    client_key: Optional[str] = None,
-    **kwargs: Any,
+    PLUGIN_MAGIC_COOKIE_VALUE: Optional[str] = None, # Or PLUGIN_MAGIC_COOKIE
+    PLUGIN_PROTOCOL_VERSIONS: Optional[List[int]] = None,
+    PLUGIN_SERVER_TRANSPORTS: Optional[List[str]] = None, # For server capabilities
+    PLUGIN_CLIENT_TRANSPORTS: Optional[List[str]] = None, # For client preferences
+    PLUGIN_AUTO_MTLS: Optional[bool] = None,
+    PLUGIN_HANDSHAKE_TIMEOUT: Optional[float] = None,
+    PLUGIN_CONNECTION_TIMEOUT: Optional[float] = None,
+    PLUGIN_SERVER_CERT: Optional[str] = None,
+    PLUGIN_SERVER_KEY: Optional[str] = None,
+    PLUGIN_CLIENT_CERT: Optional[str] = None,
+    PLUGIN_CLIENT_KEY: Optional[str] = None,
+    **kwargs: Any, # For other PLUGIN_ prefixed keys
 ) -> None
 ```
 
-**Parameters:**
-- `magic_cookie` - Authentication cookie for handshake validation
-- `protocol_version` - RPC protocol version number
-- `transports` - List of supported transport types
-- `auto_mtls` - Enable automatic mTLS configuration
-- `handshake_timeout` - Timeout for connection handshake (seconds)
-- `connection_timeout` - Timeout for maintaining connections (seconds)
-- `server_cert` - Server certificate (PEM format or file path)
-- `server_key` - Server private key (PEM format or file path)
-- `client_cert` - Client certificate for mTLS (PEM format or file path)
-- `client_key` - Client private key for mTLS (PEM format or file path)
-- `**kwargs` - Additional configuration options
+**Parameters (examples, use actual `PLUGIN_` prefixed keys):**
+- `PLUGIN_MAGIC_COOKIE_VALUE` - Authentication cookie for handshake validation.
+- `PLUGIN_PROTOCOL_VERSIONS` - List of protocol versions supported/announced by this instance.
+- `PLUGIN_SERVER_TRANSPORTS` - List of transports the server supports (e.g., `["unix", "tcp"]`).
+- `PLUGIN_CLIENT_TRANSPORTS` - List of transports the client prefers.
+- `PLUGIN_AUTO_MTLS` - Enable automatic mTLS configuration.
+- `PLUGIN_HANDSHAKE_TIMEOUT` - Timeout for connection handshake (seconds).
+- `PLUGIN_CONNECTION_TIMEOUT` - Timeout for maintaining connections (seconds).
+- `PLUGIN_SERVER_CERT` - Server certificate (PEM format or file path).
+- `PLUGIN_SERVER_KEY` - Server private key (PEM format or file path).
+- `PLUGIN_CLIENT_CERT` - Client certificate for mTLS (PEM format or file path).
+- `PLUGIN_CLIENT_KEY` - Client private key for mTLS (PEM format or file path).
+- `**kwargs` - Other `PLUGIN_` prefixed configuration options.
 
 ### `RPCPluginConfig`
 
@@ -566,18 +575,23 @@ from pyvider.rpcplugin import plugin_client, configure
 
 # Configure mTLS
 configure(
-    auto_mtls=True,
-    client_cert="path/to/client.crt",
-    client_key="path/to/client.key"
+    PLUGIN_AUTO_MTLS=True,
+    PLUGIN_CLIENT_CERT="path/to/client.crt", # Used if client needs to present a specific cert
+    PLUGIN_CLIENT_KEY="path/to/client.key",
+    # PLUGIN_SERVER_ROOT_CERTS="path/to/ca.crt" # If server's cert is not signed by public CA
 )
 
-# Create and connect client
-client = plugin_client(transport="tcp")
-await client.connect("secure-server.example.com:50051")
+# Create and connect client (assuming executable plugin)
+# client = plugin_client(server_path="./secure_plugin_executable")
+# await client.start()
 
 # Use client for RPC calls
-stub = MyServiceStub(client.channel)
-response = await stub.MyMethod(MyRequest())
+# if client.grpc_channel:
+    # stub = MyServiceStub(client.grpc_channel)
+    # response = await stub.MyMethod(MyRequest())
+    # print("Conceptual: Secure client connected.")
+# await client.close()
+print("Note: Secure client example is conceptual for executable plugins.")
 ```
 
 ### Error Handling
@@ -599,14 +613,19 @@ except HandshakeError as e:
 
 ### Connection Pooling
 
-For high-throughput scenarios, maintain multiple client connections:
+For high-throughput scenarios with executable plugins, you might manage multiple `RPCPluginClient` instances if connecting to different plugin types or needing distinct configurations. True connection pooling to a single plugin executable is typically handled within the gRPC channel's capabilities or by application design.
 
 ```python
-clients = [plugin_client() for _ in range(pool_size)]
-for client in clients:
-    await client.connect(endpoint)
+# Conceptual: Managing multiple client instances for different plugins
+# client_A = plugin_client(server_path="./plugin_A_executable")
+# await client_A.start()
+# client_B = plugin_client(server_path="./plugin_B_executable")
+# await client_B.start()
 
-# Use clients in round-robin fashion
+# # Use client_A and client_B as needed
+# await client_A.close()
+# await client_B.close()
+print("Note: Connection pooling example is conceptual.")
 ```
 
 ### Transport Selection
@@ -618,9 +637,10 @@ for client in clients:
 
 ```python
 configure(
-    handshake_timeout=5.0,  # Faster handshakes
-    connection_timeout=60.0,  # Reasonable connection lifetime
-    transports=["unix"],  # Single transport for performance
+    PLUGIN_HANDSHAKE_TIMEOUT=5.0,  # Faster handshakes
+    PLUGIN_CONNECTION_TIMEOUT=60.0,  # Reasonable connection lifetime
+    PLUGIN_SERVER_TRANSPORTS=["unix"],  # Example: server configured for only Unix
+    PLUGIN_CLIENT_TRANSPORTS=["unix"],  # Example: client configured to only use Unix
 )
 ```
 
