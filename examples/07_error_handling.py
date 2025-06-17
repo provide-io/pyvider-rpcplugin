@@ -404,11 +404,11 @@ async def example_7_basic_error_handling():
 
     # Configure for error handling demonstration
     configure(
-        magic_cookie="error-handling-cookie",
-        protocol_version=1,
-        transports=["unix"],
-        auto_mtls=False,
-        handshake_timeout=5.0,
+        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["unix"], # Correct key for server transports
+        PLUGIN_AUTO_MTLS=False,
+        PLUGIN_HANDSHAKE_TIMEOUT=5.0,
         connection_timeout=30.0,
     )
 
