@@ -8,9 +8,11 @@ examples/
 ├── 03_client_connection.py      # Client implementation examples
 ├── 04_transport_options.py      # Unix socket vs TCP configuration
 ├── 05_security_mtls.py          # mTLS certificate setup
-├── 06_error_handling.py         # Robust error management
-├── 07_async_patterns.py         # Best async practices
+├── 06_async_patterns.py         # Best async practices (Corrected order)
+├── 07_error_handling.py         # Robust error management (Corrected order)
 ├── 08_production_config.py      # Production deployment patterns
+├── 09_custom_protocols.py       # Custom protocol definitions & middleware
+├── 10_performance_tuning.py     # Performance benchmarking & optimization
 └── demo/                        # Subdirectory for more complex demos
     ├── echo_service/            # Complete echo service implementation
     │   ├── echo_pb2.py         # Generated protobuf
@@ -26,7 +28,8 @@ examples/
         └── client.py           # KV client implementation
 ```
 
-## Priority Implementation Order
+<!--
+## Priority Implementation Order (Historical - Kept for reference if needed)
 
 ### **IMMEDIATE (Pre-Release)**
 1. **01_quick_start.py** - This is the primary README demo
@@ -42,3 +45,4 @@ examples/
 7. **05_security_mtls.py** - Security implementation
 8. **examples/demo/kvproto/** - More complex key-value example
 9. Remaining numbered examples (06-08)
+-->

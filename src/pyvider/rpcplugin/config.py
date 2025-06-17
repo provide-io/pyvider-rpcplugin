@@ -117,7 +117,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_AUTO_MTLS": {
         "required": True,
-        "default": "true",
+        "default": "true", # Reverted default from "false" back to "true"
         "description": "Flag to enable automatic mTLS (true/false).",
         "type": "bool",
     },

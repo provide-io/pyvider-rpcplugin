@@ -143,16 +143,19 @@ Core client and server classes support async context management for resource cle
 
 ```python
 # For RPCPluginClient (assuming 'client' is an instance from plugin_client factory)
-# async with client: # client is already an instance, not a factory call
-#     await client.start() # Start is typically called explicitly
-#     # ... use client ...
-# Automatic client.close() on exit of the block if client.start() was successful.
+# For RPCPluginClient (assuming 'client' is an instance from plugin_client factory)
+# async with client as active_client: # client is the RPCPluginClient instance
+#     # active_client.start() was called by __aenter__
+#     # active_client is now ready to use, e.g., active_client.grpc_channel
+#     logger.info(f"Client active, target: {active_client.target_endpoint}")
+#     # ... use active_client ...
+# # active_client.close() (and shutdown_plugin if applicable) is called by __aexit__
 
-# Example for RPCPluginServer (if used directly)
+# Example for RPCPluginServer (if used directly - less common)
 # server = RPCPluginServer(...)
 # async with server: # Conceptual, direct server usage with 'async with' is not standard pattern
 #    await server.serve()
-print("Note: Async context management for client is via RPCPluginClient instance.")
+print("Note: Async context management for client is via RPCPluginClient instance. See api-reference.md for a runnable example.")
 ```
 
 ## Transport Layer
@@ -472,28 +475,27 @@ Automated certificate generation and validation:
 ```python
 class Certificate:
     @classmethod
-    def generate_ca(cls, common_name: str, validity_days: int = 365) -> Certificate:
+    def create_ca(
+        cls, 
+        common_name: str,
+        organization_name: str = "Pyvider RPC", # Updated for consistency
+        validity_days: int = 365
+    ) -> Certificate:
         """Generate self-signed CA certificate."""
         
     @classmethod
-    def generate_server_certificate(
-        cls, 
-        ca_cert: Certificate,
-        common_name: str,
-        san_dns: List[str] = None,
-        validity_days: int = 90
-    ) -> Certificate:
-        """Generate server certificate signed by CA."""
-        
-    @classmethod
-    def generate_client_certificate(
+    def create_signed_certificate(
         cls,
-        ca_cert: Certificate, 
+        ca_certificate: Certificate, # Updated parameter name
         common_name: str,
-        validity_days: int = 30
-    ) -> Certificate:
-        """Generate client certificate signed by CA."""
+        organization_name: Optional[str] = None, # Updated parameter name
+        validity_days: int = 90,
+        alt_names: Optional[List[str]] = None, # Updated parameter name
+        is_client_cert: bool = False  # Added parameter
+    ) -> Certificate: # Covers both server and client cert generation
+        """Generate server or client certificate signed by CA."""
 ```
+The `.cert` and `.key` attributes are used to access the PEM data.
 
 ## Configuration System
 

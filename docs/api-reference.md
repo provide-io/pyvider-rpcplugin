@@ -206,29 +206,62 @@ Instances of `RPCPluginClient` support the asynchronous context management proto
 
 #### Async Context Manager Example
 ```python
-# from pyvider.rpcplugin import plugin_client, RPCPluginError, logger # Assuming these are imported
-# import asyncio
+from pyvider.rpcplugin import plugin_client, RPCPluginError, logger # Assuming these are imported
+from pyvider.telemetry import setup_logging # For standalone test
+import asyncio
+from pathlib import Path # For dummy_server.sh path
 
-# client_instance = plugin_client(server_path="./my_plugin_executable")
-# async def manage_client():
-#     try:
-#         async with client_instance as client:
-#             # client.start() has been called by __aenter__
-#             # Now you can use client.grpc_channel, for example:
-#             # stub = YourServiceStub(client.grpc_channel)
-#             # response = await stub.YourMethod(YourRequest())
-#             logger.info(f"Client connected to target: {client.target_endpoint}") # Assuming target_endpoint exists
-#             # Simulate some work
-#             await asyncio.sleep(0.1)
-#     # client.shutdown_plugin() (if applicable) and client.close()
-#     # are automatically called by __aexit__
-#     except RPCPluginError as e:
-#         logger.error(f"An error occurred with the plugin client: {e}")
-#     except Exception as e: # Catch any other unexpected errors
-#         logger.error(f"An unexpected error occurred: {e}")
+# This example demonstrates the async context manager.
+# It uses a dummy server executable for the client to start.
+async def manage_client_with_context():
+    # Setup basic logging for the example to run
+    setup_logging(log_level="DEBUG")
 
-# asyncio.run(manage_client())
-print("Note: RPCPluginClient async with example is conceptual until full executable context is shown elsewhere.")
+    # Determine path to dummy_server.sh relative to this potential doc path
+    # This pathing might need adjustment if docs are built/moved.
+    # Assuming docs/api-reference.md, so examples/ is ../examples/
+    # A more robust solution for finding examples might be needed if docs are deeply nested.
+    dummy_server_path_rel = Path("../examples/dummy_server.sh")
+    dummy_server_path_abs = (Path(__file__).parent / dummy_server_path_rel).resolve()
+
+    # Fallback if the typical relative path from 'docs' does not work (e.g. when run from root)
+    if not dummy_server_path_abs.exists():
+        dummy_server_path_abs = (Path.cwd() / "examples" / "dummy_server.sh").resolve()
+
+    if not dummy_server_path_abs.exists():
+        logger.error(f"dummy_server.sh not found at expected paths. "
+                     "Ensure examples/dummy_server.sh exists relative to project root or docs/ folder.")
+        print(f"Error: dummy_server.sh not found. Searched paths based on {Path(__file__)} and {Path.cwd()}")
+        return
+
+    client = plugin_client(server_path=str(dummy_server_path_abs))
+    try:
+        async with client:
+            # client.start() is automatically called by __aenter__
+            logger.info(f"Client started. Handshake info: {client.handshake_info}")
+            # The dummy_server.sh doesn't establish a real gRPC channel,
+            # so client.grpc_channel would typically be None or unusable here.
+            # We're primarily testing the context manager's start/close lifecycle.
+            logger.info("Client is active within the 'async with' block.")
+            await asyncio.sleep(0.1) # Simulate some work
+        logger.info("Client has been closed automatically by __aexit__.")
+    except FileNotFoundError: # Should be caught by the check above, but as a safeguard
+        logger.error(f"dummy_server.sh not found at {dummy_server_path_abs}. "
+                     "Ensure path is correct for this example to run.")
+    except RPCPluginError as e:
+        logger.error(f"An RPCPluginError occurred: {e}")
+    except Exception as e:
+        logger.error(f"An unexpected error occurred: {e}")
+
+# To run this example (if saved to a file, e.g., test_client_context.py):
+# 1. Ensure dummy_server.sh is executable and in the correct examples/ path.
+#    (e.g., chmod +x examples/dummy_server.sh)
+# 2. Export PLUGIN_AUTO_MTLS=False if not set globally and other parts of the library might default to True.
+#    (export PLUGIN_AUTO_MTLS=False)
+# 3. Run the script: python test_client_context.py
+# Example of how to run if you were to extract it:
+# if __name__ == "__main__":
+#    asyncio.run(manage_client_with_context())
 ```
 
 #### Constructor
@@ -424,46 +457,34 @@ Certificate management utilities.
 
 #### Class Methods
 
-##### `generate_ca()`
+##### `create_ca()`
 
 Generate a Certificate Authority.
 
 ```python
 @classmethod
-def generate_ca(
+def create_ca(
     cls,
     common_name: str,
-    organization: str = "Pyvider RPC",
-    validity_days: int = 365
+    organization_name: str = "Pyvider RPC", # Parameter name updated for consistency
+    validity_days: int = 365,
 ) -> Certificate
 ```
 
-##### `generate_server_certificate()`
+##### `create_signed_certificate()`
 
-Generate a server certificate.
-
-```python
-@classmethod
-def generate_server_certificate(
-    cls,
-    ca_cert: Certificate,
-    common_name: str,
-    san_dns: Optional[List[str]] = None,
-    validity_days: int = 90
-) -> Certificate
-```
-
-##### `generate_client_certificate()`
-
-Generate a client certificate.
+Generate a server or client certificate signed by a CA.
 
 ```python
 @classmethod
-def generate_client_certificate(
+def create_signed_certificate(
     cls,
-    ca_cert: Certificate,
+    ca_certificate: Certificate, # Parameter name updated
     common_name: str,
-    validity_days: int = 30
+    organization_name: Optional[str] = None, # Parameter name updated
+    validity_days: int = 90,
+    alt_names: Optional[List[str]] = None, # Parameter name updated
+    is_client_cert: bool = False # Parameter added
 ) -> Certificate
 ```
 
@@ -484,12 +505,12 @@ def verify_certificate_chain(
 
 ```python
 @property
-def certificate_pem(self) -> str
-    """PEM-encoded certificate."""
+def cert(self) -> str
+    """PEM-encoded certificate. Guaranteed to be non-None."""
 
 @property
-def private_key_pem(self) -> str
-    """PEM-encoded private key."""
+def key(self) -> Optional[str]
+    """PEM-encoded private key. Optional, may be None if loaded from cert-only PEM."""
 ```
 
 ## Exceptions

@@ -445,23 +445,32 @@ diagnose_certificate_issues("/path/to/cert.crt", "/path/to/ca.crt")
 **Solutions:**
 1. **Regenerate expired certificates:**
    ```python
-   # Generate new certificate
-   new_cert = Certificate.generate_server_certificate(
-       ca_cert=ca_cert,
+   # Generate new certificate (using corrected API)
+   # Ensure ca_cert is your loaded CA Certificate object
+   new_server_cert = Certificate.create_signed_certificate(
+       ca_certificate=ca_cert,
        common_name="your-server.com",
-       validity_days=90
+       validity_days=90,
+       is_client_cert=False # For a server certificate
    )
-   new_cert.save_to_file("new_server.crt", "new_server.key")
+   # new_server_cert.cert and new_server_cert.key contain the PEM data
+   # new_cert.save_to_file("new_server.crt", "new_server.key") # save_to_file might not exist, handle manually:
+   with open("new_server.crt", "w") as f: f.write(new_server_cert.cert)
+   if new_server_cert.key:
+       with open("new_server.key", "w") as f: f.write(new_server_cert.key)
    ```
 
 2. **Fix certificate chain:**
    ```python
-   # Ensure certificate is signed by the correct CA
-   server_cert = Certificate.generate_server_certificate(
-       ca_cert=ca_cert,  # Use same CA for client validation
+   # Ensure certificate is signed by the correct CA (using corrected API)
+   # Ensure ca_cert is your loaded CA Certificate object
+   new_server_cert = Certificate.create_signed_certificate(
+       ca_certificate=ca_cert,  # Use same CA for client validation
        common_name="server",
-       validity_days=90
+       validity_days=90,
+       is_client_cert=False # For a server certificate
    )
+   # Save new_server_cert.cert and new_server_cert.key as needed
    ```
 
 ### mTLS Handshake Failures
@@ -520,21 +529,24 @@ test_mtls_connection("127.0.0.1", 50051, "client.crt", "client.key", "ca.crt")
 
 3. **Regenerate certificate chain:**
    ```python
-   # Regenerate complete certificate chain
-   ca_cert = Certificate.generate_ca("My CA", validity_days=365)
+   # Regenerate complete certificate chain (using corrected API)
+   ca_cert = Certificate.create_ca(common_name="My CA", validity_days=365) # organization_name is also a param
    
-   server_cert = Certificate.generate_server_certificate(
-       ca_cert=ca_cert,
+   server_cert = Certificate.create_signed_certificate(
+       ca_certificate=ca_cert,
        common_name="localhost",
-       san_dns=["localhost", "127.0.0.1"],
-       validity_days=90
+       alt_names=["localhost", "127.0.0.1"], # Corrected parameter name
+       validity_days=90,
+       is_client_cert=False
    )
    
-   client_cert = Certificate.generate_client_certificate(
-       ca_cert=ca_cert,
+   client_cert = Certificate.create_signed_certificate(
+       ca_certificate=ca_cert,
        common_name="client-001",
-       validity_days=30
+       validity_days=30,
+       is_client_cert=True
    )
+   # Remember to save these certs using .cert and .key attributes
    ```
 
 ## Transport Layer Issues
@@ -740,6 +752,45 @@ async def monitor_memory_usage(duration_seconds: int = 60):
    ```
 
 ## Configuration Issues
+
+### Server Fails to Start Due to mTLS Requirements
+
+**Symptoms:**
+- Server exits prematurely.
+- Error logs indicate `SecurityError: Server certificate or key not configured for mTLS/TLS.`
+- Or, `Error starting gRPC server: PemSslCredentialsOptions.private_key must be a string` if paths are missing but expected.
+
+**Diagnosis:**
+- Check the server's configuration for `PLUGIN_AUTO_MTLS`. If it's `True` (which is the default if not overridden by environment variable or `configure()` call):
+    - The server *requires* valid paths for `PLUGIN_SERVER_CERT` (its own certificate) and `PLUGIN_SERVER_KEY` (its private key).
+    - For mutual TLS (mTLS, where the server also verifies the client), `PLUGIN_CLIENT_ROOT_CERTS` (the CA(s) to trust for client certificates) must also be set.
+- If these are not set, the server cannot start in secure mode.
+
+**Solutions:**
+1.  **Run Insecurely (for development/testing or if mTLS is not needed):**
+    Explicitly set `PLUGIN_AUTO_MTLS` to `False`.
+    ```bash
+    export PLUGIN_AUTO_MTLS=False
+    # Then run your server script
+    ```
+    Or, at the beginning of your server script:
+    ```python
+    from pyvider.rpcplugin import configure
+    configure(PLUGIN_AUTO_MTLS=False)
+    ```
+
+2.  **Provide Correct Certificates for mTLS:**
+    Ensure all required certificate paths are correctly configured via environment variables or `configure()`:
+    ```python
+    # Example using configure()
+    configure(
+        PLUGIN_AUTO_MTLS=True,
+        PLUGIN_SERVER_CERT="file:///path/to/your/server.crt",
+        PLUGIN_SERVER_KEY="file:///path/to/your/server.key",
+        PLUGIN_CLIENT_ROOT_CERTS="file:///path/to/your/ca_to_verify_clients.crt"
+    )
+    ```
+    Ensure the certificate files exist at the specified paths and are readable by the server process. Refer to `docs/security.md` and `examples/05_security_mtls.py` for certificate generation.
 
 ### Environment Variable Not Found
 

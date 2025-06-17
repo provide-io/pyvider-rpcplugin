@@ -714,6 +714,42 @@ class Certificate:
         logger.info(f"📜🔑✅ Successfully created and signed certificate for CN={common_name} by CA='{ca_certificate.subject}'")
         return new_cert_obj
 
+    @classmethod
+    def create_self_signed_server_cert(cls, common_name: str, organization_name: str, validity_days: int,
+                                      alt_names: list[str] | None = None,
+                                      key_type: str = "ecdsa", key_size: int = 2048,
+                                      ecdsa_curve: str = "secp384r1") -> 'Certificate':
+        """
+        Creates a new self-signed end-entity certificate suitable for a server.
+        """
+        logger.info(f"📜🔑🏭 Creating new self-signed SERVER certificate: CN={common_name}, Org={organization_name}")
+
+        cert_obj = cls(
+            generate_keypair=True,
+            common_name=common_name,
+            organization_name=organization_name,
+            validity_days=validity_days,
+            alt_names=alt_names or [common_name],
+            key_type=key_type,
+            key_size=key_size,
+            ecdsa_curve=ecdsa_curve
+        )
+
+        if not cert_obj._private_key:
+            raise CertificateError("Private key not generated for self-signed server certificate.")
+
+        actual_x509_cert = cert_obj._create_x509_certificate(
+            is_ca=False, # Self-signed server cert is NOT a CA
+            is_client_cert=False # It's a server cert
+        )
+
+        cert_obj._cert = actual_x509_cert
+        # Ensure cert_obj.cert (the PEM string) is updated from the newly created _cert object
+        cert_obj.cert = actual_x509_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+
+        logger.info(f"📜🔑✅ Successfully created self-signed SERVER certificate for CN={common_name}")
+        return cert_obj
+
     def verify_trust(self, other_cert: Self) -> bool:
         """Verifies if the `other_cert` is trusted based on this certificate's trust chain."""
         if other_cert is None:

@@ -72,6 +72,8 @@ pip install pyvider-rpcplugin
 
 Create your first RPC plugin in minutes:
 
+Note: To run this basic example without configuring mTLS certificates, ensure you set the `PLUGIN_AUTO_MTLS=False` environment variable before executing the server script (e.g., `export PLUGIN_AUTO_MTLS=False`). For more details on mTLS, see the security examples.
+
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server, create_basic_protocol
@@ -89,12 +91,13 @@ async def main():
     # 2. Create a basic protocol (uses a default service definition)
     protocol = create_basic_protocol()
 
-    # 3. Create the plugin server with your handler
-    server = plugin_server(protocol=protocol, handler=MyHandler())
-
-    # 4. Start the server (this will run indefinitely until stopped)
-    # Forcing a known socket path for the client example to connect to
-    server = plugin_server(protocol=protocol, handler=MyHandler(), transport="unix", transport_path="/tmp/pyvider_quickstart.sock")
+    # 3. Create the plugin server with your handler and transport path
+    server = plugin_server(
+        protocol=protocol,
+        handler=MyHandler(),
+        transport="unix",
+        transport_path="/tmp/pyvider_quickstart.sock"
+    )
     print("Starting server on /tmp/pyvider_quickstart.sock")
     await server.serve()
 

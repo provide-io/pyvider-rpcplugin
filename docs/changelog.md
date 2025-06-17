@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Internal updates and documentation improvements (reflecting version 0.0.11 state).
 - Initial release preparation
 - Complete example suite with echo and key-value demos
 - Production documentation and deployment guides
@@ -57,13 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Hot-reloadable configuration support
 
 ### Performance
-- **Ultra-low latency**: 0.12ms P50 latency for Unix socket transport
-- **High throughput**: 85,000+ requests/second on standard hardware
+- **Ultra-low latency**: e.g., 0.12ms P50 latency for Unix socket transport in specific tests.
+- **High throughput**: Up to 50K+ req/s on Unix sockets. (Performance figures vary by benchmark and environment; specific high-throughput scenarios are benchmarked separately).
 - **Efficient resource usage**: Zero-copy protocol buffers where possible
 - **Async-first architecture**: Full asyncio integration for maximum concurrency
 
 ### Security
-- **mTLS by default** for production deployments
+- **mTLS by default** for production deployments (mTLS is enabled by default if certificate paths are provided; otherwise, servers require `PLUGIN_AUTO_MTLS=False` to start insecurely).
 - **Certificate auto-discovery** in standard system locations
 - **Secure key storage** with appropriate file permissions
 - **CA certificate validation** for full mutual authentication
