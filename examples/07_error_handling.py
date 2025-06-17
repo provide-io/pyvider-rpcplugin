@@ -277,7 +277,7 @@ class RetryPolicy:
                 )
                 
                 if self.jitter:
-                    delay += random.uniform(0, delay * 0.1)
+                    delay += random.uniform(0, delay * 0.1) # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
                 
                 logger.warning(
                     f"Operation failed, retrying in {delay:.2f}s",
@@ -548,7 +548,7 @@ async def example_7_retry_patterns():
         await asyncio.sleep(0.1)
         
         # Random failure based on success rate
-        if random.random() > success_rate:
+        if random.random() > success_rate:  # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
             raise TransportError(f"Simulated failure for operation {operation_id}")
         
         return f"Success result for operation {operation_id}"
@@ -665,7 +665,7 @@ async def example_7_circuit_breaker():
         
         await asyncio.sleep(0.05)  # Simulate network delay
         
-        if random.random() < failure_rate:
+        if random.random() < failure_rate:  # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
             raise Exception(f"Service failure for call {call_id}")
         
         return f"Service success for call {call_id}"

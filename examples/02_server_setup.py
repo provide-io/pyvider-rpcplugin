@@ -80,7 +80,7 @@ async def example_2_unix_socket_server():
         protocol=protocol,
         handler=handler,
         transport="unix",
-        transport_path="/tmp/example_echo.sock",  # Custom socket path
+        transport_path="/tmp/example_echo.sock",  # nosec B108 # Example code, /tmp is acceptable here. # Custom socket path
     )
 
     logger.info(
@@ -89,7 +89,7 @@ async def example_2_unix_socket_server():
         action="startup",
         status="starting",
         transport="unix",
-        socket_path="/tmp/example_echo.sock",
+        socket_path="/tmp/example_echo.sock", # nosec B108 # Example code, /tmp is acceptable here.
     )
 
     # Start server and let it initialize

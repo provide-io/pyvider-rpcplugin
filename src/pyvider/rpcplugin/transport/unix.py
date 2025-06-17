@@ -464,7 +464,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 # Make multiple attempts with proper error handling
                 for _ in range(3):
                     try:
-                        os.chmod(
+                        os.chmod( # nosec B103 # Permissions are intentionally 0o660 for owner/group r/w during cleanup.
                             socket_path, 0o660
                         )  # Changed from 0o770, to ensure write access if needed for unlinking
                         os.unlink(socket_path)

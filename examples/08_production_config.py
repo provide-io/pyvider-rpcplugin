@@ -241,7 +241,7 @@ async def example_8_production_server_deployment():
         protocol=protocol,
         handler=handler,
         transport="tcp",
-        host="0.0.0.0",  # Accept connections from any IP
+        host="0.0.0.0",  # nosec B104 # Example for production-like config, binding to 0.0.0.0 is intentional here. # Accept connections from any IP
         port=50051,      # Standard gRPC port
         config={
             "max_workers": 32,  # Scale with CPU cores

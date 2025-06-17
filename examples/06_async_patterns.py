@@ -527,7 +527,7 @@ async def example_6_async_error_handling():
         
         # Simulate random failures
         import random
-        if random.random() < fail_probability:
+        if random.random() < fail_probability: # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
             raise Exception(f"Operation {operation_id} failed randomly")
         
         return f"Success_result_{operation_id}"
