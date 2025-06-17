@@ -317,6 +317,7 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(client_instance_
     with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake line"):
         await client_instance._read_raw_handshake_line_from_stdout()
 
+# LONG_RUNNING_TEST - This test takes approximately 3 minutes to run due to byte-by-byte processing and timeouts.
 # long-running
 @pytest.mark.asyncio
 async def test_read_raw_handshake_line_byte_by_byte_read_timeout(client_instance_for_retry_tests, mocker):
