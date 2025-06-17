@@ -55,8 +55,8 @@ from pyvider.telemetry import logger
 
 @define(slots=False)
 class RPCPluginServer(
-    ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT, ClientT]
-):  # Added ClientT
+    ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT] # Removed ClientT from Generic
+):
     """
     RPCPluginServer initializes and runs a gRPC server according to negotiated
     handshake parameters.
@@ -81,7 +81,7 @@ class RPCPluginServer(
     # Public initialization parameters.
     protocol: ProtocolT = field()
     handler: HandlerT = field()
-    config: ClientT | None = field(default=None)
+    config: dict[str, Any] | None = field(default=None) # Changed type hint
     transport: TransportT | None = field(default=None)
 
     _exit_on_stop: bool = field(default=True, init=False)

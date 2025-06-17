@@ -251,9 +251,14 @@ config.set("PLUGIN_HANDSHAKE_TIMEOUT", 30.0)
 # PLUGIN_SERVER_TRANSPORTS=unix,tcp
 
 # File-based configuration
+# This loads values from a file, sets them as environment variables (mapping keys as needed),
+# and then reloads the configuration from the environment.
+# See docs/configuration.md for details on key mappings and file formats.
 from pyvider.rpcplugin.config import load_config_from_file
-load_config_from_file("config.yaml")  # Also supports .json, .env
+load_config_from_file("config.yaml")  # Also supports .json, .env files
 ```
+
+See [docs/configuration.md](docs/configuration.md) for full details on all configuration options and methods.
 
 ### 📊 **Built-in Observability**
 
@@ -468,7 +473,7 @@ See **[docs/troubleshooting.md](docs/troubleshooting.md)** for comprehensive deb
 - **[📖 API Reference](docs/api-reference.md)** - Complete class and method documentation
 - **[🏗️ Architecture Guide](docs/architecture.md)** - Design patterns and best practices  
 - **[🔒 Security Guide](docs/security.md)** - mTLS setup and certificate management
-- **[🚀 Performance Guide](docs/performance.md)** - Optimization and tuning recommendations
+- **[🚀 Performance Guide](#performance)** - Optimization and tuning recommendations
 - **[🐛 Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
 
 ## 🤝 Contributing

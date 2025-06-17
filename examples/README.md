@@ -35,7 +35,7 @@ Here's a complete list of the available examples and what they demonstrate:
   Illustrates advanced server configuration options including transport selection, endpoint binding, and service registration patterns.
 
 - **`03_client_connection.py`** 🙋
-  Demonstrates robust client connection patterns with error handling, retry logic, and connection lifecycle management.
+  Demonstrates robust client connection patterns with error handling, retry logic, and connection lifecycle management. (Note: Retry logic is demonstrated as an application-level pattern within this example.)
 
 ### 🚄 **Transport & Protocol Examples**
 
@@ -51,7 +51,7 @@ Here's a complete list of the available examples and what they demonstrate:
 ### 🏭 **Production Examples**
 
 - **`07_error_handling.py`** 🚨
-  Robust error handling strategies including custom exceptions, retry policies, circuit breakers, and failure recovery patterns.
+  Robust error handling strategies including custom exceptions, retry policies, circuit breakers, and failure recovery patterns. (Note: Retry policies and circuit breaker patterns are shown via example implementations within this script, not as built-in library classes.)
 
 - **`08_production_config.py`** ⚙️
   Production-ready configuration management using environment variables, configuration files, and structured logging for monitoring.
@@ -60,7 +60,7 @@ Here's a complete list of the available examples and what they demonstrate:
   Advanced protocol customization including custom service definitions, middleware integration, and protocol extension patterns.
 
 - **`10_performance_tuning.py`** 📈
-  Performance optimization techniques including connection pooling, throughput tuning, latency optimization, and resource management.
+  Performance optimization techniques including connection pooling, throughput tuning, latency optimization, and resource management. (Note: Connection pooling concepts are illustrated by managing multiple client instances; benchmark rigging is example-specific and uses direct gRPC channels for load simulation against the server.)
 
 ## 🏃‍♂️ Quick Reference
 
@@ -160,6 +160,7 @@ Feel free to modify and extend these examples for your specific use cases:
 4. **Check Logs** - Pay attention to the structured logging output for insights
 5. **Measure Performance** - Use the benchmarking examples to understand system limits
 6. **Security First** - Always use mTLS in production environments
+7. **Understand Library Scope**: Some examples demonstrate advanced patterns (e.g., custom client-side retry logic, circuit breakers, specific pooling strategies for `plugin_client`) implemented within the example code itself. These illustrate how you can build robust applications on top of `pyvider.rpcplugin`, and may not represent built-in utility classes provided by the core library.
 
 ## 🆘 Getting Help
 
@@ -177,6 +178,6 @@ After exploring these examples:
 1. **Build your own plugin** - Use the patterns as templates for your use case
 2. **Read the API docs** - Review [docs/api-reference.md](../docs/api-reference.md) for complete details
 3. **Study the architecture** - Understand the design in [docs/architecture.md](../docs/architecture.md)
-4. **Optimize for production** - Follow [docs/production.md](../docs/production.md) guidelines
+4. **Optimize for production** - Follow guidelines in [docs/security.md](../docs/security.md) (which includes production checklists and operational security) and the Performance section in the main [README.md](../README.md#performance).
 
 Happy coding with `pyvider.rpcplugin`! 🎉

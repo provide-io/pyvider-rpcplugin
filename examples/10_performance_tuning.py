@@ -175,7 +175,11 @@ class HighPerformanceHandler:
 
 
 class PerformanceBenchmarker:
-    """Comprehensive performance benchmarking utility."""
+    """Utility for this example to simulate benchmark tests against an in-process server.
+    Note: Uses direct gRPC channels, not plugin_client, for load generation.
+
+    Comprehensive performance benchmarking utility.
+    """
 
     def __init__(self):
         self.process = psutil.Process()
