@@ -15,7 +15,7 @@ import stat
 import sys  # Single import
 import traceback
 from abc import ABC
-from typing import Generic, cast  # Added cast
+from typing import Generic, cast, Any  # Added Any
 
 import grpc
 from attrs import define, field

@@ -468,7 +468,6 @@ async def main():
     try:
         # Run each production configuration example
         await example_8_environment_configuration()
-        # await example_8_file_based_configuration() # Removed
         await example_8_production_server_deployment()
         await example_8_monitoring_and_observability()
 
@@ -477,7 +476,6 @@ async def main():
         print("=" * 60)
         print("\n🏭 Production Checklist:")
         print("  • Environment-based configuration for different stages")
-        # print("  • File-based config management (.env, .json, .yaml)") # Removed
         print("  • mTLS security enabled for all environments")
         print("  • Comprehensive monitoring and alerting")
         print("  • Health checks and graceful shutdown procedures")
