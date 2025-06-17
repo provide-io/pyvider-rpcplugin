@@ -249,13 +249,6 @@ config.set("PLUGIN_HANDSHAKE_TIMEOUT", 30.0)
 # PLUGIN_MAGIC_COOKIE=my-secret-cookie
 # PLUGIN_AUTO_MTLS=true
 # PLUGIN_SERVER_TRANSPORTS=unix,tcp
-
-# File-based configuration
-# This loads values from a file, sets them as environment variables (mapping keys as needed),
-# and then reloads the configuration from the environment.
-# See docs/configuration.md for details on key mappings and file formats.
-from pyvider.rpcplugin.config import load_config_from_file
-load_config_from_file("config.yaml")  # Also supports .json, .env files
 ```
 
 See [docs/configuration.md](docs/configuration.md) for full details on all configuration options and methods.

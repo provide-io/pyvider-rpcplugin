@@ -34,6 +34,12 @@ async def test_server_signal_handling(
                 f"DIAGNOSTIC: mock_get_for_endpoint_with_logging called for {key}, RETURNING None"
             )  # Prominent log
             return None
+        elif key == "PLUGIN_AUTO_MTLS":
+            return False
+        elif key == "PLUGIN_SERVER_CERT":
+            return None
+        elif key == "PLUGIN_SERVER_KEY":
+            return None
         # For other keys, delegate to the actual config's dictionary.
         # This assumes mock_server_config fixture (which yields global_rpc_config) has set up other necessary defaults.
         # The global_rpc_config.instance().config should be used if RPCPluginConfig.instance() ensures init.

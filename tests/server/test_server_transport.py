@@ -28,8 +28,21 @@ async def test_setup_server_unix_success_insecure(
     managed_unix_socket_path,
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
+    mock_server_config, # This is global rpcplugin_config
+    mocker,
 ) -> None:
+    # This test is for an insecure setup
+    def mock_config_get_insecure(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            return False
+        if key == "PLUGIN_SERVER_CERT":
+            return None
+        if key == "PLUGIN_SERVER_KEY":
+            return None
+        return mock_server_config.config.get(key, default) # Use .config for direct dict access
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_insecure)
+
     test_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     server = RPCPluginServer(
@@ -182,8 +195,32 @@ async def test_setup_server_exception_2(
     managed_unix_socket_path,
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
+    mock_server_config, # This is global rpcplugin_config
+    mocker,
 ) -> None:
+    # This test expects _generate_server_credentials to pass, then add_secure_port to fail.
+    def mock_config_get_secure(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            # Set to False to avoid needing client_root_certs if not explicitly testing mTLS part of creds
+            return False
+        if key == "PLUGIN_SERVER_CERT":
+            return "dummy.crt"
+        if key == "PLUGIN_SERVER_KEY":
+            return "dummy.key"
+        # PLUGIN_CLIENT_ROOT_CERTS not needed if AUTO_MTLS is False
+        return mock_server_config.config.get(key, default)
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_secure)
+
+    # Mock the Certificate class to prevent file loading errors for dummy paths
+    # Re-import Certificate from its source for spec to avoid potential circularity if this file also defines it
+    from pyvider.rpcplugin.crypto.certificate import Certificate
+    mock_certificate_class = mocker.patch("pyvider.rpcplugin.server.Certificate", spec=Certificate)
+    mock_cert_instance = mocker.MagicMock(spec=Certificate)
+    mock_cert_instance.cert = "dummy_cert_pem_content_for_test_setup_server_exception_2"
+    mock_cert_instance.key = "dummy_key_pem_content_for_test_setup_server_exception_2"
+    mock_certificate_class.return_value = mock_cert_instance
+
     from unittest import mock # Already imported at top, but kept for clarity if this test is isolated
     socket_path = managed_unix_socket_path
     transport = UnixSocketTransport(path=socket_path)
@@ -248,8 +285,29 @@ async def test_setup_server_unix_no_socket_linux_1(
     tmp_path,
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
+    mock_server_config, # This is global rpcplugin_config
+    mocker,
 ) -> None:
+    # This test expects _generate_server_credentials to pass, then add_secure_port to fail.
+    def mock_config_get_secure(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            return False # Avoid needing client_root_certs for this specific path
+        if key == "PLUGIN_SERVER_CERT":
+            return "dummy.crt"
+        if key == "PLUGIN_SERVER_KEY":
+            return "dummy.key"
+        return mock_server_config.config.get(key, default)
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_secure)
+
+    # Mock the Certificate class
+    from pyvider.rpcplugin.crypto.certificate import Certificate # Ensure Certificate is imported
+    mock_certificate_class = mocker.patch("pyvider.rpcplugin.server.Certificate", spec=Certificate)
+    mock_cert_instance = mocker.MagicMock(spec=Certificate)
+    mock_cert_instance.cert = "dummy_cert_pem_content_for_test_setup_server_unix_no_socket_linux_1"
+    mock_cert_instance.key = "dummy_key_pem_content_for_test_setup_server_unix_no_socket_linux_1"
+    mock_certificate_class.return_value = mock_cert_instance
+
     nonexistent_path = str(tmp_path / "nonexistent_dir" / "nosock.sock")
     if os.path.lexists(nonexistent_path):
         os.unlink(nonexistent_path)
@@ -324,18 +382,49 @@ async def test_setup_server_unix_no_socket_2(
 async def test_setup_server_tcp_success(
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
-    mock_server_transport_tcp,
+    mock_server_config, # This is global rpcplugin_config
+    mock_server_transport_tcp, # Fixture that provides a fresh TCP transport
+    mocker,
 ) -> None:
+    # Configure for an insecure setup
+    def mock_config_get_insecure(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            return False
+        if key == "PLUGIN_SERVER_CERT":
+            return None
+        # PLUGIN_SERVER_KEY will not be checked by _generate_server_credentials
+        # if PLUGIN_SERVER_CERT is None and AUTO_MTLS is False
+        return mock_server_config.config.get(key, default)
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_insecure)
+
     transport = mock_server_transport_tcp
-    await transport.listen()
-    RPCPluginServer(
+
+    # Ensure the transport is listening.
+    # The mock_server_transport_tcp fixture might provide a transport that is already listening.
+    # If not, this explicit listen is needed.
+    # Checking for ._server as an indicator if listen() might have been called by fixture.
+    if not transport.endpoint or not hasattr(transport, '_server') or not transport._server :
+       await transport.listen()
+
+    # This initial RPCPluginServer instance and transport.close() call were part of the
+    # original test structure, likely to ensure the port was acquired and then released
+    # for the main server_instance to use. We keep this structure.
+    # Note: This first server instance will also use the insecure config due to the patch.
+    temp_server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=mock_server_config,
         transport=transport,
     )
+    # We don't need to fully setup or serve this temp_server, just ensure port is used then freed.
+    # The `listen()` above should have acquired the port.
     await transport.close()
+
+    # Re-listen on the same transport instance. This is necessary because it was closed.
+    # This simulates the original test's likely intent of ensuring the port can be reused.
+    await transport.listen()
+
     server_instance = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
@@ -343,17 +432,19 @@ async def test_setup_server_tcp_success(
         transport=transport,
     )
     await server_instance._negotiate_handshake()
-    await server_instance._setup_server(client_cert=None)
-    assert server_instance._transport is not None, "Server's transport should be set"
-    transport_endpoint = server_instance._transport.endpoint
-    assert transport_endpoint is not None, "Server transport endpoint should be set"
-    assert "127.0.0.1" in transport_endpoint and not transport_endpoint.startswith(
-        "unix:"
-    ), f"Endpoint {transport_endpoint} is not a valid TCP endpoint as expected."
-    assert server_instance._port is not None and server_instance._port > 0, (
-        "gRPC server port not assigned"
-    )
-    await server_instance.stop()
 
+    # _setup_server should now use add_insecure_port due to the config mock
+    await server_instance._setup_server(client_cert=None)
+
+    # Assertions
+    assert server_instance._server is not None, "gRPC server object should be created"
+    assert server_instance._transport is not None, "Internal transport should be set"
+    assert server_instance._transport.endpoint is not None, "Endpoint should be set"
+    assert server_instance._port is not None and server_instance._port > 0, "gRPC server port not assigned"
+    assert "127.0.0.1" in server_instance._transport.endpoint and \
+           not server_instance._transport.endpoint.startswith("unix:"), \
+           f"Endpoint {server_instance._transport.endpoint} is not a valid TCP endpoint."
+
+    await server_instance.stop()
 
 ### 🐍🏗🧪️

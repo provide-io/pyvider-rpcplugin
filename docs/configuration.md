@@ -2,8 +2,6 @@
 
 This document details all environment variables used to configure the Pyvider RPC Plugin system. These variables allow for fine-grained control over plugin behavior, security, and communication parameters.
 
-They can be set directly in your shell environment or loaded from configuration files (`.env`, `json`, `yaml`) as described in the main README.
-
 ## Configuration Methods
 
 There are several ways to configure the Pyvider RPC Plugin system, each with its own use cases.
@@ -22,92 +20,9 @@ export PLUGIN_SERVER_TRANSPORTS="unix,tcp" # Lists are often comma-separated
 ```
 This method is common for containerized environments and CI/CD pipelines.
 
-### 2. Configuration Files
+### 2. Programmatic Configuration (`configure()` function)
 
-Configuration can be loaded from files using the `load_config_from_file(config_file_path: str)` function. This is a powerful way to manage settings for different environments or to centralize configuration.
-
-**Behavior of `load_config_from_file()`:**
-1.  **File Reading**: It accepts a path to a configuration file. Supported formats are:
-    *   `.env`: Standard dotenv file format.
-    *   `.json`: JSON formatted configuration.
-    *   `.yaml` or `.yml`: YAML formatted configuration. (Requires `PyYAML` to be installed).
-2.  **Parsing and Key Mapping**:
-    *   **`.env` files**: Parsed line by line. Lines starting with `#` or empty lines are ignored. `KEY=VALUE` pairs are processed. Keys prefixed with `PYVIDER_` are mapped to their corresponding `PLUGIN_` equivalents (e.g., `PYVIDER_LOG_LEVEL` becomes `PLUGIN_LOG_LEVEL`). Other keys are used as-is. Values can optionally be quoted (quotes are stripped).
-    *   **`.json` and `.yaml`/`.yml` files**: Parsed using standard library `json` or `PyYAML` (if available). Keys from these files are mapped from common shorter names to their `PLUGIN_` prefixed environment variable names (e.g., a top-level JSON key `log_level` becomes `PLUGIN_LOG_LEVEL`). Refer to `KEY_MAPPING_JSON_YAML` in `config.py` for the specific mappings. Unmapped keys are typically uppercased and used directly.
-3.  **Environment Variable Setting**:
-    *   For each key-value pair derived from the file (after key mapping), an environment variable is set using `os.environ[key] = str(value)`.
-    *   If a value from a JSON or YAML file is a list, it's converted into a comma-separated string before being set as an environment variable (e.g., `["unix", "tcp"]` becomes `"unix,tcp"`).
-4.  **Configuration Reload**: After processing the entire file and setting all corresponding environment variables, the function calls `RPCPluginConfig.instance().reload()`. This forces the singleton configuration object to re-read all its values from the (now updated) environment variables and schema defaults.
-
-**YAML Support Note**: If you intend to use `.yaml` or `.yml` configuration files, you must have the `PyYAML` library installed in your Python environment (`pip install pyyaml`). If `PyYAML` is not found when `load_config_from_file()` attempts to process a YAML file, a warning will be logged, and the processing of that specific YAML file will be skipped. Other file types will still be processed if specified.
-
-**Note on Key Mappings (Conceptual):** The system uses internal mappings like `KEY_MAPPING_JSON_YAML` (for JSON/YAML short keys to `PLUGIN_` keys) and `KEY_MAPPING_DOTENV` (for `PYVIDER_` to `PLUGIN_` keys). While you don't interact with these mappings directly, understanding they exist helps clarify how file keys translate to environment variables. You can always use the canonical `PLUGIN_` prefixed keys directly in any file type if you prefer to bypass the mapping.
-
-#### a. JSON File
-
-Create a JSON file (e.g., `config.json`):
-```json
-{
-  "magic_cookie": "json-cookie-example",
-  "auto_mtls": true,
-  "handshake_timeout": 22.0,
-  "log_level": "DEBUG",
-  "server_transports": ["unix", "tcp"]
-}
-```
-Load it in Python:
-```python
-from pyvider.rpcplugin.config import load_config_from_file
-
-load_config_from_file("config.json")
-# The RPCPluginConfig singleton is now updated.
-```
-
-#### b. YAML File
-
-Create a YAML file (e.g., `config.yaml`):
-```yaml
-magic_cookie: yaml-cookie-example
-auto_mtls: false
-handshake_timeout: 23.0
-log_level: WARNING
-server_transports:
-  - unix
-  - tcp
-```
-Load it in Python:
-```python
-from pyvider.rpcplugin.config import load_config_from_file
-
-load_config_from_file("config.yaml")
-# The RPCPluginConfig singleton is now updated.
-```
-
-#### c. .env File
-
-Create a `.env` file (e.g., `.env` or `custom.env`):
-```env
-# Uses PYVIDER_ prefix which maps to PLUGIN_ counterparts
-PYVIDER_MAGIC_COOKIE="dotenv-cookie-example"
-PYVIDER_AUTO_MTLS="true"
-
-# Can also use PLUGIN_ prefix directly
-PLUGIN_HANDSHAKE_TIMEOUT="24.0"
-PLUGIN_SERVER_TRANSPORTS="unix,tcp" # Comma-separated for lists
-PLUGIN_LOG_LEVEL="INFO"
-```
-Load it in Python:
-```python
-from pyvider.rpcplugin.config import load_config_from_file
-
-load_config_from_file(".env")
-# Or load_config_from_file("custom.env")
-# The RPCPluginConfig singleton is now updated.
-```
-
-### 3. Programmatic Configuration (`configure()` function)
-
-You can configure the system directly in your Python code using the `configure()` function. This is useful for dynamic configurations or when file/environment variable-based setup is not suitable. Values set via `configure()` affect the in-memory state of the `RPCPluginConfig` singleton.
+You can configure the system directly in your Python code using the `configure()` function. This is useful for dynamic configurations or when environment variable-based setup is not suitable. Values set via `configure()` affect the in-memory state of the `RPCPluginConfig` singleton.
 
 ```python
 from pyvider.rpcplugin import configure
@@ -127,16 +42,11 @@ configure(
 
 The configuration system applies values in the following general order, with later steps overriding earlier ones for the in-memory config state:
 
-1.  **Schema Defaults**: The hardcoded default values defined in `CONFIG_SCHEMA`.
-2.  **Environment Variables (Initial)**: Values already present in the environment when the `RPCPluginConfig` singleton is first initialized.
-3.  **Configuration Files (`load_config_from_file`)**: When a file is loaded:
-    a.  Values from the file are read.
-    b.  These values are used to set/overwrite corresponding environment variables (using key mappings).
-    c.  The internal `RPCPluginConfig` state is then entirely reloaded by `RPCPluginConfig.instance().reload()`. This reload process uses the current state of all environment variables (which now includes changes from the loaded file) and applies schema defaults for any settings not found in the environment.
-    d.  If multiple files are loaded sequentially using `load_config_from_file()`, the environment variables set by the last-loaded file for a given key will take precedence during that file's subsequent config reload.
-4.  **Programmatic `configure()` Calls**: Values passed to `configure()` directly update the in-memory `RPCPluginConfig` state, overriding any values loaded from previous steps (defaults, initial environment, or file-loaded environment variables). `configure()` does *not* change environment variables themselves.
+1.  **Schema Defaults**: The hardcoded default values defined in `CONFIG_SCHEMA`. These are applied first.
+2.  **Environment Variables**: Values present in the environment when the `RPCPluginConfig` singleton is first initialized will override the schema defaults.
+3.  **Programmatic `configure()` Calls**: Values passed to `configure()` directly update the in-memory `RPCPluginConfig` state, overriding any values loaded from previous steps (defaults or environment variables). `configure()` does *not* change environment variables themselves.
 
-It's crucial to understand that `load_config_from_file()` ultimately works by **modifying the environment variables**, and then triggering a reload of the `RPCPluginConfig` from this updated environment. This makes its behavior consistent with how environment variables are prioritized. The `configure()` function, in contrast, directly modifies the live configuration object without altering the environment.
+The `RPCPluginConfig` singleton is initialized once, loading from environment variables at that time. Subsequent calls to `configure()` modify this live instance.
 
 ## Magic Cookie Authentication Flow
 

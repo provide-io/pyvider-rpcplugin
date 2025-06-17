@@ -160,9 +160,25 @@ async def test_full_handshake_cycle():
 
 @pytest.mark.asyncio
 async def test_server_handshake_integration(
-    setup_environment, mock_protocol, mock_handler, managed_unix_socket_path
+    setup_environment, mock_protocol, mock_handler, managed_unix_socket_path, mocker
 ):
     """Test integration of handshake with the server."""
+
+    # Ensure the server runs in insecure mode for this test's original intent
+    # (checking handshake output, not TLS setup).
+    def mock_config_get(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            return False
+        if key == "PLUGIN_SERVER_CERT":
+            return None
+        if key == "PLUGIN_SERVER_KEY":
+            return None
+        # For other keys, return their actual values from the global config
+        # This ensures values set by setup_environment are respected.
+        return rpcplugin_config.config.get(key, default)
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get)
+
     # Patch sys.stdout to capture handshake output
     with (
         patch("sys.stdout.buffer.write") as mock_write,
