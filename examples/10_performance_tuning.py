@@ -351,7 +351,7 @@ class PerformanceBenchmarker:
         # Test Unix socket performance
         unix_config = {
             'transport': 'unix',
-            'transport_path': '/tmp/perf_test_unix.sock'
+            'transport_path': '/tmp/perf_test_unix.sock' # nosec B108 # Example code, /tmp is acceptable here.
         }
         
         logger.info("Benchmarking Unix socket transport", domain="performance")
@@ -431,7 +431,7 @@ async def example_10_baseline_performance():
     # Baseline configuration
     baseline_config = {
         'transport': 'unix',
-        'transport_path': '/tmp/baseline_perf.sock'
+        'transport_path': '/tmp/baseline_perf.sock' # nosec B108 # Example code, /tmp is acceptable here.
     }
     
     # Run baseline benchmark

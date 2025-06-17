@@ -141,7 +141,7 @@ async def example_3_connection_retry_logic():
 
             # Simulate random connection failures for demonstration
             import random
-            if random.random() < 0.7:  # 70% chance of "failure" for demo
+            if random.random() < 0.7:  # nosec B311 # random is not used for security/crypto here, just for demo/jitter. # 70% chance of "failure" for demo
                 raise TransportError(f"Simulated connection failure (attempt {attempt + 1})")
 
             # Success!

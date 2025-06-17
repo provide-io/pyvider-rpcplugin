@@ -100,7 +100,7 @@ async def example_4_unix_socket_performance():
 
     try:
         # Get server endpoint
-        server_endpoint = getattr(server._transport, 'endpoint', '/tmp/unknown.sock')
+        server_endpoint = getattr(server._transport, 'endpoint', '/tmp/unknown.sock') # nosec B108 # Example code, /tmp is acceptable here.
 
         # Create client and connect
         # Using placeholder for server_path, as example focuses on simulated benchmark

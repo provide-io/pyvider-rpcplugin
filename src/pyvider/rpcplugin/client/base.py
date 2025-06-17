@@ -130,7 +130,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)  # nosec B603 # shell=True is not used, which is safer
+    _process: subprocess.Popen | None = field(init=False, default=None)  # shell=True is not used, which is safer
     _transport: TransportType | None = field(
         init=False, default=None
     )  # Changed to TransportType
@@ -250,7 +250,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                     try:
                         await self.grpc_channel.close(grace=0.1)
                     except Exception:
-                        pass # Ignore errors during cleanup
+                        pass # nosec B110 # Ignoring errors during cleanup of channel/transport in retry logic.
                     self.grpc_channel = None
                     self._stubs = {}
 
@@ -259,7 +259,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                     try:
                         await self._transport.close()
                     except Exception:
-                        pass # Ignore errors during cleanup
+                        pass # nosec B110 # Ignoring errors during cleanup of channel/transport in retry logic.
                 self._transport = None # Will be re-initialized by _perform_handshake
 
                 self.is_started = False
@@ -298,7 +298,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                     self._handshake_failed_event.set()
                     raise last_exception
 
-                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms)
+                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms) # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
                 delay_ms = min(delay_ms, max_backoff_ms) # Cap at max_backoff_ms
                 delay_ms = max(delay_ms, 0.0) # Ensure non-negative
 

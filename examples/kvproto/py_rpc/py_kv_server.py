@@ -94,7 +94,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             logger.debug(
                 f"🐍 S> 🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}"
             )
-            filename = f"/tmp/kv-data-{key}"
+            filename = f"/tmp/kv-data-{key}" # nosec B108 # Example code, /tmp is acceptable here.
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(value_str)
             logger.debug(
@@ -120,7 +120,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         try:
             key = request.key
             logger.info(f"🐍 S> 🛎️📡🚀 Get: Received request for key: '{key}'")
-            filename = f"/tmp/kv-data-{key}"
+            filename = f"/tmp/kv-data-{key}" # nosec B108 # Example code, /tmp is acceptable here.
             logger.debug(f"🐍 S> 🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'.")
             if not os.path.exists(filename):
                 logger.warning( # Changed from logger.error to logger.warning
@@ -174,13 +174,13 @@ async def serve() -> None:
 
         await kv_handler.Put(
             kv_pb2.PutRequest(key=test_key, value=test_value.encode("utf-8")),
-            dummy_context,
+            dummy_context,  # type: ignore[arg-type]
         )
 
         logger.info("🐍 S> 🛎️🧪 Self-Test: Put executed successfully.")
         logger.info(f"🐍 S> 🛎️🧪 Self-Test: Executing Get for key '{test_key}'")
 
-        response = await kv_handler.Get(kv_pb2.GetRequest(key=test_key), dummy_context)
+        response = await kv_handler.Get(kv_pb2.GetRequest(key=test_key), dummy_context)  # type: ignore[attr-defined, arg-type]
 
         retrieved = response.value.decode("utf-8")
 
@@ -194,13 +194,14 @@ async def serve() -> None:
     try:
         # Create and configure the RPCPluginServer with KVProtocol.
         logger.debug("🐍 S> 🛎️🚀✅ Server: Server started successfully")
-        server = RPCPluginServer(
+        # The config dict here was causing type issues as RPCPluginServer expects ClientT | None.
+        # This specific config isn't used by the base server class anyway.
+        # For custom server configs, they should typically be handled by a custom server subclass
+        # or through global configuration mechanisms.
+        server: RPCPluginServer = RPCPluginServer(
             protocol=KVProtocol(),
             handler=kv_handler,
-            config={
-                "max_workers": 10,
-                "max_message_length": 16 * 1024 * 1024,  # 16 MB
-            },
+            config=None, # Changed from dict to None
         )
 
         await server.serve()
