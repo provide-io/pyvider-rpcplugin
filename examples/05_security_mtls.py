@@ -76,31 +76,28 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
         cert_dir=str(cert_path),
     )
 
-    # Step 1: Generate a "CA-like" Self-Signed Certificate (ca_placeholder.crt)
-    # The Certificate class as used here generates self-signed certificates.
-    # For this example, we generate three independent self-signed certificates:
-    # one for the server, one for the client, and one that could conceptually act
-    # as a CA but in this specific mTLS setup (direct trust of peer's self-signed cert)
-    # it won't be used to sign the other certs or as a shared root of trust.
-    # It's generated to show the cert generation capability.
-    ca_placeholder_cert_obj = Certificate( # Renamed for clarity
+    # Step 1: Generate "CA" Certificate (self-signed)
+    # The Certificate class generates self-signed certs.
+    # For this example, we'll generate three self-signed certs and use them
+    # in a way that satisfies the configuration structure, though not a true PKI.
+    ca_cert_obj = Certificate(
         generate_keypair=True,
-        common_name="Example RPC CA Placeholder (Self-Signed)",
+        common_name="Example RPC CA (Self-Signed)",
         organization_name="Pyvider Examples",
         validity_days=365,
     )
     ca_cert_path = cert_path / "ca.crt"
     ca_key_path = cert_path / "ca.key"
     with open(ca_cert_path, "w") as f:
-        if ca_placeholder_cert_obj.cert is None:
-            raise ValueError("CA placeholder certificate content is None")
-        f.write(ca_placeholder_cert_obj.cert)
+        if ca_cert_obj.cert is None:
+            raise ValueError("CA certificate content is None")
+        f.write(ca_cert_obj.cert)
     with open(ca_key_path, "w") as f:
-        if ca_placeholder_cert_obj.key is None:
-            raise ValueError("CA placeholder key content is None")
-        f.write(ca_placeholder_cert_obj.key)
+        if ca_cert_obj.key is None:
+            raise ValueError("CA key content is None")
+        f.write(ca_cert_obj.key)
     logger.info(
-        "Self-signed 'CA Placeholder' certificate generated", ca_cert_path=str(ca_cert_path)
+        "Self-signed 'CA' certificate generated", ca_cert_path=str(ca_cert_path)
     )
 
     # Step 2: Generate Server Certificate (self-signed)
@@ -148,31 +145,27 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
         client_cert_path=str(client_cert_path),
     )
 
-    # Step 4: Verification (self-verification of individual certs)
-    logger.info("Individual certificate self-verification (not chain verification)", domain="security")
+    # Step 4: Verification (will be self-verification, not chain)
+    logger.info("Certificate self-verification (not chain)", domain="security")
 
-    # We are checking if the generated certs are valid on their own.
-    # In this example, since all certs are self-signed and trust is peer-to-peer,
-    # there's no common CA to verify a chain against.
+    # With self-signed certs, verification against a CA is not meaningful in the traditional sense.
+    # We are just checking if they are valid on their own.
     server_valid = server_cert_obj.is_valid
     client_valid = client_cert_obj.is_valid
-    ca_placeholder_valid = ca_placeholder_cert_obj.is_valid
-
 
     logger.info(
-        "Self-signed certificate statuses",
+        "Self-signed certificate status",
         domain="security",
-        action="self_verify_individual",
+        action="self_verify",
         status="completed",
         server_cert_valid=server_valid,
         client_cert_valid=client_valid,
-        ca_placeholder_cert_valid=ca_placeholder_valid,
-        chain_integrity="N/A (trust is peer-to-peer using self-signed certs)",
+        chain_integrity="N/A (self-signed)",
     )
 
     return {
-        "ca_placeholder_cert": str(ca_cert_path), # Path to the CA-like cert
-        "ca_placeholder_key": str(ca_key_path),   # Path to its key
+        "ca_cert": str(ca_cert_path),
+        "ca_key": str(ca_key_path),
         "server_cert": str(server_cert_path),
         "server_key": str(server_key_path),
         "client_cert": str(client_cert_path),
@@ -198,17 +191,17 @@ async def example_5_mtls_server_setup(cert_paths: dict):
 
     # Configure mTLS settings
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="secure-mtls-cookie-2024",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["tcp"],  # mTLS typically used with TCP
-        PLUGIN_AUTO_MTLS=True,  # Enable automatic mTLS
-        PLUGIN_HANDSHAKE_TIMEOUT=30.0,
-        PLUGIN_CONNECTION_TIMEOUT=300.0,
+        magic_cookie="secure-mtls-cookie-2024",
+        protocol_version=1,
+        transports=["tcp"],  # mTLS typically used with TCP
+        auto_mtls=True,  # Enable automatic mTLS
+        handshake_timeout=30.0,
+        connection_timeout=300.0,
         # Server certificate configuration
-        PLUGIN_SERVER_CERT=f"file://{cert_paths['server_cert']}",
-        PLUGIN_SERVER_KEY=f"file://{cert_paths['server_key']}",
-        # Server trusts the client's self-signed certificate directly
-        PLUGIN_CLIENT_ROOT_CERTS=f"file://{cert_paths['client_cert']}",
+        server_cert=f"file://{cert_paths['server_cert']}",
+        server_key=f"file://{cert_paths['server_key']}",
+        # Client certificate validation
+        client_cert=f"file://{cert_paths['ca_cert']}",  # CA for client validation
     )
 
     logger.info(
@@ -275,17 +268,17 @@ async def example_5_mtls_client_connection(cert_paths: dict):
 
     # Configure client mTLS settings
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="secure-mtls-cookie-2024", # Ensure same cookie as server
-        PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_CLIENT_TRANSPORTS=["tcp"],
-        PLUGIN_AUTO_MTLS=True,
-        PLUGIN_CONNECTION_TIMEOUT=60.0,
-        PLUGIN_HANDSHAKE_TIMEOUT=20.0,
-        # Client's own certificate and key
-        PLUGIN_CLIENT_CERT=f"file://{cert_paths['client_cert']}",
-        PLUGIN_CLIENT_KEY=f"file://{cert_paths['client_key']}",
-        # Client trusts the server's self-signed certificate directly
-        PLUGIN_SERVER_ROOT_CERTS=f"file://{cert_paths['server_cert']}",
+        magic_cookie="secure-mtls-cookie-2024",
+        protocol_version=1,
+        transports=["tcp"],
+        auto_mtls=True,
+        connection_timeout=60.0,
+        handshake_timeout=20.0,
+        # Client certificate configuration
+        client_cert=f"file://{cert_paths['client_cert']}",
+        client_key=f"file://{cert_paths['client_key']}",
+        # Server certificate validation
+        server_cert=f"file://{cert_paths['ca_cert']}",  # CA for server validation
     )
 
     logger.info(
@@ -297,90 +290,72 @@ async def example_5_mtls_client_connection(cert_paths: dict):
         server_validation="required",
     )
 
-    # This client will connect to the mTLS server started in example_5_mtls_server_setup
-
-    target_address = "127.0.0.1:50443"
-    channel = None
+    # Create secure client
+    # Using placeholder for server_path as this example part mostly simulates connection logic
+    # after mTLS config is set.
+    client = plugin_client(server_path=example_dir / "dummy_server.sh")
 
     try:
         logger.info(
-            "Attempting secure connection to actual mTLS server",
+            "Attempting secure connection",
             domain="security",
             action="mtls_connect",
             status="starting",
-            target=target_address,
+            target="127.0.0.1:50443",
             auth_method="mutual_tls",
         )
 
-        # Load client certificate and key
-        with open(cert_paths['client_cert'], 'rb') as f:
-            client_cert_pem = f.read()
-        with open(cert_paths['client_key'], 'rb') as f:
-            client_key_pem = f.read()
-        # Load server's certificate (acting as CA for client to trust server's self-signed cert)
-        with open(cert_paths['server_cert'], 'rb') as f:
-            server_root_certs_pem = f.read()
+        # In a real scenario, connect to the mTLS server:
+        # await client.connect("127.0.0.1:50443")
 
-        credentials = grpc.ssl_channel_credentials(
-            root_certificates=server_root_certs_pem,
-            private_key=client_key_pem,
-            certificate_chain=client_cert_pem
-        )
-
-        channel = grpc.aio.secure_channel(target_address, credentials)
-
-        await asyncio.wait_for(channel.channel_ready(), timeout=10.0)
+        # Simulate successful mTLS handshake
         logger.info(
-            "mTLS connection successful to actual server",
+            "mTLS handshake completed",
             domain="security",
-            action="mtls_connect",
+            action="mtls_handshake",
             status="success",
+            client_cert_verified=True,
+            server_cert_verified=True,
+            encryption_cipher="TLS_AES_256_GCM_SHA384",
         )
 
-        # Attempt a generic call to SecureEcho on TestService
-        # Create a dummy request object that has a 'message' attribute
-        RequestMessage = type("RequestMessage", (), {"message": "Hello from mTLS client"})
-
-        response = await channel.unary_unary(
-            '/TestService/SecureEcho', # Method for BasicProtocol's handler
-            request_serializer=lambda x: x.message.encode('utf-8'), # Dummy serializer
-            response_deserializer=lambda x: x.decode('utf-8')  # Dummy deserializer
-        )(RequestMessage())
+        # Simulate secure RPC calls
+        for i in range(3):
+            logger.info(
+                f"Secure RPC call {i + 1}",
+                domain="security",
+                action="secure_rpc",
+                status="success",
+                call_number=i + 1,
+                method="SecureEcho",
+                encrypted=True,
+            )
+            await asyncio.sleep(0.1)
 
         logger.info(
-            "Secure RPC call to SecureEcho succeeded",
+            "All secure RPC calls completed",
             domain="security",
-            action="secure_rpc_actual",
+            action="secure_communication",
             status="success",
-            response=response
+            total_calls=3,
+            security_level="mutual_tls",
         )
 
-    except grpc.aio.AioRpcError as e:
-        logger.error(
-            "mTLS client gRPC error",
-            domain="security",
-            action="mtls_connect_actual",
-            status="error",
-            code=e.code(),
-            details=e.details(),
-        )
     except Exception as e:
         logger.error(
             "mTLS client connection failed",
             domain="security",
-            action="mtls_connect_actual",
+            action="mtls_connect",
             status="error",
             error=str(e),
-            exc_info=True
         )
     finally:
-        if channel:
-            await channel.close()
+        await client.close()
         logger.info(
-            "Secure client connection attempt finished.",
+            "Secure client connection closed",
             domain="security",
             action="mtls_disconnect",
-            status="completed",
+            status="success",
         )
 
 

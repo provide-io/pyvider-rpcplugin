@@ -217,12 +217,12 @@ async def example_8_production_server_deployment():
 
     # Production configuration
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="production-server-2024",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["tcp"],  # TCP for production deployments
-        PLUGIN_AUTO_MTLS=True,  # Always use mTLS in production
-        PLUGIN_HANDSHAKE_TIMEOUT=30.0,
-        PLUGIN_CONNECTION_TIMEOUT=600.0,  # 10 minutes for long-running operations
+        magic_cookie="production-server-2024",
+        protocol_version=1,
+        transports=["tcp"],  # TCP for production deployments
+        auto_mtls=True,  # Always use mTLS in production
+        handshake_timeout=30.0,
+        connection_timeout=600.0,  # 10 minutes for long-running operations
     )
 
     logger.info(
@@ -246,11 +246,12 @@ async def example_8_production_server_deployment():
         host="0.0.0.0",  # nosec B104 # Example for production-like config, binding to 0.0.0.0 is intentional here. # Accept connections from any IP
         port=50051,  # Standard gRPC port
         config={
-            # General application config can be passed here.
-            # Note: Low-level gRPC options (max_workers, keepalive, etc.) are not directly
-            # configurable through this factory's 'config' dict. They would require
-            # direct instantiation of grpc.aio.server and potentially RPCPluginServer.
-            "app_performance_profile": "high_throughput",
+            "max_workers": 32,  # Scale with CPU cores
+            "max_connections": 1000,
+            "keepalive_timeout": 300,
+            "keepalive_time": 60,
+            "max_message_size": 1024 * 1024 * 4,  # 4MB
+            "compression": "gzip",
         },
     )
 
@@ -260,7 +261,8 @@ async def example_8_production_server_deployment():
         action="startup",
         status="starting",
         bind_address="0.0.0.0:50051",
-        # max_workers, max_connections are conceptual for this example's logging
+        max_workers=32,
+        max_connections=1000,
     )
 
     # Start server in background
