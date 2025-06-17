@@ -21,7 +21,9 @@ from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
 )
 from pyvider.rpcplugin.crypto.certificate import Certificate  # noqa: E402
+from pyvider.rpcplugin.exception import CertificateError # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
+import grpc # For direct channel creation
 
 
 class SecureEchoHandler:
@@ -76,91 +78,82 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
         cert_dir=str(cert_path),
     )
 
-    # Step 1: Generate "CA" Certificate (self-signed)
-    # The Certificate class generates self-signed certs.
-    # For this example, we'll generate three self-signed certs and use them
-    # in a way that satisfies the configuration structure, though not a true PKI.
-    ca_cert_obj = Certificate(
-        generate_keypair=True,
-        common_name="Example RPC CA (Self-Signed)",
-        organization_name="Pyvider Examples",
+    # Step 1: Create a Root CA
+    ca_cert_obj = Certificate.create_ca(
+        common_name="Example Test CA",
+        organization_name="Pyvider Examples CA",
         validity_days=365,
     )
     ca_cert_path = cert_path / "ca.crt"
     ca_key_path = cert_path / "ca.key"
     with open(ca_cert_path, "w") as f:
-        if ca_cert_obj.cert is None:
-            raise ValueError("CA certificate content is None")
-        f.write(ca_cert_obj.cert)
+        f.write(ca_cert_obj.cert) # cert property is guaranteed to be non-None
     with open(ca_key_path, "w") as f:
-        if ca_cert_obj.key is None:
-            raise ValueError("CA key content is None")
+        if ca_cert_obj.key is None: # Key might be None if loaded from cert-only PEM
+            raise ValueError("CA private key is None, cannot save.")
         f.write(ca_cert_obj.key)
     logger.info(
-        "Self-signed 'CA' certificate generated", ca_cert_path=str(ca_cert_path)
+        "Root CA certificate and key generated and saved.",
+        ca_cert_path=str(ca_cert_path),
+        ca_key_path=str(ca_key_path),
     )
 
-    # Step 2: Generate Server Certificate (self-signed)
-    server_cert_obj = Certificate(
-        generate_keypair=True,
-        common_name="localhost",
+    # Step 2: Create a Server Certificate signed by the CA
+    server_cert_obj = Certificate.create_signed_certificate(
+        ca_certificate=ca_cert_obj,
+        common_name="localhost", # Common name for the server
         organization_name="Pyvider Examples Server",
-        alt_names=["localhost", "127.0.0.1"],
         validity_days=90,
+        alt_names=["localhost", "127.0.0.1"], # Subject Alternative Names
+        is_client_cert=False # This is a server certificate
     )
     server_cert_path = cert_path / "server.crt"
     server_key_path = cert_path / "server.key"
     with open(server_cert_path, "w") as f:
-        if server_cert_obj.cert is None:
-            raise ValueError("Server certificate content is None")
         f.write(server_cert_obj.cert)
     with open(server_key_path, "w") as f:
         if server_cert_obj.key is None:
-            raise ValueError("Server key content is None")
+            raise ValueError("Server private key is None, cannot save.")
         f.write(server_cert_obj.key)
     logger.info(
-        "Self-signed Server certificate generated",
+        "Server certificate signed by CA generated and saved.",
         server_cert_path=str(server_cert_path),
+        server_key_path=str(server_key_path),
     )
 
-    # Step 3: Generate Client Certificate (self-signed)
-    client_cert_obj = Certificate(
-        generate_keypair=True,
-        common_name="example-client",
+    # Step 3: Create a Client Certificate signed by the CA
+    client_cert_obj = Certificate.create_signed_certificate(
+        ca_certificate=ca_cert_obj,
+        common_name="example-mtls-client", # Common name for the client
         organization_name="Pyvider Examples Client",
         validity_days=30,
+        alt_names=["localhost"], # Optional for client certs
+        is_client_cert=True # This is a client certificate
     )
     client_cert_path = cert_path / "client.crt"
     client_key_path = cert_path / "client.key"
     with open(client_cert_path, "w") as f:
-        if client_cert_obj.cert is None:
-            raise ValueError("Client certificate content is None")
         f.write(client_cert_obj.cert)
     with open(client_key_path, "w") as f:
         if client_cert_obj.key is None:
-            raise ValueError("Client key content is None")
+            raise ValueError("Client private key is None, cannot save.")
         f.write(client_cert_obj.key)
     logger.info(
-        "Self-signed Client certificate generated",
+        "Client certificate signed by CA generated and saved.",
         client_cert_path=str(client_cert_path),
+        client_key_path=str(client_key_path),
     )
 
-    # Step 4: Verification (will be self-verification, not chain)
-    logger.info("Certificate self-verification (not chain)", domain="security")
-
-    # With self-signed certs, verification against a CA is not meaningful in the traditional sense.
-    # We are just checking if they are valid on their own.
-    server_valid = server_cert_obj.is_valid
-    client_valid = client_cert_obj.is_valid
-
+    # Step 4: Verification (conceptual - actual verification happens during TLS handshake)
+    # We can log that the chain should be valid.
     logger.info(
-        "Self-signed certificate status",
+        "Certificates generated for a proper mTLS chain.",
         domain="security",
-        action="self_verify",
+        action="generate_pki_chain",
         status="completed",
-        server_cert_valid=server_valid,
-        client_cert_valid=client_valid,
-        chain_integrity="N/A (self-signed)",
+        ca_subject=ca_cert_obj.subject,
+        server_issuer=server_cert_obj.issuer,
+        client_issuer=client_cert_obj.issuer,
     )
 
     return {
@@ -197,12 +190,35 @@ async def example_5_mtls_server_setup(cert_paths: dict):
         auto_mtls=True,  # Enable automatic mTLS
         handshake_timeout=30.0,
         connection_timeout=300.0,
-        # Server certificate configuration
-        server_cert=f"file://{cert_paths['server_cert']}",
-        server_key=f"file://{cert_paths['server_key']}",
-        # Client certificate validation
-        client_cert=f"file://{cert_paths['ca_cert']}",  # CA for client validation
+        # Server certificate configuration (now using CA-signed server cert)
+        server_cert=f"file://{cert_paths['server_cert']}", # Path to the CA-signed server certificate
+        server_key=f"file://{cert_paths['server_key']}",   # Path to the server's private key
+        # Client certificate validation (server uses CA cert to verify client certs)
+        client_root_certs=f"file://{cert_paths['ca_cert']}", # Path to the CA certificate
+        # Note: PLUGIN_CLIENT_CERT in server config context means root CAs for client auth.
+        # The 'client_cert=' parameter in configure() maps to PLUGIN_CLIENT_ROOT_CERTS for server-side.
+        # This was a bit confusingly named in `configure` and relies on its internal mapping.
+        # For clarity, I'm providing it as client_root_certs which configure() should handle.
+        # If configure() has a direct `client_root_certs` param, that's better.
+        # Looking at config.py, `configure` takes `client_cert` and `client_key` for client identity,
+        # and `server_cert`, `server_key` for server identity.
+        # For server to validate client, it's `PLUGIN_CLIENT_ROOT_CERTS`.
+        # `configure()` doesn't have a direct param for `PLUGIN_CLIENT_ROOT_CERTS`.
+        # We must ensure `rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")`
+        # is called or that `client_cert` in `configure` maps to it for server-side.
+        # The current `configure` maps `client_cert` to `PLUGIN_CLIENT_CERT`.
+        # This needs to be set directly for server-side mTLS client validation.
+        # **Self-correction**: The `configure()` function has `client_cert` which maps to `PLUGIN_CLIENT_CERT`.
+        # In the context of a server's mTLS setup, `PLUGIN_CLIENT_CERT` (if used by server's credential builder)
+        # or more appropriately `PLUGIN_CLIENT_ROOT_CERTS` is what the server uses to verify clients.
+        # The server's `_generate_server_credentials` now explicitly uses `PLUGIN_CLIENT_ROOT_CERTS`.
+        # So, we should set that. `configure()` doesn't have a direct mapping for this.
+        # I will set it directly via rpcplugin_config and then call configure for other parts.
     )
+    # Explicitly set the client root certs for the server to use for mTLS validation
+    from pyvider.rpcplugin.config import rpcplugin_config # Import locally if not at top
+    rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")
+
 
     logger.info(
         "Configuring mTLS server",
@@ -290,73 +306,103 @@ async def example_5_mtls_client_connection(cert_paths: dict):
         server_validation="required",
     )
 
-    # Create secure client
-    # Using placeholder for server_path as this example part mostly simulates connection logic
-    # after mTLS config is set.
-    client = plugin_client(server_path=example_dir / "dummy_server.sh")
+    # No longer using plugin_client with dummy_server.sh for this example.
+    # We will create a direct gRPC secure channel.
+
+    server_address = "127.0.0.1:50443"
+    channel = None
 
     try:
         logger.info(
-            "Attempting secure connection",
+            "Attempting direct mTLS connection to server",
             domain="security",
-            action="mtls_connect",
+            action="direct_mtls_connect",
             status="starting",
-            target="127.0.0.1:50443",
-            auth_method="mutual_tls",
+            target=server_address,
         )
 
-        # In a real scenario, connect to the mTLS server:
-        # await client.connect("127.0.0.1:50443")
+        # Load credentials from files
+        try:
+            with open(cert_paths['ca_cert'], 'rb') as f:
+                ca_cert_pem = f.read()
+            with open(cert_paths['client_key'], 'rb') as f:
+                client_key_pem = f.read()
+            with open(cert_paths['client_cert'], 'rb') as f:
+                client_cert_pem = f.read()
+        except Exception as e:
+            raise CertificateError(f"Failed to read certificate/key files for client: {e}") from e
 
-        # Simulate successful mTLS handshake
-        logger.info(
-            "mTLS handshake completed",
-            domain="security",
-            action="mtls_handshake",
-            status="success",
-            client_cert_verified=True,
-            server_cert_verified=True,
-            encryption_cipher="TLS_AES_256_GCM_SHA384",
+        # Create SSL/TLS channel credentials for mTLS
+        credentials = grpc.ssl_channel_credentials(
+            root_certificates=ca_cert_pem,         # Server authentication: CA cert to verify server's cert
+            private_key=client_key_pem,            # Client authentication: Client's private key
+            certificate_chain=client_cert_pem      # Client authentication: Client's own cert
         )
 
-        # Simulate secure RPC calls
-        for i in range(3):
-            logger.info(
-                f"Secure RPC call {i + 1}",
-                domain="security",
-                action="secure_rpc",
-                status="success",
-                call_number=i + 1,
-                method="SecureEcho",
-                encrypted=True,
-            )
-            await asyncio.sleep(0.1)
+        # Create a secure channel
+        channel = grpc.aio.secure_channel(server_address, credentials)
 
         logger.info(
-            "All secure RPC calls completed",
+            "Secure channel created. Waiting for channel to be ready...",
             domain="security",
-            action="secure_communication",
-            status="success",
-            total_calls=3,
-            security_level="mutual_tls",
+            action="channel_created",
+            status="pending_ready",
+            target=server_address,
         )
 
+        # Wait for the channel to be ready (completes mTLS handshake)
+        # Timeout can be adjusted; 5 seconds should be enough for local mTLS.
+        await asyncio.wait_for(channel.channel_ready(), timeout=10.0)
+
+        logger.info(
+            "mTLS connection successful: Channel is ready.",
+            domain="security",
+            action="mtls_connect_direct",
+            status="success",
+            target=server_address,
+        )
+
+        # At this point, an RPC call could be made if a stub was available.
+        # For this example, channel_ready() success is the main verification.
+        # Example:
+        #   stub = YourGeneratedStub(channel)
+        #   response = await stub.YourMethod(Request())
+        #   logger.info(f"RPC call successful: {response}")
+
+    except asyncio.TimeoutError:
+        logger.error(
+            "mTLS connection timeout: Channel not ready within timeout.",
+            domain="security",
+            action="mtls_connect_direct",
+            status="timeout_error",
+            target=server_address,
+        )
+    except CertificateError as e:
+        logger.error(
+            f"mTLS certificate error: {e.message}",
+            domain="security",
+            action="mtls_connect_direct",
+            status="cert_error",
+            hint=e.hint or "Check certificate paths and contents.",
+        )
     except Exception as e:
         logger.error(
-            "mTLS client connection failed",
+            f"mTLS client connection failed: {type(e).__name__} - {e}",
             domain="security",
-            action="mtls_connect",
+            action="mtls_connect_direct",
             status="error",
-            error=str(e),
+            target=server_address,
+            error_details=str(e),
         )
     finally:
-        await client.close()
-        logger.info(
-            "Secure client connection closed",
-            domain="security",
-            action="mtls_disconnect",
-            status="success",
-        )
+        if channel:
+            await channel.close()
+            logger.info(
+                "Secure client channel closed.",
+                domain="security",
+                action="channel_close",
+                status="success",
+            )
 
 
 async def example_5_certificate_rotation():

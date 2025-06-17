@@ -27,11 +27,64 @@ Usage:
 """
 
 import os
-
-# from pathlib import Path # Removed Path
-from typing import Any, Literal, cast, get_args  # Removed Callable
+import json
+import pathlib
+# Conditional import for yaml later
+from typing import Any, Literal, cast, get_args, Dict
 
 from pyvider.telemetry import logger
+
+# Key mappings for different config file formats
+KEY_MAPPING_JSON_YAML: Dict[str, str] = {
+    "magic_cookie_value": "PLUGIN_MAGIC_COOKIE_VALUE",
+    "magic_cookie_key": "PLUGIN_MAGIC_COOKIE_KEY", # Usually not set by user directly, but good to have
+    "protocol_versions": "PLUGIN_PROTOCOL_VERSIONS",
+    "log_level": "PLUGIN_LOG_LEVEL",
+    "server_transports": "PLUGIN_SERVER_TRANSPORTS",
+    "client_transports": "PLUGIN_CLIENT_TRANSPORTS",
+    "server_endpoint": "PLUGIN_SERVER_ENDPOINT",
+    "client_endpoint": "PLUGIN_CLIENT_ENDPOINT",
+    "auto_mtls": "PLUGIN_AUTO_MTLS",
+    "server_cert": "PLUGIN_SERVER_CERT",
+    "server_key": "PLUGIN_SERVER_KEY",
+    "client_cert": "PLUGIN_CLIENT_CERT",
+    "client_key": "PLUGIN_CLIENT_KEY",
+    "client_root_certs": "PLUGIN_CLIENT_ROOT_CERTS",
+    "server_root_certs": "PLUGIN_SERVER_ROOT_CERTS",
+    "handshake_timeout": "PLUGIN_HANDSHAKE_TIMEOUT",
+    "connection_timeout": "PLUGIN_CONNECTION_TIMEOUT",
+    "retry_enabled": "PLUGIN_CLIENT_RETRY_ENABLED",
+    "max_retries": "PLUGIN_CLIENT_MAX_RETRIES",
+    "initial_backoff_ms": "PLUGIN_CLIENT_INITIAL_BACKOFF_MS",
+    "max_backoff_ms": "PLUGIN_CLIENT_MAX_BACKOFF_MS",
+    "retry_jitter_ms": "PLUGIN_CLIENT_RETRY_JITTER_MS",
+    "retry_total_timeout_s": "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S",
+}
+
+KEY_MAPPING_DOTENV: Dict[str, str] = {
+    "PYVIDER_MAGIC_COOKIE_VALUE": "PLUGIN_MAGIC_COOKIE_VALUE",
+    "PYVIDER_MAGIC_COOKIE": "PLUGIN_MAGIC_COOKIE_VALUE",
+    "PYVIDER_LOG_LEVEL": "PLUGIN_LOG_LEVEL",
+    "PYVIDER_SERVER_TRANSPORTS": "PLUGIN_SERVER_TRANSPORTS",
+    "PYVIDER_CLIENT_TRANSPORTS": "PLUGIN_CLIENT_TRANSPORTS",
+    "PYVIDER_SERVER_ENDPOINT": "PLUGIN_SERVER_ENDPOINT",
+    "PYVIDER_CLIENT_ENDPOINT": "PLUGIN_CLIENT_ENDPOINT",
+    "PYVIDER_AUTO_MTLS": "PLUGIN_AUTO_MTLS",
+    "PYVIDER_SERVER_CERT": "PLUGIN_SERVER_CERT",
+    "PYVIDER_SERVER_KEY": "PLUGIN_SERVER_KEY",
+    "PYVIDER_CLIENT_CERT": "PLUGIN_CLIENT_CERT",
+    "PYVIDER_CLIENT_KEY": "PLUGIN_CLIENT_KEY",
+    "PYVIDER_CLIENT_ROOT_CERTS": "PLUGIN_CLIENT_ROOT_CERTS",
+    "PYVIDER_SERVER_ROOT_CERTS": "PLUGIN_SERVER_ROOT_CERTS",
+    "PYVIDER_HANDSHAKE_TIMEOUT": "PLUGIN_HANDSHAKE_TIMEOUT",
+    "PYVIDER_CONNECTION_TIMEOUT": "PLUGIN_CONNECTION_TIMEOUT",
+    "PYVIDER_RETRY_ENABLED": "PLUGIN_CLIENT_RETRY_ENABLED",
+    "PYVIDER_MAX_RETRIES": "PLUGIN_CLIENT_MAX_RETRIES",
+    "PYVIDER_INITIAL_BACKOFF_MS": "PLUGIN_CLIENT_INITIAL_BACKOFF_MS",
+    "PYVIDER_MAX_BACKOFF_MS": "PLUGIN_CLIENT_MAX_BACKOFF_MS",
+    "PYVIDER_RETRY_JITTER_MS": "PLUGIN_CLIENT_RETRY_JITTER_MS",
+    "PYVIDER_RETRY_TOTAL_TIMEOUT_S": "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S",
+}
 
 
 class ConfigError(ValueError):
@@ -573,6 +626,18 @@ class RPCPluginConfig:
         """
         return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
 
+    def reload(self) -> None:
+        """Reloads the configuration by re-evaluating environment variables and defaults."""
+        logger.info("⚙️🔄 Reloading RPCPluginConfig...")
+        try:
+            self.config = get_config() # get_config() reads from SCHEMA and current os.environ
+            logger.info("⚙️🔄 RPCPluginConfig reloaded successfully.")
+        except Exception as e: # pylint: disable=broad-except
+            logger.error(
+                "⚙️❌ Error reloading RPCPluginConfig", extra={"error": str(e)}
+            )
+            # Optionally re-raise or handle more gracefully depending on desired behavior
+            # For now, logs error and potentially leaves config in a partially updated state or old state.
 
 # Global singleton instance
 rpcplugin_config = RPCPluginConfig.instance()
@@ -688,3 +753,122 @@ def configure(
         logger.debug(f"⚙️📝 Set additional config {config_key} = {value}")
 
     logger.debug("⚙️✅ Configuration completed successfully")
+
+
+def load_config_from_file(config_file_path: str) -> None:
+    """
+    Loads configuration from a specified file and updates environment variables.
+
+    Supported file formats: .env, .json, .yaml/.yml
+
+    Args:
+        config_file_path: Path to the configuration file.
+
+    Raises:
+        ConfigError: If the file is not found, format is unsupported, or parsing fails.
+    """
+    path = pathlib.Path(config_file_path)
+    if not path.exists() or not path.is_file():
+        raise ConfigError(
+            message=f"Configuration file not found: {config_file_path}",
+            hint="Ensure the path is correct and the file exists.",
+        )
+
+    file_suffix = path.suffix.lower()
+    parsed_config: Dict[str, Any] = {}
+
+    try:
+        if file_suffix == ".env":
+            logger.debug(f"⚙️📄 Loading .env file: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    if "=" not in line:
+                        logger.warning(
+                            f"⚙️⚠️ Skipping malformed line {line_num} in {path}: No '=' found."
+                        )
+                        continue
+
+                    key, value = line.split("=", 1)
+                    key = key.strip()
+                    value = value.strip()
+
+                    # Handle optional quotes around value
+                    if (value.startswith('"') and value.endswith('"')) or \
+                       (value.startswith("'") and value.endswith("'")):
+                        value = value[1:-1]
+
+                    # Apply .env key mapping (e.g., PYVIDER_ to PLUGIN_)
+                    mapped_key = KEY_MAPPING_DOTENV.get(key, key)
+                    parsed_config[mapped_key] = value
+            logger.info(f"⚙️📄 Successfully parsed .env file: {path}")
+
+        elif file_suffix == ".json":
+            logger.debug(f"⚙️📄 Loading .json file: {path}")
+            with open(path, "r", encoding="utf-8") as f:
+                raw_data = json.load(f)
+            for short_key, value in raw_data.items():
+                mapped_key = KEY_MAPPING_JSON_YAML.get(short_key, short_key.upper())
+                parsed_config[mapped_key] = value
+            logger.info(f"⚙️📄 Successfully parsed .json file: {path}")
+
+        elif file_suffix in (".yaml", ".yml"):
+            logger.debug(f"⚙️📄 Loading YAML file: {path}")
+            try:
+                import yaml  # type: ignore
+            except ImportError:
+                logger.warning(
+                    "⚙️⚠️ PyYAML library is not installed. Cannot process YAML configuration file. Skipping."
+                )
+                # Depending on strictness, could raise ConfigError here
+                return # Or raise ConfigError("PyYAML not installed, cannot load YAML.")
+
+            with open(path, "r", encoding="utf-8") as f:
+                raw_data = yaml.safe_load(f)
+            if raw_data: # Ensure raw_data is not None
+                for short_key, value in raw_data.items():
+                    mapped_key = KEY_MAPPING_JSON_YAML.get(short_key, short_key.upper())
+                    parsed_config[mapped_key] = value
+            logger.info(f"⚙️📄 Successfully parsed YAML file: {path}")
+        else:
+            raise ConfigError(
+                message=f"Unsupported configuration file format: {file_suffix}",
+                hint="Supported formats are .env, .json, .yaml, .yml.",
+            )
+
+    except json.JSONDecodeError as e:
+        raise ConfigError(
+            message=f"Error parsing JSON file {path}: {e}",
+            hint="Ensure the JSON file is correctly formatted.",
+        ) from e
+    except Exception as e: # Catch other potential errors like yaml.YAMLError
+        raise ConfigError(
+            message=f"Error processing configuration file {path}: {e}",
+            hint="Check file content and format.",
+        ) from e
+
+    # Set environment variables from the parsed config
+    for key, value in parsed_config.items():
+        if isinstance(value, list):
+            # Convert list to comma-separated string for env var
+            os.environ[key] = ",".join(map(str, value))
+            logger.debug(f"⚙️ENV SET (list): {key}='{os.environ[key]}'")
+        else:
+            os.environ[key] = str(value)
+            logger.debug(f"⚙️ENV SET: {key}='{os.environ[key]}'")
+
+    # Reload the global configuration instance
+    try:
+        RPCPluginConfig.instance().reload()
+        logger.info(f"⚙️🔄 Configuration successfully loaded and reloaded from {path}")
+    except Exception as e:
+        # This handles errors from reload() itself, which might be ConfigErrors from get_config
+        logger.error(f"⚙️❌ Failed to reload configuration after loading file {path}: {e}")
+        if isinstance(e, ConfigError):
+            raise # Re-raise ConfigError with its original hint
+        raise ConfigError(
+            message=f"Failed to apply configuration loaded from {path} due to reload error: {e}",
+            hint="The file was parsed, but applying the new settings failed. Check logs for details from the reload process."
+        ) from e

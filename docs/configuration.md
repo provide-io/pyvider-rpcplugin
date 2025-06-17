@@ -127,13 +127,15 @@ It's important to note that `load_config_from_file` modifies the environment var
 Below is a detailed list of all supported environment variables, their purposes, types, and default values.
 
 ### `PLUGIN_AUTO_MTLS`
-- **Description**: Flag to enable automatic mTLS (true/false).
+- **Description**: Flag to enable automatic mTLS (true/false). If set to true:
+  - A **server** will enforce mTLS if `PLUGIN_SERVER_CERT`, `PLUGIN_SERVER_KEY`, and `PLUGIN_CLIENT_ROOT_CERTS` are correctly configured. It will use its own cert/key for its identity and `PLUGIN_CLIENT_ROOT_CERTS` to verify clients.
+  - A **client** (if it's a `pyvider-rpcplugin` based executable) will attempt mTLS if `PLUGIN_CLIENT_CERT`, `PLUGIN_CLIENT_KEY`, and `PLUGIN_SERVER_ROOT_CERTS` are configured. It uses its cert/key for its identity and `PLUGIN_SERVER_ROOT_CERTS` to verify the server.
 - **Type**: `bool`
 - **Default**: `"true"`
 - **`.env` Alias**: `PYVIDER_AUTO_MTLS`
 
 ### `PLUGIN_CLIENT_CERT`
-- **Description**: Client certificate in PEM format or 'file://<path>' to read from a file.
+- **Description**: Path to the client's own identity certificate file (PEM format, or `file://<path>`). Used by the client (if it's a `pyvider-rpcplugin` based executable) to present its identity to the server during mTLS.
 - **Type**: `str`
 - **Default**: `None`
 - **`.env` Alias**: `PYVIDER_CLIENT_CERT`
@@ -145,13 +147,13 @@ Below is a detailed list of all supported environment variables, their purposes,
 - **`.env` Alias**: `PYVIDER_CLIENT_ENDPOINT`
 
 ### `PLUGIN_CLIENT_KEY`
-- **Description**: Client private key in PEM format or 'file://<path>' to read from a file.
+- **Description**: Path to the client's private key file (PEM format, or `file://<path>`). Used by the client (if it's a `pyvider-rpcplugin` based executable) along with its certificate (`PLUGIN_CLIENT_CERT`) for mTLS.
 - **Type**: `str`
 - **Default**: `None`
 - **`.env` Alias**: `PYVIDER_CLIENT_KEY`
 
 ### `PLUGIN_CLIENT_ROOT_CERTS`
-- **Description**: Root certificates for client in PEM format or 'file://<path>'.
+- **Description**: Path to CA certificate file(s) (PEM format, or `file://<path>`) that the **server** uses to verify client certificates in an mTLS setup. This is a server-side setting, used when `PLUGIN_AUTO_MTLS` is true on the server to enable mTLS.
 - **Type**: `str`
 - **Default**: `None`
 - **`.env` Alias**: `PYVIDER_CLIENT_ROOT_CERTS`
@@ -210,7 +212,7 @@ Below is a detailed list of all supported environment variables, their purposes,
 - **`.env` Alias**: `PYVIDER_PROTOCOL_VERSIONS`
 
 ### `PLUGIN_SERVER_CERT`
-- **Description**: Server certificate in PEM format or 'file://<path>' to read from a file.
+- **Description**: Path to the server's own identity certificate file (PEM format, or `file://<path>`). Used by the server to present its identity to clients. Required for any form of TLS (including mTLS).
 - **Type**: `str`
 - **Default**: `None`
 - **`.env` Alias**: `PYVIDER_SERVER_CERT`
@@ -222,13 +224,13 @@ Below is a detailed list of all supported environment variables, their purposes,
 - **`.env` Alias**: `PYVIDER_SERVER_ENDPOINT`
 
 ### `PLUGIN_SERVER_KEY`
-- **Description**: Server private key in PEM format or 'file://<path>' to read from a file.
+- **Description**: Path to the server's private key file (PEM format, or `file://<path>`). Used by the server along with its certificate (`PLUGIN_SERVER_CERT`). Required for any form of TLS (including mTLS).
 - **Type**: `str`
 - **Default**: `None`
 - **`.env` Alias**: `PYVIDER_SERVER_KEY`
 
 ### `PLUGIN_SERVER_ROOT_CERTS`
-- **Description**: Root certificates for server in PEM format or 'file://<path>'.
+- **Description**: Path to CA certificate file(s) (PEM format, or `file://<path>`) that the **client** uses to verify the server's certificate in an mTLS or server-auth TLS setup. This is a client-side setting.
 - **Type**: `str`
 - **Default**: `None`
 - **`.env` Alias**: `PYVIDER_SERVER_ROOT_CERTS`
