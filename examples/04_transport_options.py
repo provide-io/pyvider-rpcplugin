@@ -66,12 +66,12 @@ async def example_4_unix_socket_performance():
 
     # Configure for Unix socket optimization
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="unix-benchmark-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_MAGIC_COOKIE_VALUE="unix-benchmark-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix"], # Correct key
+        PLUGIN_SERVER_TRANSPORTS=["unix"],
         PLUGIN_AUTO_MTLS=False,  # Disable mTLS for max performance
         PLUGIN_HANDSHAKE_TIMEOUT=5.0,
-        connection_timeout=30.0,
+        PLUGIN_CONNECTION_TIMEOUT=30.0, # Corrected key
     )
 
     # Create protocol and handler
@@ -112,7 +112,9 @@ async def example_4_unix_socket_performance():
             latency_estimate="<0.1ms",
         )
 
-        # Simulate benchmark results
+        # NOTE: The following benchmark_results are illustrative and hardcoded for this example.
+        # Actual performance depends on the environment and workload.
+        # See examples/10_performance_tuning.py for actual (though basic) benchmarking.
         benchmark_results = {
             "transport": "unix",
             "requests_per_second": 50000,
@@ -161,12 +163,12 @@ async def example_4_tcp_socket_performance():
 
     # Configure for TCP optimization
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="tcp-benchmark-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_MAGIC_COOKIE_VALUE="tcp-benchmark-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["tcp"], # Correct key
+        PLUGIN_SERVER_TRANSPORTS=["tcp"],
         PLUGIN_AUTO_MTLS=False,  # Disable mTLS for baseline performance
         PLUGIN_HANDSHAKE_TIMEOUT=10.0,
-        connection_timeout=60.0,
+        PLUGIN_CONNECTION_TIMEOUT=60.0, # Corrected key
     )
 
     # Create protocol and handler
@@ -213,7 +215,8 @@ async def example_4_tcp_socket_performance():
             network_stack="loopback",
         )
 
-        # Simulate benchmark results
+        # NOTE: The following benchmark_results are illustrative and hardcoded for this example.
+        # Actual performance depends on the environment and workload.
         benchmark_results = {
             "transport": "tcp",
             "requests_per_second": 25000,
@@ -398,12 +401,12 @@ async def example_4_dual_transport_setup():
 
     # Configure for dual transport
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="dual-transport-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_MAGIC_COOKIE_VALUE="dual-transport-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],  # Correct key
+        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
         PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=15.0,
-        connection_timeout=120.0,
+        PLUGIN_CONNECTION_TIMEOUT=120.0, # Corrected key
     )
 
     protocol = create_basic_protocol()

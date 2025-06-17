@@ -287,16 +287,18 @@ class CertificateRotator:
             
             # Generate new certificate
             if cert_type == "server":
-                new_cert = Certificate.generate_server_certificate(
-                    ca_cert=self.ca_cert,
+                new_cert = Certificate.create_signed_certificate( # Corrected method
+                    ca_certificate=self.ca_cert, # Corrected parameter
                     common_name=common_name,
-                    validity_days=90
+                    validity_days=90,
+                    is_client_cert=False # Added parameter
                 )
             else:
-                new_cert = Certificate.generate_client_certificate(
-                    ca_cert=self.ca_cert,
+                new_cert = Certificate.create_signed_certificate( # Corrected method
+                    ca_certificate=self.ca_cert, # Corrected parameter
                     common_name=common_name,
-                    validity_days=30
+                    validity_days=30,
+                    is_client_cert=True # Added parameter
                 )
             
             # Atomic replacement

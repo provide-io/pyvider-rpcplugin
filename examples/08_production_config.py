@@ -216,11 +216,13 @@ async def example_8_production_server_deployment():
     print("=" * 60)
 
     # Production configuration
+    # For this example to run without full cert setup, ensure PLUGIN_AUTO_MTLS is False.
+    # Actual mTLS is demonstrated in 05_security_mtls.py.
     configure(
         PLUGIN_MAGIC_COOKIE_VALUE="production-server-2024",
         PLUGIN_PROTOCOL_VERSIONS=[1],
         PLUGIN_SERVER_TRANSPORTS=["tcp"],  # TCP for production deployments
-        PLUGIN_AUTO_MTLS=True,  # Always use mTLS in production
+        PLUGIN_AUTO_MTLS=False,  # Changed to False to allow running without certs
         PLUGIN_HANDSHAKE_TIMEOUT=30.0,
         PLUGIN_CONNECTION_TIMEOUT=600.0,  # 10 minutes for long-running operations
     )
@@ -231,7 +233,7 @@ async def example_8_production_server_deployment():
         action="configure",
         status="starting",
         environment="production",
-        security_level="mtls_required",
+        security_level="mtls_disabled_for_example", # Updated log
     )
 
     # Create production protocol and handler

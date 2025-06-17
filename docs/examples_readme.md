@@ -29,9 +29,11 @@ Each script automatically configures the Python path to find the `pyvider` modul
 | **`03_client_connection.py`** | 🔗 Client implementation examples | Beginner | Understanding of 02 |
 | **`04_transport_options.py`** | 🚚 Unix socket vs TCP configuration | Intermediate | Basic networking |
 | **`05_security_mtls.py`** | 🔒 mTLS certificate setup | Advanced | PKI knowledge |
-| **`06_error_handling.py`** | ⚠️ Robust error management patterns | Intermediate | Exception handling |
-| **`07_async_patterns.py`** | ⚡ Advanced async best practices | Advanced | Asyncio proficiency |
+| **`06_async_patterns.py`** | ⚡ Advanced async best practices | Advanced | Asyncio proficiency |
+| **`07_error_handling.py`** | ⚠️ Robust error management patterns | Intermediate | Exception handling |
 | **`08_production_config.py`** | 🏭 Production deployment patterns | Advanced | Operations experience |
+| **`09_custom_protocols.py`** | 🔧 Custom protocol definitions & middleware | Advanced | Framework understanding |
+| **`10_performance_tuning.py`** | 📈 Performance benchmarking & optimization | Advanced | System knowledge |
 
 ### **Complete Demos** (`demo/` directory)
 
@@ -131,13 +133,15 @@ python client.py
 
 ### **For Intermediate Users**
 1. Study `04_transport_options.py` - Compare Unix vs TCP
-2. Examine `06_error_handling.py` - Robust patterns
-3. Experiment with `demo/kvproto/` - Complex service implementation
+2. Study `06_async_patterns.py` for async best practices (Corrected order)
+3. Review `07_error_handling.py` for robust applications (Corrected order)
+4. Experiment with `demo/kvproto/` - Complex service implementation
 
 ### **For Advanced Users**
 1. Master `05_security_mtls.py` - Production security
-2. Optimize with `07_async_patterns.py` - Performance patterns
-3. Deploy using `08_production_config.py` - Production setup
+2. Deploy using `08_production_config.py` - Production setup
+3. Analyze `09_custom_protocols.py` for protocol extensions
+4. Optimize with `10_performance_tuning.py` for high-scale scenarios
 
 ## 🔧 Customizing Examples
 
@@ -158,17 +162,25 @@ server = plugin_server(
 ### **Adding Security**
 ```python
 # Enable mTLS
+# Note: For mTLS, global configuration via `configure()` or environment variables
+# for PLUGIN_SERVER_CERT, PLUGIN_SERVER_KEY, and PLUGIN_CLIENT_ROOT_CERTS (for server to verify clients)
+# or PLUGIN_CLIENT_CERT, PLUGIN_CLIENT_KEY, and PLUGIN_SERVER_ROOT_CERTS (for client to verify server)
+# is generally preferred. See `05_security_mtls.py` for a detailed example.
+# The following shows using `configure()` for a server requiring mTLS:
+from pyvider.rpcplugin import configure # Add import
+
+configure(
+    PLUGIN_AUTO_MTLS=True,
+    PLUGIN_SERVER_CERT="/path/to/server.crt",       # Example path for server's certificate
+    PLUGIN_SERVER_KEY="/path/to/server.key",        # Example path for server's private key
+    PLUGIN_CLIENT_ROOT_CERTS="/path/to/ca.crt"      # Example path to CA cert for server to verify clients
+)
 server = plugin_server(
     protocol=protocol,
     handler=handler,
-    transport="tcp",
-    config={
-        "PLUGIN_AUTO_MTLS": True, # Use actual config keys
-        "PLUGIN_SERVER_CERT": "/path/to/server.crt",
-        "PLUGIN_SERVER_KEY": "/path/to/server.key",
-        "PLUGIN_CLIENT_ROOT_CERTS": "/path/to/ca.crt" # For server to verify client
-        # Ensure client also has its cert/key and the CA to verify server
-    }
+    transport="tcp" # mTLS typically uses TCP
+    # Client would need its own cert/key (PLUGIN_CLIENT_CERT, PLUGIN_CLIENT_KEY)
+    # and the CA to verify this server (PLUGIN_SERVER_ROOT_CERTS).
 )
 ```
 

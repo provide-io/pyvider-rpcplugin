@@ -17,6 +17,8 @@ import (
     "crypto/x509"
 
     "google.golang.org/grpc"
+    "google.golang.org/grpc/codes"  // Added
+	"google.golang.org/grpc/status" // Added
     // "google.golang.org/grpc/credentials"
 
     "github.com/hashicorp/go-hclog"
@@ -53,7 +55,16 @@ func (k *KV) Get(key string) ([]byte, error) {
     }
 
     k.logger.Debug("🗄️📥 getting value", "key", key)
-    return os.ReadFile("/tmp/kv-data-" + key)
+    data, err := os.ReadFile("/tmp/kv-data-" + key)
+	if err != nil {
+		if os.IsNotExist(err) {
+			k.logger.Debug("🗄️📥 key not found", "key", key)
+			return nil, status.Errorf(codes.NotFound, "Key not found: %s", key)
+		}
+		k.logger.Error("🗄️📥 error reading file", "key", key, "error", err)
+		return nil, status.Errorf(codes.Internal, "Error reading data for key %s: %v", key, err)
+	}
+	return data, nil
 }
 
 func main() {

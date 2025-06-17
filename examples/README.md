@@ -139,6 +139,7 @@ python examples/05_security_mtls.py
 
 # Test production examples  
 python examples/08_production_config.py
+python examples/09_custom_protocols.py # Added
 python examples/10_performance_tuning.py
 ```
 

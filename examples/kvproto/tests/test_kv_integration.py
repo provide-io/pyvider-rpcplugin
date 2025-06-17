@@ -13,6 +13,36 @@ from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.telemetry import logger
+from pathlib import Path # Added
+from typing import AsyncGenerator, Dict, Any # Added Dict, Any
+
+
+@pytest_asyncio.fixture
+async def mock_server_config() -> Dict[str, Any]:
+    """Provides a mock server configuration dictionary."""
+    logger.debug("🔧🚀✅ Using mock server config")
+    return {
+        "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+        # Add other necessary mock config values if the server fixture depends on them
+    }
+
+@pytest_asyncio.fixture
+async def managed_unix_socket_path(tmp_path: Path) -> AsyncGenerator[str, None]:
+    """Generate a unique Unix socket path in a temporary directory and ensure cleanup."""
+    socket_file = tmp_path / "kv_test_socket.sock"
+    socket_path = str(socket_file)
+    logger.debug(f"🔌🔧🚀 Generated managed Unix socket path: {socket_path}")
+    try:
+        yield socket_path
+    finally:
+        # Ensure socket file is removed after test, if it exists
+        if socket_file.exists():
+            try:
+                socket_file.unlink()
+                logger.debug(f"🔌🔧✅ Cleaned up managed Unix socket: {socket_path}")
+            except OSError as e:
+                logger.error(f"🔌🔧❌ Error removing socket file {socket_path}: {e}")
 
 
 def summarize_text(text: str, length: int = 32) -> str:
@@ -172,10 +202,11 @@ async def kv_client(kv_server, transport_fixture):
     # Set up environment for client
     env = {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE": "hello",
+            "PLUGIN_MAGIC_COOKIE": "hello", # This is what the client (test) sends to the plugin server via env var BASIC_PLUGIN
+            "PLUGIN_MAGIC_COOKIE_VALUE": "hello", # This is what the plugin server (py_kv_server.py) will expect
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": transport_type,
-        "PLUGIN_AUTO_MTLS": "true",
+            "PLUGIN_AUTO_MTLS": "false", # Ensure py_kv_server runs insecurely
     }
 
     # Create client
@@ -198,7 +229,7 @@ async def kv_client(kv_server, transport_fixture):
 @pytest.mark.asyncio
 async def test_kv_put_get_flow(kv_client) -> None:
     """Test basic Put/Get operations."""
-    stub = kv_pb2_grpc.KVStub(kv_client._channel)
+    stub = kv_pb2_grpc.KVStub(kv_client.grpc_channel)
     logger.debug("🔌🧪🚀 Starting Put/Get flow test")
 
     # Put a value
@@ -230,7 +261,7 @@ async def test_kv_put_get_flow(kv_client) -> None:
 @pytest.mark.asyncio
 async def test_kv_missing_key(kv_client) -> None:
     """Test Get with nonexistent key."""
-    stub = kv_pb2_grpc.KVStub(kv_client._channel)
+    stub = kv_pb2_grpc.KVStub(kv_client.grpc_channel)
     logger.debug("🔌🧪🚀 Starting missing key test")
 
     with pytest.raises(grpc.RpcError) as exc_info:
@@ -250,7 +281,7 @@ async def test_kv_missing_key(kv_client) -> None:
 @pytest.mark.asyncio
 async def test_kv_concurrent_operations(kv_client) -> None:
     """Test concurrent Put/Get operations."""
-    stub = kv_pb2_grpc.KVStub(kv_client._channel)
+    stub = kv_pb2_grpc.KVStub(kv_client.grpc_channel)
     logger.debug("🔌🧪🚀 Starting concurrent operations test")
 
     # Number of concurrent operations

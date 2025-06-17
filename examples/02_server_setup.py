@@ -63,12 +63,12 @@ async def example_2_unix_socket_server():
 
     # Configure for Unix socket communication
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="example-unix-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_MAGIC_COOKIE_VALUE="example-unix-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix"],  # Correct key for server transports
+        PLUGIN_SERVER_TRANSPORTS=["unix"],
         PLUGIN_AUTO_MTLS=False,  # Disable mTLS for local communication
         PLUGIN_HANDSHAKE_TIMEOUT=10.0,
-        connection_timeout=60.0,
+        PLUGIN_CONNECTION_TIMEOUT=60.0, # Corrected key
     )
 
     # Create protocol and handler
@@ -130,12 +130,12 @@ async def example_2_tcp_server():
 
     # Configure for TCP communication
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="example-tcp-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_MAGIC_COOKIE_VALUE="example-tcp-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["tcp"],  # Correct key for server transports
+        PLUGIN_SERVER_TRANSPORTS=["tcp"],
         PLUGIN_AUTO_MTLS=False,  # Will enable mTLS in security example
         PLUGIN_HANDSHAKE_TIMEOUT=15.0,
-        connection_timeout=120.0,
+        PLUGIN_CONNECTION_TIMEOUT=120.0, # Corrected key
     )
 
     # Create protocol and handler
@@ -201,12 +201,12 @@ async def example_2_dual_transport_server():
 
     # Configure for dual transport support
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="example-dual-cookie", # Use PLUGIN_ prefixed keys
+        PLUGIN_MAGIC_COOKIE_VALUE="example-dual-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],  # Correct key for server transports
+        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
         PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=20.0,
-        connection_timeout=180.0,
+        PLUGIN_CONNECTION_TIMEOUT=180.0, # Corrected key
     )
 
     # Create protocol and handler
