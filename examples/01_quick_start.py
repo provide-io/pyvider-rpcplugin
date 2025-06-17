@@ -119,20 +119,21 @@ async def example_1_basic_client():  # No server_path needed if using dummy exec
         domain="client",
         action="create",
         status="starting",
-        server_executable="./dummy_server.sh",
+        server_executable=str(example_dir / "dummy_server.sh"),
     )
 
     # plugin_client expects path to an executable
-    client = plugin_client(server_path="./dummy_server.sh")
+    client = plugin_client(server_path=example_dir / "dummy_server.sh")
 
     try:
-        # Start the client (launches subprocess, handshake)
-        await client.start()  # This replaces connect()
+        # For dummy_server.sh, we don't want to fully start the client,
+        # as it's not a real gRPC server. We'll skip client.start().
+        # await client.start()  # This replaces connect()
         logger.info(
-            "Client started and connected to dummy server process",
+            "Client instance created for dummy server process (connection not established)",
             domain="client",
-            action="connect_simulation",  # Renamed from "connect"
-            status="success",
+            action="create_for_simulation",
+            status="simulated_connection",
         )
 
         # Simulate making an RPC call as direct calls will fail with dummy_server.sh
