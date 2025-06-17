@@ -10,8 +10,10 @@ dependency injection for I/O functions to facilitate testing.
 import asyncio
 from collections.abc import (
     Awaitable,
-    Callable as AbcCallable,
 )  # Alias to avoid conflict
+from collections.abc import (
+    Callable as AbcCallable,
+)
 
 from attrs import define, field
 

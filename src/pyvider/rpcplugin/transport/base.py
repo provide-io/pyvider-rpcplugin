@@ -8,6 +8,7 @@ must inherit from this class and implement its abstract methods.
 """
 
 import abc
+
 from attrs import define, field
 
 

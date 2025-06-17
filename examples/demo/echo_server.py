@@ -2,16 +2,17 @@
 import asyncio
 import os
 
-# Assuming a basic logger setup
-from pyvider.telemetry import logger
+# Import generated code
+from examples.demo import echo_pb2
+from examples.demo import echo_pb2_grpc
+
+from pyvider.rpcplugin.factories import plugin_server
 
 # Import pyvider components
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
-from pyvider.rpcplugin.factories import plugin_server
 
-# Import generated code
-import echo_pb2
-import echo_pb2_grpc
+# Assuming a basic logger setup
+from pyvider.telemetry import logger
 
 
 # --- Implement the Handler (Servicer) ---

@@ -15,16 +15,7 @@ from pyvider.rpcplugin.types import RPCPluginTransport
 from pyvider.rpcplugin.exception import TransportError, ProtocolError # Ensure ProtocolError is imported
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
-# Assuming TCPSocketTransport and UnixSocketTransport are imported from somewhere, e.g.
-# from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-# For now, let's ensure they are defined if not imported, for the sake of completeness for the test.
-# These might come from fixtures.py or conftest.py in a real scenario.
-if 'TCPSocketTransport' not in globals():
-    class TCPSocketTransport:
-        pass # type: ignore
-if 'UnixSocketTransport' not in globals():
-    class UnixSocketTransport:
-        pass # type: ignore
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
 from tests.conftest import (
@@ -556,8 +547,7 @@ async def test_wait_for_server_ready_unix_path_none(
     """Test wait_for_server_ready when Unix transport path is None."""
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = None  # Simulate path being None
-    # Mock other necessary attributes of the transport if hasattr checks them
-    mock_transport.endpoint = "dummy_endpoint_for_hasattr_check"  # ensure isinstance check passes if it relies on this
+    mock_transport.endpoint = "/tmp/dummy.sock"  # ensure isinstance check passes if it relies on this
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -574,9 +564,7 @@ async def test_wait_for_server_ready_unix_path_none(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_check: True
-        if cls_check == UnixSocketTransport
-        else original_isinstance(obj, cls_check),
+        lambda obj, cls_info: True if obj is mock_transport and (cls_info == UnixSocketTransport or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
     )
 
     expected_unix_path_none_regex = (
@@ -594,7 +582,7 @@ async def test_wait_for_server_ready_unix_file_not_exists(
     """Test wait_for_server_ready when Unix socket file does not exist."""
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = "/tmp/non_existent_socket.sock"
-    mock_transport.endpoint = mock_transport.path
+    mock_transport.endpoint = mock_transport.path # Already set, this is fine
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -611,9 +599,7 @@ async def test_wait_for_server_ready_unix_file_not_exists(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_check: True
-        if cls_check == UnixSocketTransport
-        else original_isinstance(obj, cls_check),
+        lambda obj, cls_info: True if obj is mock_transport and (cls_info == UnixSocketTransport or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
     )
 
     expected_msg_regex = (
@@ -633,7 +619,7 @@ async def test_wait_for_server_ready_tcp_port_none(
     """Test wait_for_server_ready when TCP port is None after server start."""
     mock_transport = mocker.MagicMock(spec=TCPSocketTransport)
     mock_transport.host = "127.0.0.1"
-    mock_transport.endpoint = "127.0.0.1:0"  # Example initial endpoint
+    mock_transport.endpoint = "127.0.0.1:0"  # Ensure endpoint is truthy
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -650,9 +636,7 @@ async def test_wait_for_server_ready_tcp_port_none(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_check: True
-        if cls_check == TCPSocketTransport
-        else original_isinstance(obj, cls_check),
+        lambda obj, cls_info: True if obj is mock_transport and (cls_info == TCPSocketTransport or (isinstance(cls_info, tuple) and TCPSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
     )
 
     expected_tcp_port_none_regex = (
@@ -670,7 +654,7 @@ async def test_wait_for_server_ready_tcp_connect_fails(
     """Test wait_for_server_ready with TCP when sock.connect repeatedly fails."""
     mock_transport = mocker.MagicMock(spec=TCPSocketTransport)
     mock_transport.host = "127.0.0.1"
-    mock_transport.endpoint = "127.0.0.1:12345"
+    mock_transport.endpoint = "127.0.0.1:12345"  # Ensure endpoint is truthy
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -693,9 +677,7 @@ async def test_wait_for_server_ready_tcp_connect_fails(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_check: True
-        if cls_check == TCPSocketTransport
-        else original_isinstance(obj, cls_check),
+        lambda obj, cls_info: True if obj is mock_transport and (cls_info == TCPSocketTransport or (isinstance(cls_info, tuple) and TCPSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
     )
 
     expected_msg_regex = (
@@ -716,7 +698,7 @@ async def test_wait_for_server_ready_unix_connect_fails(
     socket_path = "/tmp/test_unix_connect_fail.sock"
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = socket_path
-    mock_transport.endpoint = socket_path
+    mock_transport.endpoint = socket_path # Already set, this is fine
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -744,9 +726,7 @@ async def test_wait_for_server_ready_unix_connect_fails(
     # However, the specific problem context is usually one type. If only UnixSocketTransport is relevant for this test's match statement:
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_check: True
-        if cls_check == UnixSocketTransport
-        else original_isinstance(obj, cls_check),
+        lambda obj, cls_info: True if obj is mock_transport and (cls_info == UnixSocketTransport or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
     )
     # If the code being tested *could* check against TCPSocketTransport as well in the same logic block:
     # mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check in (UnixSocketTransport, TCPSocketTransport) else original_isinstance(obj, cls_check))

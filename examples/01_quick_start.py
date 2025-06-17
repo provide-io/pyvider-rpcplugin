@@ -14,9 +14,9 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
-    plugin_server,
-    plugin_client,
     create_basic_protocol,
+    plugin_client,
+    plugin_server,
 )
 from pyvider.telemetry import logger  # noqa: E402
 

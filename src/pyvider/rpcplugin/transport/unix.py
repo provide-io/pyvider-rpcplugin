@@ -17,8 +17,8 @@ from attrs import define, field
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
-from pyvider.telemetry import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
+from pyvider.telemetry import logger
 
 
 def normalize_unix_path(path: str) -> str:
@@ -464,7 +464,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 # Make multiple attempts with proper error handling
                 for _ in range(3):
                     try:
-                        os.chmod( # nosec B103 # Permissions are intentionally 0o660 for owner/group r/w during cleanup.
+                        os.chmod(  # nosec B103 # Permissions are intentionally 0o660 for owner/group r/w during cleanup.
                             socket_path, 0o660
                         )  # Changed from 0o770, to ensure write access if needed for unlinking
                         os.unlink(socket_path)

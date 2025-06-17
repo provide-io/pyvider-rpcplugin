@@ -11,15 +11,14 @@ It also includes helper classes like `SubchannelConnection` and a registration
 function to add these services to a gRPC server.
 """
 
-import os
 import asyncio
+import os
 import traceback
-from typing import Any  # Added for type hinting
 from collections.abc import AsyncIterator  # Added for StartStream return type
+from typing import Any  # Added for type hinting
 
 from attrs import define, field
 
-from pyvider.telemetry import logger
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
     GRPCBrokerServicer,
@@ -35,6 +34,7 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
     GRPCStdioServicer,
     add_GRPCStdioServicer_to_server,
 )
+from pyvider.telemetry import logger
 
 
 class BrokerError(Exception):

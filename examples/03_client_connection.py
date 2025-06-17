@@ -14,13 +14,13 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
-    plugin_client,
     configure,
+    plugin_client,
 )
 from pyvider.rpcplugin.exception import (  # noqa: E402
-    TransportError,
     HandshakeError,
-    RPCPluginError
+    RPCPluginError,
+    TransportError,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -43,7 +43,7 @@ async def example_3_basic_client_connection():
         protocol_version=1,
         transports=["unix"],
         connection_timeout=30.0,
-        handshake_timeout=10.0
+        handshake_timeout=10.0,
     )
 
     logger.info(
@@ -51,7 +51,7 @@ async def example_3_basic_client_connection():
         domain="client",
         action="create",
         status="starting",
-        transport="unix"
+        transport="unix",
     )
 
     # Create client instance
@@ -67,7 +67,7 @@ async def example_3_basic_client_connection():
             domain="client",
             action="lifecycle",
             status="demonstrating",
-            steps=["connect", "authenticate", "ready", "disconnect"]
+            steps=["connect", "authenticate", "ready", "disconnect"],
         )
 
         # In a real scenario, you would connect to an actual server:
@@ -78,7 +78,7 @@ async def example_3_basic_client_connection():
             domain="client",
             action="ready",
             status="success",
-            capabilities=["method_calls", "streaming", "metadata"]
+            capabilities=["method_calls", "streaming", "metadata"],
         )
 
         # Simulate some client operations
@@ -90,7 +90,7 @@ async def example_3_basic_client_connection():
             domain="client",
             action="connect",
             status="error",
-            error=str(e)
+            error=str(e),
         )
     finally:
         # Always cleanup client resources
@@ -99,7 +99,7 @@ async def example_3_basic_client_connection():
             "Client connection closed",
             domain="client",
             action="cleanup",
-            status="success"
+            status="success",
         )
 
 
@@ -120,7 +120,7 @@ async def example_3_connection_retry_logic():
 
     for attempt in range(max_retries):
         try:
-            delay = base_delay * (2 ** attempt)  # Exponential backoff
+            delay = base_delay * (2**attempt)  # Exponential backoff
 
             logger.info(
                 f"Connection attempt {attempt + 1}",
@@ -129,7 +129,7 @@ async def example_3_connection_retry_logic():
                 status="attempting",
                 attempt=attempt + 1,
                 max_retries=max_retries,
-                delay_seconds=delay
+                delay_seconds=delay,
             )
 
             # Create new client for each attempt
@@ -141,8 +141,11 @@ async def example_3_connection_retry_logic():
 
             # Simulate random connection failures for demonstration
             import random
+
             if random.random() < 0.7:  # nosec B311 # random is not used for security/crypto here, just for demo/jitter. # 70% chance of "failure" for demo
-                raise TransportError(f"Simulated connection failure (attempt {attempt + 1})")
+                raise TransportError(
+                    f"Simulated connection failure (attempt {attempt + 1})"
+                )
 
             # Success!
             logger.info(
@@ -151,7 +154,7 @@ async def example_3_connection_retry_logic():
                 action="connect_retry",
                 status="success",
                 attempt=attempt + 1,
-                total_delay=sum(base_delay * (2 ** i) for i in range(attempt))
+                total_delay=sum(base_delay * (2**i) for i in range(attempt)),
             )
 
             await client.close()
@@ -165,7 +168,7 @@ async def example_3_connection_retry_logic():
                 status="failed",
                 attempt=attempt + 1,
                 error=str(e),
-                will_retry=attempt < max_retries - 1
+                will_retry=attempt < max_retries - 1,
             )
 
             if attempt < max_retries - 1:
@@ -174,7 +177,7 @@ async def example_3_connection_retry_logic():
                     domain="client",
                     action="backoff",
                     status="waiting",
-                    delay_seconds=delay
+                    delay_seconds=delay,
                 )
                 await asyncio.sleep(delay)
             else:
@@ -183,7 +186,7 @@ async def example_3_connection_retry_logic():
                     domain="client",
                     action="connect_retry",
                     status="exhausted",
-                    total_attempts=max_retries
+                    total_attempts=max_retries,
                 )
 
 
@@ -208,7 +211,7 @@ async def example_3_connection_pooling():
             domain="client",
             action="pool_create",
             status="starting",
-            pool_size=pool_size
+            pool_size=pool_size,
         )
 
         # Create pool of client connections
@@ -223,7 +226,7 @@ async def example_3_connection_pooling():
                 action="pool_add",
                 status="success",
                 client_id=i + 1,
-                pool_progress=f"{i + 1}/{pool_size}"
+                pool_progress=f"{i + 1}/{pool_size}",
             )
 
         logger.info(
@@ -232,7 +235,7 @@ async def example_3_connection_pooling():
             action="pool_create",
             status="success",
             pool_size=len(clients),
-            throughput_estimate="5x single client"
+            throughput_estimate="5x single client",
         )
 
         # Simulate using pool for concurrent operations
@@ -244,7 +247,7 @@ async def example_3_connection_pooling():
                 action="pool_work",
                 status="processing",
                 client_id=client_id,
-                work_type="simulated_rpc"
+                work_type="simulated_rpc",
             )
 
             # Simulate RPC call latency
@@ -255,13 +258,12 @@ async def example_3_connection_pooling():
                 domain="client",
                 action="pool_work",
                 status="completed",
-                client_id=client_id
+                client_id=client_id,
             )
 
         # Run concurrent work across the pool
         tasks = [
-            simulate_client_work(i + 1, client)
-            for i, client in enumerate(clients)
+            simulate_client_work(i + 1, client) for i, client in enumerate(clients)
         ]
 
         await asyncio.gather(*tasks)
@@ -271,7 +273,7 @@ async def example_3_connection_pooling():
             domain="client",
             action="pool_work",
             status="all_completed",
-            concurrent_operations=len(tasks)
+            concurrent_operations=len(tasks),
         )
 
     finally:
@@ -281,7 +283,7 @@ async def example_3_connection_pooling():
             domain="client",
             action="pool_cleanup",
             status="starting",
-            clients_to_close=len(clients)
+            clients_to_close=len(clients),
         )
 
         cleanup_tasks = [client.close() for client in clients]
@@ -291,7 +293,7 @@ async def example_3_connection_pooling():
             "Client pool cleaned up",
             domain="client",
             action="pool_cleanup",
-            status="success"
+            status="success",
         )
 
 
@@ -323,7 +325,7 @@ async def example_3_async_context_manager():
                 domain="client",
                 action="context_enter",
                 status="starting",
-                transport=self.transport
+                transport=self.transport,
             )
 
             # Simulate connection
@@ -334,7 +336,7 @@ async def example_3_async_context_manager():
                 "Client connected via context manager",
                 domain="client",
                 action="context_enter",
-                status="success"
+                status="success",
             )
 
             return self
@@ -345,7 +347,7 @@ async def example_3_async_context_manager():
                 domain="client",
                 action="context_exit",
                 status="starting",
-                has_exception=exc_type is not None
+                has_exception=exc_type is not None,
             )
 
             # Simulate cleanup
@@ -356,7 +358,7 @@ async def example_3_async_context_manager():
                 "Client disconnected via context manager",
                 domain="client",
                 action="context_exit",
-                status="success"
+                status="success",
             )
 
         async def make_call(self, method: str):
@@ -369,7 +371,7 @@ async def example_3_async_context_manager():
                 domain="client",
                 action="rpc_call",
                 status="success",
-                method=method
+                method=method,
             )
 
     # Demonstrate the async context manager pattern
@@ -378,7 +380,7 @@ async def example_3_async_context_manager():
         domain="client",
         action="pattern_demo",
         status="starting",
-        benefits=["automatic_cleanup", "exception_safety", "readable_code"]
+        benefits=["automatic_cleanup", "exception_safety", "readable_code"],
     )
 
     async with MockAsyncClient("unix") as client:
@@ -391,7 +393,7 @@ async def example_3_async_context_manager():
             domain="client",
             action="context_operations",
             status="success",
-            operations_count=2
+            operations_count=2,
         )
 
         # Client will be automatically disconnected when exiting the context
@@ -401,7 +403,7 @@ async def example_3_async_context_manager():
         domain="client",
         action="pattern_demo",
         status="success",
-        recommendation="Use this pattern for production code"
+        recommendation="Use this pattern for production code",
     )
 
 
@@ -436,7 +438,7 @@ async def main():
             domain="examples",
             action="run",
             status="error",
-            error=str(e)
+            error=str(e),
         )
         raise
 

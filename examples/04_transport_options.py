@@ -14,10 +14,10 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
-    plugin_server,
-    plugin_client,
-    create_basic_protocol,
     configure,
+    create_basic_protocol,
+    plugin_client,
+    plugin_server,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -34,21 +34,21 @@ class BenchmarkHandler:
         """Echo service for benchmarking."""
         self.request_count += 1
 
-        message = getattr(request, 'message', 'empty')
+        message = getattr(request, "message", "empty")
         self.total_payload_size += len(message)
 
         # Simulate minimal processing time
         await asyncio.sleep(0.001)  # 1ms processing
 
         response_data = f"Echo[{self.transport_type}]: {message}"
-        return type('EchoReply', (), {'response': response_data})()
+        return type("EchoReply", (), {"response": response_data})()
 
     def get_stats(self) -> dict:
         """Get handler statistics."""
         return {
-            'requests': self.request_count,
-            'total_payload_bytes': self.total_payload_size,
-            'avg_payload_bytes': self.total_payload_size / max(1, self.request_count)
+            "requests": self.request_count,
+            "total_payload_bytes": self.total_payload_size,
+            "avg_payload_bytes": self.total_payload_size / max(1, self.request_count),
         }
 
 
@@ -71,7 +71,7 @@ async def example_4_unix_socket_performance():
         transports=["unix"],
         auto_mtls=False,  # Disable mTLS for max performance
         handshake_timeout=5.0,
-        connection_timeout=30.0
+        connection_timeout=30.0,
     )
 
     # Create protocol and handler
@@ -79,11 +79,7 @@ async def example_4_unix_socket_performance():
     handler = BenchmarkHandler("unix")
 
     # Create Unix socket server
-    server = plugin_server(
-        protocol=protocol,
-        handler=handler,
-        transport="unix"
-    )
+    server = plugin_server(protocol=protocol, handler=handler, transport="unix")
 
     logger.info(
         "Starting Unix socket performance test",
@@ -91,7 +87,7 @@ async def example_4_unix_socket_performance():
         action="benchmark_start",
         status="starting",
         transport="unix",
-        optimization="high_performance"
+        optimization="high_performance",
     )
 
     # Start server
@@ -100,7 +96,7 @@ async def example_4_unix_socket_performance():
 
     try:
         # Get server endpoint
-        server_endpoint = getattr(server._transport, 'endpoint', '/tmp/unknown.sock') # nosec B108 # Example code, /tmp is acceptable here.
+        server_endpoint = getattr(server._transport, "endpoint", "/tmp/unknown.sock")  # nosec B108 # Example code, /tmp is acceptable here.
 
         # Create client and connect
         # Using placeholder for server_path, as example focuses on simulated benchmark
@@ -113,18 +109,18 @@ async def example_4_unix_socket_performance():
             action="connection",
             status="success",
             endpoint=server_endpoint,
-            latency_estimate="<0.1ms"
+            latency_estimate="<0.1ms",
         )
 
         # Simulate benchmark results
         benchmark_results = {
-            'transport': 'unix',
-            'requests_per_second': 50000,
-            'avg_latency_ms': 0.05,
-            'p95_latency_ms': 0.1,
-            'p99_latency_ms': 0.2,
-            'throughput_mbps': 800,
-            'cpu_overhead_percent': 2.5
+            "transport": "unix",
+            "requests_per_second": 50000,
+            "avg_latency_ms": 0.05,
+            "p95_latency_ms": 0.1,
+            "p99_latency_ms": 0.2,
+            "throughput_mbps": 800,
+            "cpu_overhead_percent": 2.5,
         }
 
         logger.info(
@@ -132,7 +128,7 @@ async def example_4_unix_socket_performance():
             domain="transport",
             action="benchmark_result",
             status="success",
-            **benchmark_results
+            **benchmark_results,
         )
 
         await client.close()
@@ -147,7 +143,7 @@ async def example_4_unix_socket_performance():
         domain="transport",
         action="benchmark_end",
         status="success",
-        key_benefit="Fastest option for local IPC"
+        key_benefit="Fastest option for local IPC",
     )
 
 
@@ -170,7 +166,7 @@ async def example_4_tcp_socket_performance():
         transports=["tcp"],
         auto_mtls=False,  # Disable mTLS for baseline performance
         handshake_timeout=10.0,
-        connection_timeout=60.0
+        connection_timeout=60.0,
     )
 
     # Create protocol and handler
@@ -183,7 +179,7 @@ async def example_4_tcp_socket_performance():
         handler=handler,
         transport="tcp",
         host="127.0.0.1",
-        port=0  # Auto-assign port
+        port=0,  # Auto-assign port
     )
 
     logger.info(
@@ -192,7 +188,7 @@ async def example_4_tcp_socket_performance():
         action="benchmark_start",
         status="starting",
         transport="tcp",
-        capability="network_communication"
+        capability="network_communication",
     )
 
     # Start server
@@ -201,7 +197,7 @@ async def example_4_tcp_socket_performance():
 
     try:
         # Get actual server port
-        server_port = getattr(server._transport, 'port', 'unknown')
+        server_port = getattr(server._transport, "port", "unknown")
         server_endpoint = f"127.0.0.1:{server_port}"
 
         # Create client
@@ -214,19 +210,19 @@ async def example_4_tcp_socket_performance():
             action="connection",
             status="success",
             endpoint=server_endpoint,
-            network_stack="loopback"
+            network_stack="loopback",
         )
 
         # Simulate benchmark results
         benchmark_results = {
-            'transport': 'tcp',
-            'requests_per_second': 25000,
-            'avg_latency_ms': 0.2,
-            'p95_latency_ms': 0.5,
-            'p99_latency_ms': 1.0,
-            'throughput_mbps': 600,
-            'cpu_overhead_percent': 5.0,
-            'network_capable': True
+            "transport": "tcp",
+            "requests_per_second": 25000,
+            "avg_latency_ms": 0.2,
+            "p95_latency_ms": 0.5,
+            "p99_latency_ms": 1.0,
+            "throughput_mbps": 600,
+            "cpu_overhead_percent": 5.0,
+            "network_capable": True,
         }
 
         logger.info(
@@ -234,7 +230,7 @@ async def example_4_tcp_socket_performance():
             domain="transport",
             action="benchmark_result",
             status="success",
-            **benchmark_results
+            **benchmark_results,
         )
 
         await client.close()
@@ -249,7 +245,7 @@ async def example_4_tcp_socket_performance():
         domain="transport",
         action="benchmark_end",
         status="success",
-        key_benefit="Required for remote clients"
+        key_benefit="Required for remote clients",
     )
 
 
@@ -267,52 +263,52 @@ async def example_4_transport_comparison():
 
     # Transport comparison data
     transport_comparison = {
-        'unix_socket': {
-            'performance': {
-                'max_rps': 50000,
-                'typical_rps': 30000,
-                'min_latency_ms': 0.02,
-                'avg_latency_ms': 0.05,
-                'max_latency_ms': 0.2
+        "unix_socket": {
+            "performance": {
+                "max_rps": 50000,
+                "typical_rps": 30000,
+                "min_latency_ms": 0.02,
+                "avg_latency_ms": 0.05,
+                "max_latency_ms": 0.2,
             },
-            'characteristics': {
-                'scope': 'local_machine_only',
-                'network_traversal': False,
-                'firewall_friendly': True,
-                'os_overhead': 'minimal',
-                'security': 'filesystem_permissions'
+            "characteristics": {
+                "scope": "local_machine_only",
+                "network_traversal": False,
+                "firewall_friendly": True,
+                "os_overhead": "minimal",
+                "security": "filesystem_permissions",
             },
-            'use_cases': [
-                'Microservices on same host',
-                'High-frequency local IPC',
-                'Container-to-container (same node)',
-                'Process-to-process communication',
-                'Development and testing'
-            ]
+            "use_cases": [
+                "Microservices on same host",
+                "High-frequency local IPC",
+                "Container-to-container (same node)",
+                "Process-to-process communication",
+                "Development and testing",
+            ],
         },
-        'tcp_socket': {
-            'performance': {
-                'max_rps': 25000,
-                'typical_rps': 15000,
-                'min_latency_ms': 0.1,
-                'avg_latency_ms': 0.2,
-                'max_latency_ms': 2.0
+        "tcp_socket": {
+            "performance": {
+                "max_rps": 25000,
+                "typical_rps": 15000,
+                "min_latency_ms": 0.1,
+                "avg_latency_ms": 0.2,
+                "max_latency_ms": 2.0,
             },
-            'characteristics': {
-                'scope': 'network_capable',
-                'network_traversal': True,
-                'firewall_friendly': False,
-                'os_overhead': 'moderate',
-                'security': 'tls_encryption_required'
+            "characteristics": {
+                "scope": "network_capable",
+                "network_traversal": True,
+                "firewall_friendly": False,
+                "os_overhead": "moderate",
+                "security": "tls_encryption_required",
             },
-            'use_cases': [
-                'Distributed microservices',
-                'Client-server across network',
-                'Load-balanced services',
-                'Multi-host deployments',
-                'Production distributed systems'
-            ]
-        }
+            "use_cases": [
+                "Distributed microservices",
+                "Client-server across network",
+                "Load-balanced services",
+                "Multi-host deployments",
+                "Production distributed systems",
+            ],
+        },
     }
 
     # Log detailed comparison
@@ -323,7 +319,7 @@ async def example_4_transport_comparison():
             action="comparison",
             status="analysis",
             transport=transport_name,
-            **details['performance']
+            **details["performance"],
         )
 
         logger.info(
@@ -332,7 +328,7 @@ async def example_4_transport_comparison():
             action="characteristics",
             status="reference",
             transport=transport_name,
-            **details['characteristics']
+            **details["characteristics"],
         )
 
         logger.info(
@@ -341,41 +337,41 @@ async def example_4_transport_comparison():
             action="use_cases",
             status="reference",
             transport=transport_name,
-            use_cases=details['use_cases']
+            use_cases=details["use_cases"],
         )
 
     # Performance recommendations
     recommendations = [
         {
-            'scenario': 'Local microservices (same host)',
-            'recommended': 'unix_socket',
-            'reason': '2x faster, lower CPU overhead, simpler security'
+            "scenario": "Local microservices (same host)",
+            "recommended": "unix_socket",
+            "reason": "2x faster, lower CPU overhead, simpler security",
         },
         {
-            'scenario': 'Distributed services (multiple hosts)',
-            'recommended': 'tcp_socket',
-            'reason': 'Only option for network communication'
+            "scenario": "Distributed services (multiple hosts)",
+            "recommended": "tcp_socket",
+            "reason": "Only option for network communication",
         },
         {
-            'scenario': 'Container orchestration (K8s)',
-            'recommended': 'tcp_socket',
-            'reason': 'Pods may be on different nodes'
+            "scenario": "Container orchestration (K8s)",
+            "recommended": "tcp_socket",
+            "reason": "Pods may be on different nodes",
         },
         {
-            'scenario': 'Development environment',
-            'recommended': 'unix_socket',
-            'reason': 'Faster iteration, simpler debugging'
+            "scenario": "Development environment",
+            "recommended": "unix_socket",
+            "reason": "Faster iteration, simpler debugging",
         },
         {
-            'scenario': 'High-frequency trading',
-            'recommended': 'unix_socket',
-            'reason': 'Microsecond latency requirements'
+            "scenario": "High-frequency trading",
+            "recommended": "unix_socket",
+            "reason": "Microsecond latency requirements",
         },
         {
-            'scenario': 'Web API backend',
-            'recommended': 'tcp_socket',
-            'reason': 'Load balancing and scaling requirements'
-        }
+            "scenario": "Web API backend",
+            "recommended": "tcp_socket",
+            "reason": "Load balancing and scaling requirements",
+        },
     ]
 
     for rec in recommendations:
@@ -384,7 +380,7 @@ async def example_4_transport_comparison():
             domain="transport",
             action="recommendation",
             status="reference",
-            **rec
+            **rec,
         )
 
 
@@ -407,7 +403,7 @@ async def example_4_dual_transport_setup():
         transports=["unix", "tcp"],  # Support both
         auto_mtls=False,
         handshake_timeout=15.0,
-        connection_timeout=120.0
+        connection_timeout=120.0,
     )
 
     protocol = create_basic_protocol()
@@ -417,13 +413,13 @@ async def example_4_dual_transport_setup():
     # For dual transport, we let the server negotiate by passing transport=None
     # The `configure()` call above set PLUGIN_SERVER_TRANSPORTS = ['unix', 'tcp']
     # which will be used by RPCPluginServer's negotiation logic.
-    from pyvider.rpcplugin.server import RPCPluginServer # Import directly
+    from pyvider.rpcplugin.server import RPCPluginServer  # Import directly
 
     server = RPCPluginServer(
         protocol=protocol,
         handler=handler,
         transport=None,  # Crucial for negotiation
-        config={} # Pass empty config or specific if needed
+        config={},  # Pass empty config or specific if needed
     )
 
     logger.info(
@@ -432,7 +428,7 @@ async def example_4_dual_transport_setup():
         action="dual_setup",
         status="starting",
         transports=["unix", "tcp"],
-        strategy="client_choice"
+        strategy="client_choice",
     )
 
     # Start server
@@ -443,25 +439,25 @@ async def example_4_dual_transport_setup():
         # Demonstrate different client connection types
         client_scenarios = [
             {
-                'name': 'local_high_performance',
-                'transport': 'unix',
-                'reason': 'Maximum speed for local communication'
+                "name": "local_high_performance",
+                "transport": "unix",
+                "reason": "Maximum speed for local communication",
             },
             {
-                'name': 'network_capable',
-                'transport': 'tcp',
-                'reason': 'Enables remote client connections'
+                "name": "network_capable",
+                "transport": "tcp",
+                "reason": "Enables remote client connections",
             },
             {
-                'name': 'development_testing',
-                'transport': 'unix',
-                'reason': 'Faster iteration cycles'
+                "name": "development_testing",
+                "transport": "unix",
+                "reason": "Faster iteration cycles",
             },
             {
-                'name': 'production_distributed',
-                'transport': 'tcp',
-                'reason': 'Load balancing and scaling'
-            }
+                "name": "production_distributed",
+                "transport": "tcp",
+                "reason": "Load balancing and scaling",
+            },
         ]
 
         for scenario in client_scenarios:
@@ -470,24 +466,24 @@ async def example_4_dual_transport_setup():
                 domain="transport",
                 action="client_scenario",
                 status="demonstration",
-                preferred_transport=scenario['transport'],
-                reason=scenario['reason']
+                preferred_transport=scenario["transport"],
+                reason=scenario["reason"],
             )
 
         # Show transport selection logic
         transport_selection_logic = {
-            'local_client': {
-                'priority': ['unix', 'tcp'],
-                'reasoning': 'Prefer Unix for performance, fallback to TCP'
+            "local_client": {
+                "priority": ["unix", "tcp"],
+                "reasoning": "Prefer Unix for performance, fallback to TCP",
             },
-            'remote_client': {
-                'priority': ['tcp'],
-                'reasoning': 'TCP required for network communication'
+            "remote_client": {
+                "priority": ["tcp"],
+                "reasoning": "TCP required for network communication",
             },
-            'container_client': {
-                'priority': ['tcp', 'unix'],
-                'reasoning': 'TCP for cross-node, Unix for same-node optimization'
-            }
+            "container_client": {
+                "priority": ["tcp", "unix"],
+                "reasoning": "TCP for cross-node, Unix for same-node optimization",
+            },
         }
 
         for client_type, selection in transport_selection_logic.items():
@@ -497,8 +493,8 @@ async def example_4_dual_transport_setup():
                 action="selection_logic",
                 status="reference",
                 client_type=client_type,
-                priority_order=selection['priority'],
-                reasoning=selection['reasoning']
+                priority_order=selection["priority"],
+                reasoning=selection["reasoning"],
             )
 
         logger.info(
@@ -506,9 +502,9 @@ async def example_4_dual_transport_setup():
             domain="transport",
             action="dual_setup",
             status="success",
-            unix_endpoint=getattr(server._transport, 'unix_endpoint', 'available'),
+            unix_endpoint=getattr(server._transport, "unix_endpoint", "available"),
             tcp_endpoint="127.0.0.1:50051",
-            client_note="Clients can choose optimal transport"
+            client_note="Clients can choose optimal transport",
         )
 
     finally:
@@ -521,7 +517,7 @@ async def example_4_dual_transport_setup():
         domain="transport",
         action="dual_setup",
         status="completed",
-        benefit="Maximum flexibility for diverse client needs"
+        benefit="Maximum flexibility for diverse client needs",
     )
 
 
@@ -556,7 +552,7 @@ async def main():
             domain="examples",
             action="run",
             status="error",
-            error=str(e)
+            error=str(e),
         )
         raise
 

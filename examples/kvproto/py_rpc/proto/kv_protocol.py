@@ -1,29 +1,27 @@
-
 # examples/kvproto/py_rpc/proto/kv_protocol.py
 
 from typing import Any
 
-from pyvider.telemetry import logger
+from . import kv_pb2_grpc # Changed to relative import
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
+from pyvider.telemetry import logger
 
-from examples.kvproto.py_rpc.proto import kv_pb2_grpc
 
 class KVProtocol(RPCPluginProtocol):
     """Protocol implementation for KV service."""
 
-    def get_grpc_descriptors(self) -> tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]: # Added async
         """Get the gRPC service descriptors."""
         return kv_pb2_grpc, "KV"
 
-
-    async def add_to_server(self, handler, server) -> None:
+    async def add_to_server(self, server, handler) -> None: # Swapped parameters
         logger.debug("🔌📡🚀 KVProtocol.add_to_server: Registering KV service")
 
-        if not hasattr(handler, 'Get') or not callable(handler.Get):
+        if not hasattr(handler, "Get") or not callable(handler.Get):
             logger.error("🔌📡❌ KVProtocol handler missing required 'Get' method")
             raise ValueError("Invalid KV handler: missing 'Get' method")
 
-        if not hasattr(handler, 'Put') or not callable(handler.Put):
+        if not hasattr(handler, "Put") or not callable(handler.Put):
             logger.error("🔌📡❌ KVProtocol handler missing required 'Put' method")
             raise ValueError("Invalid KV handler: missing 'Put' method")
 

@@ -1,4 +1,3 @@
-
 # examples/kvproto/test_kv_integration.py
 
 import asyncio
@@ -9,18 +8,19 @@ import grpc
 import pytest
 import pytest_asyncio
 
+from examples.kvproto.py_rpc.proto import KVProtocol, kv_pb2, kv_pb2_grpc
 from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.telemetry import logger
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
+from pyvider.telemetry import logger
 
-from examples.kvproto.py_rpc.proto import KVProtocol, kv_pb2, kv_pb2_grpc
 
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
     if len(text) <= 2 * length:
         return text
     return f"{text[:length]} ... {text[-length:]}"
+
 
 class TestKVHandler(kv_pb2_grpc.KVServicer):
     """KV service handler implementation with proper type handling."""
@@ -39,13 +39,17 @@ class TestKVHandler(kv_pb2_grpc.KVServicer):
         if value is None:
             logger.debug(f"🔌📖❌ Key not found: '{key}'")
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
-            return kv_pb2.GetResponse()  # Return empty response, will not be used because of abort
+            return (
+                kv_pb2.GetResponse()
+            )  # Return empty response, will not be used because of abort
 
         # Ensure value is returned as bytes
         if isinstance(value, str):
-            value = value.encode('utf-8')
+            value = value.encode("utf-8")
 
-        logger.debug(f"🔌📖✅ Retrieved value for key '{key}', size: {len(value)} bytes")
+        logger.debug(
+            f"🔌📖✅ Retrieved value for key '{key}', size: {len(value)} bytes"
+        )
         return kv_pb2.GetResponse(value=value)
 
     async def Put(self, request, context):
@@ -58,7 +62,7 @@ class TestKVHandler(kv_pb2_grpc.KVServicer):
 
             # For logging, convert to string if needed
             if isinstance(value, bytes):
-                value_str = value.decode('utf-8', errors='replace')
+                value_str = value.decode("utf-8", errors="replace")
                 value_summary = summarize_text(value_str)
             else:
                 # Handle case where value is already a string
@@ -69,7 +73,10 @@ class TestKVHandler(kv_pb2_grpc.KVServicer):
         except Exception as e:
             logger.error(f"🔌📤❌ Error in Put operation: {e}")
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
-            return kv_pb2.Empty()  # Return empty response, will not be used because of abort
+            return (
+                kv_pb2.Empty()
+            )  # Return empty response, will not be used because of abort
+
 
 @pytest_asyncio.fixture
 async def kv_handler() -> TestKVHandler:
@@ -77,6 +84,7 @@ async def kv_handler() -> TestKVHandler:
     handler = TestKVHandler()
     logger.debug("🔌🚀✅ Created KV handler")
     return handler
+
 
 @pytest_asyncio.fixture(params=["tcp", "unix"])
 async def transport_fixture(request, managed_unix_socket_path):
@@ -102,6 +110,7 @@ async def transport_fixture(request, managed_unix_socket_path):
                 logger.debug(f"🔌🔒✅ {transport_type} transport closed")
             except Exception as e:
                 logger.error(f"🔌🔒❌ Error closing {transport_type} transport: {e}")
+
 
 @pytest_asyncio.fixture
 async def kv_server(transport_fixture, kv_handler, mock_server_config):
@@ -153,6 +162,7 @@ async def kv_server(transport_fixture, kv_handler, mock_server_config):
 
         logger.debug("🛎️🔒✅ KV server stopped")
 
+
 @pytest_asyncio.fixture
 async def kv_client(kv_server, transport_fixture):
     """Provides a KV client connected to the server."""
@@ -184,6 +194,7 @@ async def kv_client(kv_server, transport_fixture):
         await client.close()
         logger.debug("🙋🔒✅ KV client closed")
 
+
 @pytest.mark.asyncio
 async def test_kv_put_get_flow(kv_client) -> None:
     """Test basic Put/Get operations."""
@@ -207,11 +218,14 @@ async def test_kv_put_get_flow(kv_client) -> None:
         logger.debug("🔌🧪👍 Value verification successful")
 
     except grpc.RpcError as e:
-        logger.error(f"🔌🧪❌ gRPC error during Put/Get test: {e.code()}: {e.details()}")
+        logger.error(
+            f"🔌🧪❌ gRPC error during Put/Get test: {e.code()}: {e.details()}"
+        )
         raise
     except Exception as e:
         logger.error(f"🔌🧪❌ Unexpected error during Put/Get test: {e}")
         raise
+
 
 @pytest.mark.asyncio
 async def test_kv_missing_key(kv_client) -> None:
@@ -223,10 +237,12 @@ async def test_kv_missing_key(kv_client) -> None:
         await stub.Get(kv_pb2.GetRequest(key="nonexistent_key"))
 
     # Verify the error code
-    assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, \
+    assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND, (
         f"Expected NOT_FOUND, got {exc_info.value.code()}"
+    )
 
     logger.debug("🔌🧪✅ Missing key test passed: received expected NOT_FOUND error")
+
 
 # TODO: Fix this.
 # There is a race condition somewhere around here. I've seen it fail with:
@@ -244,7 +260,7 @@ async def test_kv_concurrent_operations(kv_client) -> None:
     async def put_get(i: int) -> bool:
         try:
             key = f"concurrent_key_{i}"
-            value = f"concurrent_value_{i}".encode('utf-8')
+            value = f"concurrent_value_{i}".encode("utf-8")
 
             logger.debug(f"🔌🧪🔍 Concurrent operation {i}: Put")
             await stub.Put(kv_pb2.PutRequest(key=key, value=value))
@@ -253,8 +269,9 @@ async def test_kv_concurrent_operations(kv_client) -> None:
             response = await stub.Get(kv_pb2.GetRequest(key=key))
 
             # Verify response
-            assert response.value == value, \
+            assert response.value == value, (
                 f"Operation {i}: Expected {value!r}, got {response.value!r}"
+            )
 
             logger.debug(f"🔌🧪✅ Concurrent operation {i} successful")
             return True
@@ -264,15 +281,18 @@ async def test_kv_concurrent_operations(kv_client) -> None:
 
     # Run concurrent operations
     results = await asyncio.gather(
-        *[put_get(i) for i in range(operation_count)],
-        return_exceptions=True
+        *[put_get(i) for i in range(operation_count)], return_exceptions=True
     )
 
     # Count successes
     success_count = sum(1 for result in results if result is True)
 
-    logger.debug(f"🔌🧪🔄 Concurrent operations completed: {success_count}/{operation_count} successful")
-    assert success_count == operation_count, f"Only {success_count}/{operation_count} operations succeeded"
+    logger.debug(
+        f"🔌🧪🔄 Concurrent operations completed: {success_count}/{operation_count} successful"
+    )
+    assert success_count == operation_count, (
+        f"Only {success_count}/{operation_count} operations succeeded"
+    )
 
 
 ### 🐍🏗🧪️

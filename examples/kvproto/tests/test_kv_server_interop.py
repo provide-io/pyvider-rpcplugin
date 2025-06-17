@@ -1,23 +1,20 @@
-
 # examples/kvproto/test_go_python_interop.py
 
 import asyncio
 import os
 import subprocess
-import pytest
-import pytest_asyncio
 import time
-
 from pathlib import Path
 from typing import AsyncGenerator
 
 import grpc
+import pytest
+import pytest_asyncio
 
+from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.telemetry import logger
-
-from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
 
 TEST_DIR: Path = Path(__file__).parent
 
@@ -26,6 +23,7 @@ DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
 SPECIAL_CHARACTERS = "!@#$%^&*()_+{}|:<>?[];',./`~"
+
 
 @pytest_asyncio.fixture
 async def go_server_path() -> str:
@@ -50,15 +48,17 @@ async def go_server_env() -> dict[str, str]:
         "BASIC_PLUGIN": "hello",
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport for stability
-        "PLUGIN_AUTO_MTLS": "true",   # Enable mTLS
-        "PYTHONUNBUFFERED": "1",      # Disable Python buffering
+        "PLUGIN_AUTO_MTLS": "true",  # Enable mTLS
+        "PYTHONUNBUFFERED": "1",  # Disable Python buffering
         "PLUGIN_SHOW_EMOJI_MATRIX": "true",  # Show emoji matrix for better logs
-        "GODEBUG": "asyncpreemptoff=1",      # Improve Go output behavior
+        "GODEBUG": "asyncpreemptoff=1",  # Improve Go output behavior
     }
 
 
 @pytest_asyncio.fixture
-async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> AsyncGenerator[RPCPluginClient, None]:
+async def kv_go_client(
+    go_server_path: str, go_server_env: dict[str, str]
+) -> AsyncGenerator[RPCPluginClient, None]:
     """Create and yield a RPCPluginClient connected to a KV server."""
     client = None
     logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Server at {go_server_path}")
@@ -66,15 +66,16 @@ async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> As
     try:
         # Create client with Server command
         client = RPCPluginClient(
-            command=[go_server_path],
-            config={"env": go_server_env}
+            command=[go_server_path], config={"env": go_server_env}
         )
 
         # Start client with timeout
         logger.debug(f"🧪🚀🔄 Starting client with {TEST_TIMEOUT}s timeout")
         start_time = time.time()
         await asyncio.wait_for(client.start(), timeout=TEST_TIMEOUT)
-        logger.debug(f"🧪🚀✅ Client started successfully in {time.time() - start_time:.2f}s")
+        logger.debug(
+            f"🧪🚀✅ Client started successfully in {time.time() - start_time:.2f}s"
+        )
 
         yield client
 
@@ -98,6 +99,7 @@ async def kv_go_client(go_server_path: str, go_server_env: dict[str, str]) -> As
             except Exception as e:
                 logger.error(f"🧪🔒❌ Error closing client: {e}")
 
+
 @pytest_asyncio.fixture
 async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     """Create and return a KV stub for the Server."""
@@ -105,6 +107,7 @@ async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     stub = kv_pb2_grpc.KVStub(kv_go_client._channel)
     logger.debug("🧪🔌✅ KV stub created successfully")
     return stub
+
 
 @pytest.mark.asyncio
 async def test_go_server_binary_exists() -> None:
@@ -115,13 +118,16 @@ async def test_go_server_binary_exists() -> None:
 
     if not os.path.exists(server_path):
         logger.error(f"🧪❌ Server binary not found at {server_path}")
-        pytest.fail(f"Server binary not found at {server_path}. Please build it or set PLUGIN_SERVER_PATH.")
+        pytest.fail(
+            f"Server binary not found at {server_path}. Please build it or set PLUGIN_SERVER_PATH."
+        )
 
     if not is_executable(server_path):
         logger.error(f"🧪❌ Server binary exists but is not executable: {server_path}")
         pytest.fail(f"Server binary exists but is not executable: {server_path}")
 
     logger.info("🧪✅ Server binary exists and is executable")
+
 
 @pytest.mark.asyncio
 async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
@@ -147,11 +153,14 @@ async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
         logger.debug(f"🧪📥✅ Get operation successful for key '{key}'")
 
         # Verify value
-        assert response.value == value, f"Value mismatch: expected {value!r}, got {response.value!r}"
+        assert response.value == value, (
+            f"Value mismatch: expected {value!r}, got {response.value!r}"
+        )
         logger.debug("🧪🔍✅ Value verification successful")
     except grpc.RpcError as e:
         logger.error(f"🧪📥❌ Get operation failed: {e.details()}")
         pytest.fail(f"Get operation failed: {e.details()}")
+
 
 @pytest.mark.asyncio
 async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
@@ -188,6 +197,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
         logger.error(f"🧪❌ Empty value operation failed: {e.details()}")
         pytest.fail(f"Empty value operation failed: {e.details()}")
 
+
 @pytest.mark.skip
 async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with special characters in keys and values."""
@@ -217,7 +227,9 @@ async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None
         logger.debug("🧪📤✅ Put operation with special characters in value successful")
 
         response = await kv_stub.Get(kv_pb2.GetRequest(key=key))
-        logger.debug("🧪📥✅ Get operation for key with special characters in value successful")
+        logger.debug(
+            "🧪📥✅ Get operation for key with special characters in value successful"
+        )
         assert response.value == value_with_special
     except grpc.RpcError as e:
         logger.error(f"🧪❌ Special character value operation failed: {e.details()}")
@@ -237,16 +249,24 @@ async def test_go_server_nonexistent_key(kv_stub: kv_pb2_grpc.KVStub) -> None:
     except grpc.RpcError as e:
         # This should fail with NOT_FOUND
         if e.code() == grpc.StatusCode.NOT_FOUND:
-            logger.debug("🧪🔍✅ Get operation for nonexistent key correctly returned NOT_FOUND")
+            logger.debug(
+                "🧪🔍✅ Get operation for nonexistent key correctly returned NOT_FOUND"
+            )
         else:
-            logger.error(f"🧪❌ Get operation for nonexistent key failed with unexpected error: {e.details()}")
-            pytest.fail(f"Get operation for nonexistent key failed with unexpected error: {e.details()}")
+            logger.error(
+                f"🧪❌ Get operation for nonexistent key failed with unexpected error: {e.details()}"
+            )
+            pytest.fail(
+                f"Get operation for nonexistent key failed with unexpected error: {e.details()}"
+            )
 
 
 @pytest.mark.asyncio
 async def test_go_server_large_value(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with large values."""
-    logger.debug(f"🧪🔍🚀 Testing operations with large value ({LARGE_VALUE_SIZE/1024:.1f} KB)")
+    logger.debug(
+        f"🧪🔍🚀 Testing operations with large value ({LARGE_VALUE_SIZE / 1024:.1f} KB)"
+    )
 
     key = "key_for_large_value"
     large_value = b"x" * LARGE_VALUE_SIZE
@@ -255,23 +275,33 @@ async def test_go_server_large_value(kv_stub: kv_pb2_grpc.KVStub) -> None:
         start_time = time.time()
         await kv_stub.Put(kv_pb2.PutRequest(key=key, value=large_value))
         put_duration = time.time() - start_time
-        logger.debug(f"🧪📤✅ Put operation with large value successful ({put_duration:.3f}s)")
+        logger.debug(
+            f"🧪📤✅ Put operation with large value successful ({put_duration:.3f}s)"
+        )
 
         start_time = time.time()
         response = await kv_stub.Get(kv_pb2.GetRequest(key=key))
         get_duration = time.time() - start_time
-        logger.debug(f"🧪📥✅ Get operation for large value successful ({get_duration:.3f}s)")
+        logger.debug(
+            f"🧪📥✅ Get operation for large value successful ({get_duration:.3f}s)"
+        )
 
-        assert len(response.value) == LARGE_VALUE_SIZE, f"Large value size mismatch: expected {LARGE_VALUE_SIZE}, got {len(response.value)}"
+        assert len(response.value) == LARGE_VALUE_SIZE, (
+            f"Large value size mismatch: expected {LARGE_VALUE_SIZE}, got {len(response.value)}"
+        )
         assert response.value == large_value, "Large value content mismatch"
         logger.debug("🧪🔍✅ Large value verification successful")
     except grpc.RpcError as e:
         # Some implementations might have size limits
         if e.code() == grpc.StatusCode.RESOURCE_EXHAUSTED:
-            logger.warning(f"🧪⚠️ Large value operation returned RESOURCE_EXHAUSTED: {e.details()}")
+            logger.warning(
+                f"🧪⚠️ Large value operation returned RESOURCE_EXHAUSTED: {e.details()}"
+            )
             pytest.skip(f"Server doesn't support large values: {e.details()}")
         else:
-            logger.error(f"🧪❌ Large value operation failed: {e.details()} (code={e.code()})")
+            logger.error(
+                f"🧪❌ Large value operation failed: {e.details()} (code={e.code()})"
+            )
             pytest.fail(f"Large value operation failed: {e.details()}")
 
 
@@ -292,11 +322,7 @@ async def test_go_server_rapid_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
         tasks.append(kv_stub.Put(kv_pb2.PutRequest(key=key, value=value)))
 
         # Add immediate Get task
-        tasks.append(
-            asyncio.create_task(
-                verify_kv_operation(kv_stub, key, value)
-            )
-        )
+        tasks.append(asyncio.create_task(verify_kv_operation(kv_stub, key, value)))
 
     # Run all tasks concurrently
     start_time = time.time()
@@ -310,11 +336,13 @@ async def test_go_server_rapid_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
     if errors:
         logger.error(f"🧪❌ {len(errors)}/{len(tasks)} rapid operations failed")
         for i, error in enumerate(errors[:3]):  # Log first 3 errors
-            logger.error(f"🧪❌ Error {i+1}: {error}")
+            logger.error(f"🧪❌ Error {i + 1}: {error}")
         pytest.fail(f"{len(errors)}/{len(tasks)} rapid operations failed")
 
 
-async def verify_kv_operation(stub: kv_pb2_grpc.KVStub, key: str, expected_value: bytes) -> bool:
+async def verify_kv_operation(
+    stub: kv_pb2_grpc.KVStub, key: str, expected_value: bytes
+) -> bool:
     """Helper to verify a key-value pair."""
     response = await stub.Get(kv_pb2.GetRequest(key=key))
     assert response.value == expected_value, f"Value mismatch for {key}"
@@ -326,17 +354,21 @@ def is_executable(path: str) -> bool:
     return os.path.isfile(path) and os.access(path, os.X_OK)
 
 
-async def run_process_with_timeout(cmd: list, timeout: float = 2.0) -> tuple[int, str, str]:
+async def run_process_with_timeout(
+    cmd: list, timeout: float = 2.0
+) -> tuple[int, str, str]:
     """Run a process with timeout and return exit code, stdout, stderr."""
     process = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
+        *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )
 
     try:
         stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=timeout)
-        return process.returncode, stdout.decode('utf-8', errors='replace'), stderr.decode('utf-8', errors='replace')
+        return (
+            process.returncode,
+            stdout.decode("utf-8", errors="replace"),
+            stderr.decode("utf-8", errors="replace"),
+        )
     except asyncio.TimeoutError:
         # Process ran too long, kill it
         try:
@@ -354,7 +386,9 @@ async def test_go_server_basic_execution() -> None:
 
     # Run with help flag to check if it responds properly
     logger.info(f"🧪🚀 Testing basic execution of Server: {server_path}")
-    exit_code, stdout, stderr = await run_process_with_timeout([server_path, "--help"], timeout=3.0)
+    exit_code, stdout, stderr = await run_process_with_timeout(
+        [server_path, "--help"], timeout=3.0
+    )
 
     if exit_code is None:
         logger.error("🧪⏱️❌ Server execution timed out when running with --help")
@@ -378,15 +412,17 @@ async def test_go_server_with_environment() -> None:
 
     # Setup environment variables
     env = os.environ.copy()
-    env.update({
-        "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
-        "BASIC)_PLUGIN": "hello",
-        "PLUGIN_PROTOCOL_VERSIONS": "1",
-        "PLUGIN_TRANSPORTS": "unix",
-        "PLUGIN_AUTO_MTLS": "true",
-        "PLUGIN_SHOW_ENV": "true",  # Show environment in logs
-    })
+    env.update(
+        {
+            "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
+            "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+            "BASIC)_PLUGIN": "hello",
+            "PLUGIN_PROTOCOL_VERSIONS": "1",
+            "PLUGIN_TRANSPORTS": "unix",
+            "PLUGIN_AUTO_MTLS": "true",
+            "PLUGIN_SHOW_ENV": "true",  # Show environment in logs
+        }
+    )
 
     # Start process with environment
     logger.info("🧪🚀 Testing Server with environment variables")
@@ -396,7 +432,7 @@ async def test_go_server_with_environment() -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        bufsize=0
+        bufsize=0,
     )
 
     # Wait a short time for startup
@@ -440,10 +476,7 @@ async def test_client_connection_timeout() -> None:
         "PLUGIN_AUTO_MTLS": "true",
     }
 
-    client = RPCPluginClient(
-        command=[server_path],
-        config={"env": env}
-    )
+    client = RPCPluginClient(command=[server_path], config={"env": env})
 
     logger.info("🧪⏱️ Testing client connection with timeout (expect failure)")
     start_time = time.time()
@@ -458,10 +491,14 @@ async def test_client_connection_timeout() -> None:
         logger.info(f"🧪⏱️✅ Client connection properly timed out after {duration:.2f}s")
     except HandshakeError as e:
         duration = time.time() - start_time
-        logger.info(f"🧪🤝❌ Client properly failed with HandshakeError after {duration:.2f}s: {e}")
+        logger.info(
+            f"🧪🤝❌ Client properly failed with HandshakeError after {duration:.2f}s: {e}"
+        )
     except Exception as e:
         duration = time.time() - start_time
-        logger.info(f"🧪❌ Client failed with unexpected error after {duration:.2f}s: {e}")
+        logger.info(
+            f"🧪❌ Client failed with unexpected error after {duration:.2f}s: {e}"
+        )
         pytest.fail(f"Client failed with unexpected error: {e}")
     finally:
         # Clean up
@@ -487,7 +524,7 @@ async def test_connection_with_debugging() -> None:
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport
         "PLUGIN_AUTO_MTLS": "false",  # Disable mTLS to simplify
-        "PYTHONUNBUFFERED": "1",      # Disable Python buffering
+        "PYTHONUNBUFFERED": "1",  # Disable Python buffering
         "PLUGIN_LOG_LEVEL": "DEBUG",  # Maximum logging
         "PLUGIN_SHOW_EMOJI_MATRIX": "true",
         "GODEBUG": "asyncpreemptoff=1",  # Improve Go output
@@ -501,7 +538,7 @@ async def test_connection_with_debugging() -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
-        bufsize=0
+        bufsize=0,
     )
 
     # Wait a moment for startup
@@ -547,13 +584,12 @@ async def test_connection_with_debugging() -> None:
 
     # Now try with client
     logger.info("🧪🚀 Starting client connection with debugging")
-    client = RPCPluginClient(
-        command=[server_path],
-        config={"env": env}
-    )
+    client = RPCPluginClient(command=[server_path], config={"env": env})
 
     try:
-        logger.info(f"🧪🔌 Attempting to connect to Server with {DEFAULT_TIMEOUT}s timeout")
+        logger.info(
+            f"🧪🔌 Attempting to connect to Server with {DEFAULT_TIMEOUT}s timeout"
+        )
         await asyncio.wait_for(client.start(), timeout=DEFAULT_TIMEOUT)
         logger.info("🧪✅ Client connected successfully to Server!")
 
@@ -569,7 +605,9 @@ async def test_connection_with_debugging() -> None:
             if client._process.stderr:
                 stderr_data = client._process.stderr.read(1024)
                 if stderr_data:
-                    logger.info(f"🧪📝 Server stderr: {stderr_data.decode('utf-8', errors='replace')}")
+                    logger.info(
+                        f"🧪📝 Server stderr: {stderr_data.decode('utf-8', errors='replace')}"
+                    )
 
         # Ensure clean up on failure
         try:
@@ -578,5 +616,6 @@ async def test_connection_with_debugging() -> None:
             pass
 
         pytest.fail(f"Client connection failed: {e}")
+
 
 ### 🐍🏗🧪️

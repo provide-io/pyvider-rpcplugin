@@ -27,18 +27,20 @@ Usage:
 """
 
 import os
+
 # from pathlib import Path # Removed Path
-from typing import Any, Literal, cast, get_args # Removed Callable
+from typing import Any, Literal, cast, get_args  # Removed Callable
 
 from pyvider.telemetry import logger
 
 
 class ConfigError(ValueError):
     """Custom exception for configuration-related errors."""
+
     # Add more context if needed, e.g. error_code, hint
     def __init__(self, message: str, hint: str | None = None, code: int | None = None):
         super().__init__(message)
-        self.message = message # Add this line
+        self.message = message  # Add this line
         self.hint = hint
         self.code = code
 
@@ -189,39 +191,39 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_CLIENT_RETRY_ENABLED": {
         "required": False,
-        "default": "true", # Retries enabled by default
+        "default": "true",  # Retries enabled by default
         "description": "Enable automatic retries for client connection and handshake failures.",
         "type": "bool",
     },
     "PLUGIN_CLIENT_MAX_RETRIES": {
         "required": False,
-        "default": 3, # Number of retry attempts (e.g., 3 retries means 1 initial attempt + 3 retries = 4 total attempts)
+        "default": 3,  # Number of retry attempts (e.g., 3 retries means 1 initial attempt + 3 retries = 4 total attempts)
         "description": "Maximum number of retry attempts for client operations.",
         "type": "int",
     },
     "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": {
         "required": False,
-        "default": 500, # Initial delay in milliseconds
+        "default": 500,  # Initial delay in milliseconds
         "description": "Initial backoff delay in milliseconds before the first retry.",
         "type": "int",
     },
     "PLUGIN_CLIENT_MAX_BACKOFF_MS": {
         "required": False,
-        "default": 5000, # Maximum delay in milliseconds (e.g., 5 seconds)
+        "default": 5000,  # Maximum delay in milliseconds (e.g., 5 seconds)
         "description": "Maximum backoff delay in milliseconds between retries.",
         "type": "int",
     },
     "PLUGIN_CLIENT_RETRY_JITTER_MS": {
         "required": False,
-        "default": 100, # Max jitter in milliseconds to add/subtract
+        "default": 100,  # Max jitter in milliseconds to add/subtract
         "description": "Maximum jitter in milliseconds to apply to backoff delays to prevent thundering herd.",
         "type": "int",
     },
     "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": {
         "required": False,
-        "default": 60, # Total time in seconds to keep retrying before giving up
+        "default": 60,  # Total time in seconds to keep retrying before giving up
         "description": "Total timeout in seconds for the entire retry sequence for a client operation.",
-        "type": "int", # Or float, but int is fine for seconds
+        "type": "int",  # Or float, but int is fine for seconds
     },
 }
 
@@ -266,7 +268,10 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 f"⚙️📂❌ Failed to read file for {key}: {file_path}",
                 extra={"error": str(e)},
             )
-            raise ConfigError(message=f"Failed to read configuration file specified for '{key}'. Path: {file_path}", hint="Ensure the file exists, is accessible, and has correct read permissions.") from e
+            raise ConfigError(
+                message=f"Failed to read configuration file specified for '{key}'. Path: {file_path}",
+                hint="Ensure the file exists, is accessible, and has correct read permissions.",
+            ) from e
 
     # Type conversion based on schema type
     try:
@@ -310,7 +315,10 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
 
     except (ValueError, TypeError) as e:
         logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
-        raise ConfigError(message=f"Invalid value format for configuration key '{key}'. Expected type '{meta['type']}', but received value '{value}'.", hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).") from e
+        raise ConfigError(
+            message=f"Invalid value format for configuration key '{key}'. Expected type '{meta['type']}', but received value '{value}'.",
+            hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).",
+        ) from e
 
 
 def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
@@ -333,7 +341,10 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     # Required check
     if meta.get("required", False) and value is None:
         logger.error(f"⚙️❌ Missing required configuration: {key}")
-        raise ConfigError(message=f"Missing required configuration key: '{key}'. Description: {meta['description']}", hint=f"Please provide a value for the required configuration key '{key}'. This setting is essential for the plugin's operation.")
+        raise ConfigError(
+            message=f"Missing required configuration key: '{key}'. Description: {meta['description']}",
+            hint=f"Please provide a value for the required configuration key '{key}'. This setting is essential for the plugin's operation.",
+        )
 
     # If value is None, no further validation needed
     if value is None:
@@ -345,7 +356,10 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
             f"⚙️❌ Invalid value for {key}: {value}",
             extra={"valid_values": meta["valid_values"]},
         )
-        raise ConfigError(message=f"Invalid value '{value}' provided for configuration key '{key}'.", hint=f"The value '{value}' is not a valid option for '{key}'. Allowed values are: {meta['valid_values']}. Please choose one of these.")
+        raise ConfigError(
+            message=f"Invalid value '{value}' provided for configuration key '{key}'.",
+            hint=f"The value '{value}' is not a valid option for '{key}'. Allowed values are: {meta['valid_values']}. Please choose one of these.",
+        )
 
     # logger.debug(f"⚙️🔍✅ Config {key} validation passed") # lots of logs
     return True
@@ -369,12 +383,17 @@ def get_config() -> dict[str, Any]:
             value = fetch_env_variable(key, meta)
             validate_config_value(key, value, meta)
             config[key] = value
-        except ConfigError: # Re-raise ConfigError directly
+        except ConfigError:  # Re-raise ConfigError directly
             raise
-        except ValueError as e: # Should ideally not happen if fetch/validate use ConfigError
-            logger.error(f"⚙️❌ Unexpected ValueError for {key}", extra={"error": str(e)})
-            raise ConfigError(message=f"Unexpected validation or fetch error for {key}: {e}") from e
-
+        except (
+            ValueError
+        ) as e:  # Should ideally not happen if fetch/validate use ConfigError
+            logger.error(
+                f"⚙️❌ Unexpected ValueError for {key}", extra={"error": str(e)}
+            )
+            raise ConfigError(
+                message=f"Unexpected validation or fetch error for {key}: {e}"
+            ) from e
 
     logger.debug(f"⚙️✅ Configuration complete with {len(config)} values")
     return config
@@ -400,11 +419,13 @@ class RPCPluginConfig:
         try:
             self.config = get_config()
             logger.debug("⚙️✅ RPCPluginConfig initialized with environment variables")
-        except Exception as e: # Catches ConfigError from get_config or other init issues
+        except (
+            Exception
+        ) as e:  # Catches ConfigError from get_config or other init issues
             logger.error(
                 "⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)}
             )
-            raise # Re-raise the original error (could be ConfigError or other)
+            raise  # Re-raise the original error (could be ConfigError or other)
 
     @classmethod
     def instance(cls) -> "RPCPluginConfig":
@@ -463,7 +484,10 @@ class RPCPluginConfig:
         """
         if key not in CONFIG_SCHEMA and not key.startswith("PLUGIN_"):
             logger.warning(f"⚙️⚠️ Setting unknown config key: {key}")
-            raise ConfigError(message=f"Attempted to set an unknown configuration key: '{key}'.", hint="Ensure the configuration key is spelled correctly. It should be a predefined schema key or a dynamic key starting with 'PLUGIN_'.")
+            raise ConfigError(
+                message=f"Attempted to set an unknown configuration key: '{key}'.",
+                hint="Ensure the configuration key is spelled correctly. It should be a predefined schema key or a dynamic key starting with 'PLUGIN_'.",
+            )
 
         logger.debug(f"⚙️📝 Updating config {key} -> {value}")
         self.config[key] = value
@@ -617,7 +641,10 @@ def configure(
                     f"⚙️❌ Unknown transport type: {transport}",
                     extra={"valid": get_args(TRANSPORT_TYPES)},
                 )
-                raise ConfigError(message=f"Unknown transport type specified: '{transport}'.", hint=f"Valid transport types are: {list(get_args(TRANSPORT_TYPES))}. Please use one of these.")
+                raise ConfigError(
+                    message=f"Unknown transport type specified: '{transport}'.",
+                    hint=f"Valid transport types are: {list(get_args(TRANSPORT_TYPES))}. Please use one of these.",
+                )
 
         rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", transports)
         rpcplugin_config.set("PLUGIN_CLIENT_TRANSPORTS", transports)
