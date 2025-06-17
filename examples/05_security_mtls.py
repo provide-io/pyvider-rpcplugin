@@ -308,7 +308,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
 
     # No longer using plugin_client with dummy_server.sh for this example.
     # We will create a direct gRPC secure channel.
-
+    
     server_address = "127.0.0.1:50443"
     channel = None
 
@@ -353,7 +353,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
         # Wait for the channel to be ready (completes mTLS handshake)
         # Timeout can be adjusted; 5 seconds should be enough for local mTLS.
         await asyncio.wait_for(channel.channel_ready(), timeout=10.0)
-
+        
         logger.info(
             "mTLS connection successful: Channel is ready.",
             domain="security",
