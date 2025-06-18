@@ -281,14 +281,16 @@ class GRPCStdioService(GRPCStdioServicer):
                         )
                         # If done_wait_task also completed (which it should have to cancel get_task), loop will break
 
-                # Cancel any pending tasks
+                # Cancel any pending tasks (correctly indented within the try block)
+                tasks_to_await_cleanup_pending = []
                 for task_to_cancel in pending:
-                    task_to_cancel.cancel()
-                    # Optionally, await the cancellation with suppress to ensure cleanup
-                    # try:
-                    #     await task_to_cancel
-                    # except asyncio.CancelledError:
-                    #     pass
+                    if not task_to_cancel.done(): # Check if not already done
+                        task_to_cancel.cancel()
+                        tasks_to_await_cleanup_pending.append(task_to_cancel)
+
+                if tasks_to_await_cleanup_pending:
+                    await asyncio.gather(*tasks_to_await_cleanup_pending, return_exceptions=True)
+                    logger.debug(f"🔌📝 GRPCStdioService.StreamStdio: Cleaned up {len(tasks_to_await_cleanup_pending)} pending tasks from loop.")
 
                 if should_break_loop:  # If done_wait_task was the one that completed
                     logger.debug(
@@ -300,27 +302,45 @@ class GRPCStdioService(GRPCStdioServicer):
                 logger.debug(
                     "🔌📝🛑 GRPCStdioService.StreamStdio task itself was cancelled."
                 )
+                tasks_to_await_cleanup = []
                 if get_task and not get_task.done():
                     get_task.cancel()
+                    tasks_to_await_cleanup.append(get_task)
                 if done_wait_task and not done_wait_task.done():
                     done_wait_task.cancel()
+                    tasks_to_await_cleanup.append(done_wait_task)
+                if tasks_to_await_cleanup:
+                    await asyncio.gather(*tasks_to_await_cleanup, return_exceptions=True)
                 break
             except Exception as e:
                 logger.error(
                     f"🔌📝❌ Error in StreamStdio loop: {e}",
                     extra={"trace": traceback.format_exc()},
                 )
+                tasks_to_await_cleanup = []
                 if get_task and not get_task.done():
                     get_task.cancel()
+                    tasks_to_await_cleanup.append(get_task)
                 if done_wait_task and not done_wait_task.done():
                     done_wait_task.cancel()
+                    tasks_to_await_cleanup.append(done_wait_task)
+                if tasks_to_await_cleanup:
+                    await asyncio.gather(*tasks_to_await_cleanup, return_exceptions=True)
                 break
 
         # Final cleanup of any lingering tasks (defensive)
+        tasks_to_await_cleanup = []
         if get_task and not get_task.done():
             get_task.cancel()
+            tasks_to_await_cleanup.append(get_task)
         if done_wait_task and not done_wait_task.done():
             done_wait_task.cancel()
+            tasks_to_await_cleanup.append(done_wait_task)
+
+        if tasks_to_await_cleanup:
+            logger.debug(f"🔌📝 GRPCStdioService.StreamStdio: Awaiting final cleanup of {len(tasks_to_await_cleanup)} tasks...")
+            await asyncio.gather(*tasks_to_await_cleanup, return_exceptions=True)
+            logger.debug("🔌📝 GRPCStdioService.StreamStdio: Final task cleanup complete.")
 
         logger.debug(
             f"🔌📝🛑 GRPCStdioService.StreamStdio => exited main loop. shutdown={self._shutdown}, done.is_set()={done.is_set()}"

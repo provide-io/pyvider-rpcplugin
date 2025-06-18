@@ -291,11 +291,14 @@ def test_controller_service_init_default_shutdown_event(mocker):
 async def test_controller_shutdown(
     controller_service, mock_context, shutdown_event
 ) -> None:
-    with patch.object(controller_service, "_delayed_shutdown", new_callable=AsyncMock):
+    with patch.object(controller_service, "_delayed_shutdown", new_callable=AsyncMock) as actual_mock_delayed_shutdown:
+        actual_mock_delayed_shutdown.return_value = None # Set return_value on the mock from 'as' clause
         response = await controller_service.Shutdown(ControllerEmpty(), mock_context)
         assert shutdown_event.is_set()
         assert controller_service._stdio_service._shutdown is True
-        controller_service._delayed_shutdown.assert_called_once()
+        # Allow the created task a moment to run and call the mock
+        await asyncio.sleep(0.01)
+        actual_mock_delayed_shutdown.assert_called_once() # Assert on the mock from 'as' clause
         assert isinstance(response, ControllerEmpty)
 
 
