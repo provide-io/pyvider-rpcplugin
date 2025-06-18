@@ -17,7 +17,7 @@ from tests.fixtures.proto import echo_pb2_grpc
 
 
 # Concrete Handler/Servicer for Echo service
-class EchoServicerImpl(echo_pb2_grpc.EchoService):
+class EchoServicerImpl(echo_pb2_grpc.EchoerServicer):
     async def Echo(
         self, request: echo_pb2.EchoRequest, context: grpc.aio.ServicerContext
     ) -> echo_pb2.EchoResponse:
@@ -32,7 +32,7 @@ class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServicerImpl]): # HandlerT
 
     async def add_to_server(self, server: ServerT, handler: EchoServicerImpl) -> None:
         logger.debug(f"EchoProtocolImpl add_to_server called with handler {type(handler)} and server {type(server)}")
-        echo_pb2_grpc.add_EchoService_to_server(handler, server)
+        echo_pb2_grpc.add_EchoerServicer_to_server(handler, server)
 
 
 @pytest.fixture
