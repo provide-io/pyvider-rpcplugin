@@ -1032,3 +1032,23 @@ class SecureHandler:
   - [ ] Security metrics tracking
 
 This comprehensive security guide ensures `pyvider-rpcplugin` deployments maintain the highest security standards while providing practical implementation guidance for development and operations teams.
+
+### Auto-mTLS with Self-Signed Certificates (No Explicit Configuration)
+
+When `PLUGIN_AUTO_MTLS` is set to `true` (either explicitly or by default) and no specific certificate paths (`PLUGIN_SERVER_CERT`, `PLUGIN_SERVER_KEY`, `PLUGIN_CLIENT_CERT`, `PLUGIN_CLIENT_KEY`, `PLUGIN_CLIENT_ROOT_CERTS`, `PLUGIN_SERVER_ROOT_CERTS`) are provided in the configuration:
+
+1.  **Server-Side Auto-Generation:**
+    *   The `RPCPluginServer` will automatically generate an ephemeral, self-signed server certificate and private key.
+    *   Importantly, this auto-generated server certificate is created with `BasicConstraints(is_ca=True)`, allowing it to also function as a Certificate Authority (CA).
+
+2.  **Client-Side Auto-Generation:**
+    *   If the `RPCPluginClient` is also configured for `PLUGIN_AUTO_MTLS=True` and does not have explicit client certificates (`PLUGIN_CLIENT_CERT`, `PLUGIN_CLIENT_KEY`) or server root CAs (`PLUGIN_SERVER_ROOT_CERTS`) configured, it will also auto-generate an ephemeral, self-signed client certificate and private key.
+
+3.  **Trust Establishment (Server Authentication Only):**
+    *   During the handshake, the client receives the server's auto-generated, self-signed certificate.
+    *   The client then uses this server certificate as its trusted root CA to validate the server.
+    *   In this specific auto-generation scenario on both sides, the client *does not* present its own auto-generated client certificate to the server for validation.
+    *   Similarly, the server, lacking specific `PLUGIN_CLIENT_ROOT_CERTS` to validate against, does not require or validate a client certificate.
+    *   This results in a **server-only TLS authentication**, where the client verifies the server's identity using its auto-generated certificate, but the server does not authenticate the client via its certificate. The connection is still encrypted.
+
+This behavior allows for secure, encrypted communication out-of-the-box without manual certificate setup, suitable for development or scenarios where both client and server are known entities launched within a controlled environment. For production scenarios requiring strict mutual client authentication, providing explicitly generated CA-signed certificates and configuring the appropriate root CAs on both client and server is recommended as detailed in other sections.
