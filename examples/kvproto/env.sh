@@ -18,5 +18,3 @@ export PLUGIN_MAGIC_COOKIE_VALUE=hello
 
 # Set the server path using the robust SCRIPT_DIR
 export PLUGIN_SERVER_PATH=${SCRIPT_DIR}/py_rpc/py_kv_server.py
-
-export PLUGIN_AUTO_MTLS="true"
