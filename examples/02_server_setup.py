@@ -68,7 +68,7 @@ async def example_2_unix_socket_server():
         PLUGIN_SERVER_TRANSPORTS=["unix"],
         PLUGIN_AUTO_MTLS=False,  # Disable mTLS for local communication
         PLUGIN_HANDSHAKE_TIMEOUT=10.0,
-        PLUGIN_CONNECTION_TIMEOUT=60.0, # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=60.0,  # Corrected key
     )
 
     # Create protocol and handler
@@ -135,7 +135,7 @@ async def example_2_tcp_server():
         PLUGIN_SERVER_TRANSPORTS=["tcp"],
         PLUGIN_AUTO_MTLS=False,  # Will enable mTLS in security example
         PLUGIN_HANDSHAKE_TIMEOUT=15.0,
-        PLUGIN_CONNECTION_TIMEOUT=120.0, # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=120.0,  # Corrected key
     )
 
     # Create protocol and handler
@@ -206,7 +206,7 @@ async def example_2_dual_transport_server():
         PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
         PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=20.0,
-        PLUGIN_CONNECTION_TIMEOUT=180.0, # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=180.0,  # Corrected key
     )
 
     # Create protocol and handler

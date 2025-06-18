@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from . import kv_pb2_grpc # Changed to relative import
+from . import kv_pb2_grpc  # Changed to relative import
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.telemetry import logger
 
@@ -10,11 +10,11 @@ from pyvider.telemetry import logger
 class KVProtocol(RPCPluginProtocol):
     """Protocol implementation for KV service."""
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]: # Added async
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Added async
         """Get the gRPC service descriptors."""
         return kv_pb2_grpc, "KV"
 
-    async def add_to_server(self, server, handler) -> None: # Swapped parameters
+    async def add_to_server(self, server, handler) -> None:  # Swapped parameters
         logger.debug("🔌📡🚀 KVProtocol.add_to_server: Registering KV service")
 
         if not hasattr(handler, "Get") or not callable(handler.Get):

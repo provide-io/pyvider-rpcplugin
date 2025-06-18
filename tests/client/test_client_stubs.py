@@ -10,7 +10,10 @@ from unittest.mock import (
     ANY,
 )
 
-from pyvider.rpcplugin.exception import ProtocolError, TransportError # Added TransportError
+from pyvider.rpcplugin.exception import (
+    ProtocolError,
+    TransportError,
+)  # Added TransportError
 
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
 try:
@@ -65,7 +68,10 @@ async def test_init_stubs_no_channel(client_instance):
     """Test _init_stubs with no channel available."""
     client_instance.grpc_channel = None
 
-    with pytest.raises(ProtocolError, match="Cannot initialize gRPC stubs; gRPC channel is not available."):
+    with pytest.raises(
+        ProtocolError,
+        match="Cannot initialize gRPC stubs; gRPC channel is not available.",
+    ):
         client_instance._init_stubs()
 
 
@@ -279,20 +285,21 @@ async def test_shutdown_plugin_rpc_error(client_instance, mocker):
     # Configure the Shutdown method of the AsyncMock instance
     mock_controller_stub.Shutdown = AsyncMock(side_effect=original_rpc_error)
 
-
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
     # Expect TransportError and match its message
     # For a vanilla RpcError("Shutdown RPC failed"), details() is "Shutdown RPC failed"
     # The TransportError message is f"gRPC error during plugin shutdown: {error_details_str}"
-    expected_transport_error_msg = r"\[TransportError\] gRPC error during plugin shutdown: Shutdown RPC failed"
+    expected_transport_error_msg = (
+        r"\[TransportError\] gRPC error during plugin shutdown: Shutdown RPC failed"
+    )
 
     with pytest.raises(TransportError, match=expected_transport_error_msg):
         await client_instance.shutdown_plugin()
 
     # Assertions about logging and mock calls
-    mock_controller_stub.Shutdown.assert_called_once() # Verify Shutdown was called
-    mock_logger_error.assert_called_once() # Verify logger.error was called
+    mock_controller_stub.Shutdown.assert_called_once()  # Verify Shutdown was called
+    mock_logger_error.assert_called_once()  # Verify logger.error was called
 
     args, kwargs = mock_logger_error.call_args
     # The logged message in shutdown_plugin is:

@@ -71,7 +71,7 @@ async def example_4_unix_socket_performance():
         PLUGIN_SERVER_TRANSPORTS=["unix"],
         PLUGIN_AUTO_MTLS=False,  # Disable mTLS for max performance
         PLUGIN_HANDSHAKE_TIMEOUT=5.0,
-        PLUGIN_CONNECTION_TIMEOUT=30.0, # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=30.0,  # Corrected key
     )
 
     # Create protocol and handler
@@ -168,7 +168,7 @@ async def example_4_tcp_socket_performance():
         PLUGIN_SERVER_TRANSPORTS=["tcp"],
         PLUGIN_AUTO_MTLS=False,  # Disable mTLS for baseline performance
         PLUGIN_HANDSHAKE_TIMEOUT=10.0,
-        PLUGIN_CONNECTION_TIMEOUT=60.0, # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=60.0,  # Corrected key
     )
 
     # Create protocol and handler
@@ -406,7 +406,7 @@ async def example_4_dual_transport_setup():
         PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
         PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=15.0,
-        PLUGIN_CONNECTION_TIMEOUT=120.0, # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=120.0,  # Corrected key
     )
 
     protocol = create_basic_protocol()

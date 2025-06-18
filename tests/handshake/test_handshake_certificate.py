@@ -4,7 +4,7 @@ import pytest
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.handshake import build_handshake_response
-from pyvider.rpcplugin.exception import HandshakeError # Added import
+from pyvider.rpcplugin.exception import HandshakeError  # Added import
 
 
 def test_rebuild_x509_pem():

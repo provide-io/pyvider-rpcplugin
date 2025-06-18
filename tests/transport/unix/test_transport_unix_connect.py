@@ -10,7 +10,7 @@ from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py
-from tests.fixtures.dummy import DummyReader, DummyWriter # Re-added specific import
+from tests.fixtures.dummy import DummyReader, DummyWriter  # Re-added specific import
 # from tests.fixtures.transport import managed_unix_socket_path
 
 

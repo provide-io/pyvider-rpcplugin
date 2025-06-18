@@ -128,7 +128,7 @@ __all__ = [
     "transport_cleanup",
     # client
     "client_command",
-    "client_instance", # Note: client_instance is defined twice, this will refer to the last one from tests.fixtures.client
+    "client_instance",  # Note: client_instance is defined twice, this will refer to the last one from tests.fixtures.client
     "mock_process",
     "mock_transport",
     "mock_unix_transport",
@@ -136,6 +136,6 @@ __all__ = [
     "test_client_command",
     # server
     "valid_server_env",
-    "server_instance", # Note: server_instance from tests.fixtures.server
+    "server_instance",  # Note: server_instance from tests.fixtures.server
     "mock_async_tcp_server",
 ]

@@ -9,10 +9,13 @@ from io import StringIO
 import gc
 import stat  # Added import
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock # Added MagicMock for ProtocolWithError
+from unittest.mock import AsyncMock, MagicMock  # Added MagicMock for ProtocolWithError
 from grpc.aio import server as GrpcAioServerType
 from pyvider.rpcplugin.types import RPCPluginTransport
-from pyvider.rpcplugin.exception import TransportError, ProtocolError # Ensure ProtocolError is imported
+from pyvider.rpcplugin.exception import (
+    TransportError,
+    ProtocolError,
+)  # Ensure ProtocolError is imported
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
@@ -129,7 +132,7 @@ async def test_server_serve_runtime_error(
         def get_grpc_descriptors(self) -> tuple[Any, str]:
             return (MagicMock(), "service_name")
 
-        async def add_to_server(self, handler, server): # Corrected signature
+        async def add_to_server(self, handler, server):  # Corrected signature
             raise RuntimeError("Protocol service registration")
 
     server = RPCPluginServer(
@@ -140,17 +143,21 @@ async def test_server_serve_runtime_error(
     )
 
     monkeypatch.setattr(server, "_register_signal_handlers", lambda: None)
+
     async def mock_negotiate_handshake():
         server._transport = test_transport
-        server._transport_name = getattr(test_transport, '_transport_name', 'mock')
+        server._transport_name = getattr(test_transport, "_transport_name", "mock")
         server._protocol_version = 1
         server._server_cert_obj = None
-        if hasattr(test_transport, "listen") and not getattr(test_transport, "_running", False):
-             await test_transport.listen()
+        if hasattr(test_transport, "listen") and not getattr(
+            test_transport, "_running", False
+        ):
+            await test_transport.listen()
         if isinstance(test_transport, TCPSocketTransport):
             server._port = getattr(test_transport, "port", 12345)
         else:
             server._port = None
+
     monkeypatch.setattr(server, "_negotiate_handshake", mock_negotiate_handshake)
     monkeypatch.setattr(server, "_read_client_cert", lambda: None)
 
@@ -158,7 +165,9 @@ async def test_server_serve_runtime_error(
     fake_stdout.buffer = MockBytesIO(fake_stdout)
     monkeypatch.setattr(sys, "stdout", fake_stdout)
 
-    if hasattr(test_transport, "listen") and not getattr(test_transport, "_running", False):
+    if hasattr(test_transport, "listen") and not getattr(
+        test_transport, "_running", False
+    ):
         await test_transport.listen()
 
     expected_msg_regex = (
@@ -182,7 +191,8 @@ async def test_serve_error(
     managed_unix_socket_path,  # Use unique path
 ) -> None:
     # Create fresh transport with unique path
-    from pyvider.rpcplugin.transport import UnixSocketTransport # Import directly
+    from pyvider.rpcplugin.transport import UnixSocketTransport  # Import directly
+
     test_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     server = RPCPluginServer(
@@ -220,7 +230,8 @@ async def test_wait_for_server_ready(
     managed_unix_socket_path,  # Use unique path
 ) -> None:
     # Create fresh transport with unique path
-    from pyvider.rpcplugin.transport import UnixSocketTransport # Import directly
+    from pyvider.rpcplugin.transport import UnixSocketTransport  # Import directly
+
     test_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # Don't actually listen on the socket here
@@ -283,7 +294,8 @@ async def test_stop_handles_exceptions(
     managed_unix_socket_path,  # Use a unique path fixture
 ) -> None:
     # Create a fresh transport with unique path for this test
-    from pyvider.rpcplugin.transport import UnixSocketTransport # Import directly
+    from pyvider.rpcplugin.transport import UnixSocketTransport  # Import directly
+
     dummy_transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # Don't actually listen on the transport to avoid socket creation
@@ -547,7 +559,9 @@ async def test_wait_for_server_ready_unix_path_none(
     """Test wait_for_server_ready when Unix transport path is None."""
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = None  # Simulate path being None
-    mock_transport.endpoint = "/tmp/dummy.sock"  # ensure isinstance check passes if it relies on this
+    mock_transport.endpoint = (
+        "/tmp/dummy.sock"  # ensure isinstance check passes if it relies on this
+    )
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -564,7 +578,13 @@ async def test_wait_for_server_ready_unix_path_none(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_info: True if obj is mock_transport and (cls_info == UnixSocketTransport or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
+        lambda obj, cls_info: True
+        if obj is mock_transport
+        and (
+            cls_info == UnixSocketTransport
+            or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)
+        )
+        else original_isinstance(obj, cls_info),
     )
 
     expected_unix_path_none_regex = (
@@ -582,7 +602,7 @@ async def test_wait_for_server_ready_unix_file_not_exists(
     """Test wait_for_server_ready when Unix socket file does not exist."""
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = "/tmp/non_existent_socket.sock"
-    mock_transport.endpoint = mock_transport.path # Already set, this is fine
+    mock_transport.endpoint = mock_transport.path  # Already set, this is fine
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -599,7 +619,13 @@ async def test_wait_for_server_ready_unix_file_not_exists(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_info: True if obj is mock_transport and (cls_info == UnixSocketTransport or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
+        lambda obj, cls_info: True
+        if obj is mock_transport
+        and (
+            cls_info == UnixSocketTransport
+            or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)
+        )
+        else original_isinstance(obj, cls_info),
     )
 
     expected_msg_regex = (
@@ -636,7 +662,13 @@ async def test_wait_for_server_ready_tcp_port_none(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_info: True if obj is mock_transport and (cls_info == TCPSocketTransport or (isinstance(cls_info, tuple) and TCPSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
+        lambda obj, cls_info: True
+        if obj is mock_transport
+        and (
+            cls_info == TCPSocketTransport
+            or (isinstance(cls_info, tuple) and TCPSocketTransport in cls_info)
+        )
+        else original_isinstance(obj, cls_info),
     )
 
     expected_tcp_port_none_regex = (
@@ -677,7 +709,13 @@ async def test_wait_for_server_ready_tcp_connect_fails(
     original_isinstance = builtins.isinstance
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_info: True if obj is mock_transport and (cls_info == TCPSocketTransport or (isinstance(cls_info, tuple) and TCPSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
+        lambda obj, cls_info: True
+        if obj is mock_transport
+        and (
+            cls_info == TCPSocketTransport
+            or (isinstance(cls_info, tuple) and TCPSocketTransport in cls_info)
+        )
+        else original_isinstance(obj, cls_info),
     )
 
     expected_msg_regex = (
@@ -698,7 +736,7 @@ async def test_wait_for_server_ready_unix_connect_fails(
     socket_path = "/tmp/test_unix_connect_fail.sock"
     mock_transport = mocker.MagicMock(spec=UnixSocketTransport)
     mock_transport.path = socket_path
-    mock_transport.endpoint = socket_path # Already set, this is fine
+    mock_transport.endpoint = socket_path  # Already set, this is fine
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -726,7 +764,13 @@ async def test_wait_for_server_ready_unix_connect_fails(
     # However, the specific problem context is usually one type. If only UnixSocketTransport is relevant for this test's match statement:
     mocker.patch(
         "builtins.isinstance",
-        lambda obj, cls_info: True if obj is mock_transport and (cls_info == UnixSocketTransport or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)) else original_isinstance(obj, cls_info)
+        lambda obj, cls_info: True
+        if obj is mock_transport
+        and (
+            cls_info == UnixSocketTransport
+            or (isinstance(cls_info, tuple) and UnixSocketTransport in cls_info)
+        )
+        else original_isinstance(obj, cls_info),
     )
     # If the code being tested *could* check against TCPSocketTransport as well in the same logic block:
     # mocker.patch('builtins.isinstance', lambda obj, cls_check: True if cls_check in (UnixSocketTransport, TCPSocketTransport) else original_isinstance(obj, cls_check))
@@ -821,9 +865,7 @@ async def test_stop_plugin_task_cancellation_timeout(
     mocker.patch("asyncio.gather", side_effect=asyncio.TimeoutError("Gather timed out"))
 
     mock_logger_warning = mocker.patch("pyvider.rpcplugin.server.logger.warning")
-    mocker.patch(
-        "pyvider.rpcplugin.server.logger.debug"
-    )  # To check other logs
+    mocker.patch("pyvider.rpcplugin.server.logger.debug")  # To check other logs
 
     await server.stop()
 
@@ -999,7 +1041,8 @@ async def test_serve_serving_future_raises_exception(
 
     # Check that the error during run was logged
     found_log = any(
-        "Serve() encountered an unexpected error during main execution loop" in call.args[0]
+        "Serve() encountered an unexpected error during main execution loop"
+        in call.args[0]
         and "Serving future error!" in call.kwargs.get("extra", {}).get("error", "")
         for call in mock_logger_error.call_args_list
     )

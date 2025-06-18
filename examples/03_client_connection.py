@@ -39,11 +39,11 @@ async def example_3_basic_client_connection():
 
     # Configure client settings
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="client-example-cookie", # This was already correct
+        PLUGIN_MAGIC_COOKIE_VALUE="client-example-cookie",  # This was already correct
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_CLIENT_TRANSPORTS=["unix"], # This was already correct
-        PLUGIN_CONNECTION_TIMEOUT=30.0, # This was already correct
-        PLUGIN_HANDSHAKE_TIMEOUT=10.0, # This was already correct
+        PLUGIN_CLIENT_TRANSPORTS=["unix"],  # This was already correct
+        PLUGIN_CONNECTION_TIMEOUT=30.0,  # This was already correct
+        PLUGIN_HANDSHAKE_TIMEOUT=10.0,  # This was already correct
     )
 
     logger.info(

@@ -177,7 +177,7 @@ async def test_server_handshake_integration(
         # This ensures values set by setup_environment are respected.
         return rpcplugin_config.config.get(key, default)
 
-    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get)
+    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get)
 
     # Patch sys.stdout to capture handshake output
     with (

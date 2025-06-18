@@ -17,7 +17,10 @@ from pyvider.rpcplugin.transport import (
 @pytest.mark.asyncio
 async def test_negotiate_transport_no_options():
     """Test transport negotiation with no options."""
-    with pytest.raises(TransportError, match=r"\[TransportError\] No transport options were provided.*Hint:.*"):
+    with pytest.raises(
+        TransportError,
+        match=r"\[TransportError\] No transport options were provided.*Hint:.*",
+    ):
         await negotiate_transport([])
 
 
@@ -63,7 +66,10 @@ async def test_negotiate_transport_multiple_options():
 @pytest.mark.asyncio
 async def test_negotiate_transport_invalid_options():
     """Test transport negotiation with invalid options."""
-    with pytest.raises(TransportError, match=r"\[TransportError\] No compatible transport found.*Hint:.*"):
+    with pytest.raises(
+        TransportError,
+        match=r"\[TransportError\] No compatible transport found.*Hint:.*",
+    ):
         await negotiate_transport(["invalid"])
 
 
@@ -75,11 +81,17 @@ async def test_negotiate_transport_exception_handling():
         "pyvider.rpcplugin.transport.UnixSocketTransport",
         side_effect=Exception("Transport creation failed"),
     ):
-        with pytest.raises(TransportError, match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Transport creation failed.*Hint:.*"):
+        with pytest.raises(
+            TransportError,
+            match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Transport creation failed.*Hint:.*",
+        ):
             await negotiate_transport(["unix"])
 
         # Test with multiple options
-        with pytest.raises(TransportError, match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Transport creation failed.*Hint:.*"):
+        with pytest.raises(
+            TransportError,
+            match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Transport creation failed.*Hint:.*",
+        ):
             await negotiate_transport(["unix", "tcp"])
 
 
@@ -89,7 +101,10 @@ async def test_negotiate_transport_tempfile_exception(mocker):
     mocker.patch("tempfile.gettempdir", side_effect=OSError("Disk full"))
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
-    with pytest.raises(TransportError, match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Disk full.*Hint:.*"):
+    with pytest.raises(
+        TransportError,
+        match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Disk full.*Hint:.*",
+    ):
         await negotiate_transport(["unix"])
 
     mock_logger_error.assert_called_once()

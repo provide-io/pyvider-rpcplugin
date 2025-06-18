@@ -17,13 +17,12 @@ if src_path.exists() and str(src_path) not in sys.path:
 from pyvider.rpcplugin import (  # noqa: E402
     configure,
     create_basic_protocol,
-    plugin_client,
     plugin_server,
 )
 from pyvider.rpcplugin.crypto.certificate import Certificate  # noqa: E402
-from pyvider.rpcplugin.exception import CertificateError # noqa: E402
+from pyvider.rpcplugin.exception import CertificateError  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
-import grpc # For direct channel creation
+import grpc  # For direct channel creation
 
 
 class SecureEchoHandler:
@@ -87,9 +86,9 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
     ca_cert_path = cert_path / "ca.crt"
     ca_key_path = cert_path / "ca.key"
     with open(ca_cert_path, "w") as f:
-        f.write(ca_cert_obj.cert) # cert property is guaranteed to be non-None
+        f.write(ca_cert_obj.cert)  # cert property is guaranteed to be non-None
     with open(ca_key_path, "w") as f:
-        if ca_cert_obj.key is None: # Key might be None if loaded from cert-only PEM
+        if ca_cert_obj.key is None:  # Key might be None if loaded from cert-only PEM
             raise ValueError("CA private key is None, cannot save.")
         f.write(ca_cert_obj.key)
     logger.info(
@@ -101,11 +100,11 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
     # Step 2: Create a Server Certificate signed by the CA
     server_cert_obj = Certificate.create_signed_certificate(
         ca_certificate=ca_cert_obj,
-        common_name="localhost", # Common name for the server
+        common_name="localhost",  # Common name for the server
         organization_name="Pyvider Examples Server",
         validity_days=90,
-        alt_names=["localhost", "127.0.0.1"], # Subject Alternative Names
-        is_client_cert=False # This is a server certificate
+        alt_names=["localhost", "127.0.0.1"],  # Subject Alternative Names
+        is_client_cert=False,  # This is a server certificate
     )
     server_cert_path = cert_path / "server.crt"
     server_key_path = cert_path / "server.key"
@@ -124,11 +123,11 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
     # Step 3: Create a Client Certificate signed by the CA
     client_cert_obj = Certificate.create_signed_certificate(
         ca_certificate=ca_cert_obj,
-        common_name="example-mtls-client", # Common name for the client
+        common_name="example-mtls-client",  # Common name for the client
         organization_name="Pyvider Examples Client",
         validity_days=30,
-        alt_names=["localhost"], # Optional for client certs
-        is_client_cert=True # This is a client certificate
+        alt_names=["localhost"],  # Optional for client certs
+        is_client_cert=True,  # This is a client certificate
     )
     client_cert_path = cert_path / "client.crt"
     client_key_path = cert_path / "client.key"
@@ -191,10 +190,10 @@ async def example_5_mtls_server_setup(cert_paths: dict):
         handshake_timeout=30.0,
         connection_timeout=300.0,
         # Server certificate configuration (now using CA-signed server cert)
-        server_cert=f"file://{cert_paths['server_cert']}", # Path to the CA-signed server certificate
-        server_key=f"file://{cert_paths['server_key']}",   # Path to the server's private key
+        server_cert=f"file://{cert_paths['server_cert']}",  # Path to the CA-signed server certificate
+        server_key=f"file://{cert_paths['server_key']}",  # Path to the server's private key
         # Client certificate validation (server uses CA cert to verify client certs)
-        client_root_certs=f"file://{cert_paths['ca_cert']}", # Path to the CA certificate
+        client_root_certs=f"file://{cert_paths['ca_cert']}",  # Path to the CA certificate
         # Note: PLUGIN_CLIENT_CERT in server config context means root CAs for client auth.
         # The 'client_cert=' parameter in configure() maps to PLUGIN_CLIENT_ROOT_CERTS for server-side.
         # This was a bit confusingly named in `configure` and relies on its internal mapping.
@@ -216,9 +215,11 @@ async def example_5_mtls_server_setup(cert_paths: dict):
         # I will set it directly via rpcplugin_config and then call configure for other parts.
     )
     # Explicitly set the client root certs for the server to use for mTLS validation
-    from pyvider.rpcplugin.config import rpcplugin_config # Import locally if not at top
-    rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")
+    from pyvider.rpcplugin.config import (
+        rpcplugin_config,
+    )  # Import locally if not at top
 
+    rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")
 
     logger.info(
         "Configuring mTLS server",
@@ -308,7 +309,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
 
     # No longer using plugin_client with dummy_server.sh for this example.
     # We will create a direct gRPC secure channel.
-    
+
     server_address = "127.0.0.1:50443"
     channel = None
 
@@ -323,20 +324,22 @@ async def example_5_mtls_client_connection(cert_paths: dict):
 
         # Load credentials from files
         try:
-            with open(cert_paths['ca_cert'], 'rb') as f:
+            with open(cert_paths["ca_cert"], "rb") as f:
                 ca_cert_pem = f.read()
-            with open(cert_paths['client_key'], 'rb') as f:
+            with open(cert_paths["client_key"], "rb") as f:
                 client_key_pem = f.read()
-            with open(cert_paths['client_cert'], 'rb') as f:
+            with open(cert_paths["client_cert"], "rb") as f:
                 client_cert_pem = f.read()
         except Exception as e:
-            raise CertificateError(f"Failed to read certificate/key files for client: {e}") from e
+            raise CertificateError(
+                f"Failed to read certificate/key files for client: {e}"
+            ) from e
 
         # Create SSL/TLS channel credentials for mTLS
         credentials = grpc.ssl_channel_credentials(
-            root_certificates=ca_cert_pem,         # Server authentication: CA cert to verify server's cert
-            private_key=client_key_pem,            # Client authentication: Client's private key
-            certificate_chain=client_cert_pem      # Client authentication: Client's own cert
+            root_certificates=ca_cert_pem,  # Server authentication: CA cert to verify server's cert
+            private_key=client_key_pem,  # Client authentication: Client's private key
+            certificate_chain=client_cert_pem,  # Client authentication: Client's own cert
         )
 
         # Create a secure channel
@@ -353,7 +356,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
         # Wait for the channel to be ready (completes mTLS handshake)
         # Timeout can be adjusted; 5 seconds should be enough for local mTLS.
         await asyncio.wait_for(channel.channel_ready(), timeout=10.0)
-        
+
         logger.info(
             "mTLS connection successful: Channel is ready.",
             domain="security",

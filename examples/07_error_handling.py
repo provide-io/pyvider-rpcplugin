@@ -410,12 +410,12 @@ async def example_7_basic_error_handling():
 
     # Configure for error handling demonstration
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie", # This was already correct
+        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie",  # This was already correct
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix"], # This was already correct
+        PLUGIN_SERVER_TRANSPORTS=["unix"],  # This was already correct
         PLUGIN_AUTO_MTLS=False,
-        PLUGIN_HANDSHAKE_TIMEOUT=5.0, # This was already correct
-        PLUGIN_CONNECTION_TIMEOUT=30.0, # Corrected key
+        PLUGIN_HANDSHAKE_TIMEOUT=5.0,  # This was already correct
+        PLUGIN_CONNECTION_TIMEOUT=30.0,  # Corrected key
     )
 
     protocol = create_basic_protocol()

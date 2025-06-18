@@ -617,9 +617,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 if process is not None and process.stdout is not None:
                     stdout = process.stdout
                     line_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(
-                            None, lambda: stdout.readline()
-                        ),
+                        loop.run_in_executor(None, lambda: stdout.readline()),
                         timeout=2.0,  # Longer per-read timeout
                     )
                 else:
@@ -653,9 +651,7 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                 if process is not None and process.stdout is not None:
                     stdout = process.stdout
                     char_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(
-                            None, lambda: stdout.read(1)
-                        ),
+                        loop.run_in_executor(None, lambda: stdout.read(1)),
                         timeout=1.0,
                     )
                     if char_bytes:

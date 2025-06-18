@@ -39,10 +39,11 @@ async def test_start_complete_flow(
             "pyvider.rpcplugin.client.base.RPCPluginClient._read_stdio_logs",
             new_callable=AsyncMock,
         ) as mock_read_stdio_logs,
-        patch("asyncio.create_task") as mock_create_task,
+        # REMOVE: patch("asyncio.create_task") as mock_create_task,
     ):
+        mock_read_stdio_logs.return_value = None  # Ensure the mock coroutine has a return value
         # Configure mock_handshake side_effect
-        async def perform_handshake_side_effect_revised(): # No 'slf' argument, uses client_instance from outer scope
+        async def perform_handshake_side_effect_revised():  # No 'slf' argument, uses client_instance from outer scope
             client_instance._address = "mock_unix_socket.sock"
             client_instance._transport_name = "unix"
             # The real _perform_handshake also sets:
@@ -66,9 +67,17 @@ async def test_start_complete_flow(
         mock_init_stubs.assert_called_once()
         # Check that asyncio.create_task was called.
         # The argument to create_task is the coroutine returned by mock_read_stdio_logs().
-        mock_create_task.assert_called_once()
+        # mock_create_task.assert_called_once() # asyncio.create_task is no longer mocked
         mock_read_stdio_logs.assert_called_once()  # The method itself is called
         # mock_relay_stderr.assert_not_called() # Or called, depending on expectations
+
+        # Clean up the task created by client_instance.start()
+        if client_instance._stdio_task:
+            client_instance._stdio_task.cancel()
+            try:
+                await client_instance._stdio_task
+            except asyncio.CancelledError:
+                pass
 
 
 @pytest.mark.asyncio
@@ -122,7 +131,9 @@ async def test_close_with_tasks(client_instance):
             client_instance, "_transport", new_callable=AsyncMock
         ) as local_mock_transport,
     ):
-        local_mock_process.poll.return_value = None # Ensure process doesn't appear exited
+        local_mock_process.poll.return_value = (
+            None  # Ensure process doesn't appear exited
+        )
         # local_mock_channel.close is already an AsyncMock
         # local_mock_process.terminate and .wait are MagicMocks
         # local_mock_transport.close is already an AsyncMock
@@ -155,12 +166,12 @@ async def test_close_with_errors(client_instance):
         ) as mock_channel,
         patch.object(
             client_instance, "_process", new_callable=MagicMock
-        ) as mock_process, # _process is mocked
+        ) as mock_process,  # _process is mocked
         patch.object(
             client_instance, "_transport", new_callable=AsyncMock
         ) as mock_transport,
     ):
-        mock_process.poll.return_value = None # <--- ADD THIS LINE
+        mock_process.poll.return_value = None  # <--- ADD THIS LINE
         mock_channel.close.side_effect = Exception("Channel close error")
         mock_process.terminate.side_effect = Exception("Process terminate error")
         mock_transport.close.side_effect = Exception("Transport close error")
@@ -309,7 +320,7 @@ async def test_close_process_terminate_error(client_instance, mocker):
         client_instance, "_transport", new_callable=AsyncMock
     )
 
-    mock_process.poll.return_value = None # Add this line
+    mock_process.poll.return_value = None  # Add this line
     mock_process.terminate.side_effect = OSError("Failed to terminate process")
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 

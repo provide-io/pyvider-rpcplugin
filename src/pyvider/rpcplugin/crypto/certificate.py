@@ -289,11 +289,17 @@ class Certificate:
 
                 # Create the X.509 certificate object using the base and key
                 # For self-signed, it's typically a CA, and not specifically a client cert by default.
-                self._cert = self._create_x509_certificate(is_ca=True, is_client_cert=False)
+                self._cert = self._create_x509_certificate(
+                    is_ca=True, is_client_cert=False
+                )
 
                 # Store public PEM representations
-                if self._cert is None: # Should not happen if _create_x509_certificate is correct
-                    raise CertificateError("Certificate object (_cert) is None after creation.")
+                if (
+                    self._cert is None
+                ):  # Should not happen if _create_x509_certificate is correct
+                    raise CertificateError(
+                        "Certificate object (_cert) is None after creation."
+                    )
                 self.cert = self._cert.public_bytes(serialization.Encoding.PEM).decode(
                     "utf-8"
                 )
@@ -304,7 +310,7 @@ class Certificate:
                         encryption_algorithm=serialization.NoEncryption(),
                     ).decode("utf-8")
                 else:
-                    self.key = None # Should not happen if generate_keypair is True
+                    self.key = None  # Should not happen if generate_keypair is True
 
                 logger.debug(
                     "📜🔑✅ Certificate.__attrs_post_init__: Generated cert and key."
@@ -429,11 +435,17 @@ class Certificate:
         try:
             logger.debug("📜📝🚀 _create_x509_certificate: Building certificate.")
 
-            actual_issuer_name = issuer_name_override if issuer_name_override else self._base.issuer
-            actual_signing_key = signing_key_override if signing_key_override else self._private_key
+            actual_issuer_name = (
+                issuer_name_override if issuer_name_override else self._base.issuer
+            )
+            actual_signing_key = (
+                signing_key_override if signing_key_override else self._private_key
+            )
 
             if not actual_signing_key:
-                 raise CertificateError("Cannot sign certificate without a signing key (either own or override).")
+                raise CertificateError(
+                    "Cannot sign certificate without a signing key (either own or override)."
+                )
 
             builder = (
                 x509.CertificateBuilder()
@@ -455,20 +467,22 @@ class Certificate:
 
             # --- Add standard extensions based on certificate type ---
             builder = builder.add_extension(
-                x509.BasicConstraints(ca=is_ca, path_length=None), # path_length is None for non-CA or CA with no limit
+                x509.BasicConstraints(
+                    ca=is_ca, path_length=None
+                ),  # path_length is None for non-CA or CA with no limit
                 critical=True,
             )
 
             if is_ca:
                 builder = builder.add_extension(
                     x509.KeyUsage(
-                        digital_signature=False, # CA key usage differs
+                        digital_signature=False,  # CA key usage differs
                         key_encipherment=False,
                         key_agreement=False,
                         content_commitment=False,
                         data_encipherment=False,
-                        key_cert_sign=True, # Must be true for CA
-                        crl_sign=True,      # Typically true for CA
+                        key_cert_sign=True,  # Must be true for CA
+                        crl_sign=True,  # Typically true for CA
                         encipher_only=False,
                         decipher_only=False,
                     ),
@@ -477,15 +491,20 @@ class Certificate:
                 # ExtendedKeyUsage is typically not set or has specific CA usages if needed,
                 # but for simplicity, we can omit it for a self-signed CA being generated here.
                 # If it were signing, ExtendedKeyUsage might be relevant.
-            else: # End-entity certificate
+            else:  # End-entity certificate
                 builder = builder.add_extension(
                     x509.KeyUsage(
-                        digital_signature=True, # Required for TLS
-                        key_encipherment=True if not is_client_cert and isinstance(self._base.public_key, rsa.RSAPublicKey) else False, # For server RSA key exchange
-                        key_agreement=True if isinstance(self._base.public_key, ec.EllipticCurvePublicKey) else False, # For ECDH
+                        digital_signature=True,  # Required for TLS
+                        key_encipherment=True
+                        if not is_client_cert
+                        and isinstance(self._base.public_key, rsa.RSAPublicKey)
+                        else False,  # For server RSA key exchange
+                        key_agreement=True
+                        if isinstance(self._base.public_key, ec.EllipticCurvePublicKey)
+                        else False,  # For ECDH
                         content_commitment=False,
                         data_encipherment=False,
-                        key_cert_sign=False, # Must be false for end-entity
+                        key_cert_sign=False,  # Must be false for end-entity
                         crl_sign=False,
                         encipher_only=False,
                         decipher_only=False,
@@ -495,21 +514,23 @@ class Certificate:
                 extended_usages = []
                 if is_client_cert:
                     extended_usages.append(ExtendedKeyUsageOID.CLIENT_AUTH)
-                else: # Server certificate or other non-client end-entity
+                else:  # Server certificate or other non-client end-entity
                     extended_usages.append(ExtendedKeyUsageOID.SERVER_AUTH)
 
-                if extended_usages: # Only add if there are usages specified
+                if extended_usages:  # Only add if there are usages specified
                     builder = builder.add_extension(
                         x509.ExtendedKeyUsage(extended_usages),
                         critical=False,
                     )
 
-            logger.debug(f"📜📝✅ Added BasicConstraints (is_ca={is_ca}), KeyUsage, ExtendedKeyUsage (is_client_cert={is_client_cert}).")
+            logger.debug(
+                f"📜📝✅ Added BasicConstraints (is_ca={is_ca}), KeyUsage, ExtendedKeyUsage (is_client_cert={is_client_cert})."
+            )
 
             # Sign the certificate
             signed_cert = builder.sign(
                 private_key=actual_signing_key,
-                algorithm=hashes.SHA256(), # Consider SHA384 for ECDSA P-384 keys if policy dictates
+                algorithm=hashes.SHA256(),  # Consider SHA384 for ECDSA P-384 keys if policy dictates
                 backend=default_backend(),
             )
             logger.debug("📜📝✅ Certificate signed successfully.")
@@ -634,13 +655,21 @@ class Certificate:
     # _create_x509_certificate is defined above by the previous SEARCH/REPLACE block
 
     @classmethod
-    def create_ca(cls, common_name: str, organization_name: str, validity_days: int,
-                  key_type: str = "ecdsa", key_size: int = 2048,
-                  ecdsa_curve: str = "secp384r1") -> 'Certificate':
+    def create_ca(
+        cls,
+        common_name: str,
+        organization_name: str,
+        validity_days: int,
+        key_type: str = "ecdsa",
+        key_size: int = 2048,
+        ecdsa_curve: str = "secp384r1",
+    ) -> "Certificate":
         """
         Creates a new self-signed CA certificate.
         """
-        logger.info(f"📜🔑🏭 Creating new CA certificate: CN={common_name}, Org={organization_name}")
+        logger.info(
+            f"📜🔑🏭 Creating new CA certificate: CN={common_name}, Org={organization_name}"
+        )
         # __attrs_post_init__ will call _create_x509_certificate with is_ca=True
         return cls(
             generate_keypair=True,
@@ -650,13 +679,13 @@ class Certificate:
             key_type=key_type,
             key_size=key_size,
             ecdsa_curve=ecdsa_curve,
-            alt_names=[common_name] # CA often has its CN as SAN
+            alt_names=[common_name],  # CA often has its CN as SAN
         )
 
     @classmethod
     def create_signed_certificate(
         cls,
-        ca_certificate: 'Certificate',
+        ca_certificate: "Certificate",
         common_name: str,
         organization_name: str,
         validity_days: int,
@@ -664,8 +693,8 @@ class Certificate:
         key_type: str = "ecdsa",
         key_size: int = 2048,
         ecdsa_curve: str = "secp384r1",
-        is_client_cert: bool = False
-    ) -> 'Certificate':
+        is_client_cert: bool = False,
+    ) -> "Certificate":
         """
         Creates a new certificate signed by the provided CA certificate.
         """
@@ -676,19 +705,21 @@ class Certificate:
         if not ca_certificate._private_key:
             raise CertificateError(
                 message="CA certificate's private key is not available for signing.",
-                hint="Ensure the CA certificate object was loaded or created with its private key."
+                hint="Ensure the CA certificate object was loaded or created with its private key.",
             )
         if not ca_certificate.is_ca:
-            logger.warning(f"📜🔑⚠️ Signing certificate (Subject: {ca_certificate.subject}) is not marked as a CA. This might lead to validation issues.")
-
+            logger.warning(
+                f"📜🔑⚠️ Signing certificate (Subject: {ca_certificate.subject}) is not marked as a CA. This might lead to validation issues."
+            )
 
         # 1. Create a new certificate object - this will generate a new keypair and base attributes
         new_cert_obj = cls(
-            generate_keypair=True, # Important: new keypair for the new cert
+            generate_keypair=True,  # Important: new keypair for the new cert
             common_name=common_name,
             organization_name=organization_name,
             validity_days=validity_days,
-            alt_names=alt_names or [common_name], # Default SAN to common_name if not provided
+            alt_names=alt_names
+            or [common_name],  # Default SAN to common_name if not provided
             key_type=key_type,
             key_size=key_size,
             ecdsa_curve=ecdsa_curve,
@@ -698,31 +729,43 @@ class Certificate:
         # The _base object of new_cert_obj has the correct subject, serial, public_key, validity for the new cert.
         # We override the issuer and signing key with the CA's.
         signed_x509_cert = new_cert_obj._create_x509_certificate(
-            issuer_name_override=ca_certificate._base.subject, # CA's subject is the new cert's issuer
-            signing_key_override=ca_certificate._private_key, # CA's private key signs it
-            is_ca=False, # This new cert is an end-entity cert, not a CA
-            is_client_cert=is_client_cert
+            issuer_name_override=ca_certificate._base.subject,  # CA's subject is the new cert's issuer
+            signing_key_override=ca_certificate._private_key,  # CA's private key signs it
+            is_ca=False,  # This new cert is an end-entity cert, not a CA
+            is_client_cert=is_client_cert,
         )
 
         # 3. Update the new_cert_obj with the CA-signed X509Certificate and its PEM representation
         new_cert_obj._cert = signed_x509_cert
-        new_cert_obj.cert = signed_x509_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        new_cert_obj.cert = signed_x509_cert.public_bytes(
+            serialization.Encoding.PEM
+        ).decode("utf-8")
 
         # Optionally, link the CA to the new certificate's trust chain (conceptual)
         # new_cert_obj._trust_chain.append(ca_certificate) # This depends on how trust_chain is used
 
-        logger.info(f"📜🔑✅ Successfully created and signed certificate for CN={common_name} by CA='{ca_certificate.subject}'")
+        logger.info(
+            f"📜🔑✅ Successfully created and signed certificate for CN={common_name} by CA='{ca_certificate.subject}'"
+        )
         return new_cert_obj
 
     @classmethod
-    def create_self_signed_server_cert(cls, common_name: str, organization_name: str, validity_days: int,
-                                      alt_names: list[str] | None = None,
-                                      key_type: str = "ecdsa", key_size: int = 2048,
-                                      ecdsa_curve: str = "secp384r1") -> 'Certificate':
+    def create_self_signed_server_cert(
+        cls,
+        common_name: str,
+        organization_name: str,
+        validity_days: int,
+        alt_names: list[str] | None = None,
+        key_type: str = "ecdsa",
+        key_size: int = 2048,
+        ecdsa_curve: str = "secp384r1",
+    ) -> "Certificate":
         """
         Creates a new self-signed end-entity certificate suitable for a server.
         """
-        logger.info(f"📜🔑🏭 Creating new self-signed SERVER certificate: CN={common_name}, Org={organization_name}")
+        logger.info(
+            f"📜🔑🏭 Creating new self-signed SERVER certificate: CN={common_name}, Org={organization_name}"
+        )
 
         cert_obj = cls(
             generate_keypair=True,
@@ -732,22 +775,28 @@ class Certificate:
             alt_names=alt_names or [common_name],
             key_type=key_type,
             key_size=key_size,
-            ecdsa_curve=ecdsa_curve
+            ecdsa_curve=ecdsa_curve,
         )
 
         if not cert_obj._private_key:
-            raise CertificateError("Private key not generated for self-signed server certificate.")
+            raise CertificateError(
+                "Private key not generated for self-signed server certificate."
+            )
 
         actual_x509_cert = cert_obj._create_x509_certificate(
-            is_ca=False, # Self-signed server cert is NOT a CA
-            is_client_cert=False # It's a server cert
+            is_ca=False,  # Self-signed server cert is NOT a CA
+            is_client_cert=False,  # It's a server cert
         )
 
         cert_obj._cert = actual_x509_cert
         # Ensure cert_obj.cert (the PEM string) is updated from the newly created _cert object
-        cert_obj.cert = actual_x509_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        cert_obj.cert = actual_x509_cert.public_bytes(
+            serialization.Encoding.PEM
+        ).decode("utf-8")
 
-        logger.info(f"📜🔑✅ Successfully created self-signed SERVER certificate for CN={common_name}")
+        logger.info(
+            f"📜🔑✅ Successfully created self-signed SERVER certificate for CN={common_name}"
+        )
         return cert_obj
 
     def verify_trust(self, other_cert: Self) -> bool:
