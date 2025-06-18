@@ -263,15 +263,15 @@ async def test_generate_server_credentials_cert_constructor_exception(
         transport=mock_server_transport,
     )
 
-    with pytest.raises(Exception, match="Generic cert constructor error"):
+    # Expect SecurityError wrapping the original Exception
+    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key from configuration: Generic cert constructor error"):
         server._generate_server_credentials()
 
     mock_logger_error.assert_called_once()
     args, kwargs_log = mock_logger_error.call_args
-    assert "Error generating server credentials" in args[0]
-    assert "Generic cert constructor error" in kwargs_log.get("extra", {}).get(
-        "error", ""
-    )
+    assert "Failed to load server certificate/key from configuration" in args[0]
+    assert "Generic cert constructor error" in args[0] # Check in the main message string
+    assert "trace" in kwargs_log.get("extra", {}) # Ensure traceback was logged in extra
 
 
 @pytest.mark.asyncio
@@ -335,13 +335,13 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     )
 
     # 5. Call the target method and assert the *actual* exception and message
-    actual_expected_error_message = "Server certificate or private key content is missing after loading."
-    actual_expected_hint = "Verify the certificate and key files specified by PLUGIN_SERVER_CERT and PLUGIN_SERVER_KEY are valid and contain PEM-encoded data."
+    expected_error_message = "Server certificate object is invalid or missing PEM data after loading/generation."
+    expected_hint = "Verify certificate source or generation process. This should not happen if loading/generation was successful."
 
-    with pytest.raises(SecurityError, match=actual_expected_error_message) as excinfo:
+    with pytest.raises(SecurityError, match=expected_error_message) as excinfo:
         server._generate_server_credentials()
 
-    assert excinfo.value.hint == actual_expected_hint
+    assert excinfo.value.hint == expected_hint
 
     # 6. Assert the logger call
     # For this specific error path (SecurityError raised directly due to cert/key content missing),
