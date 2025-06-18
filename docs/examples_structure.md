@@ -1,48 +1,48 @@
 # Required Examples Directory Structure
 
-```
+This document outlines the actual structure of the `examples/` directory.
+
+\`\`\`
 examples/
 ├── README.md                     # Examples overview and setup instructions
-├── 01_quick_start.py            # Basic server/client setup (PRIMARY README DEMO)
+├── 01_quick_start.py            # Basic server/client setup
 ├── 02_server_setup.py           # Server configuration patterns
 ├── 03_client_connection.py      # Client implementation examples
 ├── 04_transport_options.py      # Unix socket vs TCP configuration
 ├── 05_security_mtls.py          # mTLS certificate setup
-├── 06_async_patterns.py         # Best async practices (Corrected order)
-├── 07_error_handling.py         # Robust error management (Corrected order)
+├── 06_async_patterns.py         # Best async practices
+├── 07_error_handling.py         # Robust error management
 ├── 08_production_config.py      # Production deployment patterns
 ├── 09_custom_protocols.py       # Custom protocol definitions & middleware
 ├── 10_performance_tuning.py     # Performance benchmarking & optimization
-└── demo/                        # Subdirectory for more complex demos
-    ├── echo_service/            # Complete echo service implementation
-    │   ├── echo_pb2.py         # Generated protobuf
-    │   ├── echo_pb2_grpc.py    # Generated gRPC stubs
-    │   ├── echo.proto          # Protocol definition
-    │   ├── server.py           # Echo server implementation
-    │   └── client.py           # Echo client implementation
-    └── kvproto/                 # Key-value service demo
-        ├── kv_pb2.py           # Generated protobuf
-        ├── kv_pb2_grpc.py      # Generated gRPC stubs
-        ├── kv.proto            # Protocol definition
-        ├── server.py           # KV server implementation
-        └── client.py           # KV client implementation
-```
+├── __init__.py                  # Makes 'examples' a package (if needed)
+├── dummy_server.sh              # Dummy server script for some examples
+├── demo/                        # Subdirectory for the Echo demo
+│   ├── __init__.py
+│   ├── echo.proto
+│   ├── echo_client.py
+│   ├── echo_pb2.py
+│   ├── echo_pb2.pyi
+│   ├── echo_pb2_grpc.py
+│   ├── echo_server.py
+│   └── env.sh
+└── kvproto/                     # Subdirectory for the Key-Value demo
+    ├── __init__.py
+    ├── env.sh                   # Environment setup for KV demos
+    ├── go-rpc/                  # Go language RPC example for KV
+    │   ├── ... (contents of go-rpc)
+    ├── py_rpc/                  # Python RPC implementation for KV
+    │   ├── __init__.py
+    │   ├── proto/               # Protobuf definitions for Python KV
+    │   │   ├── __init__.py
+    │   │   ├── kv.proto
+    │   │   ├── kv_pb2.py
+    │   │   ├── kv_pb2.pyi
+    │   │   └── kv_pb2_grpc.py
+    │   ├── py_kv_client.py      # Python KV client
+    │   └── py_kv_server.py      # Python KV server
+    └── tests/                   # Tests specific to KV examples
+        ├── ... (contents of tests)
+\`\`\`
 
-<!--
-## Priority Implementation Order (Historical - Kept for reference if needed)
-
-### **IMMEDIATE (Pre-Release)**
-1. **01_quick_start.py** - This is the primary README demo
-2. **examples/demo/echo_service/** - Complete working echo service
-3. **examples/README.md** - Setup and running instructions
-
-### **HIGH PRIORITY (Release Readiness)**
-4. **02_server_setup.py** - Server configuration examples
-5. **03_client_connection.py** - Client patterns  
-6. **04_transport_options.py** - Transport configuration
-
-### **MEDIUM PRIORITY (Post-Release)**
-7. **05_security_mtls.py** - Security implementation
-8. **examples/demo/kvproto/** - More complex key-value example
-9. Remaining numbered examples (06-08)
--->
+The historical "Priority Implementation Order" section has been removed as it's outdated.
