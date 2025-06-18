@@ -2,7 +2,7 @@
 
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
-from pyvider.rpcplugin.exception import TransportError # Added import
+from pyvider.rpcplugin.exception import TransportError  # Added import
 
 
 @pytest.mark.asyncio

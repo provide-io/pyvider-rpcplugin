@@ -20,7 +20,7 @@ from pyvider.rpcplugin.transport import (
 )
 
 from pyvider.rpcplugin.types import TransportT, HandlerT
-from pyvider.rpcplugin.config import rpcplugin_config # Import global instance
+from pyvider.rpcplugin.config import rpcplugin_config  # Import global instance
 
 from typing import Tuple
 
@@ -173,7 +173,9 @@ async def mock_server_transport_unix(managed_unix_socket_path) -> TransportT:
             if os.path.exists(managed_unix_socket_path):
                 os.chmod(managed_unix_socket_path, 0o770)
                 os.unlink(managed_unix_socket_path)
-                logger.debug(f"🧪🧹 Manually removed socket file {managed_unix_socket_path}")
+                logger.debug(
+                    f"🧪🧹 Manually removed socket file {managed_unix_socket_path}"
+                )
         except Exception as e:
             logger.error(f"🧪❌ Error cleaning transport: {e}")
 

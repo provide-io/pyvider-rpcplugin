@@ -3,6 +3,7 @@
 import pytest
 from datetime import datetime, timedelta, timezone  # Or use UTC if available
 from unittest import mock
+from unittest.mock import MagicMock
 
 
 from pyvider.rpcplugin.exception import CertificateError
@@ -109,7 +110,7 @@ def test_certificate_base_create_unsupported_key_type_str(mocker):
         "not_valid_after": now + timedelta(days=30),
     }
     mock_logger_error = mocker.patch(
-        "pyvider.rpcplugin.crypto.certificate.logger.error"
+        "pyvider.rpcplugin.crypto.certificate.logger.error", new=MagicMock()
     )
 
     with pytest.raises(CertificateError) as excinfo:
@@ -130,7 +131,7 @@ def test_certificate_base_create_unsupported_key_type_str(mocker):
 async def test_certificate_init_invalid_ecdsa_curve(mocker):
     """Test Certificate instantiation with an invalid ecdsa_curve string."""
     mock_logger_error = mocker.patch(
-        "pyvider.rpcplugin.crypto.certificate.logger.error"
+        "pyvider.rpcplugin.crypto.certificate.logger.error", new=MagicMock()
     )
 
     with pytest.raises(CertificateError) as excinfo:

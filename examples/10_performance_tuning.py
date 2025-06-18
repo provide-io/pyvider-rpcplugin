@@ -653,7 +653,7 @@ async def example_10_concurrency_tuning():
             config={
                 # "max_workers": concurrent_clients * 2,  # Conceptual: gRPC options not set this way
                 # "connection_pool_size": concurrent_clients, # Conceptual
-                "app_concurrency_setting": concurrent_clients # Example of app-specific config
+                "app_concurrency_setting": concurrent_clients  # Example of app-specific config
             },
         )
 
@@ -872,9 +872,9 @@ async def example_10_memory_optimization():
         handler=handler,
         transport="unix",
         config={
-                # "max_connections": 100,  # Conceptual: gRPC options not set this way
-                # "connection_timeout": 30, # This is a PLUGIN_ key, not for direct gRPC option
-                "app_resource_profile": "optimized" # Example of app-specific config
+            # "max_connections": 100,  # Conceptual: gRPC options not set this way
+            # "connection_timeout": 30, # This is a PLUGIN_ key, not for direct gRPC option
+            "app_resource_profile": "optimized"  # Example of app-specific config
         },
     )
 

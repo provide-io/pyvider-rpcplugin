@@ -67,11 +67,16 @@ async def test_unix_socket_concurrent_connections() -> None:
         await asyncio.sleep(0)  # Give event loop a chance to process
     finally:
         # Clean up remaining clients if any
-        for client in client_transports:
-            try:
-                await client.close()  # Idempotent
-            except Exception as e:
-                logger.error(f"Error closing client during finally: {e}")
+        client_close_tasks = []
+        for client_transport_obj in client_transports: # Renamed to avoid conflict
+            if hasattr(client_transport_obj, 'close') and callable(client_transport_obj.close):
+                 client_close_tasks.append(asyncio.create_task(client_transport_obj.close())) # Idempotent
+
+        if client_close_tasks:
+            logger.debug(f"Gathering {len(client_close_tasks)} client close tasks in finally block...")
+            await asyncio.gather(*client_close_tasks, return_exceptions=True)
+            logger.debug(f"Finished gathering client close tasks.")
+        client_transports.clear() # Clear the list after attempting to close all
 
         # Ensure server_transport is closed if it was initialized
         if server_transport:

@@ -13,8 +13,8 @@ from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.telemetry import logger
-from pathlib import Path # Added
-from typing import AsyncGenerator, Dict, Any # Added Dict, Any
+from pathlib import Path  # Added
+from typing import AsyncGenerator, Dict, Any  # Added Dict, Any
 
 
 @pytest_asyncio.fixture
@@ -26,6 +26,7 @@ async def mock_server_config() -> Dict[str, Any]:
         "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
         # Add other necessary mock config values if the server fixture depends on them
     }
+
 
 @pytest_asyncio.fixture
 async def managed_unix_socket_path(tmp_path: Path) -> AsyncGenerator[str, None]:
@@ -202,11 +203,11 @@ async def kv_client(kv_server, transport_fixture):
     # Set up environment for client
     env = {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-            "PLUGIN_MAGIC_COOKIE": "hello", # This is what the client (test) sends to the plugin server via env var BASIC_PLUGIN
-            "PLUGIN_MAGIC_COOKIE_VALUE": "hello", # This is what the plugin server (py_kv_server.py) will expect
+        "PLUGIN_MAGIC_COOKIE": "hello",  # This is what the client (test) sends to the plugin server via env var BASIC_PLUGIN
+        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",  # This is what the plugin server (py_kv_server.py) will expect
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": transport_type,
-            "PLUGIN_AUTO_MTLS": "false", # Ensure py_kv_server runs insecurely
+        "PLUGIN_AUTO_MTLS": "false",  # Ensure py_kv_server runs insecurely
     }
 
     # Create client

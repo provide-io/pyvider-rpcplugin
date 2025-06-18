@@ -30,7 +30,6 @@ async def server_instance(
 ):
     from pyvider.rpcplugin.config import rpcplugin_config
 
-
     try:
         # Set environment variables
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")

@@ -25,7 +25,10 @@ from pyvider.rpcplugin.transport.base import (
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.config import rpcplugin_config  # Added for config manipulation
 
-from tests.fixtures.mocks import MockProtocol, MockHandler # Assumes SocketStateMonitor, MockProtocol, MockHandler are here
+from tests.fixtures.mocks import (
+    MockProtocol,
+    MockHandler,
+)  # Assumes SocketStateMonitor, MockProtocol, MockHandler are here
 
 # managed_transport context manager seems unused by current tests, can be reviewed later.
 
@@ -227,7 +230,12 @@ async def test_transport_connection_original_unix_only(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["unix"])  # Only run unix part
 async def test_server_with_transport_old_unix_only(
-    transport_type, transport_factory, server_factory, temp_sock_dir, unused_tcp_port, mocker
+    transport_type,
+    transport_factory,
+    server_factory,
+    temp_sock_dir,
+    unused_tcp_port,
+    mocker,
 ) -> None:
     # Configure for an insecure setup
     def mock_config_get_insecure(key, default=None):
@@ -236,7 +244,8 @@ async def test_server_with_transport_old_unix_only(
         if key == "PLUGIN_SERVER_CERT":
             return None
         return rpcplugin_config.config.get(key, default)
-    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_insecure)
+
+    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
 
     transport_kwargs = {}  # No port for unix
     transport = await transport_factory(transport_type, **transport_kwargs)
@@ -288,7 +297,8 @@ async def test_server_lifecycle_and_connectivity(
         if key == "PLUGIN_SERVER_CERT":
             return None
         return rpcplugin_config.config.get(key, default)
-    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_insecure)
+
+    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
 
     server_transport_kwargs = (
         {"port": unused_tcp_port} if transport_type == "tcp" else {}
@@ -414,6 +424,7 @@ async def test_connection_refused_consolidated(
             await client.connect(endpoint_to_test)
     finally:
         await client.close()
+
 
 # long-running
 @pytest.mark.asyncio

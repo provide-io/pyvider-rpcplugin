@@ -27,8 +27,9 @@ Usage:
 """
 
 import os
+
 # Conditional import for yaml later
-from typing import Any, Literal, cast, get_args, Dict
+from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
 
@@ -117,7 +118,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_AUTO_MTLS": {
         "required": True,
-        "default": "true", # Reverted default from "false" back to "true"
+        "default": "true",  # Reverted default from "false" back to "true"
         "description": "Flag to enable automatic mTLS (true/false).",
         "type": "bool",
     },
@@ -571,6 +572,7 @@ class RPCPluginConfig:
             Timeout in seconds
         """
         return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
+
 
 # Global singleton instance
 rpcplugin_config = RPCPluginConfig.instance()

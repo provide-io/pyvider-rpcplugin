@@ -1,6 +1,6 @@
 # tests/handshake/test_handshake_responses.py
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock # Added AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock  # Added AsyncMock
 
 from pyvider.rpcplugin.handshake import (
     build_handshake_response,
@@ -20,7 +20,7 @@ async def test_build_handshake_response_with_tls(mock_server_transport_tcp):
         transport_name="tcp",
         transport=mock_server_transport_tcp,
         server_cert=cert,
-        port=mock_server_transport_tcp.port
+        port=mock_server_transport_tcp.port,
     )
     parts = response.split("|")
     assert len(parts) == 6
@@ -29,7 +29,9 @@ async def test_build_handshake_response_with_tls(mock_server_transport_tcp):
 
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 @pytest.mark.asyncio
-async def test_build_handshake_response_without_tls(transport_type, mock_server_transport_tcp, mock_server_transport_unix, mocker):
+async def test_build_handshake_response_without_tls(
+    transport_type, mock_server_transport_tcp, mock_server_transport_unix, mocker
+):
     """Test building handshake response without TLS."""
     transport_to_use = None
     port_to_use = None
@@ -38,19 +40,23 @@ async def test_build_handshake_response_without_tls(transport_type, mock_server_
         transport_to_use = mock_server_transport_tcp
         port_to_use = mock_server_transport_tcp.port
         if not transport_to_use._running:
-             mocker.patch.object(transport_to_use, 'listen', return_value=f"127.0.0.1:{port_to_use}")
+            mocker.patch.object(
+                transport_to_use, "listen", return_value=f"127.0.0.1:{port_to_use}"
+            )
 
     elif transport_type == "unix":
         transport_to_use = mock_server_transport_unix
         if not transport_to_use._running:
-            mocker.patch.object(transport_to_use, 'listen', return_value="/tmp/mock.sock")
+            mocker.patch.object(
+                transport_to_use, "listen", return_value="/tmp/mock.sock"
+            )
 
     response = await build_handshake_response(
         plugin_version=7,
         transport_name=transport_type,
         transport=transport_to_use,
         server_cert=None,
-        port=port_to_use
+        port=port_to_use,
     )
     parts = response.split("|")
     assert len(parts) == 6
@@ -60,12 +66,15 @@ async def test_build_handshake_response_without_tls(transport_type, mock_server_
 @pytest.mark.asyncio
 async def test_build_handshake_response_invalid_transport(mock_server_transport_tcp):
     """Test building handshake with an invalid transport type."""
-    with pytest.raises(HandshakeError, match=r"Failed to build handshake response: .*Unsupported transport type specified for handshake response: 'invalid'"):
+    with pytest.raises(
+        HandshakeError,
+        match=r"Failed to build handshake response: .*Unsupported transport type specified for handshake response: 'invalid'",
+    ):
         await build_handshake_response(
             plugin_version=7,
             transport_name="invalid",
             transport=mock_server_transport_tcp,
-            port=mock_server_transport_tcp.port
+            port=mock_server_transport_tcp.port,
         )
 
 
@@ -74,7 +83,7 @@ def test_parse_handshake_response_with_tls():
     cert_data = "FAKECERTDATA"
     response_str = f"1|7|tcp|127.0.0.1:12345|grpc|{cert_data}"
 
-    with patch.object(rpcplugin_config, 'get') as mock_get_config:
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
         mock_get_config.return_value = 1
 
         core_version, plugin_version, network, address, protocol, server_cert = (
@@ -91,7 +100,7 @@ def test_parse_handshake_response_with_tls():
 def test_parse_handshake_response_without_tls():
     """Test parsing a handshake response without a TLS certificate."""
     response_str = "1|7|unix|/tmp/test.sock|grpc|"
-    with patch.object(rpcplugin_config, 'get') as mock_get_config:
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
         mock_get_config.return_value = 1
 
         core_version, plugin_version, network, address, protocol, server_cert = (
@@ -108,45 +117,60 @@ def test_parse_handshake_response_without_tls():
 def test_parse_handshake_response_invalid_format():
     """Test parsing an improperly formatted handshake response."""
     response_str = "1|7|tcp"  # Missing parts
-    with pytest.raises(HandshakeError, match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 3: '1\|7\|tcp...'"):
+    with pytest.raises(
+        HandshakeError,
+        match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 3: '1\|7\|tcp...'",
+    ):
         parse_handshake_response(response_str)
 
 
 def test_parse_handshake_response_missing_fields():
     """Test parsing a handshake response with missing fields (empty strings)."""
     response_str = "1|7|||grpc|"  # Empty network and address
-    with patch.object(rpcplugin_config, 'get') as mock_get_config:
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
         mock_get_config.return_value = 1
-        with pytest.raises(HandshakeError, match="Invalid network type '' in handshake."):
+        with pytest.raises(
+            HandshakeError, match="Invalid network type '' in handshake."
+        ):
             parse_handshake_response(response_str)
 
     response_str_empty_addr = "1|7|tcp||grpc|"
-    with patch.object(rpcplugin_config, 'get') as mock_get_config:
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
         mock_get_config.return_value = 1
-        with pytest.raises(HandshakeError, match="Empty address received in handshake string."):
-             parse_handshake_response(response_str_empty_addr)
+        with pytest.raises(
+            HandshakeError, match="Empty address received in handshake string."
+        ):
+            parse_handshake_response(response_str_empty_addr)
 
 
 def test_parse_handshake_response_empty():
     """Test parsing an empty handshake response string."""
-    with pytest.raises(HandshakeError, match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 1: '...'"):
+    with pytest.raises(
+        HandshakeError,
+        match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 1: '...'",
+    ):
         parse_handshake_response("")
 
 
 def test_parse_handshake_response_excessive_fields():
     """Test parsing a handshake response with too many fields."""
     response_str = "1|7|tcp|127.0.0.1:12345|grpc|certdata|extrafield"
-    with pytest.raises(HandshakeError, match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 7: '1\|7\|tcp\|127.0.0.1:12345\|grpc\|certdata\|extrafield...'"):
+    with pytest.raises(
+        HandshakeError,
+        match=r"Invalid handshake format. Expected 6 pipe-separated parts, got 7: '1\|7\|tcp\|127.0.0.1:12345\|grpc\|certdata\|extrafield...'",
+    ):
         parse_handshake_response(response_str)
 
 
 def test_parse_handshake_response_invalid_protocol_version() -> None:
     """Test parsing a handshake response with an invalid protocol version."""
-    with patch.object(rpcplugin_config, 'get') as mock_get_config:
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
         # Scenario 1: Core protocol version mismatch (e.g., plugin sends 2, client expects 1)
         response_diff_core = "2|7|tcp|127.0.0.1:12345|grpc|"
         # Configure the mock to return '1' when 'PLUGIN_CORE_VERSION' is fetched.
-        mock_get_config.side_effect = lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default
+        mock_get_config.side_effect = (
+            lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default
+        )
         # The parse_handshake_response function wraps the specific error.
         # The specific error is "Unsupported handshake version: 2 (expected: 1)".
         # The current regex in the code for this part is correct for matching the specific part.
@@ -172,14 +196,18 @@ def test_parse_handshake_response_invalid_protocol_version() -> None:
 @pytest.mark.asyncio
 async def test_build_handshake_response_missing_port(mock_server_transport_unix):
     """Test HandshakeError if TCP transport is used without specifying a port."""
-    with pytest.raises(HandshakeError, match="TCP transport requires a port number to build handshake response."):
+    with pytest.raises(
+        HandshakeError,
+        match="TCP transport requires a port number to build handshake response.",
+    ):
         await build_handshake_response(
             plugin_version=7,
             transport_name="tcp",
             transport=mock_server_transport_unix,
             server_cert=None,
-            port=None
+            port=None,
         )
+
 
 @pytest.mark.asyncio
 async def test_build_handshake_response_unix_transport_already_running(mocker):
@@ -188,7 +216,7 @@ async def test_build_handshake_response_unix_transport_already_running(mocker):
     mock_transport._running = True
     mock_transport.endpoint = "/tmp/existing.sock"
 
-    mocker.patch.object(rpcplugin_config, 'get', return_value="1")
+    mocker.patch.object(rpcplugin_config, "get", return_value="1")
 
     response = await build_handshake_response(
         plugin_version=7,
@@ -206,15 +234,19 @@ async def test_build_handshake_response_generic_exception(mocker):
     mock_transport = AsyncMock()
     mock_transport.listen = AsyncMock(side_effect=Exception("Underlying listen error"))
 
-    mocker.patch.object(rpcplugin_config, 'get', return_value="1")
+    mocker.patch.object(rpcplugin_config, "get", return_value="1")
 
-    with pytest.raises(HandshakeError, match=r"Failed to build handshake response: sequence item 3: expected str instance, AsyncMock found"):
+    with pytest.raises(
+        HandshakeError,
+        match=r"Failed to build handshake response: sequence item 3: expected str instance, AsyncMock found",
+    ):
         await build_handshake_response(
             plugin_version=7,
             transport_name="unix",
             transport=mock_transport,
-            server_cert=None
+            server_cert=None,
         )
+
 
 @pytest.mark.parametrize(
     "response_input, error_msg_part",
@@ -222,7 +254,7 @@ async def test_build_handshake_response_generic_exception(mocker):
         (None, "Handshake response is not a string."),
         (123, "Handshake response is not a string."),
         (b"bytes_not_str", "Handshake response is not a string."),
-    ]
+    ],
 )
 def test_parse_handshake_response_not_string(response_input, error_msg_part):
     """Test parse_handshake_response with non-string inputs."""
@@ -232,28 +264,28 @@ def test_parse_handshake_response_not_string(response_input, error_msg_part):
 
 @pytest.mark.parametrize(
     "config_core_version, expected_parsed_core_version_or_error",
-    [
-        (None, 1),
-        ("abc", 1),
-        ("2", 2),
-        (3, 3)
-    ]
+    [(None, 1), ("abc", 1), ("2", 2), (3, 3)],
 )
-def test_parse_handshake_core_version_config_issues(config_core_version, expected_parsed_core_version_or_error, mocker):
+def test_parse_handshake_core_version_config_issues(
+    config_core_version, expected_parsed_core_version_or_error, mocker
+):
     """Test how parse_handshake_response handles various PLUGIN_CORE_VERSION from config."""
     handshake_line_core_version = 1
 
     response_str = f"{handshake_line_core_version}|7|tcp|127.0.0.1:1234|grpc|"
 
-    mock_get = mocker.patch.object(rpcplugin_config, 'get')
+    mock_get = mocker.patch.object(rpcplugin_config, "get")
 
     def side_effect_func(key, default=None):
         if key == "PLUGIN_CORE_VERSION":
             return config_core_version
         return default
+
     mock_get.side_effect = side_effect_func
 
-    if isinstance(expected_parsed_core_version_or_error, type) and issubclass(expected_parsed_core_version_or_error, Exception):
+    if isinstance(expected_parsed_core_version_or_error, type) and issubclass(
+        expected_parsed_core_version_or_error, Exception
+    ):
         with pytest.raises(expected_parsed_core_version_or_error):
             parse_handshake_response(response_str)
     else:
@@ -282,6 +314,9 @@ def test_parse_handshake_response_generic_exception(mocker):
     mock_logger_error.assert_called_once()
     args, kwargs = mock_logger_error.call_args
     assert "📡❌ Handshake parsing failed: Unexpected parsing error" in args[0]
-    assert kwargs.get("extra", {}).get("error") == "Unexpected parsing error" # Check the 'error' key in 'extra'
+    assert (
+        kwargs.get("extra", {}).get("error") == "Unexpected parsing error"
+    )  # Check the 'error' key in 'extra'
+
 
 # 🐍🏗️🤝

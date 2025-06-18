@@ -18,7 +18,9 @@ from pyvider.telemetry import logger
 
 TEST_DIR: Path = Path(__file__).parent
 
-DEFAULT_PLUGIN_SERVER_PATH = str(TEST_DIR / "../go-rpc/bin/kv-go-server") # Changed to Go server path
+DEFAULT_PLUGIN_SERVER_PATH = str(
+    TEST_DIR / "../go-rpc/bin/kv-go-server"
+)  # Changed to Go server path
 DEFAULT_TIMEOUT = 5.0  # shorter timeout for faster test failures
 TEST_TIMEOUT = 15.0  # seconds
 LARGE_VALUE_SIZE: int = 1 * 1024 * 1024  # 1MB
@@ -45,7 +47,7 @@ async def go_server_env() -> dict[str, str]:
     return {
         "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
         "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
-        "BASIC_PLUGIN": "hello", # This is the env var name, its value is "hello"
+        "BASIC_PLUGIN": "hello",  # This is the env var name, its value is "hello"
         "PLUGIN_PROTOCOL_VERSIONS": "1",
         "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport for stability
         "PLUGIN_AUTO_MTLS": "false",  # Changed to false for interop tests without certs
@@ -104,7 +106,9 @@ async def kv_go_client(
 async def kv_stub(kv_go_client: RPCPluginClient) -> kv_pb2_grpc.KVStub:
     """Create and return a KV stub for the Server."""
     logger.debug("🧪🔌🚀 Creating KV stub")
-    stub = kv_pb2_grpc.KVStub(kv_go_client.grpc_channel) # Changed to use public grpc_channel
+    stub = kv_pb2_grpc.KVStub(
+        kv_go_client.grpc_channel
+    )  # Changed to use public grpc_channel
     logger.debug("🧪🔌✅ KV stub created successfully")
     return stub
 
@@ -405,7 +409,9 @@ async def test_go_server_basic_execution() -> None:
     logger.debug(f"🧪📝 Server stderr: {stderr[:200]}...")
 
 
-@pytest.mark.skip(reason="Go server with PLUGIN_SHOW_ENV=true exits by design after printing env, test needs adjustment.")
+@pytest.mark.skip(
+    reason="Go server with PLUGIN_SHOW_ENV=true exits by design after printing env, test needs adjustment."
+)
 @pytest.mark.asyncio
 async def test_go_server_with_environment() -> None:
     """Test that the Server responds properly to environment variables."""

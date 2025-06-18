@@ -8,10 +8,10 @@ from pyvider.rpcplugin.crypto.certificate import (
     Certificate,
 )  # Ensure Certificate is imported
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.config import rpcplugin_config # Added ConfigError
-from pyvider.rpcplugin.exception import SecurityError # Added SecurityError
+from pyvider.rpcplugin.config import rpcplugin_config  # Added ConfigError
+from pyvider.rpcplugin.exception import SecurityError  # Added SecurityError
+
 # Import the specific logger instance that is used in server.py
-from pyvider.telemetry import logger as server_module_logger # For patching target
 
 from tests.conftest import (
     mock_server_protocol,
@@ -213,7 +213,7 @@ async def test_generate_server_credentials_cert_constructor_exception(
     mock_server_handler,
     mock_server_config,
     mock_server_transport,
-    monkeypatch, # Added monkeypatch
+    monkeypatch,  # Added monkeypatch
 ):
     """Test _generate_server_credentials when Certificate constructor raises a generic Exception (covers line 282)."""
 
@@ -234,9 +234,9 @@ async def test_generate_server_credentials_cert_constructor_exception(
                 else "/tmp/dummy.sock"
             )
         elif key == "PLUGIN_SERVER_CERT":
-            return "dummy_path.crt" # Ensure this is returned by the mocked get
+            return "dummy_path.crt"  # Ensure this is returned by the mocked get
         elif key == "PLUGIN_SERVER_KEY":
-            return "dummy_path.key"   # Ensure this is returned by the mocked get
+            return "dummy_path.key"  # Ensure this is returned by the mocked get
             # PLUGIN_AUTO_MTLS will be set by monkeypatch.setitem directly on config
         return default  # Fallback for any other keys
 
@@ -253,8 +253,7 @@ async def test_generate_server_credentials_cert_constructor_exception(
         side_effect=Exception("Generic cert constructor error"),
     )
     # Corrected logger patching: Target where 'logger.error' is looked up in server.py
-    mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
-
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.server.logger.error")
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -264,14 +263,21 @@ async def test_generate_server_credentials_cert_constructor_exception(
     )
 
     # Expect SecurityError wrapping the original Exception
-    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key from configuration: Generic cert constructor error"):
+    with pytest.raises(
+        SecurityError,
+        match=r"Failed to load server certificate/key from configuration: Generic cert constructor error",
+    ):
         server._generate_server_credentials()
 
     mock_logger_error.assert_called_once()
     args, kwargs_log = mock_logger_error.call_args
     assert "Failed to load server certificate/key from configuration" in args[0]
-    assert "Generic cert constructor error" in args[0] # Check in the main message string
-    assert "trace" in kwargs_log.get("extra", {}) # Ensure traceback was logged in extra
+    assert (
+        "Generic cert constructor error" in args[0]
+    )  # Check in the main message string
+    assert "trace" in kwargs_log.get(
+        "extra", {}
+    )  # Ensure traceback was logged in extra
 
 
 @pytest.mark.asyncio
@@ -279,7 +285,7 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     mocker,
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config, # This is rpcplugin_config via fixture
+    mock_server_config,  # This is rpcplugin_config via fixture
     mock_server_transport,
     monkeypatch,
 ):
@@ -294,20 +300,26 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
         if key == "PLUGIN_AUTO_MTLS":
             return False
         if key == "PLUGIN_CLIENT_ROOT_CERTS":
-             return None
+            return None
         if key == "PLUGIN_PROTOCOL_VERSIONS":
             return ["1"]
         if key == "PLUGIN_SERVER_TRANSPORTS":
             return ["tcp", "unix"]
         if key == "PLUGIN_SERVER_ENDPOINT":
-             return "127.0.0.1:0" if "tcp" in mock_server_transport.endpoint else "/tmp/test.sock"
+            return (
+                "127.0.0.1:0"
+                if "tcp" in mock_server_transport.endpoint
+                else "/tmp/test.sock"
+            )
         if key == "magic_cookie_key":
             return "test_key"
         if key == "magic_cookie_value":
             return "test_value"
         return mock_server_config.config.get(key, default)
 
-    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_config_get_side_effect)
+    mocker.patch.object(
+        rpcplugin_config, "get", side_effect=mock_config_get_side_effect
+    )
     # Ensure PLUGIN_AUTO_MTLS is False via monkeypatch as well, for defense in depth,
     # though the side_effect should handle it.
     monkeypatch.setitem(mock_server_config.config, "PLUGIN_AUTO_MTLS", False)
@@ -315,16 +327,19 @@ async def test_generate_server_credentials_cert_obj_key_is_none(
     # 2. Mock the Certificate class instance to have key=None and cert=non-None
     from pyvider.rpcplugin.crypto.certificate import Certificate as RealCertificate
 
-    MockedCertificateClass = mocker.patch('pyvider.rpcplugin.server.Certificate', spec=RealCertificate)
+    MockedCertificateClass = mocker.patch(
+        "pyvider.rpcplugin.server.Certificate", spec=RealCertificate
+    )
     mock_cert_instance = mocker.MagicMock(spec=RealCertificate)
-    mock_cert_instance.cert = "-----BEGIN CERTIFICATE-----\nVALIDCERT\n-----END CERTIFICATE-----"
+    mock_cert_instance.cert = (
+        "-----BEGIN CERTIFICATE-----\nVALIDCERT\n-----END CERTIFICATE-----"
+    )
     mock_cert_instance.key = None
     MockedCertificateClass.return_value = mock_cert_instance
 
     # 3. Mock the logger - TARGETING THE CORRECT LOGGER OBJECT
     # server.py uses `from pyvider.telemetry import logger`, so we patch 'pyvider.rpcplugin.server.logger.error'
-    mock_logger_error = mocker.patch('pyvider.rpcplugin.server.logger.error')
-
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.server.logger.error")
 
     # 4. Instantiate RPCPluginServer
     server = RPCPluginServer(
@@ -457,7 +472,9 @@ async def test_read_client_cert_exception_handling(
 
 
 @pytest.mark.asyncio
-async def test_generate_server_credentials_insecure(server_with_mocks, monkeypatch) -> None:
+async def test_generate_server_credentials_insecure(
+    server_with_mocks, monkeypatch
+) -> None:
     """Test generating server credentials in insecure mode."""
     # Ensure config reflects insecure setup: no server cert, no auto_mtls
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_CERT", None)
@@ -480,7 +497,7 @@ async def test_generate_server_credentials_insecure(server_with_mocks, monkeypat
     # Let's adjust to test the condition where it *would* be insecure.
 
     # If we want to test the path where _generate_server_credentials is NOT called by _setup_server:
-    server_with_mocks.config = rpcplugin_config # Ensure it uses the patched config
+    server_with_mocks.config = rpcplugin_config  # Ensure it uses the patched config
     original_auto_mtls = rpcplugin_config.get("PLUGIN_AUTO_MTLS")
     original_server_cert = rpcplugin_config.get("PLUGIN_SERVER_CERT")
 
@@ -488,19 +505,25 @@ async def test_generate_server_credentials_insecure(server_with_mocks, monkeypat
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_CERT", None)
 
     # Simulate _setup_server's decision logic
-    if rpcplugin_config.auto_mtls_enabled() or rpcplugin_config.get("PLUGIN_SERVER_CERT"):
+    if rpcplugin_config.auto_mtls_enabled() or rpcplugin_config.get(
+        "PLUGIN_SERVER_CERT"
+    ):
         # This path should not be taken for insecure
         # Forcing a call to _generate_server_credentials here would require server certs.
         # Instead, we assert that creds would be None based on the logic in _setup_server.
-            with pytest.raises(SecurityError, match="Server certificate or key not configured"):
-                server_with_mocks._generate_server_credentials()
+        with pytest.raises(
+            SecurityError, match="Server certificate or key not configured"
+        ):
+            server_with_mocks._generate_server_credentials()
     else:
         # This is the expected path for insecure
-        pass # creds would remain None
+        pass  # creds would remain None
 
     # Restore original values if they were changed by other tests/fixtures
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_AUTO_MTLS", original_auto_mtls)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_CERT", original_server_cert)
+    monkeypatch.setitem(
+        rpcplugin_config.config, "PLUGIN_SERVER_CERT", original_server_cert
+    )
     # This test doesn't directly assert creds is None from _generate_server_credentials anymore,
     # as the method now always tries to return credentials or raises an error.
     # The logic for returning None is now in _setup_server.
@@ -558,7 +581,9 @@ async def test_generate_server_credentials_success(
     # _generate_server_credentials now takes no args.
     # For mTLS, PLUGIN_AUTO_MTLS and PLUGIN_CLIENT_ROOT_CERTS should be set.
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_AUTO_MTLS", True)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_CLIENT_ROOT_CERTS", client_cert.cert) # Using client_cert as CA for simplicity in this test
+    monkeypatch.setitem(
+        rpcplugin_config.config, "PLUGIN_CLIENT_ROOT_CERTS", client_cert.cert
+    )  # Using client_cert as CA for simplicity in this test
 
     creds = server._generate_server_credentials()
     assert creds is not None
@@ -625,15 +650,19 @@ async def test_generate_server_credentials_failure(
 
     # Restore the with pytest.raises block with the corrected regex
     with pytest.raises(
-        SecurityError, # Changed from CertificateError
-            match=r".*Diagnosing CertificateError message"
+        SecurityError,  # Changed from CertificateError
+        match=r".*Diagnosing CertificateError message",
     ):
         # Ensure config is set for secure mode to trigger Certificate() call.
-        monkeypatch.setitem(mock_server_config.config, "PLUGIN_SERVER_CERT", "dummy.crt")
+        monkeypatch.setitem(
+            mock_server_config.config, "PLUGIN_SERVER_CERT", "dummy.crt"
+        )
         monkeypatch.setitem(mock_server_config.config, "PLUGIN_SERVER_KEY", "dummy.key")
         # If mTLS is intended, client root certs also needed
         monkeypatch.setitem(mock_server_config.config, "PLUGIN_AUTO_MTLS", True)
-        monkeypatch.setitem(mock_server_config.config, "PLUGIN_CLIENT_ROOT_CERTS", "dummy_ca.crt")
+        monkeypatch.setitem(
+            mock_server_config.config, "PLUGIN_CLIENT_ROOT_CERTS", "dummy_ca.crt"
+        )
         server._generate_server_credentials()
 
 
@@ -655,14 +684,19 @@ async def test_generate_server_credentials_secure(
     monkeypatch.setitem(mock_server_config.config, "PLUGIN_SERVER_KEY", dummy_key_pem)
     monkeypatch.setitem(mock_server_config.config, "PLUGIN_AUTO_MTLS", True)
     # Using server's cert as client's root CA for simplicity in this mTLS test
-    monkeypatch.setitem(mock_server_config.config, "PLUGIN_CLIENT_ROOT_CERTS", dummy_cert_pem)
+    monkeypatch.setitem(
+        mock_server_config.config, "PLUGIN_CLIENT_ROOT_CERTS", dummy_cert_pem
+    )
 
     # Ensure other necessary defaults for server initialization are present
     if "PLUGIN_PROTOCOL_VERSIONS" not in mock_server_config.config:
-        monkeypatch.setitem(mock_server_config.config, "PLUGIN_PROTOCOL_VERSIONS", ["1"])
+        monkeypatch.setitem(
+            mock_server_config.config, "PLUGIN_PROTOCOL_VERSIONS", ["1"]
+        )
     if "PLUGIN_SERVER_TRANSPORTS" not in mock_server_config.config:
-        monkeypatch.setitem(mock_server_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
-
+        monkeypatch.setitem(
+            mock_server_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"]
+        )
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -671,7 +705,9 @@ async def test_generate_server_credentials_secure(
     )
 
     # Patch the Certificate class constructor and grpc.ssl_server_credentials
-    with mock.patch("pyvider.rpcplugin.server.Certificate", spec=Certificate) as mock_certificate_constructor:
+    with mock.patch(
+        "pyvider.rpcplugin.server.Certificate", spec=Certificate
+    ) as mock_certificate_constructor:
         mock_cert_instance = mock.MagicMock(spec=Certificate)
         mock_cert_instance.cert = dummy_cert_pem
         mock_cert_instance.key = dummy_key_pem
@@ -729,16 +765,18 @@ async def test_generate_server_credentials_with_client_cert(mock_server_config) 
         encoding=serialization.Encoding.PEM,
         format=serialization.PrivateFormat.PKCS8,
         encryption_algorithm=serialization.NoEncryption(),
-    ).decode('utf-8')
+    ).decode("utf-8")
 
     # 2. Create a self-signed certificate
-    subject = issuer = x509.Name([
-        x509.NameAttribute(NameOID.COUNTRY_NAME, u"US"),
-        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, u"California"),
-        x509.NameAttribute(NameOID.LOCALITY_NAME, u"San Francisco"),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, u"Test Org"),
-        x509.NameAttribute(NameOID.COMMON_NAME, u"testserver.com"),
-    ])
+    subject = issuer = x509.Name(
+        [
+            x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
+            x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
+            x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
+            x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Test Org"),
+            x509.NameAttribute(NameOID.COMMON_NAME, "testserver.com"),
+        ]
+    )
     builder = (
         x509.CertificateBuilder()
         .subject_name(subject)
@@ -747,34 +785,32 @@ async def test_generate_server_credentials_with_client_cert(mock_server_config) 
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
         .not_valid_after(datetime.now(timezone.utc) + timedelta(days=1))
-        .add_extension(
-            x509.BasicConstraints(ca=True, path_length=None), critical=True
-        )
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
     )
     certificate = builder.sign(private_key, hashes.SHA256())
     dummy_cert_pem = certificate.public_bytes(
         encoding=serialization.Encoding.PEM
-    ).decode('utf-8')
+    ).decode("utf-8")
 
     # Generate a client certificate PEM for the 'client_cert' argument
     client_private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    client_subject = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, u"testclient.com")])
+    client_subject = x509.Name(
+        [x509.NameAttribute(NameOID.COMMON_NAME, "testclient.com")]
+    )
     client_builder = (
         x509.CertificateBuilder()
         .subject_name(client_subject)
-        .issuer_name(client_subject) # Self-signed for simplicity
+        .issuer_name(client_subject)  # Self-signed for simplicity
         .public_key(client_private_key.public_key())
         .serial_number(x509.random_serial_number())
         .not_valid_before(datetime.now(timezone.utc) - timedelta(days=1))
         .not_valid_after(datetime.now(timezone.utc) + timedelta(days=1))
-        .add_extension(
-            x509.BasicConstraints(ca=False, path_length=None), critical=True
-        )
+        .add_extension(x509.BasicConstraints(ca=False, path_length=None), critical=True)
     )
     client_certificate = client_builder.sign(client_private_key, hashes.SHA256())
     client_cert_pem_str = client_certificate.public_bytes(
         encoding=serialization.Encoding.PEM
-    ).decode('utf-8')
+    ).decode("utf-8")
 
     # Set up config
     mock_server_config.set("PLUGIN_SERVER_CERT", dummy_cert_pem)
@@ -956,10 +992,13 @@ async def test_generate_server_credentials_success_A_2(
     # Ensure other defaults that might be needed by RPCPluginServer constructor are present
     # The mock_server_config fixture should handle these, but if not, add them:
     if "PLUGIN_PROTOCOL_VERSIONS" not in mock_server_config.config:
-        monkeypatch.setitem(mock_server_config.config, "PLUGIN_PROTOCOL_VERSIONS", ["1"])
+        monkeypatch.setitem(
+            mock_server_config.config, "PLUGIN_PROTOCOL_VERSIONS", ["1"]
+        )
     if "PLUGIN_SERVER_TRANSPORTS" not in mock_server_config.config:
-        monkeypatch.setitem(mock_server_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
-
+        monkeypatch.setitem(
+            mock_server_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"]
+        )
 
     transport = mock_server_transport
 
@@ -970,12 +1009,14 @@ async def test_generate_server_credentials_success_A_2(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config, # This is rpcplugin_config
+        config=mock_server_config,  # This is rpcplugin_config
         transport=transport,
     )
 
     # Mock Certificate creation to avoid actual certificate operations
-    with mock.patch("pyvider.rpcplugin.server.Certificate", spec=Certificate) as mock_cert_constructor:
+    with mock.patch(
+        "pyvider.rpcplugin.server.Certificate", spec=Certificate
+    ) as mock_cert_constructor:
         # Setup the mock certificate instance
         cert_instance = mock.MagicMock(spec=Certificate)
         cert_instance.cert = dummy_cert_pem
@@ -992,12 +1033,19 @@ async def test_generate_server_credentials_success_A_2(
             # For mTLS, set auto_mtls and client_root_certs
             monkeypatch.setitem(mock_server_config.config, "PLUGIN_AUTO_MTLS", True)
             # Corrected: Use the client_cert_pem_str directly
-            monkeypatch.setitem(mock_server_config.config, "PLUGIN_CLIENT_ROOT_CERTS", client_cert_pem_str)
+            monkeypatch.setitem(
+                mock_server_config.config,
+                "PLUGIN_CLIENT_ROOT_CERTS",
+                client_cert_pem_str,
+            )
             creds = server._generate_server_credentials()
 
             # Check results
-            assert mock_cert_constructor.call_count > 0, "Certificate constructor should be called"
+            assert mock_cert_constructor.call_count > 0, (
+                "Certificate constructor should be called"
+            )
             assert creds == "mock_credentials"
+
 
 # Removing the duplicated test function below as it causes F811
 

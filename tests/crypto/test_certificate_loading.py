@@ -52,7 +52,9 @@ async def test_load_key_value_error(valid_cert_pem) -> None:
 
 
 @pytest.mark.asyncio
-async def test_load_key_type_error(valid_cert_pem) -> None: # Added valid_cert_pem fixture
+async def test_load_key_type_error(
+    valid_cert_pem,
+) -> None:  # Added valid_cert_pem fixture
     """Test TypeError in private key loading."""
     with mock.patch(
         "cryptography.hazmat.primitives.serialization.load_pem_private_key",

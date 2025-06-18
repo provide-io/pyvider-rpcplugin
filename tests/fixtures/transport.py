@@ -6,9 +6,8 @@ import pytest_asyncio
 import asyncio
 import os
 import socket
-import tempfile
 import uuid
-from pathlib import Path # Ensure Path is imported
+from pathlib import Path  # Ensure Path is imported
 from typing import AsyncGenerator
 
 from pyvider.telemetry import logger
@@ -209,14 +208,15 @@ async def unix_transport(
 
 @pytest_asyncio.fixture(scope="function")
 async def managed_unix_socket_path(
-    request: pytest.FixtureRequest, tmp_path: Path # Added tmp_path
+    request: pytest.FixtureRequest,
+    tmp_path: Path,  # Added tmp_path
 ) -> AsyncGenerator[str, None]:
     socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"
-    socket_path_obj = tmp_path / socket_filename # Use tmp_path
+    socket_path_obj = tmp_path / socket_filename  # Use tmp_path
     socket_path = str(socket_path_obj)
 
     logger.debug(
-        f"🧪🔌 Providing managed socket path: {socket_path} (using tmp_path: {tmp_path})" # Updated log
+        f"🧪🔌 Providing managed socket path: {socket_path} (using tmp_path: {tmp_path})"  # Updated log
     )
 
     # Ensure the path does not exist before yielding (defensive)
@@ -237,10 +237,12 @@ async def managed_unix_socket_path(
             f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER: Finalizing managed socket path: {socket_path}"
         )  # Existing + emphasis
         await asyncio.sleep(0.05)
-        if os.path.exists(socket_path): # socket_path_obj should be used here
+        if os.path.exists(socket_path):  # socket_path_obj should be used here
             try:
                 os.chmod(socket_path, 0o777)  # Ensure permissions allow unlink
-                os.unlink(socket_path) # socket_path_obj.unlink(missing_ok=True) is better
+                os.unlink(
+                    socket_path
+                )  # socket_path_obj.unlink(missing_ok=True) is better
                 logger.debug(f"✅ Successfully unlinked socket: {socket_path}")
             except OSError as e:
                 logger.warning(
