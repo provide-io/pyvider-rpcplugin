@@ -225,36 +225,6 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
         "description": "Total timeout in seconds for the entire retry sequence for a client operation.",
         "type": "int",  # Or float, but int is fine for seconds
     },
-    "PLUGIN_SHUTDOWN_FILE_PATH": {
-        "required": False,
-        "default": None,
-        "description": "Path to a file that, if created, will trigger a graceful server shutdown.",
-        "type": "str",
-    },
-    "PLUGIN_RATE_LIMIT_ENABLED": {
-        "required": False,
-        "default": "false",
-        "description": "Enable or disable server-side rate limiting.",
-        "type": "bool",
-    },
-    "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": {
-        "required": False,
-        "default": 100.0,
-        "description": "Maximum allowed requests per second on average for the server.",
-        "type": "float",
-    },
-    "PLUGIN_RATE_LIMIT_BURST_CAPACITY": {
-        "required": False,
-        "default": 200.0,
-        "description": "Maximum number of requests allowed in a burst for the server.",
-        "type": "float",
-    },
-    "PLUGIN_HEALTH_SERVICE_ENABLED": {
-        "required": False,
-        "default": "true", # Enabled by default
-        "description": "Enable or disable the standard gRPC health checking service.",
-        "type": "bool",
-    },
 }
 
 
@@ -520,57 +490,7 @@ class RPCPluginConfig:
             )
 
         logger.debug(f"⚙️📝 Updating config {key} -> {value}")
-
-        # Use schema to convert value to its proper type before storing
-        meta = CONFIG_SCHEMA.get(key)
-        processed_value = value
-        if meta:
-            # Create a temporary meta for fetch_env_variable by just providing type and a dummy default
-            # This is a bit of a hack; ideally, type conversion logic would be separate
-            # from environment fetching and file reading.
-            # For now, we replicate the relevant part of fetch_env_variable's logic.
-            try:
-                type_string = meta["type"]
-                if value is None: # Allow setting None if not required and default is None
-                    processed_value = None
-                elif type_string == "str":
-                    processed_value = str(value)
-                elif type_string == "int":
-                    processed_value = int(value)
-                elif type_string == "float":
-                    processed_value = float(value)
-                elif type_string == "bool":
-                    if isinstance(value, bool):
-                        processed_value = value
-                    elif isinstance(value, str):
-                        processed_value = value.lower() in ("true", "yes", "1", "on")
-                    else:
-                        processed_value = bool(value)
-                elif type_string == "list_str":
-                    if isinstance(value, list):
-                        processed_value = [str(v) for v in value]
-                    elif isinstance(value, str):
-                        processed_value = [v.strip() for v in value.split(",")]
-                    else: # Fallback for single items not in a list
-                        processed_value = [str(value)]
-                elif type_string == "list_int":
-                    if isinstance(value, list):
-                        processed_value = [int(v) for v in value]
-                    elif isinstance(value, str): # comma separated
-                        processed_value = [int(v.strip()) for v in value.split(",")]
-                    else: # fallback for single items
-                        processed_value = [int(value)]
-                # If no specific type conversion, keep original (e.g. for None where type is str but value is None)
-            except (ValueError, TypeError) as e:
-                logger.error(f"⚙️❌ Type conversion failed for {key} during set: {e}", extra={"value_being_set": value})
-                # Decide if to raise ConfigError or just warn and store raw
-                raise ConfigError(
-                    message=f"Invalid value format for configuration key '{key}' during set. Expected type '{meta['type']}', but received value '{value}'.",
-                    hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).",
-                ) from e
-
-        self.config[key] = processed_value
-        logger.debug(f"⚙️📝 Stored processed config {key} -> {processed_value} (type: {type(processed_value)})")
+        self.config[key] = value
 
     def magic_cookie_key(self) -> str:
         """
@@ -652,31 +572,6 @@ class RPCPluginConfig:
             Timeout in seconds
         """
         return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
-
-    def shutdown_file_path(self) -> str | None:
-        """
-        Get the configured shutdown file path.
-
-        Returns:
-            The shutdown file path or None
-        """
-        return cast(str | None, self.get("PLUGIN_SHUTDOWN_FILE_PATH"))
-
-    def rate_limit_enabled(self) -> bool:
-        """Check if server-side rate limiting is enabled."""
-        return cast(bool, self.get("PLUGIN_RATE_LIMIT_ENABLED"))
-
-    def rate_limit_requests_per_second(self) -> float:
-        """Get the configured requests per second for server rate limiting."""
-        return cast(float, self.get("PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND"))
-
-    def rate_limit_burst_capacity(self) -> float:
-        """Get the configured burst capacity for server rate limiting."""
-        return cast(float, self.get("PLUGIN_RATE_LIMIT_BURST_CAPACITY"))
-
-    def health_service_enabled(self) -> bool:
-        """Check if the gRPC health checking service is enabled."""
-        return cast(bool, self.get("PLUGIN_HEALTH_SERVICE_ENABLED"))
 
 
 # Global singleton instance

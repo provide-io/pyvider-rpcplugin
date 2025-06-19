@@ -37,31 +37,31 @@ Each script automatically configures the Python path to find the `pyvider` modul
 
 ### **Complete Demos** (`demo/` directory)
 
-#### **Echo Service** (`examples/demo/`)
+#### **Echo Service** (`demo/echo_service/`)
 A complete, production-ready echo service implementation.
 
 ```bash
 # Start the server
-python examples/demo/echo_server.py --transport tcp --port 50051
+python demo/echo_service/server.py --transport tcp --port 50051
 
 # In another terminal, run the client
-python examples/demo/echo_client.py localhost:50051
+python demo/echo_service/client.py localhost:50051
 ```
 
 **Files:**
-- `examples/demo/echo.proto` - Protocol buffer service definition
-- `examples/demo/echo_server.py` - Server implementation
-- `examples/demo/echo_client.py` - Client implementation
+- `echo.proto` - Protocol buffer service definition
+- `server.py` - Complete server implementation with streaming support
+- `client.py` - Full-featured client with unary and streaming operations
 
-#### **Key-Value Service** (`examples/kvproto/py_rpc/`)
+#### **Key-Value Service** (`demo/kvproto/`)
 Advanced key-value store with persistence and atomic operations.
 
 ```bash
 # Start the KV server
-python examples/kvproto/py_rpc/py_kv_server.py --storage-path /tmp/kv.db
+python demo/kvproto/server.py --storage-path /tmp/kv.db
 
 # Run the client
-python examples/kvproto/py_rpc/py_kv_client.py
+python demo/kvproto/client.py
 ```
 
 **Features:**
@@ -106,23 +106,21 @@ python 04_transport_options.py
 #### Echo Service Demo
 ```bash
 # Terminal 1: Start server
-cd examples/demo/
-python echo_server.py
+cd examples/demo/echo_service/
+python server.py
 
 # Terminal 2: Run client
-python echo_client.py (ensure env vars set, e.g. via `source env.sh`)
+python client.py /path/to/server/socket
 ```
 
 #### Key-Value Demo
 ```bash
 # Terminal 1: Start KV server  
-cd examples/kvproto/py_rpc/ # Corrected path for cd
-python py_kv_server.py --transport tcp
+cd examples/demo/kvproto/
+python server.py --transport tcp
 
 # Terminal 2: Run KV client
-python py_kv_client.py put mykey myvalue
-# Example: Get a key
-python py_kv_client.py get mykey
+python client.py
 ```
 
 ## 📚 Learning Path
@@ -131,13 +129,13 @@ python py_kv_client.py get mykey
 1. Start with `01_quick_start.py` - Understand basic concepts
 2. Explore `02_server_setup.py` - Learn server configuration
 3. Try `03_client_connection.py` - Understand client patterns
-4. Run the complete `examples/demo/` (echo demo) - See everything together
+4. Run the complete `demo/echo_service/` - See everything together
 
 ### **For Intermediate Users**
 1. Study `04_transport_options.py` - Compare Unix vs TCP
 2. Study `06_async_patterns.py` for async best practices (Corrected order)
 3. Review `07_error_handling.py` for robust applications (Corrected order)
-4. Experiment with `examples/kvproto/py_rpc/` (KV demo) - Complex service implementation
+4. Experiment with `demo/kvproto/` - Complex service implementation
 
 ### **For Advanced Users**
 1. Master `05_security_mtls.py` - Production security
@@ -187,7 +185,7 @@ server = plugin_server(
 ```
 
 ### **Custom Protocols**
-See `examples/kvproto/py_rpc/proto/kv.proto` (or similar actual path) for an example of defining custom protocol buffer services.
+See `demo/kvproto/kv.proto` for an example of defining custom protocol buffer services.
 
 ## 🐛 Troubleshooting
 
