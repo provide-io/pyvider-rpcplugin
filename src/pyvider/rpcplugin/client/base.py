@@ -880,14 +880,9 @@ class RPCPluginClient:  # No longer Generic[TransportT]
             full_pem = self._rebuild_x509_pem(self._server_cert)
 
             # Set up credentials
-            # If client certs were explicitly provided in config, attempt full mTLS.
-            # Otherwise, for auto-generated client certs, assume server-side TLS only,
-            # as the server in auto-mTLS mode typically doesn't verify client certs by default.
-            explicit_client_cert_configured = bool(rpcplugin_config.get("PLUGIN_CLIENT_CERT"))
-
-            if explicit_client_cert_configured and self.client_cert and self.client_key_pem:
+            if self.client_cert and self.client_key_pem:
                 logger.debug(
-                    "🔐 Creating mTLS channel with explicitly configured client certs + server root."
+                    "🔐 Creating mTLS channel with client certs + server root."
                 )
                 credentials = grpc.ssl_channel_credentials(
                     root_certificates=full_pem.encode(),
@@ -895,18 +890,13 @@ class RPCPluginClient:  # No longer Generic[TransportT]
                     certificate_chain=self.client_cert.encode(),
                 )
             else:
-                # This path for:
-                # 1. Auto-mTLS where client auto-generated its own certs (server likely won't verify them).
-                # 2. Server is TLS, but client was not configured with specific certs to present.
-                logger.debug(
-                    "🔐 Creating TLS channel (server auth only) using server's cert as root CA. Client certs (if auto-generated) will not be presented."
-                )
+                logger.debug("🔐 Creating TLS channel with server cert only.")
                 credentials = grpc.ssl_channel_credentials(
                     root_certificates=full_pem.encode()
                 )
 
             # Create the secure channel
-            self.grpc_channel = grpc.aio.secure_channel(
+            self.grpc_channel = grpc.aio.secure_channel(  # Changed from self._channel
                 target,
                 credentials,
                 options=[
