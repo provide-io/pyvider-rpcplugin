@@ -19,7 +19,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
                           An empty string means it reports the overall server status.
         """
         self._app_is_healthy_callable = app_is_healthy_callable
-        self._service_name = service_name # Store the main service name
+        self._service_name = service_name
         logger.debug(f"❤️⚕️ HealthServicer initialized for service '{service_name}'. Main app health check: {app_is_healthy_callable()}")
 
     async def Check(self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext) -> health_pb2.HealthCheckResponse:
@@ -29,8 +29,6 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         requested_service = request.service
         logger.debug(f"❤️⚕️ Health Check requested for service: '{requested_service}'. Monitored service: '{self._service_name}'")
 
-        # If the requested service name is empty, it's a server-wide health check.
-        # If it matches the monitored service name, check that service.
         if not requested_service or requested_service == self._service_name:
             if self._app_is_healthy_callable():
                 logger.debug(f"❤️⚕️ Reporting SERVING for '{requested_service or 'overall server'}'")
@@ -39,11 +37,8 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
                 logger.warning(f"❤️⚕️ Reporting NOT_SERVING for '{requested_service or 'overall server'}' as app is unhealthy.")
                 return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.NOT_SERVING)
         else:
-            # If a specific service is requested that we are not explicitly monitoring by this name
             logger.info(f"❤️⚕️ Service '{requested_service}' not found by this health checker. Monitored: '{self._service_name}'.")
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Service '{requested_service}' not found.")
-            # The return after abort is not strictly necessary as abort raises an error,
-            # but to satisfy type hinting if it were not an abort:
             return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN)
 
 
@@ -54,6 +49,5 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         requested_service = request.service
         logger.info(f"❤️⚕️ Watch requested for service: '{requested_service}'. Monitored: '{self._service_name}'. Watch is not implemented.")
         await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Watch streaming is not implemented.")
-        # Required to satisfy async generator type hint if not aborting
         if False: # pylint: disable=using-constant-test
             yield health_pb2.HealthCheckResponse() # type: ignore[misc]

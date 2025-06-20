@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package echo;
+package pyvider.testing.echo;
 
 // The echo service definition.
-service EchoService {
+service Echoer {
   // Sends a greeting
   rpc Echo (EchoRequest) returns (EchoResponse) {}
 }
@@ -15,5 +15,5 @@ message EchoRequest {
 
 // The response message containing the greetings
 message EchoResponse {
-  string reply = 1;
+  string message = 1;
 }

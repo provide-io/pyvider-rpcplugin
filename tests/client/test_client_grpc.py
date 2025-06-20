@@ -66,6 +66,7 @@ async def test_create_grpc_channel_with_tls(client_instance):
             assert client_instance.grpc_channel == mock_channel
 
 
+from pyvider.rpcplugin.config import rpcplugin_config # Added import
 
 @pytest.mark.skip(reason="Skipping: Unable to reliably mock client cert/key config for _create_grpc_channel. Test consistently fails to trigger mTLS path despite multiple mocking strategies.")
 @pytest.mark.asyncio

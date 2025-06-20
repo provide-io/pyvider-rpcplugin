@@ -7,7 +7,7 @@ the Pyvider RPC Plugin system.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic  # Removed Awaitable
+from typing import Any, Generic
 
 from pyvider.rpcplugin.types import (
     HandlerT,

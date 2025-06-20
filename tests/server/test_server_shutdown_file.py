@@ -1,6 +1,7 @@
 import asyncio
 import os
 import tempfile
+import uuid
 from pathlib import Path
 
 import pytest
@@ -148,7 +149,7 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, server_con
                 os.unlink(shutdown_file_path_str)
             except Exception as e_unlink:
                 logger.error(f"Error unlinking shutdown file in finally: {e_unlink}")
-        logger.info("Test test_server_shuts_down_on_file_creation finished.")
+        logger.info(f"Test test_server_shuts_down_on_file_creation finished.")
 
 
 @pytest.mark.asyncio

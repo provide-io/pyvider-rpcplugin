@@ -28,7 +28,6 @@ Usage:
 
 import os
 
-# Conditional import for yaml later
 from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
@@ -37,7 +36,6 @@ from pyvider.telemetry import logger
 class ConfigError(ValueError):
     """Custom exception for configuration-related errors."""
 
-    # Add more context if needed, e.g. error_code, hint
     def __init__(self, message: str, hint: str | None = None, code: int | None = None):
         super().__init__(message)
         self.message = message  # Add this line
@@ -118,7 +116,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_AUTO_MTLS": {
         "required": True,
-        "default": "true",  # Reverted default from "false" back to "true"
+        "default": "true",
         "description": "Flag to enable automatic mTLS (true/false).",
         "type": "bool",
     },
@@ -191,39 +189,39 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_CLIENT_RETRY_ENABLED": {
         "required": False,
-        "default": "true",  # Retries enabled by default
+        "default": "true",
         "description": "Enable automatic retries for client connection and handshake failures.",
         "type": "bool",
     },
     "PLUGIN_CLIENT_MAX_RETRIES": {
         "required": False,
-        "default": 3,  # Number of retry attempts (e.g., 3 retries means 1 initial attempt + 3 retries = 4 total attempts)
+        "default": 3,
         "description": "Maximum number of retry attempts for client operations.",
         "type": "int",
     },
     "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": {
         "required": False,
-        "default": 500,  # Initial delay in milliseconds
+        "default": 500,
         "description": "Initial backoff delay in milliseconds before the first retry.",
         "type": "int",
     },
     "PLUGIN_CLIENT_MAX_BACKOFF_MS": {
         "required": False,
-        "default": 5000,  # Maximum delay in milliseconds (e.g., 5 seconds)
+        "default": 5000,
         "description": "Maximum backoff delay in milliseconds between retries.",
         "type": "int",
     },
     "PLUGIN_CLIENT_RETRY_JITTER_MS": {
         "required": False,
-        "default": 100,  # Max jitter in milliseconds to add/subtract
+        "default": 100,
         "description": "Maximum jitter in milliseconds to apply to backoff delays to prevent thundering herd.",
         "type": "int",
     },
     "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": {
         "required": False,
-        "default": 60,  # Total time in seconds to keep retrying before giving up
+        "default": 60,
         "description": "Total timeout in seconds for the entire retry sequence for a client operation.",
-        "type": "int",  # Or float, but int is fine for seconds
+        "type": "int",
     },
     "PLUGIN_SHUTDOWN_FILE_PATH": {
         "required": False,
@@ -251,7 +249,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_HEALTH_SERVICE_ENABLED": {
         "required": False,
-        "default": "true", # Enabled by default
+        "default": "true",
         "description": "Enable or disable the standard gRPC health checking service.",
         "type": "bool",
     },
@@ -277,15 +275,11 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     Raises:
         ConfigError: If file reading fails or type conversion fails
     """
-    # Get raw value from environment or default
     value = os.getenv(key, meta["default"])
-    # logger.debug(f"⚙️🔍✅ Reading config {key}: raw value = {value}") # lots of logs
 
-    # Return None for None values
     if value is None:
         return None
 
-    # Handle file-based values
     if isinstance(value, str) and value.startswith("file://"):
         file_path = value[7:]
         try:
@@ -303,9 +297,7 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 hint="Ensure the file exists, is accessible, and has correct read permissions.",
             ) from e
 
-    # Type conversion based on schema type
     try:
-        # Using match/case for type conversion
         type_string = meta["type"]
         if type_string == "str":
             return value
@@ -368,7 +360,6 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     """
     logger.debug(f"⚙️🔍🚀 Validating config {key} = {value}")
 
-    # Required check
     if meta.get("required", False) and value is None:
         logger.error(f"⚙️❌ Missing required configuration: {key}")
         raise ConfigError(
@@ -376,11 +367,9 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
             hint=f"Please provide a value for the required configuration key '{key}'. This setting is essential for the plugin's operation.",
         )
 
-    # If value is None, no further validation needed
     if value is None:
         return True
 
-    # Check valid_values if defined
     if "valid_values" in meta and value not in meta["valid_values"]:
         logger.error(
             f"⚙️❌ Invalid value for {key}: {value}",
@@ -391,7 +380,6 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
             hint=f"The value '{value}' is not a valid option for '{key}'. Allowed values are: {meta['valid_values']}. Please choose one of these.",
         )
 
-    # logger.debug(f"⚙️🔍✅ Config {key} validation passed") # lots of logs
     return True
 
 
@@ -413,11 +401,11 @@ def get_config() -> dict[str, Any]:
             value = fetch_env_variable(key, meta)
             validate_config_value(key, value, meta)
             config[key] = value
-        except ConfigError:  # Re-raise ConfigError directly
+        except ConfigError:
             raise
         except (
             ValueError
-        ) as e:  # Should ideally not happen if fetch/validate use ConfigError
+        ) as e:
             logger.error(
                 f"⚙️❌ Unexpected ValueError for {key}", extra={"error": str(e)}
             )
@@ -451,11 +439,11 @@ class RPCPluginConfig:
             logger.debug("⚙️✅ RPCPluginConfig initialized with environment variables")
         except (
             Exception
-        ) as e:  # Catches ConfigError from get_config or other init issues
+        ) as e:
             logger.error(
                 "⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)}
             )
-            raise  # Re-raise the original error (could be ConfigError or other)
+            raise
 
     @classmethod
     def instance(cls) -> "RPCPluginConfig":
@@ -521,17 +509,12 @@ class RPCPluginConfig:
 
         logger.debug(f"⚙️📝 Updating config {key} -> {value}")
 
-        # Use schema to convert value to its proper type before storing
         meta = CONFIG_SCHEMA.get(key)
         processed_value = value
         if meta:
-            # Create a temporary meta for fetch_env_variable by just providing type and a dummy default
-            # This is a bit of a hack; ideally, type conversion logic would be separate
-            # from environment fetching and file reading.
-            # For now, we replicate the relevant part of fetch_env_variable's logic.
             try:
                 type_string = meta["type"]
-                if value is None: # Allow setting None if not required and default is None
+                if value is None:
                     processed_value = None
                 elif type_string == "str":
                     processed_value = str(value)
@@ -551,19 +534,17 @@ class RPCPluginConfig:
                         processed_value = [str(v) for v in value]
                     elif isinstance(value, str):
                         processed_value = [v.strip() for v in value.split(",")]
-                    else: # Fallback for single items not in a list
+                    else:
                         processed_value = [str(value)]
                 elif type_string == "list_int":
                     if isinstance(value, list):
                         processed_value = [int(v) for v in value]
-                    elif isinstance(value, str): # comma separated
+                    elif isinstance(value, str):
                         processed_value = [int(v.strip()) for v in value.split(",")]
-                    else: # fallback for single items
+                    else:
                         processed_value = [int(value)]
-                # If no specific type conversion, keep original (e.g. for None where type is str but value is None)
             except (ValueError, TypeError) as e:
                 logger.error(f"⚙️❌ Type conversion failed for {key} during set: {e}", extra={"value_being_set": value})
-                # Decide if to raise ConfigError or just warn and store raw
                 raise ConfigError(
                     message=f"Invalid value format for configuration key '{key}' during set. Expected type '{meta['type']}', but received value '{value}'.",
                     hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).",
@@ -721,13 +702,11 @@ def configure(
     """
     logger.debug("⚙️🔄 Running simplified configuration")
 
-    # Magic cookie configuration
     if magic_cookie is not None:
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE", magic_cookie)
         logger.debug(f"⚙️📝 Set magic cookie: {magic_cookie}")
 
-    # Protocol version configuration
     if protocol_version is not None:
         if protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:
             logger.warning(
@@ -737,9 +716,7 @@ def configure(
         rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", [protocol_version])
         logger.debug(f"⚙️📝 Set protocol version: {protocol_version}")
 
-    # Transport configuration
     if transports is not None:
-        # Validate transport types
         for transport in transports:
             if transport not in get_args(TRANSPORT_TYPES):
                 logger.error(
@@ -755,12 +732,10 @@ def configure(
         rpcplugin_config.set("PLUGIN_CLIENT_TRANSPORTS", transports)
         logger.debug(f"⚙️📝 Set transports: {transports}")
 
-    # Auto mTLS configuration
     if auto_mtls is not None:
         rpcplugin_config.set("PLUGIN_AUTO_MTLS", "true" if auto_mtls else "false")
         logger.debug(f"⚙️📝 Set auto mTLS: {auto_mtls}")
 
-    # Timeout configurations
     if handshake_timeout is not None:
         rpcplugin_config.set("PLUGIN_HANDSHAKE_TIMEOUT", handshake_timeout)
         logger.debug(f"⚙️📝 Set handshake timeout: {handshake_timeout}s")
@@ -769,7 +744,6 @@ def configure(
         rpcplugin_config.set("PLUGIN_CONNECTION_TIMEOUT", connection_timeout)
         logger.debug(f"⚙️📝 Set connection timeout: {connection_timeout}s")
 
-    # Certificate configurations
     if server_cert is not None:
         rpcplugin_config.set("PLUGIN_SERVER_CERT", server_cert)
         logger.debug("⚙️📝 Set server certificate")
@@ -786,7 +760,6 @@ def configure(
         rpcplugin_config.set("PLUGIN_CLIENT_KEY", client_key)
         logger.debug("⚙️📝 Set client key")
 
-    # Set any additional options
     for key, value in kwargs.items():
         config_key = f"PLUGIN_{key.upper()}"
         rpcplugin_config.set(config_key, value)
