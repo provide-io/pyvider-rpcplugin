@@ -290,7 +290,7 @@ class Certificate:
                 # Create the X.509 certificate object using the base and key
                 # For self-signed, it's typically a CA, and not specifically a client cert by default.
                 self._cert = self._create_x509_certificate(
-                    is_ca=False, is_client_cert=True # MODIFIED FOR CLIENT CERT
+                    is_ca=True, is_client_cert=False
                 )
 
                 # Store public PEM representations
@@ -670,9 +670,8 @@ class Certificate:
         logger.info(
             f"📜🔑🏭 Creating new CA certificate: CN={common_name}, Org={organization_name}"
         )
-        # __attrs_post_init__ will call _create_x509_certificate.
-        # The first fix makes it (is_ca=False, is_client_cert=True) initially.
-        ca_cert_obj = cls(
+        # __attrs_post_init__ will call _create_x509_certificate with is_ca=True
+        return cls(
             generate_keypair=True,
             common_name=common_name,
             organization_name=organization_name,
@@ -682,14 +681,6 @@ class Certificate:
             ecdsa_curve=ecdsa_curve,
             alt_names=[common_name],  # CA often has its CN as SAN
         )
-        # Explicitly re-sign to ensure CA flags are correctly set for a CA
-        logger.info("📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, is_client_cert=False flags.")
-        actual_ca_x509_cert = ca_cert_obj._create_x509_certificate(
-            is_ca=True, is_client_cert=False # Correct CA flags
-        )
-        ca_cert_obj._cert = actual_ca_x509_cert
-        ca_cert_obj.cert = actual_ca_x509_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
-        return ca_cert_obj
 
     @classmethod
     def create_signed_certificate(

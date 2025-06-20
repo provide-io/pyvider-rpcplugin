@@ -16,6 +16,7 @@ dependencies = [
     "cryptography>=44.0.1",
     "google>=3.0.0",
     "grpcio>=1.70.0",
+    "grpcio-health-checking>=1.70.0",
     "protobuf>=5.29.3",
     "pyvider-telemetry>=0.0.4",
     "structlog>=25.1.0",
