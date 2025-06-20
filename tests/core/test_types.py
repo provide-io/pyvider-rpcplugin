@@ -1,6 +1,5 @@
 # tests/core/test_types.py
 
-# from typing import Any # Removed import
 
 # Assuming RPCPluginHandler, RPCPluginProtocol, RPCPluginTransport are importable
 # from the SUT (System Under Test - types.py)

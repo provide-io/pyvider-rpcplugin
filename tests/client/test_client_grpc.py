@@ -67,22 +67,37 @@ async def test_create_grpc_channel_with_tls(client_instance):
 
 
 
-@pytest.mark.skip(reason="Skipping: Unable to reliably mock client cert/key config for _create_grpc_channel. Test consistently fails to trigger mTLS path despite multiple mocking strategies.")
 @pytest.mark.asyncio
-async def test_create_grpc_channel_with_mtls(client_instance, monkeypatch, mocker): # Add mocker for consistency if needed, though monkeypatch is used
+async def test_create_grpc_channel_with_mtls(client_instance, mocker):
     """Test creating a gRPC channel with mutual TLS."""
-    # Setup
+    # Setup instance attributes that _setup_client_certificates would normally set
+    # based on config, or that are set before _create_grpc_channel is called.
+    dummy_client_cert_pem = "DUMMY_CLIENT_CERT_PEM_STRING"
+    dummy_client_key_pem = "DUMMY_CLIENT_KEY_PEM_STRING"
+    dummy_server_root_pem = "DUMMY_SERVER_ROOT_PEM_STRING"
+
+    client_instance.client_cert = dummy_client_cert_pem
+    client_instance.client_key_pem = dummy_client_key_pem
+    client_instance._server_cert = dummy_server_root_pem # Used if PLUGIN_SERVER_ROOT_CERTS is not primary
+
+    # Mock rpcplugin_config.get
+    def mock_config_get_side_effect(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            return True # Enable mTLS path
+        elif key == "PLUGIN_CLIENT_CERT":
+            return dummy_client_cert_pem # Explicit client cert configured
+        elif key == "PLUGIN_CLIENT_KEY":
+            return dummy_client_key_pem   # Explicit client key configured
+        elif key == "PLUGIN_SERVER_ROOT_CERTS":
+            return dummy_server_root_pem # Explicit server root CAs
+        # Default for other config values if any are checked by the method implicitly
+        return default
+
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.get", side_effect=mock_config_get_side_effect)
+
     client_instance._transport = MagicMock()
     client_instance._transport_name = "tcp"
     client_instance._address = "127.0.0.1:8000"
-    client_instance._server_cert = ( # This will be used if PLUGIN_SERVER_ROOT_CERTS is not set/found by config
-        "DUMMY_SERVER_ROOT_PEM_STRING" # Actual content doesn't matter, just that it's a string
-    )
-
-    dummy_client_cert_pem = "DUMMY_CLIENT_CERT_PEM_STRING"
-    # dummy_client_cert_pem = "DUMMY_CLIENT_CERT_PEM_STRING" # Removed redundant line
-    dummy_client_key_pem = "DUMMY_CLIENT_KEY_PEM_STRING"
-    dummy_server_root_certs_pem = client_instance._server_cert # Use the same for simplicity in this test
 
     # Mock SSL credentials
     with patch(
@@ -104,13 +119,14 @@ async def test_create_grpc_channel_with_mtls(client_instance, monkeypatch, mocke
             await client_instance._create_grpc_channel()
 
             # Verify mTLS credentials were used
-            expected_root_certs_pem = client_instance._rebuild_x509_pem(dummy_server_root_certs_pem)
+            expected_root_certs_pem = client_instance._rebuild_x509_pem(dummy_server_root_pem)
             mock_ssl_creds.assert_called_once_with(
                 root_certificates=expected_root_certs_pem.encode(),
                 private_key=dummy_client_key_pem.encode(),
                 certificate_chain=dummy_client_cert_pem.encode()
             )
             mock_secure_channel.assert_called_once()
+            assert client_instance.grpc_channel == mock_channel
 
 
 @pytest.mark.asyncio

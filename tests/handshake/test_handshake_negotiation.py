@@ -62,6 +62,49 @@ async def test_negotiate_transport_valid_unix() -> None:
     assert isinstance(transport, UnixSocketTransport)
 
 
+from unittest.mock import patch # Added for the new tests
+import tempfile # Added for the new tests
+
+@pytest.mark.asyncio
+async def test_negotiate_transport_exception_handling():
+    """Test exception handling in transport negotiation."""
+    # Mock the transport initialization to raise an exception
+    with patch(
+        "pyvider.rpcplugin.transport.UnixSocketTransport",
+        side_effect=Exception("Transport creation failed"),
+    ):
+        with pytest.raises(
+            TransportError,
+            match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Transport creation failed.*Hint:.*",
+        ):
+            await negotiate_transport(["unix"])
+
+        # Test with multiple options
+        with pytest.raises(
+            TransportError,
+            match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Transport creation failed.*Hint:.*",
+        ):
+            await negotiate_transport(["unix", "tcp"])
+
+
+@pytest.mark.asyncio
+async def test_negotiate_transport_tempfile_exception(mocker):
+    """Test that an exception during tempfile.gettempdir is handled."""
+    mocker.patch("tempfile.gettempdir", side_effect=OSError("Disk full"))
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+
+    with pytest.raises(
+        TransportError,
+        match=r"\[TransportError\] An unexpected error occurred during transport negotiation: Disk full.*Hint:.*",
+    ):
+        await negotiate_transport(["unix"])
+
+    mock_logger_error.assert_called_once()
+    args, kwargs = mock_logger_error.call_args
+    assert "Error during transport negotiation" in args[0]
+    assert "Disk full" in kwargs.get("extra", {}).get("error", "")
+
+
 @pytest.mark.asyncio
 async def test_negotiate_transport_no_common_transport() -> None:
     """Test transport negotiation when no common transport exists."""

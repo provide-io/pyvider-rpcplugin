@@ -28,11 +28,6 @@ class DummyProtocol(RPCPluginProtocol[ServerT, HandlerT]):
         # In a real scenario, this would involve grpc.aio.Server methods
         pass
 
-    # remove_from_server is not part of the base RPCPluginProtocol ABC
-    # async def remove_from_server(self, server):
-    #     logger.debug(f"DummyProtocol remove_from_server called with server {server}")
-    #     pass
-
 
 @pytest.fixture
 def temp_shutdown_file():
