@@ -88,7 +88,6 @@ async def test_close_with_tasks(client_instance):
         try:
             await asyncio.sleep(0.1)  # Shorter sleep
         except asyncio.CancelledError:
-            # print("Dummy task cancelled") # Optional: for debugging test execution
             raise
 
     # Create real asyncio.Task instances

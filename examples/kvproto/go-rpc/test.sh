@@ -1,17 +1,32 @@
-#!/bin/sh
+#!/bin/bash
+set -e
 
-export PLUGIN_CLIENT_PATH="$(pwd)/bin/kv-go-client"
-export PLUGIN_SERVER_PATH="$(pwd)/bin/kv-go-server"
+echo "🚀 Running build script first..."
+./build.sh
+echo ""
+echo ""
 
-file ${PLUGIN_CLIENT_PATH}
-file ${PLUGIN_SERVER_PATH}
+# Function to run a test case
+run_test() {
+    TITLE=$1
+    shift
+    CLIENT_ARGS=("$@")
 
-echo "-------------------------------------------------------------------------"
-echo "Putting the world into hello."
-echo "-------------------------------------------------------------------------"
-${PLUGIN_CLIENT_PATH} put hello world
+    echo "======================================================================"
+    echo "  TEST: $TITLE"
+    echo "======================================================================"
+    
+    # Run client with specified args, perform a put and a get
+    ./bin/kv-go-client "${CLIENT_ARGS[@]}" put mykey "hello world"
+    ./bin/kv-go-client "${CLIENT_ARGS[@]}" get mykey
+    echo ""
+    echo ""
+}
 
-echo "-------------------------------------------------------------------------"
-echo "Fetching the value of the hello."
-echo "-------------------------------------------------------------------------"
-${PLUGIN_CLIENT_PATH} get hello
+# Test Cases
+run_test "Default (ECDSA with secp521r1) and Auto mTLS"
+run_test "ECDSA with secp384r1 and Auto mTLS" --curve secp384r1
+run_test "RSA with 2048 bits and Auto mTLS" --key-type rsa --rsa-bits 2048
+run_test "Insecure (Auto mTLS disabled)" --auto-mtls=false
+
+echo "✅ All tests completed."

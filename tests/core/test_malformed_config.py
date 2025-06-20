@@ -1,129 +1,81 @@
-from pyvider.rpcplugin import configure, RPCPluginConfig
+import pytest
+import os
+from pathlib import Path
+from pyvider.rpcplugin.config import load_config_from_file, ConfigError, RPCPluginConfig
 
-# from pyvider.rpcplugin.config import load_config_from_file # rpcplugin_config is already an instance
-from pyvider.telemetry import (
-    logger,
-)  # Assuming logger is accessible for checking logs if needed
+@pytest.fixture(autouse=True)
+def reset_config_singleton_and_env_malformed():
+    # Backup and clear relevant env vars
+    env_backup = {}
+    test_keys = ["PLUGIN_MAGIC_COOKIE_VALUE", "PLUGIN_AUTO_MTLS", "PLUGIN_HANDSHAKE_TIMEOUT", "PLUGIN_LOG_LEVEL"]
+    for key in test_keys:
+        if key in os.environ:
+            env_backup[key] = os.environ[key]
+            del os.environ[key]
+        else:
+            env_backup[key] = None
 
-# Get the global singleton instance for direct use if needed, or rely on RPCPluginConfig.instance()
-# For consistency with how it's used in config.py, direct import might be less representative
-# than RPCPluginConfig.instance() or the configure() which manipulates the global one.
-# Let's use RPCPluginConfig.instance() for getting values to be sure.
+    RPCPluginConfig._instance = None
+    yield
+    RPCPluginConfig._instance = None
 
+    for key, value in env_backup.items():
+        if value is not None:
+            os.environ[key] = value
+        elif key in os.environ:
+            del os.environ[key]
 
-def print_current_config_state(message):
-    # Re-fetch the global config instance to ensure it's the latest state
-    current_config_instance = RPCPluginConfig.instance()
-    # Using logger.info for test output as per the prompt's style
-    logger.info(f"--- {message} ---")
-    logger.info(f"Magic Cookie: {current_config_instance.magic_cookie_value()}")
-    logger.info(f"Auto mTLS: {current_config_instance.auto_mtls_enabled()}")
-    logger.info(f"Handshake Timeout: {current_config_instance.handshake_timeout()}")
-    logger.info("--------------------")
+def test_load_malformed_json(tmp_path: Path):
+    """Test loading a malformed JSON configuration file."""
+    RPCPluginConfig._instance = None # Ensure fresh load attempt
+    malformed_json_content = '{"PLUGIN_MAGIC_COOKIE_VALUE": "json_cookie", "PLUGIN_AUTO_MTLS": ' # Missing value and closing brace
+    malformed_json_file = tmp_path / "malformed.json"
+    with open(malformed_json_file, "w") as f:
+        f.write(malformed_json_content)
 
+    with pytest.raises(ConfigError, match="Failed to decode JSON configuration file"):
+        load_config_from_file(str(malformed_json_file))
 
-# Setup initial config (defaults)
-configure()  # Resets to defaults and reloads from any existing (parent) env vars
-print_current_config_state("Initial default configuration")
+def test_load_malformed_yaml(tmp_path: Path):
+    """Test loading a malformed YAML configuration file."""
+    RPCPluginConfig._instance = None
+    # Example of malformed YAML: inconsistent indentation or unsupported characters
+    malformed_yaml_content = "PLUGIN_MAGIC_COOKIE_VALUE: yaml_cookie\n  PLUGIN_AUTO_MTLS: true\nPLUGIN_LOG_LEVEL: DEBUG" # Intentionally bad indent for LOG_LEVEL
+    malformed_yaml_file = tmp_path / "malformed.yaml"
+    with open(malformed_yaml_file, "w") as f:
+        f.write(malformed_yaml_content)
 
-# Store initial default values to check against later
-initial_config_snapshot = {
-    "magic_cookie": RPCPluginConfig.instance().magic_cookie_value(),
-    "auto_mtls": RPCPluginConfig.instance().auto_mtls_enabled(),
-    "handshake_timeout": RPCPluginConfig.instance().handshake_timeout(),
-}
+    with pytest.raises(ConfigError, match="Failed to parse YAML configuration file"):
+        load_config_from_file(str(malformed_yaml_file))
 
-# Test malformed JSON
-logger.info("Attempting to load malformed_config.json...")
-try:
-    # load_config_from_file("malformed_config.json")
-    # Simulating the error that would have been caught if the file was malformed
-    raise ValueError("Simulated error: Malformed JSON content")
-    logger.error(
-        "Malformed JSON did not raise an error!", extra={"test_status": "failed"}
-    )
-except ValueError as e:
-    logger.info(
-        "Successfully caught expected ValueError for malformed JSON.",
-        extra={"error_message": str(e), "test_status": "passed"},
-    )
-except Exception as e:
-    logger.error(
-        f"Caught unexpected exception for malformed JSON: {type(e).__name__}",
-        extra={"error_message": str(e), "test_status": "failed"},
-    )
-print_current_config_state("Configuration after attempting malformed JSON")
+def test_load_malformed_dotenv(tmp_path: Path):
+    """Test loading a malformed .env configuration file."""
+    RPCPluginConfig._instance = None
+    malformed_env_content = "PLUGIN_MAGIC_COOKIE_VALUE_NO_EQUALS_HERE" # Line without '='
+    malformed_env_file = tmp_path / "malformed.env"
+    with open(malformed_env_file, "w") as f:
+        f.write(malformed_env_content)
 
-# Test malformed YAML
-logger.info("Attempting to load malformed_config.yaml...")
-try:
-    # load_config_from_file("malformed_config.yaml")
-    # Simulating the error for YAML
-    raise ValueError("Simulated error: Malformed YAML content")
-    logger.error(
-        "Malformed YAML did not raise an error!", extra={"test_status": "failed"}
-    )
-except ValueError as e:
-    logger.info(
-        "Successfully caught expected ValueError for malformed YAML.",
-        extra={"error_message": str(e), "test_status": "passed"},
-    )
-except Exception as e:
-    logger.error(
-        f"Caught unexpected exception for malformed YAML: {type(e).__name__}",
-        extra={"error_message": str(e), "test_status": "failed"},
-    )
-print_current_config_state("Configuration after attempting malformed YAML")
+    # The error message for malformed .env lines was "Error parsing .env file.*Malformed line:.*"
+    # Let's make it more specific if possible, or use a general "Failed to parse .env"
+    with pytest.raises(ConfigError, match=r"Error parsing .env file.*Malformed line:.*PLUGIN_MAGIC_COOKIE_VALUE_NO_EQUALS_HERE"):
+        load_config_from_file(str(malformed_env_file))
 
-# Test malformed .env
-logger.info("Attempting to load malformed_config.env...")
-try:
-    # load_config_from_file("malformed_config.env")
-    # Simulating the error for .env
-    raise ValueError("Simulated error: Malformed .env content")
-    # The .env loader in config.py might log errors per line but not raise a single ValueError for the whole file
-    # if it can process some lines or if it's designed to be lenient.
-    # Let's check if the log indicates errors during loading.
-    # For this test, we expect a ValueError as per the prompt if *any* line is malformed to the point of parsing failure.
-    # The current _load_dotenv_file will raise ValueError on line.split("=", 1) if no "=" is present.
-    logger.error(
-        "Malformed .env did not raise an error as expected by this test design!",
-        extra={"test_status": "failed"},
-    )
-except ValueError as e:
-    logger.info(
-        "Successfully caught expected ValueError for malformed .env.",
-        extra={"error_message": str(e), "test_status": "passed"},
-    )
-except Exception as e:
-    logger.error(
-        f"Caught unexpected exception for malformed .env: {type(e).__name__}",
-        extra={"error_message": str(e), "test_status": "failed"},
-    )
-print_current_config_state("Configuration after attempting malformed .env")
+def test_load_non_existent_file(tmp_path: Path):
+    """Test loading a non-existent configuration file."""
+    RPCPluginConfig._instance = None
+    non_existent_file = tmp_path / "non_existent_config.cfg"
 
-# Verify that after failed loads, the config is still the same as the initial snapshot
-final_config_instance = RPCPluginConfig.instance()
-if (
-    final_config_instance.magic_cookie_value()
-    == initial_config_snapshot["magic_cookie"]
-    and final_config_instance.auto_mtls_enabled()
-    == initial_config_snapshot["auto_mtls"]
-    and final_config_instance.handshake_timeout()
-    == initial_config_snapshot["handshake_timeout"]
-):
-    logger.info(
-        "Config correctly remained at initial state after failed loads.",
-        extra={"test_status": "passed"},
-    )
-else:
-    logger.error(
-        "Config changed from initial state after failed loads!",
-        extra={
-            "final_cookie": final_config_instance.magic_cookie_value(),
-            "initial_cookie": initial_config_snapshot["magic_cookie"],
-            "test_status": "failed",
-        },
-    )
+    with pytest.raises(ConfigError, match=f"Configuration file not found: {str(non_existent_file)}"):
+        load_config_from_file(str(non_existent_file))
 
-logger.info("Finished malformed config loading tests.")
+def test_load_unsupported_file_type(tmp_path: Path):
+    """Test loading an unsupported configuration file type."""
+    RPCPluginConfig._instance = None
+    unsupported_content = "some_data"
+    unsupported_file = tmp_path / "config.txt" # .txt is not supported
+    with open(unsupported_file, "w") as f:
+        f.write(unsupported_content)
+
+    with pytest.raises(ConfigError, match=r"Unsupported configuration file type: \.txt"):
+        load_config_from_file(str(unsupported_file))

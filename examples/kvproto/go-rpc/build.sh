@@ -1,37 +1,16 @@
-#!/bin/sh
-# pyvider-rpcplugin/examples/kvproto/go-plugin/build.sh
+#!/bin/bash
+set -e
 
-set -e # Exit on any error
+echo "🧼 Cleaning up previous builds..."
+rm -rf ./bin
 
-export PLUGIN_CLIENT_PATH="$(pwd)/bin/kv-go-client"
-export PLUGIN_SERVER_PATH="$(pwd)/bin/kv-go-server"
-
-echo "Cleaning up previous builds..."
-rm -f ${PLUGIN_CLIENT_PATH} ${PLUGIN_SERVER_PATH}
-
-# Initialize module if needed
-if [ ! -f go.mod ]; then
-	echo "Initializing Go module..."
-	go mod init github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin
-
-	echo "Installing buf dependencies..."
-	go install github.com/bufbuild/buf/cmd/buf@latest
-
-	echo "Generating protobuf code..."
-	buf generate
-fi
-
-echo "Updating Go dependencies..."
+echo "🚚 Ensuring Go dependencies are correct and tidy..."
 go mod tidy
+echo "⬆️ Updating Go dependencies to the latest versions..."
+go get -u ./...
 
-echo "Building client and server..."
-go build -o ${PLUGIN_CLIENT_PATH} ./plugin-go-client
-go build -o ${PLUGIN_SERVER_PATH} ./plugin-go-server
+echo "🛠️ Building client and server..."
+go build -o ./bin/kv-go-server ./plugin-go-server
+go build -o ./bin/kv-go-client ./plugin-go-client
 
-echo "Build complete. Binary information:"
-file ${PLUGIN_CLIENT_PATH}
-file ${PLUGIN_SERVER_PATH}
-
-echo "\nNext steps:"
-echo "1. Set environment variables: source env.sh"
-echo "2. Run tests: ./test.sh"
+echo "✅ Build complete."

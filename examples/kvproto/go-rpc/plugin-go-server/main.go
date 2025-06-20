@@ -1,192 +1,89 @@
-//
-// pyvider-rpcplugin/examples/kvproto/go-plugin/plugin-go-server/main.go
-//
-
 package main
 
 import (
-    "os"
-    "os/signal"
-    "sync"
-    "syscall"
-    "time"
+	"crypto/tls"
+	"flag"
+	"fmt"
+	"os"
+	"sync"
 
-    "strconv"
-    "strings"
-
-    "crypto/x509"
-
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/codes"  // Added
-	"google.golang.org/grpc/status" // Added
-    // "google.golang.org/grpc/credentials"
-
-    "github.com/hashicorp/go-hclog"
-    "github.com/hashicorp/go-plugin"
-    "github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin/shared"
+	"github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/go-plugin"
+	"github.com/hashicorp/go-plugin/examples/kv/shared"
 )
 
+// KV is the implementation of our key-value store.
 type KV struct {
-    logger hclog.Logger
-    mu     sync.RWMutex
+	logger hclog.Logger
+	data   map[string][]byte
+	mutex  sync.Mutex
 }
 
 func (k *KV) Put(key string, value []byte) error {
-    k.mu.Lock()
-    defer k.mu.Unlock()
-
-    if key == "" {
-        return nil
-    }
-
-    k.logger.Debug("🗄️📤 putting value",
-        "key", key,
-        "value_length", len(value))
-
-    return os.WriteFile("/tmp/kv-data-"+key, value, 0644)
+	k.mutex.Lock()
+	defer k.mutex.Unlock()
+	k.logger.Debug("💾✅ Storing value", "key", key)
+	k.data[key] = value
+	return nil
 }
 
 func (k *KV) Get(key string) ([]byte, error) {
-    k.mu.RLock()
-    defer k.mu.RUnlock()
-
-    if key == "" {
-        return nil, nil
-    }
-
-    k.logger.Debug("🗄️📥 getting value", "key", key)
-    data, err := os.ReadFile("/tmp/kv-data-" + key)
-	if err != nil {
-		if os.IsNotExist(err) {
-			k.logger.Debug("🗄️📥 key not found", "key", key)
-			return nil, status.Errorf(codes.NotFound, "Key not found: %s", key)
-		}
-		k.logger.Error("🗄️📥 error reading file", "key", key, "error", err)
-		return nil, status.Errorf(codes.Internal, "Error reading data for key %s: %v", key, err)
+	k.mutex.Lock()
+	defer k.mutex.Unlock()
+	k.logger.Debug("💾🔍 Retrieving value", "key", key)
+	val, ok := k.data[key]
+	if !ok {
+		return nil, fmt.Errorf("key not found: %s", key)
 	}
-	return data, nil
+	return val, nil
 }
 
 func main() {
-    logger := hclog.New(&hclog.LoggerOptions{
-        Name:       "🐹 S> kv-go-server",
-        Level:      hclog.Trace,
-        Output:     os.Stderr,
-        JSONFormat: false,
-    })
+	// Command-line flags for crypto configuration
+	keyType := flag.String("key-type", "ecdsa", "Type of key to generate (rsa or ecdsa)")
+	curve := flag.String("curve", "secp521r1", "ECDSA curve to use (secp256r1, secp384r1, secp521r1)")
+	rsaBits := flag.Int("rsa-bits", 2048, "Bit size for RSA key")
+	autoMTLS := flag.Bool("auto-mtls", true, "Enable or disable automatic mTLS")
+	flag.Parse()
 
-    // show some environment variables if `PLUGIN_SHOW_ENV` is `true`
-    shared.DisplayFilteredEnv(logger, []string{
-        "PLUGIN",
-        "GRPC",
-        "DEBUG",
-    })
+	logger := hclog.New(&hclog.LoggerOptions{
+		Name:   "kv-plugin-server",
+		Level:  hclog.Debug,
+		Output: os.Stderr,
+	})
 
-    // Determine if AutoMTLS is enabled
-    autoMTLS := true // Default to true
-    autoMTLSValue := os.Getenv("PLUGIN_AUTO_MTLS")
-    if autoMTLSValue != "" {
-        autoMTLS, _ = strconv.ParseBool(strings.ToLower(autoMTLSValue))
-    }
+	logger.Info("🔌🚀✅ Starting KV plugin server...")
+	logger.Info("🔌⚙️✅ Server configuration", "key-type", *keyType, "curve", *curve, "rsa-bits", *rsaBits, "auto-mtls", *autoMTLS)
 
-    if autoMTLS {
-        logger.Info("📡🔐 AutoMTLS is enabled. Proceeding with TLS setup...")
+	kv := &KV{
+		logger: logger,
+		data:   make(map[string][]byte),
+	}
 
-        // Load and parse certificate from the environment variable
-        certPEM := os.Getenv("PLUGIN_CLIENT_CERT")
-        if certPEM == "" {
-            logger.Error("📡❌ Certificate not found in PLUGIN_CLIENT_CERT")
-            exitWithError()
-        }
+	pluginMap := map[string]plugin.Plugin{
+		"kv": &shared.KVPlugin{Impl: kv, Logger: logger},
+	}
 
-        // Display certificate details if
-        logger.Info("🔌🔐 Client Certificate Details:")
-        if shared.DecodeAndLogCertificate(certPEM, logger) != nil {
-            exitWithError()
-        }
+	plugin.Serve(&plugin.ServeConfig{
+		HandshakeConfig: shared.Handshake,
+		Plugins:         pluginMap,
+		GRPCServer:      plugin.DefaultGRPCServer,
+		Logger:          logger,
+		TLSProvider: func() (*tls.Config, error) {
+			if !*autoMTLS {
+				logger.Info("🔌🔐❌ Auto mTLS is disabled. Running insecurely.")
+				return nil, nil
+			}
+			logger.Info("🔌🔐✅ Auto mTLS is enabled. Generating TLS config...")
+			tlsConfig, err := shared.GenerateTLSConfig(logger, *keyType, *curve, *rsaBits)
+			if err != nil {
+				logger.Error("🔌🔐❌ Failed to generate TLS config", "error", err)
+				return nil, err
+			}
+			logger.Info("🔌🔐✅ TLS config generated successfully.")
+			return tlsConfig, nil
+		},
+	})
 
-        // Create TLS configuration
-        certPool := x509.NewCertPool()
-        if !certPool.AppendCertsFromPEM([]byte(certPEM)) {
-            logger.Error("📡❌ Failed to append certificate to trust pool")
-            exitWithError()
-        }
-
-    } else {
-        logger.Info("📡🚫 AutoMTLS is disabled. Skipping TLS setup.")
-    }
-
-    // Create shutdown channel
-    shutdown := make(chan os.Signal, 1)
-    signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-
-    // Create KV implementation
-    kv := &KV{
-        logger: logger.Named("kv"),
-        mu:     sync.RWMutex{},
-    }
-
-    config := &plugin.ServeConfig{
-        HandshakeConfig: shared.Handshake,
-        Plugins: map[string]plugin.Plugin{
-            "kv_grpc": &shared.KVGRPCPlugin{
-                Impl: kv,
-            },
-        },
-        Logger: logger,
-        //TLSProvider: tlsConfig,
-        GRPCServer: func(opts []grpc.ServerOption) *grpc.Server {
-            // Extract and log the certificate
-            if autoMTLS {
-                logger.Info("🔐⛓️‍💥✅ AutoMTLS support is enabled.")
-            }
-
-            return grpc.NewServer(opts...)
-        },
-    }
-
-    // Start serving in a goroutine
-    var wg sync.WaitGroup
-    wg.Add(1)
-
-    // Create a channel to signal when the plugin server is done
-    serverDone := make(chan struct{})
-
-    go func() {
-        defer wg.Done()
-        logger.Info("🗄️✨ starting plugin server")
-        plugin.Serve(config)
-        close(serverDone)
-    }()
-
-    // Handle shutdown
-    go func() {
-        select {
-        case sig := <-shutdown:
-            logger.Info("🗄️🛑 shutting down plugin server", "signal", sig)
-        case <-serverDone:
-            logger.Info("🗄️🛑 plugin server exited before receiving a signal")
-        }
-
-        cleanup := make(chan struct{})
-        go func() {
-            wg.Wait()
-            close(cleanup)
-        }()
-
-        select {
-        case <-cleanup:
-            logger.Info("🗄️✅ clean shutdown completed")
-        case <-time.After(5 * time.Second):
-            logger.Warn("🗄️⏳ cleanup timeout reached")
-        }
-
-        os.Exit(0)
-    }()
-
-    <-serverDone
-}
-
-func exitWithError() {
-    os.Exit(1)
+	logger.Info("🔌🛑✅ Plugin server shut down.")
 }

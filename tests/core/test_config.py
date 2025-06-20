@@ -2,10 +2,8 @@
 
 import os
 
-# import re # Removed re
 import pytest
-from unittest.mock import patch, mock_open, call  # Corrected import
-# from pathlib import Path # Removed Path
+from unittest.mock import patch, mock_open, call
 
 from pyvider.rpcplugin.config import (
     fetch_env_variable,
@@ -13,13 +11,9 @@ from pyvider.rpcplugin.config import (
     get_config,
     RPCPluginConfig,
     configure,
-    ConfigError,  # Added ConfigError
-    # load_config_from_file, # Removed load_config_from_file
-    CONFIG_SCHEMA,  # Import for direct use in tests
+    ConfigError,
+    CONFIG_SCHEMA,
 )
-
-# Ensure logger is active for testing log captures if necessary
-# logger.enable("pyvider.rpcplugin.config") # Removed due to AttributeError
 
 
 # Tests for fetch_env_variable
@@ -266,7 +260,6 @@ def test_get_config_validate_raises_error(mock_fetch, mock_validate):
 
 
 # Tests for RPCPluginConfig
-# from unittest.mock import call # Already imported if needed, or ensure it is
 def test_rpcpluginconfig_singleton():
     """Test RPCPluginConfig is a singleton."""
     instance1 = RPCPluginConfig.instance()

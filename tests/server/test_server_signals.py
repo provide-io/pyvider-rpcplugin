@@ -11,11 +11,9 @@ from tests.conftest import (
     mock_server_handler,
 )
 
-# Fixtures will be available via tests.fixtures through conftest.py
-# from tests.fixtures.mocks import mock_server_transport, mock_server_config
 from pyvider.rpcplugin.config import (
     rpcplugin_config as global_rpc_config,
-)  # Alias for clarity
+)
 from unittest.mock import patch  # unittest.mock.patch is used
 from typing import Any  # For type hinting in side_effect function
 from pyvider.telemetry import logger  # For diagnostic logging
