@@ -75,7 +75,7 @@ async def test_unix_socket_concurrent_connections() -> None:
         if client_close_tasks:
             logger.debug(f"Gathering {len(client_close_tasks)} client close tasks in finally block...")
             await asyncio.gather(*client_close_tasks, return_exceptions=True)
-            logger.debug("Finished gathering client close tasks.")
+            logger.debug(f"Finished gathering client close tasks.")
         client_transports.clear() # Clear the list after attempting to close all
 
         # Ensure server_transport is closed if it was initialized

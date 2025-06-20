@@ -82,6 +82,31 @@ async def ensure_asyncio_cleanup():
             pass
 
 
+@pytest.fixture(scope="function")
+async def dummy_server(mock_server_protocol, mock_server_handler):
+    """Provides a clean DummyGRPCServer instance per test"""
+    server = RPCPluginServer(
+        protocol=mock_server_protocol,
+        handler=mock_server_handler,
+    )
+    yield server
+    # No async cleanup needed for dummy server
+
+
+@pytest.fixture(scope="function")
+async def clean_socket_dir(tmp_path):
+    """Provides a clean temporary directory for socket files"""
+    socket_dir = tmp_path / "sockets"
+    socket_dir.mkdir()
+    yield socket_dir
+    # Cleanup any leftover socket files
+    for sock_file in socket_dir.glob("*.sock"):
+        try:
+            os.unlink(sock_file)
+        except OSError:
+            pass
+
+
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
     if len(text) <= 2 * length:

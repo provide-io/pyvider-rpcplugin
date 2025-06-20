@@ -42,17 +42,12 @@ from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
 from pyvider.rpcplugin.transport.types import TransportT
-from grpc_health.v1 import health_pb2_grpc
-
 from pyvider.rpcplugin.types import (
     HandlerT,
     ProtocolT,
     ServerT,
 )
 from pyvider.telemetry import logger
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
-from pyvider.rpcplugin.health_servicer import HealthServicer
-
 
 # ClientT is already imported from pyvider.rpcplugin.client.types
 
@@ -102,12 +97,6 @@ class RPCPluginServer(
     _serving_future: asyncio.Future[None] = field(init=False, factory=asyncio.Future)
     _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
-    _shutdown_file_path: str | None = field(init=False, default=None)
-    _shutdown_watcher_task: asyncio.Task[None] | None = field(init=False, default=None)
-    _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
-    _health_servicer: HealthServicer | None = field(init=False, default=None)
-    # Default service name, can be updated if protocol provides one.
-    _main_service_name: str = field(default="pyvider.default.plugin.Service", init=False)
 
     # _instance and get_instance class-level features have been removed.
 
@@ -149,99 +138,6 @@ class RPCPluginServer(
         logger.debug(
             f"🛎️⚙️ RPCPluginServer instance initialized. New _serving_future created (ID: {id(self._serving_future)})."
         )
-        self._shutdown_file_path = rpcplugin_config.shutdown_file_path()
-        if self._shutdown_file_path:
-            logger.info(
-                f"🛎️⚙️ Server will monitor for shutdown file at: {self._shutdown_file_path}"
-            )
-
-        # Correctly check if rate limiting is enabled before trying to configure it
-        if rpcplugin_config.rate_limit_enabled() is True: # Explicitly check for True
-            capacity = rpcplugin_config.rate_limit_burst_capacity()
-            refill_rate = rpcplugin_config.rate_limit_requests_per_second()
-            if capacity > 0 and refill_rate > 0:
-                self._rate_limiter = TokenBucketRateLimiter(
-                    capacity=capacity, refill_rate=refill_rate
-                )
-                logger.info(
-                    f"🛎️⚙️ Server rate limiting enabled: capacity={capacity}, rate={refill_rate} req/s"
-                )
-            else:
-                # This case means rate_limit_enabled was true, but params were invalid.
-                logger.warning(
-                    f"🛎️⚙️ Server rate limiting is enabled, but capacity ({capacity}) or refill_rate ({refill_rate}) is not positive. Rate limiting will NOT be active with these parameters."
-                )
-        else:
-            logger.info("🛎️⚙️ Server rate limiting is disabled via configuration.")
-
-        # Attempt to set main_service_name from the protocol class attribute if available
-        if hasattr(self.protocol, 'service_name') and isinstance(getattr(self.protocol, 'service_name'), str):
-            # Ensure self.protocol is the class, not an instance yet.
-            # In __attrs_post_init__, self.protocol is typically the class passed to constructor.
-            protocol_class_service_name = getattr(self.protocol, 'service_name')
-            if protocol_class_service_name: # Ensure it's not an empty string
-                self._main_service_name = protocol_class_service_name
-                logger.info(f"🛎️⚙️ Main service name overridden by protocol class: {self._main_service_name}")
-
-        if rpcplugin_config.health_service_enabled():
-            self._health_servicer = HealthServicer(
-                app_is_healthy_callable=self._is_main_app_healthy,
-                service_name=self._main_service_name
-            )
-            logger.info(f"🛎️⚙️ gRPC Health Checking service enabled, initially monitoring: '{self._main_service_name}'.")
-        else:
-            logger.info("🛎️⚙️ gRPC Health Checking service is disabled via configuration.")
-
-
-    def _is_main_app_healthy(self) -> bool:
-        """
-        Basic health check for the main application.
-        Returns True if the server is not in the process of shutting down.
-        """
-        if self._shutdown_event and self._shutdown_event.is_set():
-            return False
-        # Could add more checks here, e.g., if the main handler is responsive
-        return True
-
-    async def _watch_shutdown_file(self) -> None:
-        """Periodically checks for the existence of a shutdown file."""
-        if not self._shutdown_file_path:
-            return
-
-        logger.debug(
-            f"🛎️👀 Starting shutdown file watcher for: {self._shutdown_file_path}"
-        )
-        while not self._shutdown_event.is_set():
-            try:
-                if os.path.exists(self._shutdown_file_path):
-                    logger.info(
-                        f"🛎️👣 Shutdown file {self._shutdown_file_path} detected. Initiating server shutdown."
-                    )
-                    # Remove the file to prevent re-triggering if the app restarts quickly
-                    try:
-                        os.remove(self._shutdown_file_path)
-                        logger.debug(
-                            f"🛎️👣 Removed shutdown file: {self._shutdown_file_path}"
-                        )
-                    except OSError as e:
-                        logger.warning(
-                            f"🛎️👣⚠️ Failed to remove shutdown file {self._shutdown_file_path}: {e}"
-                        )
-                    self._shutdown_requested()  # Trigger graceful shutdown
-                    break  # Exit watcher loop
-                await asyncio.sleep(1)  # Check every 1 second
-            except asyncio.CancelledError:
-                logger.debug("🛎️👀 Shutdown file watcher task cancelled.")
-                break
-            except Exception as e:
-                logger.error(
-                    f"🛎️👀❌ Error in shutdown file watcher: {e}",
-                    extra={"error": str(e), "trace": traceback.format_exc()},
-                )
-                # Continue watching unless it's a critical error (which CancelledError handles)
-                await asyncio.sleep(5)  # Wait a bit longer after an error
-
-        logger.debug("🛎️👀 Shutdown file watcher stopped.")
 
     async def wait_for_server_ready(self, timeout: float = 3.14) -> None:
         """
@@ -550,6 +446,10 @@ class RPCPluginServer(
         require_auth = False
 
         if auto_mtls:
+            # Attempt to read the client certificate passed via environment by the client
+            # This is specific to the auto_mtls scenario where client also generates an ephemeral cert.
+            client_cert_pem_from_env = self._read_client_cert() # Reads PLUGIN_CLIENT_CERT
+
             if client_root_certs_conf:
                 logger.debug(
                     "🛎️🔐 mTLS enabled with user-provided `PLUGIN_CLIENT_ROOT_CERTS`. Client certificate validation will be required."
@@ -576,19 +476,25 @@ class RPCPluginServer(
                     raise SecurityError(
                         f"Failed to load `PLUGIN_CLIENT_ROOT_CERTS`: {e}"
                     ) from e
-            elif generated_self_signed_server_cert:
+            elif client_cert_pem_from_env:
                 logger.info(
-                    "🛎️🔐 Server certificate auto-generated for `PLUGIN_AUTO_MTLS`, and no `PLUGIN_CLIENT_ROOT_CERTS` provided. Operating with server-side TLS (client certs not required/validated by server)."
+                    "🛎️🔐 `PLUGIN_AUTO_MTLS` is true. Client certificate received from environment. Enabling mTLS by requiring and trusting this client cert."
+                )
+                require_auth = True
+                client_ca_pem_bytes = client_cert_pem_from_env.encode("utf-8")
+            elif generated_self_signed_server_cert: # No PLUGIN_CLIENT_ROOT_CERTS and no PLUGIN_CLIENT_CERT from env
+                logger.info(
+                    "🛎️🔐 Server certificate auto-generated for `PLUGIN_AUTO_MTLS`, but no client certificate (via env or root CAs) provided. Operating with server-side TLS (client certs not required/validated by server)."
                 )
                 require_auth = False
-            else:  # auto_mtls is true, server certs were user-provided, but no client_root_certs_conf.
+            else:  # auto_mtls is true, server certs were user-provided, but no client_root_certs_conf and no client_cert_pem_from_env
                 logger.info(
-                    "🛎️🔐 `PLUGIN_AUTO_MTLS` is true, server certs provided by user, but no `PLUGIN_CLIENT_ROOT_CERTS`. Operating with server-side TLS (client certs not required/validated by server)."
+                    "🛎️🔐 `PLUGIN_AUTO_MTLS` is true, server certs provided by user, but no client certificate (via env or root CAs) provided for mTLS. Operating with server-side TLS (client certs not required/validated by server)."
                 )
                 require_auth = False
         elif rpcplugin_config.get(
             "PLUGIN_SERVER_CERT"
-        ):  # auto_mtls is FALSE, but server cert is provided
+        ):  # auto_mtls is FALSE, but server cert is provided (server-side TLS only)
             logger.info(
                 "🛎️🔐 Server-only TLS configured (PLUGIN_AUTO_MTLS is false, server cert provided). Client certificates will not be required by server."
             )
@@ -597,7 +503,7 @@ class RPCPluginServer(
         try:
             creds = grpc.ssl_server_credentials(
                 private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
-                root_certificates=client_ca_pem_bytes,
+                root_certificates=client_ca_pem_bytes, # This will be the specific client's cert if auto_mtls and PLUGIN_CLIENT_CERT was present
                 require_client_auth=require_auth,
             )
             if require_auth:
@@ -641,28 +547,11 @@ class RPCPluginServer(
         ):
             self._serving_future.set_result(None)
             logger.debug("🛎️ Serving future resolved at the beginning of stop().")
-        self._shutdown_event.set() # Signal all loops to stop
+        self._shutdown_event.set()
 
-        # Cancel the shutdown file watcher task first
-        if self._shutdown_watcher_task and not self._shutdown_watcher_task.done():
-            logger.debug("🛎️ Cancelling shutdown file watcher task...")
-            self._shutdown_watcher_task.cancel()
-            try:
-                await asyncio.wait_for(self._shutdown_watcher_task, timeout=1.5) # Wait for it to finish
-                logger.debug("🛎️ Shutdown file watcher task cancelled and finished.")
-            except asyncio.TimeoutError:
-                logger.warning("🛎️ Timed out waiting for shutdown file watcher task to cancel.")
-            except asyncio.CancelledError: # Should not happen if we are cancelling it
-                logger.debug("🛎️ Shutdown file watcher task was already cancelled.")
-            except Exception as e:
-                logger.error(f"🛎️ Error while cancelling shutdown file watcher: {e}")
-        self._shutdown_watcher_task = None
-
-
-        # Cancel any other pending tasks first (original logic)
+        # Cancel any pending tasks first
         # Consider if this task cancellation is still needed or if it should be more targeted.
         # For now, keeping it as it might relate to other plugin activities.
-        # Filter out the shutdown watcher task as it's already handled.
         all_tasks = [
             task
             for task in asyncio.all_tasks()
@@ -670,18 +559,17 @@ class RPCPluginServer(
             and not task.done()
             and hasattr(task, "get_name")
             and task.get_name().startswith("RPCPlugin")
-            # and task is not self._shutdown_watcher_task # Not strictly necessary as it should be done or None
         ]
 
         if all_tasks:
-            logger.debug(f"Cancelling {len(all_tasks)} other plugin-related tasks...")
+            logger.debug(f"Cancelling {len(all_tasks)} plugin-related tasks...")
             for task in all_tasks:
                 task.cancel()
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*all_tasks, return_exceptions=True), timeout=2.0
                 )
-                logger.debug("Other plugin-related tasks cancelled.")
+                logger.debug("Plugin-related tasks cancelled.")
             except asyncio.TimeoutError:
                 logger.warning(
                     "🛎️ Timed out waiting for plugin-related tasks to cancel."
@@ -740,15 +628,7 @@ class RPCPluginServer(
             # If server.py:378 (self._server = GRPCServer(...)) error persists, a cast might be needed:
             # from typing import cast
             # self._server = cast(ServerT, GRPCServer(...))
-
-            interceptors = []
-            if self._rate_limiter:
-                rate_limiting_interceptor = RateLimitingInterceptor(self._rate_limiter)
-                interceptors.append(rate_limiting_interceptor)
-                logger.debug("🛎️ Rate limiting interceptor prepared.")
-
             temp_server = GRPCServer(  # Assign to temp var first
-                interceptors=interceptors if interceptors else None,
                 options=[
                     ("grpc.ssl_target_name_override", "localhost"),
                     ("grpc.use_local_subchannel_pool", 1),
@@ -785,28 +665,12 @@ class RPCPluginServer(
 
             await proto.add_to_server(handler=self.handler, server=self._server)
 
-            register_protocol_service( # This seems to be a generic registration for plugin lifecycle
+            register_protocol_service(
                 server=self._server, shutdown_event=self._shutdown_event
             )
 
-            # Update main service name if protocol INSTANCE provides it and it's different
-            # This allows protocol instance to dynamically set its name if needed.
-            if hasattr(proto, 'service_name') and isinstance(proto.service_name, str) and proto.service_name:
-                if self._main_service_name != proto.service_name:
-                    logger.info(f"🛎️⚙️ Main service name changing from '{self._main_service_name}' to '{proto.service_name}' based on protocol instance.")
-                    self._main_service_name = proto.service_name
-                    if self._health_servicer: # Update health servicer if it exists
-                        self._health_servicer._service_name = self._main_service_name
-                        logger.info(f"❤️⚕️ Health servicer updated to monitor specific service: {self._main_service_name}")
-
-            self.protocol = proto # Store instantiated protocol
-            logger.debug(f"🛎️ Main protocol service '{self._main_service_name}' (instance: {type(proto)}) registered successfully.")
-
-            # Register Health Service if enabled
-            if self._health_servicer:
-                health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, self._server)
-                logger.info("🛎️❤️⚕️ gRPC Health Checking service registered.")
-
+            self.protocol = proto
+            logger.debug("🛎️ Protocol service registered successfully.")
         except Exception as e:
             logger.error(
                 f"🛎️❌ Failed to register protocol service with handler {self.handler.__class__.__name__} for protocol {self.protocol.__class__.__name__}: {e}",
@@ -1219,12 +1083,6 @@ class RPCPluginServer(
                 hint="Ensure transport is correctly initialized and stdout is accessible for writing.",
             ) from e
 
-        # Start the shutdown file watcher task
-        if self._shutdown_file_path:
-            loop = asyncio.get_event_loop()
-            self._shutdown_watcher_task = loop.create_task(self._watch_shutdown_file())
-            logger.debug("🛎️👀 Shutdown file watcher task created and started.")
-
         try:
             self._serving_event.set()
             logger.debug(
@@ -1290,156 +1148,6 @@ class RPCPluginServer(
         # The original attempt to call self._server.close() is also risky here
         # as grpc.aio.Server's own __del__ might handle some synchronous cleanup,
         # but complex operations should be in stop().
-
-
-class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
-    """
-    A gRPC server interceptor for rate limiting requests.
-    """
-
-    def __init__(self, rate_limiter: TokenBucketRateLimiter):
-        self._rate_limiter = rate_limiter
-        logger.debug("🔩🚦 RateLimitingInterceptor initialized.")
-
-    async def intercept_service(self, continuation, handler_call_details):
-        """
-        Intercepts incoming gRPC calls to apply rate limiting.
-        """
-        logger.debug(f"🔩🚦 Intercepting: {handler_call_details.method}")
-        if not await self._rate_limiter.is_allowed():
-            logger.warning(
-                f"🔩🚦❌ Rate limit exceeded for method: {handler_call_details.method}. Aborting request."
-            )
-
-            async def abort_handler(request, context):
-                await context.abort(
-                    grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded."
-                )
-
-            # The interceptor needs to return a new handler if it wants to
-            # terminate the RPC, or the result of continuation if it wants to
-            # proceed. The new handler should match the signature of the original
-            # (unary-unary, unary-stream, etc.).
-            # For simplicity, we assume unary-unary here. A more robust interceptor
-            # would need to inspect handler_call_details to determine the type.
-            # However, gRPC Python's interceptor API often handles this by allowing
-            # the context.abort to propagate correctly when called from a behavior
-            # returned by the interceptor.
-            # Let's try returning a behavior that immediately aborts.
-
-            # Create a generic handler that aborts.
-            # gRPC will call this handler.
-            def generic_terminator_handler(request_or_iterator, context):
-                context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
-                # For stream-returning RPCs, this might need to return an empty async iterator
-                # For unary-returning RPCs, this might need to return a dummy response or raise
-                # However, context.abort() should be sufficient to terminate the RPC.
-                # If this still allows the original handler to run, we need a different strategy.
-                # Let's assume abort() is enough.
-                return grpc.aio.utils.RPCBehavior( # type: ignore
-                    request_deserializer=None, # Not known here, but abort should bypass
-                    response_serializer=None, # Not known here
-                    request_streaming=False, # Simplification, would need to check details
-                    response_streaming=False, # Simplification
-                    handler=abort_handler
-                )
-
-
-            # This part is tricky. The `continuation` function expects to be called
-            # to get the actual handler for the method. If we don't call it,
-            # the RPC might hang or error. If we call it and then abort,
-            # it might be too late for some resources.
-            # The standard approach is to return a new handler that does the aborting.
-            # Let's craft a simple handler that aborts.
-            original_handler = await continuation(handler_call_details)
-
-            # This generic aborting behavior might not be perfect for all RPC types
-            # (unary/stream), but context.abort is the primary mechanism.
-            # The key is that this returned handler *replaces* the original method's handler for this call.
-
-            # Let's try a simplified approach: if the interceptor itself raises an RpcError,
-            # gRPC might handle it. Or, as per docs, modifying the context is better.
-            # The `ServicerContext` is not directly available here to call `abort`.
-            # The `continuation` returns a `grpc.RpcMethodHandler` which has a `unary_unary`, etc.
-            # attribute. We need to return a new `grpc.RpcMethodHandler` where these are our aborting methods.
-
-            # A common pattern for interceptors that want to terminate early:
-            # Create a new behavior that, when invoked, aborts.
-            # This is complex because the type of handler (unary_unary, etc.) varies.
-            # A simpler approach for modern grpc.aio might be to raise an RpcError.
-            # However, the documentation for grpc.aio.ServerInterceptor suggests
-            # returning a "handler that terminates the RPC".
-
-            # Let's try returning a handler that calls context.abort().
-            # The `continuation` returns an `RpcMethodHandler`. We need to return one too.
-            # The `handler_call_details` contains the method name.
-            # The `continuation` when called with `handler_call_details` gives the specific method handler.
-
-            # If rate limited, return a new handler that aborts.
-            # This generic handler needs to be adaptable.
-            # For now, let's assume that if we return a function that takes (request, context),
-            # and it calls context.abort(), it might work for unary calls.
-            # This is a simplification. A production interceptor needs to be more robust
-            # regarding RPC method types (unary/stream).
-
-            async def new_behavior(request, context):
-                await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded")
-                return None # Required for unary-unary
-
-            # We need to return an RpcMethodHandler
-            # This is still not quite right. The interceptor itself does not return a new RpcMethodHandler.
-            # It calls continuation, which returns an RpcMethodHandler.
-            # The interceptor is supposed to return a *callable* that *is* the new method.
-            # So, if `is_allowed` is false, we return `new_behavior`.
-            # This `new_behavior` will be called by gRPC instead of the actual method.
-            # This was the source of the AttributeError.
-
-            # Correct approach: obtain the original RpcMethodHandler, then return a new one
-            # with the behavior (e.g., unary_unary method) replaced.
-            original_handler = await continuation(handler_call_details)
-
-            async def aborting_behavior(request, context):
-                await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
-                # For unary-unary, gRPC expects a response message object or None after abort.
-                # If the original handler had a specific response type, we might need to create an empty one.
-                # However, abort() should suffice. If not, one might need:
-                # response_type = type(original_handler._unary_unary_response_serializer.deserialize(b''))
-                # return response_type()
-                return None # Placeholder, abort should take precedence.
-
-            # Reconstruct RpcMethodHandler with the new behavior for the appropriate type.
-            # This example assumes UnaryUnary, which Echoer.Echo is.
-            # A fully generic interceptor would need to check handler_call_details or original_handler
-            # to determine if it's unary_unary, unary_stream, etc. and replace the correct field.
-            if original_handler.unary_unary:
-                return grpc.unary_unary_rpc_method_handler(
-                    aborting_behavior,
-                    request_deserializer=original_handler.request_deserializer,
-                    response_serializer=original_handler.response_serializer,
-                )
-            elif original_handler.unary_stream:
-                 # Similar for unary_stream, etc.
-                logger.error("RateLimitingInterceptor: Aborting unary-stream not fully implemented here.")
-                # Fallback to just aborting behavior, might not be perfect
-                return grpc.unary_stream_rpc_method_handler(
-                    aborting_behavior, # This signature is (request, context)
-                                       # but unary_stream is (request, context) -> async iterator
-                                       # so this will likely fail for stream responses.
-                    request_deserializer=original_handler.request_deserializer,
-                    response_serializer=original_handler.response_serializer,
-                )
-            # Add other cases (stream_unary, stream_stream) if necessary for full generality.
-
-            # Fallback if no specific handler type matches (should not happen for known RPCs)
-            logger.error(f"RateLimitingInterceptor: Could not determine RPC method type for {handler_call_details.method} to abort.")
-            # Defaulting to returning the original handler to avoid breaking things further,
-            # though this means rate limiting won't abort this specific call.
-            return original_handler
-
-        else:
-            logger.debug(f"🔩🚦✅ Request allowed for method: {handler_call_details.method}. Proceeding.")
-            # If allowed, proceed with the original handler
-            return await continuation(handler_call_details)
 
 
 # 🐍🏗️🔌

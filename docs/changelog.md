@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Internal updates and documentation improvements.
+- Internal updates and documentation improvements (reflecting version 0.0.11 state).
 - Initial release preparation
 - Complete example suite with echo and key-value demos
 - Production documentation and deployment guides

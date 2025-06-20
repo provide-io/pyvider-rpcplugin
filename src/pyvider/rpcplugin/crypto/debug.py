@@ -11,9 +11,10 @@ from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from pyvider.rpcplugin.exception import CertificateError
 
+# from pyvider.rpcplugin.config import rpcplugin_config # Unused import
 from pyvider.telemetry import logger
 
-from .types import PrivateKeyType
+from .types import PrivateKeyType  # Import KeyPairType for key parameter hint
 
 
 def display_cert_details(certificate: x509.Certificate) -> None:
@@ -35,23 +36,28 @@ def display_cert_details(certificate: x509.Certificate) -> None:
     Raises:
       CertificateError: If any certificate detail cannot be extracted.
     """
+    # Use the 'certificate' parameter directly
     try:
         logger.debug(
             "📜📂🚀 display_cert_details: Starting extraction of certificate details."
         )
 
+        # Format serial number as hex grouped in two-character segments.
         serial_str = f"{certificate.serial_number:0x}"
         serial_number_hex = ":".join(
             serial_str[i : i + 2] for i in range(0, len(serial_str), 2)
         )
         logger.debug(f"  🔢 Serial Number: {serial_number_hex}")
 
+        # Log Subject and Issuer.
         logger.debug(f"  🏷️ Subject: {certificate.subject.rfc4514_string()}")
         logger.debug(f"  📢 Issuer: {certificate.issuer.rfc4514_string()}")
 
+        # Log Validity period.
         logger.debug(f"  📆 Valid From: {certificate.not_valid_before_utc.isoformat()}")
         logger.debug(f"  📆 Valid To: {certificate.not_valid_after_utc.isoformat()}")
 
+        # Key Usage extension.
         try:
             key_usage_ext_value = certificate.extensions.get_extension_for_oid(
                 x509.oid.ExtensionOID.KEY_USAGE
@@ -68,10 +74,24 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                     usages.append("data_encipherment")
                 if key_usage_ext_value.key_agreement:
                     usages.append("key_agreement")
+                # key_agreement has a sub-property encipher_only, decipher_only - this seems wrong.
+                # For KeyUsage, key_agreement is a boolean.
+                # encipher_only and decipher_only are distinct booleans for key_agreement=True if key_type=DH
+                # This part of original code might be slightly off in logic for encipher/decipher only.
+                # Sticking to direct attributes of KeyUsage for now.
                 if key_usage_ext_value.key_cert_sign:
                     usages.append("key_cert_sign")
                 if key_usage_ext_value.crl_sign:
                     usages.append("crl_sign")
+                # encipher_only and decipher_only are not direct attributes of KeyUsage in this way.
+                # They are typically associated with keyAgreement.
+                # The KeyUsage object itself doesn't have encipher_only/decipher_only attributes.
+                # These were likely misinterpretations of the KeyUsage extension.
+                # For now, removing them to fix MyPy errors, subject to functional review.
+                # if key_usage_ext_value.encipher_only:
+                #     usages.append("encipher_only")
+                # if key_usage_ext_value.decipher_only:
+                #     usages.append("decipher_only")
                 logger.debug(
                     f"  🔑 Key Usage: {', '.join(usages) if usages else 'None'}"
                 )
@@ -82,6 +102,7 @@ def display_cert_details(certificate: x509.Certificate) -> None:
         except x509.ExtensionNotFound:
             logger.debug("  🔑 Key Usage: Not present")
 
+        # Extended Key Usage extension.
         try:
             ext_key_usage_ext_value = certificate.extensions.get_extension_for_oid(
                 x509.oid.ExtensionOID.EXTENDED_KEY_USAGE
@@ -105,6 +126,7 @@ def display_cert_details(certificate: x509.Certificate) -> None:
         except x509.ExtensionNotFound:
             logger.debug("  ✨ Extended Key Usage: Not present")
 
+        # Basic Constraints extension.
         try:
             bc_ext_value = certificate.extensions.get_extension_for_oid(
                 x509.oid.ExtensionOID.BASIC_CONSTRAINTS
@@ -124,13 +146,14 @@ def display_cert_details(certificate: x509.Certificate) -> None:
         except x509.ExtensionNotFound:
             logger.debug("  ⛓️ Basic Constraints: Not present")
 
+        # Public Key details.
         public_key_obj = (
             certificate.public_key()
-        )
+        )  # Renamed to avoid conflict if public_key was a var name
         key_type_str: str
         key_size_str: str | int
 
-        match public_key_obj:
+        match public_key_obj:  # Use renamed variable
             case rsa.RSAPublicKey():
                 key_type_str = "RSA"
                 key_size_str = public_key_obj.key_size
@@ -142,7 +165,7 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                 key_size_str = "Unknown"
 
         logger.debug(f"  🔑 Public Key: {key_type_str} ({key_size_str})")
-        pem_public_key = public_key_obj.public_bytes(
+        pem_public_key = public_key_obj.public_bytes(  # Use renamed variable
             encoding=serialization.Encoding.PEM,
             format=serialization.PublicFormat.SubjectPublicKeyInfo,
         ).decode()
@@ -153,7 +176,7 @@ def display_cert_details(certificate: x509.Certificate) -> None:
         )
     except Exception as e:
         logger.error(
-            f"📜🚨 Could not extract certificate details: {e!s}",
+            f"📜🚨 Could not extract certificate details: {e!s}",  # Use !s for concise error
             extra={"error": str(e)},
         )
         raise CertificateError("Could not extract certificate details") from e
@@ -191,7 +214,7 @@ def display_key_details(priv_key: PrivateKeyType | None) -> None:
             case ec.EllipticCurvePrivateKey():
                 key_type_str = "ECDSA"
                 key_size_info = priv_key.curve.name
-            case _:
+            case _:  # Should not happen if KeyPairType is used correctly
                 key_type_str = "Unknown"
                 key_size_info = "Unknown"
 
@@ -210,7 +233,7 @@ def display_key_details(priv_key: PrivateKeyType | None) -> None:
     except Exception as e:
         logger.error(
             f"🔑🚨 Could not extract key details: {e!s}",
-            extra={"error": str(e)},
+            extra={"error": str(e)},  # Use !s for concise error
         )
         raise CertificateError("Could not extract key details") from e
 
