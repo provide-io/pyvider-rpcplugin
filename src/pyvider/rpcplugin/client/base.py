@@ -72,9 +72,8 @@ from pyvider.telemetry import logger
 
 
 class HandshakeData(NamedTuple):
-    """Represents essential data parsed from the plugin's handshake response."""
-    endpoint: str  # The network address (e.g., "host:port" or "/path/to/socket")
-    transport_type: str # The transport protocol (e.g., "tcp", "unix")
+    endpoint: str
+    transport_type: str
 
 
 @define

@@ -28,7 +28,7 @@ class EchoServiceImpl(echo_pb2_grpc.EchoService):
 
 # Concrete Protocol for Echo service
 class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
-    service_name = "pyvider.testing.echo.Echoer" # Expose service name
+    service_name = "echo.EchoService" # Changed from pyvider.testing.echo.Echoer
 
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         logger.debug("EchoProtocolImpl get_grpc_descriptors called")

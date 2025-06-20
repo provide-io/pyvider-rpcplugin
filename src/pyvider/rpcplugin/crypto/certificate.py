@@ -255,7 +255,7 @@ class Certificate:
                 self._base, self._private_key = CertificateBase.create(conf)
 
                 self._cert = self._create_x509_certificate(
-                    is_ca=True, is_client_cert=False
+                    is_ca=False, is_client_cert=True # MODIFIED FOR CLIENT CERT
                 )
 
                 if (
@@ -628,6 +628,14 @@ class Certificate:
             ecdsa_curve=ecdsa_curve,
             alt_names=[common_name],
         )
+        # Explicitly re-sign to ensure CA flags are correctly set for a CA
+        logger.info("📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, is_client_cert=False flags.")
+        actual_ca_x509_cert = ca_cert_obj._create_x509_certificate(
+            is_ca=True, is_client_cert=False # Correct CA flags
+        )
+        ca_cert_obj._cert = actual_ca_x509_cert
+        ca_cert_obj.cert = actual_ca_x509_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        return ca_cert_obj
 
     @classmethod
     def create_signed_certificate(
