@@ -17,27 +17,27 @@ from tests.fixtures.proto import echo_pb2_grpc
 from pyvider.telemetry import logger
 
 # Concrete Handler/Servicer for Echo service
-class EchoServiceImpl(echo_pb2_grpc.EchoServicer):
-    service_name = "pyvider.testing.echo.Echoer" # Expose service name
+class EchoServicerImpl(echo_pb2_grpc.EchoServiceServicer): # Changed from EchoerServicer
+    service_name = "echo.EchoService" # Changed from pyvider.testing.echo.Echoer
 
     async def Echo(
         self, request: echo_pb2.EchoRequest, context: grpc.aio.ServicerContext
     ) -> echo_pb2.EchoResponse:
-        logger.debug(f"EchoServiceImpl received: {request.message}")
-        return echo_pb2.EchoResponse(message=f"Echo: {request.message}")
+        logger.debug(f"EchoServicerImpl received: {request.message}")
+        return echo_pb2.EchoResponse(reply=f"Echo: {request.message}") # Changed from message to reply
 
 # Concrete Protocol for Echo service
-class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
-    service_name = "pyvider.testing.echo.Echoer" # Expose service name
+class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServicerImpl]):
+    service_name = "echo.EchoService" # Changed from pyvider.testing.echo.Echoer
 
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         logger.debug("EchoProtocolImpl get_grpc_descriptors called")
         # The first element is usually the file descriptor from _pb2.py
         return echo_pb2.DESCRIPTOR, self.service_name
 
-    async def add_to_server(self, server: ServerT, handler: EchoServiceImpl) -> None:
+    async def add_to_server(self, server: ServerT, handler: EchoServicerImpl) -> None:
         logger.debug(f"EchoProtocolImpl add_to_server called with handler {type(handler)} and server {type(server)}")
-        echo_pb2_grpc.add_EchoServicer_to_server(handler, server)
+        echo_pb2_grpc.add_EchoServiceServicer_to_server(handler, server) # Changed from add_EchoerServicer_to_server
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def health_test_config_override(request):
 async def test_health_service_enabled_and_serving(health_test_config_override):
     """Test health service when enabled and main app is healthy."""
     protocol = EchoProtocolImpl()
-    handler = EchoServiceImpl()
+    handler = EchoServicerImpl()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
     assert server._health_servicer is not None, "Health servicer should be initialized."
@@ -92,11 +92,11 @@ async def test_health_service_enabled_and_serving(health_test_config_override):
 
         channel = grpc.aio.insecure_channel(f"unix:{socket_path}")
         health_stub = health_pb2_grpc.HealthStub(channel)
-        echo_stub = echo_pb2_grpc.EchoerStub(channel)
+        echo_stub = echo_pb2_grpc.EchoServiceStub(channel) # Changed from EchoerStub
 
         # 1. Check main service via Echo call
         echo_response = await echo_stub.Echo(echo_pb2.EchoRequest(message="ping"))
-        assert echo_response.message == "Echo: ping"
+        assert echo_response.reply == "Echo: ping" # Changed from message to reply
         logger.info("Main Echo service responded.")
 
         # 2. Check health of the main monitored service
@@ -150,7 +150,7 @@ async def test_health_service_enabled_and_serving(health_test_config_override):
 async def test_health_service_disabled(health_test_config_override):
     """Test that the health service is not available if disabled in config."""
     protocol = EchoProtocolImpl()
-    handler = EchoServiceImpl()
+    handler = EchoServicerImpl()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
     assert server._health_servicer is None, "Health servicer should NOT be initialized if disabled."
@@ -182,9 +182,9 @@ async def test_health_service_disabled(health_test_config_override):
             logger.info(f"Health check correctly failed with {e.code()} as service is disabled.")
 
         # Main service should still work
-        echo_stub = echo_pb2_grpc.EchoerStub(channel)
+        echo_stub = echo_pb2_grpc.EchoServiceStub(channel) # Changed from EchoerStub
         echo_response = await echo_stub.Echo(echo_pb2.EchoRequest(message="ping disabled health"))
-        assert echo_response.message == "Echo: ping disabled health"
+        assert echo_response.reply == "Echo: ping disabled health" # Changed from message to reply
         logger.info("Main Echo service responded while health service was disabled.")
 
     except Exception as e:
@@ -205,7 +205,7 @@ async def test_health_service_disabled(health_test_config_override):
 async def test_health_service_reports_not_serving_when_app_unhealthy(health_test_config_override):
     """Test that health service reports NOT_SERVING if app becomes unhealthy (e.g., during shutdown)."""
     protocol = EchoProtocolImpl()
-    handler = EchoServiceImpl()
+    handler = EchoServicerImpl()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
     serve_task = None
