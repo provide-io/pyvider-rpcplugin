@@ -96,44 +96,6 @@ class DummyAioServer:
             pass
 
 
-################################################################################
-# This is from test_connecion.py
-# -------------------------------------------------------------------
-# Dummy stream implementations for testing.
-# -------------------------------------------------------------------
-class CCDummyWriter:
-    def __init__(self) -> None:
-        self.closed = False
-        self.data = bytearray()
-
-    def write(self, data: bytes) -> None:
-        self.data.extend(data)
-
-    async def drain(self) -> None:
-        # Simulate an immediate drain.
-        await asyncio.sleep(0)
-
-    def close(self) -> None:
-        self.closed = True
-
-    async def wait_closed(self) -> None:
-        await asyncio.sleep(0)
-
-    def is_closing(self) -> bool:
-        return self.closed
-
-
-class CCDummyReader:
-    def __init__(self, data: bytes = b"") -> None:
-        self.data = data
-        self.called = False
-
-    async def read(self, size: int) -> bytes:
-        self.called = True
-        return self.data
-
-
-# -------------------------------------------------------------------
 # Fixtures for DummyReader and DummyWriter.
 # -------------------------------------------------------------------
 @pytest.fixture

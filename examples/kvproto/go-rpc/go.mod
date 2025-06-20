@@ -1,27 +1,26 @@
-// examples/kvproto/go-plugin/go.mod
+module github.com/hashicorp/go-plugin/examples/kv
 
-module github.com/provide-io/pyvider-rpcplugin/examples/kvproto/go-plugin
+go 1.23.0
 
-go 1.23.4
+toolchain go1.24.4
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-plugin v1.6.3
-	google.golang.org/grpc v1.69.2
-	google.golang.org/protobuf v1.36.2
+	google.golang.org/grpc v1.73.0
+	google.golang.org/protobuf v1.36.6
 )
 
-replace github.com/hashicorp/go-plugin => github.com/livingstaccato/go-plugin v0.0.0-20250305031206-470b1c194de6
-
 require (
-	github.com/fatih/color v1.13.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/hashicorp/yamux v0.1.1 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
-	github.com/oklog/run v1.0.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241015192408-796eee8c2d53 // indirect
+	github.com/hashicorp/yamux v0.1.2 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/oklog/run v1.1.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 )
