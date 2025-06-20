@@ -655,63 +655,16 @@ print("Note: Secure client example is conceptual for executable plugins.")
 ### Error Handling
 
 ```python
-from pyvider.rpcplugin import plugin_client # Conceptual: client might be from here
-from pyvider.rpcplugin.exception import RPCPluginError, TransportError, HandshakeError
-# from pyvider.telemetry import logger # Assuming logger is configured and available
-
-# client = plugin_client(server_path="./my_plugin_executable") # Conceptual instantiation
+from pyvider.rpcplugin.exception import TransportError, HandshakeError
 
 try:
-    # For RPCPluginClient, the start() method initiates connection and handshake
-    # and is the primary operation that can raise these specific errors.
-    # await client.start()
-
-    # Replace the above with a more concrete example if possible, or keep as conceptual.
-    # For instance, if 'client' is already assumed to be an RPCPluginClient instance:
-
-    # Conceptual: Assuming 'client' is an instance of RPCPluginClient
-    # client = RPCPluginClient(command=["./path_to_your_plugin_executable"])
-
-    # Example of calling start, which handles connection and handshake:
-    # await client.start() # This is the main call that would throw HandshakeError or TransportError initially.
-
-    # If client.start() succeeded, you can then use the channel:
-    # if client.grpc_channel:
-    #     # stub = YourServiceStub(client.grpc_channel)
-    #     # await stub.YourMethod(YourRequest())
-    #     logger.info("Client started and channel is available.")
-    # else:
-    #     logger.error("Client started but channel not available.")
-    print("Conceptual: Replace with actual client usage after client.start()")
-
+    await client.connect(endpoint)
 except TransportError as e:
-    # logger.error(f"Connection or transport layer error: {e}")
-    print(f"TransportError: {e}")
-    # Specific hints:
-    # - Check network connectivity to the plugin's address.
-    # - Ensure the plugin server is running and listening on the correct endpoint.
-    # - Verify Unix socket paths and permissions if using Unix sockets.
-    # - For TCP, check firewalls and that the port is not already in use.
+    logger.error(f"Connection failed: {e}")
+    # Implement retry logic
 except HandshakeError as e:
-    # logger.error(f"Handshake with plugin failed: {e}")
-    print(f"HandshakeError: {e}")
-    # Specific hints:
-    # - Verify PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE match between client and server.
-    # - Check plugin's stdout/stderr for handshake string issues or early exit.
-    # - Ensure protocol versions are compatible.
-except RPCPluginError as e: # Catching base error for other plugin-specific issues
-    # logger.error(f"An RPC plugin error occurred: {e}")
-    print(f"RPCPluginError: {e}")
-except Exception as e: # Catch any other unexpected errors
-    # logger.error(f"An unexpected error occurred: {e}", exc_info=True)
-    print(f"Unexpected error: {e}")
-finally:
-    # Conceptual: Ensure client is closed if it was started
-    # if client and hasattr(client, 'is_started') and client.is_started:
-    #     await client.close()
-    # elif client and hasattr(client, 'close'): # Basic close if start status unknown
-    #     await client.close()
-    print("Conceptual: Client cleanup in finally block.")
+    logger.error(f"Authentication failed: {e}")
+    # Check certificates and credentials
 ```
 
 ## Performance Considerations

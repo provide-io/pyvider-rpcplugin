@@ -1,14 +1,13 @@
 import asyncio
-import os
 import grpc
 import pytest
 from typing import Any
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.server import RPCPluginServer, RateLimitingInterceptor
+from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.types import HandlerT, ServerT # Keep ServerT for type hinting protocol
+from pyvider.rpcplugin.types import ServerT # Keep ServerT for type hinting protocol
 from pyvider.telemetry import logger
 
 # Import generated gRPC stubs
@@ -17,7 +16,7 @@ from tests.fixtures.proto import echo_pb2_grpc
 
 
 # Concrete Handler/Servicer for Echo service
-class EchoServiceImpl(echo_pb2_grpc.EchoService):
+class EchoServicerImpl(echo_pb2_grpc.EchoServiceServicer): # Changed
     async def Echo(
         self, request: echo_pb2.EchoRequest, context: grpc.aio.ServicerContext
     ) -> echo_pb2.EchoResponse:
@@ -25,12 +24,12 @@ class EchoServiceImpl(echo_pb2_grpc.EchoService):
         return echo_pb2.EchoResponse()
 
 # Concrete Protocol for Echo service
-class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]): # HandlerT becomes EchoServiceImpl
+class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServicerImpl]): # HandlerT becomes EchoServicerImpl
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         logger.debug("EchoProtocolImpl get_grpc_descriptors called")
-        return echo_pb2.DESCRIPTOR, "pyvider.testing.echo.Echoer"
+        return echo_pb2.DESCRIPTOR, "echo.EchoService" # Changed
 
-    async def add_to_server(self, server: ServerT, handler: EchoServiceImpl) -> None:
+    async def add_to_server(self, server: ServerT, handler: EchoServicerImpl) -> None:
         logger.debug(f"EchoProtocolImpl add_to_server called with handler {type(handler)} and server {type(server)}")
         echo_pb2_grpc.add_EchoServiceServicer_to_server(handler, server)
 
@@ -69,7 +68,7 @@ async def test_server_initializes_with_rate_limiter_enabled(server_config_overri
     """Test that the server initializes the rate limiter when configured."""
 
     protocol = EchoProtocolImpl()
-    handler = EchoServiceImpl()
+    handler = EchoServicerImpl()
     # server_config_override_rl is active via fixture for rate limiting config
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
@@ -138,7 +137,7 @@ async def test_server_initializes_with_rate_limiter_enabled(server_config_overri
 async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_override_rl):
     """Tests that requests are denied when the rate limit is exceeded."""
     protocol = EchoProtocolImpl()
-    handler = EchoServiceImpl()
+    handler = EchoServicerImpl()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
     serve_task = None
@@ -229,7 +228,7 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
 async def test_server_runs_without_rate_limiter_if_disabled(server_config_override_rl):
     """Test that the server runs normally and no rate limiter is active if disabled in config."""
     protocol = EchoProtocolImpl()
-    handler = EchoServiceImpl()
+    handler = EchoServicerImpl()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
     assert server._rate_limiter is None, "Rate limiter should NOT be initialized if disabled."
