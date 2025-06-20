@@ -89,4 +89,27 @@ async def server_instance(
         # No need to check transport_name or os.path.exists here.
 
 
+@pytest_asyncio.fixture(scope="function")
+async def mock_async_tcp_server(mock_server_transport_tcp) -> None:
+    transport = mock_server_transport_tcp
+    endpoint = await transport.listen()
+
+    host, port = endpoint.split(":")
+
+    # Simulate a client connection
+    reader, writer = await asyncio.open_connection(host, int(port))
+    writer.write(b"test data")
+    await writer.drain()
+
+    # Keep connection open to simulate active connection
+    await asyncio.sleep(1)
+    if writer is not None:
+        writer.close()
+
+    await writer.wait_closed()
+
+    # Test transport close
+    await transport.close()
+
+
 ### 🐍🏗🧪️

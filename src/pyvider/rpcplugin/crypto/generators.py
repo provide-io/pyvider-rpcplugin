@@ -11,7 +11,7 @@ from collections.abc import Callable
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
-from pyvider.rpcplugin.crypto import constants
+from pyvider.rpcplugin.crypto import constants  # Changed import style
 from pyvider.rpcplugin.crypto.types import KeyPairType
 
 
@@ -28,6 +28,7 @@ def generate_rsa_keypair(key_size: int) -> KeyPairType:
     Raises:
         ValueError: If the key_size is not supported (though validation is expected upstream).
     """
+    # Basic validation, though generate_keypair has more robust checks
     if key_size not in constants.SUPPORTED_RSA_SIZES:
         raise ValueError(
             f"Unsupported RSA key size: {key_size}. Supported: {constants.SUPPORTED_RSA_SIZES}"
@@ -53,11 +54,12 @@ def generate_ec_keypair(curve_name: str) -> KeyPairType:
         ValueError: If the curve_name is not supported (though validation is expected upstream).
         AttributeError: If the curve name does not correspond to a valid curve in `cryptography.hazmat.primitives.asymmetric.ec`.
     """
+    # Basic validation
     if curve_name not in constants.SUPPORTED_EC_CURVES:
         raise ValueError(
             f"Unsupported EC curve: {curve_name}. Supported: {constants.SUPPORTED_EC_CURVES}"
         )
-    curve = getattr(ec, curve_name.upper())()
+    curve = getattr(ec, curve_name.upper())()  # Get curve object e.g. ec.SECP384R1()
     private_key = ec.generate_private_key(curve=curve, backend=default_backend())
     return private_key.public_key(), private_key
 

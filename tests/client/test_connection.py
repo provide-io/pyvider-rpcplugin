@@ -3,9 +3,9 @@
 import asyncio
 import gc
 
+# import logging # No longer needed for this test
 import pytest
-from unittest.mock import patch
-
+from unittest.mock import patch  # Added
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from tests.fixtures.dummy import DummyReader, DummyWriter  # Import added
@@ -147,7 +147,8 @@ async def test_close_writer_error(
 
 
 @pytest.mark.asyncio
-async def test_del_warning() -> None:
+async def test_del_warning() -> None:  # Removed caplog, capsys
+    # caplog.set_level(logging.WARNING) # REMOVE
 
     local_dummy_writer = DummyWriter()
     local_dummy_reader = DummyReader()

@@ -13,8 +13,8 @@ import asyncio
 import os
 from collections.abc import (
     Callable as AbcCallable,
-)
-from typing import Any
+)  # Import Callable from collections.abc
+from typing import Any  # Removed Callable, Optional, Dict
 
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.exception import TransportError
@@ -25,7 +25,7 @@ from pyvider.rpcplugin.types import (
     HandlerT,
     ProtocolT,
     RPCPluginTransport,
-)
+)  # Changed TransportT to RPCPluginTransport
 from pyvider.telemetry import logger
 
 
@@ -62,7 +62,7 @@ def plugin_server(
     """
     logger.debug(f"🧰🚀🔍 Creating plugin server with transport={transport}")
 
-    transport_inst: RPCPluginTransport
+    transport_inst: RPCPluginTransport  # Changed TransportT to RPCPluginTransport
     match transport.lower():
         case "unix":
             logger.debug(
@@ -95,7 +95,7 @@ def plugin_client(
     env: dict[str, str] | None = None,
     auto_connect: bool = False,
     timeout: float = 10.0,
-    **kwargs: Any,
+    **kwargs: Any,  # Added type hint for kwargs
 ) -> RPCPluginClient:
     """
     Create a new plugin client connected to a server.
@@ -120,6 +120,7 @@ def plugin_client(
     """
     logger.debug(f"🧰🚀🔍 Creating plugin client for server at {server_path}")
 
+    # Verify server executable exists and is executable
     if not os.path.exists(server_path):
         logger.error(f"🧰🚀❌ Server executable not found: {server_path}")
         raise FileNotFoundError(f"Server executable not found: {server_path}")
@@ -128,7 +129,8 @@ def plugin_client(
         logger.error(f"🧰🚀❌ Server executable not executable: {server_path}")
         raise PermissionError(f"Server executable not executable: {server_path}")
 
-    config: dict[str, Any] = {"timeout": timeout}
+    # Create configuration dictionary
+    config: dict[str, Any] = {"timeout": timeout}  # Modernized Dict to dict
     if env:
         config["env"] = env
     for key, value in kwargs.items():
@@ -140,8 +142,11 @@ def plugin_client(
         config=config,
     )
 
+    # Optionally auto-connect
     if auto_connect:
         logger.debug("🧰🚀🔄 Auto-connecting to server...")
+        # Create a task to start the client but don't await it yet
+        # The caller will need to await this
         asyncio.create_task(client.start())
 
     return client
@@ -150,7 +155,7 @@ def plugin_client(
 def plugin_protocol(
     service_name: str,
     descriptor_module: Any = None,
-    servicer_add_fn: AbcCallable | None = None,
+    servicer_add_fn: AbcCallable | None = None,  # Modernized Callable | None
 ) -> RPCPluginProtocol:
     """
     Create a protocol definition for a specific gRPC service.
@@ -192,16 +197,16 @@ def plugin_protocol(
 
         async def add_to_server(
             self, server: Any, handler: Any
-        ) -> None:
+        ) -> None:  # Parameter order fixed
             """Adds the protocol implementation to the gRPC server."""
             logger.debug(f"🧰📡🚀 Adding service '{service_name}' to gRPC server")
             if servicer_add_fn:
-                servicer_add_fn(handler, server)
+                servicer_add_fn(handler, server)  # Original arg order for call
             else:
                 logger.warning(
                     f"🧰📡⚠️ No servicer_add_fn provided for '{service_name}'"
                 )
-            return
+            return  # Explicit return
 
     logger.debug(f"🧰🚀✅ Created plugin protocol for service '{service_name}'")
     return GeneratedProtocol()
@@ -224,16 +229,16 @@ def create_basic_protocol() -> RPCPluginProtocol:
 
         async def get_grpc_descriptors(
             self,
-        ) -> tuple[Any, str]:
+        ) -> tuple[Any, str]:  # Return type Awaitable removed
             """Returns placeholder descriptors."""
             return None, "TestService"
 
         async def add_to_server(
             self, server: Any, handler: Any
-        ) -> None:
+        ) -> None:  # Parameter order fixed, return type Awaitable removed
             """No-op implementation for testing."""
             logger.debug("🧰📡🔍 Basic protocol add_to_server called")
-            return
+            return  # Explicit return
 
     logger.debug("🧰🚀✅ Created basic test protocol")
     return BasicProtocol()

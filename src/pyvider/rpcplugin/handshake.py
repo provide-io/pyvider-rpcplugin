@@ -15,8 +15,9 @@ import os
 import time
 import traceback
 
+# Use a sentinel value to detect omitted parameters.
 from enum import Enum, auto
-from typing import Literal, TypeGuard, cast
+from typing import Literal, TypeGuard, cast  # Ensure Literal and cast are imported
 
 from attrs import define
 
@@ -64,7 +65,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
     Raises:
       TransportError: If no compatible transport can be negotiated or an error occurs during negotiation.
     """
-    import tempfile
+    import tempfile  # Ensure tempfile is imported here for use below
 
     logger.debug(
         f"🗣️🚊 (Transport Negotiation: Starting) => Available transports: {server_transports}"
@@ -78,12 +79,14 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             hint="Ensure the server configuration specifies at least one supported transport (e.g., 'unix', 'tcp').",
         )
     try:
+        # Reverse the preference - prioritize Unix sockets first
         if "unix" in server_transports:
             logger.debug(
                 "🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available"
             )
-            import tempfile
+            import tempfile  # Ensure tempfile is imported
 
+            # Use tempfile.gettempdir() for a safer temporary directory
             temp_dir = os.environ.get("TEMP_DIR") or tempfile.gettempdir()
             transport_path = os.path.join(temp_dir, f"pyvider-{os.getpid()}.sock")
             from pyvider.rpcplugin.transport import UnixSocketTransport
@@ -284,7 +287,7 @@ async def build_handshake_response(
                 logger.error(
                     "🤝📝❌ TCP transport requires a valid port for handshake response."
                 )
-                raise HandshakeError(
+                raise HandshakeError(  # Changed from ValueError
                     message="TCP transport requires a port number to build handshake response.",
                     hint="Ensure the port is correctly passed to build_handshake_response for TCP transport.",
                 )
@@ -329,7 +332,7 @@ async def build_handshake_response(
             cert_lines = server_cert.cert.strip().split("\n")
             if (
                 len(cert_lines) < 3
-            ):
+            ):  # Basic check, actual PEM validation is more complex
                 logger.error(
                     "🤝🔐❌ Server certificate appears to be in an invalid PEM format (too few lines)."
                 )
@@ -337,6 +340,7 @@ async def build_handshake_response(
                     message="Invalid server certificate format provided for handshake response.",
                     hint="Ensure the server certificate is a valid PEM-encoded X.509 certificate.",
                 )
+            # Remove header and footer, then remove trailing '=' characters.
             cert_body = "".join(cert_lines[1:-1]).rstrip("=")
             response_parts[-1] = cert_body
             logger.debug("🤝🔐✅ Certificate data added to response.")
@@ -430,7 +434,9 @@ def parse_handshake_response(
         protocol = parts[4]
         raw_server_cert_part = parts[5] if parts[5] else None
         if raw_server_cert_part:
+            # Handle escaped newlines and carriage returns, then strip
             temp_cert = raw_server_cert_part.replace("\\n", "").replace("\\r", "")
+            # Also handle actual newlines and carriage returns just in case
             server_cert = temp_cert.replace("\n", "").replace("\r", "").strip()
         else:
             server_cert = None
@@ -462,9 +468,11 @@ def parse_handshake_response(
                 f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
             )
 
-        if server_cert:
+        if server_cert:  # Now server_cert is stripped
             padding = len(server_cert) % 4
             if padding:
+                # This part of the logic should remain the same,
+                # but it will now operate on a guaranteed stripped string.
                 server_cert += "=" * (4 - padding)
             logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
 
@@ -503,11 +511,13 @@ async def read_handshake_response(process) -> str:
 
     logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
 
-    timeout = 10.0
+    # Use longer timeout for initial handshake
+    timeout = 10.0  # seconds
     start_time = time.time()
     buffer = ""
 
     while (time.time() - start_time) < timeout:
+        # Check if process has exited
         if process.poll() is not None:
             stderr_output = ""
             if process.stderr:
@@ -535,12 +545,14 @@ async def read_handshake_response(process) -> str:
                 code=process.returncode,
             )
 
+        # Read strategies
         try:
+            # Strategy 1: Try to read a complete line first
             line_bytes = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(
                     None, lambda: process.stdout.readline()
                 ),
-                timeout=2.0,
+                timeout=2.0,  # Shorter timeout for individual read attempts
             )
 
             if line_bytes:
@@ -551,6 +563,7 @@ async def read_handshake_response(process) -> str:
                     logger.debug("🤝📥✅ Complete handshake response found in line")
                     return line
 
+                # Add to buffer if line doesn't contain complete handshake
                 buffer += line
                 if "|" in buffer and buffer.count("|") >= 5:
                     logger.debug("🤝📥✅ Complete handshake response found in buffer")
@@ -560,6 +573,7 @@ async def read_handshake_response(process) -> str:
             logger.debug("🤝📥⚠️ Timeout reading line, trying chunk read strategy")
 
             try:
+                # Strategy 2: Read a small chunk instead
                 chunk = await asyncio.wait_for(
                     asyncio.get_event_loop().run_in_executor(
                         None, lambda: process.stdout.read(1024)
@@ -574,7 +588,9 @@ async def read_handshake_response(process) -> str:
                         f"🤝📥✅ Read chunk: {len(chunk_str)} bytes, buffer now has {len(buffer)} bytes"
                     )
 
+                    # Check if buffer contains a complete handshake response
                     if "|" in buffer and buffer.count("|") >= 5:
+                        # Extract handshake line from buffer
                         lines = buffer.split("\n")
                         for line in lines:
                             if "|" in line and line.count("|") >= 5:
@@ -583,13 +599,17 @@ async def read_handshake_response(process) -> str:
                                 )
                                 return line
 
+                        # If no complete line found, but buffer has enough separators,
+                        # use the whole buffer (might have newlines removed)
                         return buffer
 
             except asyncio.TimeoutError:
                 logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
 
+        # Brief delay before next attempt
         await asyncio.sleep(0.2)
 
+    # If we get here, we've timed out
     stderr_output = ""
     if process.stderr:
         try:
@@ -626,7 +646,7 @@ async def create_stderr_relay(process):
     async def _stderr_reader():
         """Background task to continuously read stderr"""
         logger.debug("🤝📤🚀 Starting stderr relay task")
-        while process.poll() is None:
+        while process.poll() is None:  # While process is running
             try:
                 line = await asyncio.get_event_loop().run_in_executor(
                     None, process.stderr.readline
@@ -644,6 +664,7 @@ async def create_stderr_relay(process):
 
         logger.debug("🤝📤🛑 Stderr relay task ended")
 
+    # Create but don't wait for the task
     relay_task = asyncio.create_task(_stderr_reader())
     logger.debug("🤝📤✅ Created stderr relay task")
     return relay_task
@@ -673,8 +694,10 @@ async def parse_and_validate_handshake(
     logger.debug(f"🤝🔍🚀 Parsing handshake response: {handshake_line[:50]}...")
 
     try:
+        # Split by pipe character
         parts = handshake_line.strip().split("|")
 
+        # Validate parts count
         if len(parts) != 6:
             logger.error(
                 f"🤝🔍❌ Invalid handshake format: expected 6 parts, got {len(parts)}"
@@ -684,6 +707,7 @@ async def parse_and_validate_handshake(
                 hint=f"Received: '{handshake_line[:100]}...'. Ensure plugin output matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'.",
             )
 
+        # Extract and validate individual parts
         try:
             core_version = int(parts[0])
             plugin_version = int(parts[1])
@@ -707,7 +731,7 @@ async def parse_and_validate_handshake(
         address = parts[3]
         if (
             not address
-        ):
+        ):  # Address can be complex, further validation might be transport-specific
             logger.error("🤝🔍❌ Empty address received in handshake")
             raise HandshakeError(
                 message="Empty address received in handshake string.",
@@ -715,7 +739,7 @@ async def parse_and_validate_handshake(
             )
 
         protocol = parts[4]
-        if protocol != "grpc":
+        if protocol != "grpc":  # Currently, only grpc is supported
             logger.error(f"🤝🔍❌ Unsupported protocol '{protocol}' in handshake")
             raise HandshakeError(
                 message=f"Unsupported protocol '{protocol}' received in handshake.",
@@ -724,7 +748,9 @@ async def parse_and_validate_handshake(
 
         server_cert = parts[5] if parts[5] else None
 
+        # Handle certificate padding if present
         if server_cert:
+            # Add padding if needed (for base64)
             padding = len(server_cert) % 4
             if padding:
                 server_cert += "=" * (4 - padding)
