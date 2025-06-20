@@ -400,4 +400,5 @@ result.json*.bf.txt
 *_pb2_grpc.py
 
 # Ignore example kvproto directory (often contains generated or example-specific code)
-examples/kvproto/
+# examples/kvproto/
+bin/
