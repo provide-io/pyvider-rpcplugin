@@ -100,18 +100,6 @@ async def test_unix_socket_close_no_server(unix_transport) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_no_path(unix_transport) -> None:
-    """
-    Test that UnixSocketTransport.close works when no path exists.
-    """
-    # Call close without a path
-    await unix_transport.close()
-
-    # Check that no error is raised
-    assert True
-
-
-@pytest.mark.asyncio
 async def test_unix_socket_close_oserror(managed_unix_socket_path) -> None:
     """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
     # Create a real socket first
