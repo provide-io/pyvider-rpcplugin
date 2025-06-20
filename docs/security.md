@@ -231,22 +231,27 @@ print(f"Client private key saved to: {client_key_path}")
 Implement certificate validation:
 
 ```python
-# --- Function validate_certificate_chain removed by script ---
+def validate_certificate_chain(cert_path: str, ca_path: str) -> bool:
+    """Validate certificate against CA."""
+    try:
+        return Certificate.verify_certificate_chain(cert_path, ca_path)
+    except Exception as e:
+        logger.error("Certificate validation failed", error=str(e))
+        return False
 
-from datetime import UTC, datetime # Ensure imports for date logic
 def check_certificate_expiry(cert_path: str, days_warning: int = 30) -> bool:
     """Check if certificate expires soon."""
-    cert = Certificate(cert_pem_or_uri=f"file://{cert_path}") # Corrected load
-    # TODO: Implement expiry check, e.g., using: days_until_expiry = (cert._base.not_valid_after - datetime.now(UTC)).days
-    # TODO: The following block depends on days_until_expiry.
-    # if days_until_expiry <= days_warning:
-    #     logger.warning(
-    #         "Certificate expiring soon",
-    #         cert_path=cert_path,
-    #         days_until_expiry=days_until_expiry
-    #     )
-    #     return True
-    return False # Defaulting to False as expiry check is a TODO
+    cert = Certificate.load_from_file(cert_path)
+    days_until_expiry = cert.days_until_expiry()
+    
+    if days_until_expiry <= days_warning:
+        logger.warning(
+            "Certificate expiring soon",
+            cert_path=cert_path,
+            days_until_expiry=days_until_expiry
+        )
+        return True
+    return False
 ```
 
 ### Certificate Rotation
@@ -271,14 +276,13 @@ class CertificateRotator:
     ) -> bool:
         """Rotate certificate if expiring soon."""
         
-        current_cert = Certificate(cert_pem_or_uri=f"file://{cert_path}") # Corrected load
+        current_cert = Certificate.load_from_file(cert_path)
         
-        # TODO: Implement expiry check for current_cert, e.g., using: (current_cert._base.not_valid_after - datetime.now(UTC)).days <= self.rotation_threshold_days:
-        if False: # Placeholder for the condition above
+        if current_cert.days_until_expiry() <= self.rotation_threshold_days:
             logger.info(
                 "Rotating certificate",
-                cert_path=cert_path
-                # days_until_expiry=current_cert.days_until_expiry() # This would also need to be calculated
+                cert_path=cert_path,
+                days_until_expiry=current_cert.days_until_expiry()
             )
             
             # Generate new certificate
@@ -286,7 +290,6 @@ class CertificateRotator:
                 new_cert = Certificate.create_signed_certificate( # Corrected method
                     ca_certificate=self.ca_cert, # Corrected parameter
                     common_name=common_name,
-                    organization_name="Rotated Cert",
                     validity_days=90,
                     is_client_cert=False # Added parameter
                 )
@@ -294,7 +297,6 @@ class CertificateRotator:
                 new_cert = Certificate.create_signed_certificate( # Corrected method
                     ca_certificate=self.ca_cert, # Corrected parameter
                     common_name=common_name,
-                    organization_name="Rotated Cert",
                     validity_days=30,
                     is_client_cert=True # Added parameter
                 )
@@ -303,7 +305,7 @@ class CertificateRotator:
             temp_cert_path = f"{cert_path}.new"
             temp_key_path = f"{key_path}.new"
             
-            # TODO: Save new_cert.cert and new_cert.key PEMs to temp_cert_path and temp_key_path respectively.
+            new_cert.save_to_file(temp_cert_path, temp_key_path)
             
             # Atomic move
             os.rename(temp_cert_path, cert_path)
@@ -1030,3 +1032,23 @@ class SecureHandler:
   - [ ] Security metrics tracking
 
 This comprehensive security guide ensures `pyvider-rpcplugin` deployments maintain the highest security standards while providing practical implementation guidance for development and operations teams.
+
+### Auto-mTLS with Self-Signed Certificates (No Explicit Configuration)
+
+When `PLUGIN_AUTO_MTLS` is set to `true` (either explicitly or by default) and no specific certificate paths (`PLUGIN_SERVER_CERT`, `PLUGIN_SERVER_KEY`, `PLUGIN_CLIENT_CERT`, `PLUGIN_CLIENT_KEY`, `PLUGIN_CLIENT_ROOT_CERTS`, `PLUGIN_SERVER_ROOT_CERTS`) are provided in the configuration:
+
+1.  **Server-Side Auto-Generation:**
+    *   The `RPCPluginServer` will automatically generate an ephemeral, self-signed server certificate and private key.
+    *   Importantly, this auto-generated server certificate is created with `BasicConstraints(is_ca=True)`, allowing it to also function as a Certificate Authority (CA).
+
+2.  **Client-Side Auto-Generation:**
+    *   If the `RPCPluginClient` is also configured for `PLUGIN_AUTO_MTLS=True` and does not have explicit client certificates (`PLUGIN_CLIENT_CERT`, `PLUGIN_CLIENT_KEY`) or server root CAs (`PLUGIN_SERVER_ROOT_CERTS`) configured, it will also auto-generate an ephemeral, self-signed client certificate and private key.
+
+3.  **Trust Establishment (Server Authentication Only):**
+    *   During the handshake, the client receives the server's auto-generated, self-signed certificate.
+    *   The client then uses this server certificate as its trusted root CA to validate the server.
+    *   In this specific auto-generation scenario on both sides, the client *does not* present its own auto-generated client certificate to the server for validation.
+    *   Similarly, the server, lacking specific `PLUGIN_CLIENT_ROOT_CERTS` to validate against, does not require or validate a client certificate.
+    *   This results in a **server-only TLS authentication**, where the client verifies the server's identity using its auto-generated certificate, but the server does not authenticate the client via its certificate. The connection is still encrypted.
+
+This behavior allows for secure, encrypted communication out-of-the-box without manual certificate setup, suitable for development or scenarios where both client and server are known entities launched within a controlled environment. For production scenarios requiring strict mutual client authentication, providing explicitly generated CA-signed certificates and configuring the appropriate root CAs on both client and server is recommended as detailed in other sections.

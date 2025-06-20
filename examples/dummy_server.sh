@@ -1,7 +1,8 @@
 #!/bin/sh
+# This dummy server just prints the handshake string and exits after a delay.
+# It does not create a real socket or run a gRPC server.
 echo "1|1|unix|/tmp/dummy_server.sock|grpc|"
-# Keep it running for a short while so the client's initial process checks (if any) can pass.
-# With client.start() commented out, this sleep is less critical for connection,
-# but good practice for a dummy script that might be launched.
-sleep 2
-echo "Dummy server finished."
+echo "Dummy server: Handshake sent. Will sleep for 10 seconds then exit." >&2
+sleep 10
+echo "Dummy server: Exiting." >&2
+exit 0

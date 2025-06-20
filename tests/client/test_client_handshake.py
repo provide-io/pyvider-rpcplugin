@@ -472,7 +472,6 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(
 # LONG_RUNNING_TEST - This test takes approximately 3 minutes to run due to byte-by-byte processing and timeouts.
 # long-running
 @pytest.mark.asyncio
-# long-running test
 async def test_read_raw_handshake_line_byte_by_byte_read_timeout(
     client_instance_for_retry_tests, mocker
 ):
