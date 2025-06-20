@@ -11,19 +11,18 @@ import (
 )
 
 // Handshake is a common handshake that is shared by plugin and host.
+// This is the definitive configuration that both client and server will use.
 var Handshake = plugin.HandshakeConfig{
 	ProtocolVersion:  1,
-	MagicCookieKey:   "PLUGIN_MAGIC_COOKIE",
-	MagicCookieValue: "rpcplugin-default-cookie",
+	MagicCookieKey:   "BASIC_PLUGIN",
+	MagicCookieValue: "hello", // This value now correctly matches the expected value.
 }
 
-// KV is the interface that we're exposing as a plugin.
 type KV interface {
 	Put(key string, value []byte) error
 	Get(key string) ([]byte, error)
 }
 
-// This is the implementation of plugin.Plugin so we can serve/consume this.
 type KVPlugin struct {
 	plugin.Plugin
 	Impl   KV
@@ -38,9 +37,6 @@ func (p *KVPlugin) GRPCServer(broker *plugin.GRPCBroker, s *grpc.Server) error {
 
 func (p *KVPlugin) GRPCClient(ctx context.Context, broker *plugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	if p.Logger == nil {
-		// This can happen on the client side if the PluginMap isn't initialized with a logger.
-		// We'll proceed, but the KVGRPCClient won't have a logger.
-		// The main client process logger will still function.
 		return &KVGRPCClient{Client: proto.NewKVClient(c)}, nil
 	}
 	p.Logger.Debug("📡📝✅ Creating KV gRPC client")

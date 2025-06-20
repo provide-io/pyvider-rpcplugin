@@ -18,23 +18,20 @@ func main() {
 		Level:  hclog.Debug,
 	})
 
-	// --- Crypto flags for configuring the server ---
 	keyType := flag.String("key-type", "ecdsa", "Key type for server's mTLS cert (rsa or ecdsa)")
 	curve := flag.String("curve", "secp521r1", "Curve for server's ECDSA cert (secp256r1, secp384r1, secp521r1)")
 	rsaBits := flag.Int("rsa-bits", 2048, "Bit size for server's RSA key")
 	autoMTLS := flag.Bool("auto-mtls", true, "Enable or disable automatic mTLS for the server")
 	flag.Parse()
 
-	// --- Determine the server path (This is the fix) ---
 	serverPath := os.Getenv("PLUGIN_SERVER_PATH")
 	if serverPath == "" {
-		serverPath = "./bin/kv-go-server" // Default path if env var is not set
+		serverPath = "./bin/kv-go-server"
 		logger.Info("🔌⚙️ `PLUGIN_SERVER_PATH` not set, using default server path", "path", serverPath)
 	} else {
 		logger.Info("🔌⚙️ Using server path from `PLUGIN_SERVER_PATH` environment variable", "path", serverPath)
 	}
 
-	// --- Client command and server arguments ---
 	clientArgs := flag.Args()
 	if len(clientArgs) == 0 {
 		logger.Error("‼️ No command provided. Usage: go run ./plugin-go-client <command> [args]")
@@ -55,11 +52,18 @@ func main() {
 		"kv": &shared.KVPlugin{Logger: logger},
 	}
 
-	// --- Launch the plugin using the determined server path ---
+	// The host (this client) must create the magic cookie environment variable
+	// for the plugin subprocess. The variable's NAME is the MagicCookieKey,
+	// and its VALUE is the MagicCookieValue from the shared handshake config.
+	cmd := exec.Command(serverPath, serverArgs...)
+	cmd.Env = os.Environ() // Start with the current environment
+	cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", shared.Handshake.MagicCookieKey, shared.Handshake.MagicCookieValue))
+	logger.Debug("🤝✅ Forwarding correct magic cookie to plugin subprocess", "key", shared.Handshake.MagicCookieKey, "value", shared.Handshake.MagicCookieValue)
+
 	client := plugin.NewClient(&plugin.ClientConfig{
 		HandshakeConfig:  shared.Handshake,
 		Plugins:          pluginMap,
-		Cmd:              exec.Command(serverPath, serverArgs...), // Use the serverPath variable
+		Cmd:              cmd, // Use the command with the modified environment
 		Logger:           logger,
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
 	})
@@ -79,7 +83,6 @@ func main() {
 
 	kv := raw.(shared.KV)
 
-	// --- Execute client command ---
 	command := clientArgs[0]
 	switch command {
 	case "get":

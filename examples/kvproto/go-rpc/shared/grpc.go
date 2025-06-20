@@ -1,19 +1,14 @@
 package shared
-
 import (
 	"context"
-
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/go-plugin/examples/kv/proto"
 )
-
-// KVGRPCServer is the gRPC server that GRPCClient talks to.
 type KVGRPCServer struct {
 	Impl   KV
 	Logger hclog.Logger
 	proto.UnimplementedKVServer
 }
-
 func (m *KVGRPCServer) Put(ctx context.Context, req *proto.PutRequest) (*proto.Empty, error) {
 	m.Logger.Info("🔌➡️📥 Received Put request", "key", req.Key)
 	err := m.Impl.Put(req.Key, req.Value)
@@ -24,7 +19,6 @@ func (m *KVGRPCServer) Put(ctx context.Context, req *proto.PutRequest) (*proto.E
 	}
 	return &proto.Empty{}, err
 }
-
 func (m *KVGRPCServer) Get(ctx context.Context, req *proto.GetRequest) (*proto.GetResponse, error) {
 	m.Logger.Info("🔌➡️📥 Received Get request", "key", req.Key)
 	v, err := m.Impl.Get(req.Key)
@@ -35,13 +29,10 @@ func (m *KVGRPCServer) Get(ctx context.Context, req *proto.GetRequest) (*proto.G
 	m.Logger.Debug("🔌✅ Get operation successful", "key", req.Key)
 	return &proto.GetResponse{Value: v}, nil
 }
-
-// KVGRPCClient is an implementation of KV that talks over RPC.
 type KVGRPCClient struct {
 	Client proto.KVClient
 	Logger hclog.Logger
 }
-
 func (m *KVGRPCClient) Put(key string, value []byte) error {
 	m.Logger.Info("📡➡️📤 Sending Put request", "key", key)
 	_, err := m.Client.Put(context.Background(), &proto.PutRequest{
@@ -55,7 +46,6 @@ func (m *KVGRPCClient) Put(key string, value []byte) error {
 	}
 	return err
 }
-
 func (m *KVGRPCClient) Get(key string) ([]byte, error) {
 	m.Logger.Info("📡➡️📤 Sending Get request", "key", key)
 	resp, err := m.Client.Get(context.Background(), &proto.GetRequest{
