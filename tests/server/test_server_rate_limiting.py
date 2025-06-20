@@ -1,14 +1,13 @@
 import asyncio
-import os
 import grpc
 import pytest
 from typing import Any
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.server import RPCPluginServer, RateLimitingInterceptor
+from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.types import HandlerT, ServerT # Keep ServerT for type hinting protocol
+from pyvider.rpcplugin.types import ServerT # Keep ServerT for type hinting protocol
 from pyvider.telemetry import logger
 
 # Import generated gRPC stubs
