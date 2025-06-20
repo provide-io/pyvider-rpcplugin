@@ -305,11 +305,17 @@ class CertificateRotator:
             temp_cert_path = f"{cert_path}.new"
             temp_key_path = f"{key_path}.new"
             
-            new_cert.save_to_file(temp_cert_path, temp_key_path)
+            with open(temp_cert_path, "w", encoding="utf-8") as f:
+                f.write(new_cert.cert)
+            if new_cert.key: # Ensure key exists before trying to write it
+                with open(temp_key_path, "w", encoding="utf-8") as f:
+                    f.write(new_cert.key)
             
             # Atomic move
             os.rename(temp_cert_path, cert_path)
-            os.rename(temp_key_path, key_path)
+            # Only rename key path if it was written (i.e. new_cert.key was not None)
+            if new_cert.key:
+                os.rename(temp_key_path, key_path)
             
             logger.info("Certificate rotation completed", cert_path=cert_path)
             return True
