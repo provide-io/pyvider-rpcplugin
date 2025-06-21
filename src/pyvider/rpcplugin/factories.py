@@ -90,7 +90,7 @@ def plugin_server(
 
 
 def plugin_client(
-    server_path: str,
+    server_path: str, # Already had str, my mistake in analysis. No change here.
     protocol: ProtocolT | None = None,
     env: dict[str, str] | None = None,
     auto_connect: bool = False,
@@ -148,7 +148,7 @@ def plugin_client(
 
 
 def plugin_protocol(
-    service_name: str,
+    service_name: str, # Already had str, my mistake in analysis. No change here.
     descriptor_module: Any = None,
     servicer_add_fn: AbcCallable | None = None,
 ) -> RPCPluginProtocol:

@@ -77,8 +77,8 @@ class RPCPluginProtocol(TypeProtocol):
         ...
 
     async def add_to_server(
-        self, handler: Any, server: Any
-    ) -> None:  # Removed Awaitable
+        self, handler: HandlerT, server: ServerT
+    ) -> None:  # Use defined TypeVars
         """
         Adds the protocol implementation to the gRPC server.
 
