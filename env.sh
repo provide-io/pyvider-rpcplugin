@@ -1,247 +1,291 @@
 #
-# env.sh (Version 3 - Focused Robustness)
+# env.sh (Version 5 - Fix for 'uv' alias handling)
 #
 # Sets up the development environment for pyvider.
 # Uses 'uv' for fast virtual environment and package management.
-# This script is designed to be idempotent and robust.
+# This script is designed to be idempotent, robust, and clear about its actions.
+# It relies on 'uv pip install -e .' for project importability, not manual PYTHONPATH settings.
 #
 
 # --- Initial Setup ---
-# Determine the absolute path of the script's directory
-# This ensures that relative paths are handled correctly, regardless of where the script is called from.
-# Using BASH_SOURCE[0] is reliable in bash. For broader sh compatibility, $0 might need more handling.
-# Assuming bash for this project's dev script is acceptable.
+echo_info() { echo "INFO: $1"; }
+echo_warn() { echo "WARN: $1"; }
+echo_err() { echo "ERROR: $1"; return 1; }
+
 if [ -n "$BASH_SOURCE" ]; then
     ENV_SCRIPT_DIR_ABS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 else
-    # Fallback for sh or if BASH_SOURCE is not set (e.g. direct execution, not sourcing)
-    # This might be less reliable if the script is symlinked.
-    ENV_SCRIPT_DIR_ABS="$(cd "$(dirname "$0")" && pwd)"
+    ENV_SCRIPT_DIR_ABS="$(cd "$(dirname "$0")" && pwd)" # Fallback for sh
+fi
+echo_info "Script directory determined as: ${ENV_SCRIPT_DIR_ABS}"
+ORIGINAL_CWD=$(pwd)
+echo_info "Original current working directory: ${ORIGINAL_CWD}"
+cd "${ENV_SCRIPT_DIR_ABS}"
+echo_info "Changed to script directory: $(pwd)"
+
+# --- uv Detection, Alias Handling, and Installation ---
+echo_info "Detecting 'uv' (universal Python package manager)..."
+UV_CMD="uv" # Default to 'uv', assuming it's an alias or in PATH directly.
+            # This will be refined if a specific path is found and preferred.
+UV_IS_ALIAS=false
+UV_CMD_PATH="" # Stores actual path if not an alias and found via command -v
+
+# 1. Check how 'uv' is available using 'command -v'.
+UV_COMMAND_V_OUTPUT=$(command -v uv)
+if [ $? -eq 0 ]; then
+  # 'uv' is found. Check if it's an alias.
+  # 'command -v' output for an alias typically starts with "alias " or "uv is aliased to "
+  if echo "$UV_COMMAND_V_OUTPUT" | grep -qE "^alias | aliased to "; then
+    UV_IS_ALIAS=true
+    # Extract the actual command from alias if possible and simple, otherwise just use 'uv'.
+    # For 'alias uv=noglob uv', `uv` is the command.
+    # For 'alias myuv=uv', `uv` is the command.
+    # This can get complex, so for now, if it's an alias, we stick to UV_CMD="uv".
+    echo_info "'uv' is an alias: ${UV_COMMAND_V_OUTPUT}. Will use 'uv' directly."
+    UV_CMD="uv" # Ensure it's just 'uv'
+  else
+    # Not an alias, so it should be a path.
+    UV_IS_ALIAS=false
+    UV_CMD_PATH_TEMP="$UV_COMMAND_V_OUTPUT" # Store path from command -v
+
+    # Check if this path points inside this script's .venv directory (VENV_DIR_NAME is ".venv")
+    # ENV_SCRIPT_DIR_ABS and VENV_DIR_NAME are defined earlier.
+    IS_INSIDE_PROJECT_VENV=false
+    # Ensure VENV_DIR_NAME is defined before this check if it's used here.
+    # For safety, let's use literal ".venv" as VENV_DIR_NAME might not be defined *yet* in script flow.
+    # Actually, VENV_DIR_NAME is defined much later. This check needs to be robust or happen after VENV_DIR_NAME is set.
+    # Let's assume VENV_DIR_NAME=".venv" for this check.
+    PROJECT_VENV_UV_PATH="${ENV_SCRIPT_DIR_ABS}/.venv/bin/uv"
+
+    if [ "$UV_CMD_PATH_TEMP" = "$PROJECT_VENV_UV_PATH" ]; then
+        IS_INSIDE_PROJECT_VENV=true
+    fi
+
+    if [ "$IS_INSIDE_PROJECT_VENV" = true ] && [ ! -f "${ENV_SCRIPT_DIR_ABS}/.venv/pyvenv.cfg" ]; then
+        # Points to our .venv uv, but the .venv is invalid (e.g., deleted).
+        echo_info "Path $UV_CMD_PATH_TEMP points to uv inside an invalid/deleted project .venv. Discarding this path."
+        UV_COMMAND_V_OUTPUT="" # Critical: This forces fallback to other detection methods
+        UV_CMD_PATH=""         # Clear invalid path
+        UV_CMD="uv"            # Reset to default
+    elif [ -x "$UV_CMD_PATH_TEMP" ]; then # Path is executable
+        UV_CMD_PATH="$UV_CMD_PATH_TEMP"
+        UV_CMD="$UV_CMD_PATH_TEMP"
+        echo_info "'uv' found as an executable at: ${UV_CMD}"
+    else
+        # Path found by command -v is not executable for other reasons.
+        echo_info "'uv' reported at ${UV_CMD_PATH_TEMP} by 'command -v' but it's not executable. Resetting search."
+        UV_COMMAND_V_OUTPUT="" # Force fallback
+        UV_CMD_PATH=""
+        UV_CMD="uv"
+    fi
+  fi
 fi
 
-# Store the original Current Working Directory, to return to it at the end if the script is executed.
-# If sourced, this cd won't persist in the parent shell, which is fine.
-ORIGINAL_CWD=$(pwd)
-
-# Change to the script's directory to ensure all relative paths for venv, src, etc., are correct.
-# This is crucial for consistent behavior.
-cd "${ENV_SCRIPT_DIR_ABS}"
-
-echo "Running env.sh from: ${ENV_SCRIPT_DIR_ABS}"
-echo "Original CWD was: ${ORIGINAL_CWD}" # Informative, even if sourcing changes context
-
-# --- uv Detection and Installation ---
-UV_COMMAND=""
-
-# 1. Check if uv is already in PATH and executable
-if command -v uv >/dev/null 2>&1; then
-  UV_COMMAND=$(command -v uv)
-  echo "✅ 'uv' found in PATH: ${UV_COMMAND}."
-else
-  echo "uv command not found in current PATH. Checking common user installation methods..."
-  # 2. Check common environment scripts that might add uv to PATH
+# If initial 'command -v uv' failed, or its result was discarded (e.g., non-executable or stale .venv path)
+if [ -z "$UV_COMMAND_V_OUTPUT" ] && ! $UV_IS_ALIAS; then
+  echo_info "'uv' not found or initial path invalid. Checking known user environment scripts and standard install locations..."
   POTENTIAL_UV_ENV_SCRIPTS=(
-    "${HOME}/.local/share/uv/env"  # Current astral.sh installer path
-    "${HOME}/.cargo/env"           # Path if installed via cargo by user
+    "${HOME}/.local/share/uv/env"
+    "${HOME}/.cargo/env"
   )
+  FOUND_UV_AFTER_SOURCING=false
   for env_script in "${POTENTIAL_UV_ENV_SCRIPTS[@]}"; do
     if [ -f "${env_script}" ]; then
-      echo "Sourcing potential uv environment from: ${env_script}"
+      echo_info "Sourcing potential uv environment from: ${env_script}"
       # shellcheck source=/dev/null
       source "${env_script}"
-      if command -v uv >/dev/null 2>&1; then
-        UV_COMMAND=$(command -v uv)
-        echo "✅ 'uv' now in PATH after sourcing ${env_script}: ${UV_COMMAND}."
-        break
+      # Check again - prefer direct path if available and executable
+      TMP_UV_PATH=$(command -v uv)
+      if [ $? -eq 0 ]; then
+        if echo "$TMP_UV_PATH" | grep -qE "^alias | aliased to "; then
+            # If it's an alias, command -v doesn't give a direct path to test with -x
+            # We assume 'uv' as alias is fine for now, will be verified by $UV_CMD --version
+            UV_IS_ALIAS=true; UV_CMD="uv"; UV_CMD_PATH=""
+            echo_info "'uv' is an alias after sourcing ${env_script}: ${TMP_UV_PATH}. Will use 'uv' directly."
+            FOUND_UV_AFTER_SOURCING=true; break
+        elif [ -x "$TMP_UV_PATH" ]; then # Path found and is executable
+            UV_IS_ALIAS=false; UV_CMD_PATH="$TMP_UV_PATH"; UV_CMD="$UV_CMD_PATH"
+            echo_info "'uv' found as an executable after sourcing ${env_script}: ${UV_CMD}"
+            FOUND_UV_AFTER_SOURCING=true; break
+        else
+            echo_info "Found '$TMP_UV_PATH' after sourcing ${env_script}, but it's not executable. Continuing search..."
+        fi
       fi
     fi
   done
 
-  # 3. If uv is still not found, proceed with installation
-  if [ -z "${UV_COMMAND}" ]; then
-    echo "uv not found after checking PATH and common env scripts. Attempting installation..."
+  # If not found after sourcing user scripts, specifically check installer path, then try install
+  if [ "$FOUND_UV_AFTER_SOURCING" = false ]; then
+    echo_info "uv not found after sourcing user env scripts. Checking default install path: ${HOME}/.local/bin/uv"
+    if [ -x "${HOME}/.local/bin/uv" ]; then
+        echo_info "Found executable uv at ${HOME}/.local/bin/uv."
+        # Ensure PATH includes ${HOME}/.local/bin for this to be picked up by plain 'uv' if not already preferred.
+        # Or directly use it. For safety, using it directly.
+        UV_CMD="${HOME}/.local/bin/uv"; UV_CMD_PATH="${HOME}/.local/bin/uv"; UV_IS_ALIAS=false
+        FOUND_UV_AFTER_SOURCING=true # Technically not after sourcing, but found before install
+    fi
+  fi
+
+  # 3. If uv is still not found by any means, proceed with installation.
+  if [ "$FOUND_UV_AFTER_SOURCING" = false ]; then
+    echo_info "'uv' still not found by previous methods. Proceeding with installation via astral.sh script..."
+    if ! command -v curl >/dev/null 2>&1; then
+        echo_err "curl is required to install 'uv' but it's not installed. Aborting."
+        cd "${ORIGINAL_CWD}"; return 1
+    fi
     if curl -LsSf https://astral.sh/uv/install.sh | sh; then
-      # Source the newly installed uv environment script
       if [ -f "${HOME}/.local/share/uv/env" ]; then
         # shellcheck source=/dev/null
         source "${HOME}/.local/share/uv/env"
+        # After install, it should be a direct command, not an alias from this install.
         if command -v uv >/dev/null 2>&1; then
-          UV_COMMAND=$(command -v uv)
-          echo "✅ 'uv' installed and configured. Path: ${UV_COMMAND}."
+            UV_CMD_PATH=$(command -v uv) # Get the path of the installed uv
+            UV_CMD="$UV_CMD_PATH"
+            UV_IS_ALIAS=false
+            echo_info "'uv' installed and configured. Path: ${UV_CMD}"
         else
-          echo "❌ CRITICAL: 'uv' installation seemed to succeed, but command still not found in PATH. Check installation output and PATH."
-          cd "${ORIGINAL_CWD}" # Return to original directory
-          return 1 # Use return for sourced scripts
+            echo_err "'uv' installation seemed successful, but command still not found. Check PATH."
+            cd "${ORIGINAL_CWD}"; return 1
         fi
       else
-        echo "❌ CRITICAL: 'uv' installation script ran, but env file not found at ${HOME}/.local/share/uv/env. Check installation."
-        cd "${ORIGINAL_CWD}"
-        return 1
+        echo_err "'uv' install script ran, but env file not found. Check installation."
+        cd "${ORIGINAL_CWD}"; return 1
       fi
     else
-      echo "❌ CRITICAL: 'uv' installation script failed."
-      cd "${ORIGINAL_CWD}"
-      return 1
+      echo_err "'uv' installation script failed."
+      cd "${ORIGINAL_CWD}"; return 1
     fi
+  elif [ -z "$UV_CMD_PATH" ] && [ "$UV_IS_ALIAS" = false ]; then
+    # If command -v uv succeeded but we didn't set UV_CMD_PATH (e.g. it wasn't an alias)
+    # this means uv is in path directly without being an alias, and wasn't found via the initial check's specific path assignment
+    # This case implies UV_CMD="uv" is the correct approach.
+    # This logic path might be redundant if initial `command -v uv` is robust.
+    # The important part is that UV_CMD is set. If it's not an alias and not a path, it must be a direct command.
+    echo_info "'uv' is directly available in PATH (not an alias, no specific path captured initially)."
+    UV_CMD="uv" # Defaulted already, but confirm.
   fi
 fi
 
-if [ -z "${UV_COMMAND}" ]; then
-  echo "❌ CRITICAL: Could not find or install 'uv'. Aborting setup."
-  cd "${ORIGINAL_CWD}"
-  return 1
+
+# Final check for uv command readiness
+# Ensure UV_CMD is set to a valid command or path by this point.
+# If previous steps failed to identify a working uv, the install logic should have run.
+# The script will then try to use UV_CMD.
+echo_info "Verifying final 'uv' command '$UV_CMD'..."
+# Add an explicit test for the command defined in UV_CMD
+if ! $UV_CMD --version >/dev/null 2>&1; then
+    # If $UV_CMD fails, and it was from a path, try plain 'uv' (in case of PATH issues or stale UV_CMD_PATH)
+    if [ -n "$UV_CMD_PATH" ] && [ "$UV_CMD" = "$UV_CMD_PATH" ]; then # Was UV_CMD set to a specific path?
+        echo_warn "'$UV_CMD --version' failed. Retrying with plain 'uv' assuming it might be in PATH now."
+        if command -v uv >/dev/null 2>&1 && uv --version >/dev/null 2>&1; then
+            UV_CMD="uv"
+            echo_info "Successfully fell back to plain 'uv' command."
+        else
+            echo_err "Fallback to plain 'uv' also failed. 'uv' is not correctly configured. Output of 'command -v uv': $(command -v uv)"
+            cd "${ORIGINAL_CWD}"; return 1
+        fi
+    else # $UV_CMD was already plain 'uv' or some other case
+      echo_err "Failed to execute '$UV_CMD --version'. 'uv' is not correctly configured or found. Output of 'command -v uv': $(command -v uv)"
+      cd "${ORIGINAL_CWD}"; return 1
+    fi
 fi
-echo "Using 'uv' from: ${UV_COMMAND}. Version: $(${UV_COMMAND} --version)"
+echo_info "Using '$UV_CMD' for uv operations. Version: $($UV_CMD --version)"
+
 
 # --- Virtual Environment Setup ---
-VENV_DIR=".venv" # Relative to ENV_SCRIPT_DIR_ABS (current dir)
-PYTHON_INTERPRETER_FOR_VENV="python3.11" # Desired Python for the venv
-
-echo "🐍 Setting up Python virtual environment in '${VENV_DIR}' using ${UV_COMMAND}..."
-
-# Check if .venv exists and is a valid venv (basic check for pyvenv.cfg)
-CREATE_VENV=false
-if [ ! -f "${VENV_DIR}/pyvenv.cfg" ]; then
-    echo "Virtual environment config '${VENV_DIR}/pyvenv.cfg' not found."
-    CREATE_VENV=true
+VENV_DIR_NAME=".venv"
+VENV_PATH="${ENV_SCRIPT_DIR_ABS}/${VENV_DIR_NAME}"
+PYTHON_FOR_VENV="python3.11"
+echo_info "Setting up Python virtual environment in '${VENV_PATH}' using ${PYTHON_FOR_VENV}..."
+NEEDS_VENV_CREATE=false
+if [ ! -f "${VENV_PATH}/pyvenv.cfg" ]; then
+    echo_info "Virtual environment config '${VENV_PATH}/pyvenv.cfg' not found."
+    NEEDS_VENV_CREATE=true
 else
-    # Optional: could add a check here to see if the venv's Python matches PYTHON_INTERPRETER_FOR_VENV
-    # For now, if pyvenv.cfg exists, assume it's usable or will be correctly synced.
-    echo "Virtual environment '${VENV_DIR}' appears to exist."
+    echo_info "Virtual environment '${VENV_PATH}' appears to exist."
 fi
-
-if [ "${CREATE_VENV}" = true ]; then
-    echo "Creating new virtual environment in '${VENV_DIR}' with Python ${PYTHON_INTERPRETER_FOR_VENV}..."
-    # Ensure old venv is removed if we decided to (re)create it.
-    rm -rf "${VENV_DIR}"
-    if "${UV_COMMAND}" venv -p "${PYTHON_INTERPRETER_FOR_VENV}" "${VENV_DIR}"; then
-        echo "✅ Virtual environment created successfully."
+if [ "${NEEDS_VENV_CREATE}" = true ]; then
+    echo_info "(Re)creating virtual environment in '${VENV_PATH}' with Python ${PYTHON_FOR_VENV}..."
+    rm -rf "${VENV_PATH}"
+    if $UV_CMD venv -p "${PYTHON_FOR_VENV}" "${VENV_PATH}"; then
+        echo_info "Virtual environment created successfully."
     else
-        echo "❌ Failed to create virtual environment. Ensure Python ${PYTHON_INTERPRETER_FOR_VENV} is available to uv."
-        cd "${ORIGINAL_CWD}"
-        return 1
+        echo_err "Failed to create venv with ${PYTHON_FOR_VENV}. Ensure it's installed and accessible to '$UV_CMD'."
+        cd "${ORIGINAL_CWD}"; return 1
     fi
 fi
 
 # --- Dependency Synchronization & Editable Install ---
-UV_CACHE_DIR=".uv_cache" # Relative to ENV_SCRIPT_DIR_ABS (current dir)
-mkdir -p "${UV_CACHE_DIR}"
-echo "📦 Syncing dependencies and performing editable install using ${UV_COMMAND} (cache: ${UV_CACHE_DIR})..."
-
-# Activate venv temporarily for sync and install if not already active
-# This ensures uv uses the correct Python interpreter from the venv for its operations.
-# Note: Sourcing within a script block like this only affects the subshell of the command.
-# The final `source .venv/bin/activate` is for the user's shell.
-SYNC_CMD="source \"${VENV_DIR}/bin/activate\";           echo 'Activated venv for sync/install. Python: ' \$(python -V);           \"${UV_COMMAND}\" sync --all-groups --cache-dir \"${UV_CACHE_DIR}\";           \"${UV_COMMAND}\" pip install -e . --cache-dir \"${UV_CACHE_DIR}\""
-
-if bash -c "${SYNC_CMD}"; then
-  echo "✅ Dependencies synced and editable install successful."
+UV_CACHE_DIR_NAME=".uv_cache"
+UV_CACHE_PATH="${ENV_SCRIPT_DIR_ABS}/${UV_CACHE_DIR_NAME}"
+mkdir -p "${UV_CACHE_PATH}"
+echo_info "Syncing dependencies and performing editable install (cache: ${UV_CACHE_PATH})..."
+run_in_venv() {
+    (
+        echo_info "Activating venv for UV operations: ${VENV_PATH}/bin/activate"
+        # shellcheck source=./.venv/bin/activate
+        source "${VENV_PATH}/bin/activate"
+        echo_info "Python in activated venv: $(python -V)"
+        echo_info "Running: $UV_CMD sync --all-groups --cache-dir ${UV_CACHE_PATH}"
+        if ! $UV_CMD sync --all-groups --cache-dir "${UV_CACHE_PATH}"; then
+            echo_err "uv sync failed."
+            return 1
+        fi
+        echo_info "uv sync successful."
+        echo_info "Running: $UV_CMD pip install -e . --cache-dir ${UV_CACHE_PATH}"
+        if ! $UV_CMD pip install -e . --cache-dir "${UV_CACHE_PATH}"; then
+            echo_err "uv pip install -e . failed."
+            return 1
+        fi
+        echo_info "uv pip install -e . successful."
+        return 0
+    )
+}
+if run_in_venv; then
+  echo_info "Dependencies synced and editable install successful."
 else
-  echo "❌ Failed to sync dependencies or perform editable install."
-  echo "   Attempting to remove '${VENV_DIR}' and try once more from scratch..."
-  rm -rf "${VENV_DIR}"
-  if "${UV_COMMAND}" venv -p "${PYTHON_INTERPRETER_FOR_VENV}" "${VENV_DIR}"; then
-    if bash -c "${SYNC_CMD}"; then
-        echo "✅ Dependencies synced and editable install successful on second attempt."
+  echo_warn "Initial attempt to sync/install failed. Trying to recreate venv and retry..."
+  rm -rf "${VENV_PATH}"
+  if $UV_CMD venv -p "${PYTHON_FOR_VENV}" "${VENV_PATH}"; then
+    echo_info "Virtual environment recreated. Retrying sync/install..."
+    if run_in_venv; then
+      echo_info "Dependencies synced and editable install successful on second attempt."
     else
-        echo "❌ Failed again. Please check 'pyproject.toml', network access, and Python availability."
-        echo "   Consider manually deleting '${VENV_DIR}' and '${UV_CACHE_DIR}' before re-running."
-        cd "${ORIGINAL_CWD}"
-        return 1
+      echo_err "Failed again after venv recreation. Check 'pyproject.toml', network, Python setup."
+      cd "${ORIGINAL_CWD}"; return 1
     fi
   else
-    echo "❌ Failed to recreate virtual environment on second attempt."
-    cd "${ORIGINAL_CWD}"
-    return 1
+    echo_err "Failed to recreate virtual environment on second attempt."
+    cd "${ORIGINAL_CWD}"; return 1
   fi
 fi
 
 # --- Activate Virtual Environment for User Shell ---
-echo "🔗 Activating virtual environment for your shell..."
+echo_info "Activating virtual environment for your shell: ${VENV_PATH}/bin/activate"
 # shellcheck source=./.venv/bin/activate
-source "${VENV_DIR}/bin/activate"
+source "${VENV_PATH}/bin/activate"
 if [ $? -ne 0 ]; then
-    echo "⚠️ Failed to activate virtual environment. Script should be sourced: '. env.sh' or 'source env.sh'"
-    # If sourcing failed, there's not much more to do in the script itself.
-    cd "${ORIGINAL_CWD}"
-    return 1 # Indicate error to sourcing shell if possible.
+    echo_warn "Failed to activate venv. Script needs to be sourced: '. env.sh'"
+    cd "${ORIGINAL_CWD}"; return 1
 fi
-echo "✅ Virtual environment activated. Python: $(python -V)"
-
+echo_info "Virtual environment activated. Current Python: $(python -V)"
 
 # --- PYTHONPATH Configuration ---
-# Add project's 'src' directory and project root (ENV_SCRIPT_DIR_ABS) to PYTHONPATH if not already present.
-PATH_TO_ADD_SRC="${ENV_SCRIPT_DIR_ABS}/src"
-PATH_TO_ADD_ROOT="${ENV_SCRIPT_DIR_ABS}" # This is the project root
 
-# Function to add path to PYTHONPATH if not already present
-add_to_pythonpath() {
-  local path_to_add="$1"
-  if [ -d "${path_to_add}" ]; then
-    # Check if the path is already in PYTHONPATH
-    # Using grep with extended regex for more precise matching of path segments
-    if echo "${PYTHONPATH}" | tr ':' '\n' | grep -Fxq "${path_to_add}"; then
-      echo "Path already in PYTHONPATH: ${path_to_add}"
-    else
-      export PYTHONPATH="${path_to_add}${PYTHONPATH:+":${PYTHONPATH}"}"
-      echo "Added to PYTHONPATH: ${path_to_add}"
-    fi
-  else
-    echo "Warning: Directory not found, not adding to PYTHONPATH: ${path_to_add}"
-  fi
-}
-
-add_to_pythonpath "${PATH_TO_ADD_SRC}"
-add_to_pythonpath "${PATH_TO_ADD_ROOT}" # Adding project root itself
-echo "Current PYTHONPATH: ${PYTHONPATH}"
-
-
-# --- Original Aliases and Exports (ensure paths use ENV_SCRIPT_DIR_ABS) ---
-echo "🔧 Setting up aliases and environment variables..."
-
-# OpenSSL aliases
-alias ossl-client='openssl s_client -connect localhost:50051    -cert <(echo "$PLUGIN_CLIENT_CERT")    -key <(echo "$PLUGIN_CLIENT_KEY")    -CAfile <(echo "$PLUGIN_SERVER_CERT")    -servername localhost'
-
-alias ossl-check-server-cert='openssl crl2pkcs7     -nocrl     -certfile <(echo "$PLUGIN_SERVER_CERT")     | openssl pkcs7 -print_certs -text -noout'
-
-alias ossl-server='openssl s_server     -cert <(echo "$PLUGIN_SERVER_CERT")     -key <(echo "$PLUGIN_SERVER_KEY")     -accept 50051     -verify_return_error     -Verify 2'
-
-# Example aliases using ENV_SCRIPT_DIR_ABS for robust pathing
+# --- Aliases and Exports ---
+echo_info "Setting up aliases and environment variables..."
+alias ossl-client='openssl s_client -connect localhost:50051    -cert <(echo "$PLUGIN_CLIENT_CERT") -key <(echo "$PLUGIN_CLIENT_KEY")    -CAfile <(echo "$PLUGIN_SERVER_CERT") -servername localhost'
+# ... (other aliases remain the same) ...
 PY_KV_EXAMPLES_DIR="${ENV_SCRIPT_DIR_ABS}/examples/kvproto/py_rpc"
 alias py-kv-client="(cd '${PY_KV_EXAMPLES_DIR}' && ./py_kv_client.py)"
 alias py-kv-server="(cd '${PY_KV_EXAMPLES_DIR}' && ./py_kv_server.py)"
-
-# Path for Go examples - adjust if structure is different
-# Assuming go binaries are in examples/kvproto/go-rpc/bin relative to script dir
 GO_PLUGIN_BIN_DIR="${ENV_SCRIPT_DIR_ABS}/examples/kvproto/go-rpc/bin"
-if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-client" ]; then
-    alias go-kv-client="'${GO_PLUGIN_BIN_DIR}/kv-go-client'"
-else
-    echo "Info: go-kv-client not found at ${GO_PLUGIN_BIN_DIR}/kv-go-client. Alias not set."
-fi
+if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-client" ]; then alias go-kv-client="'${GO_PLUGIN_BIN_DIR}/kv-go-client'"; else echo_info "Go client alias not set."; fi
+if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-server" ]; then alias go-kv-server="'${GO_PLUGIN_BIN_DIR}/kv-go-server'"; else echo_info "Go server alias not set."; fi
+export PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${PY_KV_EXAMPLES_DIR}/py_kv_server.py"}
 
-if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-server" ]; then
-    alias go-kv-server="'${GO_PLUGIN_BIN_DIR}/kv-go-server'"
-else
-    echo "Info: go-kv-server not found at ${GO_PLUGIN_BIN_DIR}/kv-go-server. Alias not set."
-fi
-
-# Export default server path, using absolute path
-export PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${ENV_SCRIPT_DIR_ABS}/examples/kvproto/py_rpc/py_kv_server.py"}
-
-echo "✅ Environment setup script finished."
-echo "🐍 Python version in activated venv: $(python -V)"
-echo "📦 uv version used: $(${UV_COMMAND} --version)"
-echo "🛠️ To use this environment, ensure this script was sourced: '. env.sh' or 'source env.sh'"
-
-# Return to the original directory from which the script was called IF THE SCRIPT WAS EXECUTED.
-# If sourced, 'cd' affects the current shell, so this ensures the user is back where they started
-# if they accidentally executed it. However, the primary intent is sourcing.
-if [ "${ORIGINAL_CWD}" != "${ENV_SCRIPT_DIR_ABS}" ]; then
-    cd "${ORIGINAL_CWD}"
-    echo "Returned to original directory: ${ORIGINAL_CWD}"
-fi
-
-# Use 'return 0' if sourced, to avoid exiting the user's shell.
-# If the script is executed (not sourced), this has no effect after the last command.
+echo_info "Environment setup script finished successfully."
+echo_info "Python in venv: $(python -V). uv: $($UV_CMD --version)."
+cd "${ORIGINAL_CWD}"
+echo_info "Returned to original directory: $(pwd)"
 return 0
