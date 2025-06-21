@@ -6,9 +6,8 @@ import pytest
 import asyncio
 from unittest import mock
 
-from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.exception import TransportError
+from pyvider.rpcplugin.exception import TransportError, SecurityError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
 from tests.fixtures.dummy import DummyGRPCServer
@@ -32,21 +31,16 @@ async def test_setup_server_unix_success_secure(
         transport=test_transport,
     )
 
-    # Manually set internal state that _negotiate_handshake would set
     server._transport = test_transport
     server._transport_name = "unix"
     server._port = None
 
-    # Mock the credential generation to succeed
     mocker.patch.object(server, '_generate_server_credentials', return_value="mock_secure_creds")
-    
-    # Mock the gRPC server to check calls
     mock_grpc_server = mocker.AsyncMock()
     mocker.patch('pyvider.rpcplugin.server.GRPCServer', return_value=mock_grpc_server)
 
     try:
-        # The _setup_server method requires the transport to be listening
-        await test_transport.listen()
+        # _setup_server calls listen(), so we don't call it beforehand.
         await server._setup_server(client_cert.cert)
         
         assert server._server is not None
@@ -72,7 +66,6 @@ async def test_setup_server_exception_3(
         transport=transport,
     )
     
-    # Manually set internal state
     server._transport = transport
     server._transport_name = "unix"
     
@@ -106,7 +99,6 @@ async def test_setup_server_unix_no_socket_2_macos(
         transport=transport,
     )
     
-    # Manually set internal state
     server._transport = transport
     server._transport_name = "unix"
 
@@ -118,8 +110,6 @@ async def test_setup_server_unix_no_socket_2_macos(
     def mock_add_socket_port(*args, **kwargs):
         raise TransportError(macos_error)
 
-    # With the refined exception handling in _setup_server, the original TransportError
-    # should now propagate cleanly.
     with mock.patch.object(dummy_server, "add_secure_port", mock_add_socket_port):
         with pytest.raises(TransportError, match=f"gRPC server failed to start: {macos_error}"):
             await server._setup_server("client_cert")

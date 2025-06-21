@@ -273,10 +273,21 @@ def _load_dotenv_file(path: Path) -> dict[str, str]:
             message="The 'python-dotenv' library is required to load .env files.",
             hint="Please install it by running: uv pip install python-dotenv"
         )
+    
+    # Manually parse to enforce stricter validation than dotenv_values
+    config_data = {}
     try:
-        return dotenv_values(path)
+        with open(path, 'r', encoding='utf-8') as f:
+            for line_num, line in enumerate(f, 1):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' not in line:
+                    raise ConfigError(f"Error parsing .env file at '{path}': Malformed line: {line_num}")
+                key, value = line.split('=', 1)
+                config_data[key.strip()] = value.strip()
+        return config_data
     except Exception as e:
-        # The dotenv library can raise various errors on malformed files.
         raise ConfigError(f"Error parsing .env file at '{path}': {e}") from e
 
 def _load_yaml_file(path: Path) -> dict[str, Any]:
@@ -329,8 +340,6 @@ def load_config_from_file(file_path: str) -> None:
         raise ConfigError(f"Configuration file '{file_path}' did not produce a dictionary.")
 
     for key, value in config_data.items():
-        # For .env files, values are strings. For others, they might be native types.
-        # The `set` method handles type conversion based on the schema.
         rpcplugin_config.set(key, value)
     logger.info(f"Loaded {len(config_data)} configuration values from {file_path}")
 
@@ -338,21 +347,6 @@ def load_config_from_file(file_path: str) -> None:
 def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     """
     Fetches and processes an environment variable based on schema metadata.
-
-    This function:
-    1. Reads the variable from environment or uses default
-    2. Handles file-based values (file://) by reading from the file
-    3. Converts to the correct type based on schema information
-
-    Args:
-        key: The configuration key to fetch
-        meta: Metadata about the configuration value
-
-    Returns:
-        The processed configuration value
-
-    Raises:
-        ConfigError: If file reading fails or type conversion fails
     """
     value = os.getenv(key, meta["default"])
 
@@ -381,12 +375,8 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
         if type_string == "str":
             return value
         elif type_string == "int":
-            if isinstance(value, int):
-                return value
             return int(value)
         elif type_string == "float":
-            if isinstance(value, float):
-                return value
             return float(value)
         elif type_string == "bool":
             if isinstance(value, bool):
@@ -425,17 +415,6 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
 def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     """
     Validates a configuration value against schema requirements.
-
-    Args:
-        key: The configuration key
-        value: The value to validate
-        meta: Schema metadata for the key
-
-    Returns:
-        True if valid, False otherwise
-
-    Raises:
-        ConfigError: For validation failures
     """
     logger.debug(f"⚙️🔍🚀 Validating config {key} = {value}")
 
@@ -465,12 +444,6 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
 def get_config() -> dict[str, Any]:
     """
     Retrieves all configuration values from environment, applying defaults and validation.
-
-    Returns:
-        Dictionary of configuration key-value pairs
-
-    Raises:
-        ConfigError: For invalid configuration
     """
     config = {}
     logger.debug("⚙️🔄 Building configuration from environment and defaults")
@@ -499,13 +472,6 @@ def get_config() -> dict[str, Any]:
 class RPCPluginConfig:
     """
     Configuration manager for Pyvider RPC Plugin.
-
-    This class provides a singleton pattern for accessing configuration values,
-    with methods for getting and setting values. It loads configuration from
-    environment variables and defaults on initialization.
-
-    Attributes:
-        config: Dictionary of configuration values
     """
 
     _instance = None
@@ -528,9 +494,6 @@ class RPCPluginConfig:
     def instance(cls) -> "RPCPluginConfig":
         """
         Get or create the singleton instance.
-
-        Returns:
-            The singleton RPCPluginConfig instance
         """
         if cls._instance is None:
             cls._instance = cls()
@@ -540,13 +503,6 @@ class RPCPluginConfig:
     def get(self, key: str, default: Any = None) -> Any:
         """
         Retrieve a configuration value.
-
-        Args:
-            key: The configuration key
-            default: Default value if key doesn't exist
-
-        Returns:
-            The configuration value or default
         """
         value = self.config.get(key, default)
         logger.debug(f"⚙️📖 Getting config {key} = {value}")
@@ -555,12 +511,6 @@ class RPCPluginConfig:
     def get_list(self, key: str) -> list[Any]:
         """
         Retrieve a configuration value as a list.
-
-        Args:
-            key: The configuration key
-
-        Returns:
-            The configuration value as a list
         """
         value = self.get(key, [])
         if not isinstance(value, list):
@@ -571,13 +521,6 @@ class RPCPluginConfig:
     def set(self, key: str, value: Any) -> None:
         """
         Set a configuration value dynamically.
-
-        Args:
-            key: The configuration key
-            value: The value to set
-
-        Raises:
-            ConfigError: If key is not in CONFIG_SCHEMA and not a 'PLUGIN_' prefixed dynamic key.
         """
         if key not in CONFIG_SCHEMA and not key.startswith("PLUGIN_"):
             logger.warning(f"⚙️⚠️ Setting unknown config key: {key}")
@@ -633,109 +576,45 @@ class RPCPluginConfig:
         logger.debug(f"⚙️📝 Stored processed config {key} -> {processed_value} (type: {type(processed_value)})")
 
     def magic_cookie_key(self) -> str:
-        """
-        Get the configured magic cookie key.
-
-        Returns:
-            The magic cookie key
-        """
         return cast(str, self.get("PLUGIN_MAGIC_COOKIE_KEY"))
 
     def magic_cookie_value(self) -> str:
-        """
-        Get the expected magic cookie value.
-
-        Returns:
-            The magic cookie value
-        """
         return cast(str, self.get("PLUGIN_MAGIC_COOKIE_VALUE"))
 
     def server_transports(self) -> list[str]:
-        """
-        Get the list of transports supported by the server.
-
-        Returns:
-            List of transport names
-        """
         return cast(list[str], self.get_list("PLUGIN_SERVER_TRANSPORTS"))
 
     def server_endpoint(self) -> str | None:
-        """
-        Get the server endpoint configuration.
-
-        Returns:
-            The server endpoint or None
-        """
         return cast(str | None, self.get("PLUGIN_SERVER_ENDPOINT"))
 
     def client_transports(self) -> list[str]:
-        """
-        Get the list of transports supported by the client.
-
-        Returns:
-            List of transport names
-        """
         return cast(list[str], self.get_list("PLUGIN_CLIENT_TRANSPORTS"))
 
     def client_endpoint(self) -> str | None:
-        """
-        Get the client endpoint configuration.
-
-        Returns:
-            The client endpoint or None
-        """
         return cast(str | None, self.get("PLUGIN_CLIENT_ENDPOINT"))
 
     def auto_mtls_enabled(self) -> bool:
-        """
-        Check if auto mTLS is enabled.
-
-        Returns:
-            True if enabled, False otherwise
-        """
         return cast(bool, self.get("PLUGIN_AUTO_MTLS"))
 
     def handshake_timeout(self) -> float:
-        """
-        Get the handshake timeout in seconds.
-
-        Returns:
-            Timeout in seconds
-        """
         return cast(float, self.get("PLUGIN_HANDSHAKE_TIMEOUT"))
 
     def connection_timeout(self) -> float:
-        """
-        Get the connection timeout in seconds.
-
-        Returns:
-            Timeout in seconds
-        """
         return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
 
     def shutdown_file_path(self) -> str | None:
-        """
-        Get the configured shutdown file path.
-
-        Returns:
-            The shutdown file path or None
-        """
         return cast(str | None, self.get("PLUGIN_SHUTDOWN_FILE_PATH"))
 
     def rate_limit_enabled(self) -> bool:
-        """Check if server-side rate limiting is enabled."""
         return cast(bool, self.get("PLUGIN_RATE_LIMIT_ENABLED"))
 
     def rate_limit_requests_per_second(self) -> float:
-        """Get the configured requests per second for server rate limiting."""
         return cast(float, self.get("PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND"))
 
     def rate_limit_burst_capacity(self) -> float:
-        """Get the configured burst capacity for server rate limiting."""
         return cast(float, self.get("PLUGIN_RATE_LIMIT_BURST_CAPACITY"))
 
     def health_service_enabled(self) -> bool:
-        """Check if the gRPC health checking service is enabled."""
         return cast(bool, self.get("PLUGIN_HEALTH_SERVICE_ENABLED"))
 
 
@@ -758,26 +637,6 @@ def configure(
 ) -> None:
     """
     Configure Pyvider RPC plugin with simplified options.
-
-    This function provides a more user-friendly way to configure the plugin system
-    compared to setting individual environment variables. It handles type conversion
-    and validation automatically.
-
-    Args:
-        magic_cookie: The plugin magic cookie for handshake validation
-        protocol_version: The protocol version to use
-        transports: List of supported transports (e.g. ["unix", "tcp"])
-        auto_mtls: Enable/disable automatic mTLS
-        handshake_timeout: Timeout in seconds for handshake operations
-        connection_timeout: Timeout in seconds for connection operations
-        server_cert: Server certificate in PEM format or file:// path
-        server_key: Server private key in PEM format or file:// path
-        client_cert: Client certificate in PEM format or file:// path
-        client_key: Client private key in PEM format or file:// path
-        **kwargs: Any additional configuration options
-
-    Raises:
-        ConfigError: For invalid configuration values (e.g. unknown transport type)
     """
     logger.debug("⚙️🔄 Running simplified configuration")
 
