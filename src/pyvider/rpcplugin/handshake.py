@@ -12,13 +12,15 @@ for clarity and debugging.
 
 import asyncio
 import os
+import subprocess # Added
 import time
 import traceback
 from enum import Enum, auto
-from typing import Literal, TypeGuard, cast
+from typing import Literal, TypeGuard, cast # Tuple removed
 
 from attrs import define
 
+# First-party imports (sorted alphabetically within groups where possible)
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
@@ -475,7 +477,7 @@ def parse_handshake_response(
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
 
 
-async def read_handshake_response(process) -> str:
+async def read_handshake_response(process: subprocess.Popen) -> str:
     """
     Robust handshake response reader with multiple strategies to handle
     different Go-Python interop challenges.
@@ -497,6 +499,9 @@ async def read_handshake_response(process) -> str:
             message="Plugin process or its stdout stream is not available for handshake.",
             hint="Ensure the plugin process started correctly and is accessible.",
         )
+
+    # stdout is now confirmed to be not None
+    process_stdout = process.stdout
 
     logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
 
@@ -533,9 +538,10 @@ async def read_handshake_response(process) -> str:
             )
 
         try:
+            assert process_stdout is not None, "process_stdout cannot be None here"
             line_bytes = await asyncio.wait_for(
                 asyncio.get_event_loop().run_in_executor(
-                    None, lambda: process.stdout.readline()
+                    None, lambda: process_stdout.readline()
                 ),
                 timeout=2.0,
             )
@@ -557,9 +563,10 @@ async def read_handshake_response(process) -> str:
             logger.debug("🤝📥⚠️ Timeout reading line, trying chunk read strategy")
 
             try:
+                assert process_stdout is not None, "process_stdout cannot be None here"
                 chunk = await asyncio.wait_for(
                     asyncio.get_event_loop().run_in_executor(
-                        None, lambda: process.stdout.read(1024)
+                        None, lambda: process_stdout.read(1024)
                     ),
                     timeout=1.0,
                 )
@@ -605,7 +612,7 @@ async def read_handshake_response(process) -> str:
     )
 
 
-async def create_stderr_relay(process):
+async def create_stderr_relay(process: subprocess.Popen) -> asyncio.Task[None] | None:
     """
     Creates a background task that continuously reads and logs stderr from the plugin process.
     Essential for debugging handshake issues, especially with Go plugins.
@@ -620,7 +627,7 @@ async def create_stderr_relay(process):
         logger.debug("🤝📤⚠️ No process or stderr stream available for relay")
         return None
 
-    async def _stderr_reader():
+    async def _stderr_reader() -> None:
         """Background task to continuously read stderr"""
         logger.debug("🤝📤🚀 Starting stderr relay task")
         while process.poll() is None:

@@ -14,7 +14,7 @@ class TokenBucketRateLimiter:
     at a constant rate. It is designed to be thread-safe using an asyncio.Lock.
     """
 
-    def __init__(self, capacity: float, refill_rate: float):
+    def __init__(self, capacity: float, refill_rate: float) -> None:
         """
         Initialize the TokenBucketRateLimiter.
 
@@ -84,7 +84,7 @@ class TokenBucketRateLimiter:
 
 
 # Example Usage (can be removed or kept for testing):
-async def main():
+async def main() -> None:
     limiter = TokenBucketRateLimiter(capacity=5, refill_rate=1)  # 5 tokens, 1 token/sec
 
     for i in range(10):

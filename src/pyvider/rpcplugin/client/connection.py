@@ -205,7 +205,7 @@ class ClientConnection:
     def __hash__(self) -> int:
         return hash((id(self), self.remote_addr))
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, ClientConnection):
             return NotImplemented
         return id(self) == id(other)
