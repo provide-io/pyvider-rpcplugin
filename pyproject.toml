@@ -1,4 +1,3 @@
-
 # pyvider-rpcplugin/pyproject.toml
 
 [project]
@@ -20,6 +19,8 @@ dependencies = [
     "protobuf>=5.29.3",
     "pyvider-telemetry>=0.0.4",
     "structlog>=25.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
 ]
 
 [dependency-groups]
@@ -106,18 +107,22 @@ norecursedirs = [
 ]
 
 ################################################################################
-# lint
+# Ruff (Linter & Formatter)
 ################################################################################
 
-[tool.lint]
+[tool.ruff]
+line-length = 88
+exclude = ["tests/*", "**/*pb2*.py"]
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "UP", "ANN", "B"]
 ignore = [
-    "ANN401",
-    "B008",
-    "E501",
+    "ANN401", # Implicit `Any` return, consider fixing where possible
+    "B008",   # Function call in default argument
 ]
-exclude = ["tests/*", "**/*pb2*.py"]
-line-length = 88
+
+[tool.ruff.format]
+# Standard ruff format options, no overrides needed for now.
 
 ################################################################################
 # coverage
@@ -152,4 +157,3 @@ exclude = ["tests/*", "**/*pb2*.py"]
 strict = true
 
 # 🐍🏗️📋
-

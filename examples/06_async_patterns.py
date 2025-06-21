@@ -6,7 +6,9 @@ import asyncio
 import sys
 import time
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
+
+from attrs import define, field
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -21,6 +23,22 @@ from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
 )
 from pyvider.telemetry import logger  # noqa: E402
+
+
+@define(frozen=True, slots=True)
+class StreamReply:
+    """A structured reply for a streaming RPC method."""
+
+    response: str = field()
+    message_id: int = field()
+
+
+@define(frozen=True, slots=True)
+class BatchReply:
+    """A structured reply for a batch processing RPC method."""
+
+    results: list[Any] = field()
+    processed_count: int = field()
 
 
 class AsyncStreamHandler:
@@ -60,14 +78,10 @@ class AsyncStreamHandler:
                 )
 
                 # Yield response asynchronously
-                yield type(
-                    "StreamReply",
-                    (),
-                    {
-                        "response": f"Processed: {message}",
-                        "message_id": self.total_messages,
-                    },
-                )()
+                yield StreamReply(
+                    response=f"Processed: {message}",
+                    message_id=self.total_messages,
+                )
 
         finally:
             self.active_streams -= 1
@@ -111,9 +125,7 @@ class AsyncStreamHandler:
             results_count=len(results),
         )
 
-        return type(
-            "BatchReply", (), {"results": results, "processed_count": len(results)}
-        )()
+        return BatchReply(results=results, processed_count=len(results))
 
 
 async def example_6_async_context_managers():

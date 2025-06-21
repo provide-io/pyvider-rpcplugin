@@ -7,6 +7,9 @@ import sys
 import tempfile
 from pathlib import Path
 
+import grpc  # For direct channel creation
+from attrs import define, field
+
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
 project_root = example_dir.parent
@@ -22,7 +25,13 @@ from pyvider.rpcplugin import (  # noqa: E402
 from pyvider.rpcplugin.crypto.certificate import Certificate  # noqa: E402
 from pyvider.rpcplugin.exception import CertificateError  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
-import grpc  # For direct channel creation
+
+
+@define(frozen=True, slots=True)
+class SecureEchoReply:
+    """A structured reply for the SecureEcho service."""
+
+    response: str = field()
 
 
 class SecureEchoHandler:
@@ -50,7 +59,7 @@ class SecureEchoHandler:
         )
 
         response = f"Secure Echo [{self.authenticated_requests}]: {message}"
-        return type("SecureEchoReply", (), {"response": response})()
+        return SecureEchoReply(response=response)
 
 
 async def example_5_certificate_generation(cert_path: Path):  # Added cert_path argument

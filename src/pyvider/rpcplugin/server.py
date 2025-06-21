@@ -1158,24 +1158,15 @@ class RPCPluginServer(
             await self._negotiate_handshake()
             client_cert = self._read_client_cert()
             await self._setup_server(client_cert)
-        except (
-            ConfigError,
-            HandshakeError,
-            TransportError,
-            SecurityError,
-            ProtocolError,
-        ) as e:
+        except (HandshakeError, TransportError, SecurityError, ProtocolError) as e:
+            # Catch specific, known setup errors and re-raise them.
             logger.error(
-                f"🛎️❌ Serve() failed during setup phase due to {e.__class__.__name__}: {e.message}",
-                extra={
-                    "error": str(e),
-                    "trace": traceback.format_exc(),
-                    "hint": e.hint,
-                    "code": e.code,
-                },
+                f"🛎️❌ Serve() failed during setup phase due to a known error type: {e}",
+                extra={"error": str(e), "trace": traceback.format_exc()},
             )
             raise
         except Exception as e:
+            # Catch any other unexpected exception during setup and wrap it.
             logger.error(
                 f"🛎️❌ Serve() failed during setup with an unexpected error: {e}",
                 extra={"error": str(e), "trace": traceback.format_exc()},
@@ -1316,124 +1307,51 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
                     grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded."
                 )
 
-            # The interceptor needs to return a new handler if it wants to
-            # terminate the RPC, or the result of continuation if it wants to
-            # proceed. The new handler should match the signature of the original
-            # (unary-unary, unary-stream, etc.).
-            # For simplicity, we assume unary-unary here. A more robust interceptor
-            # would need to inspect handler_call_details to determine the type.
-            # However, gRPC Python's interceptor API often handles this by allowing
-            # the context.abort to propagate correctly when called from a behavior
-            # returned by the interceptor.
-            # Let's try returning a behavior that immediately aborts.
-
-            # Create a generic handler that aborts.
-            # gRPC will call this handler.
-            def generic_terminator_handler(request_or_iterator, context):
-                context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
-                # For stream-returning RPCs, this might need to return an empty async iterator
-                # For unary-returning RPCs, this might need to return a dummy response or raise
-                # However, context.abort() should be sufficient to terminate the RPC.
-                # If this still allows the original handler to run, we need a different strategy.
-                # Let's assume abort() is enough.
-                return grpc.aio.utils.RPCBehavior( # type: ignore
-                    request_deserializer=None, # Not known here, but abort should bypass
-                    response_serializer=None, # Not known here
-                    request_streaming=False, # Simplification, would need to check details
-                    response_streaming=False, # Simplification
-                    handler=abort_handler
-                )
-
-
-            # This part is tricky. The `continuation` function expects to be called
-            # to get the actual handler for the method. If we don't call it,
-            # the RPC might hang or error. If we call it and then abort,
-            # it might be too late for some resources.
-            # The standard approach is to return a new handler that does the aborting.
-            # Let's craft a simple handler that aborts.
+            # This is a simplified approach. A fully generic interceptor would need
+            # to handle different RPC method types (unary, stream, etc.)
+            # by creating the appropriate handler type (e.g., grpc.unary_unary_rpc_method_handler).
+            # For this context, we assume context.abort is sufficient to terminate.
+            # However, to be more correct, we should return a handler.
+            # The following is a more robust way to handle this.
             original_handler = await continuation(handler_call_details)
 
-            # This generic aborting behavior might not be perfect for all RPC types
-            # (unary/stream), but context.abort is the primary mechanism.
-            # The key is that this returned handler *replaces* the original method's handler for this call.
-
-            # Let's try a simplified approach: if the interceptor itself raises an RpcError,
-            # gRPC might handle it. Or, as per docs, modifying the context is better.
-            # The `ServicerContext` is not directly available here to call `abort`.
-            # The `continuation` returns a `grpc.RpcMethodHandler` which has a `unary_unary`, etc.
-            # attribute. We need to return a new `grpc.RpcMethodHandler` where these are our aborting methods.
-
-            # A common pattern for interceptors that want to terminate early:
-            # Create a new behavior that, when invoked, aborts.
-            # This is complex because the type of handler (unary_unary, etc.) varies.
-            # A simpler approach for modern grpc.aio might be to raise an RpcError.
-            # However, the documentation for grpc.aio.ServerInterceptor suggests
-            # returning a "handler that terminates the RPC".
-
-            # Let's try returning a handler that calls context.abort().
-            # The `continuation` returns an `RpcMethodHandler`. We need to return one too.
-            # The `handler_call_details` contains the method name.
-            # The `continuation` when called with `handler_call_details` gives the specific method handler.
-
-            # If rate limited, return a new handler that aborts.
-            # This generic handler needs to be adaptable.
-            # For now, let's assume that if we return a function that takes (request, context),
-            # and it calls context.abort(), it might work for unary calls.
-            # This is a simplification. A production interceptor needs to be more robust
-            # regarding RPC method types (unary/stream).
-
-            async def new_behavior(request, context):
-                await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded")
-                return None # Required for unary-unary
-
-            # We need to return an RpcMethodHandler
-            # This is still not quite right. The interceptor itself does not return a new RpcMethodHandler.
-            # It calls continuation, which returns an RpcMethodHandler.
-            # The interceptor is supposed to return a *callable* that *is* the new method.
-            # So, if `is_allowed` is false, we return `new_behavior`.
-            # This `new_behavior` will be called by gRPC instead of the actual method.
-            # This was the source of the AttributeError.
-
-            # Correct approach: obtain the original RpcMethodHandler, then return a new one
-            # with the behavior (e.g., unary_unary method) replaced.
-            original_handler = await continuation(handler_call_details)
-
-            async def aborting_behavior(request, context):
+            async def aborting_unary_unary(request, context):
                 await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
-                # For unary-unary, gRPC expects a response message object or None after abort.
-                # If the original handler had a specific response type, we might need to create an empty one.
-                # However, abort() should suffice. If not, one might need:
-                # response_type = type(original_handler._unary_unary_response_serializer.deserialize(b''))
-                # return response_type()
-                return None # Placeholder, abort should take precedence.
+                return None # Must return something awaitable for unary-unary
 
-            # Reconstruct RpcMethodHandler with the new behavior for the appropriate type.
-            # This example assumes UnaryUnary, which Echoer.Echo is.
-            # A fully generic interceptor would need to check handler_call_details or original_handler
-            # to determine if it's unary_unary, unary_stream, etc. and replace the correct field.
+            async def aborting_stream(request_or_iterator, context):
+                await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
+                # For streaming responses, we must return an empty async iterator
+                if False: # pylint: disable=using-constant-test
+                    yield # pragma: no cover
+
             if original_handler.unary_unary:
                 return grpc.unary_unary_rpc_method_handler(
-                    aborting_behavior,
+                    aborting_unary_unary,
                     request_deserializer=original_handler.request_deserializer,
                     response_serializer=original_handler.response_serializer,
                 )
             elif original_handler.unary_stream:
-                 # Similar for unary_stream, etc.
-                logger.error("RateLimitingInterceptor: Aborting unary-stream not fully implemented here.")
-                # Fallback to just aborting behavior, might not be perfect
                 return grpc.unary_stream_rpc_method_handler(
-                    aborting_behavior, # This signature is (request, context)
-                                       # but unary_stream is (request, context) -> async iterator
-                                       # so this will likely fail for stream responses.
+                    aborting_stream,
                     request_deserializer=original_handler.request_deserializer,
                     response_serializer=original_handler.response_serializer,
                 )
-            # Add other cases (stream_unary, stream_stream) if necessary for full generality.
-
-            # Fallback if no specific handler type matches (should not happen for known RPCs)
+            elif original_handler.stream_unary:
+                return grpc.stream_unary_rpc_method_handler(
+                    aborting_stream,
+                    request_deserializer=original_handler.request_deserializer,
+                    response_serializer=original_handler.response_serializer,
+                )
+            elif original_handler.stream_stream:
+                return grpc.stream_stream_rpc_method_handler(
+                    aborting_stream,
+                    request_deserializer=original_handler.request_deserializer,
+                    response_serializer=original_handler.response_serializer,
+                )
+            
+            # Fallback if handler type is unknown
             logger.error(f"RateLimitingInterceptor: Could not determine RPC method type for {handler_call_details.method} to abort.")
-            # Defaulting to returning the original handler to avoid breaking things further,
-            # though this means rate limiting won't abort this specific call.
             return original_handler
 
         else:

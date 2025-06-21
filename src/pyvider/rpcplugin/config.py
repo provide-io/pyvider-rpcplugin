@@ -27,10 +27,22 @@ Usage:
 """
 
 import os
-
+import json
+from pathlib import Path
 from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
+
+# Lazily import optional dependencies to provide better error messages.
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
+try:
+    from dotenv import dotenv_values
+except ImportError:
+    dotenv_values = None
 
 
 class ConfigError(ValueError):
@@ -38,7 +50,7 @@ class ConfigError(ValueError):
 
     def __init__(self, message: str, hint: str | None = None, code: int | None = None):
         super().__init__(message)
-        self.message = message  # Add this line
+        self.message = message
         self.hint = hint
         self.code = code
 
@@ -56,7 +68,6 @@ SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 TRANSPORT_TYPES = Literal["unix", "tcp"]
 
 # Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
-# This provides a single source of truth for all configuration options
 CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
@@ -254,6 +265,74 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
         "type": "bool",
     },
 }
+
+def _load_dotenv_file(path: Path) -> dict[str, str]:
+    """Loads a .env file, returning a dictionary."""
+    if dotenv_values is None:
+        raise ConfigError(
+            message="The 'python-dotenv' library is required to load .env files.",
+            hint="Please install it by running: uv pip install python-dotenv"
+        )
+    try:
+        return dotenv_values(path)
+    except Exception as e:
+        # The dotenv library can raise various errors on malformed files.
+        raise ConfigError(f"Error parsing .env file at '{path}': {e}") from e
+
+def _load_yaml_file(path: Path) -> dict[str, Any]:
+    """Loads a YAML file, returning a dictionary."""
+    if yaml is None:
+        raise ConfigError(
+            message="The 'PyYAML' library is required to load .yaml/.yml files.",
+            hint="Please install it by running: uv pip install pyyaml"
+        )
+    try:
+        with open(path, 'r') as f:
+            return yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise ConfigError(f"Failed to parse YAML configuration file at '{path}': {e}") from e
+    except Exception as e:
+        raise ConfigError(f"Failed to read YAML file at '{path}': {e}") from e
+
+def _load_json_file(path: Path) -> dict[str, Any]:
+    """Loads a JSON file, returning a dictionary."""
+    try:
+        with open(path, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        raise ConfigError(f"Failed to decode JSON configuration file at '{path}': {e}") from e
+    except Exception as e:
+        raise ConfigError(f"Failed to read JSON file at '{path}': {e}") from e
+
+def load_config_from_file(file_path: str) -> None:
+    """
+    Loads configuration from a file and sets the values in the global config.
+    Supports .json, .yaml, .yml, and .env files.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise ConfigError(f"Configuration file not found: {file_path}")
+
+    suffix = path.suffix.lower()
+    config_data: dict[str, Any]
+
+    if suffix == '.json':
+        config_data = _load_json_file(path)
+    elif suffix in ['.yaml', '.yml']:
+        config_data = _load_yaml_file(path)
+    elif suffix == '.env':
+        config_data = _load_dotenv_file(path)
+    else:
+        raise ConfigError(f"Unsupported configuration file type: {suffix}")
+
+    if not isinstance(config_data, dict):
+        raise ConfigError(f"Configuration file '{file_path}' did not produce a dictionary.")
+
+    for key, value in config_data.items():
+        # For .env files, values are strings. For others, they might be native types.
+        # The `set` method handles type conversion based on the schema.
+        rpcplugin_config.set(key, value)
+    logger.info(f"Loaded {len(config_data)} configuration values from {file_path}")
 
 
 def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:

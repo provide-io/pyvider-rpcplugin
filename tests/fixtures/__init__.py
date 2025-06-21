@@ -3,8 +3,6 @@
 from tests.fixtures.utils import (
     cleanup_temp_files,
     ensure_asyncio_cleanup,
-    dummy_server,
-    clean_socket_dir,
     summarize_text,
 )
 from tests.fixtures.dummy import (
@@ -12,8 +10,6 @@ from tests.fixtures.dummy import (
     DummyWriter,
     DummyGRPCServer,
     DummyAioServer,
-    CCDummyWriter,
-    CCDummyReader,
     dummy_writer,
     dummy_reader,
 )
@@ -65,29 +61,22 @@ from tests.fixtures.client import (
     mock_unix_transport,
     mock_grpc_channel,
     test_client_command,
-    # client_instance is defined twice, importing the second one
-    # consider renaming or removing one of them
 )
 from tests.fixtures.server import (
     valid_server_env,
     server_instance,
-    mock_async_tcp_server,
 )
 
 __all__ = [
     # utils
     "cleanup_temp_files",
     "ensure_asyncio_cleanup",
-    "dummy_server",
-    "clean_socket_dir",
     "summarize_text",
     # dummy
     "DummyReader",
     "DummyWriter",
     "DummyGRPCServer",
     "DummyAioServer",
-    "CCDummyWriter",
-    "CCDummyReader",
     "dummy_writer",
     "dummy_reader",
     # mocks
@@ -128,7 +117,7 @@ __all__ = [
     "transport_cleanup",
     # client
     "client_command",
-    "client_instance",  # Note: client_instance is defined twice, this will refer to the last one from tests.fixtures.client
+    "client_instance",
     "mock_process",
     "mock_transport",
     "mock_unix_transport",
@@ -136,6 +125,5 @@ __all__ = [
     "test_client_command",
     # server
     "valid_server_env",
-    "server_instance",  # Note: server_instance from tests.fixtures.server
-    "mock_async_tcp_server",
+    "server_instance",
 ]

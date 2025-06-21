@@ -9,6 +9,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from attrs import define, field
+
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
 project_root = example_dir.parent
@@ -29,6 +31,13 @@ from pyvider.rpcplugin.exception import (  # noqa: E402
     TransportError,
 )
 from pyvider.telemetry import logger  # noqa: E402
+
+
+@define(frozen=True, slots=True)
+class ProcessReply:
+    """A structured reply for the ProcessRequest method."""
+
+    response: str = field()
 
 
 class RobustServiceHandler:
@@ -79,7 +88,7 @@ class RobustServiceHandler:
                 result_length=len(result),
             )
 
-            return type("ProcessReply", (), {"response": result})()
+            return ProcessReply(response=result)
 
         except Exception as e:
             self.error_count += 1
@@ -162,11 +171,9 @@ class RobustServiceHandler:
                 request_id=request_id,
                 recovery_method="default_value",
             )
-            return type(
-                "ProcessReply",
-                (),
-                {"response": f"Recovered from validation error (ID: {request_id})"},
-            )()
+            return ProcessReply(
+                response=f"Recovered from validation error (ID: {request_id})"
+            )
 
         elif isinstance(error, ResourceWarning):
             # Recoverable resource issue
@@ -178,13 +185,9 @@ class RobustServiceHandler:
                 request_id=request_id,
                 recovery_method="graceful_degradation",
             )
-            return type(
-                "ProcessReply",
-                (),
-                {
-                    "response": f"Processed with reduced functionality (ID: {request_id})"
-                },
-            )()
+            return ProcessReply(
+                response=f"Processed with reduced functionality (ID: {request_id})"
+            )
 
         else:
             logger.warning(
