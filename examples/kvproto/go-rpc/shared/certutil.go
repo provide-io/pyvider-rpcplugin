@@ -16,10 +16,13 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
+// GenerateTLSConfig creates a new TLS configuration with a self-signed certificate.
 func GenerateTLSConfig(logger hclog.Logger, keyType, curveName string, rsaBits int) (*tls.Config, error) {
 	logger.Info("📜🔑🏭 Generating TLS config", "keyType", keyType, "curve", curveName, "rsaBits", rsaBits)
+
 	var priv interface{}
 	var err error
+
 	switch keyType {
 	case "ecdsa":
 		logger.Debug("📜🔑🚀 Generating ECDSA private key", "curve", curveName)
@@ -41,18 +44,22 @@ func GenerateTLSConfig(logger hclog.Logger, keyType, curveName string, rsaBits i
 	default:
 		return nil, fmt.Errorf("unsupported key type: %s", keyType)
 	}
+
 	if err != nil {
 		logger.Error("📜🔑❌ Failed to generate private key", "error", err)
 		return nil, err
 	}
 	logger.Debug("📜🔑✅ Private key generated successfully.")
+
 	notBefore := time.Now()
 	notAfter := notBefore.Add(365 * 24 * time.Hour)
+
 	serialNumber, err := rand.Int(rand.Reader, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
 		logger.Error("📜🔑❌ Failed to generate serial number", "error", err)
 		return nil, err
 	}
+
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
@@ -66,30 +73,39 @@ func GenerateTLSConfig(logger hclog.Logger, keyType, curveName string, rsaBits i
 		BasicConstraintsValid: true,
 		DNSNames:              []string{"localhost"},
 	}
+
 	derBytes, err := x509.CreateCertificate(rand.Reader, &template, &template, publicKey(priv), priv)
 	if err != nil {
 		logger.Error("📜🔑❌ Failed to create certificate", "error", err)
 		return nil, err
 	}
 	logger.Debug("📜🔑✅ Self-signed certificate created.")
+
 	privBytes, err := x509.MarshalPKCS8PrivateKey(priv)
 	if err != nil {
 		logger.Error("📜🔑❌ Failed to marshal private key", "error", err)
 		return nil, err
 	}
+
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	keyPEM := pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: privBytes})
+
 	tlsCert, err := tls.X509KeyPair(certPEM, keyPEM)
 	if err != nil {
 		logger.Error("📜🔑❌ Failed to create TLS key pair from PEM data", "error", err)
 		return nil, err
 	}
 	logger.Debug("📜🔑✅ TLS key pair created from PEM data.")
+
+	// THIS IS THE FIX: The server should not require a client certificate when the
+	// client is using the standard AutoMTLS feature, as the client generates its own
+	// cert that the server won't know about. This configures one-way TLS.
 	return &tls.Config{
 		Certificates: []tls.Certificate{tlsCert},
-		ClientAuth:   tls.RequireAnyClientCert,
+		ClientAuth:   tls.NoClientCert,
 	}, nil
 }
+
 func publicKey(priv interface{}) interface{} {
 	switch k := priv.(type) {
 	case *rsa.PrivateKey:
