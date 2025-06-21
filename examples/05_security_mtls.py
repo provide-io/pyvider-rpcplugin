@@ -381,7 +381,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
         #   response = await stub.YourMethod(Request())
         #   logger.info(f"RPC call successful: {response}")
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error(
             "mTLS connection timeout: Channel not ready within timeout.",
             domain="security",

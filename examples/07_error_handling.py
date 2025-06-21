@@ -7,7 +7,7 @@ import random
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from attrs import define, field
 
@@ -149,7 +149,7 @@ class RobustServiceHandler:
 
     async def _attempt_recovery(
         self, error: Exception, request_id: str
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """Attempt to recover from errors when possible."""
 
         logger.info(
@@ -214,7 +214,7 @@ class RetryPolicy:
         max_delay: float = 60.0,
         backoff_factor: float = 2.0,
         jitter: bool = True,
-        retryable_exceptions: Optional[tuple] = None,
+        retryable_exceptions: tuple | None = None,
     ):
         self.max_retries = max_retries
         self.base_delay = base_delay
@@ -875,7 +875,7 @@ async def example_7_error_monitoring():
                 uptime_minutes, 1
             )
 
-        def get_error_summary(self) -> Dict[str, Any]:
+        def get_error_summary(self) -> dict[str, Any]:
             """Get comprehensive error summary."""
 
             total_errors = sum(self.error_counts.values())
@@ -893,7 +893,7 @@ async def example_7_error_monitoring():
                 "error_rates": self.error_rates,
             }
 
-        def check_alert_conditions(self) -> List[Dict[str, Any]]:
+        def check_alert_conditions(self) -> list[dict[str, Any]]:
             """Check for alerting conditions."""
 
             alerts = []

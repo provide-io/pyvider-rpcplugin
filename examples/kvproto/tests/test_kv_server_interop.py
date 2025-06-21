@@ -4,8 +4,8 @@ import asyncio
 import os
 import subprocess
 import time
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator
 
 import grpc
 import pytest
@@ -60,7 +60,7 @@ async def go_server_env() -> dict[str, str]:
 @pytest_asyncio.fixture
 async def kv_go_client(
     go_server_path: str, go_server_env: dict[str, str]
-) -> AsyncGenerator[RPCPluginClient, None]:
+) -> AsyncGenerator[RPCPluginClient]:
     """Create and yield a RPCPluginClient connected to a KV server."""
     client = None
     logger.debug(f"🧪🚀🔍 Creating RPCPluginClient for Server at {go_server_path}")
@@ -81,7 +81,7 @@ async def kv_go_client(
 
         yield client
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("🧪🚀❌ Client start timed out")
         if client:
             await client.close()
@@ -140,7 +140,7 @@ async def test_go_server_basic_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
 
     # Prepare test data
     key = "test_basic_key"
-    value = "test_basic_value".encode("utf-8")
+    value = b"test_basic_value"
 
     # Put
     try:
@@ -173,7 +173,7 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
 
     # Empty key (should be accepted)
     empty_key = ""
-    value = "".encode("utf-8")
+    value = b""
 
     try:
         await kv_stub.Put(kv_pb2.PutRequest(key=empty_key, value=value))
@@ -209,7 +209,7 @@ async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None
 
     # Special characters in key
     key_with_special = f"special_key_{SPECIAL_CHARACTERS}"
-    value = "value_for_special_key".encode("utf-8")
+    value = b"value_for_special_key"
 
     try:
         await kv_stub.Put(kv_pb2.PutRequest(key=key_with_special, value=value))
@@ -224,7 +224,7 @@ async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None
 
     # Special characters in value
     key = "key_for_special_value"
-    value_with_special = f"special_value_{SPECIAL_CHARACTERS}".encode("utf-8")
+    value_with_special = f"special_value_{SPECIAL_CHARACTERS}".encode()
 
     try:
         await kv_stub.Put(kv_pb2.PutRequest(key=key, value=value_with_special))
@@ -320,7 +320,7 @@ async def test_go_server_rapid_operations(kv_stub: kv_pb2_grpc.KVStub) -> None:
     # Create tasks for concurrent operations
     for i in range(operation_count):
         key = f"rapid_key_{i}"
-        value = f"rapid_value_{i}".encode("utf-8")
+        value = f"rapid_value_{i}".encode()
 
         # Add Put task
         tasks.append(kv_stub.Put(kv_pb2.PutRequest(key=key, value=value)))
@@ -373,7 +373,7 @@ async def run_process_with_timeout(
             stdout.decode("utf-8", errors="replace"),
             stderr.decode("utf-8", errors="replace"),
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         # Process ran too long, kill it
         try:
             process.kill()
@@ -493,7 +493,7 @@ async def test_client_connection_timeout() -> None:
         await asyncio.wait_for(client.start(), timeout=DEFAULT_TIMEOUT)
         logger.error("🧪❌ Client connected successfully when it should have failed")
         pytest.fail("Client connected successfully when it should have failed")
-    except asyncio.TimeoutError:
+    except TimeoutError:
         duration = time.time() - start_time
         logger.info(f"🧪⏱️✅ Client connection properly timed out after {duration:.2f}s")
     except HandshakeError as e:

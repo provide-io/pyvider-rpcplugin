@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import mean
-from typing import Any, Dict, List
+from typing import Any
 
 import psutil
 
@@ -48,7 +48,7 @@ class PerformanceMetrics:
         """Calculate error rate as percentage."""
         return (self.error_count / max(self.total_requests, 1)) * 100
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for logging."""
         return {
             "requests_per_second": round(self.requests_per_second, 2),
@@ -144,7 +144,7 @@ class HighPerformanceHandler:
             {"response": f"Queued: {message}", "batch_size": len(self.batch_buffer)},
         )()
 
-    async def _process_batch(self) -> List[str]:
+    async def _process_batch(self) -> list[str]:
         """Process a batch of items efficiently."""
 
         # Process all items concurrently
@@ -159,7 +159,7 @@ class HighPerformanceHandler:
         # Minimal processing for benchmarking
         return f"Processed: {item}"
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get handler performance statistics."""
 
         avg_processing_time = (
@@ -186,7 +186,7 @@ class PerformanceBenchmarker:
 
     async def benchmark_rpc_performance(
         self,
-        server_config: Dict[str, Any],
+        server_config: dict[str, Any],
         test_duration_seconds: float = 10.0,
         concurrent_clients: int = 10,
         requests_per_client: int = 100,
@@ -229,7 +229,7 @@ class PerformanceBenchmarker:
                 requests: int,
                 actual_server_endpoint: str,
                 transport_type: str,
-            ) -> List[float]:
+            ) -> list[float]:
                 """Worker function for concurrent client."""
 
                 client_latencies = []
@@ -355,7 +355,7 @@ class PerformanceBenchmarker:
             await server.stop()
             await server_task
 
-    async def compare_transport_performance(self) -> Dict[str, PerformanceMetrics]:
+    async def compare_transport_performance(self) -> dict[str, PerformanceMetrics]:
         """Compare performance across different transports."""
 
         logger.info(
@@ -665,7 +665,7 @@ async def example_10_concurrency_tuning():
             latencies = []
 
             # Concurrent client simulation
-            async def client_simulation(client_id: int) -> List[float]:
+            async def client_simulation(client_id: int) -> list[float]:
                 client_latencies = []
 
                 for i in range(requests_per_client):
@@ -834,7 +834,7 @@ async def example_10_memory_optimization():
 
             return type("Reply", (), {"response": result, "from_cache": False})()
 
-        def get_memory_stats(self) -> Dict[str, Any]:
+        def get_memory_stats(self) -> dict[str, Any]:
             """Get memory usage statistics."""
 
             import sys

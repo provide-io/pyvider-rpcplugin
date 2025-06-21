@@ -190,9 +190,7 @@ def plugin_protocol(
             )
             return descriptor_module, service_name
 
-        async def add_to_server(
-            self, server: Any, handler: Any
-        ) -> None:
+        async def add_to_server(self, server: Any, handler: Any) -> None:
             """Adds the protocol implementation to the gRPC server."""
             logger.debug(f"🧰📡🚀 Adding service '{service_name}' to gRPC server")
             if servicer_add_fn:
@@ -228,9 +226,7 @@ def create_basic_protocol() -> RPCPluginProtocol:
             """Returns placeholder descriptors."""
             return None, "TestService"
 
-        async def add_to_server(
-            self, server: Any, handler: Any
-        ) -> None:
+        async def add_to_server(self, server: Any, handler: Any) -> None:
             """No-op implementation for testing."""
             logger.debug("🧰📡🔍 Basic protocol add_to_server called")
             return

@@ -3,7 +3,9 @@ import gc
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from pyvider.rpcplugin.exception import ConfigError, HandshakeError
+# FIX: Import ConfigError from config.py to match the exception's source module
+from pyvider.rpcplugin.config import ConfigError
+from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
@@ -15,25 +17,30 @@ from tests.conftest import (
 def test_attrs_post_init_handshake_config_error(mocker):
     """
     Tests that a synchronous error during __attrs_post_init__ is correctly handled.
-    This test must be synchronous (`def`) and must not depend on async fixtures
-    to ensure pytest.raises can correctly capture the constructor exception.
+    This test uses a manual try/except block for robustness.
     """
-    # FIX: Create simple synchronous mocks directly within the test.
     local_mock_protocol = MagicMock()
     local_mock_handler = MagicMock()
 
     mocker.patch(
-        "pyvider.rpcplugin.server.HandshakeConfig",
-        side_effect=ValueError("Test HandshakeConfig error"),
+        "pyvider.rpcplugin.server.rpcplugin_config.magic_cookie_key",
+        side_effect=ValueError("Test rpcplugin_config error"),
     )
 
-    with pytest.raises(ConfigError, match="Failed to initialize handshake configuration: Test HandshakeConfig error"):
+    try:
         RPCPluginServer(
             protocol=local_mock_protocol,
             handler=local_mock_handler,
             config=None,
             transport=None,
         )
+        pytest.fail("ConfigError was not raised when expected")
+    except ConfigError as e:
+        # Assert that the caught exception is the one we expect.
+        assert "Failed to initialize handshake configuration: Test rpcplugin_config error" in str(e)
+    except Exception as e:
+        pytest.fail(f"An unexpected exception was raised: {type(e).__name__}: {e}")
+
 
 @pytest.mark.asyncio
 async def test_serve_setup_server_raises_exception(

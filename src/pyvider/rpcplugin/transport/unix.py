@@ -318,7 +318,7 @@ class UnixSocketTransport(RPCPluginTransport):
             self._reader, self._writer = reader_writer  # Unpack after awaiting
             self.endpoint = endpoint
             logger.debug(f"📞🤝✅ Connected to Unix socket at {endpoint}")
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             logger.error(f"📞🤝❌ Connection to Unix socket timed out: {e}")
             raise TransportError(f"Connection to Unix socket timed out: {e}") from e
         except Exception as e:

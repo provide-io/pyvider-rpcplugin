@@ -21,7 +21,6 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-
 from cryptography.x509 import Certificate as X509Certificate
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
@@ -184,20 +183,12 @@ class Certificate:
     validity_days: int = field(default=365, kw_only=True)
 
     _base: CertificateBase = field(init=False, repr=False)
-    _private_key: KeyPair | None = field(
-        init=False, default=None, repr=False
-    )
-    _cert: X509Certificate = field(
-        init=False, repr=False
-    )
+    _private_key: KeyPair | None = field(init=False, default=None, repr=False)
+    _cert: X509Certificate = field(init=False, repr=False)
     _trust_chain: list["Certificate"] = field(init=False, factory=list, repr=False)
 
-    cert: str = field(
-        init=False, default="", repr=True
-    )
-    key: str | None = field(
-        init=False, default=None, repr=False
-    )
+    cert: str = field(init=False, default="", repr=True)
+    key: str | None = field(init=False, default=None, repr=False)
 
     def __attrs_post_init__(self) -> None:
         """
@@ -232,10 +223,8 @@ class Certificate:
                     try:
                         gen_curve = CurveType[self.ecdsa_curve.upper()]
                     except KeyError:
-                        raise ValueError(
-                            f"Unsupported ECDSA curve: {self.ecdsa_curve}"
-                        )
-                else: # RSA
+                        raise ValueError(f"Unsupported ECDSA curve: {self.ecdsa_curve}")
+                else:  # RSA
                     gen_key_size = self.key_size
 
                 conf: CertificateConfig = {
@@ -255,12 +244,11 @@ class Certificate:
                 self._base, self._private_key = CertificateBase.create(conf)
 
                 self._cert = self._create_x509_certificate(
-                    is_ca=False, is_client_cert=True # MODIFIED FOR CLIENT CERT
+                    is_ca=False,
+                    is_client_cert=True,  # MODIFIED FOR CLIENT CERT
                 )
 
-                if (
-                    self._cert is None
-                ):
+                if self._cert is None:
                     raise CertificateError(
                         "Certificate object (_cert) is None after creation."
                     )
@@ -422,9 +410,7 @@ class Certificate:
                 logger.debug(f"📜📝✅ Added SANs: {self.alt_names or []}")
 
             builder = builder.add_extension(
-                x509.BasicConstraints(
-                    ca=is_ca, path_length=None
-                ),
+                x509.BasicConstraints(ca=is_ca, path_length=None),
                 critical=True,
             )
 
@@ -629,12 +615,17 @@ class Certificate:
             alt_names=[common_name],
         )
         # Explicitly re-sign to ensure CA flags are correctly set for a CA
-        logger.info("📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, is_client_cert=False flags.")
+        logger.info(
+            "📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, is_client_cert=False flags."
+        )
         actual_ca_x509_cert = ca_cert_obj._create_x509_certificate(
-            is_ca=True, is_client_cert=False # Correct CA flags
+            is_ca=True,
+            is_client_cert=False,  # Correct CA flags
         )
         ca_cert_obj._cert = actual_ca_x509_cert
-        ca_cert_obj.cert = actual_ca_x509_cert.public_bytes(serialization.Encoding.PEM).decode("utf-8")
+        ca_cert_obj.cert = actual_ca_x509_cert.public_bytes(
+            serialization.Encoding.PEM
+        ).decode("utf-8")
         return ca_cert_obj
 
     @classmethod
@@ -672,8 +663,7 @@ class Certificate:
             common_name=common_name,
             organization_name=organization_name,
             validity_days=validity_days,
-            alt_names=alt_names
-            or [common_name],
+            alt_names=alt_names or [common_name],
             key_type=key_type,
             key_size=key_size,
             ecdsa_curve=ecdsa_curve,

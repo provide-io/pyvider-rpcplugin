@@ -197,7 +197,7 @@ class TCPSocketTransport(RPCPluginTransport):
                 logger.info(
                     f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}"
                 )
-            except asyncio.TimeoutError as e:
+            except TimeoutError as e:
                 logger.error(
                     f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}"
                 )
@@ -230,7 +230,7 @@ class TCPSocketTransport(RPCPluginTransport):
             # await writer.wait_closed() can hang.
             await asyncio.wait_for(writer.wait_closed(), timeout=5.0)
             logger.debug("🔌🔒✅ Writer closed successfully")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning(
                 f"🔌🔒⚠️ Timeout closing writer for endpoint {self.endpoint if self.endpoint else 'unknown'}"
             )
@@ -274,7 +274,7 @@ class TCPSocketTransport(RPCPluginTransport):
                         logger.debug(
                             "🔌🔒ℹ️: TCP server was not serving, no close/wait action needed."
                         )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(
                         f"🔌🔒⚠️ Timeout closing TCP server for endpoint {self.endpoint if self.endpoint else 'unknown'}"
                     )

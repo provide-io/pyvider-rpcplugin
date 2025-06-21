@@ -3,6 +3,9 @@
 import asyncio
 import contextlib
 import sys
+from collections.abc import AsyncGenerator  # Added Dict, Any
+from pathlib import Path  # Added
+from typing import Any
 
 import grpc
 import pytest
@@ -13,12 +16,10 @@ from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.telemetry import logger
-from pathlib import Path  # Added
-from typing import AsyncGenerator, Dict, Any  # Added Dict, Any
 
 
 @pytest_asyncio.fixture
-async def mock_server_config() -> Dict[str, Any]:
+async def mock_server_config() -> dict[str, Any]:
     """Provides a mock server configuration dictionary."""
     logger.debug("🔧🚀✅ Using mock server config")
     return {
@@ -29,7 +30,7 @@ async def mock_server_config() -> Dict[str, Any]:
 
 
 @pytest_asyncio.fixture
-async def managed_unix_socket_path(tmp_path: Path) -> AsyncGenerator[str, None]:
+async def managed_unix_socket_path(tmp_path: Path) -> AsyncGenerator[str]:
     """Generate a unique Unix socket path in a temporary directory and ensure cleanup."""
     socket_file = tmp_path / "kv_test_socket.sock"
     socket_path = str(socket_file)
@@ -171,7 +172,7 @@ async def kv_server(transport_fixture, kv_handler, mock_server_config):
         logger.debug("🛎️✅👍 KV server is ready")
 
         yield server
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.error("🛎️⏱️❌ Timeout waiting for server to be ready")
         # Try to stop server even if it didn't become ready
         await server.stop()
@@ -292,7 +293,7 @@ async def test_kv_concurrent_operations(kv_client) -> None:
     async def put_get(i: int) -> bool:
         try:
             key = f"concurrent_key_{i}"
-            value = f"concurrent_value_{i}".encode("utf-8")
+            value = f"concurrent_value_{i}".encode()
 
             logger.debug(f"🔌🧪🔍 Concurrent operation {i}: Put")
             await stub.Put(kv_pb2.PutRequest(key=key, value=value))
