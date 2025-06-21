@@ -7,6 +7,8 @@ import os
 import sys
 from pathlib import Path
 
+from attrs import define, field
+
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
 project_root = example_dir.parent
@@ -23,6 +25,13 @@ from pyvider.rpcplugin.config import (  # noqa: E402
     RPCPluginConfig,
 )
 from pyvider.telemetry import logger  # noqa: E402
+
+
+@define(frozen=True, slots=True)
+class ProductionReply:
+    """A structured reply for the production service."""
+
+    response: str = field()
 
 
 class ProductionServiceHandler:
@@ -88,7 +97,7 @@ class ProductionServiceHandler:
                 avg_response_time_ms=round(duration_ms, 2),
             )
 
-            return type("ProductionReply", (), {"response": response_data})()
+            return ProductionReply(response=response_data)
 
         except Exception as e:
             self.error_count += 1

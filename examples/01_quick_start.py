@@ -6,6 +6,8 @@ import asyncio
 import sys
 from pathlib import Path
 
+from attrs import define, field
+
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
 project_root = example_dir.parent
@@ -19,6 +21,13 @@ from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
 )
 from pyvider.telemetry import logger  # noqa: E402
+
+
+@define(frozen=True, slots=True)
+class HelloReply:
+    """A structured reply for the SayHello RPC method."""
+
+    message: str = field()
 
 
 class SimpleGreeterHandler:
@@ -38,9 +47,9 @@ class SimpleGreeterHandler:
             response_length=len(message),
         )
 
-        # For this example, we'll return a simple dict-like response
-        # In production, this would be a proper protobuf message
-        return type("HelloReply", (), {"message": message})()
+        # For this example, we return a structured attrs object.
+        # In production, this would be a proper protobuf message.
+        return HelloReply(message=message)
 
 
 async def example_1_basic_server():

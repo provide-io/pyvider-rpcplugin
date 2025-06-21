@@ -6,6 +6,8 @@ import asyncio
 import sys
 from pathlib import Path
 
+from attrs import define, field
+
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
 project_root = example_dir.parent
@@ -20,6 +22,13 @@ from pyvider.rpcplugin import (  # noqa: E402
 )
 from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
+
+
+@define(frozen=True, slots=True)
+class EchoReply:
+    """A structured reply for the Echo service."""
+
+    response: str = field()
 
 
 class EchoServiceHandler:
@@ -46,7 +55,7 @@ class EchoServiceHandler:
             message_length=len(message),
         )
 
-        return type("EchoReply", (), {"response": response_data})()
+        return EchoReply(response=response_data)
 
 
 async def example_2_unix_socket_server():
