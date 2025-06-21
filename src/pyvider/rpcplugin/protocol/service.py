@@ -14,12 +14,10 @@ function to add these services to a gRPC server.
 import asyncio
 import os
 import traceback
-from collections.abc import AsyncIterable, AsyncIterator # Changed to AsyncIterable
-from typing import Any # Keep Any for now, will refine grpc types if needed
+from collections.abc import AsyncIterator  # Added for StartStream return type
+from typing import Any  # Added for type hinting
 
-import grpc # Import grpc for types
 from attrs import define, field
-from google.protobuf import empty_pb2 # For Stdio Stream request
 
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
@@ -83,8 +81,8 @@ class GRPCBrokerService(GRPCBrokerServicer):
         self._subchannels: dict[int, SubchannelConnection] = {}
 
     async def StartStream(
-        self, request_iterator: AsyncIterable[ConnInfo], context: grpc.aio.ServicerContext
-    ) -> AsyncIterator[ConnInfo]:
+        self, request_iterator: Any, context: Any
+    ) -> AsyncIterator[ConnInfo]:  # Type hints for gRPC params
         """
         Handles the bidirectional stream for broker connections.
 
@@ -228,7 +226,7 @@ class GRPCStdioService(GRPCStdioServicer):
         except Exception as e:
             logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
-    async def StreamStdio(self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext) -> AsyncIterator[StdioData]:
+    async def StreamStdio(self, request, context):
         """Streams STDOUT/STDERR lines to the caller."""
         logger.debug(
             "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
@@ -236,14 +234,14 @@ class GRPCStdioService(GRPCStdioServicer):
 
         done = asyncio.Event()
 
-        # Applying the signature Mypy's error message suggests for the context.
-        def on_rpc_done_callback(context: grpc.aio.ServicerContext[Any, Any]) -> None:
+        # FIX: Corrected on_rpc_done signature
+        def on_rpc_done(_ignored_arg: Any):  # Accepts one argument
             logger.debug(
                 "🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called (client disconnected or call ended)."
             )  # Modified log
             done.set()
 
-        context.add_done_callback(on_rpc_done_callback)  # type: ignore[arg-type] # gRPC context callback
+        context.add_done_callback(on_rpc_done)  # gRPC context callback
 
         logger.debug(
             f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})"
@@ -251,7 +249,6 @@ class GRPCStdioService(GRPCStdioServicer):
 
         get_task: asyncio.Task[StdioData] | None = None
         done_wait_task: asyncio.Task[bool] | None = None
-        tasks_to_await_cleanup: list[asyncio.Task[Any]] = [] # Initialize once here
 
         while not self._shutdown and not done.is_set():
             try:
@@ -272,7 +269,7 @@ class GRPCStdioService(GRPCStdioServicer):
                         data_item = get_task.result()
                         self._message_queue.task_done()
                         logger.debug(
-                            f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]!r}"
+                            f"🔌📝✅ GRPCStdioService: Dequeued item: {data_item.channel}, {data_item.data[:20]}"
                         )
                         yield data_item
                         await asyncio.sleep(0)  # Allow consumer to process the item
@@ -285,7 +282,7 @@ class GRPCStdioService(GRPCStdioServicer):
                         # If done_wait_task also completed (which it should have to cancel get_task), loop will break
 
                 # Cancel any pending tasks (correctly indented within the try block)
-                tasks_to_await_cleanup_pending: list[asyncio.Task[Any]] = []
+                tasks_to_await_cleanup_pending = []
                 for task_to_cancel in pending:
                     if not task_to_cancel.done():  # Check if not already done
                         task_to_cancel.cancel()
@@ -309,7 +306,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 logger.debug(
                     "🔌📝🛑 GRPCStdioService.StreamStdio task itself was cancelled."
                 )
-                # tasks_to_await_cleanup: list[asyncio.Task[Any]] = [] # Removed re-declaration
+                tasks_to_await_cleanup = []
                 if get_task and not get_task.done():
                     get_task.cancel()
                     tasks_to_await_cleanup.append(get_task)
@@ -326,7 +323,7 @@ class GRPCStdioService(GRPCStdioServicer):
                     f"🔌📝❌ Error in StreamStdio loop: {e}",
                     extra={"trace": traceback.format_exc()},
                 )
-                # tasks_to_await_cleanup: list[asyncio.Task[Any]] = [] # Removed re-declaration
+                tasks_to_await_cleanup = []
                 if get_task and not get_task.done():
                     get_task.cancel()
                     tasks_to_await_cleanup.append(get_task)
@@ -340,7 +337,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 break
 
         # Final cleanup of any lingering tasks (defensive)
-        # tasks_to_await_cleanup: list[asyncio.Task[Any]] = [] # Removed re-declaration, list is already initialized
+        tasks_to_await_cleanup = []
         if get_task and not get_task.done():
             get_task.cancel()
             tasks_to_await_cleanup.append(get_task)
@@ -374,7 +371,7 @@ class GRPCStdioService(GRPCStdioServicer):
                     data_item = self._message_queue.get_nowait()
                     self._message_queue.task_done()
                     logger.debug(
-                        f"🔌📝✅ GRPCStdioService: Draining item: {data_item.channel}, {data_item.data[:20]!r}"
+                        f"🔌📝✅ GRPCStdioService: Draining item: {data_item.channel}, {data_item.data[:20]}"
                     )
                     yield data_item
                     await asyncio.sleep(0)  # Allow consumer to process
@@ -421,8 +418,8 @@ class GRPCControllerService(GRPCControllerServicer):
         self._stdio_service = stdio_service
 
     async def Shutdown(
-        self, request: CEmpty, context: grpc.aio.ServicerContext
-    ) -> CEmpty:
+        self, request: CEmpty, context: Any
+    ) -> CEmpty:  # Type hints for gRPC params
         """
         Handles the Shutdown RPC request from the client.
 
@@ -463,7 +460,7 @@ class GRPCControllerService(GRPCControllerServicer):
             sys.exit(0)
 
 
-def register_protocol_service(server: grpc.aio.Server, shutdown_event: asyncio.Event) -> None:
+def register_protocol_service(server, shutdown_event: asyncio.Event) -> None:
     """Registers all standard gRPC services for the plugin."""
     stdio_service = GRPCStdioService()
     broker_service = GRPCBrokerService()

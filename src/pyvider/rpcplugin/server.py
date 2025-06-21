@@ -11,17 +11,12 @@ import asyncio
 import contextlib
 import os
 import signal
-import asyncio
-import contextlib
-import os
-import signal
 import socket
 import sys
-from abc import ABC # Will remove this for B024
-from typing import Any, cast
+from abc import ABC
+from typing import Any, Generic, cast
 
 import grpc
-# Third-party imports
 from attrs import define, field
 from grpc.aio import server as GRPCServer
 from grpc_health.v1 import health_pb2_grpc
@@ -74,7 +69,7 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
 
 
 @define(slots=False)
-class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]: # Removed ABC
+class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     protocol: ProtocolT = field()
     handler: HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
@@ -269,26 +264,16 @@ class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]: # Removed ABC
             )
             self._server = cast(ServerT, GRPCServer(interceptors=interceptors))
 
-            proto = self.protocol # ProtocolT should be an instance
-            assert hasattr(proto, "add_to_server"), \
-                "Protocol object must have add_to_server method"
-
-            if self._server is None:
-                raise RuntimeError("_server not initialized before passing to methods.") # Or more specific error
-
-            active_server = self._server # Assign to new variable after None check
-
-            # Mypy should now understand proto has add_to_server
-            await proto.add_to_server(handler=self.handler, server=active_server) # type: ignore[misc]
-
+            proto = self.protocol() if callable(self.protocol) else self.protocol
+            await proto.add_to_server(handler=self.handler, server=self._server)
             register_protocol_service(
-                server=cast(grpc.aio.Server, active_server), shutdown_event=self._shutdown_event # Use new variable, cast
+                server=self._server, shutdown_event=self._shutdown_event
             )
             if self._health_servicer:
                 health_pb2_grpc.add_HealthServicer_to_server(
                     self._health_servicer, self._server
                 )
-            # self.protocol = proto # Re-assigning proto to self.protocol is not necessary here as proto is self.protocol
+            self.protocol = proto
 
             creds = (
                 self._generate_server_credentials()
@@ -369,21 +354,15 @@ class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]: # Removed ABC
                 )
 
             if self._transport is None:
-                # This should ideally not happen if _negotiate_handshake or _setup_server
-                # completed successfully and set up the transport, but it satisfies
-                # the type checker and guards against runtime errors.
-                msg = "Transport not initialized before building handshake response."
-                logger.error(f"🚫🔗 {msg}")
-                raise TransportError(
-                    message=msg,
-                    hint="Ensure _negotiate_handshake and _setup_server correctly set self._transport.",
-                )
+                # This should ideally not be reached if _negotiate_handshake and _setup_server worked.
+                err_msg = "Internal error: Transport is None before building handshake response."
+                logger.error(f"💣💥 {err_msg}")
+                raise TransportError(err_msg)
 
-            active_transport = self._transport # Use a new variable after the None check
             response = await build_handshake_response(
                 plugin_version=self._protocol_version,
                 transport_name=self._transport_name,
-                transport=cast(RPCPluginTransport, active_transport),
+                transport=self._transport,
                 server_cert=self._server_cert_obj,
                 port=self._port,
             )

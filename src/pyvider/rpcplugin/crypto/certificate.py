@@ -154,7 +154,6 @@ class CertificateBase:
 
 
 # =============================================================================
-# Certificate: Refactored main class using attrs
 # =============================================================================
 
 
@@ -222,8 +221,8 @@ class Certificate:
                 if gen_key_type == KeyType.ECDSA:
                     try:
                         gen_curve = CurveType[self.ecdsa_curve.upper()]
-                    except KeyError as e:
-                        raise ValueError(f"Unsupported ECDSA curve: {self.ecdsa_curve}") from e
+                    except KeyError:
+                        raise ValueError(f"Unsupported ECDSA curve: {self.ecdsa_curve}")
                 else:  # RSA
                     gen_key_size = self.key_size
 
@@ -301,7 +300,7 @@ class Certificate:
                         key_data.encode("utf-8"), password=None
                     )
                     if not isinstance(
-                        loaded_priv_key, rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
+                        loaded_priv_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)
                     ):
                         raise CertificateError(
                             f"Loaded private key is of unsupported type: {type(loaded_priv_key)}. "
@@ -323,7 +322,7 @@ class Certificate:
 
                 cert_public_key = self._cert.public_key()
                 if not isinstance(
-                    cert_public_key, rsa.RSAPublicKey | ec.EllipticCurvePublicKey
+                    cert_public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
                 ):
                     raise CertificateError(
                         f"Certificate's public key is of unsupported type: {type(cert_public_key)}. "
@@ -604,16 +603,7 @@ class Certificate:
         logger.info(
             f"📜🔑🏭 Creating new CA certificate: CN={common_name}, Org={organization_name}"
         )
-        # The __attrs_post_init__ -> _create_x509_certificate call sequence
-        # correctly self-signs this as a CA when generate_keypair=True
-        # and no external issuer/signer is provided.
-        # The previous re-signing logic was redundant and the source of the
-        # "ca_cert_obj is not defined" error during static analysis.
-        # Directly returning the cls instance.
-        logger.info(
-            f"📜🔑✅ Self-signed CA certificate for CN={common_name} will be created and returned."
-        )
-        return cls(
+        ca_cert_obj = cls(
             generate_keypair=True,
             common_name=common_name,
             organization_name=organization_name,
@@ -623,6 +613,19 @@ class Certificate:
             ecdsa_curve=ecdsa_curve,
             alt_names=[common_name],
         )
+        # Explicitly re-sign to ensure CA flags are correctly set for a CA
+        logger.info(
+            "📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, is_client_cert=False flags."
+        )
+        actual_ca_x509_cert = ca_cert_obj._create_x509_certificate(
+            is_ca=True,
+            is_client_cert=False,  # Correct CA flags
+        )
+        ca_cert_obj._cert = actual_ca_x509_cert
+        ca_cert_obj.cert = actual_ca_x509_cert.public_bytes(
+            serialization.Encoding.PEM
+        ).decode("utf-8")
+        return ca_cert_obj
 
     @classmethod
     def create_signed_certificate(

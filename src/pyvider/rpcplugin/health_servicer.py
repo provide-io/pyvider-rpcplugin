@@ -1,4 +1,4 @@
-from collections.abc import Callable, AsyncIterator # Added AsyncIterator
+from collections.abc import Callable
 
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
@@ -13,7 +13,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
 
     def __init__(
         self, app_is_healthy_callable: Callable[[], bool], service_name: str = ""
-    ) -> None:
+    ):
         """
         Args:
             app_is_healthy_callable: A callable that returns True if the main application
@@ -66,7 +66,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
 
     async def Watch(
         self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext
-    ) -> AsyncIterator[health_pb2.HealthCheckResponse]:
+    ):
         """
         Streams health status updates. This is not implemented in this basic version.
         """

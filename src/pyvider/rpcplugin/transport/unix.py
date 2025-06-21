@@ -197,9 +197,8 @@ class UnixSocketTransport(RPCPluginTransport):
                     logger.debug(f"📞🕹✅ Created directory: {dir_path}")
                 except (PermissionError, OSError) as e:
                     logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
-                    raise TransportError(f"Failed to create Unix socket directory: {e}") from e
+                    raise TransportError(f"Failed to create Unix socket directory: {e}")
 
-            # Remove stale socket file if it exists
             if os.path.exists(self.path):
                 try:
                     os.unlink(self.path)
@@ -209,7 +208,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 except OSError as e:
                     if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
                         logger.error(f"📞🕹❌ Failed to remove stale socket: {e}")
-                        raise TransportError(f"Failed to remove stale socket: {e}") from e
+                        raise TransportError(f"Failed to remove stale socket: {e}")
 
             try:
                 logger.debug(f"📞🕹🚀 Creating Unix socket at {self.path}")
@@ -257,7 +256,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
             except OSError as e:
                 logger.error(f"📞🕹❌ Failed to create Unix socket: {e}")
-                raise TransportError(f"Failed to create Unix socket: {e}") from e
+                raise TransportError(f"Failed to create Unix socket: {e}")
 
     async def connect(self, endpoint: str) -> None:
         """
@@ -309,7 +308,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 raise TransportError(f"Path exists but is not a socket: {endpoint}")
         except OSError as e:
             logger.error(f"📞🤝❌ Error checking if path is a socket: {e}")
-            raise TransportError(f"Error checking socket status: {e}") from e
+            raise TransportError(f"Error checking socket status: {e}")
 
         try:
             reader_writer = await asyncio.wait_for(
@@ -323,7 +322,7 @@ class UnixSocketTransport(RPCPluginTransport):
             raise TransportError(f"Connection to Unix socket timed out: {e}") from e
         except Exception as e:
             logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
-            raise TransportError(f"Failed to connect to Unix socket: {e}") from e
+            raise TransportError(f"Failed to connect to Unix socket: {e}")
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -457,7 +456,6 @@ class UnixSocketTransport(RPCPluginTransport):
             finally:
                 self._server = None
 
-        # Ensure socket file is removed - critical step
         socket_path = self.path
         if socket_path and os.path.exists(socket_path):
             try:
@@ -477,13 +475,12 @@ class UnixSocketTransport(RPCPluginTransport):
                         else:
                             break
                 else:  # If all retries failed
-                    # No specific 'e' in scope here if loop finishes, so don't use 'from e'
                     raise TransportError(
                         "Failed to remove socket file after multiple attempts"
                     )
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
-                raise TransportError(f"Failed to remove socket file: {e}") from e
+                raise TransportError(f"Failed to remove socket file: {e}")
 
         self.endpoint = None
         self._closing = False
