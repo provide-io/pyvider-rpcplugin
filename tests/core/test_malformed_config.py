@@ -5,7 +5,6 @@ from pyvider.rpcplugin.config import load_config_from_file, ConfigError, RPCPlug
 
 @pytest.fixture(autouse=True)
 def reset_config_singleton_and_env_malformed():
-    # Backup and clear relevant env vars
     env_backup = {}
     test_keys = ["PLUGIN_MAGIC_COOKIE_VALUE", "PLUGIN_AUTO_MTLS", "PLUGIN_HANDSHAKE_TIMEOUT", "PLUGIN_LOG_LEVEL"]
     for key in test_keys:
@@ -27,8 +26,8 @@ def reset_config_singleton_and_env_malformed():
 
 def test_load_malformed_json(tmp_path: Path):
     """Test loading a malformed JSON configuration file."""
-    RPCPluginConfig._instance = None # Ensure fresh load attempt
-    malformed_json_content = '{"PLUGIN_MAGIC_COOKIE_VALUE": "json_cookie", "PLUGIN_AUTO_MTLS": ' # Missing value and closing brace
+    RPCPluginConfig._instance = None
+    malformed_json_content = '{"PLUGIN_MAGIC_COOKIE_VALUE": "json_cookie", "PLUGIN_AUTO_MTLS": '
     malformed_json_file = tmp_path / "malformed.json"
     with open(malformed_json_file, "w") as f:
         f.write(malformed_json_content)
@@ -39,8 +38,7 @@ def test_load_malformed_json(tmp_path: Path):
 def test_load_malformed_yaml(tmp_path: Path):
     """Test loading a malformed YAML configuration file."""
     RPCPluginConfig._instance = None
-    # Example of malformed YAML: inconsistent indentation or unsupported characters
-    malformed_yaml_content = "PLUGIN_MAGIC_COOKIE_VALUE: yaml_cookie\n  PLUGIN_AUTO_MTLS: true\nPLUGIN_LOG_LEVEL: DEBUG" # Intentionally bad indent for LOG_LEVEL
+    malformed_yaml_content = "PLUGIN_MAGIC_COOKIE_VALUE: yaml_cookie\n  PLUGIN_AUTO_MTLS: true\nPLUGIN_LOG_LEVEL: DEBUG"
     malformed_yaml_file = tmp_path / "malformed.yaml"
     with open(malformed_yaml_file, "w") as f:
         f.write(malformed_yaml_content)
@@ -51,14 +49,12 @@ def test_load_malformed_yaml(tmp_path: Path):
 def test_load_malformed_dotenv(tmp_path: Path):
     """Test loading a malformed .env configuration file."""
     RPCPluginConfig._instance = None
-    malformed_env_content = "PLUGIN_MAGIC_COOKIE_VALUE_NO_EQUALS_HERE" # Line without '='
+    malformed_env_content = "PLUGIN_MAGIC_COOKIE_VALUE_NO_EQUALS_HERE"
     malformed_env_file = tmp_path / "malformed.env"
     with open(malformed_env_file, "w") as f:
         f.write(malformed_env_content)
 
-    # The error message for malformed .env lines was "Error parsing .env file.*Malformed line:.*"
-    # Let's make it more specific if possible, or use a general "Failed to parse .env"
-    with pytest.raises(ConfigError, match=r"Error parsing .env file.*Malformed line:.*PLUGIN_MAGIC_COOKIE_VALUE_NO_EQUALS_HERE"):
+    with pytest.raises(ConfigError, match=r"Error parsing .env file.*Malformed line: 1"):
         load_config_from_file(str(malformed_env_file))
 
 def test_load_non_existent_file(tmp_path: Path):
@@ -73,7 +69,7 @@ def test_load_unsupported_file_type(tmp_path: Path):
     """Test loading an unsupported configuration file type."""
     RPCPluginConfig._instance = None
     unsupported_content = "some_data"
-    unsupported_file = tmp_path / "config.txt" # .txt is not supported
+    unsupported_file = tmp_path / "config.txt"
     with open(unsupported_file, "w") as f:
         f.write(unsupported_content)
 
