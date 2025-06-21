@@ -14,7 +14,7 @@ function to add these services to a gRPC server.
 import asyncio
 import os
 import traceback
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterable, AsyncIterator # Changed to AsyncIterable
 from typing import Any # Keep Any for now, will refine grpc types if needed
 
 import grpc # Import grpc for types
@@ -83,7 +83,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         self._subchannels: dict[int, SubchannelConnection] = {}
 
     async def StartStream(
-        self, request_iterator: grpc.aio.RequestStream[ConnInfo], context: grpc.aio.ServicerContext
+        self, request_iterator: AsyncIterable[ConnInfo], context: grpc.aio.ServicerContext
     ) -> AsyncIterator[ConnInfo]:
         """
         Handles the bidirectional stream for broker connections.
@@ -236,14 +236,14 @@ class GRPCStdioService(GRPCStdioServicer):
 
         done = asyncio.Event()
 
-        # FIX: Corrected on_rpc_done signature
-        def on_rpc_done(ctx: grpc.aio.ServicerContext) -> None: # Argument should be the context
+        # Applying the signature Mypy's error message suggests for the context.
+        def on_rpc_done_callback(context: grpc.aio.ServicerContext[Any, Any]) -> None:
             logger.debug(
                 "🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called (client disconnected or call ended)."
             )  # Modified log
             done.set()
 
-        context.add_done_callback(on_rpc_done)  # gRPC context callback
+        context.add_done_callback(on_rpc_done_callback)  # type: ignore[arg-type] # gRPC context callback
 
         logger.debug(
             f"🔌📝 GRPCStdioService: Entering StreamStdio while loop (shutdown={self._shutdown}, done={done.is_set()})"
