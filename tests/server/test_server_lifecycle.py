@@ -13,7 +13,9 @@ from tests.conftest import (
 )
 
 @pytest.mark.asyncio
-async def test_attrs_post_init_handshake_config_error(mocker):
+async def test_attrs_post_init_handshake_config_error(
+    mocker, mock_server_protocol, mock_server_handler
+):
     mocker.patch(
         "pyvider.rpcplugin.server.HandshakeConfig",
         side_effect=ValueError("Test HandshakeConfig error"),

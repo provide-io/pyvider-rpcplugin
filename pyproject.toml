@@ -19,8 +19,6 @@ dependencies = [
     "protobuf>=5.29.3",
     "pyvider-telemetry>=0.0.4",
     "structlog>=25.1.0",
-    "python-dotenv>=1.0.0",
-    "pyyaml>=6.0",
 ]
 
 [dependency-groups]

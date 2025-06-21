@@ -11,12 +11,17 @@ from tests.conftest import (
 )
 
 @pytest.mark.asyncio
-async def test_register_signal_handlers_exception_logging(
+async def test_register_signal_handlers_suppresses_errors(
     mocker,
     mock_server_protocol,
     mock_server_handler,
     mock_server_transport,
 ):
+    """
+    Tests that _register_signal_handlers suppresses registration errors
+    and does not log an exception, confirming robust behavior on platforms
+    where signal handling might not be supported.
+    """
     mocked_logger_exception = mocker.patch("pyvider.rpcplugin.server.logger.exception")
 
     server = RPCPluginServer(
@@ -32,9 +37,8 @@ async def test_register_signal_handlers_exception_logging(
     )
     mocker.patch("asyncio.get_event_loop", return_value=mock_loop)
 
+    # This call should now complete without raising an exception due to contextlib.suppress
     server._register_signal_handlers()
 
-    mocked_logger_exception.assert_called_once()
-    args, kwargs = mocked_logger_exception.call_args
-    assert "Error registering signal handlers" in args[0]
-    assert "Test signal registration error" in kwargs.get("extra", {}).get("error", "")
+    # Assert that the exception logger was NOT called, as the error is suppressed.
+    mocked_logger_exception.assert_not_called()
