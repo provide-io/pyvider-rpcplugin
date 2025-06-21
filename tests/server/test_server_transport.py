@@ -37,13 +37,16 @@ async def test_setup_server_unix_success_secure(
         transport=test_transport,
     )
 
-    # FIX: Explicitly set the transport on the instance, simulating the state
-    # after _negotiate_handshake would have run.
     server._transport = test_transport
 
     mocker.patch.object(server, '_generate_server_credentials', return_value="mock_secure_creds")
     
-    mock_grpc_server_instance = mocker.AsyncMock()
+    # FIX: Use a synchronous MagicMock for the server instance, but mock its
+    # async methods individually. This resolves the RuntimeWarning messages.
+    mock_grpc_server_instance = mocker.MagicMock()
+    mock_grpc_server_instance.start = mocker.AsyncMock()
+    mock_grpc_server_instance.stop = mocker.AsyncMock()
+    
     mocker.patch('pyvider.rpcplugin.server.GRPCServer', return_value=mock_grpc_server_instance)
 
     try:
@@ -85,7 +88,6 @@ async def test_setup_server_add_port_failure(
         transport=transport,
     )
 
-    # FIX: Explicitly set the transport on the instance.
     server._transport = transport
 
     dummy_server = DummyGRPCServer()

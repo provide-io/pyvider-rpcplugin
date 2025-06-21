@@ -15,10 +15,10 @@ from tests.conftest import (
 def test_attrs_post_init_handshake_config_error(mocker):
     """
     Tests that a synchronous error during __attrs_post_init__ is correctly handled.
-    This test must be synchronous (`def`) because the error occurs during object
-    instantiation, before any async operations can take place.
+    This test must be synchronous (`def`) and must not depend on async fixtures
+    to ensure pytest.raises can correctly capture the constructor exception.
     """
-    # FIX: Create simple synchronous mocks instead of using async fixtures.
+    # FIX: Create simple synchronous mocks directly within the test.
     local_mock_protocol = MagicMock()
     local_mock_handler = MagicMock()
 

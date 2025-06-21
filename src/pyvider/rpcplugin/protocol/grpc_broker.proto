@@ -4,8 +4,6 @@
 syntax = "proto3";
 package plugin;
 
-option python_package = "pyvider.rpcplugin.protocol";
-
 message ConnInfo {
     uint32 service_id = 1;
     string network = 2;
