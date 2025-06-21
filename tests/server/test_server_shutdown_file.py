@@ -12,6 +12,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import HandlerT, ServerT
 from pyvider.telemetry import logger
+from pyvider.rpcplugin.transport import UnixSocketTransport
 
 class DummyHandler:
     pass
@@ -42,8 +43,15 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, mocker):
     handler = DummyHandler()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
+    # FIX: Use a side_effect to robustly set attributes that _negotiate_handshake would set.
+    async def mock_negotiate_side_effect():
+        server._protocol_version = 1
+        server._transport_name = "unix"
+        server._transport = UnixSocketTransport(path="/tmp/dummy_for_shutdown_test.sock")
+    
+    mocker.patch.object(server, '_negotiate_handshake', side_effect=mock_negotiate_side_effect)
+
     mocker.patch.object(server, '_register_signal_handlers')
-    mocker.patch.object(server, '_negotiate_handshake', new_callable=AsyncMock)
     mocker.patch.object(server, '_setup_server', new_callable=AsyncMock)
     mocker.patch('sys.stdout.buffer.write')
     mocker.patch('sys.stdout.buffer.flush')

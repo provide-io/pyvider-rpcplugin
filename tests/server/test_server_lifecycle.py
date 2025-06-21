@@ -12,10 +12,16 @@ from tests.conftest import (
     mock_server_handler,
 )
 
-@pytest.mark.asyncio
-async def test_attrs_post_init_handshake_config_error(
-    mocker, mock_server_protocol, mock_server_handler
-):
+def test_attrs_post_init_handshake_config_error(mocker):
+    """
+    Tests that a synchronous error during __attrs_post_init__ is correctly handled.
+    This test must be synchronous (`def`) because the error occurs during object
+    instantiation, before any async operations can take place.
+    """
+    # FIX: Create simple synchronous mocks instead of using async fixtures.
+    local_mock_protocol = MagicMock()
+    local_mock_handler = MagicMock()
+
     mocker.patch(
         "pyvider.rpcplugin.server.HandshakeConfig",
         side_effect=ValueError("Test HandshakeConfig error"),
@@ -23,8 +29,8 @@ async def test_attrs_post_init_handshake_config_error(
 
     with pytest.raises(ConfigError, match="Failed to initialize handshake configuration: Test HandshakeConfig error"):
         RPCPluginServer(
-            protocol=mock_server_protocol,
-            handler=mock_server_handler,
+            protocol=local_mock_protocol,
+            handler=local_mock_handler,
             config=None,
             transport=None,
         )
