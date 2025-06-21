@@ -27,7 +27,7 @@ Usage:
 """
 
 import os
-from typing import Any, Literal, cast, get_args # Type removed
+from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
 
@@ -370,7 +370,7 @@ class RPCPluginConfig:
 
     _instance = None
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the configuration from environment and defaults."""
         self.config = {}
         try:
@@ -383,7 +383,7 @@ class RPCPluginConfig:
             raise
 
     @classmethod
-    def instance(cls: type["RPCPluginConfig"]) -> "RPCPluginConfig": # Changed Type to type
+    def instance(cls) -> "RPCPluginConfig":
         """
         Get or create the singleton instance.
         """

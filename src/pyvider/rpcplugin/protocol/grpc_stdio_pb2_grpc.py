@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2
+from google.protobuf import empty_pb2 as google_dot_protobuf_dot_empty__pb2  # type: ignore[import-untyped]
 from . import grpc_stdio_pb2 as grpc__stdio__pb2
 
 GRPC_GENERATED_VERSION = '1.73.0'

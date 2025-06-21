@@ -44,12 +44,11 @@ import subprocess  # nosec B404
 import sys
 import time  # Added for retry
 import traceback
-from types import TracebackType
-from typing import Any, NamedTuple, Optional, Self # Type removed
+from typing import Any, NamedTuple
 
 import grpc
 from attrs import define, field
-from google.protobuf import empty_pb2
+from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
@@ -326,7 +325,7 @@ class RPCPluginClient:
                         f"Maximum retry attempts ({max_retries + 1}) reached for connection/handshake. Last error: {last_exception}"
                     )
                     self._handshake_failed_event.set()
-                    raise last_exception from last_exception
+                    raise last_exception
 
                 if (
                     time.monotonic() - overall_start_time + (current_backoff_ms / 1000)
@@ -336,7 +335,7 @@ class RPCPluginClient:
                         f"Next retry would exceed total timeout. Aborting. Last error: {last_exception}"
                     )
                     self._handshake_failed_event.set()
-                    raise last_exception from last_exception
+                    raise last_exception
 
                 delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms)  # nosec B311
                 delay_ms = min(delay_ms, max_backoff_ms)
@@ -523,11 +522,6 @@ class RPCPluginClient:
 
         buffer = ""
 
-        # Assign process.stdout to a variable here to be captured by lambdas, satisfying Ruff B023
-        process_stdout = None
-        if self._process and self._process.stdout:
-            process_stdout = self._process.stdout
-
         while (loop.time() - start_time) < timeout:
             if self._process is not None and self._process.poll() is not None:
                 stderr_output = ""
@@ -545,11 +539,11 @@ class RPCPluginClient:
                 )
 
             try:
-                # process = self._process # process is already self._process
-                if self._process is not None and process_stdout is not None:
-                    # stdout = process.stdout # Use process_stdout defined outside loop
+                process = self._process
+                if process is not None and process.stdout is not None:
+                    stdout = process.stdout
                     line_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(None, lambda: process_stdout.readline()),
+                        loop.run_in_executor(None, lambda: stdout.readline()),
                         timeout=2.0,
                     )
                 else:
@@ -573,11 +567,11 @@ class RPCPluginClient:
                 await asyncio.sleep(0.5)
 
             try:
-                # process = self._process # process is already self._process
-                if self._process is not None and process_stdout is not None:
-                    # stdout = process.stdout # Use process_stdout defined outside loop
+                process = self._process
+                if process is not None and process.stdout is not None:
+                    stdout = process.stdout
                     char_bytes = await asyncio.wait_for(
-                        loop.run_in_executor(None, lambda: process_stdout.read(1)),
+                        loop.run_in_executor(None, lambda: stdout.read(1)),
                         timeout=1.0,
                     )
                     if char_bytes:
@@ -829,7 +823,7 @@ class RPCPluginClient:
             raise TransportError(
                 message="Failed to establish gRPC channel to plugin: timeout.",
                 hint=f"Check network connectivity to {target}. Ensure plugin server is responsive. Socket diagnostics: path={socket_path}, exists={os.path.exists(socket_path) if socket_path else 'N/A'}",
-            ) from None # Explicitly chain or not from the TimeoutError
+            )
         except Exception as e:
             logger.error(f"🚢❌ gRPC channel creation failed: {e}")
             raise TransportError(
@@ -1130,16 +1124,11 @@ class RPCPluginClient:
 
         logger.info("🔄 RPCPluginClient fully closed.")
 
-    async def __aenter__(self) -> Self:
+    async def __aenter__(self):
         await self.start()
         return self
 
-    async def __aexit__(
-        self,
-        exc_type: Optional[type[BaseException]], # Changed Type to type
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType],
-    ) -> None:
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         if self._controller_stub:
             try:
                 await self.shutdown_plugin()
