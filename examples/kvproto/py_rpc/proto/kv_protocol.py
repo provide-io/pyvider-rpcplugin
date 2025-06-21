@@ -2,9 +2,10 @@
 
 from typing import Any
 
-from . import kv_pb2_grpc  # Changed to relative import
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.telemetry import logger
+
+from . import kv_pb2_grpc  # Changed to relative import
 
 
 class KVProtocol(RPCPluginProtocol):

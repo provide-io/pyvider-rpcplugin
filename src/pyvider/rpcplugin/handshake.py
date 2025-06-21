@@ -14,7 +14,6 @@ import asyncio
 import os
 import time
 import traceback
-
 from enum import Enum, auto
 from typing import Literal, TypeGuard, cast
 
@@ -327,9 +326,7 @@ async def build_handshake_response(
         if server_cert:
             logger.debug("🤝🔐🔄 Processing server certificate...")
             cert_lines = server_cert.cert.strip().split("\n")
-            if (
-                len(cert_lines) < 3
-            ):
+            if len(cert_lines) < 3:
                 logger.error(
                     "🤝🔐❌ Server certificate appears to be in an invalid PEM format (too few lines)."
                 )
@@ -556,7 +553,7 @@ async def read_handshake_response(process) -> str:
                     logger.debug("🤝📥✅ Complete handshake response found in buffer")
                     return buffer
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.debug("🤝📥⚠️ Timeout reading line, trying chunk read strategy")
 
             try:
@@ -585,7 +582,7 @@ async def read_handshake_response(process) -> str:
 
                         return buffer
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
 
         await asyncio.sleep(0.2)
@@ -705,9 +702,7 @@ async def parse_and_validate_handshake(
             )
 
         address = parts[3]
-        if (
-            not address
-        ):
+        if not address:
             logger.error("🤝🔍❌ Empty address received in handshake")
             raise HandshakeError(
                 message="Empty address received in handshake string.",

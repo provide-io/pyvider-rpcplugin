@@ -71,8 +71,7 @@ async def test_certificate_self_signed_validation(client_cert) -> None:
         pytest.skip("Certificate is not self-signed")
 
 
-@pytest.mark.asyncio
-async def test_certificate_extensions(client_cert) -> None:
+def test_certificate_extensions(client_cert) -> None:
     """Test certificate extensions are present and valid."""
     x509_cert = client_cert._cert
 

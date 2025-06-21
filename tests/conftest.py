@@ -22,8 +22,8 @@ def reset_rpcplugin_config_singleton():
         if key in os.environ:
             del os.environ[key]
 
-    # The test runs now, with a clean environment.
-    # The first call to RPCPluginConfig.instance() in the test will create a fresh instance.
+    # The test runs now in a pristine environment. The first call to
+    # RPCPluginConfig.instance() in the test will create a fresh instance.
     yield
 
     # Teardown: Restore original environment variables

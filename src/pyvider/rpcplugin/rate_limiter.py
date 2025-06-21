@@ -43,13 +43,12 @@ class TokenBucketRateLimiter:
         """
         now = time.monotonic()
         elapsed_time = now - self._last_refill_timestamp
-        if elapsed_time > 0: # only refill if time has passed
+        if elapsed_time > 0:  # only refill if time has passed
             tokens_to_add = elapsed_time * self._refill_rate
             # logger.debug(f"🔩🗑️ Refilling: elapsed={elapsed_time:.4f}s, tokens_to_add={tokens_to_add:.4f}, current_tokens={self._tokens:.4f}")
             self._tokens = min(self._capacity, self._tokens + tokens_to_add)
             self._last_refill_timestamp = now
             # logger.debug(f"🔩🗑️ Refilled: new_tokens={self._tokens:.4f}, last_refill_timestamp={self._last_refill_timestamp:.4f}")
-
 
     async def is_allowed(self) -> bool:
         """
@@ -62,11 +61,13 @@ class TokenBucketRateLimiter:
             True if the request is allowed, False otherwise.
         """
         async with self._lock:
-            await self._refill_tokens() # Refill before checking
+            await self._refill_tokens()  # Refill before checking
 
             if self._tokens >= 1.0:
                 self._tokens -= 1.0
-                logger.debug(f"🔩🗑️✅ Request allowed. Tokens remaining: {self._tokens:.2f}/{self._capacity:.2f}")
+                logger.debug(
+                    f"🔩🗑️✅ Request allowed. Tokens remaining: {self._tokens:.2f}/{self._capacity:.2f}"
+                )
                 return True
             else:
                 logger.warning(
@@ -81,21 +82,23 @@ class TokenBucketRateLimiter:
             # await self._refill_tokens()
             return self._tokens
 
+
 # Example Usage (can be removed or kept for testing):
 async def main():
-    limiter = TokenBucketRateLimiter(capacity=5, refill_rate=1) # 5 tokens, 1 token/sec
+    limiter = TokenBucketRateLimiter(capacity=5, refill_rate=1)  # 5 tokens, 1 token/sec
 
     for i in range(10):
         if await limiter.is_allowed():
-            logger.info(f"Request {i+1} allowed.")
+            logger.info(f"Request {i + 1} allowed.")
         else:
-            logger.info(f"Request {i+1} denied.")
+            logger.info(f"Request {i + 1} denied.")
 
-        if i == 5: # After 6 requests (0-5)
+        if i == 5:  # After 6 requests (0-5)
             logger.info("Waiting for 2 seconds to allow tokens to refill...")
             await asyncio.sleep(2)
 
     logger.info(f"Final tokens: {await limiter.get_current_tokens()}")
+
 
 if __name__ == "__main__":
     # This example won't run directly as-is without an event loop manager

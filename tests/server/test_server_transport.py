@@ -37,12 +37,14 @@ async def test_setup_server_unix_success_secure(
         transport=test_transport,
     )
 
-    server._transport = test_transport
+    # Call _negotiate_handshake to correctly set internal state like _transport
+    mocker.patch('pyvider.rpcplugin.server.validate_magic_cookie')
+    mocker.patch('pyvider.rpcplugin.server.negotiate_protocol_version', return_value=1)
+    await server._negotiate_handshake()
+
 
     mocker.patch.object(server, '_generate_server_credentials', return_value="mock_secure_creds")
     
-    # FIX: Use a synchronous MagicMock for the server instance, but mock its
-    # async methods individually. This resolves the RuntimeWarning messages.
     mock_grpc_server_instance = mocker.MagicMock()
     mock_grpc_server_instance.start = mocker.AsyncMock()
     mock_grpc_server_instance.stop = mocker.AsyncMock()
@@ -74,8 +76,7 @@ async def test_setup_server_add_port_failure(
     managed_unix_socket_path,
     mock_server_protocol,
     mock_server_handler,
-    mock_server_config,
-    mocker,
+    mocker, # Removed mock_server_config as it was causing issues
 ) -> None:
     """
     Consolidated and parameterized test for failures during server port binding.
@@ -84,11 +85,17 @@ async def test_setup_server_add_port_failure(
     server = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
-        config=mock_server_config,
+        config=None, # Use default config
         transport=transport,
     )
 
-    server._transport = transport
+    # FIX: Ensure the condition to take the secure path is met by mocking auto_mtls_enabled.
+    mocker.patch.object(rpcplugin_config, 'auto_mtls_enabled', return_value=True)
+
+    # Call _negotiate_handshake to correctly set internal state like _transport.
+    mocker.patch('pyvider.rpcplugin.server.validate_magic_cookie')
+    mocker.patch('pyvider.rpcplugin.server.negotiate_protocol_version', return_value=1)
+    await server._negotiate_handshake()
 
     dummy_server = DummyGRPCServer()
     mocker.patch('pyvider.rpcplugin.server.GRPCServer', return_value=dummy_server)

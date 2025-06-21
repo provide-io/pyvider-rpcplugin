@@ -10,7 +10,6 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from pyvider.rpcplugin.exception import CertificateError
-
 from pyvider.telemetry import logger
 
 from .types import PrivateKeyType
@@ -124,9 +123,7 @@ def display_cert_details(certificate: x509.Certificate) -> None:
         except x509.ExtensionNotFound:
             logger.debug("  ⛓️ Basic Constraints: Not present")
 
-        public_key_obj = (
-            certificate.public_key()
-        )
+        public_key_obj = certificate.public_key()
         key_type_str: str
         key_size_str: str | int
 

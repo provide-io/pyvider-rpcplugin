@@ -156,7 +156,7 @@ class SerializableT(TypeProtocol):
         ...
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "SerializableT":  # Modernized Dict
+    def from_dict(cls, data: dict[str, Any]) -> SerializableT:  # Modernized Dict
         """
         Create an object from a dictionary representation.
 
@@ -178,7 +178,7 @@ def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
     if not hasattr(obj, "to_dict"):
         logger.debug("SerializableT: Method to_dict is missing.")
         return False
-    to_dict_method = getattr(obj, "to_dict")
+    to_dict_method = obj.to_dict
     if not callable(to_dict_method):
         logger.debug("SerializableT: Attribute to_dict is not callable.")
         return False
@@ -201,7 +201,7 @@ def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
         )  # Unified missing message
         return False
 
-    from_dict_method = getattr(obj, "from_dict")
+    from_dict_method = obj.from_dict
     if not callable(from_dict_method):
         logger.debug(
             "SerializableT: Attribute from_dict is not callable."

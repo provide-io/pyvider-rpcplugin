@@ -6,7 +6,7 @@ import asyncio
 import sys
 import time
 from pathlib import Path
-from typing import Any, List, Tuple
+from typing import Any
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -74,7 +74,7 @@ class CustomDataStreamProtocol(RPCPluginProtocol):
             "compression_ratio": 0.0,
         }
 
-    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Return gRPC descriptors for data streaming service."""
 
         logger.info(
@@ -181,7 +181,7 @@ class CustomDataStreamProtocol(RPCPluginProtocol):
                     total_processed=processed_count,
                 )
 
-            async def _process_batch(self, batch: List[Any]) -> List[Any]:
+            async def _process_batch(self, batch: list[Any]) -> list[Any]:
                 """Process a batch of data items."""
 
                 # Simulate compression
@@ -236,7 +236,7 @@ class AdaptiveCompressionProtocol(RPCPluginProtocol):
             "json_ratio": 0.6,
         }
 
-    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Return descriptors for adaptive compression service."""
 
         mock_descriptor = {
@@ -336,12 +336,12 @@ class AdaptiveCompressionProtocol(RPCPluginProtocol):
 class VersionedProtocol(RPCPluginProtocol):
     """Protocol supporting multiple API versions."""
 
-    def __init__(self, service_name: str, supported_versions: List[str]):
+    def __init__(self, service_name: str, supported_versions: list[str]):
         self.service_name = service_name
         self.supported_versions = supported_versions
         self.default_version = supported_versions[-1]  # Latest version as default
 
-    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Return versioned service descriptors."""
 
         mock_descriptor = {
@@ -848,7 +848,7 @@ async def example_9_protocol_composition():
                 stack_size=len(self.middleware_stack),
             )
 
-        async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+        async def get_grpc_descriptors(self) -> tuple[Any, str]:
             """Return composite protocol descriptors."""
 
             mock_descriptor = {

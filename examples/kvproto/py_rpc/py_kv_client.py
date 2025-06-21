@@ -118,7 +118,7 @@ class KVClient:
                 f"✅ Connected to KV server successfully in {time.time() - start_time:.3f}s"
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(
                 f"🚨 Connection to KV server timed out after {time.time() - start_time:.3f}s"
             )
@@ -234,7 +234,7 @@ class KVClient:
                 self._stub.Put(kv_pb2.PutRequest(key=key, value=value)), timeout=5.0
             )
             logger.info(f"🗣️ 📝 Client: Put successful for key='{key}'.")
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"🗣️ 📝 Client: Put operation timed out for key='{key}'.")
             raise
         except Exception as e:
@@ -271,7 +271,7 @@ class KVClient:
                     f"🗣️ 📚 Client: Get for key='{key}' returned no response (should have been caught by gRPC error)."
                 )
                 return None
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error(f"🗣️ 📚 Client: Get operation timed out for key='{key}'.")
             raise
         except grpc.aio.AioRpcError as e:

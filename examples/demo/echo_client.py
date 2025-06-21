@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 # Import generated code
 try:
-    from examples.demo import echo_pb2
-    from examples.demo import echo_pb2_grpc
+    from examples.demo import echo_pb2, echo_pb2_grpc
 except ImportError:
     logger.error(
         "Could not import generated echo_pb2/echo_pb2_grpc. "
@@ -87,7 +86,7 @@ class EchoClient:
             logger.info("Client started and connected successfully.")
             return True
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("Timeout occurred while starting or connecting to the server.")
             await self.close()
             return False
@@ -109,7 +108,7 @@ class EchoClient:
             response = await asyncio.wait_for(self._stub.Echo(request), timeout=5.0)
             logger.info(f"Received Echo reply: '{response.reply}'")
             return response.reply
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.error("RPC call to Echo method timed out.")
             return None
         except grpc.aio.AioRpcError as e:

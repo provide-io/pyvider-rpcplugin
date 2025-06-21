@@ -5,8 +5,9 @@
 import asyncio
 import sys
 import time
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator, Any
+from typing import Any
 
 from attrs import define, field
 
@@ -405,7 +406,7 @@ async def example_6_async_generators():
     print(" Demonstrates: Streaming data with async generators")
     print("=" * 60)
 
-    async def async_data_generator(count: int) -> AsyncGenerator[dict, None]:
+    async def async_data_generator(count: int) -> AsyncGenerator[dict]:
         """Generate data asynchronously."""
 
         logger.info(
@@ -567,7 +568,7 @@ async def example_6_async_error_handling():
             result=result,
         )
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         logger.warning(
             "Operation timed out",
             domain="async",

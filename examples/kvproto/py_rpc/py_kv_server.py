@@ -136,7 +136,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
                     f"🐍 S> 🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
                 )
                 await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
-            with open(filename, "r", encoding="utf-8") as f:
+            with open(filename, encoding="utf-8") as f:
                 value_str = f.read()
             summary = summarize_text(value_str)
             logger.debug(

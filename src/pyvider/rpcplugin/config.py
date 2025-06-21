@@ -27,26 +27,12 @@ Usage:
 """
 
 import os
-from pathlib import Path
 from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
 
-class ConfigError(ValueError):
-    """Custom exception for configuration-related errors."""
-
-    def __init__(self, message: str, hint: str | None = None, code: int | None = None):
-        super().__init__(message)
-        self.message = message
-        self.hint = hint
-        self.code = code
-
-    def __str__(self) -> str:
-        base_message = super().__str__()
-        if self.hint:
-            return f"{base_message} Hint: {self.hint}"
-        return base_message
-
+# FIX: Import the single, correct ConfigError from the exception module
+from .exception import ConfigError
 
 # Define supported protocol versions
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
@@ -253,6 +239,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
 }
 
+
 def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     """
     Fetches and processes an environment variable based on schema metadata.
@@ -266,7 +253,7 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
         file_path = value[7:]
         try:
             logger.debug(f"⚙️📂🚀 Reading file for {key}: {file_path}")
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 value = f.read().strip()
                 logger.debug(f"⚙️📂✅ Successfully read file for {key}")
         except Exception as e:
@@ -364,9 +351,7 @@ def get_config() -> dict[str, Any]:
             config[key] = value
         except ConfigError:
             raise
-        except (
-            ValueError
-        ) as e:
+        except ValueError as e:
             logger.error(
                 f"⚙️❌ Unexpected ValueError for {key}", extra={"error": str(e)}
             )
@@ -391,9 +376,7 @@ class RPCPluginConfig:
         try:
             self.config = get_config()
             logger.debug("⚙️✅ RPCPluginConfig initialized with environment variables")
-        except (
-            Exception
-        ) as e:
+        except Exception as e:
             logger.error(
                 "⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)}
             )
@@ -475,14 +458,19 @@ class RPCPluginConfig:
                     else:
                         processed_value = [int(value)]
             except (ValueError, TypeError) as e:
-                logger.error(f"⚙️❌ Type conversion failed for {key} during set: {e}", extra={"value_being_set": value})
+                logger.error(
+                    f"⚙️❌ Type conversion failed for {key} during set: {e}",
+                    extra={"value_being_set": value},
+                )
                 raise ConfigError(
                     message=f"Invalid value format for configuration key '{key}' during set. Expected type '{meta['type']}', but received value '{value}'.",
                     hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).",
                 ) from e
 
         self.config[key] = processed_value
-        logger.debug(f"⚙️📝 Stored processed config {key} -> {processed_value} (type: {type(processed_value)})")
+        logger.debug(
+            f"⚙️📝 Stored processed config {key} -> {processed_value} (type: {type(processed_value)})"
+        )
 
     def magic_cookie_key(self) -> str:
         return cast(str, self.get("PLUGIN_MAGIC_COOKIE_KEY"))
