@@ -87,6 +87,7 @@ async def test_setup_server_unix_no_socket_2_macos(
     mock_server_protocol,
     mock_server_handler,
     mock_server_config,
+    mocker,
 ) -> None:
     nonexistent_path = os.path.join(
         os.path.dirname(managed_unix_socket_path), "nosock.sock"
@@ -110,6 +111,9 @@ async def test_setup_server_unix_no_socket_2_macos(
     def mock_add_socket_port(*args, **kwargs):
         raise TransportError(macos_error)
 
+    # Add this mock to ensure the secure path is taken
+    mocker.patch.object(server, '_generate_server_credentials', return_value="mock_creds")
+
     with mock.patch.object(dummy_server, "add_secure_port", mock_add_socket_port):
-        with pytest.raises(TransportError, match=f"gRPC server failed to start: {macos_error}"):
+        with pytest.raises(TransportError, match=macos_error):
             await server._setup_server("client_cert")

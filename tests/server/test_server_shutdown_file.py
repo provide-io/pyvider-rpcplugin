@@ -45,7 +45,8 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, mocker):
     mocker.patch.object(server, '_register_signal_handlers')
     mocker.patch.object(server, '_negotiate_handshake', new_callable=AsyncMock)
     mocker.patch.object(server, '_setup_server', new_callable=AsyncMock)
-    mocker.patch('sys.stdout.buffer')
+    mocker.patch('sys.stdout.buffer.write')
+    mocker.patch('sys.stdout.buffer.flush')
 
     serve_task = asyncio.create_task(server.serve())
     try:

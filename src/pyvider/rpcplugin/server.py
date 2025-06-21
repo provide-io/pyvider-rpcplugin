@@ -47,6 +47,30 @@ from pyvider.rpcplugin.types import HandlerT, ProtocolT, ServerT
 from pyvider.telemetry import logger
 
 
+class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
+    """
+    A gRPC interceptor that uses a TokenBucketRateLimiter to enforce rate limits.
+    """
+
+    def __init__(self, limiter: TokenBucketRateLimiter):
+        self._limiter = limiter
+
+    async def intercept_service(self, continuation, handler_call_details):
+        """Intercepts incoming RPCs to check against the rate limiter."""
+        if not await self._limiter.is_allowed():
+            # This is a simplified handler that will abort any unary call.
+            # A more robust implementation would inspect the handler_call_details
+            # to handle different RPC types (unary, streaming) appropriately.
+            async def abort(request, context):
+                await context.abort(
+                    grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded."
+                )
+
+            return grpc.unary_unary_rpc_method_handler(abort)
+
+        return await continuation(handler_call_details)
+
+
 @define(slots=False)
 class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     protocol: ProtocolT = field()
@@ -251,8 +275,6 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         except (TransportError, ProtocolError, SecurityError):
             raise
         except Exception as e:
-            # This was too broad, catching errors intended for tests.
-            # Now it only wraps truly unexpected errors as a TransportError.
             raise TransportError(f"gRPC server failed to start: {e}") from e
 
     async def _negotiate_handshake(self) -> None:
@@ -267,7 +289,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     def _register_signal_handlers(self) -> None:
         loop = asyncio.get_event_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
-            with contextlib.suppress(NotImplementedError, RuntimeError):
+            with contextlib.suppress(RuntimeError, NotImplementedError):
                 loop.add_signal_handler(sig, self._shutdown_requested)
 
     def _shutdown_requested(self, *args) -> None:
