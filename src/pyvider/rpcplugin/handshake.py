@@ -16,7 +16,7 @@ import subprocess # Added
 import time
 import traceback
 from enum import Enum, auto
-from typing import Literal, TypeGuard, cast # Tuple removed
+from typing import Literal, TypeGuard, cast, IO # Tuple removed, IO Added
 
 from attrs import define
 
@@ -501,7 +501,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
         )
 
     # stdout is now confirmed to be not None
-    process_stdout = process.stdout
+    process_stdout = process.stdout # This is IO[Any] | None, but guarded by check above.
 
     logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
 
@@ -537,12 +537,19 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
                 code=process.returncode,
             )
 
+        # Define helper for readline
+        def _readline_sync_for_executor(stream: IO[bytes]) -> bytes:
+            return stream.readline()
+
+        # Define helper for read
+        def _read_sync_for_executor(stream: IO[bytes], num_bytes: int) -> bytes:
+            return stream.read(num_bytes)
+
         try:
-            assert process_stdout is not None, "process_stdout cannot be None here"
+            if process_stdout is None: # Explicit check before use
+                raise HandshakeError("Process stdout is None, cannot read handshake line.")
             line_bytes = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(
-                    None, lambda: process_stdout.readline()
-                ),
+                asyncio.get_event_loop().run_in_executor(None, _readline_sync_for_executor, process_stdout),
                 timeout=2.0,
             )
 
@@ -563,11 +570,10 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
             logger.debug("🤝📥⚠️ Timeout reading line, trying chunk read strategy")
 
             try:
-                assert process_stdout is not None, "process_stdout cannot be None here"
+                if process_stdout is None: # Explicit check before use
+                    raise HandshakeError("Process stdout is None, cannot read handshake chunk.")
                 chunk = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(
-                        None, lambda: process_stdout.read(1024)
-                    ),
+                    asyncio.get_event_loop().run_in_executor(None, _read_sync_for_executor, process_stdout, 1024),
                     timeout=1.0,
                 )
 
@@ -630,10 +636,16 @@ async def create_stderr_relay(process: subprocess.Popen) -> asyncio.Task[None] |
     async def _stderr_reader() -> None:
         """Background task to continuously read stderr"""
         logger.debug("🤝📤🚀 Starting stderr relay task")
+        stderr_stream = process.stderr
+        if stderr_stream is None:
+            logger.debug("🤝📤⚠️ Stderr stream is None, exiting relay task.")
+            return
+
         while process.poll() is None:
             try:
+                # Now use the checked stderr_stream
                 line = await asyncio.get_event_loop().run_in_executor(
-                    None, process.stderr.readline
+                    None, stderr_stream.readline
                 )
                 if not line:
                     await asyncio.sleep(0.1)

@@ -282,7 +282,7 @@ class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]: # Removed ABC
             await proto.add_to_server(handler=self.handler, server=active_server) # type: ignore[misc]
 
             register_protocol_service(
-                server=active_server, shutdown_event=self._shutdown_event # Use new variable
+                server=cast(grpc.aio.Server, active_server), shutdown_event=self._shutdown_event # Use new variable, cast
             )
             if self._health_servicer:
                 health_pb2_grpc.add_HealthServicer_to_server(
@@ -383,7 +383,7 @@ class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]: # Removed ABC
             response = await build_handshake_response(
                 plugin_version=self._protocol_version,
                 transport_name=self._transport_name,
-                transport=active_transport,
+                transport=cast(RPCPluginTransport, active_transport),
                 server_cert=self._server_cert_obj,
                 port=self._port,
             )
