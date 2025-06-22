@@ -1,7 +1,11 @@
+#
+# src/pyvider/rpcplugin/types.py
+#
+
 from __future__ import annotations
 
-import asyncio  # Added
-import inspect  # Added
+import asyncio
+import inspect
 from collections.abc import Awaitable
 from collections.abc import Callable as AbcCallable
 from typing import (
@@ -10,7 +14,7 @@ from typing import (
     TypeGuard,
     TypeVar,
     runtime_checkable,
-)  # Added Callable
+)
 from typing import (
     Protocol as TypeProtocol,
 )
@@ -67,7 +71,7 @@ class RPCPluginProtocol(TypeProtocol):
     between gRPC services and Pyvider's RPC plugin system.
     """
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Removed Awaitable
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """
         Returns the protobuf descriptor set and service name.
 
@@ -78,7 +82,7 @@ class RPCPluginProtocol(TypeProtocol):
 
     async def add_to_server(
         self, handler: Any, server: Any
-    ) -> None:  # Removed Awaitable
+    ) -> None:
         """
         Adds the protocol implementation to the gRPC server.
 
@@ -110,14 +114,15 @@ class RPCPluginTransport(TypeProtocol):
     the low-level network communication between RPC plugin components.
     """
 
-    endpoint: str | None  # Modernized Optional
+    endpoint: str | None
 
     async def listen(self) -> str:
         """
         Start listening for connections and return the endpoint.
 
         Returns:
-            String representation of the endpoint (e.g., "unix:/tmp/socket" or "127.0.0.1:50051")
+            String representation of the endpoint (e.g., "unix:/tmp/socket" or
+            "127.0.0.1:50051")
         """
         ...
 
@@ -146,7 +151,7 @@ class SerializableT(TypeProtocol):
     serialized to and from dictionary representations.
     """
 
-    def to_dict(self) -> dict[str, Any]:  # Modernized Dict
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the object to a dictionary representation.
 
@@ -156,7 +161,7 @@ class SerializableT(TypeProtocol):
         ...
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> SerializableT:  # Modernized Dict
+    def from_dict(cls, data: dict[str, Any]) -> SerializableT:
         """
         Create an object from a dictionary representation.
 
@@ -171,7 +176,8 @@ class SerializableT(TypeProtocol):
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
     logger.debug(
-        "🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"
+        "🧰🔍✅ Checking if object implements SerializableT protocol "
+        "(manual runtime checks)"
     )
 
     # Check to_dict method
@@ -187,7 +193,8 @@ def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
         to_dict_sig = inspect.signature(to_dict_method)
         if len(to_dict_sig.parameters) != 0:
             logger.debug(
-                f"SerializableT: to_dict signature incorrect. Expected 0 params, got {len(to_dict_sig.parameters)}."
+                "SerializableT: to_dict signature incorrect. Expected 0 params, "
+                f"got {len(to_dict_sig.parameters)}."
             )
             return False
     except (TypeError, ValueError):
@@ -195,27 +202,26 @@ def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
         return False
 
     # Check from_dict classmethod
-    if not hasattr(obj, "from_dict"):  # Check on instance, works for classmethods too
+    if not hasattr(obj, "from_dict"):
         logger.debug(
             "SerializableT: Method from_dict is missing."
-        )  # Unified missing message
+        )
         return False
 
     from_dict_method = obj.from_dict
     if not callable(from_dict_method):
         logger.debug(
             "SerializableT: Attribute from_dict is not callable."
-        )  # Unified not callable message
+        )
         return False
 
-    # For a classmethod accessed via instance (obj.from_dict), 'cls' is bound.
-    # inspect.signature(obj.from_dict) will show 1 parameter ('data').
     try:
         from_dict_sig = inspect.signature(from_dict_method)
         if len(from_dict_sig.parameters) != 1:  # Expecting 1 param ('data')
             logger.debug(
-                f"SerializableT: from_dict signature incorrect. Expected 1 param (data), got {len(from_dict_sig.parameters)}."
-            )  # Simpler log
+                "SerializableT: from_dict signature incorrect. Expected 1 param "
+                f"(data), got {len(from_dict_sig.parameters)}."
+            )
             return False
     except (TypeError, ValueError):
         logger.debug("SerializableT: Could not inspect from_dict signature.")
@@ -264,13 +270,14 @@ class ConnectionT(TypeProtocol):
 
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     logger.debug(
-        "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+        "🧰🔍✅ Checking if object implements ConnectionT protocol "
+        "(manual runtime checks)"
     )
 
     methods_spec = {
-        "send_data": {"params": 1, "is_async": True},  # Expects 1 param (data)
-        "receive_data": {"params": 1, "is_async": True},  # Expects 1 param (size)
-        "close": {"params": 0, "is_async": True},  # Expects 0 params
+        "send_data": {"params": 1, "is_async": True},
+        "receive_data": {"params": 1, "is_async": True},
+        "close": {"params": 0, "is_async": True},
     }
 
     for method_name, spec in methods_spec.items():
@@ -292,10 +299,11 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
             if len(sig.parameters) != spec["params"]:
                 param_str = "param" if spec["params"] == 1 else "params"
                 logger.debug(
-                    f"ConnectionT: {method_name} signature incorrect. Expected {spec['params']} {param_str}, got {len(sig.parameters)}."
+                    f"ConnectionT: {method_name} signature incorrect. Expected "
+                    f"{spec['params']} {param_str}, got {len(sig.parameters)}."
                 )
                 return False
-        except (TypeError, ValueError):  # Should not happen if callable, but defensive
+        except (TypeError, ValueError):
             logger.debug(f"ConnectionT: Could not inspect {method_name} signature.")
             return False
 
@@ -352,7 +360,8 @@ class SecureRpcClientT(TypeProtocol):
 
 def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
     logger.debug(
-        "🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"
+        "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
+        "(manual runtime checks)"
     )
 
     methods_spec = {
@@ -382,7 +391,8 @@ def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
             sig = inspect.signature(method)
             if len(sig.parameters) != spec["params"]:
                 logger.debug(
-                    f"SecureRpcClientT: {method_name} signature incorrect. Expected {spec['params']} params, got {len(sig.parameters)}."
+                    f"SecureRpcClientT: {method_name} signature incorrect. Expected "
+                    f"{spec['params']} params, got {len(sig.parameters)}."
                 )
                 return False
         except (TypeError, ValueError):

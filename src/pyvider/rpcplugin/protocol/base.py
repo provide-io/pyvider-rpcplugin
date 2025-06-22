@@ -7,15 +7,10 @@ the Pyvider RPC Plugin system.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Generic
-
-from pyvider.rpcplugin.types import (
-    HandlerT,
-    ServerT,
-)
+from typing import Any
 
 
-class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
+class RPCPluginProtocol[ServerT, HandlerT](ABC):  # pragma: no cover
     """
     Abstract base class for defining RPC protocols.
     ServerT: Type of gRPC server

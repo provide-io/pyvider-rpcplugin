@@ -1,238 +1,164 @@
-"""Factory Functions for Pyvider RPC Plugin
-=======================================
+#
+# src/pyvider/rpcplugin/factories.py
+#
 
-This module provides simple factory functions that serve as the primary entry points
-for the Pyvider RPC plugin system. These functions create pre-configured instances
-of the core classes with sensible defaults, simplifying the most common use cases.
+"""
+Factory functions for creating Pyvider RPC plugin components.
 
-The factory pattern enables a clean, functional API while preserving access to the
-full power of the underlying implementation for advanced users.
+This module provides convenient factory functions for instantiating core
+components of the Pyvider RPC Plugin system, such as clients, servers,
+and protocols. These factories encapsulate common setup logic and promote
+consistent component creation.
 """
 
-import asyncio
-import os
-from collections.abc import (
-    Callable as AbcCallable,
-)
-from typing import Any
+from typing import Any, TypeVar, cast
 
 from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.types import (
-    HandlerT,
-    ProtocolT,
-    RPCPluginTransport,
+from pyvider.rpcplugin.server import (
+    RPCPluginServer,
+    _ServerT,
+    _TransportT,
 )
+from pyvider.rpcplugin.server import (
+    _HandlerT as ServerHandlerT,  # Alias to avoid conflict if HandlerT is defined here
+)
+from pyvider.rpcplugin.server import (
+    _ProtocolT as ServerProtocolT,
+)
+from pyvider.rpcplugin.transport import (
+    TCPSocketTransport,
+    UnixSocketTransport,
+)
+from pyvider.rpcplugin.types import HandlerT  # Keep this for plugin_protocol's arg
+from pyvider.rpcplugin.types import (
+    ProtocolT as BaseProtocolTDefinition,
+)
+from pyvider.rpcplugin.types import RPCPluginTransport as RPCPluginTransportType
 from pyvider.telemetry import logger
+
+# TypeVar for the create_basic_protocol and plugin_protocol context
+# This T_Proto is specific to this module's factory functions.
+T_Proto = TypeVar("T_Proto", bound=RPCPluginProtocol)
+
+
+def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
+    """
+    Creates a basic RPCPluginProtocol.
+
+    It's a placeholder and doesn't register specific gRPC services itself.
+    The actual services (Stdio, Broker, Controller) are registered by
+    `register_protocol_service` in the `RPCPluginServer`.
+    """
+
+    class BasicRPCPluginProtocol(RPCPluginProtocol[Any, Any]):
+        """Basic protocol, primarily for structure or testing."""
+
+        service_name = "pyvider.BasicRPCPluginProtocol"
+
+        async def get_grpc_descriptors(self) -> tuple[Any, str]: # Sig matches base
+            logger.debug(
+                "BasicRPCPluginProtocol: get_grpc_descriptors for "
+                f"{self.service_name}"
+            )
+            return (None, self.service_name)
+
+        async def add_to_server(self, server: Any, handler: Any) -> None:
+            logger.debug(
+                f"BasicRPCPluginProtocol: add_to_server for {self.service_name} "
+                "(no specific services added by this basic protocol itself)."
+            )
+            pass
+
+        def get_method_type(self, method_name: str) -> str:
+            logger.warning(
+                f"BasicRPCPluginProtocol: get_method_type for {method_name} "
+                "defaulting to unary_unary. Implement for specific protocols."
+            )
+            return "unary_unary"
+
+    return BasicRPCPluginProtocol
+
+
+# Use T_Proto for the generic function parameter as per UP047
+def plugin_protocol[T_Proto_fn: RPCPluginProtocol]( # Bound to RPCPluginProtocol
+    protocol_class: type[T_Proto_fn] | None = None,
+    handler_class: type[HandlerT] | None = None, # HandlerT from .types
+) -> T_Proto_fn:
+    """
+    Factory for creating an RPC plugin protocol instance.
+
+    Args:
+        protocol_class: The specific RPCPluginProtocol subclass to instantiate.
+                        If None, a BasicRPCPluginProtocol is used.
+        handler_class: The handler class for the protocol.
+
+    Returns:
+        An instance of the specified or basic RPC plugin protocol.
+    """
+    effective_protocol_class: type[T_Proto_fn]
+    if protocol_class:
+        effective_protocol_class = protocol_class
+    else:
+        # create_basic_protocol returns Type[RPCPluginProtocol[Any, Any]]
+        # We need to cast it to Type[T_Proto_fn]
+        # This assumes BasicRPCPluginProtocol is compatible with T_Proto_fn's bound
+        effective_protocol_class = cast(
+            type[T_Proto_fn], create_basic_protocol()
+        )
+
+    return effective_protocol_class()
 
 
 def plugin_server(
-    protocol: ProtocolT,
+    protocol: BaseProtocolTDefinition,
     handler: HandlerT,
     transport: str = "unix",
     transport_path: str | None = None,
     host: str = "127.0.0.1",
     port: int = 0,
     config: dict[str, Any] | None = None,
-) -> RPCPluginServer:
+    # Use specific TypeVars imported from server.py for the return type
+) -> RPCPluginServer[_ServerT, ServerHandlerT, _TransportT, ServerProtocolT]:
     """
-    Create a new plugin server with sensible defaults.
-
-    This factory function simplifies server creation by handling transport selection
-    and configuration. It creates a properly configured RPCPluginServer instance
-    ready to be started with server.serve().
-
-    Args:
-        protocol: The protocol implementation for the server
-        handler: The handler implementation for the protocol
-        transport: Transport type, either "unix" or "tcp"
-        transport_path: For unix transport, the path to the socket file (default: auto-generated)
-        host: For TCP transport, the host address to bind to (default: 127.0.0.1)
-        port: For TCP transport, the port to bind to (0 = auto-assign)
-        config: Additional configuration options as a dictionary
-
-    Returns:
-        A configured RPCPluginServer instance ready to serve
-
-    Raises:
-        TransportError: If an invalid transport type is specified
+    Factory for creating an RPC plugin server instance.
     """
-    logger.debug(f"🧰🚀🔍 Creating plugin server with transport={transport}")
+    logger.debug(
+        f"🏭 Creating plugin server: transport={transport}, path={transport_path}, "
+        f"host={host}, port={port}"
+    )
+    transport_instance: RPCPluginTransportType
+    if transport == "unix":
+        transport_instance = UnixSocketTransport(path=transport_path)
+    elif transport == "tcp":
+        transport_instance = TCPSocketTransport(host=host, port=port)
+    else:
+        raise ValueError(f"Unsupported transport type: {transport}")
 
-    transport_inst: RPCPluginTransport
-    match transport.lower():
-        case "unix":
-            logger.debug(
-                f"🧰🚀✅ Creating Unix socket transport, path={transport_path}"
-            )
-            transport_inst = UnixSocketTransport(path=transport_path)
-        case "tcp":
-            logger.debug(
-                f"🧰🚀✅ Creating TCP socket transport, host={host}, port={port}"
-            )
-            transport_inst = TCPSocketTransport(host=host, port=port)
-        case _:
-            logger.error(f"🧰🚀❌ Invalid transport type: {transport}")
-            raise TransportError(f"Invalid transport type: {transport}")
-
-    config_dict = config or {}
-
-    logger.debug("🧰🚀✅ Creating RPCPluginServer instance")
     return RPCPluginServer(
-        protocol=protocol,
-        handler=handler,
-        transport=transport_inst,
-        config=config_dict,
+        protocol=cast(ServerProtocolT, protocol),
+        handler=cast(ServerHandlerT, handler),
+        passed_transport=cast(_TransportT, transport_instance),
+        config=config or {},
     )
 
 
 def plugin_client(
-    server_path: str,
-    protocol: ProtocolT | None = None,
-    env: dict[str, str] | None = None,
-    auto_connect: bool = False,
-    timeout: float = 10.0,
-    **kwargs: Any,
+    command: list[str],
+    config: dict[str, Any] | None = None,
+    auto_connect: bool = True,
 ) -> RPCPluginClient:
     """
-    Create a new plugin client connected to a server.
-
-    This factory function simplifies client creation and connection to a plugin server.
-    It can optionally auto-connect to the server if desired.
-
-    Args:
-        server_path: Path to the server executable
-        protocol: Optional protocol implementation for custom functionality
-        env: Environment variables to pass to the server process
-        auto_connect: If True, automatically connect to the server
-        timeout: Connection timeout in seconds
-        **kwargs: Additional configuration options
-
-    Returns:
-        A configured RPCPluginClient instance
-
-    Raises:
-        FileNotFoundError: If the server executable doesn't exist
-        PermissionError: If the server executable isn't executable
+    Factory for creating an RPC plugin client instance.
     """
-    logger.debug(f"🧰🚀🔍 Creating plugin client for server at {server_path}")
-
-    if not os.path.exists(server_path):
-        logger.error(f"🧰🚀❌ Server executable not found: {server_path}")
-        raise FileNotFoundError(f"Server executable not found: {server_path}")
-
-    if not os.access(server_path, os.X_OK):
-        logger.error(f"🧰🚀❌ Server executable not executable: {server_path}")
-        raise PermissionError(f"Server executable not executable: {server_path}")
-
-    config: dict[str, Any] = {"timeout": timeout}
-    if env:
-        config["env"] = env
-    for key, value in kwargs.items():
-        config[key] = value
-
-    logger.debug("🧰🚀✅ Creating RPCPluginClient instance")
-    client = RPCPluginClient(
-        command=[server_path],
-        config=config,
-    )
-
+    logger.debug(f"🏭 Creating plugin client for command: {command}")
+    client = RPCPluginClient(command=command, config=config or {})
     if auto_connect:
-        logger.debug("🧰🚀🔄 Auto-connecting to server...")
-        asyncio.create_task(client.start())
-
-    return client
-
-
-def plugin_protocol(
-    service_name: str,
-    descriptor_module: Any = None,
-    servicer_add_fn: AbcCallable | None = None,
-) -> RPCPluginProtocol:
-    """
-    Create a protocol definition for a specific gRPC service.
-
-    This factory function simplifies the creation of protocol implementations
-    for standard gRPC services.
-
-    Args:
-        service_name: The name of the gRPC service
-        descriptor_module: The generated gRPC module containing the service definition
-        servicer_add_fn: The function to add the servicer to a gRPC server
-            (typically named add_XXXServicer_to_server)
-
-    Returns:
-        A configured RPCPluginProtocol implementation
-
-    Example:
-        ```python
-        from my_proto import my_pb2, my_pb2_grpc
-
-        protocol = plugin_protocol(
-            service_name="MyService",
-            descriptor_module=my_pb2,
-            servicer_add_fn=my_pb2_grpc.add_MyServiceServicer_to_server
+        logger.warning(
+            "🏭 auto_connect=True in synchronous factory is misleading. "
+            "Caller should handle async client.start()."
         )
-        ```
-    """
-    logger.debug(f"🧰🚀🔍 Creating plugin protocol for service '{service_name}'")
-
-    class GeneratedProtocol(RPCPluginProtocol):
-        """Protocol implementation for a specific gRPC service."""
-
-        async def get_grpc_descriptors(self) -> tuple[Any, str]:
-            """Returns the protobuf descriptor set and service name."""
-            logger.debug(
-                f"🧰📡🔍 Returning gRPC descriptors for service '{service_name}'"
-            )
-            return descriptor_module, service_name
-
-        async def add_to_server(self, server: Any, handler: Any) -> None:
-            """Adds the protocol implementation to the gRPC server."""
-            logger.debug(f"🧰📡🚀 Adding service '{service_name}' to gRPC server")
-            if servicer_add_fn:
-                servicer_add_fn(handler, server)
-            else:
-                logger.warning(
-                    f"🧰📡⚠️ No servicer_add_fn provided for '{service_name}'"
-                )
-            return
-
-    logger.debug(f"🧰🚀✅ Created plugin protocol for service '{service_name}'")
-    return GeneratedProtocol()
-
-
-def create_basic_protocol() -> RPCPluginProtocol:
-    """
-    Create a minimal protocol implementation for testing purposes.
-
-    This factory function creates a very simple protocol that can be used for
-    basic connectivity testing without a full service implementation.
-
-    Returns:
-        A basic RPCPluginProtocol implementation
-    """
-    logger.debug("🧰🚀🔍 Creating basic test protocol")
-
-    class BasicProtocol(RPCPluginProtocol):
-        """Minimal protocol implementation for basic connectivity testing."""
-
-        async def get_grpc_descriptors(
-            self,
-        ) -> tuple[Any, str]:
-            """Returns placeholder descriptors."""
-            return None, "TestService"
-
-        async def add_to_server(self, server: Any, handler: Any) -> None:
-            """No-op implementation for testing."""
-            logger.debug("🧰📡🔍 Basic protocol add_to_server called")
-            return
-
-    logger.debug("🧰🚀✅ Created basic test protocol")
-    return BasicProtocol()
+    return client
 
 
 # 🐍🏗️🔌

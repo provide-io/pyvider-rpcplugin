@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/crypto/debug.py
+#
+
 """
 Cryptographic Debugging Utilities.
 
@@ -92,14 +96,17 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                     for oid in ext_key_usage_ext_value
                 ]
                 logger.debug(
-                    f"  ✨ Extended Key Usage (OID): {', '.join(eku_oids) if eku_oids else 'None'}"
+                    "  ✨ Extended Key Usage (OID): "
+                    f"{', '.join(eku_oids) if eku_oids else 'None'}"
                 )
                 logger.debug(
-                    f"  ✨ Extended Key Usage (Name): {', '.join(eku_names) if eku_names else 'None'}"
+                    "  ✨ Extended Key Usage (Name): "
+                    f"{', '.join(eku_names) if eku_names else 'None'}"
                 )
             else:
                 logger.debug(
-                    "  ✨ Extended Key Usage: Value is not an ExtendedKeyUsage object or not present"
+                    "  ✨ Extended Key Usage: Value is not an ExtendedKeyUsage "
+                    "object or not present"
                 )
         except x509.ExtensionNotFound:
             logger.debug("  ✨ Extended Key Usage: Not present")
@@ -118,7 +125,8 @@ def display_cert_details(certificate: x509.Certificate) -> None:
                 logger.debug(f"  ⛓️ Basic Constraints: {ca_info}{path_length}")
             else:
                 logger.debug(
-                    "  ⛓️ Basic Constraints: Value is not a BasicConstraints object or not present"
+                    "  ⛓️ Basic Constraints: Value is not a BasicConstraints "
+                    "object or not present"
                 )
         except x509.ExtensionNotFound:
             logger.debug("  ⛓️ Basic Constraints: Not present")
@@ -165,7 +173,8 @@ def display_key_details(priv_key: PrivateKeyType | None) -> None:
       - The PEM-encoded private key (PKCS8 format).
 
     Args:
-        priv_key: The private key object (RSAPrivateKey or EllipticCurvePrivateKey), or None.
+        priv_key: The private key object (RSAPrivateKey or
+                  EllipticCurvePrivateKey), or None.
 
     Raises:
       CertificateError: If key details cannot be extracted when a key is provided.
