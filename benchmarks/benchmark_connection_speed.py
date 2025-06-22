@@ -1,5 +1,5 @@
-import sys
 import statistics  # Moved here
+import sys
 from pathlib import Path
 
 # Ensure examples directory and examples/demo are in path
@@ -17,11 +17,13 @@ if str(project_root) not in sys.path:  # /app
 # END OF SYS.PATH MANIPULATION
 
 import asyncio
-import time
 import os
-from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
+import time
+
 import echo_pb2
 import echo_pb2_grpc
+
+from pyvider.rpcplugin import plugin_client, plugin_protocol, plugin_server
 
 
 class BenchmarkEchoHandler(echo_pb2_grpc.EchoService):
@@ -149,7 +151,7 @@ async def main_test_address(
         connection_timings = await measure_connection_time(
             protocol, dummy_handshaker_script_path, num_iterations
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         print(f"Server for {address_url} did not become ready.")
     except Exception as e:
         print(f"Error during test for {address_url}: {e}")

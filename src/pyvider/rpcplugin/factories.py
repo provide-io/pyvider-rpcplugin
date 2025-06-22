@@ -17,6 +17,9 @@ from pyvider.rpcplugin.client import RPCPluginClient
 
 # ClientT was erroring from .types, it's defined in .client.types
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+
+# Removed ServerProtocolT import from server
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.server import (
     RPCPluginServer,
     _ServerT,
@@ -24,9 +27,6 @@ from pyvider.rpcplugin.server import (
 )
 from pyvider.rpcplugin.server import (
     _HandlerT as ServerHandlerT,
-)
-from pyvider.rpcplugin.server import (
-    _ProtocolT as ServerProtocolT,
 )
 from pyvider.rpcplugin.transport import (
     TCPSocketTransport,
@@ -89,7 +89,7 @@ def plugin_protocol[
 ](  # Use new TypeVar, assume it's covariant if protocol_class is.
     protocol_class: type[PT_co]
     | None = None,  # PT_co bound to RPCPluginProtocol implicitly by usage
-    handler_class: type[RPCPluginHandler] # Use imported RPCPluginHandler
+    handler_class: type[RPCPluginHandler]  # Use imported RPCPluginHandler
     | None = None,
     service_name: str | None = None,
     **kwargs: Any,  # Add **kwargs to accept arbitrary keyword arguments
@@ -117,13 +117,13 @@ def plugin_protocol[
         # or if 'service_name_override' was already in **kwargs from the call.
         final_basic_kwargs = {}
         if service_name:
-            final_basic_kwargs['service_name_override'] = service_name
-        elif 'service_name_override' in instance_kwargs:
+            final_basic_kwargs["service_name_override"] = service_name
+        elif "service_name_override" in instance_kwargs:
             # If service_name wasn't given directly to factory,
             # but was in **kwargs
-             final_basic_kwargs['service_name_override'] = (
-                 instance_kwargs['service_name_override']
-            )
+            final_basic_kwargs["service_name_override"] = instance_kwargs[
+                "service_name_override"
+            ]
         instance_kwargs = final_basic_kwargs
 
     return effective_protocol_class(**instance_kwargs)
@@ -137,7 +137,7 @@ def plugin_server(
     host: str = "127.0.0.1",
     port: int = 0,
     config: dict[str, Any] | None = None,
-) -> RPCPluginServer[_ServerT, ServerHandlerT, _TransportT, ServerProtocolT]:
+) -> RPCPluginServer[_ServerT, ServerHandlerT, _TransportT]:
     """
     Factory for creating an RPC plugin server instance.
     """
@@ -154,7 +154,7 @@ def plugin_server(
         raise ValueError(f"Unsupported transport type: {transport}")
 
     return RPCPluginServer(
-        protocol=cast(ServerProtocolT, protocol),
+        protocol=cast(BaseRpcAbcProtocol[_ServerT, ServerHandlerT], protocol),
         handler=cast(ServerHandlerT, handler),
         transport=cast(_TransportT, transport_instance),  # Use 'transport' kwarg
         config=config or {},

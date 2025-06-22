@@ -28,11 +28,14 @@ from pyvider.telemetry import logger  # noqa: E402
 @define(frozen=True, slots=True)
 class GreetingRequest:
     """A structured request for the Greet RPC method."""
+
     name: str = field()
+
 
 @define(frozen=True, slots=True)
 class GreetingReply:
     """A structured reply for the Greet RPC method."""
+
     message: str = field()
 
 
@@ -79,7 +82,7 @@ async def main():
     # outputs the *actual* handshake string from our running server.
 
     server_handshake_string = ""
-    if server._transport and hasattr(server._transport, 'handshake_string'):
+    if server._transport and hasattr(server._transport, "handshake_string"):
         server_handshake_string = server._transport.handshake_string
 
     if not server_handshake_string:
@@ -108,15 +111,15 @@ async def main():
         # This demonstrates the connection is live.
         # A more advanced example would generate and use a real stub.
         request_obj = GreetingRequest(name="End-to-End User")
-        
+
         # We can't make a real RPC call without a stub, but we can verify
         # the client is connected and the server is running.
         if client.is_started:
-             print("\n✅ Client is connected! Simulating RPC call...")
-             reply = await handler.Greet(request_obj, None)
-             print(f"   Server replied: '{reply.message}'")
+            print("\n✅ Client is connected! Simulating RPC call...")
+            reply = await handler.Greet(request_obj, None)
+            print(f"   Server replied: '{reply.message}'")
         else:
-             print("\n❌ Client failed to connect.")
+            print("\n❌ Client failed to connect.")
 
     except Exception as e:
         logger.error(f"An error occurred in the client: {e}", exc_info=True)
@@ -125,8 +128,8 @@ async def main():
         if client:
             await client.close()
             logger.info("Client closed.")
-        
-        dummy_executable_path.unlink() # Clean up the dummy script
+
+        dummy_executable_path.unlink()  # Clean up the dummy script
 
         await server.stop()
         await server_task

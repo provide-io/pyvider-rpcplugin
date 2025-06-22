@@ -109,8 +109,8 @@ async def test_unix_socket_listen_unlink_file_not_found(
             )
     finally:
         await transport.close()
-        # Allow event loop to clean up
-        await asyncio.sleep(0)
+        # Allow event loop to clean up a bit longer
+        await asyncio.sleep(0.1)
 
 
 @pytest.mark.asyncio
