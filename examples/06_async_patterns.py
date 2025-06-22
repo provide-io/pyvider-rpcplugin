@@ -5,11 +5,19 @@
 import asyncio
 import sys
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator as AbcAsyncGenerator
 from pathlib import Path
-from typing import Any
+from types import TracebackType
+from typing import Any, TypeVar  # Added Dict
 
+import grpc
 from attrs import define, field
+
+from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.types import (
+    RPCPluginProtocol as TypesRPCPluginProtocol,
+)
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -19,8 +27,8 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
-    create_basic_protocol,
     plugin_client,
+    plugin_protocol,  # Changed
     plugin_server,
 )
 from pyvider.telemetry import logger  # noqa: E402
@@ -38,18 +46,22 @@ class StreamReply:
 class BatchReply:
     """A structured reply for a batch processing RPC method."""
 
-    results: list[Any] = field()
+    results: list[Any] = field()  # Changed list to List
     processed_count: int = field()
 
 
 class AsyncStreamHandler:
     """Handler demonstrating async streaming patterns."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.active_streams = 0
         self.total_messages = 0
 
-    async def ProcessStream(self, request_iterator, context):
+    async def ProcessStream(
+        self,
+        request_iterator: AbcAsyncGenerator[Any],
+        context: grpc.aio.ServicerContext,
+    ) -> AbcAsyncGenerator[StreamReply]:
         """Handle streaming requests asynchronously."""
         self.active_streams += 1
 
@@ -96,7 +108,9 @@ class AsyncStreamHandler:
                 total_messages=self.total_messages,
             )
 
-    async def BatchProcess(self, request, context):
+    async def BatchProcess(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> BatchReply:
         """Handle batch processing with concurrent workers."""
         batch_size = getattr(request, "batch_size", 10)
 
@@ -109,13 +123,13 @@ class AsyncStreamHandler:
         )
 
         # Create concurrent tasks
-        async def process_item(item_id: int):
+        async def process_item(item_id: int) -> str:  # Added str return
             await asyncio.sleep(0.1)  # Simulate work
             return f"Item_{item_id}_processed"
 
         # Process batch concurrently
         tasks = [process_item(i) for i in range(batch_size)]
-        results = await asyncio.gather(*tasks)
+        results: list[str] = await asyncio.gather(*tasks)  # Annotated results
 
         logger.info(
             "Batch processing completed",
@@ -129,7 +143,7 @@ class AsyncStreamHandler:
         return BatchReply(results=results, processed_count=len(results))
 
 
-async def example_6_async_context_managers():
+async def example_6_async_context_managers() -> None:
     """
     Example 6A: Demonstrates async context manager patterns.
 
@@ -141,16 +155,22 @@ async def example_6_async_context_managers():
     print(" Demonstrates: Proper async resource management")
     print("=" * 60)
 
+    _TAsyncRPCManager = TypeVar("_TAsyncRPCManager", bound="AsyncRPCManager")
+
     class AsyncRPCManager:
         """Async context manager for RPC resources."""
 
-        def __init__(self, transport: str = "unix"):
+        server: RPCPluginServer | None
+        client: RPCPluginClient | None
+        server_task: asyncio.Task | None
+
+        def __init__(self, transport: str = "unix") -> None:
             self.transport = transport
             self.server = None
             self.client = None
             self.server_task = None
 
-        async def __aenter__(self):
+        async def __aenter__(self: _TAsyncRPCManager) -> _TAsyncRPCManager:
             logger.info(
                 "Entering async RPC context",
                 domain="async",
@@ -160,7 +180,7 @@ async def example_6_async_context_managers():
             )
 
             # Setup server
-            protocol = create_basic_protocol()
+            protocol: TypesRPCPluginProtocol = plugin_protocol()
             handler = AsyncStreamHandler()
 
             self.server = plugin_server(
@@ -169,16 +189,10 @@ async def example_6_async_context_managers():
 
             # Start server
             self.server_task = asyncio.create_task(self.server.serve())
-            await asyncio.sleep(0.5)  # Let server initialize
+            await self.server.wait_for_server_ready(timeout=5.0)
 
             # Create client
-            # plugin_client expects a server_path (executable).
-            # The self.transport argument of AsyncRPCManager is not directly used here
-            # for the client factory in its current form.
-            # Note: Our custom AsyncRPCManager manually handles the client lifecycle here.
-            # RPCPluginClient instances (like self.client) also support direct use
-            # as async context managers (see docs/api-reference.md).
-            self.client = plugin_client(server_path=example_dir / "dummy_server.sh")
+            self.client = plugin_client(command=[str(example_dir / "dummy_server.sh")])
 
             logger.info(
                 "Async RPC context ready",
@@ -191,7 +205,12 @@ async def example_6_async_context_managers():
 
             return self
 
-        async def __aexit__(self, exc_type, exc_val, exc_tb):
+        async def __aexit__(
+            self,
+            exc_type: type[BaseException] | None,
+            exc_val: BaseException | None,
+            exc_tb: TracebackType | None,
+        ) -> None:
             logger.info(
                 "Exiting async RPC context",
                 domain="async",
@@ -218,7 +237,7 @@ async def example_6_async_context_managers():
                 status="success",
             )
 
-        async def make_call(self, method_name: str, data: str):
+        async def make_call(self, method_name: str, data: str) -> str:
             """Make an async RPC call."""
             logger.info(
                 f"Making async RPC call: {method_name}",
@@ -261,7 +280,7 @@ async def example_6_async_context_managers():
         )
 
 
-async def example_6_concurrent_operations():
+async def example_6_concurrent_operations() -> None:
     """
     Example 6B: Demonstrates concurrent async operations.
 
@@ -273,7 +292,9 @@ async def example_6_concurrent_operations():
     print(" Demonstrates: High-concurrency async RPC patterns")
     print("=" * 60)
 
-    async def simulate_rpc_operation(operation_id: int, duration: float):
+    async def simulate_rpc_operation(
+        operation_id: int, duration: float
+    ) -> dict[str, Any]:  # Changed dict to Dict
         """Simulate an async RPC operation."""
         start_time = time.time()
 
@@ -322,7 +343,9 @@ async def example_6_concurrent_operations():
     operations = [simulate_rpc_operation(i, 0.1 + (i * 0.05)) for i in range(5)]
 
     # Execute all operations concurrently
-    results = await asyncio.gather(*operations)
+    results_gather: list[dict[str, Any]] = await asyncio.gather(
+        *operations
+    )  # Annotated results
 
     total_time = time.time() - start_time
 
@@ -332,9 +355,9 @@ async def example_6_concurrent_operations():
         action="concurrency_pattern",
         status="success",
         pattern="gather",
-        operations_count=len(results),
+        operations_count=len(results_gather),
         total_time=total_time,
-        efficiency_gain=f"{len(results)}x faster than sequential",
+        efficiency_gain=f"{len(results_gather)}x faster than sequential",
     )
 
     # Pattern 2: as_completed() for processing results as they arrive
@@ -346,11 +369,13 @@ async def example_6_concurrent_operations():
         pattern="as_completed",
     )
 
-    operations = [simulate_rpc_operation(i + 10, 0.2 - (i * 0.03)) for i in range(4)]
+    operations_as_completed = [  # Renamed variable
+        simulate_rpc_operation(i + 10, 0.2 - (i * 0.03)) for i in range(4)
+    ]
 
     completed_count = 0
-    async for coro in asyncio.as_completed(operations):
-        result = await coro
+    async for coro in asyncio.as_completed(operations_as_completed):
+        result_as_completed: dict[str, Any] = await coro  # Annotated result
         completed_count += 1
 
         logger.info(
@@ -358,9 +383,9 @@ async def example_6_concurrent_operations():
             domain="async",
             action="streaming_result",
             status="success",
-            operation_id=result["operation_id"],
+            operation_id=result_as_completed["operation_id"],
             completed_count=completed_count,
-            total_operations=len(operations),
+            total_operations=len(operations_as_completed),
         )
 
     # Pattern 3: Semaphore for controlling concurrency
@@ -375,13 +400,15 @@ async def example_6_concurrent_operations():
     # Limit to 2 concurrent operations
     semaphore = asyncio.Semaphore(2)
 
-    async def controlled_operation(op_id: int):
+    async def controlled_operation(op_id: int) -> dict[str, Any]:  # Changed dict
         async with semaphore:  # Acquire semaphore
             return await simulate_rpc_operation(op_id + 20, 0.1)
 
     # Create more operations than semaphore allows
     controlled_ops = [controlled_operation(i) for i in range(6)]
-    controlled_results = await asyncio.gather(*controlled_ops)
+    controlled_results: list[dict[str, Any]] = await asyncio.gather(
+        *controlled_ops
+    )  # Annotated
 
     logger.info(
         "Controlled concurrency completed",
@@ -394,7 +421,7 @@ async def example_6_concurrent_operations():
     )
 
 
-async def example_6_async_generators():
+async def example_6_async_generators() -> None:
     """
     Example 6C: Demonstrates async generator patterns.
 
@@ -406,7 +433,9 @@ async def example_6_async_generators():
     print(" Demonstrates: Streaming data with async generators")
     print("=" * 60)
 
-    async def async_data_generator(count: int) -> AsyncGenerator[dict]:
+    async def async_data_generator(
+        count: int,
+    ) -> AbcAsyncGenerator[dict[str, Any]]:  # Changed dict
         """Generate data asynchronously."""
 
         logger.info(
@@ -421,7 +450,7 @@ async def example_6_async_generators():
             # Simulate async data generation
             await asyncio.sleep(0.05)
 
-            data_item = {
+            data_item: dict[str, Any] = {  # Annotated
                 "id": i,
                 "data": f"generated_data_{i}",
                 "timestamp": time.time(),
@@ -459,17 +488,17 @@ async def example_6_async_generators():
     processed_count = 0
     total_size = 0
 
-    async for data_item in async_data_generator(5):
+    async for data_item_for in async_data_generator(5):  # Renamed data_item
         # Process each item as it's generated
         processed_count += 1
-        total_size += data_item["size"]
+        total_size += data_item_for["size"]  # Used renamed var
 
         logger.info(
             "Processed streamed data item",
             domain="async",
             action="stream_process",
             status="processed",
-            item_id=data_item["id"],
+            item_id=data_item_for["id"],  # Used renamed var
             processed_count=processed_count,
             cumulative_size=total_size,
         )
@@ -493,9 +522,9 @@ async def example_6_async_generators():
         pattern="collect_all",
     )
 
-    collected_items = []
-    async for item in async_data_generator(3):
-        collected_items.append(item)
+    collected_items: list[dict[str, Any]] = []  # Annotated
+    async for item_collect in async_data_generator(3):  # Renamed item
+        collected_items.append(item_collect)  # Used renamed var
 
     logger.info(
         "Async generator collection completed",
@@ -508,7 +537,7 @@ async def example_6_async_generators():
     )
 
 
-async def example_6_async_error_handling():
+async def example_6_async_error_handling() -> None:
     """
     Example 6D: Demonstrates async error handling patterns.
 
@@ -520,7 +549,9 @@ async def example_6_async_error_handling():
     print(" Demonstrates: Robust async error handling")
     print("=" * 60)
 
-    async def potentially_failing_operation(fail_probability: float, operation_id: int):
+    async def potentially_failing_operation(
+        fail_probability: float, operation_id: int
+    ) -> str:
         """Operation that may fail or timeout."""
 
         logger.info(
@@ -555,7 +586,7 @@ async def example_6_async_error_handling():
 
     try:
         # Set timeout for operation
-        result = await asyncio.wait_for(
+        result_timeout: str = await asyncio.wait_for(  # Annotated
             potentially_failing_operation(0.0, 1), timeout=0.5
         )
 
@@ -565,7 +596,7 @@ async def example_6_async_error_handling():
             action="error_pattern",
             status="success",
             pattern="timeout",
-            result=result,
+            result=result_timeout,
         )
 
     except TimeoutError:
@@ -591,7 +622,9 @@ async def example_6_async_error_handling():
 
     for attempt in range(max_retries):
         try:
-            result = await potentially_failing_operation(0.7, attempt + 10)
+            result_retry: str = await potentially_failing_operation(
+                0.7, attempt + 10
+            )  # Annotated
 
             logger.info(
                 "Operation succeeded after retries",
@@ -600,7 +633,7 @@ async def example_6_async_error_handling():
                 status="success",
                 pattern="retry",
                 attempt=attempt + 1,
-                result=result,
+                result=result_retry,
             )
             break
 
@@ -638,7 +671,9 @@ async def example_6_async_error_handling():
     )
 
     # Start a long-running task
-    long_task = asyncio.create_task(potentially_failing_operation(0.0, 100))
+    long_task: asyncio.Task[str] = asyncio.create_task(  # Annotated
+        potentially_failing_operation(0.0, 100)
+    )
 
     try:
         # Cancel after short delay
@@ -670,13 +705,17 @@ async def example_6_async_error_handling():
     risky_operations = [potentially_failing_operation(0.5, i) for i in range(20, 25)]
 
     # Use gather with return_exceptions=True
-    results = await asyncio.gather(*risky_operations, return_exceptions=True)
+    results_multiple: list[
+        str | BaseException
+    ] = await asyncio.gather(  # Annotated
+        *risky_operations, return_exceptions=True
+    )
 
     success_count = 0
     failure_count = 0
 
-    for i, result in enumerate(results):
-        if isinstance(result, Exception):
+    for i, res_item in enumerate(results_multiple):  # Renamed result to res_item
+        if isinstance(res_item, Exception):
             failure_count += 1
             logger.warning(
                 f"Operation {i + 20} failed",
@@ -684,7 +723,7 @@ async def example_6_async_error_handling():
                 action="multiple_results",
                 status="failed",
                 operation_id=i + 20,
-                error=str(result),
+                error=str(res_item),  # Used renamed var
             )
         else:
             success_count += 1
@@ -694,7 +733,7 @@ async def example_6_async_error_handling():
                 action="multiple_results",
                 status="success",
                 operation_id=i + 20,
-                result=result,
+                result=res_item,  # Used renamed var
             )
 
     logger.info(
@@ -703,14 +742,14 @@ async def example_6_async_error_handling():
         action="error_pattern",
         status="summary",
         pattern="multiple_failures",
-        total_operations=len(results),
+        total_operations=len(results_multiple),
         success_count=success_count,
         failure_count=failure_count,
-        success_rate=f"{(success_count / len(results) * 100):.1f}%",
+        success_rate=f"{(success_count / len(results_multiple) * 100):.1f}%",
     )
 
 
-async def main():
+async def main() -> None:
     """Run all async pattern examples."""
     print("⚙️ pyvider-rpcplugin Async Patterns Examples")
     print("============================================")

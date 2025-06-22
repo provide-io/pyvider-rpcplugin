@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 # examples/08_production_config.py
-"""Demonstrates production-ready configuration and deployment patterns with pyvider-rpcplugin."""
+"""Production-ready configuration and deployment patterns with pyvider-rpcplugin."""
 
 import asyncio
 import os
 import sys
 from pathlib import Path
+from typing import (
+    Any,
+    cast,
+)
 
+import grpc  # For ServicerContext
 from attrs import define, field
 
 # Add src to path for examples
@@ -18,11 +23,15 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     configure,
-    create_basic_protocol,
+    plugin_protocol,  # Changed
     plugin_server,
 )
 from pyvider.rpcplugin.config import (  # noqa: E402
     RPCPluginConfig,
+)
+from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402 # For type hint
+from pyvider.rpcplugin.types import (  # noqa: E402 # For type hint
+    RPCPluginProtocol as TypesRPCPluginProtocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -37,13 +46,17 @@ class ProductionReply:
 class ProductionServiceHandler:
     """Production-grade service handler with comprehensive logging and metrics."""
 
-    def __init__(self, service_name: str = "ProductionService"):
+    start_time: float  # Class variable annotation
+
+    def __init__(self, service_name: str = "ProductionService") -> None:
         self.service_name = service_name
         self.request_count = 0
         self.error_count = 0
         self.start_time = asyncio.get_event_loop().time()
 
-    async def ProcessRequest(self, request, context):
+    async def ProcessRequest(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> ProductionReply:
         """Handle production requests with full observability."""
         request_id = f"req_{self.request_count + 1}"
         self.request_count += 1
@@ -114,7 +127,7 @@ class ProductionServiceHandler:
             raise
 
 
-async def example_8_environment_configuration():
+async def example_8_environment_configuration() -> None:
     """
     Example 8A: Demonstrates environment-based configuration.
 
@@ -212,7 +225,7 @@ async def example_8_environment_configuration():
                 os.environ[key] = original_value
 
 
-async def example_8_production_server_deployment():
+async def example_8_production_server_deployment() -> None:
     """
     Example 8B: Demonstrates production server deployment patterns.
 
@@ -246,16 +259,16 @@ async def example_8_production_server_deployment():
     )
 
     # Create production protocol and handler
-    protocol = create_basic_protocol()
+    protocol: TypesRPCPluginProtocol = plugin_protocol()  # Changed and annotated
     handler = ProductionServiceHandler("ProductionRPCService")
 
     # Note: The 'max_workers', 'max_connections', etc., keys in this config dict
-    # are illustrative of potential gRPC server settings. Currently, RPCPluginServer
-    # uses a set of hardcoded default gRPC options and does not dynamically
-    # apply these specific keys from the passed 'config' dictionary for gRPC server tuning.
+    # are illustrative of potential gRPC server settings. RPCPluginServer uses
+    # default gRPC options and doesn't dynamically apply these specific keys
+    # from 'config' for gRPC server tuning.
     # This dictionary is primarily for application-specific settings.
     # Create production server
-    server = plugin_server(
+    server: RPCPluginServer = plugin_server(  # Annotated
         protocol=protocol,
         handler=handler,
         transport="tcp",
@@ -263,9 +276,9 @@ async def example_8_production_server_deployment():
         port=50051,  # Standard gRPC port
         config={
             # General application config can be passed here.
-            # Note: Low-level gRPC options (max_workers, keepalive, etc.) are not directly
-            # configurable through this factory's 'config' dict. They would require
-            # direct instantiation of grpc.aio.server and potentially RPCPluginServer.
+            # Note: Low-level gRPC options (max_workers, keepalive, etc.) are not
+            # directly configurable via this 'config' dict.
+            # They'd require direct grpc.aio.server instantiation.
             "app_performance_profile": "high_throughput",
         },
     )
@@ -283,7 +296,7 @@ async def example_8_production_server_deployment():
     server_task = asyncio.create_task(server.serve())
 
     # Simulate server initialization time
-    await asyncio.sleep(0.5)
+    await server.wait_for_server_ready(timeout=5.0)  # Changed
 
     logger.info(
         "Production server started successfully",
@@ -332,7 +345,7 @@ async def example_8_production_server_deployment():
     )
 
 
-async def example_8_monitoring_and_observability():
+async def example_8_monitoring_and_observability() -> None:
     """
     Example 8D: Demonstrates monitoring and observability patterns.
 
@@ -345,7 +358,7 @@ async def example_8_monitoring_and_observability():
     print("=" * 60)
 
     # Simulate production metrics collection
-    metrics = {
+    metrics: dict[str, dict[str, Any]] = {  # Annotated
         "service_info": {
             "name": "production-rpc-service",
             "version": "1.0.0",
@@ -407,7 +420,7 @@ async def example_8_monitoring_and_observability():
     )
 
     # Simulate alerting thresholds
-    alert_conditions = [
+    alert_conditions: list[dict[str, str | float | bool | int]] = [  # Annotated
         {
             "metric": "error_rate",
             "threshold": 0.05,
@@ -435,10 +448,12 @@ async def example_8_monitoring_and_observability():
     ]
 
     for condition in alert_conditions:
-        is_alert = condition["current"] > condition["threshold"]
+        current_val = cast(int | float, condition["current"])
+        threshold_val = cast(int | float, condition["threshold"])
+        is_alert = current_val > threshold_val
 
         logger.info(
-            f"Alert condition check: {condition['metric']}",
+            f"Alert check: {str(condition['metric'])}",  # Shortened
             domain="alerting",
             action="threshold_check",
             status="alert" if is_alert else "ok",
@@ -469,7 +484,7 @@ async def example_8_monitoring_and_observability():
     )
 
 
-async def main():
+async def main() -> None:
     """Run all production configuration examples."""
     print("🏭 pyvider-rpcplugin Production Configuration Examples")
     print("====================================================")

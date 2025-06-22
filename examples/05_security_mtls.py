@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # examples/05_security_mtls.py
-"""Demonstrates mTLS security setup and certificate management with pyvider-rpcplugin."""
+"""mTLS security setup and certificate management with pyvider-rpcplugin."""
 
 import asyncio
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any  # For type hints
 
 import grpc  # For direct channel creation
 from attrs import define, field
@@ -17,13 +18,15 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from pyvider.rpcplugin import (  # noqa: E402
-    configure,
-    create_basic_protocol,
-    plugin_server,
-)
+# First-party imports (after sys.path modification)
+from pyvider.rpcplugin import configure, plugin_protocol, plugin_server  # noqa: E402
+from pyvider.rpcplugin.config import rpcplugin_config  # noqa: E402
 from pyvider.rpcplugin.crypto.certificate import Certificate  # noqa: E402
 from pyvider.rpcplugin.exception import CertificateError  # noqa: E402
+from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
+from pyvider.rpcplugin.types import (  # noqa: E402
+    RPCPluginProtocol as TypesRPCPluginProtocol,
+)
 from pyvider.telemetry import logger  # noqa: E402
 
 
@@ -37,10 +40,12 @@ class SecureEchoReply:
 class SecureEchoHandler:
     """Secure echo handler for mTLS demonstration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.authenticated_requests = 0
 
-    async def SecureEcho(self, request, context):
+    async def SecureEcho(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> SecureEchoReply:
         """Handle secure echo requests with client authentication."""
         self.authenticated_requests += 1
 
@@ -62,7 +67,7 @@ class SecureEchoHandler:
         return SecureEchoReply(response=response)
 
 
-async def example_5_certificate_generation(cert_path: Path):  # Added cert_path argument
+async def example_5_certificate_generation(cert_path: Path) -> dict[str, str]:
     """
     Example 5A: Demonstrates certificate generation for mTLS.
 
@@ -152,8 +157,8 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
         client_key_path=str(client_key_path),
     )
 
-    # Step 4: Verification (conceptual - actual verification happens during TLS handshake)
-    # We can log that the chain should be valid.
+    # Step 4: Verification (conceptual - actual verification is via TLS handshake).
+    # Log that the chain should be valid.
     logger.info(
         "Certificates generated for a proper mTLS chain.",
         domain="security",
@@ -174,11 +179,15 @@ async def example_5_certificate_generation(cert_path: Path):  # Added cert_path 
     }
 
 
+# from pyvider.rpcplugin.server import RPCPluginServer  # Moved to top
+
 # The 'with tempfile.TemporaryDirectory() as cert_dir:' block is removed from here
 # and will be moved to main()
 
 
-async def example_5_mtls_server_setup(cert_paths: dict):
+async def example_5_mtls_server_setup(
+    cert_paths: dict[str, str],
+) -> tuple[RPCPluginServer, asyncio.Task]:
     """
     Example 5B: Demonstrates mTLS server configuration.
 
@@ -193,41 +202,22 @@ async def example_5_mtls_server_setup(cert_paths: dict):
     # Configure mTLS settings
     configure(
         magic_cookie="secure-mtls-cookie-2024",
-        protocol_version=1,
+        protocol_versions=[1],  # Changed from protocol_version
         transports=["tcp"],  # mTLS typically used with TCP
         auto_mtls=True,  # Enable automatic mTLS
         handshake_timeout=30.0,
         connection_timeout=300.0,
-        # Server certificate configuration (now using CA-signed server cert)
-        server_cert=f"file://{cert_paths['server_cert']}",  # Path to the CA-signed server certificate
-        server_key=f"file://{cert_paths['server_key']}",  # Path to the server's private key
-        # Client certificate validation (server uses CA cert to verify client certs)
-        client_root_certs=f"file://{cert_paths['ca_cert']}",  # Path to the CA certificate
-        # Note: PLUGIN_CLIENT_CERT in server config context means root CAs for client auth.
-        # The 'client_cert=' parameter in configure() maps to PLUGIN_CLIENT_ROOT_CERTS for server-side.
-        # This was a bit confusingly named in `configure` and relies on its internal mapping.
-        # For clarity, I'm providing it as client_root_certs which configure() should handle.
-        # If configure() has a direct `client_root_certs` param, that's better.
-        # Looking at config.py, `configure` takes `client_cert` and `client_key` for client identity,
-        # and `server_cert`, `server_key` for server identity.
-        # For server to validate client, it's `PLUGIN_CLIENT_ROOT_CERTS`.
-        # `configure()` doesn't have a direct param for `PLUGIN_CLIENT_ROOT_CERTS`.
-        # We must ensure `rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")`
-        # is called or that `client_cert` in `configure` maps to it for server-side.
-        # The current `configure` maps `client_cert` to `PLUGIN_CLIENT_CERT`.
-        # This needs to be set directly for server-side mTLS client validation.
-        # **Self-correction**: The `configure()` function has `client_cert` which maps to `PLUGIN_CLIENT_CERT`.
-        # In the context of a server's mTLS setup, `PLUGIN_CLIENT_CERT` (if used by server's credential builder)
-        # or more appropriately `PLUGIN_CLIENT_ROOT_CERTS` is what the server uses to verify clients.
-        # The server's `_generate_server_credentials` now explicitly uses `PLUGIN_CLIENT_ROOT_CERTS`.
-        # So, we should set that. `configure()` doesn't have a direct mapping for this.
-        # I will set it directly via rpcplugin_config and then call configure for other parts.
+        # Server identity: CA-signed server certificate and its private key.
+        server_cert=f"file://{cert_paths['server_cert']}",
+        server_key=f"file://{cert_paths['server_key']}",
+        # For mTLS, server needs to verify clients. It uses the CA certificate for this.
+        # The relevant config key is PLUGIN_CLIENT_ROOT_CERTS.
+        # `configure()` doesn't have a direct parameter for PLUGIN_CLIENT_ROOT_CERTS.
+        # So, we set it directly using rpcplugin_config *after* other configurations.
+        # `client_cert` in `configure()` sets PLUGIN_CLIENT_CERT (client's own cert),
+        # which is not what the server uses to verify other clients.
     )
-    # Explicitly set the client root certs for the server to use for mTLS validation
-    from pyvider.rpcplugin.config import (
-        rpcplugin_config,
-    )  # Import locally if not at top
-
+    # Set client root CAs for server to validate client certificates in mTLS.
     rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")
 
     logger.info(
@@ -240,11 +230,15 @@ async def example_5_mtls_server_setup(cert_paths: dict):
     )
 
     # Create secure protocol and handler
-    protocol = create_basic_protocol()
+    protocol: TypesRPCPluginProtocol = (
+        plugin_protocol()
+    )  # Annotated with types.RPCPluginProtocol
     handler = SecureEchoHandler()
 
     # Create server with mTLS
-    server = plugin_server(
+    # Type for server: RPCPluginServer[Any, SecureEchoHandler, TCPSocketTransport]
+    # but TCPSocketTransport is not imported. Using RPCPluginServer from import.
+    server: RPCPluginServer = plugin_server(
         protocol=protocol,
         handler=handler,
         transport="tcp",
@@ -264,7 +258,7 @@ async def example_5_mtls_server_setup(cert_paths: dict):
 
     # Start server
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)  # Let server initialize
+    await server.wait_for_server_ready(timeout=10.0)  # Changed, longer for mTLS
 
     logger.info(
         "mTLS server running",
@@ -280,7 +274,7 @@ async def example_5_mtls_server_setup(cert_paths: dict):
     return server, server_task
 
 
-async def example_5_mtls_client_connection(cert_paths: dict):
+async def example_5_mtls_client_connection(cert_paths: dict[str, str]) -> None:
     """
     Example 5C: Demonstrates mTLS client configuration.
 
@@ -295,7 +289,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
     # Configure client mTLS settings
     configure(
         magic_cookie="secure-mtls-cookie-2024",
-        protocol_version=1,
+        protocol_versions=[1],  # Changed from protocol_version
         transports=["tcp"],
         auto_mtls=True,
         connection_timeout=60.0,
@@ -346,9 +340,9 @@ async def example_5_mtls_client_connection(cert_paths: dict):
 
         # Create SSL/TLS channel credentials for mTLS
         credentials = grpc.ssl_channel_credentials(
-            root_certificates=ca_cert_pem,  # Server authentication: CA cert to verify server's cert
-            private_key=client_key_pem,  # Client authentication: Client's private key
-            certificate_chain=client_cert_pem,  # Client authentication: Client's own cert
+            root_certificates=ca_cert_pem,  # CA to verify server's certificate
+            private_key=client_key_pem,     # Client's private key for its identity
+            certificate_chain=client_cert_pem,  # Client's certificate chain
         )
 
         # Create a secure channel
@@ -417,7 +411,7 @@ async def example_5_mtls_client_connection(cert_paths: dict):
             )
 
 
-async def example_5_certificate_rotation():
+async def example_5_certificate_rotation() -> None:
     """
     Example 5D: Demonstrates certificate rotation patterns.
 
@@ -488,7 +482,7 @@ async def example_5_certificate_rotation():
     )
 
 
-async def main():
+async def main() -> None:
     """Run all mTLS security examples."""
     print("🔒 pyvider-rpcplugin Security & mTLS Examples")
     print("=============================================")

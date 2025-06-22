@@ -5,12 +5,13 @@
 import asyncio
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict # Added asdict
 from pathlib import Path
 from statistics import mean
-from typing import Any
+from typing import Any, List, Dict, Tuple, Optional, Callable, cast # Added more types
 
-import psutil
+import psutil # type: ignore
+import grpc # For grpc.aio.insecure_channel
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -21,8 +22,12 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     configure,
-    create_basic_protocol,
+    plugin_protocol, # Changed
     plugin_server,
+)
+from pyvider.rpcplugin.server import RPCPluginServer # For type hint
+from pyvider.rpcplugin.types import ( # For type hint
+    RPCPluginProtocol as TypesRPCPluginProtocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -48,38 +53,33 @@ class PerformanceMetrics:
         """Calculate error rate as percentage."""
         return (self.error_count / max(self.total_requests, 1)) * 100
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for logging."""
-        return {
-            "requests_per_second": round(self.requests_per_second, 2),
-            "avg_latency_ms": round(self.avg_latency_ms, 3),
-            "p95_latency_ms": round(self.p95_latency_ms, 3),
-            "p99_latency_ms": round(self.p99_latency_ms, 3),
-            "min_latency_ms": round(self.min_latency_ms, 3),
-            "max_latency_ms": round(self.max_latency_ms, 3),
-            "cpu_usage_percent": round(self.cpu_usage_percent, 1),
-            "memory_usage_mb": round(self.memory_usage_mb, 1),
-            "total_requests": self.total_requests,
-            "total_duration_seconds": round(self.total_duration_seconds, 2),
-            "error_count": self.error_count,
-            "error_rate": round(self.error_rate, 2),
-        }
+        data = asdict(self)
+        data["error_rate"] = round(self.error_rate, 2)
+        # Round other float fields for cleaner logging
+        for key in [
+            "requests_per_second", "avg_latency_ms", "p95_latency_ms",
+            "p99_latency_ms", "min_latency_ms", "max_latency_ms",
+            "cpu_usage_percent", "memory_usage_mb", "total_duration_seconds"
+        ]:
+            if key in data and isinstance(data[key], float):
+                # Adjust precision based on key type (more for latency)
+                data[key] = round(data[key], 3 if "latency" in key else 2)
+        return data
 
 
 class HighPerformanceHandler:
     """Optimized handler for performance testing."""
+    handler_name: str; request_count: int; total_processing_time: float
+    cache: Dict[str, Any]; batch_buffer: List[str]; batch_size: int
 
-    def __init__(self, handler_name: str):
-        self.handler_name = handler_name
-        self.request_count = 0
-        self.total_processing_time = 0.0
-        self.cache: dict[str, Any] = {}  # Type hint added
-        self.batch_buffer: list[
-            str
-        ] = []  # Type hint added, assuming messages are strings
-        self.batch_size = 100
+    def __init__(self, handler_name: str) -> None:
+        self.handler_name = handler_name; self.request_count = 0
+        self.total_processing_time = 0.0; self.cache = {}
+        self.batch_buffer = []; self.batch_size = 100
 
-    async def FastEcho(self, request, context):
+    async def FastEcho(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         """Optimized echo service for performance testing."""
 
         self.request_count += 1
@@ -97,7 +97,7 @@ class HighPerformanceHandler:
 
         return type("EchoReply", (), {"response": result})()
 
-    async def CachedProcess(self, request, context):
+    async def CachedProcess(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         """Process with caching optimization."""
 
         self.request_count += 1
@@ -116,7 +116,7 @@ class HighPerformanceHandler:
 
         return type("CachedReply", (), {"response": result, "from_cache": False})()
 
-    async def BatchProcess(self, request, context):
+    async def BatchProcess(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         """Process with batching optimization."""
 
         self.request_count += 1
@@ -138,13 +138,10 @@ class HighPerformanceHandler:
                 },
             )()
 
-        return type(
-            "BatchReply",
-            (),
-            {"response": f"Queued: {message}", "batch_size": len(self.batch_buffer)},
-        )()
+            "BatchReply", (), {"response": f"Queued: {message}", "batch_size": len(self.batch_buffer)}
+        )() # Removed extra parenthesis
 
-    async def _process_batch(self) -> list[str]:
+    async def _process_batch(self) -> List[str]: # Changed list to List
         """Process a batch of items efficiently."""
 
         # Process all items concurrently
@@ -180,13 +177,14 @@ class PerformanceBenchmarker:
 
     Comprehensive performance benchmarking utility.
     """
+    process: psutil.Process # type: ignore[name-defined] # psutil is untyped import
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.process = psutil.Process()
 
     async def benchmark_rpc_performance(
         self,
-        server_config: dict[str, Any],
+        server_config: Dict[str, Any], # Changed dict to Dict
         test_duration_seconds: float = 10.0,
         concurrent_clients: int = 10,
         requests_per_client: int = 100,
@@ -204,10 +202,25 @@ class PerformanceBenchmarker:
         )
 
         # Setup server
-        protocol = create_basic_protocol()
+        protocol = plugin_protocol() # Changed
         handler = HighPerformanceHandler("BenchmarkHandler")
 
-        server = plugin_server(protocol=protocol, handler=handler, **server_config)
+        # Corrected plugin_server call: pass server_config to 'config' param
+        # Also, explicitly pass transport details from server_config if they exist
+        transport = server_config.get('transport', 'unix')
+        transport_path = server_config.get('transport_path') if transport == 'unix' else None
+        host = server_config.get('host') if transport == 'tcp' else '127.0.0.1'
+        port = server_config.get('port', 0) if transport == 'tcp' else 0
+
+        server = plugin_server(
+            protocol=protocol,
+            handler=handler,
+            transport=transport,
+            transport_path=transport_path,
+            host=host,
+            port=port,
+            config=server_config
+        )
 
         # Start server
         server_task = asyncio.create_task(server.serve())
@@ -229,10 +242,10 @@ class PerformanceBenchmarker:
                 requests: int,
                 actual_server_endpoint: str,
                 transport_type: str,
-            ) -> list[float]:
+            ) -> List[float]: # Changed list to List
                 """Worker function for concurrent client."""
 
-                client_latencies = []
+                client_latencies: List[float] = [] # Annotated
                 # client = plugin_client(transport=server_config.get('transport', 'unix')) # Incorrect factory call
 
                 # Manually create a gRPC channel to the in-process server
@@ -355,7 +368,7 @@ class PerformanceBenchmarker:
             await server.stop()
             await server_task
 
-    async def compare_transport_performance(self) -> dict[str, PerformanceMetrics]:
+    async def compare_transport_performance(self) -> Dict[str, PerformanceMetrics]: # Changed dict
         """Compare performance across different transports."""
 
         logger.info(
@@ -643,22 +656,26 @@ async def example_10_concurrency_tuning():
         )
 
         # Setup optimized server
-        protocol = create_basic_protocol()
+        protocol = plugin_protocol() # Changed
         handler = HighPerformanceHandler(f"ConcurrencyHandler_{concurrent_clients}")
+
+        # Define srv_cfg for clarity before passing to plugin_server
+        srv_cfg = {
+            "transport":"unix",
+            "transport_path":f"/tmp/conc_{concurrent_clients}.sock", # nosec B108
+            "app_concurrency_setting": concurrent_clients
+        }
 
         server = plugin_server(
             protocol=protocol,
             handler=handler,
-            transport="unix",
-            config={
-                # "max_workers": concurrent_clients * 2,  # Conceptual: gRPC options not set this way
-                # "connection_pool_size": concurrent_clients, # Conceptual
-                "app_concurrency_setting": concurrent_clients  # Example of app-specific config
-            },
+            transport=srv_cfg["transport"],
+            transport_path=srv_cfg["transport_path"],
+            config=srv_cfg
         )
 
         server_task = asyncio.create_task(server.serve())
-        await asyncio.sleep(0.3)
+        await server.wait_for_server_ready(timeout=5.0) # Changed
 
         try:
             start_time = time.perf_counter()
@@ -864,22 +881,25 @@ async def example_10_memory_optimization():
     )
 
     # Create memory-optimized server
-    protocol = create_basic_protocol()
+    protocol = plugin_protocol() # Changed
     handler = MemoryOptimizedHandler()
 
+    # Define srv_cfg for clarity
+    srv_cfg = {
+        "transport": "unix",
+        "transport_path": "/tmp/mem_opt.sock", # nosec B108
+        "app_resource_profile": "optimized"
+    }
     server = plugin_server(
         protocol=protocol,
         handler=handler,
-        transport="unix",
-        config={
-            # "max_connections": 100,  # Conceptual: gRPC options not set this way
-            # "connection_timeout": 30, # This is a PLUGIN_ key, not for direct gRPC option
-            "app_resource_profile": "optimized"  # Example of app-specific config
-        },
+        transport=srv_cfg["transport"],
+        transport_path=srv_cfg["transport_path"],
+        config=srv_cfg
     )
 
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)
+    await server.wait_for_server_ready(timeout=5.0) # Changed
 
     try:
         # Simulate memory usage patterns
