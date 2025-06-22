@@ -477,12 +477,10 @@ def parse_handshake_response(
         except ValueError as e_ver:
             raise HandshakeError(
                 message=(
-                    "Invalid version numbers in handshake: "
-                    f"'{parts[0]}', '{parts[1]}'."
+                    f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."
                 ),
                 hint=(
-                    "Core and plugin versions in the handshake string must be "
-                    "integers."
+                    "Core and plugin versions in the handshake string must be integers."
                 ),
             ) from e_ver
 
@@ -637,13 +635,11 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
         try:
             # Ensure stdout is not None before accessing readline
             if process.stdout is None:
-                await asyncio.sleep(0.1) # Wait briefly if stdout not ready
+                await asyncio.sleep(0.1)  # Wait briefly if stdout not ready
                 continue
 
             line_bytes = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(
-                    None, process.stdout.readline
-                ),
+                asyncio.get_event_loop().run_in_executor(None, process.stdout.readline),
                 timeout=2.0,
             )
 
@@ -671,7 +667,8 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
 
                 chunk = await asyncio.wait_for(
                     asyncio.get_event_loop().run_in_executor(
-                        None, lambda: process.stdout.read(1024) # type: ignore[union-attr]
+                        None,
+                        lambda: process.stdout.read(1024),  # type: ignore[union-attr]
                     ),
                     timeout=1.0,
                 )
@@ -696,7 +693,6 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
                         # If complete handshake is split across reads but now in buffer
                         return buffer
 
-
             except TimeoutError:
                 logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
 
@@ -718,12 +714,12 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
             f"{timeout} seconds."
         ),
         hint=(
-            "Ensure the plugin starts and prints its handshake string to stdout "
-            f"promptly. Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'"
+            f"Ensure plugin starts and prints handshake to stdout promptly. "
+            f"Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'"
             if stderr_output_truncated
             else (
-                "Ensure the plugin starts and prints its handshake string to stdout "
-                f"promptly. Last buffer: '{buffer}'."
+                f"Ensure plugin starts and prints handshake to stdout promptly. "
+                f"Last buffer: '{buffer}'."
             )
         ),
     )
@@ -807,8 +803,7 @@ async def parse_and_validate_handshake(
 
         if len(parts) != 6:
             logger.error(
-                "🤝🔍❌ Invalid handshake format: expected 6 parts, got "
-                f"{len(parts)}"
+                f"🤝🔍❌ Invalid handshake format: expected 6 parts, got {len(parts)}"
             )
             raise HandshakeError(
                 message=(
@@ -831,12 +826,10 @@ async def parse_and_validate_handshake(
             )
             raise HandshakeError(
                 message=(
-                    "Invalid version numbers in handshake: "
-                    f"'{parts[0]}', '{parts[1]}'."
+                    f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."
                 ),
                 hint=(
-                    "Core and plugin versions in the handshake string must be "
-                    "integers."
+                    "Core and plugin versions in the handshake string must be integers."
                 ),
             ) from e_ver
 

@@ -38,8 +38,7 @@ from pyvider.rpcplugin.handshake import _SENTINEL_INSTANCE
             "PLUGIN_MAGIC_COOKIE_KEY",
             "expected_value",  # This is the 'set_value' or 'expected_value_config'
             "wrong_cookie",  # This is the 'set_cookie' or 'magic_cookie_env_var'
-            # Applying the more flexible regex that worked for a similar case
-            r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'expected_value', Received: 'wrong_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE_KEY' set by the client matches the server's expected 'PLUGIN_MAGIC_COO.*\)",
+            r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'expected_value', Received: 'wrong_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE_KEY' set by the client matches the server's expected 'PLUGIN_MAGIC_COOKIE_VALUE'\.\)",
         ),
     ],
 )
@@ -147,7 +146,7 @@ def test_validate_magic_cookie_missing_still_raises(monkeypatch) -> None:
             "some_expected",
             "different_cookie",
             True,
-            r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'some_expected', Received: 'different_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE_KEY' set by the client matches the server's expected 'PLUGIN_MAGIC_COO\.\.\..*\)",
+                r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'some_expected', Received: 'different_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE_KEY' set by the client matches the server's expected 'PLUGIN_MAGIC_COOKIE_VALUE'\.\)",
         ),
     ],
 )

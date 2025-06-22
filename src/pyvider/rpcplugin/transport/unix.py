@@ -506,7 +506,7 @@ class UnixSocketTransport(RPCPluginTransport):
                             )
                             await asyncio.sleep(0.1)  # Brief pause before retry
                         else:
-                            break # File already gone
+                            break  # File already gone
                 else:  # If all retries failed
                     # Only raise if file still exists after retries
                     if os.path.exists(socket_path):
@@ -515,9 +515,7 @@ class UnixSocketTransport(RPCPluginTransport):
                         )
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
-                raise TransportError(
-                    f"Failed to remove socket file: {e}"
-                ) from e
+                raise TransportError(f"Failed to remove socket file: {e}") from e
 
         self.endpoint = None
         self._closing = False

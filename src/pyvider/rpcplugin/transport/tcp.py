@@ -209,9 +209,11 @@ class TCPSocketTransport(RPCPluginTransport):
                 )
             except TimeoutError as e_timeout:
                 logger.error(
-                    f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e_timeout}"
+                    f"🔌❌⚠: Timeout for TCP endpoint {endpoint}: {e_timeout}"
                 )
-                raise TransportError(f"Connection timed out: {e_timeout}") from e_timeout
+                raise TransportError(
+                    f"Connection timed out: {e_timeout}"
+                ) from e_timeout
             except ConnectionRefusedError as e_refused:
                 logger.error(
                     f"🔌❌⚠: Connection refused to TCP endpoint {endpoint}: {e_refused}"

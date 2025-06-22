@@ -115,9 +115,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         )
         try:  # Outer try for iterator errors
             async for incoming in request_iterator:
-                sub_id = (
-                    incoming.service_id
-                )
+                sub_id = incoming.service_id
                 try:  # Inner try for processing each item
                     logger.debug(
                         "🔌📡🔍 Received ConnInfo: service_id="
@@ -175,8 +173,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                             )
                 except Exception as ex_inner:
                     err_str_inner = (
-                        "Broker error processing item for sub_id "
-                        f"{sub_id}: {ex_inner}"
+                        f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
                     )
                     logger.error(
                         f"🔌📡❌ {err_str_inner}",
@@ -261,7 +258,7 @@ class GRPCStdioService(GRPCStdioServicer):
             )
             done.set()
 
-        context.add_done_callback(on_rpc_done) # type: ignore[arg-type]
+        context.add_done_callback(on_rpc_done)  # type: ignore[arg-type]
 
         logger.debug(
             "🔌📝 GRPCStdioService: Entering StreamStdio while loop "
@@ -397,9 +394,7 @@ class GRPCControllerService(GRPCControllerServicer):
             shutdown_event: An asyncio.Event to signal plugin shutdown.
             stdio_service: The GRPCStdioService instance to also shutdown.
         """
-        self._shutdown_event = (
-            shutdown_event or asyncio.Event()
-        )
+        self._shutdown_event = shutdown_event or asyncio.Event()
         self._stdio_service = stdio_service
 
     async def Shutdown(
