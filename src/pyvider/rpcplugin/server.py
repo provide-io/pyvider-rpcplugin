@@ -22,7 +22,7 @@ from typing import Any, TypeVar, cast
 
 import grpc
 from attrs import define, field
-from grpc.aio import server as GRPCServer # Reverted alias
+from grpc.aio import server as GRPCServer # Ensure this is the alias used
 from grpc_health.v1 import health_pb2_grpc
 
 from pyvider.rpcplugin.config import ConfigError, rpcplugin_config
@@ -71,7 +71,7 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
     ) -> grpc.RpcMethodHandler:
         """Intercepts incoming RPCs to check against the rate limiter."""
         if not await self._limiter.is_allowed():
-            raise grpc.aio.AbortError( # Corrected AbortError call
+            raise grpc.aio.AbortError(
                 grpc.StatusCode.RESOURCE_EXHAUSTED,
                 "Rate limit exceeded."
             )
@@ -83,11 +83,10 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
     protocol: _ProtocolT = field()
     handler: _HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
-    transport: _TransportT | None = field(default=None) # Reverted from passed_transport
+    transport: _TransportT | None = field(default=None) # Reverted to 'transport'
     _exit_on_stop: bool = field(default=True, init=False)
-    # Internal _transport will be set from self.transport or negotiation
-    _transport: _TransportT | None = field(init=False, default=None) # Reverted from _active_transport
-    _server: _ServerT | None = field(init=False, default=None) # Reverted from _server_instance
+    _transport: _TransportT | None = field(init=False, default=None) # Reverted name
+    _server: _ServerT | None = field(init=False, default=None) # Reverted name
     _handshake_config: HandshakeConfig = field(init=False)
     _protocol_version: int = field(init=False)
     _transport_name: str = field(init=False)
@@ -123,7 +122,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 hint="Check rpcplugin_config settings.",
             ) from e
 
-        if self.transport is not None: # Use self.transport (the field)
+        if self.transport is not None: # Use the public 'transport' field
             self._transport = self.transport
 
         self._serving_future = asyncio.Future()
@@ -173,7 +172,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
     async def wait_for_server_ready(self, timeout: float = 5.0) -> None:
         try:
             await asyncio.wait_for(self._serving_event.wait(), timeout)
-            if self._transport is not None: # Use internal _transport
+            if self._transport is not None:
                 transport_checked = cast(RPCPluginTransportType, self._transport)
                 if transport_checked.endpoint:
                     if isinstance(transport_checked, UnixSocketTransport):
@@ -308,10 +307,10 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 else None
             )
 
-            if self._transport is None: # Use _transport
+            if self._transport is None:
                 raise TransportError("Transport not initialized before server setup.")
 
-            active_transport_checked = cast(RPCPluginTransportType, self._transport) # Use _transport
+            active_transport_checked = cast(RPCPluginTransportType, self._transport)
             await active_transport_checked.listen()
             endpoint = active_transport_checked.endpoint
             if not endpoint:
@@ -323,7 +322,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 else endpoint
             )
 
-            server_for_port = cast(grpc.aio.Server, self._server) # Use _server
+            server_for_port = cast(grpc.aio.Server, self._server)
             port_num = (
                 server_for_port.add_secure_port(bind_address, creds)
                 if creds
@@ -339,7 +338,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                     f"{active_transport_checked.host}:{port_num}"
                 )
 
-            server_to_start = cast(grpc.aio.Server, self._server) # Use _server
+            server_to_start = cast(grpc.aio.Server, self._server)
             await server_to_start.start()
         except (TransportError, ProtocolError, SecurityError):
             raise
@@ -351,15 +350,14 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
         self._protocol_version = negotiate_protocol_version(
             self._handshake_config.protocol_versions
         )
-        if not self._transport:  # Use internal _transport
+        if not self._transport:
+            # Type hint for what negotiate_transport returns
             negotiated_transport_typed: HandshakeModuleTransportT
             self._transport_name, negotiated_transport_typed = await negotiate_transport(
                 self._handshake_config.supported_transports
             )
-            self._transport = cast(_TransportT, negotiated_transport_typed) # Assign to _transport
+            self._transport = cast(_TransportT, negotiated_transport_typed)
         else:
-            # If self.transport (field) was provided, it's already in self._transport
-            # from __attrs_post_init__
             self._transport_name = (
                 "tcp" if isinstance(self._transport, TCPSocketTransport)
                 else "unix"
@@ -388,7 +386,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                     self._watch_shutdown_file()
                 )
 
-            if self._transport is None: # Use _transport
+            if self._transport is None:
                 err_msg = (
                     "Internal error: Transport is None before building "
                     "handshake response."
@@ -396,7 +394,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 logger.error(f"💣💥 {err_msg}")
                 raise TransportError(err_msg)
 
-            concrete_transport = cast(RPCPluginTransportType, self._transport) # Use _transport
+            concrete_transport = cast(RPCPluginTransportType, self._transport)
             response = await build_handshake_response(
                 plugin_version=self._protocol_version,
                 transport_name=self._transport_name,
@@ -418,15 +416,15 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
             with contextlib.suppress(asyncio.CancelledError):
                 await self._shutdown_watcher_task
 
-        if self._server is not None: # Use _server
-            server_to_stop = cast(grpc.aio.Server, self._server) # Use _server
+        if self._server is not None:
+            server_to_stop = cast(grpc.aio.Server, self._server)
             await server_to_stop.stop(grace=0.5)
-            self._server = None # Use _server
+            self._server = None
 
-        if self._transport is not None: # Use _transport
-            transport_to_close = cast(RPCPluginTransportType, self._transport) # Use _transport
+        if self._transport is not None:
+            transport_to_close = cast(RPCPluginTransportType, self._transport)
             await transport_to_close.close()
-            self._transport = None # Use _transport
+            self._transport = None
 
         if not self._serving_future.done():
             self._serving_future.set_result(None)
