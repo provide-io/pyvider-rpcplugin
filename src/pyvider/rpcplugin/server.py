@@ -285,12 +285,10 @@ class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]:
                 GRPCServer(interceptors=interceptors_list),  # Use GRPCServer
             )
 
-            proto_instance = (
-                self.protocol() if callable(self.protocol) else self.protocol
-            )  # type: ignore
-            await proto_instance.add_to_server(
-                handler=self.handler, server=self._server
-            )  # type: ignore
+            # self.protocol is already an instance of _ProtocolT (bound by RPCPluginProtocol)
+            # No need to check if callable or call it.
+            proto_instance = self.protocol # Let MyPy infer the type
+            await proto_instance.add_to_server(handler=self.handler, server=self._server)
 
             if self._server is None:
                 raise TransportError(
