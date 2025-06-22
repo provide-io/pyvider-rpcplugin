@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/server.py
+#
+
 """
 RPC Plugin Server Implementation.
 
@@ -13,12 +17,12 @@ import os
 import signal
 import socket
 import sys
-from abc import ABC
-from typing import Any, Generic, cast
+from collections.abc import Awaitable, Callable
+from typing import Any, TypeVar, cast
 
 import grpc
 from attrs import define, field
-from grpc.aio import server as GRPCServer
+from grpc.aio import server as GRPCServer # Reverted alias
 from grpc_health.v1 import health_pb2_grpc
 
 from pyvider.rpcplugin.config import ConfigError, rpcplugin_config
@@ -37,11 +41,19 @@ from pyvider.rpcplugin.handshake import (
 )
 from pyvider.rpcplugin.health_servicer import HealthServicer
 from pyvider.rpcplugin.protocol import register_protocol_service
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.transport.types import TransportT
-from pyvider.rpcplugin.types import HandlerT, ProtocolT, ServerT
+from pyvider.rpcplugin.transport.types import (
+    RPCPluginTransport as RPCPluginTransportType,
+)
+from pyvider.rpcplugin.transport.types import TransportT as HandshakeModuleTransportT
 from pyvider.telemetry import logger
+
+_ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
+_HandlerT = TypeVar("_HandlerT")
+_TransportT = TypeVar("_TransportT", bound=RPCPluginTransportType)
+_ProtocolT = TypeVar("_ProtocolT", bound=RPCPluginProtocol)
 
 
 class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
@@ -49,34 +61,33 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
     A gRPC interceptor that uses a TokenBucketRateLimiter to enforce rate limits.
     """
 
-    def __init__(self, limiter: TokenBucketRateLimiter):
+    def __init__(self, limiter: TokenBucketRateLimiter) -> None:
         self._limiter = limiter
 
-    async def intercept_service(self, continuation, handler_call_details):
+    async def intercept_service(
+        self,
+        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]],
+        handler_call_details: grpc.HandlerCallDetails,
+    ) -> grpc.RpcMethodHandler:
         """Intercepts incoming RPCs to check against the rate limiter."""
         if not await self._limiter.is_allowed():
-            # This is a simplified handler that will abort any unary call.
-            # A more robust implementation would inspect the handler_call_details
-            # to handle different RPC types (unary, streaming) appropriately.
-            async def abort(request, context):
-                await context.abort(
-                    grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded."
-                )
-
-            return grpc.unary_unary_rpc_method_handler(abort)
-
+            raise grpc.aio.AbortError( # Corrected AbortError call
+                grpc.StatusCode.RESOURCE_EXHAUSTED,
+                "Rate limit exceeded."
+            )
         return await continuation(handler_call_details)
 
 
 @define(slots=False)
-class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
-    protocol: ProtocolT = field()
-    handler: HandlerT = field()
+class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
+    protocol: _ProtocolT = field()
+    handler: _HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
-    transport: TransportT | None = field(default=None)
+    transport: _TransportT | None = field(default=None) # Reverted from passed_transport
     _exit_on_stop: bool = field(default=True, init=False)
-    _transport: TransportT | None = field(init=False, default=None)
-    _server: ServerT | None = field(init=False, default=None)
+    # Internal _transport will be set from self.transport or negotiation
+    _transport: _TransportT | None = field(init=False, default=None) # Reverted from _active_transport
+    _server: _ServerT | None = field(init=False, default=None) # Reverted from _server_instance
     _handshake_config: HandshakeConfig = field(init=False)
     _protocol_version: int = field(init=False)
     _transport_name: str = field(init=False)
@@ -86,7 +97,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_file_path: str | None = field(init=False, default=None)
-    _shutdown_watcher_task: asyncio.Task[None] | None = field(init=False, default=None)
+    _shutdown_watcher_task: asyncio.Task[None] | None = field(
+        init=False, default=None
+    )
     _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
     _health_servicer: HealthServicer | None = field(init=False, default=None)
     _main_service_name: str = field(
@@ -110,6 +123,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 hint="Check rpcplugin_config settings.",
             ) from e
 
+        if self.transport is not None: # Use self.transport (the field)
+            self._transport = self.transport
+
         self._serving_future = asyncio.Future()
         self._shutdown_file_path = rpcplugin_config.shutdown_file_path()
 
@@ -122,9 +138,9 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 )
 
         if hasattr(self.protocol, "service_name") and isinstance(
-            self.protocol.service_name, str
+            self.protocol.service_name, str # type: ignore
         ):
-            protocol_class_service_name = self.protocol.service_name
+            protocol_class_service_name = self.protocol.service_name # type: ignore
             if protocol_class_service_name:
                 self._main_service_name = protocol_class_service_name
 
@@ -157,29 +173,31 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
     async def wait_for_server_ready(self, timeout: float = 5.0) -> None:
         try:
             await asyncio.wait_for(self._serving_event.wait(), timeout)
-            if self._transport and self._transport.endpoint:
-                if isinstance(self._transport, UnixSocketTransport):
-                    if not self._transport.path or not os.path.exists(
-                        self._transport.path
-                    ):
-                        raise TransportError(
-                            f"Unix socket file {self._transport.path} does not exist."
-                        )
-                    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-                    sock.settimeout(1.0)
-                    sock.connect(self._transport.path)
-                    sock.close()
-                elif isinstance(self._transport, TCPSocketTransport):
-                    host = self._transport.host or "127.0.0.1"
-                    port = self._port
-                    if port is None:
-                        raise TransportError(
-                            "TCP port not available for readiness check."
-                        )
-                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                    sock.settimeout(1.0)
-                    sock.connect((host, port))
-                    sock.close()
+            if self._transport is not None: # Use internal _transport
+                transport_checked = cast(RPCPluginTransportType, self._transport)
+                if transport_checked.endpoint:
+                    if isinstance(transport_checked, UnixSocketTransport):
+                        if not transport_checked.path or not os.path.exists(
+                            transport_checked.path
+                        ):
+                            raise TransportError(
+                                f"Unix socket file {transport_checked.path} does not exist."
+                            )
+                        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                        sock.settimeout(1.0)
+                        sock.connect(transport_checked.path)
+                        sock.close()
+                    elif isinstance(transport_checked, TCPSocketTransport):
+                        host = transport_checked.host or "127.0.0.1"
+                        port = self._port
+                        if port is None:
+                            raise TransportError(
+                                "TCP port not available for readiness check."
+                            )
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        sock.settimeout(1.0)
+                        sock.connect((host, port))
+                        sock.close()
         except TimeoutError as e:
             raise TransportError(
                 f"Server failed to signal readiness within {timeout}s."
@@ -255,25 +273,33 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             require_client_auth=require_auth,
         )
 
-    async def _setup_server(self, client_cert: str | None) -> None:
+    async def _setup_server(self, client_cert_str: str | None) -> None:
         try:
-            interceptors = (
+            interceptors_list: list[grpc.aio.ServerInterceptor] = (
                 [RateLimitingInterceptor(self._rate_limiter)]
                 if self._rate_limiter
                 else []
             )
-            self._server = cast(ServerT, GRPCServer(interceptors=interceptors))
-
-            proto = self.protocol() if callable(self.protocol) else self.protocol
-            await proto.add_to_server(handler=self.handler, server=self._server)
-            register_protocol_service(
-                server=self._server, shutdown_event=self._shutdown_event
+            self._server = cast( # Use _server
+                _ServerT, GRPCServer(interceptors=interceptors_list) # Use GRPCServer
             )
-            if self._health_servicer:
-                health_pb2_grpc.add_HealthServicer_to_server(
-                    self._health_servicer, self._server
+
+            proto_instance = self.protocol() if callable(self.protocol) else self.protocol # type: ignore
+            await proto_instance.add_to_server(handler=self.handler, server=self._server) # type: ignore
+
+            if self._server is None:
+                raise TransportError(
+                    "Server object not initialized before registration."
                 )
-            self.protocol = proto
+
+            concrete_server = cast(grpc.aio.Server, self._server)
+            register_protocol_service(
+                server=concrete_server, shutdown_event=self._shutdown_event
+            )
+            if self._health_servicer and self._server:
+                health_pb2_grpc.add_HealthServicer_to_server(
+                    self._health_servicer, concrete_server
+                )
 
             creds = (
                 self._generate_server_credentials()
@@ -282,34 +308,39 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
                 else None
             )
 
-            if self._transport is None:
+            if self._transport is None: # Use _transport
                 raise TransportError("Transport not initialized before server setup.")
 
-            await self._transport.listen()
-            endpoint = self._transport.endpoint
+            active_transport_checked = cast(RPCPluginTransportType, self._transport) # Use _transport
+            await active_transport_checked.listen()
+            endpoint = active_transport_checked.endpoint
             if not endpoint:
                 raise TransportError("Transport endpoint not available after listen.")
 
             bind_address = (
                 f"unix:{endpoint}"
-                if isinstance(self._transport, UnixSocketTransport)
+                if isinstance(active_transport_checked, UnixSocketTransport)
                 else endpoint
             )
 
-            port = (
-                self._server.add_secure_port(bind_address, creds)
+            server_for_port = cast(grpc.aio.Server, self._server) # Use _server
+            port_num = (
+                server_for_port.add_secure_port(bind_address, creds)
                 if creds
-                else self._server.add_insecure_port(bind_address)
+                else server_for_port.add_insecure_port(bind_address)
             )
 
-            if isinstance(self._transport, TCPSocketTransport):
-                if port == 0 and bind_address != "0.0.0.0:0":
+            if isinstance(active_transport_checked, TCPSocketTransport):
+                if port_num == 0 and bind_address != "0.0.0.0:0":
                     raise TransportError(f"Failed to bind to TCP port: {bind_address}")
-                self._port = port
-                self._transport.port = port
-                self._transport.endpoint = f"{self._transport.host}:{port}"
+                self._port = port_num
+                active_transport_checked.port = port_num
+                active_transport_checked.endpoint = (
+                    f"{active_transport_checked.host}:{port_num}"
+                )
 
-            await self._server.start()
+            server_to_start = cast(grpc.aio.Server, self._server) # Use _server
+            await server_to_start.start()
         except (TransportError, ProtocolError, SecurityError):
             raise
         except Exception as e:
@@ -320,14 +351,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         self._protocol_version = negotiate_protocol_version(
             self._handshake_config.protocol_versions
         )
-        if not self.transport:
-            self._transport_name, self._transport = await negotiate_transport(
+        if not self._transport:  # Use internal _transport
+            negotiated_transport_typed: HandshakeModuleTransportT
+            self._transport_name, negotiated_transport_typed = await negotiate_transport(
                 self._handshake_config.supported_transports
             )
+            self._transport = cast(_TransportT, negotiated_transport_typed) # Assign to _transport
         else:
-            self._transport = self.transport
+            # If self.transport (field) was provided, it's already in self._transport
+            # from __attrs_post_init__
             self._transport_name = (
-                "tcp" if isinstance(self.transport, TCPSocketTransport) else "unix"
+                "tcp" if isinstance(self._transport, TCPSocketTransport)
+                else "unix"
             )
 
     def _register_signal_handlers(self) -> None:
@@ -336,7 +371,7 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             with contextlib.suppress(RuntimeError, NotImplementedError):
                 loop.add_signal_handler(sig, self._shutdown_requested)
 
-    def _shutdown_requested(self, *args) -> None:
+    def _shutdown_requested(self, *args: Any) -> None:
         if not self._serving_future.done():
             self._serving_future.set_result(None)
         self._shutdown_event.set()
@@ -345,24 +380,27 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
         try:
             self._register_signal_handlers()
             await self._negotiate_handshake()
-            client_cert = self._read_client_cert()
-            await self._setup_server(client_cert)
+            client_cert_str = self._read_client_cert()
+            await self._setup_server(client_cert_str)
 
             if self._shutdown_file_path:
                 self._shutdown_watcher_task = asyncio.create_task(
                     self._watch_shutdown_file()
                 )
 
-            if self._transport is None:
-                # This should ideally not be reached if _negotiate_handshake and _setup_server worked.
-                err_msg = "Internal error: Transport is None before building handshake response."
+            if self._transport is None: # Use _transport
+                err_msg = (
+                    "Internal error: Transport is None before building "
+                    "handshake response."
+                )
                 logger.error(f"💣💥 {err_msg}")
                 raise TransportError(err_msg)
 
+            concrete_transport = cast(RPCPluginTransportType, self._transport) # Use _transport
             response = await build_handshake_response(
                 plugin_version=self._protocol_version,
                 transport_name=self._transport_name,
-                transport=self._transport,
+                transport=concrete_transport,
                 server_cert=self._server_cert_obj,
                 port=self._port,
             )
@@ -380,13 +418,18 @@ class RPCPluginServer(ABC, Generic[ServerT, HandlerT, TransportT, ProtocolT]):
             with contextlib.suppress(asyncio.CancelledError):
                 await self._shutdown_watcher_task
 
-        if self._server:
-            await self._server.stop(grace=0.5)
-            self._server = None
+        if self._server is not None: # Use _server
+            server_to_stop = cast(grpc.aio.Server, self._server) # Use _server
+            await server_to_stop.stop(grace=0.5)
+            self._server = None # Use _server
 
-        if self._transport:
-            await self._transport.close()
-            self._transport = None
+        if self._transport is not None: # Use _transport
+            transport_to_close = cast(RPCPluginTransportType, self._transport) # Use _transport
+            await transport_to_close.close()
+            self._transport = None # Use _transport
 
         if not self._serving_future.done():
             self._serving_future.set_result(None)
+
+
+# 🐍🏗️🔌

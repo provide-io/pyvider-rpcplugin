@@ -1,74 +1,82 @@
+#
+# src/pyvider/rpcplugin/exception.py
+#
+
 """
-Custom Exceptions for Pyvider RPC Plugin System.
+Custom Exception Types for Pyvider RPC Plugin.
 
 This module defines a hierarchy of custom exceptions used throughout the
-Pyvider RPC Plugin system to indicate various error conditions related to
-configuration, handshake, protocol, transport, and security.
+Pyvider RPC Plugin system. These exceptions provide more specific error
+information than standard Python exceptions, aiding in debugging and error
+handling.
+
+The base exception is `RPCPluginError`, from which all other plugin-specific
+exceptions inherit. This allows for broad catching of plugin-related errors
+while still enabling fine-grained handling of specific error conditions.
 """
+
+from typing import Any
 
 
 class RPCPluginError(Exception):
-    """Base class for all RPC plugin-specific errors."""
+    """
+    Base exception for all Pyvider RPC plugin errors.
+
+    This class serves as the root of the exception hierarchy for the plugin system.
+    It can be subclassed to create more specific error types.
+
+    Attributes:
+        message: A human-readable error message.
+        hint: An optional hint for resolving the error.
+        code: An optional error code associated with the error.
+    """
 
     def __init__(
-        self, message: str, code: int | None = None, hint: str | None = None
+        self,
+        message: str,
+        hint: str | None = None,
+        code: int | str | None = None,
+        *args: Any,
     ) -> None:
-        """
-        Initialize RPCPluginError.
-
-        Args:
-            message: The error message.
-            code: An optional error code.
-            hint: An optional hint for resolving the error.
-        """
-        super().__init__(message)
-        self.message = message  # Add this line
-        self.code = code
+        super().__init__(message, *args)
+        self.message = message
         self.hint = hint
+        self.code = code
 
     def __str__(self) -> str:
-        MAX_MSG_LEN = 256  # Max length for the base message part
-        MAX_HINT_LEN = 128  # Max length for the hint part
-
-        base_message = super().__str__()
-        if len(base_message) > MAX_MSG_LEN:
-            base_message = base_message[:MAX_MSG_LEN] + "..."
-
-        output_message = f"[{self.__class__.__name__}] {base_message}"
-
+        parts = [self.message]
         if self.code is not None:
-            output_message += f" (Code: {self.code})"
-
+            parts.append(f"[Code: {self.code}]")
         if self.hint:
-            hint_str = self.hint
-            if len(hint_str) > MAX_HINT_LEN:
-                hint_str = hint_str[:MAX_HINT_LEN] + "..."
-            output_message += f" (Hint: {hint_str})"
-        return output_message
+            parts.append(f"(Hint: {self.hint})")
+        return " ".join(parts)
 
 
 class ConfigError(RPCPluginError):
-    """Configuration-related errors."""
+    """Errors related to plugin configuration issues."""
 
 
 class HandshakeError(RPCPluginError):
-    """Errors during the handshake."""
+    """Errors occurring during the plugin handshake process."""
 
 
 class ProtocolError(RPCPluginError):
-    """Errors related to protocol negotiation or incompatibility."""
+    """Errors related to violations of the plugin protocol."""
 
 
 class TransportError(RPCPluginError):
-    """Errors with the transport layer (TCP or Unix sockets)."""
+    """Errors related to network transport or communication issues."""
 
 
 class SecurityError(RPCPluginError):
-    """Errors related to security (mTLS, certificate verification)."""
+    """Base class for security-related errors within the plugin system."""
 
 
 class CertificateError(SecurityError):
-    """Errors related to security certificates, private keys, or other credential validation and management issues."""
+    """
+    Errors related to security certificates, private keys, or other credential
+    validation and management issues.
+    """
 
 
 # 🐍🏗️🔌

@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/config.py
+#
+
 """Configuration management for Pyvider RPC Plugin.
 
 This module provides a configuration system for the Pyvider RPC Plugin framework,
@@ -40,7 +44,8 @@ SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 # Define supported transport types
 TRANSPORT_TYPES = Literal["unix", "tcp"]
 
-# Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
+# Configuration Schema: Defines environment variables, requirements, defaults,
+# and descriptions
 CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
@@ -95,7 +100,9 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_SERVER_ENDPOINT": {
         "required": False,
         "default": None,
-        "description": "Server endpoint for connection (host:port for TCP, path for Unix).",
+        "description": (
+            "Server endpoint for connection (host:port for TCP, path for Unix)."
+        ),
         "type": "str",
     },
     "PLUGIN_AUTO_MTLS": {
@@ -107,13 +114,17 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_SERVER_CERT": {
         "required": False,
         "default": None,
-        "description": "Server certificate in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Server certificate in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_SERVER_KEY": {
         "required": False,
         "default": None,
-        "description": "Server private key in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Server private key in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_SERVER_ROOT_CERTS": {
@@ -138,13 +149,17 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_CLIENT_CERT": {
         "required": False,
         "default": None,
-        "description": "Client certificate in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Client certificate in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_CLIENT_KEY": {
         "required": False,
         "default": None,
-        "description": "Client private key in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Client private key in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_CLIENT_ROOT_CERTS": {
@@ -174,7 +189,9 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_CLIENT_RETRY_ENABLED": {
         "required": False,
         "default": "true",
-        "description": "Enable automatic retries for client connection and handshake failures.",
+        "description": (
+            "Enable automatic retries for client connection and handshake failures."
+        ),
         "type": "bool",
     },
     "PLUGIN_CLIENT_MAX_RETRIES": {
@@ -198,19 +215,28 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_CLIENT_RETRY_JITTER_MS": {
         "required": False,
         "default": 100,
-        "description": "Maximum jitter in milliseconds to apply to backoff delays to prevent thundering herd.",
+        "description": (
+            "Maximum jitter in milliseconds to apply to backoff delays to prevent "
+            "thundering herd."
+        ),
         "type": "int",
     },
     "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": {
         "required": False,
         "default": 60,
-        "description": "Total timeout in seconds for the entire retry sequence for a client operation.",
+        "description": (
+            "Total timeout in seconds for the entire retry sequence for a client "
+            "operation."
+        ),
         "type": "int",
     },
     "PLUGIN_SHUTDOWN_FILE_PATH": {
         "required": False,
         "default": None,
-        "description": "Path to a file that, if created, will trigger a graceful server shutdown.",
+        "description": (
+            "Path to a file that, if created, will trigger a graceful server "
+            "shutdown."
+        ),
         "type": "str",
     },
     "PLUGIN_RATE_LIMIT_ENABLED": {
@@ -262,8 +288,14 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 extra={"error": str(e)},
             )
             raise ConfigError(
-                message=f"Failed to read configuration file specified for '{key}'. Path: {file_path}",
-                hint="Ensure the file exists, is accessible, and has correct read permissions.",
+                message=(
+                    f"Failed to read configuration file specified for '{key}'. "
+                    f"Path: {file_path}"
+                ),
+                hint=(
+                    "Ensure the file exists, is accessible, and has correct read "
+                    "permissions."
+                ),
             ) from e
 
     try:
@@ -303,8 +335,14 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     except (ValueError, TypeError) as e:
         logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
         raise ConfigError(
-            message=f"Invalid value format for configuration key '{key}'. Expected type '{meta['type']}', but received value '{value}'.",
-            hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).",
+            message=(
+                f"Invalid value format for configuration key '{key}'. Expected "
+                f"type '{meta['type']}', but received value '{value}'."
+            ),
+            hint=(
+                f"Please check the value of '{key}' (currently '{value}') and "
+                f"ensure it conforms to the expected type ({meta['type']})."
+            ),
         ) from e
 
 
@@ -317,8 +355,14 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     if meta.get("required", False) and value is None:
         logger.error(f"⚙️❌ Missing required configuration: {key}")
         raise ConfigError(
-            message=f"Missing required configuration key: '{key}'. Description: {meta['description']}",
-            hint=f"Please provide a value for the required configuration key '{key}'. This setting is essential for the plugin's operation.",
+            message=(
+                f"Missing required configuration key: '{key}'. "
+                f"Description: {meta['description']}"
+            ),
+            hint=(
+                f"Please provide a value for the required configuration key '{key}'. "
+                "This setting is essential for the plugin's operation."
+            ),
         )
 
     if value is None:
@@ -331,7 +375,11 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
         )
         raise ConfigError(
             message=f"Invalid value '{value}' provided for configuration key '{key}'.",
-            hint=f"The value '{value}' is not a valid option for '{key}'. Allowed values are: {meta['valid_values']}. Please choose one of these.",
+            hint=(
+                f"The value '{value}' is not a valid option for '{key}'. "
+                f"Allowed values are: {meta['valid_values']}. Please choose one of "
+                "these."
+            ),
         )
 
     return True
@@ -339,7 +387,8 @@ def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
 
 def get_config() -> dict[str, Any]:
     """
-    Retrieves all configuration values from environment, applying defaults and validation.
+    Retrieves all configuration values from environment, applying defaults and
+    validation.
     """
     config = {}
     logger.debug("⚙️🔄 Building configuration from environment and defaults")
@@ -370,7 +419,7 @@ class RPCPluginConfig:
 
     _instance = None
 
-    def __init__(self):
+    def __init__(self) -> None:  # Added return type hint
         """Initialize the configuration from environment and defaults."""
         self.config = {}
         try:
@@ -418,7 +467,10 @@ class RPCPluginConfig:
             logger.warning(f"⚙️⚠️ Setting unknown config key: {key}")
             raise ConfigError(
                 message=f"Attempted to set an unknown configuration key: '{key}'.",
-                hint="Ensure the configuration key is spelled correctly. It should be a predefined schema key or a dynamic key starting with 'PLUGIN_'.",
+                hint=(
+                    "Ensure the configuration key is spelled correctly. It should be "
+                    "a predefined schema key or a dynamic key starting with 'PLUGIN_'."
+                ),
             )
 
         logger.debug(f"⚙️📝 Updating config {key} -> {value}")
@@ -463,13 +515,21 @@ class RPCPluginConfig:
                     extra={"value_being_set": value},
                 )
                 raise ConfigError(
-                    message=f"Invalid value format for configuration key '{key}' during set. Expected type '{meta['type']}', but received value '{value}'.",
-                    hint=f"Please check the value of '{key}' (currently '{value}') and ensure it conforms to the expected type ({meta['type']}).",
+                    message=(
+                        f"Invalid value format for configuration key '{key}' during "
+                        f"set. Expected type '{meta['type']}', but received value "
+                        f"'{value}'."
+                    ),
+                    hint=(
+                        f"Please check the value of '{key}' (currently '{value}') and "
+                        f"ensure it conforms to the expected type ({meta['type']})."
+                    ),
                 ) from e
 
         self.config[key] = processed_value
         logger.debug(
-            f"⚙️📝 Stored processed config {key} -> {processed_value} (type: {type(processed_value)})"
+            f"⚙️📝 Stored processed config {key} -> {processed_value} "
+            f"(type: {type(processed_value)})"
         )
 
     def magic_cookie_key(self) -> str:
@@ -560,7 +620,10 @@ def configure(
                 )
                 raise ConfigError(
                     message=f"Unknown transport type specified: '{transport}'.",
-                    hint=f"Valid transport types are: {list(get_args(TRANSPORT_TYPES))}. Please use one of these.",
+                    hint=(
+                        "Valid transport types are: "
+                        f"{list(get_args(TRANSPORT_TYPES))}. Please use one of these."
+                    ),
                 )
 
         rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", transports)
@@ -601,3 +664,6 @@ def configure(
         logger.debug(f"⚙️📝 Set additional config {config_key} = {value}")
 
     logger.debug("⚙️✅ Configuration completed successfully")
+
+
+# 🐍🏗️🔌

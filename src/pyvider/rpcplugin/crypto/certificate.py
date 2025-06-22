@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/crypto/certificate.py
+#
+
 """
 Certificate Generation and Management.
 
@@ -95,7 +99,8 @@ class CertificateBase:
                 not_valid_after = not_valid_after.replace(tzinfo=UTC)
 
             logger.debug(
-                f"📜⏳✅ CertificateBase.create: Using validity: {not_valid_before} to {not_valid_after}"
+                "📜⏳✅ CertificateBase.create: Using validity: "
+                f"{not_valid_before} to {not_valid_after}"
             )
 
             private_key: KeyPair
@@ -212,7 +217,8 @@ class Certificate:
                         gen_key_type = KeyType.ECDSA
                     case _:
                         raise ValueError(
-                            f"Unsupported key_type string: '{self.key_type}'. Must be 'rsa' or 'ecdsa'."
+                            f"Unsupported key_type string: '{self.key_type}'. "
+                            "Must be 'rsa' or 'ecdsa'."
                         )
 
                 gen_curve: CurveType | None = None
@@ -221,8 +227,10 @@ class Certificate:
                 if gen_key_type == KeyType.ECDSA:
                     try:
                         gen_curve = CurveType[self.ecdsa_curve.upper()]
-                    except KeyError:
-                        raise ValueError(f"Unsupported ECDSA curve: {self.ecdsa_curve}")
+                    except KeyError as e_curve:
+                        raise ValueError(
+                            f"Unsupported ECDSA curve: {self.ecdsa_curve}"
+                        ) from e_curve
                 else:  # RSA
                     gen_key_size = self.key_size
 
@@ -278,10 +286,12 @@ class Certificate:
                 self.cert = cert_data
 
                 logger.debug(
-                    f"📜🔑🔍 Attempting to load X.509 certificate from PEM data (first 100 chars): {cert_data[:100]}"
+                    "📜🔑🔍 Attempting to load X.509 certificate from PEM data "
+                    f"(first 100 chars): {cert_data[:100]}"
                 )
                 logger.debug(
-                    f"📜🔑🔍 Full PEM data for cert (len {len(cert_data)}):\n{cert_data}"
+                    f"📜🔑🔍 Full PEM data for cert (len {len(cert_data)}):\n"
+                    f"{cert_data}"
                 )
                 self._cert = x509.load_pem_x509_certificate(cert_data.encode("utf-8"))
                 logger.debug("📜🔑✅ X.509 certificate object loaded from PEM.")
@@ -291,20 +301,24 @@ class Certificate:
                     key_data = self._load_from_uri_or_pem(self.key_pem_or_uri)
                     self.key = key_data
                     logger.debug(
-                        f"📜🔑🔍 Attempting to load private key from PEM data (first 100 chars): {key_data[:100]}"
+                        "📜🔑🔍 Attempting to load private key from PEM data "
+                        f"(first 100 chars): {key_data[:100]}"
                     )
                     logger.debug(
-                        f"📜🔑🔍 Full PEM data for key (len {len(key_data)}):\n{key_data}"
+                        f"📜🔑🔍 Full PEM data for key (len {len(key_data)}):\n"
+                        f"{key_data}"
                     )
                     loaded_priv_key = load_pem_private_key(
                         key_data.encode("utf-8"), password=None
                     )
                     if not isinstance(
-                        loaded_priv_key, (rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey)
+                        loaded_priv_key,
+                        rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey,
                     ):
                         raise CertificateError(
-                            f"Loaded private key is of unsupported type: {type(loaded_priv_key)}. "
-                            "Expected RSA or ECDSA private key."
+                            "Loaded private key is of unsupported type: "
+                            f"{type(loaded_priv_key)}. Expected RSA or ECDSA "
+                            "private key."
                         )
                     self._private_key = loaded_priv_key
                     logger.debug("📜🔑✅ Private key object loaded and type validated.")
@@ -322,11 +336,11 @@ class Certificate:
 
                 cert_public_key = self._cert.public_key()
                 if not isinstance(
-                    cert_public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)
+                    cert_public_key, rsa.RSAPublicKey | ec.EllipticCurvePublicKey
                 ):
                     raise CertificateError(
-                        f"Certificate's public key is of unsupported type: {type(cert_public_key)}. "
-                        "Expected RSA or ECDSA public key."
+                        "Certificate's public key is of unsupported type: "
+                        f"{type(cert_public_key)}. Expected RSA or ECDSA public key."
                     )
 
                 self._base = CertificateBase(
@@ -341,11 +355,13 @@ class Certificate:
 
         except Exception as e:
             logger.error(
-                f"📜❌ Certificate.__attrs_post_init__: Failed. Error: {type(e).__name__}: {e}",
+                "📜❌ Certificate.__attrs_post_init__: Failed. Error: "
+                f"{type(e).__name__}: {e}",
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
             raise CertificateError(
-                f"Failed to initialize certificate. Original error: {type(e).__name__}"
+                "Failed to initialize certificate. Original error: "
+                f"{type(e).__name__}"
             ) from e
 
     def _create_x509_certificate(
@@ -357,7 +373,9 @@ class Certificate:
     ) -> X509Certificate:
         """
         Internal helper to build and sign the X.509 certificate object.
-        Uses self._base and self._private_key (or overrides) which must be set beforehand.
+
+        Uses self._base and self._private_key (or overrides) which must be set
+        beforehand.
 
         Args:
             issuer_name_override: If provided, use this as the issuer name.
@@ -388,7 +406,8 @@ class Certificate:
 
             if not actual_signing_key:
                 raise CertificateError(
-                    "Cannot sign certificate without a signing key (either own or override)."
+                    "Cannot sign certificate without a signing key "
+                    "(either own or override)."
                 )
 
             builder = (
@@ -432,13 +451,19 @@ class Certificate:
                 builder = builder.add_extension(
                     x509.KeyUsage(
                         digital_signature=True,
-                        key_encipherment=True
-                        if not is_client_cert
-                        and isinstance(self._base.public_key, rsa.RSAPublicKey)
-                        else False,
-                        key_agreement=True
-                        if isinstance(self._base.public_key, ec.EllipticCurvePublicKey)
-                        else False,
+                        key_encipherment=(
+                            True
+                            if not is_client_cert
+                            and isinstance(self._base.public_key, rsa.RSAPublicKey)
+                            else False
+                        ),
+                        key_agreement=(
+                            True
+                            if isinstance(
+                                self._base.public_key, ec.EllipticCurvePublicKey
+                            )
+                            else False
+                        ),
                         content_commitment=False,
                         data_encipherment=False,
                         key_cert_sign=False,
@@ -461,7 +486,9 @@ class Certificate:
                     )
 
             logger.debug(
-                f"📜📝✅ Added BasicConstraints (is_ca={is_ca}), KeyUsage, ExtendedKeyUsage (is_client_cert={is_client_cert})."
+                "📜📝✅ Added BasicConstraints (is_ca="
+                f"{is_ca}), KeyUsage, ExtendedKeyUsage (is_client_cert="
+                f"{is_client_cert})."
             )
 
             signed_cert = builder.sign(
@@ -601,7 +628,8 @@ class Certificate:
         Creates a new self-signed CA certificate.
         """
         logger.info(
-            f"📜🔑🏭 Creating new CA certificate: CN={common_name}, Org={organization_name}"
+            f"📜🔑🏭 Creating new CA certificate: CN={common_name}, "
+            f"Org={organization_name}"
         )
         ca_cert_obj = cls(
             generate_keypair=True,
@@ -615,7 +643,8 @@ class Certificate:
         )
         # Explicitly re-sign to ensure CA flags are correctly set for a CA
         logger.info(
-            "📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, is_client_cert=False flags."
+            "📜🔑🏭 Re-signing generated CA certificate to ensure is_ca=True, "
+            "is_client_cert=False flags."
         )
         actual_ca_x509_cert = ca_cert_obj._create_x509_certificate(
             is_ca=True,
@@ -650,11 +679,15 @@ class Certificate:
         if not ca_certificate._private_key:
             raise CertificateError(
                 message="CA certificate's private key is not available for signing.",
-                hint="Ensure the CA certificate object was loaded or created with its private key.",
+                hint=(
+                    "Ensure the CA certificate object was loaded or created with "
+                    "its private key."
+                ),
             )
         if not ca_certificate.is_ca:
             logger.warning(
-                f"📜🔑⚠️ Signing certificate (Subject: {ca_certificate.subject}) is not marked as a CA. This might lead to validation issues."
+                f"📜🔑⚠️ Signing certificate (Subject: {ca_certificate.subject}) "
+                "is not marked as a CA. This might lead to validation issues."
             )
 
         new_cert_obj = cls(
@@ -681,7 +714,8 @@ class Certificate:
         ).decode("utf-8")
 
         logger.info(
-            f"📜🔑✅ Successfully created and signed certificate for CN={common_name} by CA='{ca_certificate.subject}'"
+            "📜🔑✅ Successfully created and signed certificate for "
+            f"CN={common_name} by CA='{ca_certificate.subject}'"
         )
         return new_cert_obj
 
@@ -700,7 +734,8 @@ class Certificate:
         Creates a new self-signed end-entity certificate suitable for a server.
         """
         logger.info(
-            f"📜🔑🏭 Creating new self-signed SERVER certificate: CN={common_name}, Org={organization_name}"
+            "📜🔑🏭 Creating new self-signed SERVER certificate: "
+            f"CN={common_name}, Org={organization_name}"
         )
 
         cert_obj = cls(
@@ -730,17 +765,22 @@ class Certificate:
         ).decode("utf-8")
 
         logger.info(
-            f"📜🔑✅ Successfully created self-signed SERVER certificate for CN={common_name}"
+            "📜🔑✅ Successfully created self-signed SERVER certificate for "
+            f"CN={common_name}"
         )
         return cert_obj
 
     def verify_trust(self, other_cert: Self) -> bool:
-        """Verifies if the `other_cert` is trusted based on this certificate's trust chain."""
+        """
+        Verifies if the `other_cert` is trusted based on this certificate's
+        trust chain.
+        """
         if other_cert is None:
             raise CertificateError("Cannot verify trust: other_cert is None")
 
         logger.debug(
-            f"📜🔍🚀 Verifying trust for cert S/N {other_cert.serial_number} against chain of S/N {self.serial_number}"
+            f"📜🔍🚀 Verifying trust for cert S/N {other_cert.serial_number} "
+            f"against chain of S/N {self.serial_number}"
         )
 
         if not other_cert.is_valid:
@@ -755,7 +795,8 @@ class Certificate:
 
         if self == other_cert:
             logger.debug(
-                "📜🔍✅ Trust verified: Certificates are identical (based on subject/serial)."
+                "📜🔍✅ Trust verified: Certificates are identical (based on "
+                "subject/serial)."
             )
             return True
 
@@ -767,18 +808,21 @@ class Certificate:
 
         for trusted_cert in self._trust_chain:
             logger.debug(
-                f"📜🔍🔁 Checking signature against trusted cert S/N {trusted_cert.serial_number}"
+                "📜🔍🔁 Checking signature against trusted cert S/N "
+                f"{trusted_cert.serial_number}"
             )
             if self._validate_signature(
                 signed_cert=other_cert, signing_cert=trusted_cert
             ):
                 logger.debug(
-                    f"📜🔍✅ Trust verified: Other cert signed by trusted cert S/N {trusted_cert.serial_number}."
+                    "📜🔍✅ Trust verified: Other cert signed by trusted cert S/N "
+                    f"{trusted_cert.serial_number}."
                 )
                 return True
 
         logger.debug(
-            "📜🔍❌ Trust verification failed: Other certificate not identical, not in chain, and not signed by any cert in chain."
+            "📜🔍❌ Trust verification failed: Other certificate not identical, not in "
+            "chain, and not signed by any cert in chain."
         )
         return False
 
@@ -788,13 +832,14 @@ class Certificate:
         """Internal helper: Validates signature and issuer/subject match."""
         if not hasattr(signed_cert, "_cert") or not hasattr(signing_cert, "_cert"):
             logger.error(
-                "📜🔍❌ Cannot validate signature: Certificate object(s) not initialized."
+                "📜🔍❌ Cannot validate signature: Certificate object(s) not "
+                "initialized."
             )
             return False
 
         if signed_cert._cert.issuer != signing_cert._cert.subject:
             logger.debug(
-                f"📜🔍❌ Signature validation failed: Issuer/Subject mismatch. "
+                "📜🔍❌ Signature validation failed: Issuer/Subject mismatch. "
                 f"Signed Issuer='{signed_cert._cert.issuer}', "
                 f"Signing Subject='{signing_cert._cert.subject}'"
             )
@@ -804,7 +849,8 @@ class Certificate:
             signing_public_key = signing_cert.public_key
             if not signing_public_key:
                 logger.error(
-                    "📜🔍❌ Cannot validate signature: Signing certificate has no public key."
+                    "📜🔍❌ Cannot validate signature: Signing certificate has no "
+                    "public key."
                 )
                 return False
 
@@ -834,7 +880,8 @@ class Certificate:
                     )
                 case _:
                     logger.error(
-                        f"📜🔍❌ Unsupported signing public key type: {type(signing_public_key)}"
+                        "📜🔍❌ Unsupported signing public key type: "
+                        f"{type(signing_public_key)}"
                     )
                     return False
 
