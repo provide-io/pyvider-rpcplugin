@@ -234,8 +234,7 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
         "required": False,
         "default": None,
         "description": (
-            "Path to a file that, if created, will trigger a graceful server "
-            "shutdown."
+            "Path to a file that, if created, will trigger a graceful server shutdown."
         ),
         "type": "str",
     },

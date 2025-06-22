@@ -80,9 +80,7 @@ class RPCPluginProtocol(TypeProtocol):
         """
         ...
 
-    async def add_to_server(
-        self, handler: Any, server: Any
-    ) -> None:
+    async def add_to_server(self, handler: Any, server: Any) -> None:
         """
         Adds the protocol implementation to the gRPC server.
 
@@ -203,16 +201,12 @@ def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
 
     # Check from_dict classmethod
     if not hasattr(obj, "from_dict"):
-        logger.debug(
-            "SerializableT: Method from_dict is missing."
-        )
+        logger.debug("SerializableT: Method from_dict is missing.")
         return False
 
     from_dict_method = obj.from_dict
     if not callable(from_dict_method):
-        logger.debug(
-            "SerializableT: Attribute from_dict is not callable."
-        )
+        logger.debug("SerializableT: Attribute from_dict is not callable.")
         return False
 
     try:

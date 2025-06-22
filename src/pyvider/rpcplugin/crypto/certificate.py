@@ -360,8 +360,7 @@ class Certificate:
                 extra={"error": str(e), "trace": traceback.format_exc()},
             )
             raise CertificateError(
-                "Failed to initialize certificate. Original error: "
-                f"{type(e).__name__}"
+                f"Failed to initialize certificate. Original error: {type(e).__name__}"
             ) from e
 
     def _create_x509_certificate(

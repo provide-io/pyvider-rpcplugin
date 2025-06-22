@@ -178,9 +178,7 @@ class RPCPluginClient:
         grpc_channel, target_endpoint upon channel creation. It also manages
         _handshake_complete_event and _handshake_failed_event.
         """
-        retry_enabled_str = rpcplugin_config.get(
-            "PLUGIN_CLIENT_RETRY_ENABLED", "true"
-        )
+        retry_enabled_str = rpcplugin_config.get("PLUGIN_CLIENT_RETRY_ENABLED", "true")
         retry_enabled = str(retry_enabled_str).lower() == "true"
 
         if not retry_enabled:
@@ -209,8 +207,7 @@ class RPCPluginClient:
                 )
                 await self._create_grpc_channel()
                 self.logger.info(
-                    "Successfully connected to gRPC endpoint: "
-                    f"{self.target_endpoint}"
+                    f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
                 )
 
                 self.is_started = True
@@ -358,8 +355,7 @@ class RPCPluginClient:
                     raise last_exception from e
 
                 if (
-                    time.monotonic() - overall_start_time
-                    + (current_backoff_ms / 1000)
+                    time.monotonic() - overall_start_time + (current_backoff_ms / 1000)
                     > total_timeout_s
                 ):
                     self.logger.error(
@@ -369,9 +365,7 @@ class RPCPluginClient:
                     self._handshake_failed_event.set()
                     raise last_exception from e
 
-                delay_ms = current_backoff_ms + random.uniform(
-                    -jitter_ms, jitter_ms
-                )  # nosec B311
+                delay_ms = current_backoff_ms + random.uniform(-jitter_ms, jitter_ms)  # nosec B311
                 delay_ms = min(delay_ms, max_backoff_ms)
                 delay_ms = max(delay_ms, 0.0)
 
@@ -641,10 +635,9 @@ class RPCPluginClient:
                     await asyncio.sleep(0.1)
             except TimeoutError:
                 logger.debug(
-                    "🤝 Timeout on byte-by-byte read(1) attempt, "
-                    "continuing outer loop."
+                    "🤝 Timeout on byte-by-byte read(1) attempt, continuing outer loop."
                 )
-                pass # noqa: B012 (silence ruff about pass in except)
+                pass  # noqa: B012 (silence ruff about pass in except)
 
         stderr_output = ""
         if self._process is not None and self._process.stderr is not None:
@@ -795,7 +788,7 @@ class RPCPluginClient:
             )
             raise HandshakeError(
                 message=(
-                    "Failed to process handshake response or establish transport "
+                    f"Failed to process handshake response or establish transport "
                     f"connection: {e}"
                 ),
                 hint=(

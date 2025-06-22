@@ -44,11 +44,23 @@ class RPCPluginError(Exception):
         self.code = code
 
     def __str__(self) -> str:
-        parts = [self.message]
+        prefix = f"[{self.__class__.__name__}]"
+
+        # Ensure message is prefixed only if it's not already.
+        # This simplified check assumes if it starts with '[', it's likely prefixed.
+        effective_message = self.message
+        if not self.message.startswith("["):
+            effective_message = f"{prefix} {self.message}"
+        elif not self.message.lower().startswith(prefix.lower()):
+            # It starts with a bracket, but not *our* prefix, so add ours.
+            effective_message = f"{prefix} {self.message}"
+
+        parts = [effective_message]
         if self.code is not None:
             parts.append(f"[Code: {self.code}]")
         if self.hint:
             parts.append(f"(Hint: {self.hint})")
+
         return " ".join(parts)
 
 

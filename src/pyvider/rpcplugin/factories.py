@@ -10,25 +10,32 @@ components of the Pyvider RPC Plugin system, such as clients, servers,
 and protocols. These factories encapsulate common setup logic and promote
 consistent component creation.
 """
-import os # Ensured os is imported
-from typing import Any, Type, TypeVar, cast
+
+from typing import Any, TypeVar, cast
 
 from pyvider.rpcplugin.client import RPCPluginClient
+
 # ClientT was erroring from .types, it's defined in .client.types
-from pyvider.rpcplugin.client.types import ClientT
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.server import (
     RPCPluginServer,
     _ServerT,
-    _HandlerT as ServerHandlerT,
     _TransportT,
+)
+from pyvider.rpcplugin.server import (
+    _HandlerT as ServerHandlerT,
+)
+from pyvider.rpcplugin.server import (
     _ProtocolT as ServerProtocolT,
 )
 from pyvider.rpcplugin.transport import (
     TCPSocketTransport,
     UnixSocketTransport,
 )
-from pyvider.rpcplugin.types import HandlerT
+from pyvider.rpcplugin.types import (
+    HandlerT,  # Retain this for plugin_server
+    RPCPluginHandler,  # For plugin_protocol factory
+)
 from pyvider.rpcplugin.types import (
     ProtocolT as BaseProtocolTDefinition,
 )
@@ -39,13 +46,14 @@ from pyvider.telemetry import logger
 T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol)
 
 
-def create_basic_protocol() -> Type[RPCPluginProtocol[Any, Any]]:
+def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
     """
     Creates a basic RPCPluginProtocol.
     """
 
     class BasicRPCPluginProtocol(RPCPluginProtocol[Any, Any]):
         """Basic protocol, primarily for structure or testing."""
+
         service_name: str = "pyvider.BasicRPCPluginProtocol"
 
         def __init__(self, service_name_override: str | None = None) -> None:
@@ -55,8 +63,7 @@ def create_basic_protocol() -> Type[RPCPluginProtocol[Any, Any]]:
 
         async def get_grpc_descriptors(self) -> tuple[Any, str]:
             logger.debug(
-                "BasicRPCPluginProtocol: get_grpc_descriptors for "
-                f"{self.service_name}"
+                f"BasicRPCPluginProtocol: get_grpc_descriptors for {self.service_name}"
             )
             return (None, self.service_name)
 
@@ -77,32 +84,47 @@ def create_basic_protocol() -> Type[RPCPluginProtocol[Any, Any]]:
     return BasicRPCPluginProtocol
 
 
-def plugin_protocol[PT_co]( # Use new TypeVar, assume it's covariant if protocol_class is.
-    protocol_class: type[PT_co] | None = None, # PT_co bound to RPCPluginProtocol implicitly by usage
-    handler_class: type[HandlerT] | None = None,
+def plugin_protocol[
+    PT_co
+](  # Use new TypeVar, assume it's covariant if protocol_class is.
+    protocol_class: type[PT_co]
+    | None = None,  # PT_co bound to RPCPluginProtocol implicitly by usage
+    handler_class: type[RPCPluginHandler] # Use imported RPCPluginHandler
+    | None = None,
     service_name: str | None = None,
+    **kwargs: Any,  # Add **kwargs to accept arbitrary keyword arguments
 ) -> PT_co:
     """
     Factory for creating an RPC plugin protocol instance.
     """
     effective_protocol_class: type[PT_co]
-    instance_kwargs = {}
+    instance_kwargs = kwargs  # Initialize with all extra kwargs
 
     if protocol_class:
         effective_protocol_class = protocol_class
-        # If a custom protocol class is provided, we assume it handles its own service_name
-        # or the caller doesn't intend to override it via this factory.
-        # If it needs service_name, it should take it in its __init__.
-        if service_name and not hasattr(protocol_class, "service_name"):
-            logger.warning(f"service_name '{service_name}' provided but "
-                           f"{protocol_class.__name__} may not use it via __init__.")
+        # If service_name is provided, pass it as 'service_name_override'.
+        # Custom protocols should handle 'service_name_override' for this factory
+        # to configure their service name.
+        if service_name:
+            instance_kwargs["service_name_override"] = service_name
     else:
         # Default to BasicRPCPluginProtocol
-        # Cast needed as create_basic_protocol returns Type[RPCPluginProtocol[Any, Any]]
         BasicProtoCls = create_basic_protocol()
         effective_protocol_class = cast(type[PT_co], BasicProtoCls)
+
+        # For BasicRPCPluginProtocol, only 'service_name_override' is relevant.
+        # Filter instance_kwargs to only pass this if service_name was provided,
+        # or if 'service_name_override' was already in **kwargs from the call.
+        final_basic_kwargs = {}
         if service_name:
-            instance_kwargs['service_name_override'] = service_name
+            final_basic_kwargs['service_name_override'] = service_name
+        elif 'service_name_override' in instance_kwargs:
+            # If service_name wasn't given directly to factory,
+            # but was in **kwargs
+             final_basic_kwargs['service_name_override'] = (
+                 instance_kwargs['service_name_override']
+            )
+        instance_kwargs = final_basic_kwargs
 
     return effective_protocol_class(**instance_kwargs)
 
@@ -134,7 +156,7 @@ def plugin_server(
     return RPCPluginServer(
         protocol=cast(ServerProtocolT, protocol),
         handler=cast(ServerHandlerT, handler),
-        transport=cast(_TransportT, transport_instance), # Use 'transport' kwarg
+        transport=cast(_TransportT, transport_instance),  # Use 'transport' kwarg
         config=config or {},
     )
 

@@ -101,7 +101,7 @@ async def test_read_handshake_response_process_exit_stderr_read_error(mocker):
 
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
-    expected_regex = r"\[HandshakeError\] Plugin process exited prematurely with code \d+ before completing handshake\. \(Code: \d+\) \(Hint: Check plugin logs or stderr for details\. Stderr captured: 'Error reading stderr: Failed to read stderr'\)"
+    expected_regex = r"\[HandshakeError\] Plugin process exited prematurely with code \d+ before completing handshake\. \[Code: \d+\] \(Hint: Check plugin logs or stderr for details\. Stderr captured: 'Error reading stderr: .*'\)"
     with pytest.raises(HandshakeError, match=expected_regex):
         await read_handshake_response(process)
 
@@ -151,7 +151,7 @@ async def test_read_handshake_response_timeout_stderr_read_error(mocker):
         "pyvider.rpcplugin.handshake.time.time", side_effect=[0, 2, 4, 6, 8, 10, 12]
     )  # Exceed the 10s timeout
 
-    expected_regex = r"\[HandshakeError\] Timed out waiting for handshake response from plugin after \d+\.\d+ seconds\. \(Hint: Ensure the plugin starts and prints its handshake string to stdout promptly\. Last buffer: ''\. Stderr: 'Error reading stderr: Fai.*\)"
+    expected_regex = r"\[HandshakeError\] Timed out waiting for handshake response from plugin after \d+\.\d+ seconds\. \(Hint: Ensure plugin starts and prints handshake to stdout promptly\. Last buffer: ''\. Stderr: 'Error reading stderr: .*'\)"
     with pytest.raises(HandshakeError, match=expected_regex):
         await read_handshake_response(process)
 

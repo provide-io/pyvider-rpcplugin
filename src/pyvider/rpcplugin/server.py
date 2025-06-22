@@ -22,7 +22,7 @@ from typing import Any, TypeVar, cast
 
 import grpc
 from attrs import define, field
-from grpc.aio import server as GRPCServer # Ensure this is the alias used
+from grpc.aio import server as GRPCServer  # Ensure this is the alias used
 from grpc_health.v1 import health_pb2_grpc
 
 from pyvider.rpcplugin.config import ConfigError, rpcplugin_config
@@ -47,7 +47,6 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
 )
-from pyvider.rpcplugin.transport.types import TransportT as HandshakeModuleTransportT
 from pyvider.telemetry import logger
 
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
@@ -66,27 +65,28 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
 
     async def intercept_service(
         self,
-        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]],
+        continuation: Callable[
+            [grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]
+        ],
         handler_call_details: grpc.HandlerCallDetails,
     ) -> grpc.RpcMethodHandler:
         """Intercepts incoming RPCs to check against the rate limiter."""
         if not await self._limiter.is_allowed():
             raise grpc.aio.AbortError(
-                grpc.StatusCode.RESOURCE_EXHAUSTED,
-                "Rate limit exceeded."
+                grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded."
             )
         return await continuation(handler_call_details)
 
 
 @define(slots=False)
-class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
-    protocol: _ProtocolT = field()
-    handler: _HandlerT = field()
+class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]:
+    protocol: ProtocolT = field()
+    handler: HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
-    transport: _TransportT | None = field(default=None) # Reverted to 'transport'
+    transport: TransportT | None = field(default=None)  # Reverted to 'transport'
     _exit_on_stop: bool = field(default=True, init=False)
-    _transport: _TransportT | None = field(init=False, default=None) # Reverted name
-    _server: _ServerT | None = field(init=False, default=None) # Reverted name
+    _transport: TransportT | None = field(init=False, default=None)  # Reverted name
+    _server: ServerT | None = field(init=False, default=None)  # Reverted name
     _handshake_config: HandshakeConfig = field(init=False)
     _protocol_version: int = field(init=False)
     _transport_name: str = field(init=False)
@@ -96,9 +96,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
     _serving_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_event: asyncio.Event = field(init=False, factory=asyncio.Event)
     _shutdown_file_path: str | None = field(init=False, default=None)
-    _shutdown_watcher_task: asyncio.Task[None] | None = field(
-        init=False, default=None
-    )
+    _shutdown_watcher_task: asyncio.Task[None] | None = field(init=False, default=None)
     _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
     _health_servicer: HealthServicer | None = field(init=False, default=None)
     _main_service_name: str = field(
@@ -122,7 +120,7 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 hint="Check rpcplugin_config settings.",
             ) from e
 
-        if self.transport is not None: # Use the public 'transport' field
+        if self.transport is not None:  # Use the public 'transport' field
             self._transport = self.transport
 
         self._serving_future = asyncio.Future()
@@ -137,9 +135,10 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 )
 
         if hasattr(self.protocol, "service_name") and isinstance(
-            self.protocol.service_name, str # type: ignore
+            self.protocol.service_name,
+            str,  # type: ignore
         ):
-            protocol_class_service_name = self.protocol.service_name # type: ignore
+            protocol_class_service_name = self.protocol.service_name  # type: ignore
             if protocol_class_service_name:
                 self._main_service_name = protocol_class_service_name
 
@@ -179,9 +178,11 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                         if not transport_checked.path or not os.path.exists(
                             transport_checked.path
                         ):
-                            raise TransportError(
-                                f"Unix socket file {transport_checked.path} does not exist."
+                            err_msg = (
+                                f"Unix socket file {transport_checked.path} "
+                                "does not exist."
                             )
+                            raise TransportError(err_msg)
                         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                         sock.settimeout(1.0)
                         sock.connect(transport_checked.path)
@@ -279,12 +280,17 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
                 if self._rate_limiter
                 else []
             )
-            self._server = cast( # Use _server
-                _ServerT, GRPCServer(interceptors=interceptors_list) # Use GRPCServer
+            self._server = cast(  # Use _server
+                ServerT,
+                GRPCServer(interceptors=interceptors_list),  # Use GRPCServer
             )
 
-            proto_instance = self.protocol() if callable(self.protocol) else self.protocol # type: ignore
-            await proto_instance.add_to_server(handler=self.handler, server=self._server) # type: ignore
+            proto_instance = (
+                self.protocol() if callable(self.protocol) else self.protocol
+            )  # type: ignore
+            await proto_instance.add_to_server(
+                handler=self.handler, server=self._server
+            )  # type: ignore
 
             if self._server is None:
                 raise TransportError(
@@ -352,15 +358,17 @@ class RPCPluginServer[_ServerT, _HandlerT, _TransportT, _ProtocolT]:
         )
         if not self._transport:
             # Type hint for what negotiate_transport returns
-            negotiated_transport_typed: HandshakeModuleTransportT
-            self._transport_name, negotiated_transport_typed = await negotiate_transport(
-                self._handshake_config.supported_transports
+            negotiated_transport_typed: (
+                RPCPluginTransportType  # Use the concrete Union or base class
             )
-            self._transport = cast(_TransportT, negotiated_transport_typed)
+            (
+                self._transport_name,
+                negotiated_transport_typed,
+            ) = await negotiate_transport(self._handshake_config.supported_transports)
+            self._transport = cast(TransportT, negotiated_transport_typed)
         else:
             self._transport_name = (
-                "tcp" if isinstance(self._transport, TCPSocketTransport)
-                else "unix"
+                "tcp" if isinstance(self._transport, TCPSocketTransport) else "unix"
             )
 
     def _register_signal_handlers(self) -> None:
