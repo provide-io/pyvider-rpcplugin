@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 # examples/07_error_handling.py
-"""Demonstrates comprehensive error handling and recovery patterns with pyvider-rpcplugin."""
+"""Comprehensive error handling and recovery patterns with pyvider-rpcplugin."""
 
 import asyncio
 import random
 import sys
 import time
+from collections.abc import Callable  # Added Union
 from pathlib import Path
-from typing import Any
+from typing import (
+    Any,
+    cast,
+)
 
+import grpc  # For ServicerContext
 from attrs import define, field
 
 # Add src to path for examples
@@ -20,8 +25,8 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     configure,
-    create_basic_protocol,
     plugin_client,
+    plugin_protocol,  # Changed
     plugin_server,
 )
 from pyvider.rpcplugin.exception import (  # noqa: E402
@@ -29,6 +34,10 @@ from pyvider.rpcplugin.exception import (  # noqa: E402
     RPCPluginError,
     SecurityError,
     TransportError,
+)
+from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
+from pyvider.rpcplugin.types import (  # noqa: E402
+    RPCPluginProtocol as TypesRPCPluginProtocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -43,12 +52,14 @@ class ProcessReply:
 class RobustServiceHandler:
     """Service handler demonstrating robust error handling patterns."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.request_count = 0
         self.error_count = 0
         self.recovery_count = 0
 
-    async def ProcessRequest(self, request, context):
+    async def ProcessRequest(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> ProcessReply:
         """Process request with comprehensive error handling."""
         request_id = f"req_{self.request_count + 1}"
         self.request_count += 1
@@ -113,7 +124,7 @@ class RobustServiceHandler:
             # Re-raise if recovery failed
             raise
 
-    async def _simulate_error(self, error_type: str, request_id: str):
+    async def _simulate_error(self, error_type: str, request_id: str) -> None:
         """Simulate different types of errors for demonstration."""
 
         logger.warning(
@@ -147,7 +158,9 @@ class RobustServiceHandler:
         else:
             raise RPCPluginError(f"Unknown error type: {error_type}")
 
-    async def _attempt_recovery(self, error: Exception, request_id: str) -> Any | None:
+    async def _attempt_recovery(
+        self, error: Exception, request_id: str
+    ) -> ProcessReply | None:
         """Attempt to recover from errors when possible."""
 
         logger.info(
@@ -212,8 +225,8 @@ class RetryPolicy:
         max_delay: float = 60.0,
         backoff_factor: float = 2.0,
         jitter: bool = True,
-        retryable_exceptions: tuple | None = None,
-    ):
+        retryable_exceptions: tuple[type[Exception], ...] | None = None,
+    ) -> None:
         self.max_retries = max_retries
         self.base_delay = base_delay
         self.max_delay = max_delay
@@ -225,10 +238,12 @@ class RetryPolicy:
             ConnectionError,
         )
 
-    async def execute_with_retry(self, operation, *args, **kwargs):
+    async def execute_with_retry(
+        self, operation: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute operation with retry logic."""
 
-        last_exception = None
+        last_exception: Exception | None = None
 
         for attempt in range(self.max_retries + 1):
             try:
@@ -288,7 +303,8 @@ class RetryPolicy:
                 )
 
                 if self.jitter:
-                    delay += random.uniform(0, delay * 0.1)  # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
+                    delay += random.uniform(0, delay * 0.1)  # nosec B311
+                    # random is not used for security/crypto here, just for demo/jitter.
 
                 logger.warning(
                     f"Operation failed, retrying in {delay:.2f}s",
@@ -303,7 +319,12 @@ class RetryPolicy:
                 await asyncio.sleep(delay)
 
         # This should never be reached due to the logic above
-        raise last_exception
+        if last_exception is not None:  # MyPy check
+            raise last_exception
+        else:  # Should be logically impossible to reach here
+            raise RuntimeError(
+                "Retry logic finished without success or final exception."
+            )
 
 
 class CircuitBreaker:
@@ -317,21 +338,26 @@ class CircuitBreaker:
         failure_threshold: int = 5,
         success_threshold: int = 3,
         timeout: float = 60.0,
-    ):
+    ) -> None:
         self.failure_threshold = failure_threshold
         self.success_threshold = success_threshold
         self.timeout = timeout
 
-        self.failure_count = 0
-        self.success_count = 0
-        self.last_failure_time = None
-        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+        self.failure_count: int = 0
+        self.success_count: int = 0
+        self.last_failure_time: float | None = None
+        self.state: str = "CLOSED"
 
-    async def call(self, operation, *args, **kwargs):
+    async def call(
+        self, operation: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """Execute operation with circuit breaker protection."""
 
         # Check circuit state
         if self.state == "OPEN":
+            assert self.last_failure_time is not None, (
+                "last_failure_time cannot be None in OPEN state"
+            )
             if time.time() - self.last_failure_time > self.timeout:
                 logger.info(
                     "Circuit breaker transitioning to HALF_OPEN",
@@ -344,14 +370,16 @@ class CircuitBreaker:
                 self.state = "HALF_OPEN"
                 self.success_count = 0
             else:
+                time_remaining = 0.0
+                # self.last_failure_time is asserted not None above
+                time_remaining = self.timeout - (time.time() - self.last_failure_time)
                 logger.warning(
                     "Circuit breaker is OPEN, rejecting call",
                     domain="error_handling",
                     action="circuit_breaker",
                     status="rejected",
                     state="OPEN",
-                    time_until_retry=self.timeout
-                    - (time.time() - self.last_failure_time),
+                    time_until_retry=max(0, time_remaining),
                 )
                 raise Exception("Circuit breaker is OPEN")
 
@@ -397,7 +425,7 @@ class CircuitBreaker:
             raise
 
 
-async def example_7_basic_error_handling():
+async def example_7_basic_error_handling() -> None:
     """
     Example 7A: Demonstrates basic error handling patterns.
 
@@ -411,18 +439,20 @@ async def example_7_basic_error_handling():
 
     # Configure for error handling demonstration
     configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie",  # This was already correct
+        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie",
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix"],  # This was already correct
+        PLUGIN_SERVER_TRANSPORTS=["unix"],
         PLUGIN_AUTO_MTLS=False,
-        PLUGIN_HANDSHAKE_TIMEOUT=5.0,  # This was already correct
-        PLUGIN_CONNECTION_TIMEOUT=30.0,  # Corrected key
+        PLUGIN_HANDSHAKE_TIMEOUT=5.0,
+        PLUGIN_CONNECTION_TIMEOUT=30.0,
     )
 
-    protocol = create_basic_protocol()
+    protocol: TypesRPCPluginProtocol = plugin_protocol()
     handler = RobustServiceHandler()
 
-    server = plugin_server(protocol=protocol, handler=handler, transport="unix")
+    server: RPCPluginServer = plugin_server(
+        protocol=protocol, handler=handler, transport="unix"
+    )
 
     logger.info(
         "Starting error handling demonstration server",
@@ -433,16 +463,13 @@ async def example_7_basic_error_handling():
     )
 
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)
+    await server.wait_for_server_ready(timeout=5.0)
 
     try:
-        # plugin_client expects a server_path (executable).
-        # Using a placeholder as this example focuses on error handling patterns
-        # with simulated client-side logic rather than actual RPC calls.
-        client = plugin_client(server_path=example_dir / "dummy_server.sh")
+        client = plugin_client(command=[str(example_dir / "dummy_server.sh")])
 
         # Test cases for different error scenarios
-        test_cases = [
+        test_cases: list[dict[str, str]] = [  # Annotated
             {
                 "name": "successful_request",
                 "input": "normal_message",
@@ -476,42 +503,43 @@ async def example_7_basic_error_handling():
                 domain="error_handling",
                 action="test_scenario",
                 status="starting",
-                scenario=test_case["name"],
-                input=test_case["input"],
-                expected_outcome=test_case["expected"],
+                scenario=str(test_case["name"]),
+                input=str(test_case["input"]),
+                expected_outcome=str(test_case["expected"]),
             )
 
             try:
                 # Simulate RPC call (in real scenario, would use gRPC stub)
                 await asyncio.sleep(0.1)
+                current_input = str(test_case["input"])
 
-                if test_case["input"].startswith("ERROR_"):
+                if current_input.startswith("ERROR_"):
                     # Simulate different error types
-                    if "VALIDATION" in test_case["input"]:
-                        result = f"Recovered: {test_case['input']}"
-                    elif "RESOURCE" in test_case["input"]:
-                        result = f"Degraded: {test_case['input']}"
+                    if "VALIDATION" in current_input:
+                        result = f"Recovered: {current_input}"
+                    elif "RESOURCE" in current_input:
+                        result = f"Degraded: {current_input}"
                     else:
-                        raise Exception(f"Simulated error: {test_case['input']}")
+                        raise Exception(f"Simulated error: {current_input}")
                 else:
-                    result = f"Success: {test_case['input']}"
+                    result = f"Success: {current_input}"
 
                 logger.info(
-                    f"Test scenario completed: {test_case['name']}",
+                    f"Test scenario completed: {str(test_case['name'])}",
                     domain="error_handling",
                     action="test_scenario",
                     status="success",
-                    scenario=test_case["name"],
+                    scenario=str(test_case["name"]),
                     result=result,
                 )
 
             except Exception as e:
                 logger.error(
-                    f"Test scenario failed: {test_case['name']}",
+                    f"Test scenario failed: {str(test_case['name'])}",
                     domain="error_handling",
                     action="test_scenario",
                     status="error",
-                    scenario=test_case["name"],
+                    scenario=str(test_case["name"]),
                     error=str(e),
                     error_type=type(e).__name__,
                 )
@@ -531,7 +559,7 @@ async def example_7_basic_error_handling():
     )
 
 
-async def example_7_retry_patterns():
+async def example_7_retry_patterns() -> None:
     """
     Example 7B: Demonstrates retry patterns and policies.
 
@@ -543,7 +571,7 @@ async def example_7_retry_patterns():
     print(" Demonstrates: Advanced retry logic with backoff")
     print("=" * 60)
 
-    async def unreliable_operation(operation_id: int, success_rate: float = 0.3):
+    async def unreliable_operation(operation_id: int, success_rate: float = 0.3) -> str:
         """Simulate an unreliable operation for retry testing."""
 
         logger.debug(
@@ -559,13 +587,13 @@ async def example_7_retry_patterns():
         await asyncio.sleep(0.1)
 
         # Random failure based on success rate
-        if random.random() > success_rate:  # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
+        if random.random() > success_rate:  # nosec B311
             raise TransportError(f"Simulated failure for operation {operation_id}")
 
         return f"Success result for operation {operation_id}"
 
     # Test different retry policies
-    retry_policies = [
+    retry_policies: list[dict[str, Any]] = [
         {
             "name": "conservative",
             "policy": RetryPolicy(max_retries=2, base_delay=0.5, backoff_factor=1.5),
@@ -581,8 +609,8 @@ async def example_7_retry_patterns():
     ]
 
     for policy_config in retry_policies:
-        policy_name = policy_config["name"]
-        retry_policy = policy_config["policy"]
+        policy_name = str(policy_config["name"])
+        retry_policy: RetryPolicy = cast(RetryPolicy, policy_config["policy"])
 
         logger.info(
             f"Testing retry policy: {policy_name}",
@@ -650,7 +678,7 @@ async def example_7_retry_patterns():
         )
 
 
-async def example_7_circuit_breaker():
+async def example_7_circuit_breaker() -> None:
     """
     Example 7C: Demonstrates circuit breaker pattern.
 
@@ -662,7 +690,7 @@ async def example_7_circuit_breaker():
     print(" Demonstrates: Preventing cascade failures")
     print("=" * 60)
 
-    async def failing_service(call_id: int, failure_rate: float = 0.8):
+    async def failing_service(call_id: int, failure_rate: float = 0.8) -> str:
         """Simulate a failing downstream service."""
 
         logger.debug(
@@ -676,7 +704,7 @@ async def example_7_circuit_breaker():
 
         await asyncio.sleep(0.05)  # Simulate network delay
 
-        if random.random() < failure_rate:  # nosec B311 # random is not used for security/crypto here, just for demo/jitter.
+        if random.random() < failure_rate:  # nosec B311
             raise Exception(f"Service failure for call {call_id}")
 
         return f"Service success for call {call_id}"
@@ -790,7 +818,8 @@ async def example_7_circuit_breaker():
     await asyncio.sleep(0.5)
 
     # Force circuit to half-open state for demonstration
-    circuit_breaker.last_failure_time = time.time() - 10.0
+    if circuit_breaker.last_failure_time is not None:
+        circuit_breaker.last_failure_time = time.time() - 10.0
 
     # Try calls with better success rate
     for call_id in range(20, 25):
@@ -836,7 +865,7 @@ async def example_7_circuit_breaker():
     )
 
 
-async def example_7_error_monitoring():
+async def example_7_error_monitoring() -> None:
     """
     Example 7D: Demonstrates error monitoring and metrics.
 
@@ -851,13 +880,18 @@ async def example_7_error_monitoring():
     class ErrorMonitor:
         """Error monitoring and metrics collection."""
 
-        def __init__(self):
+        error_counts: dict[str, int]
+        error_rates: dict[str, float]
+        recovery_stats: dict[str, int]
+        start_time: float
+
+        def __init__(self) -> None:
             self.error_counts = {}
             self.error_rates = {}
             self.recovery_stats = {}
             self.start_time = time.time()
 
-        def record_error(self, error_type: str, recoverable: bool = False):
+        def record_error(self, error_type: str, recoverable: bool = False) -> None:
             """Record an error occurrence."""
 
             self.error_counts[error_type] = self.error_counts.get(error_type, 0) + 1
@@ -894,7 +928,7 @@ async def example_7_error_monitoring():
         def check_alert_conditions(self) -> list[dict[str, Any]]:
             """Check for alerting conditions."""
 
-            alerts = []
+            alerts: list[dict[str, Any]] = []
 
             # High error rate alert
             if sum(self.error_rates.values()) > 10:  # More than 10 errors per minute
@@ -902,7 +936,9 @@ async def example_7_error_monitoring():
                     {
                         "type": "high_error_rate",
                         "severity": "warning",
-                        "message": f"High error rate: {sum(self.error_rates.values()):.1f} errors/min",
+                        # Shortened message further
+                        "message":
+                            f"High err rate: {sum(self.error_rates.values()):.1f}/min",
                     }
                 )
 
@@ -927,7 +963,9 @@ async def example_7_error_monitoring():
                         {
                             "type": "frequent_error",
                             "severity": "warning",
-                            "message": f"Frequent {error_type} errors: {count} occurrences",
+                            # Shortened
+                            "message":
+                                f"Frequent {error_type} err: {count}x",
                         }
                     )
 
@@ -950,7 +988,7 @@ async def example_7_error_monitoring():
     )
 
     # Simulate various error scenarios
-    error_scenarios = [
+    error_scenarios: list[dict[str, str | int | bool]] = [
         {"type": "TransportError", "count": 3, "recoverable": False},
         {"type": "ValidationError", "count": 8, "recoverable": True},
         {"type": "TimeoutError", "count": 2, "recoverable": False},
@@ -960,30 +998,32 @@ async def example_7_error_monitoring():
 
     for scenario in error_scenarios:
         logger.info(
-            f"Simulating {scenario['type']} errors",
+            f"Simulating {str(scenario['type'])} errors",
             domain="error_handling",
             action="error_simulation",
             status="starting",
-            error_type=scenario["type"],
-            count=scenario["count"],
-            recoverable=scenario["recoverable"],
+            error_type=str(scenario["type"]),
+            count=cast(int, scenario["count"]),
+            recoverable=cast(bool, scenario["recoverable"]),
         )
 
-        for i in range(scenario["count"]):
+        for i in range(cast(int, scenario["count"])):
             # Record error
-            error_monitor.record_error(scenario["type"], scenario["recoverable"])
+            error_monitor.record_error(
+                cast(str, scenario["type"]), cast(bool, scenario["recoverable"])
+            )
 
             # Simulate some time between errors
             await asyncio.sleep(0.05)
 
             logger.debug(
-                f"Recorded {scenario['type']} error {i + 1}",
+                f"Recorded {str(scenario['type'])} error {i + 1}",
                 domain="error_handling",
                 action="error_record",
                 status="recorded",
-                error_type=scenario["type"],
+                error_type=str(scenario["type"]),
                 occurrence=i + 1,
-                recoverable=scenario["recoverable"],
+                recoverable=cast(bool, scenario["recoverable"]),
             )
 
     # Generate error summary
@@ -1003,13 +1043,13 @@ async def example_7_error_monitoring():
     if alerts:
         for alert in alerts:
             logger.warning(
-                f"Alert triggered: {alert['type']}",
+                f"Alert triggered: {str(alert['type'])}",
                 domain="error_handling",
                 action="alert",
                 status="triggered",
-                alert_type=alert["type"],
-                severity=alert["severity"],
-                message=alert["message"],
+                alert_type=str(alert["type"]),
+                severity=str(alert["severity"]),
+                message=str(alert["message"]),
             )
     else:
         logger.info(
@@ -1021,7 +1061,7 @@ async def example_7_error_monitoring():
         )
 
     # Demonstrate metrics export (would integrate with monitoring systems)
-    _metrics_export = {
+    _metrics_export: dict[str, Any] = {
         "timestamp": time.time(),
         "service": "pyvider-rpcplugin-example",
         "metrics": error_summary,
@@ -1038,7 +1078,7 @@ async def example_7_error_monitoring():
     )
 
 
-async def main():
+async def main() -> None:
     """Run all error handling examples."""
     print("🚨 pyvider-rpcplugin Error Handling Examples")
     print("============================================")
@@ -1063,9 +1103,9 @@ async def main():
         print("  • Design graceful degradation for non-critical functionality")
         print("\n📖 Next Steps:")
         print(
-            "  • See example 08_production_config.py for production-ready error handling"
+            "  • See ex08 for prod-ready error handling" # Aggressively shortened
         )
-        print("  • Try example 06_async_patterns.py for async error handling patterns")
+        print("  • Try ex06 for async error handling patterns") # Aggressively shortened
         print("  • Check docs/troubleshooting.md for debugging common issues")
 
     except Exception as e:

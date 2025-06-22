@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # examples/03_client_connection.py
-"""Demonstrates robust client connection patterns and lifecycle management with pyvider-rpcplugin."""
+"""Robust client connection patterns and lifecycle management."""
 
 import asyncio
 import contextlib
 import sys
+from collections.abc import AsyncGenerator  # For type hint
 from pathlib import Path
 
 # Add src to path for examples
@@ -15,10 +16,11 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
-    create_basic_protocol,
     plugin_client,
+    plugin_protocol,  # Changed
     plugin_server,
 )
+from pyvider.rpcplugin.config import rpcplugin_config  # noqa: E402
 from pyvider.rpcplugin.exception import (  # noqa: E402
     HandshakeError,
     TransportError,
@@ -28,19 +30,38 @@ from pyvider.telemetry import logger  # noqa: E402
 
 # --- Helper to manage a background server for the examples ---
 @contextlib.asynccontextmanager
-async def managed_server():
+async def managed_server() -> AsyncGenerator[str]:
     """An async context manager to start and stop a server for tests."""
+    server_socket_path = Path(f"./managed_server_{Path().name}.sock")  # Unique path
     server = plugin_server(
-        protocol=create_basic_protocol(),
-        handler=type("DummyHandler", (), {})(),  # A simple dummy handler
+        protocol=plugin_protocol(),  # Changed
+        handler=type("DummyHandler", (), {})(),
         transport="unix",
+        transport_path=str(
+            server_socket_path
+        ),  # Explicit path for cleanup and handshake
     )
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)  # Let it start
 
-    handshake_string = getattr(server._transport, "handshake_string", None)
-    if not handshake_string:
-        raise RuntimeError("Managed server failed to produce a handshake string.")
+    await server.wait_for_server_ready(timeout=5.0)  # Added wait
+
+    # Construct handshake string
+    core_version = rpcplugin_config.get("PLUGIN_CORE_VERSION")
+    protocol_version = getattr(server, "_protocol_version", "1")
+    transport_type = "unix"
+    server_endpoint = getattr(getattr(server, "_transport", None), "endpoint", None)
+
+    if not server_endpoint:
+        # Clean up before raising
+        if server_socket_path.exists():
+            server_socket_path.unlink(missing_ok=True)
+        server.stop()
+        await server_task
+        raise RuntimeError("Managed server endpoint not available after server ready.")
+
+    handshake_string = (
+        f"{core_version}|{protocol_version}|{transport_type}|{server_endpoint}|"
+    )
 
     dummy_executable_path = Path("./dummy_conn_handshaker.sh")
     with open(dummy_executable_path, "w") as f:
@@ -50,19 +71,39 @@ async def managed_server():
     try:
         yield str(dummy_executable_path)
     finally:
-        dummy_executable_path.unlink()
-        await server.stop()
-        await server_task
+        if dummy_executable_path.exists():
+            dummy_executable_path.unlink()
+        if server_socket_path.exists():
+            server_socket_path.unlink(missing_ok=True)
+
+        # Graceful server shutdown
+        if not server_task.done():
+            server.stop()
+            try:
+                await asyncio.wait_for(server_task, timeout=5.0)
+            except TimeoutError:
+                logger.warning(
+                    "Timeout waiting for managed server task to complete, cancelling."
+                )
+                server_task.cancel()
+                await asyncio.gather(server_task, return_exceptions=True)
+        else:
+            # If already done, check for exceptions
+            exc = server_task.exception()
+            if exc:
+                logger.error(
+                    f"Managed server task exited with exception: {exc}", exc_info=exc
+                )
 
 
-async def example_3_basic_client_connection():
+async def example_3_basic_client_connection() -> None:
     """Example 3A: Demonstrates basic client connection lifecycle."""
     print("\n" + "=" * 60)
     print("🙋 Example 3A: Basic Client Connection Lifecycle")
     print("=" * 60)
 
     async with managed_server() as server_executable:
-        client = plugin_client(server_path=server_executable)
+        client = plugin_client(command=[server_executable])  # Changed
         try:
             await client.start()
             logger.info(
@@ -77,7 +118,7 @@ async def example_3_basic_client_connection():
             logger.info("Client connection closed.")
 
 
-async def example_3_connection_retry_logic():
+async def example_3_connection_retry_logic() -> None:
     """Example 3B: Demonstrates robust connection retry patterns."""
     print("\n" + "=" * 60)
     print("🔁 Example 3B: Connection Retry Logic")
@@ -89,37 +130,62 @@ async def example_3_connection_retry_logic():
 
     # This example simulates a server that isn't ready immediately.
     server_ready_event = asyncio.Event()
+    # dummy_handshaker_script_path was unused, removed.
 
-    async def start_server_delayed():
-        await asyncio.sleep(
-            base_delay * 2
-        )  # Start server after the first retry attempt
-        async with managed_server() as server_executable:
+    async def start_server_delayed() -> None:
+        await asyncio.sleep(base_delay * 2)  # Delay server startup
+
+        # managed_server will create/use its own dummy script.
+        # To align names for this example, we'll tell managed_server to use our path.
+        # This requires managed_server to accept a path for its dummy script.
+        # Assume managed_server uses a fixed name like dummy_conn_handshaker.sh
+        # and our client will point to that.
+
+        # orig_dummy_path = Path("./dummy_conn_handshaker.sh") # Unused
+
+        async with managed_server() as server_executable_path_from_managed_server:
+            # server_executable_path_from_managed_server is the path to the script
+            # created by managed_server (e.g. dummy_conn_handshaker.sh)
+            logger.info(
+                f"Delayed server is now up. Handshaker script at: "
+                f"{server_executable_path_from_managed_server}"
+            )
             server_ready_event.set()
-            # Keep the context alive until the test is over
-            await asyncio.sleep(max_retries * base_delay * 2)
+            # Keep the server alive for the duration of retry attempts
+            await asyncio.sleep(max_retries * base_delay * 3)
 
     server_task = asyncio.create_task(start_server_delayed())
 
     for attempt in range(max_retries):
+        client = None  # Define client here to close it in finally if needed
         try:
             logger.info(f"Connection attempt {attempt + 1}/{max_retries}...")
-            # We need a dummy handshaker that points to a non-existent socket initially
-            # This is complex to show here. A better way is to show retrying the start() call.
 
-            # Let's simplify: we'll try to start a client against a server that we know
-            # will only be ready after a delay.
             if not server_ready_event.is_set():
-                raise TransportError("Simulated: Server not ready yet.")
+                # Simulate failure if server (and its handshaker script) isn't ready
+                # This could be a failure to find the script or the script failing.
+                logger.info("Server not ready yet, simulating connection failure.")
+                raise TransportError(
+                    "Simulated: Server's handshaker script not ready or server down."
+                )
 
-            # If we reach here, the server is ready.
-            # We would create the client pointing to the now-ready server.
-            # This logic is complex for a simple example. The key takeaway is the loop.
+            # Server is supposedly ready, try to connect using the known script name
+            # that managed_server creates.
+            client = plugin_client(command=[str(Path("./dummy_conn_handshaker.sh"))])
+            await client.start()
+
             logger.info("Connection successful!")
-            break
+            assert client.is_started
+            # In a real app, do something with the client here.
+            await (
+                client.close()
+            )  # Close the client as we're done with this successful attempt.
+            break  # Exit retry loop
 
         except (TransportError, HandshakeError) as e:
             logger.warning(f"Attempt {attempt + 1} failed: {e}")
+            if client:  # Ensure client is closed if created but start failed partially
+                await client.close()
             if attempt < max_retries - 1:
                 delay = base_delay * (2**attempt)
                 logger.info(f"Retrying in {delay:.2f} seconds...")
@@ -131,7 +197,7 @@ async def example_3_connection_retry_logic():
     await asyncio.gather(server_task, return_exceptions=True)
 
 
-async def example_3_async_context_manager():
+async def example_3_async_context_manager() -> None:
     """Example 3D: Demonstrates using async context managers for clients."""
     print("\n" + "=" * 60)
     print("🔧 Example 3D: Async Context Manager Pattern")
@@ -139,7 +205,7 @@ async def example_3_async_context_manager():
 
     async with managed_server() as server_executable:
         try:
-            async with plugin_client(server_path=server_executable) as client:
+            async with plugin_client(command=[server_executable]) as client:  # Changed
                 logger.info("Client entered async context and connected.")
                 assert client.is_started
                 # RPC calls would go here
@@ -149,7 +215,7 @@ async def example_3_async_context_manager():
             logger.error(f"Error in context manager example: {e}")
 
 
-async def main():
+async def main() -> None:
     """Run all client connection examples."""
     await example_3_basic_client_connection()
     await example_3_connection_retry_logic()

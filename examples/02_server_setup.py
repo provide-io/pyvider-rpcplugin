@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # examples/02_server_setup.py
-"""Demonstrates advanced server configuration and setup patterns with pyvider-rpcplugin."""
+"""Advanced server configuration and setup patterns with pyvider-rpcplugin."""
 
 import asyncio
 import sys
 from pathlib import Path
+from typing import Any  # For type hints
 
+import grpc  # For ServicerContext
 from attrs import define, field
 
 # Add src to path for examples
@@ -17,7 +19,7 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     configure,
-    create_basic_protocol,
+    plugin_protocol,  # Changed from create_basic_protocol
     plugin_server,
 )
 from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: E402
@@ -34,11 +36,13 @@ class EchoReply:
 class EchoServiceHandler:
     """Handler implementing an echo service for demonstration."""
 
-    def __init__(self, service_name: str = "EchoService"):
+    def __init__(self, service_name: str = "EchoService") -> None:
         self.service_name = service_name
         self.request_count = 0
 
-    async def Echo(self, request, context):
+    async def Echo(
+        self, request: Any, context: grpc.aio.ServicerContext
+    ) -> EchoReply:
         """Echo back the received message with metadata."""
         self.request_count += 1
 
@@ -58,7 +62,7 @@ class EchoServiceHandler:
         return EchoReply(response=response_data)
 
 
-async def example_2_unix_socket_server():
+async def example_2_unix_socket_server() -> None:
     """
     Example 2A: Demonstrates Unix socket server configuration.
 
@@ -81,7 +85,7 @@ async def example_2_unix_socket_server():
     )
 
     # Create protocol and handler
-    protocol = create_basic_protocol()
+    protocol = plugin_protocol()  # Changed
     handler = EchoServiceHandler("UnixEchoService")
 
     # Create server with Unix socket transport
@@ -103,7 +107,7 @@ async def example_2_unix_socket_server():
 
     # Start server and let it initialize
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)
+    await server.wait_for_server_ready(timeout=5.0)  # Added wait
 
     logger.info(
         "Unix socket server running",
@@ -125,7 +129,7 @@ async def example_2_unix_socket_server():
     )
 
 
-async def example_2_tcp_server():
+async def example_2_tcp_server() -> None:
     """
     Example 2B: Demonstrates TCP server configuration.
 
@@ -148,7 +152,7 @@ async def example_2_tcp_server():
     )
 
     # Create protocol and handler
-    protocol = create_basic_protocol()
+    protocol = plugin_protocol()  # Changed
     handler = EchoServiceHandler("TcpEchoService")
 
     # Create server with TCP transport
@@ -172,10 +176,10 @@ async def example_2_tcp_server():
 
     # Start server and let it initialize
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)
+    await server.wait_for_server_ready(timeout=5.0)  # Added wait
 
     # Get the actual port assigned
-    actual_port = getattr(server._transport, "port", "unknown")
+    actual_port = getattr(server, "_port", "unknown")  # Changed to server._port
 
     logger.info(
         "TCP server running",
@@ -196,7 +200,7 @@ async def example_2_tcp_server():
     )
 
 
-async def example_2_dual_transport_server():
+async def example_2_dual_transport_server() -> None:
     """
     Example 2C: Demonstrates dual transport configuration.
 
@@ -219,7 +223,7 @@ async def example_2_dual_transport_server():
     )
 
     # Create protocol and handler
-    protocol = create_basic_protocol()
+    protocol = plugin_protocol()  # Changed
     handler = EchoServiceHandler("DualTransportEchoService")
 
     # Create server with dual transport support
@@ -258,7 +262,7 @@ async def example_2_dual_transport_server():
 
     # Start server and let it initialize
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5)
+    await server.wait_for_server_ready(timeout=5.0)  # Added wait
 
     logger.info(
         "Dual transport server running",
@@ -282,7 +286,7 @@ async def example_2_dual_transport_server():
     )
 
 
-async def example_2_advanced_configuration():
+async def example_2_advanced_configuration() -> None:
     """
     Example 2D: Demonstrates advanced server configuration options.
 
@@ -325,7 +329,7 @@ async def example_2_advanced_configuration():
     )
 
     # Create server with advanced configuration
-    protocol = create_basic_protocol()
+    protocol = plugin_protocol()  # Changed
     handler = EchoServiceHandler("AdvancedConfigService")
 
     server_adv = plugin_server(
@@ -339,7 +343,9 @@ async def example_2_advanced_configuration():
     )
     # Start server, let it initialize briefly, then stop it for cleanup
     server_task_adv = asyncio.create_task(server_adv.serve())
-    await asyncio.sleep(0.1)  # Brief pause for server to initialize
+    await server_adv.wait_for_server_ready(
+        timeout=5.0
+    )  # Added wait, longer timeout for potentially complex setup
 
     logger.info(
         "Advanced configuration server created",
@@ -367,7 +373,7 @@ async def example_2_advanced_configuration():
     )
 
 
-async def main():
+async def main() -> None:
     """Run all server setup examples."""
     print("🛎️ pyvider-rpcplugin Server Setup Examples")
     print("===========================================")
