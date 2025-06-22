@@ -22,9 +22,10 @@ if str(project_root) not in sys.path:  # /app
     sys.path.insert(0, str(project_root))
 # END OF SYS.PATH MANIPULATION
 
-from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 import echo_pb2
 import echo_pb2_grpc
+
+from pyvider.rpcplugin import plugin_client, plugin_protocol, plugin_server
 
 
 class EchoHandler(echo_pb2_grpc.EchoServiceServicer):  # Corrected: EchoServiceServicer
@@ -184,7 +185,7 @@ async def main():
             f"Concurrency Test: {successful_calls}/{num_concurrent_clients} clients made successful calls."
         )
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         print("Server did not become ready in time.")
         results_summary["error"] = "Server Timeout"
     except Exception as e:

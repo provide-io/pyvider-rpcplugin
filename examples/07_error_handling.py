@@ -147,9 +147,7 @@ class RobustServiceHandler:
         else:
             raise RPCPluginError(f"Unknown error type: {error_type}")
 
-    async def _attempt_recovery(
-        self, error: Exception, request_id: str
-    ) -> Any | None:
+    async def _attempt_recovery(self, error: Exception, request_id: str) -> Any | None:
         """Attempt to recover from errors when possible."""
 
         logger.info(

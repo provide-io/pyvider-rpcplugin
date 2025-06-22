@@ -101,7 +101,7 @@ async def test_unix_socket_concurrent_connections() -> None:
         except Exception as e:
             logger.error(f"Error removing temp directory: {e}")
 
-        await asyncio.sleep(0)  # Give event loop a chance after all cleanup
+        await asyncio.sleep(0.1)  # Give event loop a bit longer after all cleanup
 
 
 @pytest.mark.asyncio

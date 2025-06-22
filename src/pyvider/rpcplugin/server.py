@@ -41,7 +41,7 @@ from pyvider.rpcplugin.handshake import (
 )
 from pyvider.rpcplugin.health_servicer import HealthServicer
 from pyvider.rpcplugin.protocol import register_protocol_service
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import (
@@ -52,7 +52,8 @@ from pyvider.telemetry import logger
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
 _HandlerT = TypeVar("_HandlerT")
 _TransportT = TypeVar("_TransportT", bound=RPCPluginTransportType)
-_ProtocolT = TypeVar("_ProtocolT", bound=RPCPluginProtocol)
+
+# Import for protocol field type moved to top
 
 
 class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
@@ -79,14 +80,14 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
 
 
 @define(slots=False)
-class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]:
-    protocol: ProtocolT = field()
+class RPCPluginServer[ServerT, HandlerT, TransportT]:  # Simplified generic parameters
+    protocol: BaseRpcAbcProtocol[ServerT, HandlerT] = field()  # Type field directly
     handler: HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
-    transport: TransportT | None = field(default=None)  # Reverted to 'transport'
+    transport: TransportT | None = field(default=None)
     _exit_on_stop: bool = field(default=True, init=False)
-    _transport: TransportT | None = field(init=False, default=None)  # Reverted name
-    _server: ServerT | None = field(init=False, default=None)  # Reverted name
+    _transport: TransportT | None = field(init=False, default=None)
+    _server: ServerT | None = field(init=False, default=None)
     _handshake_config: HandshakeConfig = field(init=False)
     _protocol_version: int = field(init=False)
     _transport_name: str = field(init=False)
@@ -285,10 +286,12 @@ class RPCPluginServer[ServerT, HandlerT, TransportT, ProtocolT]:
                 GRPCServer(interceptors=interceptors_list),  # Use GRPCServer
             )
 
-            # self.protocol is already an instance of _ProtocolT (bound by RPCPluginProtocol)
+            # self.protocol is an instance of a type bound by RPCPluginProtocol.
             # No need to check if callable or call it.
-            proto_instance = self.protocol # Let MyPy infer the type
-            await proto_instance.add_to_server(handler=self.handler, server=self._server)
+            proto_instance = self.protocol  # Let MyPy infer the type
+            await proto_instance.add_to_server(
+                handler=self.handler, server=self._server
+            )
 
             if self._server is None:
                 raise TransportError(

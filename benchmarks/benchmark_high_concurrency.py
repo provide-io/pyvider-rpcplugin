@@ -24,9 +24,10 @@ if str(project_root) not in sys.path:  # /app
     sys.path.insert(0, str(project_root))
 # END OF SYS.PATH MANIPULATION
 
-from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
 import echo_pb2
 import echo_pb2_grpc
+
+from pyvider.rpcplugin import plugin_client, plugin_protocol, plugin_server
 
 
 class EchoHandler(echo_pb2_grpc.EchoServiceServicer):  # Corrected: EchoServiceServicer
@@ -129,7 +130,9 @@ async def main():
         f"unix://{socket_path}"  # Used by server and for dummy handshaker output
     )
 
-    dummy_handshaker_script_path = str(benchmarks_dir / "dummy_high_cc_echo_handshaker.sh")  # Changed script name
+    dummy_handshaker_script_path = str(
+        benchmarks_dir / "dummy_high_cc_echo_handshaker.sh"
+    )  # Changed script name
 
     # Configure the dummy handshaker to output the correct socket path for this test
     handshake_line_for_dummy = f"1|1|unix|{socket_path}|grpc|"
@@ -186,7 +189,7 @@ async def main():
             f"High Concurrency Test: {successful_calls}/{num_concurrent_clients} clients made successful calls."
         )
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         print("Server did not become ready in time.")
         results_summary["error"] = "Server Timeout for High Concurrency Test"
     except Exception as e:

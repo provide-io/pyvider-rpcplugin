@@ -202,7 +202,9 @@ async def test_go_server_empty_values(kv_stub: kv_pb2_grpc.KVStub) -> None:
         pytest.fail(f"Empty value operation failed: {e.details()}")
 
 
-@pytest.mark.skip(reason="Go KV server fails to handle special characters in keys for file-based persistence (Errno 2). Requires Go server fix.")
+@pytest.mark.skip(
+    reason="Go KV server fails to handle special characters in keys for file-based persistence (Errno 2). Requires Go server fix."
+)
 async def test_go_server_special_characters(kv_stub: kv_pb2_grpc.KVStub) -> None:
     """Test operations with special characters in keys and values."""
     logger.debug("🧪🔍🚀 Testing operations with special characters")
@@ -383,7 +385,9 @@ async def run_process_with_timeout(
 
 
 # I haven't created a --help yet.
-@pytest.mark.skip(reason="Go KV server (or fallback server tested) does not implement --help flag or exit cleanly when --help is passed. Test confirmed server times out.")
+@pytest.mark.skip(
+    reason="Go KV server (or fallback server tested) does not implement --help flag or exit cleanly when --help is passed. Test confirmed server times out."
+)
 async def test_go_server_basic_execution() -> None:
     """Test that the Server binary can be executed with basic arguments."""
     server_path = os.environ.get("PLUGIN_SERVER_PATH", DEFAULT_PLUGIN_SERVER_PATH)
@@ -524,39 +528,45 @@ async def test_connection_with_debugging() -> None:
         pytest.skip(f"Server binary not found at {server_path}")
 
     # Environment with debugging enabled
-    env = os.environ.copy() # Start with a full copy of the current environment
+    env = os.environ.copy()  # Start with a full copy of the current environment
 
     # Ensure PYTHONPATH allows finding 'grpc' and other project modules
-    current_pythonpath = env.get("PYTHONPATH", "") # Get from the copied env
+    current_pythonpath = env.get("PYTHONPATH", "")  # Get from the copied env
     new_pythonpath = f"/app/src:/app:{current_pythonpath}".strip(":")
 
-    env.update({
-        "PYTHONPATH": new_pythonpath,
-        "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
-        "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
-        "BASIC_PLUGIN": "hello", # This is the actual cookie value expected by the server handshake
-        "PLUGIN_PROTOCOL_VERSIONS": "1",
-        "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport
-        "PLUGIN_AUTO_MTLS": "false",  # Disable mTLS to simplify
-        "PYTHONUNBUFFERED": "1",  # Disable Python buffering
-        "PLUGIN_LOG_LEVEL": "DEBUG",  # Maximum logging
-        "PLUGIN_SHOW_EMOJI_MATRIX": "true",
-        # "GODEBUG": "asyncpreemptoff=1", # Not needed for Python server
-    })
+    env.update(
+        {
+            "PYTHONPATH": new_pythonpath,
+            "PLUGIN_MAGIC_COOKIE_KEY": "BASIC_PLUGIN",
+            "PLUGIN_MAGIC_COOKIE_VALUE": "hello",
+            "BASIC_PLUGIN": "hello",  # This is the actual cookie value expected by the server handshake
+            "PLUGIN_PROTOCOL_VERSIONS": "1",
+            "PLUGIN_TRANSPORTS": "unix",  # Force Unix transport
+            "PLUGIN_AUTO_MTLS": "false",  # Disable mTLS to simplify
+            "PYTHONUNBUFFERED": "1",  # Disable Python buffering
+            "PLUGIN_LOG_LEVEL": "DEBUG",  # Maximum logging
+            "PLUGIN_SHOW_EMOJI_MATRIX": "true",
+            # "GODEBUG": "asyncpreemptoff=1", # Not needed for Python server
+        }
+    )
     # Remove GODEBUG if it was in os.environ.copy() and not overwritten by update()
-    if "GODEBUG" in env and env.get("GODEBUG") == "asyncpreemptoff=1": # Check if it's the specific value we want to remove
+    if (
+        "GODEBUG" in env and env.get("GODEBUG") == "asyncpreemptoff=1"
+    ):  # Check if it's the specific value we want to remove
         del env["GODEBUG"]
 
-
     # Start the Server directly first to see if it runs
-    logger.info(f"🧪🚀 Starting Server process directly for diagnostics with PYTHONPATH: {env.get('PYTHONPATH')}")
+    logger.info(
+        f"🧪🚀 Starting Server process directly for diagnostics with PYTHONPATH: {env.get('PYTHONPATH')}"
+    )
     # Explicitly use the same Python interpreter that's running pytest
     import sys
+
     executable_command = [sys.executable, server_path]
     logger.info(f"🧪🚀 Executable command: {executable_command}")
     process = subprocess.Popen(
         executable_command,
-        env=env, # Pass the fully populated and modified environment
+        env=env,  # Pass the fully populated and modified environment
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,

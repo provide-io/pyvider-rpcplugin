@@ -16,11 +16,13 @@ if str(project_root) not in sys.path:  # /app
 # END OF SYS.PATH MANIPULATION
 
 import asyncio
-import time
 import os
-from pyvider.rpcplugin import plugin_server, plugin_client, plugin_protocol
+import time
+
 import echo_pb2
 import echo_pb2_grpc
+
+from pyvider.rpcplugin import plugin_client, plugin_protocol, plugin_server
 
 
 # Define a handler compatible with the Echo service
@@ -153,7 +155,7 @@ async def main():
         results["throughput_rps"] = await run_client_throughput(
             protocol, 10000, dummy_handshaker_script
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         print("Server did not become ready in time.")
         results["throughput_rps"] = "ERROR: Server timeout"
     except Exception as e:

@@ -26,16 +26,20 @@ from pyvider.telemetry import logger  # noqa: E402
 @define(frozen=True, slots=True)
 class HelloReply:
     """A structured reply for the SayHello RPC method."""
+
     message: str = field()
+
 
 class SimpleGreeterHandler:
     """Simple handler that implements a greeting service."""
+
     async def SayHello(self, request, context):
         """Handle SayHello RPC calls."""
         name = getattr(request, "name", "Anonymous")
         message = f"Hello, {name}! Welcome to pyvider-rpcplugin."
         logger.info("Greeting request processed", client_name=name)
         return HelloReply(message=message)
+
 
 async def main():
     """Run a self-contained server and client example."""
@@ -45,11 +49,7 @@ async def main():
     # --- Server Setup ---
     protocol = create_basic_protocol()
     handler = SimpleGreeterHandler()
-    server = plugin_server(
-        protocol=protocol,
-        handler=handler,
-        transport="unix"
-    )
+    server = plugin_server(protocol=protocol, handler=handler, transport="unix")
 
     server_task = asyncio.create_task(server.serve())
     logger.info("Starting server in background...")
@@ -60,7 +60,7 @@ async def main():
     # and read the handshake string from its stdout. For this example, we'll
     # simulate that by creating a dummy executable on the fly that just echoes
     # the handshake string our server produced.
-    handshake_string = getattr(server._transport, 'handshake_string', None)
+    handshake_string = getattr(server._transport, "handshake_string", None)
     if not handshake_string:
         logger.error("Failed to get handshake string from running server.")
         await server.stop()
@@ -88,7 +88,9 @@ async def main():
             print("   In a real app, you would now use your gRPC stub to make calls.")
             # e.g., response = await stub.SayHello(Request(name="World"))
             # For demonstration, we can invoke the handler directly.
-            simulated_reply = await handler.SayHello(type("Request", (), {"name": "World"})(), None)
+            simulated_reply = await handler.SayHello(
+                type("Request", (), {"name": "World"})(), None
+            )
             print(f"   Server handler would reply: '{simulated_reply.message}'")
 
     except Exception as e:
@@ -98,13 +100,14 @@ async def main():
         if client:
             await client.close()
             logger.info("Client closed.")
-        
-        dummy_executable_path.unlink() # Clean up the script
+
+        dummy_executable_path.unlink()  # Clean up the script
 
         await server.stop()
         await server_task
         logger.info("Server stopped.")
         print("\n✅ Quick Start Example Finished.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

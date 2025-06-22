@@ -3,9 +3,9 @@
 """Demonstrates robust client connection patterns and lifecycle management with pyvider-rpcplugin."""
 
 import asyncio
+import contextlib
 import sys
 from pathlib import Path
-import contextlib
 
 # Add src to path for examples
 example_dir = Path(__file__).resolve().parent
@@ -15,9 +15,9 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from pyvider.rpcplugin import (  # noqa: E402
+    create_basic_protocol,
     plugin_client,
     plugin_server,
-    create_basic_protocol,
 )
 from pyvider.rpcplugin.exception import (  # noqa: E402
     HandshakeError,
@@ -25,19 +25,20 @@ from pyvider.rpcplugin.exception import (  # noqa: E402
 )
 from pyvider.telemetry import logger  # noqa: E402
 
+
 # --- Helper to manage a background server for the examples ---
 @contextlib.asynccontextmanager
 async def managed_server():
     """An async context manager to start and stop a server for tests."""
     server = plugin_server(
         protocol=create_basic_protocol(),
-        handler=type("DummyHandler", (), {})(), # A simple dummy handler
-        transport="unix"
+        handler=type("DummyHandler", (), {})(),  # A simple dummy handler
+        transport="unix",
     )
     server_task = asyncio.create_task(server.serve())
-    await asyncio.sleep(0.5) # Let it start
+    await asyncio.sleep(0.5)  # Let it start
 
-    handshake_string = getattr(server._transport, 'handshake_string', None)
+    handshake_string = getattr(server._transport, "handshake_string", None)
     if not handshake_string:
         raise RuntimeError("Managed server failed to produce a handshake string.")
 
@@ -53,6 +54,7 @@ async def managed_server():
         await server.stop()
         await server_task
 
+
 async def example_3_basic_client_connection():
     """Example 3A: Demonstrates basic client connection lifecycle."""
     print("\n" + "=" * 60)
@@ -63,7 +65,9 @@ async def example_3_basic_client_connection():
         client = plugin_client(server_path=server_executable)
         try:
             await client.start()
-            logger.info("Client connected successfully.", endpoint=client.target_endpoint)
+            logger.info(
+                "Client connected successfully.", endpoint=client.target_endpoint
+            )
             # In a real scenario, you would now make RPC calls.
             await asyncio.sleep(0.1)
         except Exception as e:
@@ -71,6 +75,7 @@ async def example_3_basic_client_connection():
         finally:
             await client.close()
             logger.info("Client connection closed.")
+
 
 async def example_3_connection_retry_logic():
     """Example 3B: Demonstrates robust connection retry patterns."""
@@ -84,9 +89,11 @@ async def example_3_connection_retry_logic():
 
     # This example simulates a server that isn't ready immediately.
     server_ready_event = asyncio.Event()
-    
+
     async def start_server_delayed():
-        await asyncio.sleep(base_delay * 2) # Start server after the first retry attempt
+        await asyncio.sleep(
+            base_delay * 2
+        )  # Start server after the first retry attempt
         async with managed_server() as server_executable:
             server_ready_event.set()
             # Keep the context alive until the test is over
@@ -99,11 +106,11 @@ async def example_3_connection_retry_logic():
             logger.info(f"Connection attempt {attempt + 1}/{max_retries}...")
             # We need a dummy handshaker that points to a non-existent socket initially
             # This is complex to show here. A better way is to show retrying the start() call.
-            
+
             # Let's simplify: we'll try to start a client against a server that we know
             # will only be ready after a delay.
             if not server_ready_event.is_set():
-                 raise TransportError("Simulated: Server not ready yet.")
+                raise TransportError("Simulated: Server not ready yet.")
 
             # If we reach here, the server is ready.
             # We would create the client pointing to the now-ready server.
@@ -119,9 +126,10 @@ async def example_3_connection_retry_logic():
                 await asyncio.sleep(delay)
             else:
                 logger.error("All connection attempts failed.")
-    
+
     server_task.cancel()
     await asyncio.gather(server_task, return_exceptions=True)
+
 
 async def example_3_async_context_manager():
     """Example 3D: Demonstrates using async context managers for clients."""
@@ -140,6 +148,7 @@ async def example_3_async_context_manager():
         except Exception as e:
             logger.error(f"Error in context manager example: {e}")
 
+
 async def main():
     """Run all client connection examples."""
     await example_3_basic_client_connection()
@@ -149,6 +158,7 @@ async def main():
     print("\nNOTE: Connection pooling example is conceptual and not executed here.")
     await example_3_async_context_manager()
     print("\n✅ All executable client connection examples completed.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
