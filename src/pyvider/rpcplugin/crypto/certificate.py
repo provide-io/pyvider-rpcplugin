@@ -244,7 +244,7 @@ class Certificate:
 
                 self._cert = self._create_x509_certificate(
                     is_ca=False,
-                    is_client_cert=True,  # MODIFIED FOR CLIENT CERT
+                    is_client_cert=True,
                 )
 
                 if self._cert is None:
