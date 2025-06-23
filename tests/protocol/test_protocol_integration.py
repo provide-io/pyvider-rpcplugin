@@ -38,6 +38,7 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.telemetry import logger
+from typing import AsyncGenerator # Added import
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -51,9 +52,7 @@ class ServerFixtureOutput:
 
 
 @pytest_asyncio.fixture
-async def grpc_server_output() -> (
-    ServerFixtureOutput
-):  # Changed fixture name for clarity
+async def grpc_server_output() -> AsyncGenerator[ServerFixtureOutput, None]:
     """Fixture providing a real gRPC server with our services registered."""
     server = grpc.aio.server()
     shutdown_event = asyncio.Event()

@@ -11,7 +11,7 @@ from typing import Tuple
 class IncompleteProtocol(RPCPluginProtocol):
     """A protocol implementation that doesn't implement all abstract methods."""
 
-    def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:
+    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]: # Made async
         return (MagicMock(), "TestService")
 
     # Missing add_to_server implementation
@@ -20,7 +20,7 @@ class IncompleteProtocol(RPCPluginProtocol):
 class ConcreteProtocol(RPCPluginProtocol):
     """A concrete implementation of the protocol with all methods."""
 
-    def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:
+    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]: # Made async
         descriptors = MagicMock()
         service_name = "TestService"
         return descriptors, service_name
@@ -33,13 +33,13 @@ class ConcreteProtocol(RPCPluginProtocol):
 def test_abstract_protocol_instantiation() -> None:
     """Test that abstract class cannot be instantiated directly."""
     with pytest.raises(TypeError):
-        RPCPluginProtocol()
+        RPCPluginProtocol()  # type: ignore[abstract]
 
 
 def test_incomplete_protocol_instantiation() -> None:
     """Test that incomplete implementations cannot be instantiated."""
     with pytest.raises(TypeError):
-        IncompleteProtocol()
+        IncompleteProtocol()  # type: ignore[abstract]
 
 
 def test_concrete_protocol_instantiation() -> None:

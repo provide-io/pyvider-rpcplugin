@@ -125,7 +125,7 @@ async def test_close_writer_exception(monkeypatch) -> None:
 
     fake_writer = FakeWriter()
     # _close_writer should catch the exception and log an error.
-    await transport._close_writer(fake_writer)
+    await transport._close_writer(fake_writer)  # type: ignore[arg-type]
     # No exception should propagate.
 
 

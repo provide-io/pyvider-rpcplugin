@@ -86,7 +86,7 @@ async def test_create_invalid_key_type() -> None:
         "common_name": "test",
         "organization": "test",
         "alt_names": ["test.local"],  # Added
-        "key_type": 123,  # Invalid type, not a KeyType Enum
+        "key_type": 123,  # type: ignore[typeddict-item] # Invalid type, not a KeyType Enum
         "not_valid_before": now - timedelta(days=1),  # Added
         "not_valid_after": now + timedelta(days=1),  # Added
         # No need for key_size or curve for this specific test's purpose

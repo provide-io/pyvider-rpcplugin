@@ -11,7 +11,7 @@ from pyvider.rpcplugin.types import HandlerT, ServerT
 class PartialTestProtocol(RPCPluginProtocol):
     """A partial implementation missing the add_to_server method."""
 
-    def get_grpc_descriptors(self) -> tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Made async
         """Implemented method."""
         return MagicMock(), "TestService"
 
@@ -21,7 +21,7 @@ class PartialTestProtocol(RPCPluginProtocol):
 class CompleteTestProtocol(RPCPluginProtocol):
     """A complete implementation with all methods."""
 
-    def get_grpc_descriptors(self) -> tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Made async
         """Returns mock descriptors and service name."""
         return MagicMock(), "TestService"
 
@@ -33,13 +33,13 @@ class CompleteTestProtocol(RPCPluginProtocol):
 def test_abstract_base_cannot_instantiate() -> None:
     """Test that RPCPluginProtocol cannot be instantiated directly."""
     with pytest.raises(TypeError):
-        RPCPluginProtocol()
+        RPCPluginProtocol()  # type: ignore[abstract]
 
 
 def test_partial_implementation_cannot_instantiate() -> None:
     """Test that a partial implementation cannot be instantiated."""
     with pytest.raises(TypeError):
-        PartialTestProtocol()
+        PartialTestProtocol()  # type: ignore[abstract]
 
 
 def test_complete_implementation_can_instantiate() -> None:
@@ -54,7 +54,7 @@ async def test_complete_implementation_methods() -> None:
     protocol = CompleteTestProtocol()
 
     # Test get_grpc_descriptors
-    descriptors, service_name = protocol.get_grpc_descriptors()
+    descriptors, service_name = await protocol.get_grpc_descriptors() # Added await
     assert service_name == "TestService"
     assert descriptors is not None
 

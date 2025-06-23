@@ -26,7 +26,7 @@ async def test_unix_socket_handle_client_called(managed_unix_socket_path) -> Non
 
         # Verify the server handles data correctly
         response = await reader.read(100)
-        logger.debug(f"Server echoed response: {response}")
+        logger.debug(f"Server echoed response: {response!r}")
         assert response == b"test data", "Data was not echoed back correctly."
 
         # Close the client connection
@@ -95,7 +95,7 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
     fake_reader = DummyReader(b"echo")
     fake_writer = DummyWriter()
     # Call _handle_client directly.
-    await transport._handle_client(fake_reader, fake_writer)
+    await transport._handle_client(fake_reader, fake_writer)  # type: ignore[arg-type]
     # Verify that the data was echoed back.
     assert fake_writer.data == b"echo"
 

@@ -19,7 +19,7 @@ async def test_server_handshake_invalid_cookie(
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
 
-    server = RPCPluginServer(
+    server: RPCPluginServer = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=None,
@@ -44,7 +44,7 @@ async def test_negotiate_handshake_via_negotiation(
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", "value")
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
 
-    server = RPCPluginServer(
+    server: RPCPluginServer = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=None,

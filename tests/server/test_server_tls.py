@@ -31,7 +31,7 @@ async def test_generate_server_credentials_failure(
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_KEY", "dummy.key")
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_AUTO_MTLS", False)
 
-    server = RPCPluginServer(
+    server: RPCPluginServer = RPCPluginServer(
         protocol=mock_server_protocol,
         handler=mock_server_handler,
         config=None,
