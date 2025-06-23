@@ -4,24 +4,29 @@ import os
 import sys
 
 # Ensure /app/src and /app are in sys.path for module resolution
-# This is a workaround for potential PYTHONPATH/editable install issues in the test environment
+# Workaround for PYTHONPATH/editable install issues in test env.
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src"))
 )
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 import asyncio
-import os
+
+# os is already imported by sys.path block
+from typing import Any, cast  # Consolidated typing imports
 
 import grpc
-from cryptography.hazmat.primitives.asymmetric import ec
 
 from examples.kvproto.py_rpc.proto import (
     KVProtocol,
     kv_pb2,
     kv_pb2_grpc,
 )
-from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.factories import plugin_server  # Added
+from pyvider.rpcplugin.server import RPCPluginServer  # For type hint
+from pyvider.rpcplugin.types import (
+    RPCPluginProtocol as TypesRPCPluginProtocol,
+)  # For cast
 from pyvider.telemetry import logger
 
 """
@@ -41,13 +46,13 @@ storage functions work correctly and assists during gRPC debugging.
 # Dummy context for self‑testing (to satisfy the context parameter)
 # ------------------------------------------------------------------------------
 class DummyContext:
-    async def abort(self, code, details):
+    async def abort(self, code: grpc.StatusCode, details: str) -> None:  # Annotated
         raise Exception(f"Abort: {code}, {details}")
 
     def peer(self) -> str:
         return "dummy_peer"
 
-    def auth_context(self):
+    def auth_context(self) -> dict[Any, Any]:  # Annotated
         return {}
 
 
@@ -70,17 +75,12 @@ class KVHandler(kv_pb2_grpc.KVServicer):
     Detailed logging is added to both Put and Get methods.
     """
 
+    _server_cert_obj: Any  # Placeholder for potential attribute
+
     def __init__(self) -> None:
         logger.debug("🐍 S> 🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
-        # Add explicit logging of certificate parameters
-        # Ensure 'ec' is imported at the top of the file
-        if hasattr(self, "_server_cert_obj"):
-            cert = self._server_cert_obj._cert
-            public_key = cert.public_key()
-            if isinstance(
-                public_key, ec.EllipticCurvePublicKey
-            ):  # F821 here if ec is not imported
-                logger.info(f"🐍 S> 🔐 Server using curve: {public_key.curve.name}")
+        self._server_cert_obj = None  # Initialize if it's an instance var
+        # Removed problematic certificate logging block that assumed _server_cert_obj
 
     async def Put(
         self, request: kv_pb2.PutRequest, context: grpc.aio.ServicerContext
@@ -88,10 +88,8 @@ class KVHandler(kv_pb2_grpc.KVServicer):
         """
         🛎️📡🚀 Put:
           - Receives a key/value pair.
-          - Writes the value (decoded from UTF‑8, with errors replaced) to a text file
-            named "kv-data-<key>".
-          - Logs the key, full file name, and a summary (first 32 and last 32 characters)
-            of the value.
+          - Writes value (UTF-8 decoded) to file "kv-data-<key>".
+          - Logs key, filename, and value summary (first/last 32 chars).
         """
         try:
             key = request.key
@@ -105,7 +103,7 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(value_str)
             logger.debug(
-                f"🐍 S> 🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'."
+                f"🐍 S> Put: Stored key '{key}' in file '{filename}'." # Shortened
             )
             return kv_pb2.Empty()
         except Exception as e:
@@ -120,9 +118,8 @@ class KVHandler(kv_pb2_grpc.KVServicer):
     ) -> kv_pb2.GetResponse:
         """
         🛎️📡🚀 Get:
-          - Retrieves the value for the given key by reading the file "kv-data-<key>".
-          - Logs the lookup process and displays a summary (first 32 and last 32 characters)
-            of the retrieved value.
+          - Retrieves value for key by reading file "kv-data-<key>".
+          - Logs lookup and value summary (first/last 32 chars).
         """
         try:
             key = request.key
@@ -132,15 +129,15 @@ class KVHandler(kv_pb2_grpc.KVServicer):
                 f"🐍 S> 🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'."
             )
             if not os.path.exists(filename):
-                logger.warning(  # Changed from logger.error to logger.warning
-                    f"🐍 S> 🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
+                logger.warning( # Shortened
+                    f"🐍 S> Get: Key '{key}' not found (file '{filename}' missing)."
                 )
                 await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
             with open(filename, encoding="utf-8") as f:
                 value_str = f.read()
             summary = summarize_text(value_str)
             logger.debug(
-                f"🐍 S> 🛎️📡✅ Get: Successfully retrieved key '{key}' with value (summary): {summary}"
+                f"🐍 S> Get: Retrieved key '{key}', summary: {summary}" # Shortened
             )
             return kv_pb2.GetResponse(value=value_str.encode("utf-8"))
         except Exception as e:
@@ -150,7 +147,9 @@ class KVHandler(kv_pb2_grpc.KVServicer):
             )
             await context.abort(grpc.StatusCode.INTERNAL, str(e))
 
-    async def _log_request_details(self, context: grpc.aio.ServicerContext) -> None:
+    async def _log_request_details(
+        self, context: grpc.aio.ServicerContext
+    ) -> None:  # Already annotated by user
         """Log request details (peer and auth context) for debugging."""
         try:
             logger.debug(f"🐍 S> 🛎️🧰🔍 Utils: Request from peer: {context.peer()}")
@@ -166,32 +165,35 @@ class KVHandler(kv_pb2_grpc.KVServicer):
 # ------------------------------------------------------------------------------
 # Server entry point
 # ------------------------------------------------------------------------------
-async def serve() -> None:
+async def serve() -> None:  # Already annotated
     logger.info("🐍 S> 🛎️🚀 Starting KV plugin server...")
 
     # Create an instance of KVHandler.
-    kv_handler = KVHandler()
+    kv_handler: KVHandler = KVHandler()  # Annotated
 
     # Self-Test: Put and then Get with key "status" and value "pyvider server listening"
-    dummy_context = DummyContext()
+    dummy_context: DummyContext = DummyContext()  # Annotated
     try:
-        test_key = "status"
-        test_value = "pyvider server listening"
+        test_key: str = "status"  # Annotated
+        test_value: str = "pyvider server listening"  # Annotated
         logger.info(
-            f"🐍 S> 🛎️🧪 Self-Test: Executing Put for key '{test_key}' with value '{test_value}'"
+            f"🐍 S> Self-Test: Put key '{test_key}', value '{test_value}'" # Shortened
         )
 
         await kv_handler.Put(
             kv_pb2.PutRequest(key=test_key, value=test_value.encode("utf-8")),
-            dummy_context,  # type: ignore[arg-type]
+            dummy_context,  # type: ignore[arg-type] # Keeping ignore for dummy context
         )
 
         logger.info("🐍 S> 🛎️🧪 Self-Test: Put executed successfully.")
         logger.info(f"🐍 S> 🛎️🧪 Self-Test: Executing Get for key '{test_key}'")
 
-        response = await kv_handler.Get(kv_pb2.GetRequest(key=test_key), dummy_context)  # type: ignore[attr-defined, arg-type]
+        response: kv_pb2.GetResponse = await kv_handler.Get(  # Annotated
+            kv_pb2.GetRequest(key=test_key),
+            dummy_context,  # type: ignore[arg-type]
+        )
 
-        retrieved = response.value.decode("utf-8")
+        retrieved: str = response.value.decode("utf-8")  # Annotated
 
         logger.info(f"🐍 S> 🛎️🧪 Self-Test: Get returned: {retrieved}")
 
@@ -203,14 +205,10 @@ async def serve() -> None:
     try:
         # Create and configure the RPCPluginServer with KVProtocol.
         logger.debug("🐍 S> 🛎️🚀✅ Server: Server started successfully")
-        # The config dict here was causing type issues as RPCPluginServer expects ClientT | None.
-        # This specific config isn't used by the base server class anyway.
-        # For custom server configs, they should typically be handled by a custom server subclass
-        # or through global configuration mechanisms.
-        server: RPCPluginServer = RPCPluginServer(
-            protocol=KVProtocol(),
+
+        server: RPCPluginServer = plugin_server(
+            protocol=cast(TypesRPCPluginProtocol, KVProtocol()),
             handler=kv_handler,
-            config=None,  # Changed from dict to None
         )
 
         await server.serve()

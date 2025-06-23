@@ -222,11 +222,17 @@ def validate_magic_cookie(
         if magic_cookie_value is _SENTINEL_INSTANCE
         else magic_cookie_value
     )
-    cookie_provided = (
-        rpcplugin_config.get("PLUGIN_MAGIC_COOKIE")
-        if magic_cookie is _SENTINEL_INSTANCE
-        else magic_cookie
-    )
+
+    # Determine the actual cookie value that was provided.
+    # If magic_cookie is passed directly (client-side or test), use that.
+    # Otherwise (server-side validation), read from the environment variable
+    # whose name is defined by cookie_key.
+    if magic_cookie is not _SENTINEL_INSTANCE:
+        cookie_provided = magic_cookie
+    else:
+        # Server-side: cookie_key is from server's PLUGIN_MAGIC_COOKIE_KEY.
+        # Client is expected to set an env var with this name.
+        cookie_provided = os.environ.get(str(cookie_key))
 
     logger.debug(f"cookie_key: {cookie_key}")
     logger.debug(f"cookie_value (expected): {cookie_value}")

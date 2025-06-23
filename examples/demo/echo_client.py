@@ -4,10 +4,19 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Any  # Added Dict, Any
 
 import grpc
 
-from pyvider.rpcplugin.client import RPCPluginClient  # Moved here
+# Add src to path for examples - IMPORTANT for pyvider.rpcplugin imports
+project_root_path = (
+    Path(__file__).resolve().parent.parent.parent
+)  # Assuming this file is in examples/demo
+src_path_abs = project_root_path / "src"
+if src_path_abs.exists() and str(src_path_abs) not in sys.path:
+    sys.path.insert(0, str(src_path_abs))
+
+from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
 
 # Assuming a basic logger setup (can use logging module directly)
 # from pyvider.telemetry import logger
@@ -31,20 +40,26 @@ except ImportError:
 class EchoClient:
     """A client to interact with the Echo Plugin Server."""
 
-    def __init__(self, server_script_path: str):
+    server_script_path: str
+    _client: RPCPluginClient | None
+    _stub: echo_pb2_grpc.EchoServiceStub | None
+    plugin_env: dict[str, str]  # For type hint, Dict from typing needed
+    client_config: dict[str, Any]  # For type hint
+
+    def __init__(self, server_script_path: str) -> None:
         self.server_script_path = server_script_path
-        self._client: RPCPluginClient | None = None
-        self._stub: echo_pb2_grpc.EchoServiceStub | None = None
+        self._client = None
+        self._stub = None
 
         # --- Crucial: Environment must match server expectation for handshake ---
         # These should ideally be set externally or configured consistently.
         # For this example, we set them directly to match the standalone server example.
         self.plugin_env = {
             "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE",  # Must match server
-            "PLUGIN_MAGIC_COOKIE_VALUE": "standalonesecret",  # Server will expect this value
-            "PLUGIN_MAGIC_COOKIE": "standalonesecret",  # Client will send this value / Server actual value
+            "PLUGIN_MAGIC_COOKIE_VALUE": "standalonesecret",  # Server expects this
+            "PLUGIN_MAGIC_COOKIE": "standalonesecret",  # Client sends this
             "PLUGIN_PROTOCOL_VERSIONS": "1",  # Must be compatible
-            "PLUGIN_TRANSPORTS": "unix,tcp",  # What the client supports
+            "PLUGIN_TRANSPORTS": "unix,tcp",  # What client supports
             "PLUGIN_AUTO_MTLS": "true",  # Use mTLS (recommended)
             "PYTHONUNBUFFERED": "1",  # Good practice for plugins
         }
@@ -57,48 +72,42 @@ class EchoClient:
             f"Attempting to start and connect to server: {self.server_script_path}"
         )
         try:
-            # Ensure server script exists and is executable
             if not os.path.exists(self.server_script_path):
                 logger.error(f"Server script not found: {self.server_script_path}")
                 return False
-            # Note: Checking execute permissions might be complex across platforms,
-            # relying on subprocess to fail if it's not executable.
 
             self._client = RPCPluginClient(
-                command=[
-                    sys.executable,
-                    self.server_script_path,
-                ],  # Command to launch server
+                command=[sys.executable, self.server_script_path],
                 config=self.client_config,
             )
-
-            # Start the client (launches server, performs handshake, creates channel)
-            # Use a reasonable timeout
             await asyncio.wait_for(self._client.start(), timeout=15.0)
 
             if not self._client.grpc_channel:
-                logger.error("gRPC channel was not established after client start.")
-                await self.close()
+                logger.error("gRPC channel not established after client start.")
+                await self.close()  # Ensure close is awaited
                 return False
 
-            # Create the gRPC stub using the established channel
             self._stub = echo_pb2_grpc.EchoServiceStub(self._client.grpc_channel)
             logger.info("Client started and connected successfully.")
             return True
 
         except TimeoutError:
-            logger.error("Timeout occurred while starting or connecting to the server.")
-            await self.close()
+            logger.error("Timeout starting/connecting to server.")
+            await self.close()  # Ensure close is awaited
             return False
         except Exception as e:
             logger.error(f"Failed to start client: {e}", exc_info=True)
-            await self.close()
+            await self.close()  # Ensure close is awaited
             return False
 
-    async def call_echo(self, message: str) -> str | None:
+    async def call_echo(self, message: str) -> str | None:  # Changed return
         """Call the Echo RPC method on the server."""
-        if not self._stub:
-            logger.error("Client not started or stub not available.")
+        if (
+            not self._stub or not self._client or not self._client.is_started
+        ):  # Added more checks
+            logger.error(
+                "Client not started, stub not available, or client not running."
+            )
             return None
 
         logger.info(f"Sending Echo request: '{message}'")
@@ -118,16 +127,11 @@ class EchoClient:
             logger.error(f"Unexpected error during Echo call: {e}", exc_info=True)
             return None
 
-    async def close(self):
+    async def close(self) -> None:  # Annotated
         """Cleanly close the client and shut down the server process."""
         if self._client:
             logger.info("Closing client connection and terminating server process...")
             try:
-                # Ask the server to shutdown (optional, relies on GRPCController)
-                # await self._client.shutdown_plugin()
-                # await asyncio.sleep(0.5) # Give server time to react
-
-                # Close client resources and kill process
                 await self._client.close()
                 logger.info("Client closed.")
             except Exception as e:
@@ -138,10 +142,10 @@ class EchoClient:
 
 
 # --- Main Execution ---
-async def run_client():
+async def run_client() -> None:  # Annotated
     # Define path to the server script relative to this client script
     client_dir = Path(__file__).parent
-    server_script = client_dir / "echo_server.py"  # Assumes server is in same dir
+    server_script: Path = client_dir / "echo_server.py"  # Annotated
 
     client = EchoClient(str(server_script))
 
