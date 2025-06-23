@@ -195,7 +195,7 @@ echo_info "Using '$UV_CMD' for uv operations. Version: $($UV_CMD --version)"
 # --- Virtual Environment Setup ---
 VENV_DIR_NAME=".venv"
 VENV_PATH="${ENV_SCRIPT_DIR_ABS}/${VENV_DIR_NAME}"
-PYTHON_FOR_VENV="python3.11"
+PYTHON_FOR_VENV="python3.13" # Changed from python3.11 to python3.13
 echo_info "Setting up Python virtual environment in '${VENV_PATH}' using ${PYTHON_FOR_VENV}..."
 NEEDS_VENV_CREATE=false
 if [ ! -f "${VENV_PATH}/pyvenv.cfg" ]; then
@@ -283,6 +283,11 @@ GO_PLUGIN_BIN_DIR="${ENV_SCRIPT_DIR_ABS}/examples/kvproto/go-rpc/bin"
 if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-client" ]; then alias go-kv-client="'${GO_PLUGIN_BIN_DIR}/kv-go-client'"; else echo_info "Go client alias not set."; fi
 if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-server" ]; then alias go-kv-server="'${GO_PLUGIN_BIN_DIR}/kv-go-server'"; else echo_info "Go server alias not set."; fi
 export PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${PY_KV_EXAMPLES_DIR}/py_kv_server.py"}
+
+# Prepend project's src directory to PYTHONPATH to ensure correct namespace package handling
+# This is crucial for pyvider.rpcplugin to be found correctly alongside pyvider.telemetry
+export PYTHONPATH="${ENV_SCRIPT_DIR_ABS}/src${PYTHONPATH:+:$PYTHONPATH}"
+echo_info "PYTHONPATH set to: $PYTHONPATH"
 
 echo_info "Environment setup script finished successfully."
 echo_info "Python in venv: $(python -V). uv: $($UV_CMD --version)."
