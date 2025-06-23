@@ -229,7 +229,7 @@ async def test_verify_invalid_public_key() -> None:
     """Ensure verification fails when public key is None."""
     cert = Certificate(generate_keypair=True)
     with pytest.raises(CertificateError, match="Cannot verify trust"):
-        cert.verify_trust(None)
+        cert.verify_trust(None)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

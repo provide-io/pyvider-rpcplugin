@@ -45,14 +45,14 @@ async def test_unix_socket_connection_metrics(managed_unix_socket_path) -> None:
         test_data = b"test data"
         writer.write(test_data)
         await writer.drain()
-        logger.debug(f"Sent data: {test_data}")
+        logger.debug(f"Sent data: {test_data!r}")
 
         # Wait a bit to allow for data processing
         await asyncio.sleep(0.1)
 
         # Read response
         response = await asyncio.wait_for(reader.read(len(test_data)), timeout=1.0)
-        logger.debug(f"Received response: {response}")
+        logger.debug(f"Received response: {response!r}")
 
         # Verify the response
         assert response == test_data, f"Expected {test_data!r}, got {response!r}"

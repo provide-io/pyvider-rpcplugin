@@ -144,12 +144,12 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
     async def create(
         transport_type: str, tcp_port_for_server: int | None = None
     ) -> tuple[BaseTransportT, BaseTransportT]:
-        server_kwargs = (
+        server_kwargs: dict[str, Any] = ( # Type hint for server_kwargs
             {"port": tcp_port_for_server}
             if transport_type == "tcp" and tcp_port_for_server is not None
             else {}
         )
-        client_kwargs = {}
+        client_kwargs: dict[str, Any] = {} # Type hint for client_kwargs
 
         server_transport = await transport_factory(transport_type, **server_kwargs)
 

@@ -53,7 +53,7 @@ async def test_update_metrics(connection) -> None:
 async def test_send_data_normal() -> None:  # Removed fixtures
     local_dummy_reader = DummyReader()  # Default empty reader
     local_dummy_writer = DummyWriter()
-    conn = ClientConnection(
+    conn = ClientConnection( # type: ignore[arg-type]
         reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
 
@@ -90,7 +90,7 @@ async def test_receive_data_normal() -> None:  # Removed fixtures
     test_bytes = b"test data"
     local_dummy_reader = DummyReader(data=test_bytes)  # Initialize with data
     local_dummy_writer = DummyWriter()
-    conn = ClientConnection(
+    conn = ClientConnection( # type: ignore[arg-type]
         reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
 
@@ -152,7 +152,7 @@ async def test_del_warning() -> None:
     local_dummy_writer = DummyWriter()
     local_dummy_reader = DummyReader()
 
-    conn = ClientConnection(
+    conn = ClientConnection( # type: ignore[arg-type]
         reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
 
