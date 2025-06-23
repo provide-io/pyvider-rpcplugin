@@ -173,12 +173,6 @@ async def test_server_handshake_integration(
             return None
         if key == "PLUGIN_SERVER_KEY":
             return None
-        # Values set by setup_environment fixture
-        if key == "PLUGIN_MAGIC_COOKIE_KEY":
-            return "PLUGIN_MAGIC_COOKIE" # As set by setup_environment
-        if key == "PLUGIN_MAGIC_COOKIE_VALUE":
-            return "test_cookie_value" # As set by setup_environment
-
         # For other keys, return their actual values from the global config
         # This ensures values set by setup_environment are respected.
         return rpcplugin_config.config.get(key, default)

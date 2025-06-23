@@ -14,7 +14,11 @@ consistent component creation.
 from typing import Any, TypeVar, cast
 
 from pyvider.rpcplugin.client import RPCPluginClient
+
+# ClientT was erroring from .types, it's defined in .client.types
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+
+# Removed ServerProtocolT import from server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.server import (
     RPCPluginServer,
