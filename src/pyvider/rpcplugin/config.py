@@ -35,7 +35,6 @@ from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
 
-# FIX: Import the single, correct ConfigError from the exception module
 from .exception import ConfigError
 
 # Define supported protocol versions

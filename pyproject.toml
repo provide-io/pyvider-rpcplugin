@@ -159,22 +159,17 @@ strict = true
 ################################################################################
 [tool.mypy]
 ignore_missing_imports = false # Default, but explicit
-disable_error_code = ["import-untyped"] # Globally disable for now to test
+# disable_error_code = ["import-untyped"] # Globally disable for now to test
+
 # Add specific ignores for problematic protobuf imports
-# [[tool.mypy.overrides]]
-# module = [
-#     "google.protobuf",
-#     "google.protobuf.internal",
-#     "google.protobuf.descriptor",
-#     "google.protobuf.message",
-#     "google.protobuf.reflection",
-#     "google.protobuf.symbol_database",
-#     "google.protobuf.text_encoding",
-#     "google.protobuf.text_format",
-#     "google.protobuf.pyext", # Adding this as it's often a C extension part
-#     "google.protobuf.compiler" # Adding this as it's often a C extension part
-# ]
-# ignore_missing_imports = true # Keep this, it's good practice for third-party stubs
-# disable_error_code = ["import-untyped"] # Focus only on import-untyped
+[[tool.mypy.overrides]]
+module = [
+    "google.protobuf.internal",
+    "google.protobuf.descriptor", # Often imported by generated code
+    "google.protobuf.message",    # Base class for messages
+    "google.protobuf.empty_pb2",  # For google.protobuf.empty_pb2
+    "google.protobuf"             # General fallback for the google.protobuf namespace
+]
+ignore_missing_imports = true
 
 # 🐍🏗️📋
