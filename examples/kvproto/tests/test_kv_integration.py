@@ -145,16 +145,35 @@ async def transport_fixture(request, managed_unix_socket_path):
 
 
 @pytest_asyncio.fixture
-async def kv_server(transport_fixture, kv_handler, mock_server_config):
+async def kv_server(transport_fixture, kv_handler, monkeypatch): # Removed mock_server_config, added monkeypatch
     """Provides a running KV server with proper lifecycle management."""
     transport_type, transport = transport_fixture
-
     logger.debug(f"🛎️🚀🔍 Starting KV server with {transport_type} transport")
+
+    # Store original config values to restore them later
+    # Ensure rpcplugin_config is imported for direct use
+    from pyvider.rpcplugin.config import rpcplugin_config as global_rpc_config
+
+    original_config_values = {
+        "PLUGIN_MAGIC_COOKIE_KEY": global_rpc_config.get("PLUGIN_MAGIC_COOKIE_KEY"),
+        "PLUGIN_MAGIC_COOKIE_VALUE": global_rpc_config.get("PLUGIN_MAGIC_COOKIE_VALUE"),
+    }
+
+    # Set config for this test directly on the global config object
+    test_cookie_key_name = "BASIC_PLUGIN"  # This is what the server will expect as the env var name
+    test_expected_cookie_value = "hello"   # This is the value the server will expect in that env var
+
+    global_rpc_config.set("PLUGIN_MAGIC_COOKIE_KEY", test_cookie_key_name)
+    global_rpc_config.set("PLUGIN_MAGIC_COOKIE_VALUE", test_expected_cookie_value)
+
+    # Simulate the client providing the cookie via environment variable
+    monkeypatch.setenv(test_cookie_key_name, test_expected_cookie_value)
+    logger.debug(f"🔑 Configured global rpcplugin_config and patched env for KV Server: {test_cookie_key_name}={test_expected_cookie_value}")
 
     server = RPCPluginServer(
         protocol=KVProtocol(),
         handler=kv_handler,
-        config=mock_server_config,
+        config=None, # Explicitly None, so RPCPluginServer uses the (modified) global rpcplugin_config
         transport=transport,
     )
 
@@ -191,8 +210,12 @@ async def kv_server(transport_fixture, kv_handler, mock_server_config):
             serve_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await serve_task
-
         logger.debug("🛎️🔒✅ KV server stopped")
+
+        # Restore original config values
+        for key, val in original_config_values.items():
+            global_rpc_config.set(key, val)
+        logger.debug("🔧⚙️ Restored original rpcplugin_config values")
 
 
 @pytest_asyncio.fixture

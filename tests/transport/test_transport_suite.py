@@ -192,9 +192,6 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
 async def test_server_lifecycle_and_connectivity(
     transport_type, transport_factory, server_factory, unused_tcp_port, mocker, monkeypatch # Added monkeypatch
 ):
-    # Set the expected magic cookie in the environment for the server to validate
-    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
-
     # Configure for an insecure setup for both tcp and unix variants
     def mock_config_get_insecure(key, default=None):
         if key == "PLUGIN_AUTO_MTLS":
@@ -204,6 +201,11 @@ async def test_server_lifecycle_and_connectivity(
         return rpcplugin_config.config.get(key, default)
 
     mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
+
+    # Ensure the magic cookie environment variable is set for direct server instantiation
+    cookie_key = rpcplugin_config.magic_cookie_key()
+    cookie_value = rpcplugin_config.magic_cookie_value()
+    monkeypatch.setenv(cookie_key, cookie_value)
 
     server_transport_kwargs = (
         {"port": unused_tcp_port} if transport_type == "tcp" else {}

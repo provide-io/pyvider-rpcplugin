@@ -56,12 +56,15 @@ def test_validate_magic_cookie_config_scenarios(
     monkeypatch.setitem(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie_value_config
     )
-    # Simulate client providing the cookie via environment variable
+    # Simulate client setting the environment variable
+    # The key for the env var is magic_cookie_key_config
+    # The value for the env var is magic_cookie_env_var
     if magic_cookie_key_config and magic_cookie_env_var is not None:
-        monkeypatch.setenv(str(magic_cookie_key_config), str(magic_cookie_env_var))
+        monkeypatch.setenv(magic_cookie_key_config, magic_cookie_env_var)
     elif magic_cookie_key_config and magic_cookie_env_var is None:
-        monkeypatch.delenv(str(magic_cookie_key_config), raising=False)
-    # If magic_cookie_key_config is None, os.environ.get(None) is fine for the test.
+        monkeypatch.delenv(magic_cookie_key_config, raising=False)
+    # If magic_cookie_key_config is None, os.environ.get(None) would error or return None
+    # which is handled by validate_magic_cookie's internal checks for cookie_key.
 
     if expected_error_regex:
         with pytest.raises(HandshakeError, match=expected_error_regex):
@@ -101,15 +104,15 @@ def test_validate_magic_cookie_failures(
     monkeypatch.setitem(
         rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", magic_cookie_key
     )
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "hello") # This is what the server expects
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "hello")
 
-    # Simulate client providing the cookie via environment variable
-    # The actual value provided by the client is in the 'magic_cookie_value' parameter for this test
+    # Simulate client setting the environment variable
+    # The key for the env var is magic_cookie_key (from config)
+    # The value for the env var is magic_cookie_value (the parameter to this test)
     if magic_cookie_key and magic_cookie_value is not None:
-        monkeypatch.setenv(str(magic_cookie_key), str(magic_cookie_value))
-    elif magic_cookie_key and magic_cookie_value is None: # If the test intends to simulate "not provided"
-        monkeypatch.delenv(str(magic_cookie_key), raising=False)
-    # If magic_cookie_key is None, os.environ.get(None) is fine for the test.
+        monkeypatch.setenv(magic_cookie_key, magic_cookie_value)
+    elif magic_cookie_key and magic_cookie_value is None:
+        monkeypatch.delenv(magic_cookie_key, raising=False)
 
     if expected_error:
         with pytest.raises(HandshakeError, match=expected_error):
@@ -165,16 +168,15 @@ def test_validate_magic_cookie(
     Parametrized test that covers valid/invalid cookie scenarios by directly setting config.
     """
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", set_key)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", set_value) # Server's expected value
+    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", set_value)
 
-    # Simulate client providing the cookie via environment variable
-    # 'set_key' is the name of the env var the server will check
-    # 'set_cookie' is the value the client is "providing" for that env var
+    # Simulate client setting the environment variable
+    # The key for the env var is set_key (from config)
+    # The value for the env var is set_cookie (the parameter to this test)
     if set_key and set_cookie is not None:
-        monkeypatch.setenv(str(set_key), str(set_cookie))
-    elif set_key and set_cookie is None: # Client provides no cookie / env var not set
-        monkeypatch.delenv(str(set_key), raising=False)
-    # If set_key is None, os.environ.get(None) is fine for the test.
+        monkeypatch.setenv(set_key, set_cookie)
+    elif set_key and set_cookie is None:
+        monkeypatch.delenv(set_key, raising=False)
 
     if expect_error:
         with pytest.raises(HandshakeError, match=error_regex):

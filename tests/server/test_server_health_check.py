@@ -60,9 +60,10 @@ def health_test_config_override(request):
 
 @pytest.mark.asyncio
 async def test_health_service_enabled_and_serving(health_test_config_override, monkeypatch): # Added monkeypatch
-    # Ensure the server's expected magic cookie is provided in the environment
-    # Default key is PLUGIN_MAGIC_COOKIE, default value is rpcplugin-default-cookie
-    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
+    # Ensure the magic cookie environment variable is set for direct server instantiation
+    cookie_key = rpcplugin_config.magic_cookie_key()
+    cookie_value = rpcplugin_config.magic_cookie_value()
+    monkeypatch.setenv(cookie_key, cookie_value)
 
     protocol = EchoProtocolImpl()
     handler = EchoServiceImpl()

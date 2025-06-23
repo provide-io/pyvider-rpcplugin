@@ -35,6 +35,7 @@ from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
 
+# FIX: Import the single, correct ConfigError from the exception module
 from .exception import ConfigError
 
 # Define supported protocol versions
@@ -73,13 +74,13 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_MAGIC_COOKIE_VALUE": {
         "required": True,
-        "default": "rpcplugin-default-cookie",
+        "default": "test_cookie_value",
         "description": "The expected magic cookie value for validation.",
         "type": "str",
     },
     "PLUGIN_MAGIC_COOKIE": {
         "required": True,
-        "default": "rpcplugin-default-cookie",
+        "default": "test_cookie_value",
         "description": "The actual cookie provided by the client.",
         "type": "str",
     },
