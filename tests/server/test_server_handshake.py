@@ -15,7 +15,7 @@ async def test_server_handshake_invalid_cookie(
 ) -> None:
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "valid_cookie")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", "invalid_cookie")
+    monkeypatch.setenv("PLUGIN_MAGIC_COOKIE", "invalid_cookie") # Simulate client providing env var
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
 
@@ -41,7 +41,7 @@ async def test_negotiate_handshake_via_negotiation(
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_TRANSPORTS", [transport_type])
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "key")
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "value")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", "value")
+    monkeypatch.setenv("key", "value") # Simulate client providing env var named by "key"
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
 
     server: RPCPluginServer = RPCPluginServer(

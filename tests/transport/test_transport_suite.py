@@ -190,8 +190,11 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_server_lifecycle_and_connectivity(
-    transport_type, transport_factory, server_factory, unused_tcp_port, mocker
+    transport_type, transport_factory, server_factory, unused_tcp_port, mocker, monkeypatch # Added monkeypatch
 ):
+    # Set the expected magic cookie in the environment for the server to validate
+    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
+
     # Configure for an insecure setup for both tcp and unix variants
     def mock_config_get_insecure(key, default=None):
         if key == "PLUGIN_AUTO_MTLS":
