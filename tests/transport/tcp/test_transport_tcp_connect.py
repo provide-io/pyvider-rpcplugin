@@ -1,13 +1,14 @@
 # pyvider/rpcplugin/tests/transport/tcp/test_transport_tcp_connect.py
 
 import asyncio
+import socket # Added import
 
 import pytest
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock # Added AsyncMock
 
 
 @pytest.mark.asyncio
@@ -147,5 +148,23 @@ async def test_connect_generic_exception_open_connection(mocker):
     ):
         await transport.connect("127.0.0.1:12345")
 
+
+@pytest.mark.asyncio
+async def test_listen_already_running_and_endpoint_set(mocker):
+    transport = TCPSocketTransport(host="127.0.0.1", port=12345)
+    transport._running = True
+    transport.endpoint = "127.0.0.1:12345"
+
+    # Mock the lock to avoid actual locking in this specific test path
+    mocker.patch.object(transport, '_lock', AsyncMock(spec=asyncio.Lock))
+
+    # Spy on socket creation to ensure it's not called
+    socket_spy = mocker.spy(socket, "socket")
+
+    # Call listen again
+    endpoint = await transport.listen()
+    assert endpoint == "127.0.0.1:12345"
+    socket_spy.assert_not_called() # Ensure no new socket was created
+    await transport.close() # Clean up transport
 
 ### 🐍🏗🧪️

@@ -72,7 +72,7 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
     serve_task = asyncio.create_task(server.serve())
     try:
         await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
-        
+
         socket_path = server._transport.endpoint
         assert socket_path, "Could not determine server socket path for client connection."
 
