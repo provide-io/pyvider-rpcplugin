@@ -466,11 +466,7 @@ async def example_7_basic_error_handling() -> None:
     await server.wait_for_server_ready(timeout=5.0)
 
     try:
-        # Use the Python-based 00_dummy_server.py for reliability
-        dummy_server_script_path = example_dir / "00_dummy_server.py"
-        client_command = [sys.executable, str(dummy_server_script_path.resolve())]
-        logger.info(f"Test client will use command: {client_command}")
-        client = plugin_client(command=client_command)
+        client = plugin_client(command=[str(example_dir / "dummy_server.sh")])
 
         # Test cases for different error scenarios
         test_cases: list[dict[str, str]] = [  # Annotated
