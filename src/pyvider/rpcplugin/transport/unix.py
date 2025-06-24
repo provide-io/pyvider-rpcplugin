@@ -436,9 +436,12 @@ class UnixSocketTransport(RPCPluginTransport):
                     "📞🔒✍️ DIAGNOSTIC: repr(writer.wait_closed): "
                     f"{writer.wait_closed!r}"
                 )
-            logger.debug(
-                f"📞🔒✍️ DIAGNOSTIC: writer.is_closing(): {writer.is_closing()}"
-            )
+            if hasattr(writer, 'is_closing') and callable(writer.is_closing):
+                logger.debug(
+                    f"📞🔒✍️ DIAGNOSTIC: writer.is_closing(): {writer.is_closing()}"
+                )
+            else:
+                logger.debug("📞🔒✍️ DIAGNOSTIC: writer has no is_closing() method.")
 
             await writer.wait_closed()
             logger.debug("📞🔒✅ Writer closed successfully")
@@ -446,34 +449,40 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.error(f"📞🔒⚠️ Error closing writer: {e}", exc_info=True)
             # Don't propagate exception to avoid crashing cleanup.
         finally:
-            # Aggressively abort the transport if it exists and is not already closing
-            # This helps ensure the underlying socket is closed, which should prevent
-            # the ResourceWarning in __del__ of the transport.
-            if (
-                transport_to_abort
-                and hasattr(transport_to_abort, "is_closing")
-                and hasattr(transport_to_abort, "abort")
-                and callable(transport_to_abort.abort)
-            ):
-                if not transport_to_abort.is_closing():
-                    logger.debug(
-                        f"📞🔒✍️ Aggro abort in _close_writer: {transport_to_abort!r}"
-                    )
-                    transport_to_abort.abort()
+            if hasattr(writer, 'transport'):
+                transport_to_abort = writer.transport
+                if transport_to_abort: # Ensure transport is not None
+                    # Aggressively abort the transport if it exists and is not already closing
+                    # This helps ensure the underlying socket is closed, which should prevent
+                    # the ResourceWarning in __del__ of the transport.
+                    if (
+                        hasattr(transport_to_abort, "is_closing")
+                        and callable(transport_to_abort.is_closing)
+                        and hasattr(transport_to_abort, "abort")
+                        and callable(transport_to_abort.abort)
+                    ):
+                        if not transport_to_abort.is_closing():
+                            logger.debug(
+                                f"📞🔒✍️ Aggro abort in _close_writer for transport: {transport_to_abort!r}"
+                            )
+                            transport_to_abort.abort()
+                        else:
+                            logger.debug(
+                                f"📞🔒✍️ Transport already closing in _close_writer: {transport_to_abort!r}"
+                            )
+                    elif hasattr(transport_to_abort, "abort") and callable(
+                        transport_to_abort.abort
+                    ):  # Fallback if is_closing not available but abort is
+                        logger.debug( # Corrected log message
+                            f"📞🔒✍️ No is_closing, attempting abort: {transport_to_abort!r}"
+                        )
+                        transport_to_abort.abort()
+                    else:
+                        logger.debug(f"📞🔒✍️ Transport {transport_to_abort!r} has no abort method.") # Adjusted this log too for clarity
                 else:
-                    logger.debug(
-                        f"📞🔒✍️ Closing in close_writer: {transport_to_abort!r}"
-                    )
-            elif (
-                transport_to_abort
-            ):  # Fallback if is_closing not available but abort is
-                logger.debug(
-                    f"📞🔒✍️ No is_closing, attempting abort: {transport_to_abort!r}"
-                )
-                if hasattr(transport_to_abort, "abort") and callable(
-                    transport_to_abort.abort
-                ):
-                    transport_to_abort.abort()
+                    logger.debug("📞🔒✍️ writer.transport was None.")
+            else:
+                logger.debug("📞🔒✍️ writer has no transport attribute.")
 
     async def close(self) -> None:
         """
@@ -548,6 +557,8 @@ class UnixSocketTransport(RPCPluginTransport):
                         )
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
+                # Before raising, ensure loop has a chance to process other tasks
+                await asyncio.sleep(0) # Yield just before raising the error from this path
                 raise TransportError(f"Failed to remove socket file: {e}") from e
 
         self.endpoint = None
