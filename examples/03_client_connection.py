@@ -17,8 +17,6 @@ if src_path.exists() and str(src_path) not in sys.path:
 
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_client,
-    plugin_protocol,  # Changed
-    plugin_server,
 )
 from pyvider.rpcplugin.config import rpcplugin_config  # noqa: E402
 from pyvider.rpcplugin.exception import (  # noqa: E402
@@ -32,68 +30,86 @@ from pyvider.telemetry import logger  # noqa: E402
 @contextlib.asynccontextmanager
 async def managed_server() -> AsyncGenerator[str]:
     """An async context manager to start and stop a server for tests."""
-    server_socket_path = Path(f"./managed_server_{Path().name}.sock")  # Unique path
-    server = plugin_server(
-        protocol=plugin_protocol(),  # Changed
-        handler=type("DummyHandler", (), {})(),
-        transport="unix",
-        transport_path=str(
-            server_socket_path
-        ),  # Explicit path for cleanup and handshake
-    )
-    server_task = asyncio.create_task(server.serve())
+    # This server needs to be the actual 00_dummy_server.py for the client examples
+    # to interact with a pyvider-rpcplugin server.
+    # We will start it with the necessary magic cookie environment variable.
 
-    await server.wait_for_server_ready(timeout=5.0)  # Added wait
+    server_script_path = Path(__file__).resolve().parent / "00_dummy_server.py"
 
-    # Construct handshake string
-    core_version = rpcplugin_config.get("PLUGIN_CORE_VERSION")
-    protocol_version = getattr(server, "_protocol_version", "1")
-    transport_type = "unix"
-    server_endpoint = getattr(getattr(server, "_transport", None), "endpoint", None)
+    # Get the magic cookie key and value from the current config
+    # (which might be the global default or set by a previous example part)
+    # If not set, use a default that 00_dummy_server.py would expect if run by a host.
+    current_config = rpcplugin_config
+    magic_cookie_key = current_config.magic_cookie_key()
+    magic_cookie_value = current_config.magic_cookie_value()
 
-    if not server_endpoint:
-        # Clean up before raising
-        if server_socket_path.exists():
-            server_socket_path.unlink(missing_ok=True)
-        server.stop()
-        await server_task
-        raise RuntimeError("Managed server endpoint not available after server ready.")
+    env = {**sys.modules["os"].environ, magic_cookie_key: magic_cookie_value}
 
-    handshake_string = (
-        f"{core_version}|{protocol_version}|{transport_type}|{server_endpoint}|"
+    # Start 00_dummy_server.py as a subprocess
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(server_script_path),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=env,
     )
 
-    dummy_executable_path = Path("./dummy_conn_handshaker.sh")
-    with open(dummy_executable_path, "w") as f:
-        f.write(f"#!/bin/sh\necho '{handshake_string}'")
-    dummy_executable_path.chmod(0o755)
+    # The client examples will use this server_script_path as their command.
+    # The server will output its handshake string to its stdout.
+    # The RPCPluginClient will read this handshake string.
 
     try:
-        yield str(dummy_executable_path)
+        # Yield the command that clients should use to "run" this server.
+        # In this managed setup, the server is already running.
+        # The client just needs a command that *would* produce the handshake.
+        # We give it the actual server script path. The client's _launch_process
+        # will run it, and since it's already running with the cookie,
+        # the new instance will handshake correctly.
+        # Alternatively, for a truly "managed" external server, we'd capture its
+        # handshake here and provide a dummy script that echoes it, but that's
+        # more complex than needed if the client can just relaunch the server.
+        yield str(server_script_path)
     finally:
-        if dummy_executable_path.exists():
-            dummy_executable_path.unlink()
-        if server_socket_path.exists():
-            server_socket_path.unlink(missing_ok=True)
-
-        # Graceful server shutdown
-        if not server_task.done():
-            server.stop()
+        logger.info("Managed server: stopping subprocess...")
+        if process.returncode is None:
+            process.terminate()
             try:
-                await asyncio.wait_for(server_task, timeout=5.0)
+                await asyncio.wait_for(process.wait(), timeout=5.0)
             except TimeoutError:
-                logger.warning(
-                    "Timeout waiting for managed server task to complete, cancelling."
+                logger.warning("Managed server: timeout during terminate, killing.")
+                process.kill()
+                await process.wait()
+        logger.info(f"Managed server: subprocess exited with {process.returncode}")
+
+        # Clean up stderr/stdout from the server process if needed
+        if process.stdout:
+            stdout_bytes = await process.stdout.read()
+            if stdout_bytes:
+                logger.debug(
+                    f"Managed server stdout: {stdout_bytes.decode(errors='replace')}"
                 )
-                server_task.cancel()
-                await asyncio.gather(server_task, return_exceptions=True)
-        else:
-            # If already done, check for exceptions
-            exc = server_task.exception()
-            if exc:
-                logger.error(
-                    f"Managed server task exited with exception: {exc}", exc_info=exc
+        if process.stderr:
+            stderr_bytes = await process.stderr.read()
+            if stderr_bytes:
+                logger.debug(
+                    f"Managed server stderr: {stderr_bytes.decode(errors='replace')}"
                 )
+
+        # No dummy_executable_path or server_socket_path to clean up in this new setup.
+        # The server (00_dummy_server.py) manages its own socket if it uses one.
+
+        # No server_task to manage here as it's an external process.
+        # The original server_task was for an in-process asyncio server.
+        # server.stop() is also not applicable to the external process.
+        pass  # Keep finally block for structure, even if empty after refactor
+        # The following block was part of the old server_task logic
+        # else:
+        #     # If already done, check for exceptions
+        #     exc = server_task.exception()
+        #     if exc:
+        #         logger.error(
+        #             f"Managed server task exited with exception: {exc}", exc_info=exc
+        #         )
 
 
 async def example_3_basic_client_connection() -> None:
@@ -169,9 +185,14 @@ async def example_3_connection_retry_logic() -> None:
                     "Simulated: Server's handshaker script not ready or server down."
                 )
 
-            # Server is supposedly ready, try to connect using the known script name
-            # that managed_server creates.
-            client = plugin_client(command=[str(Path("./dummy_conn_handshaker.sh"))])
+            # Server is supposedly ready. The client needs a command to "launch"
+            # the server to get the handshake.
+            # The `managed_server` (when called by `start_server_delayed`) sets up
+            # the necessary environment (e.g., magic cookie) for 00_dummy_server.py.
+            # So, the client should "launch" 00_dummy_server.py.
+            client = plugin_client(
+                command=[str(Path(__file__).resolve().parent / "00_dummy_server.py")]
+            )
             await client.start()
 
             logger.info("Connection successful!")
