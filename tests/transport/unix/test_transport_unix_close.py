@@ -119,15 +119,25 @@ async def test_close_writer_exception(monkeypatch) -> None:
     transport = UnixSocketTransport(path="/tmp/dummy.sock")
 
     class FakeWriter:
+        def __init__(self):
+            self.transport = AsyncMock() # Mock the transport attribute
+            # Make transport.is_closing() exist and return False by default
+            self.transport.is_closing = MagicMock(return_value=False)
+            self.transport.abort = MagicMock()
+
+
         def close(self):
             pass
 
         async def wait_closed(self):
+            # Simulate that after close() is called, is_closing might become True
+            if hasattr(self.transport, 'is_closing') and callable(self.transport.is_closing):
+                self.transport.is_closing.return_value = True
             raise Exception("Fake wait_closed error")
 
     fake_writer = FakeWriter()
     # _close_writer should catch the exception and log an error.
-    await transport._close_writer(fake_writer)  # type: ignore[arg-type]
+    await transport._close_writer(fake_writer) # No longer need type: ignore if FakeWriter is closer to StreamWriter
     # No exception should propagate.
 
 
