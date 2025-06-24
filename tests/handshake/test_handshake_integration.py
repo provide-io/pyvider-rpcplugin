@@ -160,7 +160,7 @@ async def test_full_handshake_cycle():
 
 @pytest.mark.asyncio
 async def test_server_handshake_integration(
-    setup_environment, mock_protocol, mock_handler, managed_unix_socket_path, mocker
+        setup_environment, mock_protocol, mock_handler, managed_unix_socket_path, mocker, monkeypatch # Added monkeypatch
 ):
     """Test integration of handshake with the server."""
 
@@ -184,6 +184,12 @@ async def test_server_handshake_integration(
         return rpcplugin_config.config.get(key, default)
 
     mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get)
+
+    # Ensure the server's expected cookie is in the environment for validate_magic_cookie
+    # The mock_config_get will ensure rpcplugin_config.magic_cookie_key() and
+    # rpcplugin_config.magic_cookie_value() return their default values.
+    monkeypatch.setenv(rpcplugin_config.magic_cookie_key(), rpcplugin_config.magic_cookie_value())
+
 
     # Patch sys.stdout to capture handshake output
     with (

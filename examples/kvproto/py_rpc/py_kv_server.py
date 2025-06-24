@@ -211,23 +211,6 @@ async def serve() -> None:  # Already annotated
             handler=kv_handler,
         )
 
-        # For the Go interop test, it seems the env var named by PLUGIN_MAGIC_COOKIE_KEY
-        # might not be passed to this python script from the Go parent process,
-        # even though PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE are.
-        # If PLUGIN_SHOW_ENV is true (set by that test), let's try to ensure
-        # the cookie env var itself is set.
-        if os.environ.get("PLUGIN_SHOW_ENV") == "true":
-            from pyvider.rpcplugin.config import rpcplugin_config # Local import
-
-            # These will be sourced from the environment variables set by the test for the Go process
-            # e.g., PLUGIN_MAGIC_COOKIE_KEY="BASIC_PLUGIN", PLUGIN_MAGIC_COOKIE_VALUE="hello"
-            actual_cookie_key_name = rpcplugin_config.magic_cookie_key()
-            expected_cookie_value = rpcplugin_config.magic_cookie_value()
-
-            if actual_cookie_key_name and os.environ.get(actual_cookie_key_name) is None:
-                logger.info(f"🐍 S> Attempting to self-set environment variable for Go interop: {actual_cookie_key_name}={expected_cookie_value}")
-                os.environ[actual_cookie_key_name] = expected_cookie_value
-
         await server.serve()
         logger.info("🐍 S> 🛎️🚀✅ Server: Server started successfully")
 
