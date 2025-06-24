@@ -184,11 +184,24 @@ async def test_unix_socket_close_unlink_fails_persistently(mocker, managed_unix_
     mock_unlink = mocker.patch("os.unlink", side_effect=OSError(errno.EACCES, "Permission denied"))
     mocker.patch("os.chmod", return_value=None) # Assume chmod works or is attempted
 
-    # Patch sleep to avoid actual delays
-    mocker.patch("asyncio.sleep", new_callable=AsyncMock)
+    # Patch sleep to avoid actual delays during the transport.close() logic itself
+    mock_asyncio_sleep = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
 
-    with pytest.raises(TransportError, match="Failed to remove socket file after multiple attempts"):
-        await transport.close()
+    try:
+        with pytest.raises(TransportError, match="Failed to remove socket file after multiple attempts"):
+            await transport.close()
+    finally:
+        # Unpatch asyncio.sleep so our explicit sleep below works correctly
+        # It's important to clean up mocks that might interfere with subsequent operations
+        # However, pytest-mock automatically undoes patches at the end of the test.
+        # For this specific case, let's ensure the *real* asyncio.sleep is used for final cleanup.
+        # pytest-mock automatically undoes patches, so explicit stop might not be needed
+        # and could be causing the new RuntimeWarning.
+        # mock_asyncio_sleep.stop() # Stop the general mock for asyncio.sleep
+
+        import gc # Import garbage collector
+        gc.collect() # Explicitly trigger garbage collection
+        await asyncio.sleep(0.1) # Give event loop time to process cleanup
 
     assert mock_unlink.call_count == 3 # Should try 3 times
     # managed_unix_socket_path fixture will handle cleanup of the actual file
