@@ -114,8 +114,7 @@ async def main() -> None:
     # 3. Create the client
     client = None
     try:
-        # Use the resolved absolute path for the command
-        client = plugin_client(command=[str(dummy_executable_path.resolve())])
+        client = plugin_client(command=[str(dummy_executable_path)])  # Changed
         await client.start()
         logger.info("Client connected to server successfully.")
 

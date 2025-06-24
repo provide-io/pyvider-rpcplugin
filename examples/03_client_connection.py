@@ -130,25 +130,29 @@ async def example_3_connection_retry_logic() -> None:
 
     # This example simulates a server that isn't ready immediately.
     server_ready_event = asyncio.Event()
-    shared_context = {"server_script_path": None} # To store the script path
+    # dummy_handshaker_script_path was unused, removed.
 
     async def start_server_delayed() -> None:
         await asyncio.sleep(base_delay * 2)  # Delay server startup
+
+        # managed_server will create/use its own dummy script.
+        # To align names for this example, we'll tell managed_server to use our path.
+        # This requires managed_server to accept a path for its dummy script.
+        # Assume managed_server uses a fixed name like dummy_conn_handshaker.sh
+        # and our client will point to that.
+
+        # orig_dummy_path = Path("./dummy_conn_handshaker.sh") # Unused
+
         async with managed_server() as server_executable_path_from_managed_server:
-            shared_context["server_script_path"] = server_executable_path_from_managed_server
+            # server_executable_path_from_managed_server is the path to the script
+            # created by managed_server (e.g. dummy_conn_handshaker.sh)
             logger.info(
                 f"Delayed server is now up. Handshaker script at: "
                 f"{server_executable_path_from_managed_server}"
             )
             server_ready_event.set()
             # Keep the server alive for the duration of retry attempts
-            # Use a try-except block to handle potential cancellation during sleep
-            try:
-                await asyncio.sleep(max_retries * base_delay * 4) # Slightly longer
-            except asyncio.CancelledError:
-                logger.info("Delayed server task cancelled during sleep.")
-                raise
-
+            await asyncio.sleep(max_retries * base_delay * 3)
 
     server_task = asyncio.create_task(start_server_delayed())
 
@@ -157,16 +161,17 @@ async def example_3_connection_retry_logic() -> None:
         try:
             logger.info(f"Connection attempt {attempt + 1}/{max_retries}...")
 
-            if not server_ready_event.is_set() or not shared_context["server_script_path"]:
+            if not server_ready_event.is_set():
                 # Simulate failure if server (and its handshaker script) isn't ready
-                logger.info("Server or its handshaker script not ready yet, simulating connection failure.")
+                # This could be a failure to find the script or the script failing.
+                logger.info("Server not ready yet, simulating connection failure.")
                 raise TransportError(
                     "Simulated: Server's handshaker script not ready or server down."
                 )
 
-            # Server is supposedly ready, try to connect using the script path from shared_context
-            logger.info(f"Attempting to connect to server using script: {shared_context['server_script_path']}")
-            client = plugin_client(command=[str(shared_context["server_script_path"])])
+            # Server is supposedly ready, try to connect using the known script name
+            # that managed_server creates.
+            client = plugin_client(command=[str(Path("./dummy_conn_handshaker.sh"))])
             await client.start()
 
             logger.info("Connection successful!")
