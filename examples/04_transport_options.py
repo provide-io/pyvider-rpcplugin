@@ -30,6 +30,7 @@ from pyvider.telemetry import logger  # noqa: E402
 @define(frozen=True, slots=True)
 class EchoReply:
     """A structured reply for the Echo RPC method."""
+
     response: str = field()
 
 
@@ -54,7 +55,7 @@ class BenchmarkHandler:
         response_data = f"Echo[{self.transport_type}]: {message}"
         return EchoReply(response=response_data)
 
-    def get_stats(self) -> dict[str, Any]: # Changed dict to Dict[str, Any]
+    def get_stats(self) -> dict[str, Any]:  # Changed dict to Dict[str, Any]
         """Get handler statistics."""
         return {
             "requests": self.request_count,
@@ -86,11 +87,18 @@ async def example_4_unix_socket_performance() -> None:
     )
 
     # Create protocol and handler
-    protocol = plugin_protocol()  # Changed
+    from pyvider.rpcplugin.factories import create_basic_protocol
+
+    BasicRPCPluginProtocol = create_basic_protocol()
+    protocol: BasicRPCPluginProtocol = plugin_protocol()  # type: ignore
     handler = BenchmarkHandler("unix")
 
     # Create Unix socket server
-    server = plugin_server(protocol=protocol, handler=handler, transport="unix")
+    from pyvider.rpcplugin.server import RPCPluginServer
+
+    server: RPCPluginServer = plugin_server(
+        protocol=protocol, handler=handler, transport="unix"
+    )
 
     logger.info(
         "Starting Unix socket performance test",
@@ -184,11 +192,16 @@ async def example_4_tcp_socket_performance() -> None:
     )
 
     # Create protocol and handler
-    protocol = plugin_protocol()  # Changed
+    from pyvider.rpcplugin.factories import create_basic_protocol
+
+    BasicRPCPluginProtocol = create_basic_protocol()
+    protocol: BasicRPCPluginProtocol = plugin_protocol()  # type: ignore
     handler = BenchmarkHandler("tcp")
 
     # Create TCP server
-    server = plugin_server(
+    from pyvider.rpcplugin.server import RPCPluginServer
+
+    server: RPCPluginServer = plugin_server(
         protocol=protocol,
         handler=handler,
         transport="tcp",
@@ -279,7 +292,9 @@ async def example_4_transport_comparison() -> None:
     print("=" * 60)
 
     # Transport comparison data
-    transport_comparison = {
+    from typing import Any
+
+    transport_comparison: dict[str, Any] = {
         "unix_socket": {
             "performance": {
                 "max_rps": 50000,
@@ -336,7 +351,7 @@ async def example_4_transport_comparison() -> None:
             action="comparison",
             status="analysis",
             transport=transport_name,
-            **details["performance"],
+            **details["performance"],  # type: ignore[arg-type]
         )
 
         logger.info(
@@ -345,7 +360,7 @@ async def example_4_transport_comparison() -> None:
             action="characteristics",
             status="reference",
             transport=transport_name,
-            **details["characteristics"],
+            **details["characteristics"],  # type: ignore[arg-type]
         )
 
         logger.info(
@@ -423,7 +438,10 @@ async def example_4_dual_transport_setup() -> None:
         PLUGIN_CONNECTION_TIMEOUT=120.0,  # Corrected key
     )
 
-    protocol = plugin_protocol()  # Changed
+    from pyvider.rpcplugin.factories import create_basic_protocol
+
+    BasicRPCPluginProtocol = create_basic_protocol()
+    protocol: BasicRPCPluginProtocol = plugin_protocol()  # type: ignore
     handler = BenchmarkHandler("dual")
 
     # Create server with dual transport support
@@ -432,7 +450,7 @@ async def example_4_dual_transport_setup() -> None:
     # which will be used by RPCPluginServer's negotiation logic.
     from pyvider.rpcplugin.server import RPCPluginServer  # Import directly
 
-    server = RPCPluginServer(
+    server: RPCPluginServer = RPCPluginServer(
         protocol=protocol,
         handler=handler,
         transport=None,  # Crucial for negotiation
@@ -544,15 +562,54 @@ async def main() -> None:
     print("🚄 pyvider-rpcplugin Transport Options Examples")
     print("===============================================")
 
+    from pyvider.rpcplugin.config import RPCPluginConfig
+    from pyvider.rpcplugin.exception import HandshakeError, TransportError
+
+    default_config_for_message = RPCPluginConfig()
+    # load_config is an internal method, not needed here as defaults are loaded on init.
+
+    magic_cookie_key_example = default_config_for_message.magic_cookie_key()
+    magic_cookie_value_example = default_config_for_message.magic_cookie_value()
+
     try:
-        # Run each transport example
-        await example_4_unix_socket_performance()
-        await example_4_tcp_socket_performance()
+        example_functions_with_server = [
+            example_4_unix_socket_performance,
+            example_4_tcp_socket_performance,
+            # example_4_transport_comparison does not start a server
+            example_4_dual_transport_setup,
+        ]
+
+        for example_func in example_functions_with_server:
+            try:
+                await example_func()
+            except (HandshakeError, TransportError) as e_server:
+                error_message = (
+                    f"\nERROR {example_func.__name__}: Server needs magic cookie via "
+                    f"env var '{magic_cookie_key_example}'.\n"
+                    "Usually set by plugin host (e.g., Terraform).\n"
+                    "Standalone runs fail without it. Example value: "
+                    f"'{magic_cookie_value_example}'.\n"
+                )
+                print(error_message)
+                logger.error(
+                    f"{example_func.__name__} failed (magic cookie?): {e_server}",
+                    exc_info=False,
+                )
+                sys.exit(1)  # Exit after the first failing server example
+            except Exception as e_other:
+                logger.error(
+                    f"Unexpected error in {example_func.__name__}: {e_other}",
+                    exc_info=True,
+                )
+                sys.exit(1)
+
+        # Run examples that don't start a server separately
         await example_4_transport_comparison()
-        await example_4_dual_transport_setup()
 
         print("\n" + "=" * 60)
-        print("✅ All Transport Options Examples Completed Successfully!")
+        print(
+            "✅ All Transport Options Examples (that were run) Completed Successfully!"
+        )
         print("=" * 60)
         print("\n🚄 Transport Selection Guide:")
         print("  • Unix Sockets: Use for local IPC (50K+ req/s)")

@@ -67,7 +67,21 @@ async def main() -> None:
     except KeyboardInterrupt:
         logger.info("Dummy server stopped by user (KeyboardInterrupt).")
     except Exception as e:
-        logger.error(f"Dummy server an error: {e}", exc_info=True)
+        from pyvider.rpcplugin.exception import HandshakeError
+        if isinstance(e, HandshakeError) and "Magic cookie not provided" in str(e):
+            print(
+                "\nERROR: This server expects to be run by a plugin host (like Terraform) "
+                "which provides a magic cookie for secure handshake.\n"
+                "When run standalone, the handshake will fail because this cookie is missing.\n"
+                "To run this server for development or with a custom client, ensure the\n"
+                f"'{server._handshake_config.magic_cookie_key}' environment variable is set to the expected value\n"
+                f" (e.g., '{server._handshake_config.magic_cookie_value}' or as configured).\n"
+            )
+            logger.error(f"Dummy server failed due to missing magic cookie: {e}", exc_info=False)
+            sys.exit(1)
+        else:
+            logger.error(f"Dummy server an error: {e}", exc_info=True)
+            sys.exit(1) # Exit with 1 for other errors too as per instruction for failing examples
     finally:
         logger.info("Dummy server shutting down.")
         # server.stop() is called internally by server.serve()'s finally block.
