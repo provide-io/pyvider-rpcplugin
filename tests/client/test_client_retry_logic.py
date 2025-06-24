@@ -114,3 +114,78 @@ async def test_connect_handshake_retry_success_after_failures(
     spied_logger_warning.assert_any_call(
         "Attempt 2 failed: Simulated handshake failure attempt 2"
     )
+
+@pytest.mark.asyncio
+async def test_connect_handshake_retry_disabled_success(client_instance_local, mocker):
+    client = client_instance_local
+    # Ensure PLUGIN_CLIENT_RETRY_ENABLED is "false"
+    # All other retry configs can be default or don't matter here.
+    def config_get_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_RETRY_ENABLED":
+            return "false"
+        # For other keys, return a sensible default or what rpcplugin_config would normally return
+        # For this test, we only care about disabling retries.
+        # Using a dict for other potential default values to avoid None issues if client code uses them.
+        defaults = {"PLUGIN_CLIENT_MAX_RETRIES": 3} # Example default
+        return defaults.get(key, default)
+
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get", side_effect=config_get_side_effect)
+
+    mock_perform_handshake = mocker.patch.object(client, "_perform_handshake", new_callable=AsyncMock)
+    mock_create_channel = mocker.patch.object(client, "_create_grpc_channel", new_callable=AsyncMock)
+
+    # Simulate successful handshake and channel creation on first try
+    async def successful_handshake():
+        client._address = "addr_no_retry"
+        client._transport_name = "tcp_no_retry"
+    mock_perform_handshake.side_effect = successful_handshake
+
+    async def successful_channel():
+        client.target_endpoint = "target_no_retry"
+        client.grpc_channel = AsyncMock()
+    mock_create_channel.side_effect = successful_channel
+
+
+    await client._connect_and_handshake_with_retry()
+
+    mock_perform_handshake.assert_called_once()
+    mock_create_channel.assert_called_once()
+    assert client.is_started
+    assert client._handshake_complete_event.is_set()
+    client.logger.info.assert_any_call( # Check for the specific log message
+        "Client retries disabled. Attempting connection and handshake once."
+    )
+
+
+@pytest.mark.asyncio
+async def test_connect_handshake_retry_disabled_failure(client_instance_local, mocker):
+    client = client_instance_local
+    def config_get_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_RETRY_ENABLED":
+            return "false"
+        return default
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get", side_effect=config_get_side_effect)
+
+    mock_perform_handshake = mocker.patch.object(client, "_perform_handshake", new_callable=AsyncMock,
+                                             side_effect=HandshakeError("Simulated failure"))
+    mock_create_channel = mocker.patch.object(client, "_create_grpc_channel", new_callable=AsyncMock)
+    # Use spy for logger.error as it's called with exc_info=True
+    mock_logger_error = mocker.spy(client.logger, "error")
+
+    with pytest.raises(HandshakeError, match="Simulated failure"):
+        await client._connect_and_handshake_with_retry()
+
+    mock_perform_handshake.assert_called_once()
+    mock_create_channel.assert_not_called() # Should not be called if handshake fails
+    assert not client.is_started
+    assert client._handshake_failed_event.is_set()
+
+    # Check that the specific error log was made
+    found_log = False
+    for call_args_list_item in mock_logger_error.call_args_list:
+        args, kwargs = call_args_list_item
+        if args and "Failed to connect and handshake with plugin (retries disabled)" in args[0]:
+            if "Simulated failure" in args[0] and kwargs.get("exc_info") is True:
+                found_log = True
+                break
+    assert found_log, f"Expected error log not found or exc_info not True. Logs: {mock_logger_error.call_args_list}"
