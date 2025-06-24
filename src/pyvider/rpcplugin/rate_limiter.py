@@ -106,7 +106,7 @@ class TokenBucketRateLimiter:
             return self._tokens
 
 
-async def main() -> None:
+async def main() -> None:  # pragma: no cover
     limiter = TokenBucketRateLimiter(capacity=5, refill_rate=1)  # 5 tokens, 1 token/sec
 
     for i in range(10):
@@ -122,7 +122,7 @@ async def main() -> None:
     logger.info(f"Final tokens: {await limiter.get_current_tokens()}")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # This example won't run directly as-is without an event loop manager
     # if used outside of an existing asyncio context.
     # To run:

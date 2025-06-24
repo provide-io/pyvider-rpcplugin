@@ -197,10 +197,28 @@ async def test_unix_socket_close_unlink_fails_persistently(mocker, managed_unix_
         # For this specific case, let's ensure the *real* asyncio.sleep is used for final cleanup.
         # pytest-mock automatically undoes patches, so explicit stop might not be needed
         # and could be causing the new RuntimeWarning.
-        # mock_asyncio_sleep.stop() # Stop the general mock for asyncio.sleep
+        # mock_asyncio_sleep.stop() # Stop the general mock for asyncio.sleep - pytest-mock handles this
 
         import gc # Import garbage collector
         gc.collect() # Explicitly trigger garbage collection
+
+        # Attempt to cancel pending tasks to help cleanup
+        try:
+            loop = asyncio.get_running_loop()
+            current_task = asyncio.current_task(loop)
+            tasks = [task for task in asyncio.all_tasks(loop) if task is not current_task]
+            if tasks:
+                for task in tasks:
+                    task.cancel()
+                # Give cancelled tasks a moment to process their cancellation
+                await asyncio.gather(*tasks, return_exceptions=True)
+        except RuntimeError: # Loop might be closed
+            pass
+        except Exception as e_task_cancel: # Catch any other error during task cancellation
+            # Log this, as it's unexpected during cleanup
+            print(f"Error during task cancellation in finally block: {e_task_cancel}")
+
+
         await asyncio.sleep(0.1) # Give event loop time to process cleanup
 
     assert mock_unlink.call_count == 3 # Should try 3 times
