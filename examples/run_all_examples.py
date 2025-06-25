@@ -47,8 +47,11 @@ async def run_script(
     cwd: Optional[Path] = None,
     expected_to_fail: bool = False,
     expected_stderr_contains: Optional[str] = None,
-    magic_cookie_value: Optional[str] = None, # Added for magic cookie
-    magic_cookie_key: str = "PLUGIN_MAGIC_COOKIE" # Added for magic cookie key
+    magic_cookie_value: Optional[str] = None,
+    # This key is what the server part of the example script will look for in os.environ
+    # It should match what example_utils.configure_for_example sets as PLUGIN_MAGIC_COOKIE_KEY
+    # which is example_utils.DEFAULT_MAGIC_COOKIE_KEY ("PYVIDER_PLUGIN_MAGIC_COOKIE")
+    magic_cookie_env_var_name: str = "PYVIDER_PLUGIN_MAGIC_COOKIE"
 ) -> Tuple[bool, str, str, int]:
     """Runs a script and returns its success status, stdout, stderr, and exit code."""
     if args is None:
@@ -62,10 +65,24 @@ async def run_script(
     # Prepare environment for the subprocess
     env = os.environ.copy()
     if magic_cookie_value:
-        env[magic_cookie_key] = magic_cookie_value # For the client's perspective (handshake.py reading os.environ)
-        env["PLUGIN_MAGIC_COOKIE_VALUE"] = magic_cookie_value # For server's config default override
-        print(f"    Setting env {magic_cookie_key}={magic_cookie_value} and PLUGIN_MAGIC_COOKIE_VALUE={magic_cookie_value} for {script_path.name}")
+        # This sets the environment variable that the server (running within the script)
+        # will check via os.getenv(CONFIGURED_MAGIC_COOKIE_KEY).
+        # The CONFIGURED_MAGIC_COOKIE_KEY is typically "PYVIDER_PLUGIN_MAGIC_COOKIE"
+        # as set by example_utils.configure_for_example.
+        env[magic_cookie_env_var_name] = magic_cookie_value
 
+        # This makes PLUGIN_MAGIC_COOKIE_VALUE available for the script's initial config load,
+        # before configure_for_example() might override it with a more specific value.
+        # The value set here should be the one the server ultimately expects.
+        env["PLUGIN_MAGIC_COOKIE_VALUE"] = magic_cookie_value
+        # Also, ensure PLUGIN_MAGIC_COOKIE_KEY is set in env if the script relies on it being in env
+        # for its own configure_for_example() to pick up.
+        # example_utils.DEFAULT_MAGIC_COOKIE_KEY is "PYVIDER_PLUGIN_MAGIC_COOKIE"
+        env["PLUGIN_MAGIC_COOKIE_KEY"] = magic_cookie_env_var_name
+
+        print(f"    Setting env {magic_cookie_env_var_name}={magic_cookie_value}, "
+              f"PLUGIN_MAGIC_COOKIE_KEY={magic_cookie_env_var_name}, "
+              f"and PLUGIN_MAGIC_COOKIE_VALUE={magic_cookie_value} for {script_path.name}")
 
     try:
         process = await asyncio.create_subprocess_exec(

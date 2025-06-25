@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 # Import generated code
 try:
-    from examples.demo import echo_pb2, echo_pb2_grpc
+    import echo_pb2
+    import echo_pb2_grpc
 except ImportError:
     logger.error(
         "Could not import generated echo_pb2/echo_pb2_grpc. "

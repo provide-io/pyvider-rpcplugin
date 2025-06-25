@@ -57,13 +57,31 @@ async def main() -> None:
         handler=handler,
     )
 
+    socket_comm_file = Path(project_root / "dummy_server_socket.txt")
     try:
         logger.info("Dummy server attempting to start and serve...")
         # The server's handshake logic will use PLUGIN_MAGIC_COOKIE_KEY and
         # PLUGIN_MAGIC_COOKIE_VALUE from the config (set by configure_for_example)
         # to know what to expect. It will then check os.environ for the key named
         # by PLUGIN_MAGIC_COOKIE_KEY.
-        await server.serve()  # This will print handshake to stdout and then run
+
+        # Await server readiness to ensure transport is initialized
+        server_task = asyncio.create_task(server.serve())
+        await server.wait_for_server_ready(timeout=5.0)
+
+        # Write socket path to file
+        if hasattr(server, "_transport") and hasattr(server._transport, "endpoint"):
+            actual_socket_path = server._transport.endpoint
+            if actual_socket_path:
+                with open(socket_comm_file, "w") as f:
+                    f.write(actual_socket_path)
+                logger.info(f"Dummy server socket path written to {socket_comm_file}: {actual_socket_path}")
+            else:
+                logger.error("Dummy server transport endpoint not found after ready.")
+        else:
+            logger.error("Dummy server transport not available after ready.")
+
+        await server_task # Continue serving until stopped
         logger.info(
             "Dummy server finished serving (should not happen if started by client)."
         )

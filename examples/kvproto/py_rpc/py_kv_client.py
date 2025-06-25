@@ -24,20 +24,46 @@ if os.path.exists(src_dir_abs) and src_dir_abs not in sys.path:
 if project_root_dir not in sys.path:  # Add project root too for 'examples.demo' etc.
     sys.path.insert(0, project_root_dir)
 
-# Generated code import relative if examples/ in PYTHONPATH or run from dir.
-from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc  # noqa: E402
+# Generated code import
+# Assuming py_kv_client.py is in examples/kvproto/py_rpc/
+# and proto files are in examples/kvproto/py_rpc/proto/
+try:
+    from .proto import kv_pb2, kv_pb2_grpc
+except ImportError:
+    # Fallback for scenarios where CWD might be /app or /app/examples
+    # and the .proto style import is preferred.
+    logger.warning("Relative import .proto failed, trying absolute examples.kvproto...")
+    from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
+
 from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
 
 # KVProtocol itself is not needed by the client directly
 # from pyvider.telemetry import logger # Using standard logging
 
-# Configure logging
+# Configure logging first
+print(f"DEBUG: py_kv_client.py sys.path: {sys.path}")
+print(f"DEBUG: py_kv_client.py CWD: {os.getcwd()}")
 logging.basicConfig(
     level=logging.WARNING,
     format="%(asctime)s.%(msecs)03d [%(levelname)-7s] %(name)s: 🐍 C> %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
+
+# Generated code import
+# Assuming py_kv_client.py is in examples/kvproto/py_rpc/
+# and proto files are in examples/kvproto/py_rpc/proto/
+try:
+    from .proto import kv_pb2, kv_pb2_grpc
+except ImportError:
+    # Fallback for scenarios where CWD might be /app or /app/examples
+    # and the .proto style import is preferred.
+    logger.warning("Relative import .proto failed, trying absolute examples.kvproto...")
+    from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
+
+from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
+
+# KVProtocol itself is not needed by the client directly
 
 
 class KVClient:
