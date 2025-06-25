@@ -2,15 +2,13 @@ import datetime
 import os
 import shutil
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple # Keep Tuple for function signatures if they still return multiple items
 
-from pyvider.rpcplugin.crypto import Certificate, KeyPair
-from pyvider.rpcplugin.crypto.generators import generate_keypair
-from pyvider.rpcplugin.crypto.certificate import (
-    generate_x509_certificate,
-    load_pem_certificate,
-    load_pem_private_key,
-)
+from pyvider.rpcplugin.crypto.certificate import Certificate # Use the Certificate class
+# generate_keypair might not be needed if Certificate class handles it.
+# from pyvider.rpcplugin.crypto.generators import generate_keypair
+from pyvider.rpcplugin.crypto.constants import DEFAULT_RSA_KEY_SIZE, KEY_TYPE_RSA, KEY_TYPE_ECDSA # Ensure key types are available if needed by Certificate class
+# KeyPair type hint might change or be removed depending on what Certificate methods return
 
 BASE_CERT_DIR = Path(__file__).parent / ".certs"
 
@@ -25,68 +23,72 @@ def clear_certs():
     ensure_cert_dir_exists()
 
 
-def generate_ca(version: int) -> Tuple[Certificate, KeyPair]:
+def generate_ca(version: int) -> Certificate: # Corrected return type to just Certificate
     """Generates a CA certificate and key pair."""
     ensure_cert_dir_exists()
-    ca_key = generate_keypair("rsa")
-    ca_cert = generate_x509_certificate(
-        private_key=ca_key.private_key,
-        public_key=ca_key.public_key,
+    ca_cert_obj = Certificate.create_ca(
         common_name=f"Example CA v{version}",
-        is_ca=True,
-        days_valid=365,
+        organization_name="Example12 Org", # Added organization_name
+        validity_days=365,
+        key_type=KEY_TYPE_RSA,
+        key_size=DEFAULT_RSA_KEY_SIZE
     )
-    with open(BASE_CERT_DIR / f"ca_v{version}.key", "wb") as f:
-        f.write(ca_key.private_key_pem)
-    with open(BASE_CERT_DIR / f"ca_v{version}.pem", "wb") as f:
-        f.write(ca_cert.public_bytes_pem)
-    return ca_cert, ca_key
+    # Write to file
+    if not ca_cert_obj.key:
+        raise RuntimeError(f"CA v{version} key was not generated.")
+    with open(BASE_CERT_DIR / f"ca_v{version}.key", "w") as f: # Write as text
+        f.write(ca_cert_obj.key)
+    with open(BASE_CERT_DIR / f"ca_v{version}.pem", "w") as f: # Write as text
+        f.write(ca_cert_obj.cert)
+    return ca_cert_obj
 
 
 def generate_server_cert(
-    ca_cert: Certificate, ca_key: KeyPair, version: int, days_valid: int = 90
-) -> Tuple[Certificate, KeyPair]:
+    ca_cert_obj: Certificate, version: int, days_valid: int = 90
+) -> Certificate:
     """Generates a server certificate signed by the given CA."""
     ensure_cert_dir_exists()
-    server_key = generate_keypair("rsa")
-    server_cert = generate_x509_certificate(
-        private_key=server_key.private_key,
-        public_key=server_key.public_key,
+    server_cert_obj = Certificate.create_signed_certificate(
+        ca_certificate=ca_cert_obj,
         common_name=f"localhost_server_v{version}",
-        is_ca=False,
-        issuer_certificate=ca_cert,
-        issuer_private_key=ca_key.private_key,
-        days_valid=days_valid,
-        sans=["localhost", "127.0.0.1"],
+        organization_name="Example12 Org",
+        validity_days=days_valid,
+        alt_names=["localhost", "127.0.0.1"],
+        key_type=KEY_TYPE_RSA,
+        key_size=DEFAULT_RSA_KEY_SIZE,
+        is_client_cert=False
     )
-    with open(BASE_CERT_DIR / f"server_v{version}.key", "wb") as f:
-        f.write(server_key.private_key_pem)
-    with open(BASE_CERT_DIR / f"server_v{version}.pem", "wb") as f:
-        f.write(server_cert.public_bytes_pem)
-    return server_cert, server_key
+    if not server_cert_obj.key:
+        raise RuntimeError(f"Server v{version} key was not generated.")
+    with open(BASE_CERT_DIR / f"server_v{version}.key", "w") as f:
+        f.write(server_cert_obj.key)
+    with open(BASE_CERT_DIR / f"server_v{version}.pem", "w") as f:
+        f.write(server_cert_obj.cert)
+    return server_cert_obj
 
 
 def generate_client_cert(
-    ca_cert: Certificate, ca_key: KeyPair, version: int
-) -> Tuple[Certificate, KeyPair]:
+    ca_cert_obj: Certificate, version: int
+) -> Certificate:
     """Generates a client certificate signed by the given CA."""
     ensure_cert_dir_exists()
-    client_key = generate_keypair("rsa")
-    client_cert = generate_x509_certificate(
-        private_key=client_key.private_key,
-        public_key=client_key.public_key,
+    client_cert_obj = Certificate.create_signed_certificate(
+        ca_certificate=ca_cert_obj,
         common_name=f"localhost_client_v{version}",
-        is_ca=False,
-        issuer_certificate=ca_cert,
-        issuer_private_key=ca_key.private_key,
-        days_valid=180,
-        sans=["localhost"],
+        organization_name="Example12 Org",
+        validity_days=180,
+        alt_names=["localhost"],
+        key_type=KEY_TYPE_RSA,
+        key_size=DEFAULT_RSA_KEY_SIZE,
+        is_client_cert=True
     )
-    with open(BASE_CERT_DIR / f"client_v{version}.key", "wb") as f:
-        f.write(client_key.private_key_pem)
-    with open(BASE_CERT_DIR / f"client_v{version}.pem", "wb") as f:
-        f.write(client_cert.public_bytes_pem)
-    return client_cert, client_key
+    if not client_cert_obj.key:
+        raise RuntimeError(f"Client v{version} key was not generated.")
+    with open(BASE_CERT_DIR / f"client_v{version}.key", "w") as f:
+        f.write(client_cert_obj.key)
+    with open(BASE_CERT_DIR / f"client_v{version}.pem", "w") as f:
+        f.write(client_cert_obj.cert)
+    return client_cert_obj
 
 
 def get_cert_paths(
@@ -120,33 +122,33 @@ def get_client_key_pem_path(client_version: int) -> Path:
 if __name__ == "__main__":
     print("Generating initial set of certificates (v1)...")
     clear_certs()
-    ca_v1_cert, ca_v1_key = generate_ca(version=1)
-    server_v1_cert, server_v1_key = generate_server_cert(
-        ca_v1_cert, ca_v1_key, version=1, days_valid=1 # Expire quickly for testing
+    ca_v1_obj = generate_ca(version=1)
+    server_v1_obj = generate_server_cert(
+        ca_v1_obj, version=1, days_valid=1 # Expire quickly for testing
     )
-    client_v1_cert, client_v1_key = generate_client_cert(
-        ca_v1_cert, ca_v1_key, version=1
+    client_v1_obj = generate_client_cert(
+        ca_v1_obj, version=1
     )
     print("Initial certificates (v1) generated in:", BASE_CERT_DIR)
 
     print("\nGenerating second set of certificates (v2) for rotation...")
     # New CA (v2)
-    ca_v2_cert, ca_v2_key = generate_ca(version=2)
+    ca_v2_obj = generate_ca(version=2)
     # New server cert (v2) signed by new CA (v2)
-    server_v2_cert, server_v2_key = generate_server_cert(
-        ca_v2_cert, ca_v2_key, version=2, days_valid=90
+    server_v2_obj = generate_server_cert(
+        ca_v2_obj, version=2, days_valid=90
     )
     # New client cert (v2) signed by new CA (v2) - optional, for full rotation demo
-    client_v2_cert, client_v2_key = generate_client_cert(
-        ca_v2_cert, ca_v2_key, version=2
+    client_v2_obj = generate_client_cert(
+        ca_v2_obj, version=2
     )
     print("Second set of certificates (v2) generated in:", BASE_CERT_DIR)
 
     # Example of a server cert (v3) signed by the *old* CA (v1)
     # This could be used if only the server cert rotates but CA remains trusted for a while
     print("\nGenerating a server cert (v3) signed by CA v1...")
-    server_v3_cert, server_v3_key = generate_server_cert(
-        ca_v1_cert, ca_v1_key, version=3, days_valid=90
+    server_v3_obj = generate_server_cert(
+        ca_v1_obj, version=3, days_valid=90
     )
     print("Server certificate v3 (signed by CA v1) generated.")
 
@@ -170,13 +172,17 @@ if __name__ == "__main__":
 
     # Simulate time passing: check server_v1 expiry
     now = datetime.datetime.now(datetime.timezone.utc)
-    if server_v1_cert.not_valid_after_datetime < now:
-        print(f"\nServer v1 certificate has expired (as expected for demo). Expiry: {server_v1_cert.not_valid_after_datetime}")
+    # The Certificate class has an 'is_expired' property and 'not_valid_after' (which is a datetime object)
+    # Accessing _base.not_valid_after for the datetime object.
+    if not hasattr(server_v1_obj, '_base'): # Should have _base after generation
+        print("\nError: server_v1_obj._base not initialized for expiry check.")
+    elif server_v1_obj._base.not_valid_after < now:
+        print(f"\nServer v1 certificate has expired (as expected for demo). Expiry: {server_v1_obj._base.not_valid_after}")
     else:
-        print(f"\nServer v1 certificate still valid. Expiry: {server_v1_cert.not_valid_after_datetime}")
+        print(f"\nServer v1 certificate still valid. Expiry: {server_v1_obj._base.not_valid_after}")
 
     one_day_later = now + datetime.timedelta(days=1)
-    if server_v1_cert.not_valid_after_datetime < one_day_later:
+    if hasattr(server_v1_obj, '_base') and server_v1_obj._base.not_valid_after < one_day_later:
         print(f"Server v1 certificate will be expired by tomorrow ({one_day_later}).")
 
     print("\nCertificates are ready in:", BASE_CERT_DIR.resolve())

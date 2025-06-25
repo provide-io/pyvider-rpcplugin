@@ -5,12 +5,13 @@ import signal
 import threading
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
+from datetime import datetime, timezone # Added for expiry check
 
 import grpc
-from pyvider.rpcplugin.server import PluginServer, ServerConfig
-from pyvider.rpcplugin.config import RpcPluginConfig, LogLevel
-from pyvider.rpcplugin.crypto import Certificate, KeyPair, load_pem_certificate
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.config import RPCPluginConfig
+from pyvider.rpcplugin.crypto.certificate import Certificate, KeyPair # Removed crypto_cert_module alias
 from pyvider.rpcplugin.handshake import HandshakeConfig
 
 # Import generated protobuf code
@@ -98,14 +99,11 @@ class RotatingCertServer:
         self._stop_event = asyncio.Event()
         self._current_cert_version = 1 # Start with v1 certs
 
-        # Initial certificate setup
-        self.ca_v1_cert: Optional[Certificate] = None
-        self.ca_v1_key: Optional[KeyPair] = None
-        self.server_v1_cert: Optional[Certificate] = None
-        self.server_v1_key: Optional[KeyPair] = None
+        # Initial certificate setup using our Certificate wrapper
+        self.ca_v1_cert_obj: Optional[Certificate] = None # Certificate wrapper from crypto.certificate
+        self.server_v1_cert_obj: Optional[Certificate] = None
 
-        self.ca_v2_cert: Optional[Certificate] = None
-        self.ca_v2_key: Optional[KeyPair] = None
+        self.ca_v2_cert_obj: Optional[Certificate] = None
 
         self.current_server_cert_pem_path: Optional[Path] = None
         self.current_server_key_pem_path: Optional[Path] = None
@@ -115,38 +113,42 @@ class RotatingCertServer:
         self._prepare_initial_certificates()
 
         # Configure rpcplugin (minimal, will override cert paths)
-        self.rpc_config = RpcPluginConfig()
-        self.rpc_config.configure(
-            PLUGIN_HOST_ADDRESS=f"{self.host}:{self.port}",
-            PLUGIN_SERVER_CERT_PATH=str(self.current_server_cert_pem_path),
-            PLUGIN_SERVER_KEY_PATH=str(self.current_server_key_pem_path),
-            PLUGIN_CLIENT_CA_CERT_PATH=str(self.current_ca_for_clients_pem_path),
-            PLUGIN_SECURE_MODE="mtls",
-            PLUGIN_LOG_LEVEL=LogLevel.DEBUG, # Enable debug for more insight
-            HANDSHAKE_TIMEOUT_SECONDS=10,
-        )
+        self.rpc_config = RPCPluginConfig() # Corrected casing
+        self.rpc_config.set("PLUGIN_HOST_ADDRESS", f"{self.host}:{self.port}")
+        self.rpc_config.set("PLUGIN_SERVER_CERT_PATH", str(self.current_server_cert_pem_path))
+        self.rpc_config.set("PLUGIN_SERVER_KEY_PATH", str(self.current_server_key_pem_path))
+        self.rpc_config.set("PLUGIN_CLIENT_CA_CERT_PATH", str(self.current_ca_for_clients_pem_path))
+        self.rpc_config.set("PLUGIN_SECURE_MODE", "mtls")
+        self.rpc_config.set("PLUGIN_LOG_LEVEL", "DEBUG") # Enable debug for more insight
+        self.rpc_config.set("PLUGIN_HANDSHAKE_TIMEOUT", 10.0) # Use float and correct key from schema
+
         # Set handshake config based on rpc_config
-        self.handshake_cfg = HandshakeConfig.from_rpc_config(self.rpc_config)
+        self.handshake_cfg = HandshakeConfig(
+            magic_cookie_key=self.rpc_config.get("PLUGIN_MAGIC_COOKIE_KEY"),
+            magic_cookie_value=self.rpc_config.get("PLUGIN_MAGIC_COOKIE_VALUE"),
+            protocol_versions=[int(v) for v in self.rpc_config.get_list("PLUGIN_PROTOCOL_VERSIONS")],
+            supported_transports=self.rpc_config.get_list("PLUGIN_SERVER_TRANSPORTS")
+        )
 
 
     def _prepare_initial_certificates(self):
         logger.info("Preparing initial (v1) certificates...")
         clear_certs() # Clean slate for the demo
 
-        self.ca_v1_cert, self.ca_v1_key = generate_ca(version=1)
+        self.ca_v1_cert_obj = generate_ca(version=1)
         # Make server cert v1 expire quickly for testing rotation
-        self.server_v1_cert, self.server_v1_key = generate_server_cert(self.ca_v1_cert, self.ca_v1_key, version=1, days_valid=1)
+        self.server_v1_cert_obj = generate_server_cert(self.ca_v1_cert_obj, version=1, days_valid=1)
 
         # Also pre-generate CA v2 and server v2 (signed by CA v2) for rotation
-        self.ca_v2_cert, self.ca_v2_key = generate_ca(version=2)
-        generate_server_cert(self.ca_v2_cert, self.ca_v2_key, version=2, days_valid=90) # server_v2.pem, server_v2.key
+        self.ca_v2_cert_obj = generate_ca(version=2)
+        generate_server_cert(self.ca_v2_cert_obj, version=2, days_valid=90) # server_v2.pem, server_v2.key
         # Pre-generate server v3 (signed by CA v1)
-        generate_server_cert(self.ca_v1_cert, self.ca_v1_key, version=3, days_valid=90) # server_v3.pem, server_v3.key
+        generate_server_cert(self.ca_v1_cert_obj, version=3, days_valid=90) # server_v3.pem, server_v3.key
 
         self.current_server_cert_pem_path = get_server_cert_pem_path(1)
         self.current_server_key_pem_path = get_server_key_pem_path(1)
         self.current_ca_for_clients_pem_path = get_ca_cert_pem_path(1) # Initially, server trusts clients signed by CA v1
-        self.current_server_cert_common_name = self.server_v1_cert.subject_common_name
+        self.current_server_cert_common_name = self.server_v1_cert_obj.common_name # Use common_name from Certificate obj
 
         logger.info(f"Initial server cert: {self.current_server_cert_pem_path.name} (CN: {self.current_server_cert_common_name})")
         logger.info(f"Initial CA for client validation: {self.current_ca_for_clients_pem_path.name}")
@@ -257,7 +259,7 @@ class RotatingCertServer:
             raise
 
         server_credentials = grpc.ssl_server_credentials(
-            private_key_certificate_chains=[(private_key, certificate_chain)],
+            private_key_certificate_chain_pairs=[(private_key, certificate_chain)], # Corrected argument name
             root_certificates=root_certificates, # For mTLS, server needs CA to verify client certs
             require_client_auth=True
         )
@@ -280,13 +282,19 @@ class RotatingCertServer:
             while not self._stop_event.is_set():
                 try:
                     if self.current_server_cert_pem_path == get_server_cert_pem_path(1): # only check original v1 cert
-                        server_v1_disk_cert = load_pem_certificate(get_server_cert_pem_path(1))
-                        if server_v1_disk_cert.is_expired:
-                            logger.warning(f"CERT WATCHER: Server certificate {get_server_cert_pem_path(1).name} HAS EXPIRED at {server_v1_disk_cert.not_valid_after_datetime}. Rotation required.")
+                        server_v1_cert_path_str = str(get_server_cert_pem_path(1))
+                        # Instantiate Certificate object to check its properties
+                        server_v1_disk_cert_obj = Certificate(cert_pem_or_uri=server_v1_cert_path_str)
+                        # Compare expiry with current timezone-aware datetime
+                        # The Certificate class stores not_valid_after in its _base attribute
+                        if not hasattr(server_v1_disk_cert_obj, '_base'):
+                            logger.error("CERT WATCHER: server_v1_disk_cert_obj has no _base attribute.")
+                        elif server_v1_disk_cert_obj._base.not_valid_after < datetime.now(timezone.utc):
+                            logger.warning(f"CERT WATCHER: Server certificate {get_server_cert_pem_path(1).name} HAS EXPIRED at {server_v1_disk_cert_obj._base.not_valid_after}. Rotation required.")
                         else:
-                            logger.info(f"CERT WATCHER: Server certificate {get_server_cert_pem_path(1).name} is still valid. Expires: {server_v1_disk_cert.not_valid_after_datetime}")
+                            logger.info(f"CERT WATCHER: Server certificate {get_server_cert_pem_path(1).name} is still valid. Expires: {server_v1_disk_cert_obj._base.not_valid_after}")
                 except Exception as e:
-                    logger.error(f"CERT WATCHER: Error checking cert expiry: {e}")
+                    logger.error(f"CERT WATCHER: Error checking cert expiry: {e}", exc_info=True) # Added exc_info
                 await asyncio.sleep(60) # Check every 60 seconds
 
         expiry_check_task = asyncio.create_task(check_cert_expiry_task())

@@ -4,6 +4,7 @@ import logging
 import time
 from pathlib import Path
 import os
+from typing import Optional # Added Optional import
 
 # Import generated protobuf code
 from . import service_pb2, service_pb2_grpc
