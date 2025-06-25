@@ -186,34 +186,34 @@ async def example_8_environment_configuration() -> None:
             security_level="production",
         )
 
-        # Demonstrate different environment profiles
-        env_profiles = {
-            "development": {
-                "PLUGIN_LOG_LEVEL": "DEBUG",
-                "PLUGIN_AUTO_MTLS": "false",
-                "PLUGIN_SERVER_TRANSPORTS": "unix",
-            },
-            "staging": {
-                "PLUGIN_LOG_LEVEL": "INFO",
-                "PLUGIN_AUTO_MTLS": "true",
-                "PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
-            },
-            "production": {
-                "PLUGIN_LOG_LEVEL": "WARNING",
-                "PLUGIN_AUTO_MTLS": "true",
-                "PLUGIN_SERVER_TRANSPORTS": "tcp",
-            },
-        }
+    # Demonstrate different environment profiles
+    env_profiles = {
+        "development": {
+            "PLUGIN_LOG_LEVEL": "DEBUG",
+            "PLUGIN_AUTO_MTLS": "false",
+            "PLUGIN_SERVER_TRANSPORTS": "unix",
+        },
+        "staging": {
+            "PLUGIN_LOG_LEVEL": "INFO",
+            "PLUGIN_AUTO_MTLS": "true",
+            "PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
+        },
+        "production": {
+            "PLUGIN_LOG_LEVEL": "WARNING",
+            "PLUGIN_AUTO_MTLS": "true",
+            "PLUGIN_SERVER_TRANSPORTS": "tcp",
+        },
+    }
 
-        for env_name, env_config in env_profiles.items():
-            logger.info(
-                f"Environment profile: {env_name}",
-                domain="config",
-                action="profile_demo",
-                status="reference",
-                profile=env_name,
-                config=env_config,
-            )
+    for env_name, env_config in env_profiles.items():
+        logger.info(
+            f"Environment profile: {env_name}",
+            domain="config",
+            action="profile_demo",
+            status="reference",
+            profile=env_name,
+            config=env_config,
+        )
 
     # No finally block needed to restore os.environ, as example_utils
     # and clear_plugin_env_vars handle this pattern.
