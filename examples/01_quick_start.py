@@ -1,77 +1,71 @@
 #!/usr/bin/env python3
-# examples/01_quick_start.py
-"""Demonstrates basic RPC plugin server and client setup with pyvider-rpcplugin."""
+"""
+Quick Start Example - Basic server/client setup with pyvider-rpcplugin.
+This is the featured example from the README.
+"""
 
 import asyncio
-import sys
 from pathlib import Path
-from typing import Any  # For type hints
+import sys
 
-import grpc  # For ServicerContext
-from attrs import define, field
+# Setup example environment
+from example_utils import configure_for_example, get_example_port
+configure_for_example()
 
-# Add src to path for examples
-example_dir = Path(__file__).resolve().parent
-project_root = example_dir.parent
-src_path = project_root / "src"
-if src_path.exists() and str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
+from pyvider.rpcplugin import plugin_server, plugin_protocol
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.telemetry import logger
 
-from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
-from pyvider.rpcplugin import (  # noqa: E402
-    plugin_client,
-)
-# plugin_protocol, plugin_server, rpcplugin_config are not directly used by this client example
-from pyvider.telemetry import logger  # noqa: E402
+class EchoHandler:
+    """Simple echo service handler."""
+    
+    async def Echo(self, request, context):
+        """Echo the request back."""
+        logger.info(f"🔄 Echo received: {request}")
+        return request
 
+class EchoProtocol(RPCPluginProtocol):
+    """Basic echo protocol implementation."""
+    
+    async def get_grpc_descriptors(self):
+        return None, "Echo"
+    
+    def get_method_type(self, method_name: str) -> str:
+        return "unary_unary"
+    
+    async def add_to_server(self, server, handler):
+        logger.info("🔌 Echo service registered")
 
-# HelloReply and SimpleGreeterHandler removed as they are no longer used
-# in this client-focused example that uses 00_dummy_server.py.
-
-async def main() -> None:
-    """Run a self-contained server and client example."""
-    print("🚀 pyvider-rpcplugin Quick Start Example")
-    print("=========================================")
-
-    # This example now demonstrates connecting a client to 00_dummy_server.py
-    # Ensure a clean environment and then configure for the example
-    clear_plugin_env_vars()
-    configure_for_example(PLUGIN_LOG_LEVEL="DEBUG") # Use example defaults for cookie etc.
-
-    client = None
-    # The 00_dummy_server.py itself will be configured by its own call to
-    # configure_for_example when it starts up.
-    dummy_server_command = ["python", str(example_dir / "00_dummy_server.py")]
-
+async def main():
+    """Run the quick start example."""
+    logger.info("🚀 Starting pyvider-rpcplugin Quick Start Example")
+    
+    # Create protocol and handler
+    protocol = EchoProtocol()
+    handler = EchoHandler()
+    
+    # Create server with TCP transport
+    port = get_example_port()
+    server = plugin_server(
+        protocol=protocol,
+        handler=handler,
+        transport="tcp",
+        port=port
+    )
+    
+    logger.info(f"🌐 Echo server starting on port {port}")
+    
+    # Start server (this would normally run indefinitely)
     try:
-        logger.info(f"Attempting to start client with command: {' '.join(dummy_server_command)}")
-        # The client will use the config set by configure_for_example() above
-        # to determine how to set environment variables (like magic cookie)
-        # for the dummy_server_command process.
-        client = plugin_client(command=dummy_server_command)
-        await client.start() # This starts 00_dummy_server.py and connects
-        logger.info("Client connected to 00_dummy_server.py successfully!")
-
-        if client.is_started:
-            print("\n✅ Client is connected to the 00_dummy_server.py!")
-            print("   The dummy server has a simple NoOp method.")
-            print("   In a real app with a matching proto, you could make calls here.")
-            # e.g., if dummy server had a 'NoOp' method available via a stub:
-            # await stub.NoOp(NoOpRequest())
-
+        await asyncio.wait_for(server.serve(), timeout=1.0)
+    except asyncio.TimeoutError:
+        logger.info("✅ Quick start example completed successfully")
     except Exception as e:
-        logger.error(f"An error occurred: {e}", exc_info=True)
+        logger.error(f"❌ Example failed: {e}")
     finally:
-        # --- Shutdown ---
-        if client and client.is_started:
-            await client.close() # This will also stop the 00_dummy_server.py process
-            logger.info("Client closed (and dummy server stopped).")
-        elif client: # if client object exists but not started (e.g. start failed)
-            await client.close() # Ensure cleanup of any partial resources
-            logger.info("Client (which may not have fully started) closed.")
-
-        print("\n✅ Quick Start Example Finished.")
-
+        await server.stop()
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 🐍🚀

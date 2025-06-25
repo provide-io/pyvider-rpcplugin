@@ -28,7 +28,7 @@ Each script automatically configures the Python path to find the `pyvider` modul
 | **`02_server_setup.py`** | ⚙️ Server configuration patterns | Beginner | Basic Python async |
 | **`03_client_connection.py`** | 🔗 Client implementation examples | Beginner | Understanding of 02 |
 | **`04_transport_options.py`** | 🚚 Unix socket vs TCP configuration | Intermediate | Basic networking |
-| **`05_security_mtls.py`** | 🔒 mTLS certificate setup | Advanced | PKI knowledge |
+| **`05_security_mtls.py`** | 🔒 mTLS certificate setup & security patterns | Advanced | PKI knowledge |
 | **`06_async_patterns.py`** | ⚡ Advanced async best practices | Advanced | Asyncio proficiency |
 | **`07_error_handling.py`** | ⚠️ Robust error management patterns | Intermediate | Exception handling |
 | **`08_production_config.py`** | 🏭 Production deployment patterns | Advanced | Operations experience |
@@ -58,17 +58,18 @@ Advanced key-value store with persistence and atomic operations.
 
 ```bash
 # Start the KV server
-python examples/kvproto/py_rpc/py_kv_server.py --storage-path /tmp/kv.db
+python examples/kvproto/py_rpc/py_kv_server.py --transport tcp
 
 # Run the client
-python examples/kvproto/py_rpc/py_kv_client.py
+python examples/kvproto/py_rpc/py_kv_client.py put mykey myvalue
+python examples/kvproto/py_rpc/py_kv_client.py get mykey
 ```
 
 **Features:**
 - Persistent storage
 - Atomic operations
 - Batch operations
-- TTL support
+- Error handling
 
 ## 🏃‍♂️ Running Examples
 
@@ -99,6 +100,24 @@ python 03_client_connection.py
 
 # Transport comparison
 python 04_transport_options.py
+
+# Security and mTLS
+python 05_security_mtls.py
+
+# Advanced async patterns
+python 06_async_patterns.py
+
+# Error handling
+python 07_error_handling.py
+
+# Production configuration
+python 08_production_config.py
+
+# Custom protocols
+python 09_custom_protocols.py
+
+# Performance tuning
+python 10_performance_tuning.py
 ```
 
 ### **Running Complete Demos**
@@ -110,18 +129,17 @@ cd examples/demo/
 python echo_server.py
 
 # Terminal 2: Run client
-python echo_client.py (ensure env vars set, e.g. via `source env.sh`)
+python echo_client.py
 ```
 
 #### Key-Value Demo
 ```bash
 # Terminal 1: Start KV server  
-cd examples/kvproto/py_rpc/ # Corrected path for cd
+cd examples/kvproto/py_rpc/
 python py_kv_server.py --transport tcp
 
 # Terminal 2: Run KV client
 python py_kv_client.py put mykey myvalue
-# Example: Get a key
 python py_kv_client.py get mykey
 ```
 
@@ -135,108 +153,62 @@ python py_kv_client.py get mykey
 
 ### **For Intermediate Users**
 1. Study `04_transport_options.py` - Compare Unix vs TCP
-2. Study `06_async_patterns.py` for async best practices (Corrected order)
-3. Review `07_error_handling.py` for robust applications (Corrected order)
+2. Review `07_error_handling.py` for robust applications
+3. Study `06_async_patterns.py` for async best practices
 4. Experiment with `examples/kvproto/py_rpc/` (KV demo) - Complex service implementation
 
 ### **For Advanced Users**
 1. Master `05_security_mtls.py` - Production security
 2. Deploy using `08_production_config.py` - Production setup
 3. Analyze `09_custom_protocols.py` for protocol extensions
-4. Optimize with `10_performance_tuning.py` for high-scale scenarios
+4. Optimize with `10_performance_tuning.py` - Performance patterns
 
-## 🔧 Customizing Examples
-
-All examples are designed to be easily customizable:
-
-### **Modifying Transport**
-```python
-# Change from Unix socket to TCP
-server = plugin_server(
-    protocol=protocol,
-    handler=handler,
-    transport="tcp",  # Changed from "unix"
-    host="0.0.0.0",
-    port=8080
-)
-```
-
-### **Adding Security**
-```python
-# Enable mTLS
-# Note: For mTLS, global configuration via `configure()` or environment variables
-# for PLUGIN_SERVER_CERT, PLUGIN_SERVER_KEY, and PLUGIN_CLIENT_ROOT_CERTS (for server to verify clients)
-# or PLUGIN_CLIENT_CERT, PLUGIN_CLIENT_KEY, and PLUGIN_SERVER_ROOT_CERTS (for client to verify server)
-# is generally preferred. See `05_security_mtls.py` for a detailed example.
-# The following shows using `configure()` for a server requiring mTLS:
-from pyvider.rpcplugin import configure # Add import
-
-configure(
-    PLUGIN_AUTO_MTLS=True,
-    PLUGIN_SERVER_CERT="/path/to/server.crt",       # Example path for server's certificate
-    PLUGIN_SERVER_KEY="/path/to/server.key",        # Example path for server's private key
-    PLUGIN_CLIENT_ROOT_CERTS="/path/to/ca.crt"      # Example path to CA cert for server to verify clients
-)
-server = plugin_server(
-    protocol=protocol,
-    handler=handler,
-    transport="tcp" # mTLS typically uses TCP
-    # Client would need its own cert/key (PLUGIN_CLIENT_CERT, PLUGIN_CLIENT_KEY)
-    # and the CA to verify this server (PLUGIN_SERVER_ROOT_CERTS).
-)
-```
-
-### **Custom Protocols**
-See `examples/kvproto/py_rpc/proto/kv.proto` (or similar actual path) for an example of defining custom protocol buffer services.
-
-## 🐛 Troubleshooting
+## 🔧 Troubleshooting
 
 ### **Common Issues**
 
-**Import Errors:**
+#### Import Errors
 ```bash
-# Ensure source is in Python path
+# Ensure Python path is set correctly
 export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+
+# Or run from project root
+cd /path/to/pyvider-rpcplugin
+python examples/01_quick_start.py
 ```
 
-**Permission Errors (Unix sockets):**
+#### Port Already in Use
+```bash
+# Examples automatically find available ports
+# If issues persist, check for other services:
+netstat -tulpn | grep :50051
+```
+
+#### Permission Errors (Unix Sockets)
 ```bash
 # Ensure socket directory is writable
-chmod 755 /tmp/pyvider-sockets/
+mkdir -p /tmp/pyvider_sockets
+chmod 755 /tmp/pyvider_sockets
 ```
 
-**Connection Timeouts:**
-```bash
-# Increase client timeout
-client = plugin_client(server_path, timeout=30.0)
-```
+## 📖 Additional Resources
 
-### **Debugging**
-Enable detailed logging via configuration:
-```python
-from pyvider.rpcplugin import configure
-configure(PLUGIN_LOG_LEVEL="DEBUG")
+- **API Documentation**: See `docs/api-reference.md`
+- **Architecture Guide**: See `docs/architecture.md`
+- **Security Guide**: See `docs/security.md`
+- **Production Deployment**: See `docs/production.md`
 
-# Alternatively, set the environment variable:
-# export PLUGIN_LOG_LEVEL="DEBUG"
-```
+## 🤝 Contributing Examples
 
-## 🤝 Contributing
+When adding new examples:
 
-Found an issue or want to add an example? 
-
-1. Follow the existing naming convention (`##_description.py`)
-2. Include comprehensive docstrings and error handling
-3. Add the example to this README with appropriate complexity level
-4. Test on both Unix and TCP transports where applicable
-
-## 📖 Further Reading
-
-- **Main Documentation**: See project README.md
-- **API Reference**: Check `docs/api-reference.md`
-- **Configuration Guide**: Review `docs/configuration.md`
-- **Security Guide**: Review `docs/security.md`
+1. Use the numbered format for core examples (`11_new_feature.py`)
+2. Include comprehensive docstrings and comments
+3. Add appropriate emoji logging with `from pyvider.telemetry import logger`
+4. Update this README with the new example
+5. Ensure examples are self-contained and runnable
+6. Follow the established patterns for path resolution
 
 ---
 
-**🎯 Start with `01_quick_start.py` and work your way up!**
+**Happy coding with pyvider-rpcplugin!** 🐍🚀
