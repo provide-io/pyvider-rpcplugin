@@ -489,11 +489,10 @@ configure(
     PLUGIN_AUTO_MTLS=True,
     PLUGIN_HANDSHAKE_TIMEOUT=30.0,
     PLUGIN_CONNECTION_TIMEOUT=300.0,
-    # Certificate paths for mTLS
-    PLUGIN_SERVER_CERT="/etc/ssl/certs/server.crt",
-    PLUGIN_SERVER_KEY="/etc/ssl/private/server.key",
-    PLUGIN_CLIENT_CERT="/etc/ssl/certs/client.crt",
-    PLUGIN_CLIENT_KEY="/etc/ssl/private/client.key"
+    # Certificate paths for mTLS (server-side configuration)
+    PLUGIN_SERVER_CERT="/etc/ssl/certs/server.crt",      # Server's own certificate
+    PLUGIN_SERVER_KEY="/etc/ssl/private/server.key",     # Server's own private key
+    PLUGIN_CLIENT_ROOT_CERTS="/etc/ssl/certs/ca.crt"     # CA cert(s) to verify client certificates
     # Ensure these paths are accessible by the plugin process
 )
 ```

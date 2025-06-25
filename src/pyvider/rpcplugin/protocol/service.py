@@ -224,7 +224,9 @@ class GRPCStdioService(GRPCStdioServicer):
     """
 
     def __init__(self) -> None:
-        self._message_queue: asyncio.Queue[Any] = asyncio.Queue()  # Allow Any for sentinel
+        self._message_queue: asyncio.Queue[Any] = (
+            asyncio.Queue()
+        )  # Allow Any for sentinel
         self._shutdown = False
 
     async def put_line(self, line: bytes, is_stderr: bool = False) -> None:
@@ -283,33 +285,41 @@ class GRPCStdioService(GRPCStdioServicer):
                 )
 
                 # Default should_break_loop based on done_wait_task completion
-                should_break_loop = done_wait_task in completed and done_wait_task.done() and done_wait_task.result()
-
+                should_break_loop = (
+                    done_wait_task in completed
+                    and done_wait_task.done()
+                    and done_wait_task.result()
+                )
 
                 if get_task in completed:
                     try:
-                        data_item = get_task.result() # data_item can now be _SENTINEL
+                        data_item = get_task.result()  # data_item can now be _SENTINEL
                         self._message_queue.task_done()
                         if data_item is _SENTINEL:
-                            logger.debug("🔌📝 GRPCStdioService.StreamStdio: Sentinel received, breaking loop.")
-                            should_break_loop = True # Crucial for breaking loop
+                            logger.debug(
+                                "🔌📝 StreamStdio: Sentinel received, breaking loop."
+                            )
+                            should_break_loop = True  # Crucial for breaking loop
                         else:
                             # data_item is StdioData here
                             logger.debug(
                                 "🔌📝✅ GRPCStdioService: Dequeued item: "
-                                f"{data_item.channel}, {data_item.data[:20]!r}" # type: ignore[attr-defined]
+                                f"{data_item.channel}, {data_item.data[:20]!r}"  # type: ignore[attr-defined]
                             )
-                            yield data_item # type: ignore[misc]
+                            yield data_item  # type: ignore[misc]
                             await asyncio.sleep(0)
                     except asyncio.CancelledError:
                         logger.debug(
                             "🔌📝 GRPCStdioService.StreamStdio: get_task was cancelled."
                         )
-                        should_break_loop = True # Also break if task was cancelled
-                    except Exception as e_get_res: # Catch other errors from get_task.result()
-                        logger.error(f"🔌📝❌ Error getting result from get_task: {e_get_res}")
+                        should_break_loop = True  # Also break if task was cancelled
+                    except (
+                        Exception
+                    ) as e_get_res:  # Catch other errors from get_task.result()
+                        logger.error(
+                            f"🔌📝❌ Error getting result from get_task: {e_get_res}"
+                        )
                         should_break_loop = True
-
 
                 tasks_to_await_cleanup_pending = []
                 for task_to_cancel in pending:
@@ -367,16 +377,20 @@ class GRPCStdioService(GRPCStdioServicer):
                 try:
                     data_item = self._message_queue.get_nowait()
                     self._message_queue.task_done()
-                    if data_item is _SENTINEL: # Skip yielding sentinel during drain
-                        logger.debug("🔌📝 GRPCStdioService.StreamStdio: Sentinel found in drain, skipping.")
+                    if data_item is _SENTINEL:  # Skip yielding sentinel during drain
+                        logger.debug(
+                            "🔌📝 StreamStdio: Sentinel found in drain, skipping."
+                        )
                         continue
                     logger.debug(
                         "🔌📝✅ GRPCStdioService: Draining item: "
-                        f"{data_item.channel}, {data_item.data[:20]!r}" # type: ignore[attr-defined]
+                        f"{data_item.channel}, {data_item.data[:20]!r}"  # type: ignore[attr-defined]
                     )
-                    yield data_item # type: ignore[misc]
+                    yield data_item  # type: ignore[misc]
                     await asyncio.sleep(0)
-                except asyncio.QueueEmpty: # Should not happen due to outer check but good practice
+                except (
+                    asyncio.QueueEmpty
+                ):  # Should not happen due to outer check but good practice
                     logger.debug(
                         "🔌📝 GRPCStdioService.StreamStdio: Queue empty during drain."
                     )
@@ -397,7 +411,9 @@ class GRPCStdioService(GRPCStdioServicer):
         # Put sentinel into the queue to unblock .get()
         try:
             self._message_queue.put_nowait(_SENTINEL)
-            logger.debug("🔌📝⚠️ GRPCStdioService: Sentinel put in queue during shutdown.")
+            logger.debug(
+                "🔌📝⚠️ GRPCStdioService: Sentinel put in queue during shutdown."
+            )
         except asyncio.QueueFull:  # pragma: no cover
             logger.warning(
                 "🔌📝⚠️ GRPCStdioService: Queue full, could not put sentinel "
