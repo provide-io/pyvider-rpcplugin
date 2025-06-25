@@ -17,7 +17,7 @@ from pyvider.rpcplugin.handshake import _SENTINEL_INSTANCE
             None,
             "expected_value",
             "expected_value",
-            r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*",
+            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\..*Hint:.*",
         ),
         # Error: Expected value not configured
         (
@@ -84,7 +84,7 @@ def test_validate_magic_cookie_config_scenarios(
         (
             None,
             None,
-            r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*",
+            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\..*Hint:.*",
         ),
         (
             "PLUGIN_MAGIC_COOKIE",
@@ -94,7 +94,7 @@ def test_validate_magic_cookie_config_scenarios(
         (
             None,
             "hello",
-            r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*",
+            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\..*Hint:.*",
         ),
     ],
 )
@@ -127,7 +127,7 @@ def test_validate_magic_cookie_missing_still_raises(monkeypatch) -> None:
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", None)
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", None)
     monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", None)
-    with pytest.raises(HandshakeError, match="Magic cookie key is not configured"):
+    with pytest.raises(HandshakeError, match=r"Internal configuration error: cookie_key is missing for lookup\."):
         validate_magic_cookie(
             magic_cookie_key=_SENTINEL_INSTANCE,
             magic_cookie_value=_SENTINEL_INSTANCE,
@@ -150,7 +150,7 @@ def test_validate_magic_cookie_missing_still_raises(monkeypatch) -> None:
             None,
             None,
             True,
-            r"\[HandshakeError\] Magic cookie key is not configured.*Hint:.*",
+            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\..*Hint:.*",
         ),
         (
             "PLUGIN_MAGIC_COOKIE_KEY",

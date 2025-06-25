@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package example12;
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+  // RPC to signal server to rotate its certificate
+  rpc RotateCert (RotateCertRequest) returns (RotateCertReply) {}
+  // RPC for client to fetch new CA cert
+  rpc GetNewCACert (GetNewCACertRequest) returns (GetNewCACertReply) {}
+
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}
+
+message RotateCertRequest {
+  // Optional: could specify new cert details or paths if not predefined
+}
+
+message RotateCertReply {
+  string status_message = 1;
+  string new_server_cert_pem = 2; // Server sends its new cert
+}
+
+message GetNewCACertRequest {
+  // Optional: could specify current CA version or other client info
+}
+
+message GetNewCACertReply {
+  string new_ca_cert_pem = 1;
+}
