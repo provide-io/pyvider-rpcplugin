@@ -204,7 +204,7 @@ class PerformanceBenchmarker:
                 target = f"unix:{actual_server_endpoint}"
             else:
                 target = actual_server_endpoint
-            channel: grpc.aio.Channel | None = None
+            channel: grpc.aio.Channel | None = None # Added type hint
             try:
                 channel = grpc.aio.insecure_channel(target)
                 for _ in range(requests):
@@ -370,14 +370,46 @@ async def example_10_memory_optimization() -> None:
 
 async def main() -> None:
     print("📈 pyvider-rpcplugin Performance Tuning Examples")
+
+    from pyvider.rpcplugin.exception import TransportError, HandshakeError
+    from pyvider.rpcplugin.config import RPCPluginConfig
+
+    default_config_for_message = RPCPluginConfig()
+    magic_cookie_key_example = default_config_for_message.magic_cookie_key()
+    magic_cookie_value_example = default_config_for_message.magic_cookie_value()
+
+    # List of example functions that start a server
+    server_starting_examples = [
+        example_10_baseline_performance,
+        example_10_transport_optimization, # This itself calls benchmark_rpc_performance twice
+        example_10_concurrency_tuning,
+        example_10_memory_optimization,
+    ]
+
     try:
-        await example_10_baseline_performance()
-        await example_10_transport_optimization()
-        await example_10_concurrency_tuning()
-        await example_10_memory_optimization()
-        print("✅ All Performance Tuning Examples Completed Successfully!")
-    except Exception as e:
-        logger.error("Perf tuning example failed", error=str(e))
+        for example_func in server_starting_examples:
+            try:
+                await example_func()
+            except (HandshakeError, TransportError) as e_server:
+                error_message = (
+                    f"\nERROR {example_func.__name__}: Server needs magic cookie "
+                    f"via env var '{magic_cookie_key_example}'.\n"
+                    "Usually set by plugin host. Standalone runs fail. Example val: "
+                    f"'{magic_cookie_value_example}'.\n"
+                )
+                print(error_message)
+                logger.error(
+                    f"{example_func.__name__} failed (magic cookie?): {e_server}",
+                    exc_info=False,
+                )
+                sys.exit(1)
+            except Exception as e_other: # Catch other unexpected errors
+                logger.error(f"An unexpected error occurred in {example_func.__name__}: {e_other}", exc_info=True)
+                sys.exit(1)
+
+        print("✅ All Performance Tuning Examples (that were run) Completed Successfully!")
+    except Exception as e: # General catch for errors outside the loop
+        logger.error("Performance tuning main function failed", error=str(e), exc_info=True)
         raise
 
 

@@ -491,51 +491,25 @@ async def main() -> None:
     with tempfile.TemporaryDirectory() as temp_dir_str:
         cert_path_base = Path(temp_dir_str)
 
-        from pyvider.rpcplugin.exception import TransportError, HandshakeError
-        from pyvider.rpcplugin.config import RPCPluginConfig
-
-        default_config_for_message = RPCPluginConfig()
-        try:
-            # Try to load config if not already loaded, to access defaults
-            # This might not be strictly necessary if defaults are always present
-            pass # default_config_for_message.load_config() # Removed problematic call
-        except Exception:
-            pass
-
-        magic_cookie_key_example = default_config_for_message.magic_cookie_key()
-        magic_cookie_value_example = default_config_for_message.magic_cookie_value()
-
-        server = None # Ensure server is defined for finally block
-        server_task = None # Ensure server_task is defined for finally block
-
         try:
             # Generate certificates for examples, passing the persistent cert_path_base
             cert_paths = await example_5_certificate_generation(cert_path_base)
 
             # Setup mTLS server
+            server, server_task = await example_5_mtls_server_setup(cert_paths)
+
             try:
-                server, server_task = await example_5_mtls_server_setup(cert_paths)
-            except (HandshakeError, TransportError) as e_server:
-                error_message = (
-                    f"\nERROR in example_5_mtls_server_setup: Server expects magic cookie via "
-                    f"env var '{magic_cookie_key_example}'.\n"
-                    "Usually set by plugin host (e.g., Terraform).\n"
-                    "Standalone runs fail without it. Example value: "
-                    f"'{magic_cookie_value_example}'.\n"
-                )
-                print(error_message)
-                logger.error(
-                    f"example_5_mtls_server_setup failed (magic cookie?): {e_server}",
-                    exc_info=False,
-                )
-                sys.exit(1)
+                # Demonstrate mTLS client connection
+                await example_5_mtls_client_connection(cert_paths)
 
-            # Demonstrate mTLS client connection
-            # This part assumes the server started successfully. If it failed above, this won't run.
-            await example_5_mtls_client_connection(cert_paths)
+                # Show certificate rotation patterns
+                await example_5_certificate_rotation()
 
-            # Show certificate rotation patterns
-            await example_5_certificate_rotation()
+            finally:
+                # Cleanup server
+                if server and server_task:  # Ensure they exist
+                    await server.stop()
+                    await server_task
 
             print("\n" + "=" * 60)
             print("✅ All Security & mTLS Examples Completed Successfully!")
