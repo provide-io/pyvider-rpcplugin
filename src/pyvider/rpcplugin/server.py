@@ -155,52 +155,51 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:  # Simplified generic para
     async def _watch_shutdown_file(self) -> None:
         if not self._shutdown_file_path:
             return
-        while not self._shutdown_event.is_set():
-            try:
-                if os.path.exists(self._shutdown_file_path):
-                    with contextlib.suppress(OSError):
-                        os.remove(self._shutdown_file_path)
-                    self._shutdown_requested()
-                    break
-                await asyncio.sleep(1)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in shutdown file watcher: {e}")
-                await asyncio.sleep(5)  # Keep a short sleep for general errors
-
-    async def _watch_shutdown_file(self) -> None:
-        if not self._shutdown_file_path:
-            return
 
         max_consecutive_os_errors = 3  # Max retries for os.path.exists errors
         consecutive_os_errors = 0
 
         while not self._shutdown_event.is_set():
             try:
-                if os.path.exists(self._shutdown_file_path): # Potential error source
-                    with contextlib.suppress(OSError): # Gracefully handle removal error
+                if os.path.exists(self._shutdown_file_path):  # Potential error source
+                    with contextlib.suppress(
+                        OSError
+                    ):  # Gracefully handle removal error
                         os.remove(self._shutdown_file_path)
                     self._shutdown_requested()
-                    logger.info(f"Shutdown triggered by file: {self._shutdown_file_path}")
+                    logger.info(
+                        f"Shutdown triggered by file: {self._shutdown_file_path}"
+                    )
                     break
                 consecutive_os_errors = 0  # Reset counter on success
                 await asyncio.sleep(1)  # Regular check interval
             except asyncio.CancelledError:
                 logger.debug("Shutdown file watcher task cancelled.")
                 break
-            except OSError as oe: # Specifically catch OSError from os.path.exists or os.remove
+            except (
+                OSError
+            ) as oe:  # Specifically catch OSError from os.path.exists or os.remove
                 consecutive_os_errors += 1
-                logger.error(f"OSError in shutdown file watcher ({consecutive_os_errors}/{max_consecutive_os_errors}): {oe}")
+                logger.error(
+                    f"OSError in shutdown file watcher "
+                    f"({consecutive_os_errors}/{max_consecutive_os_errors}): {oe}"
+                )
                 if consecutive_os_errors >= max_consecutive_os_errors:
-                    logger.error(f"Max OSError retries reached for {self._shutdown_file_path}. Stopping watcher.")
-                    self._shutdown_requested() # Trigger shutdown to prevent indefinite hang
+                    logger.error(
+                        f"Max OSError retries for {self._shutdown_file_path}. "
+                        "Stopping watcher."
+                    )
+                    self._shutdown_requested()  # Trigger shutdown to prevent hang
                     break
-                await asyncio.sleep(1 + consecutive_os_errors) # Exponential backoff for OS errors
+                await asyncio.sleep(
+                    1 + consecutive_os_errors
+                )  # Exponential backoff for OS errors
             except Exception as e:
                 # Generic errors, less aggressive retry, but still important to log
-                logger.error(f"Unexpected error in shutdown file watcher: {e}", exc_info=True)
-                await asyncio.sleep(5) # Longer sleep for unexpected errors
+                logger.error(
+                    f"Unexpected error in shutdown file watcher: {e}", exc_info=True
+                )
+                await asyncio.sleep(5)  # Longer sleep for unexpected errors
 
     async def wait_for_server_ready(self, timeout: float = 5.0) -> None:
         try:

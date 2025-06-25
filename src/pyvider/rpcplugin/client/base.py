@@ -180,7 +180,10 @@ class RPCPluginClient:
         """
         retry_enabled_str = rpcplugin_config.get("PLUGIN_CLIENT_RETRY_ENABLED", "true")
         retry_enabled = str(retry_enabled_str).lower() == "true"
-        self.logger.debug(f"Client retry_enabled evaluated to: {retry_enabled} (from string '{retry_enabled_str}')")
+        self.logger.debug(
+            f"Client retry_enabled evaluated to: {retry_enabled} "
+            f"(from string '{retry_enabled_str}')"
+        )
 
         if not retry_enabled:
             self.logger.info(

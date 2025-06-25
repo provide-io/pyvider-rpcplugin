@@ -48,6 +48,16 @@ The configuration system applies values in the following general order, with lat
 
 The `RPCPluginConfig` singleton is initialized once, loading from environment variables at that time. Subsequent calls to `configure()` modify this live instance.
 
+### Configuration via Factory Functions (`plugin_server`, `plugin_client`)
+
+When using factory functions like `plugin_server()` or `plugin_client()`, you can pass a `config: dict[str, Any]` parameter.
+
+-   **`PLUGIN_` prefixed keys**: If you provide keys in this dictionary that start with `PLUGIN_` (e.g., `{"PLUGIN_LOG_LEVEL": "DEBUG"}`), these will be passed to an internal call to `pyvider.rpcplugin.configure()` during the setup of that specific server or client instance. This allows for instance-specific overrides of global configurations for settings like logging, timeouts, etc., for that instance's initialization.
+-   **Non-`PLUGIN_` prefixed keys**: Keys that do not start with `PLUGIN_` (e.g., `{"APP_CUSTOM_SETTING": "value"}`) are typically stored as part of the server or client instance's `self.config` attribute. These are not automatically processed by the core `pyvider.rpcplugin` configuration system but can be accessed by your application code (e.g., your custom protocol or handler) from the instance if needed.
+-   **gRPC Specific Options**: To pass options directly to the underlying gRPC server (like `max_concurrent_streams`), you might need to use a specific `PLUGIN_` prefixed variable designed for this, such as `PLUGIN_GRPC_OPTIONS`, which would then be interpreted by the server setup logic. Refer to specific documentation for such advanced gRPC configurations.
+
+This `config` parameter provides a way to customize behavior on a per-instance basis when creating clients or servers.
+
 ## Magic Cookie Authentication Flow
 
 The "magic cookie" is a shared secret used to verify that the plugin executable was indeed launched by a trusted host application and not by some other means. It's a basic authentication mechanism. Here's how the related configuration variables interact:

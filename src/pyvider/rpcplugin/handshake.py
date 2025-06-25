@@ -212,7 +212,7 @@ def validate_magic_cookie(
     """
     logger.debug("Starting magic cookie validation...")
 
-    cookie_key = (
+    cookie_key: str | None = (  # type: ignore[assignment]
         rpcplugin_config.magic_cookie_key()
         if magic_cookie_key is _SENTINEL_INSTANCE
         else magic_cookie_key
@@ -224,23 +224,28 @@ def validate_magic_cookie(
     )
 
     # Determine the actual cookie value that was provided.
-    # 1. If magic_cookie is explicitly passed, use that (for direct tests or client-side validation).
+    # 1. If magic_cookie is explicitly passed, use that (for direct tests or
+    #    client-side validation).
     # 2. Otherwise (typically server-side), read from the environment variable
     #    whose name is defined by `cookie_key`.
     if magic_cookie is not _SENTINEL_INSTANCE and magic_cookie is not None:
         cookie_provided = magic_cookie
         logger.debug(f"Using explicitly passed magic_cookie: '{cookie_provided}'")
     else:
-        if cookie_key is None or cookie_key == "": # Should not happen if default from config is used
+        if (
+            cookie_key is None or cookie_key == ""
+        ):  # Should not happen if default from config is used
             logger.error("CRITICAL: cookie_key is None or empty before env lookup.")
             # This case should ideally be prevented by config validation or defaults.
             # If it still occurs, it's a severe misconfiguration.
             raise HandshakeError(
-                message="Internal configuration error: cookie_key is missing for lookup.",
+                message="Internal config error: cookie_key missing for lookup.",
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
         cookie_provided = os.environ.get(str(cookie_key))
-        logger.debug(f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided}'")
+        logger.debug(
+            f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided}'"
+        )
 
     logger.debug(f"Final cookie_key for validation: {cookie_key}")
     logger.debug(f"cookie_value (expected): {cookie_value}")
