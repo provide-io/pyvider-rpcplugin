@@ -3,13 +3,15 @@
 import argparse
 import asyncio
 import logging
+import os
 import sys
+import time
 from pathlib import Path
 from typing import Any, cast
 
 import grpc
 
-# Simple, robust path setup
+# Simple, robust path setup for plugin system
 examples_dir = Path(__file__).resolve().parent.parent.parent
 project_root = examples_dir.parent
 src_dir = project_root / "src"
@@ -19,8 +21,13 @@ if src_dir.exists() and str(src_dir) not in sys.path:
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-# Generated code import - simplified
-from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
+# Generated code imports
+try:
+    from .proto import kv_pb2, kv_pb2_grpc
+except ImportError:
+    # Fallback for absolute imports
+    from examples.kvproto.py_rpc.proto import kv_pb2, kv_pb2_grpc
+
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.telemetry import logger
 
@@ -32,19 +39,43 @@ logging.basicConfig(
 )
 
 class KVClient:
-    """Client for KV plugin server with improved error handling & diagnostics."""
+    """Client for KV plugin server with proper plugin system integration."""
     
-    def __init__(self, address: str = "localhost:50051"):
-        self.address = address
-        self.channel = None
+    def __init__(self, server_command: list[str] | None = None):
+        """Initialize KV client.
+        
+        Args:
+            server_command: Command to start the KV server plugin.
+                          If None, assumes server is already running externally.
+        """
+        self.server_command = server_command or ["python", "py_kv_server.py"]
+        self.plugin_client = None
         self.stub = None
     
     async def connect(self):
-        """Connect to the KV server."""
-        logger.info(f"🔗 Connecting to KV server at {self.address}")
-        self.channel = grpc.aio.insecure_channel(self.address)
-        self.stub = kv_pb2_grpc.KVStub(self.channel)
-        logger.info("✅ Connected to KV server")
+        """Connect to the KV server via plugin system."""
+        logger.info(f"🔗 Starting KV plugin client")
+        
+        # Create plugin client
+        self.plugin_client = RPCPluginClient(
+            command=self.server_command,
+            config={"timeout": 30.0}
+        )
+        
+        try:
+            # Start the plugin client (this starts the server subprocess)
+            await self.plugin_client.start()
+            
+            # Get the gRPC channel from the plugin client
+            if self.plugin_client.grpc_channel:
+                self.stub = kv_pb2_grpc.KVStub(self.plugin_client.grpc_channel)
+                logger.info("✅ Connected to KV plugin server")
+            else:
+                raise RuntimeError("Failed to get gRPC channel from plugin client")
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to connect to KV plugin: {e}")
+            raise
     
     async def put(self, key: str, value: bytes):
         """Store a key-value pair."""
@@ -74,22 +105,25 @@ class KVClient:
             raise
     
     async def close(self):
-        """Close the connection."""
-        if self.channel:
-            await self.channel.close()
-            logger.info("🔌 Connection closed")
+        """Close the plugin client connection."""
+        if self.plugin_client:
+            await self.plugin_client.stop()
+            logger.info("🔌 Plugin client connection closed")
 
 async def main():
     """Main client function."""
-    parser = argparse.ArgumentParser(description="KV Client")
+    parser = argparse.ArgumentParser(description="KV Plugin Client")
     parser.add_argument("operation", choices=["put", "get"], help="Operation to perform")
     parser.add_argument("key", help="Key to operate on")
     parser.add_argument("value", nargs="?", help="Value for put operation")
-    parser.add_argument("--address", default="localhost:50051", help="Server address")
+    parser.add_argument("--server-cmd", nargs="+", 
+                       default=["python", "py_kv_server.py"],
+                       help="Command to start KV server plugin")
     
     args = parser.parse_args()
     
-    client = KVClient(args.address)
+    # Create client with server command
+    client = KVClient(server_command=args.server_cmd)
     
     try:
         if args.operation == "put":

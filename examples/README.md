@@ -1,184 +1,214 @@
-# Pyvider RPC Plugin Examples
+# 🔌 Pyvider RPC Plugin Examples
 
-This directory contains a collection of executable Python scripts demonstrating various features and usage patterns of the `pyvider-rpcplugin` library. Each script is designed to be run independently and showcases a specific aspect of building high-performance RPC plugins.
+This directory contains a comprehensive collection of executable examples demonstrating the features and usage patterns of `pyvider-rpcplugin`. Each example is designed to be run independently and showcases specific aspects of the plugin framework.
 
-## 🚀 Running the Examples
+## 🚀 Quick Start
 
-To run an example script:
+To run any example:
 
-1. **Navigate to this directory** in your terminal:
+1. **Navigate to the examples directory**:
    ```bash
    cd examples/
    ```
 
-2. **Execute the desired Python script**:
-   ```bash
-   python <example_file_name>.py
-   ```
-   For example, to run the quick start example:
+2. **Run the desired example**:
    ```bash
    python 01_quick_start.py
    ```
 
-Each script will print output to the console, typically including formatted log messages that demonstrate the feature being showcased. The scripts are self-contained and manipulate `sys.path` to ensure they can find the `pyvider.rpcplugin` module from the project's `src` directory.
+Each script automatically configures the Python path to find the `pyvider` modules from the project's `src` directory.
 
-## 📚 Example Files
+## 📋 Example Files
 
-Here's a complete list of the available examples and what they demonstrate:
+### **Core Examples** (Numbered Series)
 
-### 🌟 **Beginner Examples**
+| File | Description | Complexity | Prerequisites |
+|------|-------------|------------|---------------|
+| **`01_quick_start.py`** | 🚀 Basic server/client setup - **Featured in README** | Beginner | None |
+| **`02_server_setup.py`** | ⚙️ Server configuration patterns | Beginner | Basic Python async |
+| **`03_client_connection.py`** | 🔗 Client implementation examples | Beginner | Understanding of 02 |
+| **`04_transport_options.py`** | 🚚 Unix socket vs TCP configuration | Intermediate | Basic networking |
+| **`05_security_mtls.py`** | 🔒 mTLS certificate setup & security patterns | Advanced | PKI knowledge |
+| **`06_async_patterns.py`** | ⚡ Advanced async best practices | Advanced | Asyncio proficiency |
+| **`07_error_handling.py`** | ⚠️ Robust error management patterns | Intermediate | Exception handling |
+| **`08_production_config.py`** | 🏭 Production deployment patterns | Advanced | Operations experience |
+| **`09_custom_protocols.py`** | 🔧 Custom protocol definitions & middleware | Advanced | Framework understanding |
+| **`10_performance_tuning.py`** | 📈 Performance benchmarking & optimization | Advanced | System knowledge |
 
-- **`01_quick_start.py`** ⚡
-  Shows the most basic server and client setup using default configuration. Perfect introduction to the RPC plugin framework with minimal code.
+### **Complete Demos** (`demo/` directory)
 
-- **`02_server_setup.py`** 🛎️  
-  Illustrates advanced server configuration options including transport selection, endpoint binding, and service registration patterns.
-
-- **`03_client_connection.py`** 🙋
-  Demonstrates robust client connection patterns with error handling, retry logic, and connection lifecycle management. (Note: Retry logic is demonstrated as an application-level pattern within this example.)
-
-### 🚄 **Transport & Protocol Examples**
-
-- **`04_transport_options.py`** 🔗
-  Compares Unix domain socket vs TCP socket transports, showing when to use each and how to configure transport-specific options.
-
-- **`05_security_mtls.py`** 🔒
-  Comprehensive mTLS (mutual TLS) setup with certificate generation, validation, and secure client-server communication patterns.
-
-- **`06_async_patterns.py`** ⚙️
-  Best practices for asynchronous RPC programming including concurrent request handling, async context managers, and graceful shutdown.
-
-### 🏭 **Production Examples**
-
-- **`07_error_handling.py`** 🚨
-  Robust error handling strategies including custom exceptions, retry policies, circuit breakers, and failure recovery patterns. (Note: Retry policies and circuit breaker patterns are shown via example implementations within this script, not as built-in library classes.)
-
-- **`08_production_config.py`** ⚙️
-  Production-ready configuration management using environment variables, configuration files, and structured logging for monitoring.
-
-- **`09_custom_protocols.py`** 🔧
-  Advanced protocol customization including custom service definitions, middleware integration, and protocol extension patterns.
-
-- **`10_performance_tuning.py`** 📈
-  Performance optimization techniques including connection pooling, throughput tuning, latency optimization, and resource management. (Note: Connection pooling concepts are illustrated by managing multiple client instances; benchmark rigging is example-specific and uses direct gRPC channels for load simulation against the server.)
-
-## 🏃‍♂️ Quick Reference
-
-| Example | Focus Area | Complexity | Key Concepts |
-|---------|------------|------------|-------------|
-| `01_quick_start.py` | Basic Usage | ⭐ | Server, Client, Protocol |
-| `02_server_setup.py` | Server Config | ⭐⭐ | Endpoints, Transports, Services |
-| `03_client_connection.py` | Client Patterns | ⭐⭐ | Connections, Error Handling |
-| `04_transport_options.py` | Transports | ⭐⭐ | Unix Sockets, TCP, Performance |
-| `05_security_mtls.py` | Security | ⭐⭐⭐ | mTLS, Certificates, Encryption |
-| `06_async_patterns.py` | Async Programming | ⭐⭐⭐ | Concurrency, Context Managers |
-| `07_error_handling.py` | Reliability | ⭐⭐⭐ | Exceptions, Retries, Recovery |
-| `08_production_config.py` | Production Setup | ⭐⭐⭐⭐ | Config Management, Monitoring |
-| `09_custom_protocols.py` | Advanced Protocols | ⭐⭐⭐⭐ | Custom Services, Middleware |
-| `10_performance_tuning.py` | Optimization | ⭐⭐⭐⭐⭐ | Benchmarking, Tuning, Scaling |
-
-## 🎯 Learning Path
-
-### **For Beginners** (New to RPC or pyvider-rpcplugin)
-1. Start with `01_quick_start.py` to understand basic concepts
-2. Move to `02_server_setup.py` for server configuration
-3. Try `03_client_connection.py` for client-side patterns
-4. Experiment with `04_transport_options.py` for transport choices
-
-### **For Intermediate Users** (Familiar with RPC concepts)
-1. Jump to `05_security_mtls.py` for production security
-2. Study `06_async_patterns.py` for async best practices  
-3. Review `07_error_handling.py` for robust applications
-4. Examine `08_production_config.py` for deployment patterns
-
-### **For Advanced Users** (Building production systems)
-1. Analyze `09_custom_protocols.py` for protocol extensions
-2. Optimize with `10_performance_tuning.py` for high-scale scenarios
-3. Combine patterns from multiple examples for complex use cases
-
-## 🛠️ Example Requirements
-
-All examples use only the core `pyvider-rpcplugin` dependencies:
-
-```python
-# Core dependencies (automatically installed)
-import asyncio                    # Built-in async support
-from pyvider.rpcplugin import *  # Main RPC plugin framework
-from pyvider.telemetry import *  # Logging and observability
-```
-
-Some advanced examples may demonstrate integration with:
-- **Protocol Buffers** - For custom service definitions
-- **Certificate generation** - For mTLS security examples
-- **Performance monitoring** - For optimization examples
-
-## 🧪 Testing Examples
-
-Each example includes verification steps and expected outputs. You can run all examples as a test suite:
+#### **Echo Service** (`examples/demo/`)
+A complete, production-ready echo service implementation.
 
 ```bash
-# Run all examples in sequence
-for example in examples/[0-9]*.py; do
-    echo "🧪 Testing $example"
-    python "$example"
-    echo "✅ Completed $example"
-    echo ""
-done
+# Start the server
+python examples/demo/echo_server.py --transport tcp --port 50051
+
+# In another terminal, run the client
+python examples/demo/echo_client.py localhost:50051
 ```
 
-Or test specific categories:
+**Files:**
+- `examples/demo/echo.proto` - Protocol buffer service definition
+- `examples/demo/echo_server.py` - Server implementation
+- `examples/demo/echo_client.py` - Client implementation
+
+#### **Key-Value Service** (`examples/kvproto/py_rpc/`)
+Advanced key-value store with persistence and atomic operations.
 
 ```bash
-# Test basic examples only
+# Start the KV server
+python examples/kvproto/py_rpc/py_kv_server.py --transport tcp
+
+# Run the client
+python examples/kvproto/py_rpc/py_kv_client.py put mykey myvalue
+python examples/kvproto/py_rpc/py_kv_client.py get mykey
+```
+
+**Features:**
+- Persistent storage
+- Atomic operations
+- Batch operations
+- Error handling
+
+## 🏃‍♂️ Running Examples
+
+### **Prerequisites**
+- Python 3.13+
+- `pyvider-rpcplugin` installed or source available
+- For `demo/` examples: `protoc` compiler (for generating .proto files)
+
+### **Environment Setup**
+```bash
+# Install dependencies (if using as standalone)
+pip install pyvider-rpcplugin
+
+# Or if running from source
+export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+```
+
+### **Running Individual Examples**
+```bash
+# Basic quick start demo (great starting point)
+python 01_quick_start.py
+
+# Server configuration examples
+python 02_server_setup.py
+
+# Client patterns
+python 03_client_connection.py
+
+# Transport comparison
+python 04_transport_options.py
+
+# Security and mTLS
+python 05_security_mtls.py
+
+# Advanced async patterns
+python 06_async_patterns.py
+
+# Error handling
+python 07_error_handling.py
+
+# Production configuration
+python 08_production_config.py
+
+# Custom protocols
+python 09_custom_protocols.py
+
+# Performance tuning
+python 10_performance_tuning.py
+```
+
+### **Running Complete Demos**
+
+#### Echo Service Demo
+```bash
+# Terminal 1: Start server
+cd examples/demo/
+python echo_server.py
+
+# Terminal 2: Run client
+python echo_client.py
+```
+
+#### Key-Value Demo
+```bash
+# Terminal 1: Start KV server  
+cd examples/kvproto/py_rpc/
+python py_kv_server.py --transport tcp
+
+# Terminal 2: Run KV client
+python py_kv_client.py put mykey myvalue
+python py_kv_client.py get mykey
+```
+
+## 📚 Learning Path
+
+### **For Beginners**
+1. Start with `01_quick_start.py` - Understand basic concepts
+2. Explore `02_server_setup.py` - Learn server configuration
+3. Try `03_client_connection.py` - Understand client patterns
+4. Run the complete `examples/demo/` (echo demo) - See everything together
+
+### **For Intermediate Users**
+1. Study `04_transport_options.py` - Compare Unix vs TCP
+2. Review `07_error_handling.py` for robust applications
+3. Study `06_async_patterns.py` for async best practices
+4. Experiment with `examples/kvproto/py_rpc/` (KV demo) - Complex service implementation
+
+### **For Advanced Users**
+1. Master `05_security_mtls.py` - Production security
+2. Deploy using `08_production_config.py` - Production setup
+3. Analyze `09_custom_protocols.py` for protocol extensions
+4. Optimize with `10_performance_tuning.py` - Performance patterns
+
+## 🔧 Troubleshooting
+
+### **Common Issues**
+
+#### Import Errors
+```bash
+# Ensure Python path is set correctly
+export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+
+# Or run from project root
+cd /path/to/pyvider-rpcplugin
 python examples/01_quick_start.py
-python examples/02_server_setup.py
-python examples/03_client_connection.py
-
-# Test security examples
-python examples/05_security_mtls.py
-
-# Test production examples  
-python examples/08_production_config.py
-python examples/09_custom_protocols.py # Added
-python examples/10_performance_tuning.py
 ```
 
-## 🔧 Customization
+#### Port Already in Use
+```bash
+# Examples automatically find available ports
+# If issues persist, check for other services:
+netstat -tulpn | grep :50051
+```
 
-Feel free to modify and extend these examples for your specific use cases:
+#### Permission Errors (Unix Sockets)
+```bash
+# Ensure socket directory is writable
+mkdir -p /tmp/pyvider_sockets
+chmod 755 /tmp/pyvider_sockets
+```
 
-- **Change transport types** - Switch between Unix sockets and TCP
-- **Modify security settings** - Adjust mTLS configuration for your environment
-- **Add custom logging** - Integrate with your existing observability stack
-- **Scale parameters** - Adjust concurrency and performance settings
-- **Extend protocols** - Add your own service definitions and handlers
+## 📖 Additional Resources
 
-## 💡 Tips for Success
+- **API Documentation**: See `docs/api-reference.md`
+- **Architecture Guide**: See `docs/architecture.md`
+- **Security Guide**: See `docs/security.md`
+- **Production Deployment**: See `docs/production.md`
 
-1. **Start Simple** - Begin with basic examples before moving to advanced patterns
-2. **Read the Code** - Each example includes detailed comments explaining the concepts
-3. **Experiment** - Modify examples to understand how changes affect behavior
-4. **Check Logs** - Pay attention to the structured logging output for insights
-5. **Measure Performance** - Use the benchmarking examples to understand system limits
-6. **Security First** - Always use mTLS in production environments
-7. **Understand Library Scope**: Some examples demonstrate advanced patterns (e.g., custom client-side retry logic, circuit breakers, specific pooling strategies for `plugin_client`) implemented within the example code itself. These illustrate how you can build robust applications on top of `pyvider.rpcplugin`, and may not represent built-in utility classes provided by the core library.
+## 🤝 Contributing Examples
 
-## 🆘 Getting Help
+When adding new examples:
 
-If you encounter issues with any examples:
+1. Use the numbered format for core examples (`11_new_feature.py`)
+2. Include comprehensive docstrings and comments
+3. Add appropriate emoji logging with `from pyvider.telemetry import logger`
+4. Update this README with the new example
+5. Ensure examples are self-contained and runnable
+6. Follow the established patterns for path resolution
 
-1. **Check the logs** - Most issues are visible in the detailed log output
-2. **Verify dependencies** - Ensure `pyvider-rpcplugin` is properly installed
-3. **Review documentation** - See the main [README.md](../README.md) and [docs/](../docs/) 
-4. **Open an issue** - Report bugs or request clarifications on GitHub
+---
 
-## 🚀 Next Steps
-
-After exploring these examples:
-
-1. **Build your own plugin** - Use the patterns as templates for your use case
-2. **Read the API docs** - Review [docs/api-reference.md](../docs/api-reference.md) for complete details
-3. **Study the architecture** - Understand the design in [docs/architecture.md](../docs/architecture.md)
-4. **Optimize for production** - Follow guidelines in [docs/security.md](../docs/security.md) (which includes production checklists and operational security) and the Performance section in the main [README.md](../README.md#performance).
-
-Happy coding with `pyvider.rpcplugin`! 🎉
+**Happy coding with pyvider-rpcplugin!** 🐍🚀
