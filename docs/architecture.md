@@ -829,11 +829,36 @@ class GzipCompression(CompressionStrategy):
         return gzip.decompress(data)
 
 # Configurable compression
-server = plugin_server(
-    protocol=protocol,
-    handler=handler,
-    compression_strategy=GzipCompression()
-)
+# Note: Compression in gRPC is typically managed at the channel or server level
+# using gRPC options, not directly via a strategy pattern in pyvider.rpcplugin's
+# plugin_server factory in this manner. This example is conceptual.
+# server = plugin_server(
+#     protocol=protocol,
+#     handler=handler,
+#     compression_strategy=GzipCompression() # Conceptual
+# )
 ```
+
+## Advanced Enterprise Considerations
+
+While `pyvider.rpcplugin` provides a robust framework for individual plugin communication, certain advanced enterprise features are typically managed at a higher architectural level or by leveraging underlying gRPC capabilities:
+
+### Service Discovery
+For systems with many dynamically scaled plugins, especially if they are not all launched and managed directly by a single host application using `plugin_client`, service discovery (e.g., using Consul, etcd, or Kubernetes services) becomes important. `pyvider.rpcplugin` itself does not bundle a specific service discovery mechanism. Plugins would register themselves with, and clients would query, an external discovery service. The connection details (e.g., TCP host/port) obtained from the discovery service would then be used to connect (potentially using `grpc.aio.secure_channel` or `insecure_channel` directly if not using `plugin_client`'s process management).
+
+### Load Balancing
+gRPC supports various load balancing strategies (e.g., round-robin, pick-first). Client-side load balancing can be configured on the gRPC channel. If you are using a service mesh or an API gateway in front of your plugins, these tools often provide sophisticated load balancing capabilities. `pyvider.rpcplugin` focuses on establishing the secure point-to-point communication channel, upon which these gRPC or infrastructure-level load balancing mechanisms can be built.
+
+### Plugin API Versioning
+As your plugin services evolve, managing API versions is crucial. This is typically handled at the gRPC service definition level (in your `.proto` files):
+- **Package Versioning**: e.g., `package my_company.my_service.v1;` and `package my_company.my_service.v2;`.
+- **Service Name Versioning**: e.g., `service MyServiceV1 { ... }` and `service MyServiceV2 { ... }`.
+- **Method/Message Versioning**: Less common for breaking changes, but can involve adding new optional fields or new RPC methods while deprecating old ones.
+Clients would then connect to the specific service version they require. `pyvider.rpcplugin` facilitates running any gRPC service definition, so these versioning strategies are fully compatible.
+
+### Hot Reloading / Dynamic Plugin Management
+`pyvider.rpcplugin` is designed around plugins often being separate executables managed by a host (via `plugin_client`) or run independently. Dynamically loading, unloading, or hot-reloading Python plugin code *within a running host process without restart* is a more complex challenge, often involving Python's module import mechanics (`importlib`) and careful state management. This is generally outside the direct scope of `pyvider.rpcplugin`'s RPC and process management features.
+
+These considerations are important for scaling and managing complex plugin-based architectures. `pyvider.rpcplugin` provides the secure and performant communication backbone, while these broader architectural patterns can be integrated around it.
 
 This architecture provides a solid foundation for building high-performance, secure, and maintainable RPC-based applications while remaining flexible enough to accommodate diverse use cases and requirements.
