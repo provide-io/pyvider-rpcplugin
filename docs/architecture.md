@@ -114,11 +114,11 @@ The framework uses factory functions as the primary API for creating components:
 ```python
 # High-level factory functions
 server = plugin_server(protocol, handler, transport="tcp")
-# client = plugin_client(server_path="./path_to_executable") # Corrected
+client = plugin_client(command=["./path_to_executable"]) # Corrected: uses 'command'
 protocol = plugin_protocol(service_name, descriptor_module, servicer_add_fn)
 
 # Lower-level direct instantiation
-server = RPCPluginServer(protocol, handler, config, transport)
+# server = RPCPluginServer(protocol, handler, config, transport) # Direct use is less common
 ```
 
 **Benefits:**
@@ -132,31 +132,30 @@ server = RPCPluginServer(protocol, handler, config, transport)
 Configuration and dependencies flow through the system via dependency injection:
 
 ```python
+from pyvider.rpcplugin import configure, plugin_server # Assuming imports
+
 # Configuration flows down through the stack
-configure(PLUGIN_AUTO_MTLS=True, PLUGIN_SERVER_TRANSPORTS=["tcp"]) # Corrected
-server = plugin_server(protocol, handler)  # Inherits global config
+configure(PLUGIN_AUTO_MTLS=True, PLUGIN_SERVER_TRANSPORTS=["tcp"])
+# server = plugin_server(protocol, handler)  # Inherits global config (conceptual)
+# Actual server creation requires protocol and handler instances.
 ```
 
 ### Async Context Management
 
-Core client and server classes support async context management for resource cleanup:
+The `RPCPluginClient` class supports async context management for resource cleanup:
 
 ```python
-# For RPCPluginClient (assuming 'client' is an instance from plugin_client factory)
-# For RPCPluginClient (assuming 'client' is an instance from plugin_client factory)
-# async with client as active_client: # client is the RPCPluginClient instance
-#     # active_client.start() was called by __aenter__
-#     # active_client is now ready to use, e.g., active_client.grpc_channel
-#     logger.info(f"Client active, target: {active_client.target_endpoint}")
-#     # ... use active_client ...
-# # active_client.close() (and shutdown_plugin if applicable) is called by __aexit__
-
-# Example for RPCPluginServer (if used directly - less common)
-# server = RPCPluginServer(...)
-# async with server: # Conceptual, direct server usage with 'async with' is not standard pattern
-#    await server.serve()
-print("Note: Async context management for client is via RPCPluginClient instance. See api-reference.md for a runnable example.")
+from pyvider.rpcplugin import plugin_client # Assuming import
+# client_instance = plugin_client(command=["./my_plugin"])
+# async with client_instance:
+#     # client_instance.start() is called by __aenter__
+#     # client_instance is now ready to use, e.g., client_instance.grpc_channel
+#     # logger.info(f"Client active, target: {client_instance.target_endpoint}")
+#     # ... use client_instance ...
+# # client_instance.close() (which includes shutdown_plugin if applicable) is called by __aexit__
+print("Note: For a runnable example of RPCPluginClient with async context management, see its class docstring or tests.")
 ```
+The `RPCPluginServer` is typically run via its `serve()` method and managed by signals or direct `stop()` calls rather than an async context manager pattern for its main lifecycle.
 
 ## Transport Layer
 
@@ -353,40 +352,40 @@ The initial startup and handshake process between the host (e.g., a Go applicati
 @startuml
 title Plugin Startup and Handshake Sequence
 
-participant "Host Application (go-plugin)" as Host
-participant "Plugin Executable (Python)" as PluginProcess
-participant "RPCPluginServer" as Server
-participant "RPCPluginClient" as Client
+participant "Host Application (e.g., using RPCPluginClient or go-plugin)" as Host
+participant "Plugin Executable (Python, using RPCPluginServer)" as PluginProcess
+participant "RPCPluginServer (within PluginProcess)" as ServerInstance
+participant "RPCPluginClient (within Host)" as ClientInstance
 
 Host -> PluginProcess: Launch(env[MAGIC_COOKIE_KEY]=MAGIC_COOKIE_VALUE)
 activate PluginProcess
 
-PluginProcess -> Server: Initialize
-activate Server
-Server -> Server: validate_magic_cookie()
-Server -> Server: Negotiate protocol & transport
-Server -> Server: Determine listening address & cert
-Server --> PluginProcess: Prints Handshake String to stdout
-deactivate Server
+PluginProcess -> ServerInstance: Initialize
+activate ServerInstance
+ServerInstance -> ServerInstance: validate_magic_cookie() (checks env var set by Host)
+ServerInstance -> ServerInstance: Negotiate protocol & transport
+ServerInstance -> ServerInstance: Determine listening address & cert
+ServerInstance --> PluginProcess: Prints Handshake String to stdout
+deactivate ServerInstance
 
 Host <-- PluginProcess: Reads Handshake String from stdout
 deactivate PluginProcess
 
-Host -> Client: Initialize with handshake info
-activate Client
-Client -> Server: Connect to (NETWORK, ADDRESS)
+Host -> ClientInstance: Initialize with handshake info
+activate ClientInstance
+ClientInstance -> ServerInstance: Connect to (NETWORK, ADDRESS)
 
 opt TLS/mTLS Enabled
-    Client -> Server: TLS ClientHello (+ Client Cert if mTLS)
-    activate Server
-    Server -> Client: TLS ServerHello + Server Cert
-    deactivate Server
-    Client -> Client: Validate Server Cert
+    ClientInstance -> ServerInstance: TLS ClientHello (+ Client Cert if mTLS)
+    activate ServerInstance
+    ServerInstance -> ClientInstance: TLS ServerHello + Server Cert
+    deactivate ServerInstance
+    ClientInstance -> ClientInstance: Validate Server Cert
     opt mTLS
-        Server -> Server: Validate Client Cert
+        ServerInstance -> ServerInstance: Validate Client Cert (if required & CA configured)
     end
 end
-deactivate Client
+deactivate ClientInstance
 
 Host <-> PluginProcess: Secure gRPC Channel Established
 
@@ -476,26 +475,34 @@ Automated certificate generation and validation:
 class Certificate:
     @classmethod
     def create_ca(
-        cls, 
+        cls,
         common_name: str,
-        organization_name: str = "Pyvider RPC", # Updated for consistency
-        validity_days: int = 365
-    ) -> Certificate:
+        organization_name: str, # Corrected: was 'Optional[str] = None'
+        validity_days: int,
+        key_type: str = "ecdsa", # Added, matches code
+        key_size: int = 2048,    # Added, matches code
+        ecdsa_curve: str = "secp384r1" # Added, matches code
+    ) -> "Certificate": # Use "Certificate" for self-reference
         """Generate self-signed CA certificate."""
+        # Implementation in crypto/certificate.py
         
     @classmethod
     def create_signed_certificate(
         cls,
-        ca_certificate: Certificate, # Updated parameter name
+        ca_certificate: "Certificate", # Corrected: type is Certificate
         common_name: str,
-        organization_name: Optional[str] = None, # Updated parameter name
-        validity_days: int = 90,
-        alt_names: Optional[List[str]] = None, # Updated parameter name
-        is_client_cert: bool = False  # Added parameter
-    ) -> Certificate: # Covers both server and client cert generation
+        organization_name: str, # Corrected: was 'Optional[str] = None'
+        validity_days: int,
+        alt_names: list[str] | None = None, # Corrected: List[str] | None
+        key_type: str = "ecdsa",        # Added, matches code
+        key_size: int = 2048,           # Added, matches code
+        ecdsa_curve: str = "secp384r1", # Added, matches code
+        is_client_cert: bool = False
+    ) -> "Certificate":
         """Generate server or client certificate signed by CA."""
+        # Implementation in crypto/certificate.py
 ```
-The `.cert` and `.key` attributes are used to access the PEM data.
+The `.cert` (PEM string of the certificate) and `.key` (PEM string of the private key, if available) attributes are used to access the certificate data.
 
 ## Configuration System
 

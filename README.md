@@ -70,86 +70,100 @@ pip install pyvider-rpcplugin
 
 ### Hello, RPC World!
 
-Create your first RPC plugin in minutes. This example demonstrates launching a simple plugin server as an executable and connecting to it with a client.
+Create your first RPC plugin in minutes. This example demonstrates a client application launching a simple plugin server (as a separate Python script/executable) and connecting to it.
 
-**Note on mTLS**: For simplicity, these examples often run with mTLS disabled (`PLUGIN_AUTO_MTLS=False`). In production, mTLS is recommended. See `examples/05_security_mtls.py` for mTLS setup.
+**Note on mTLS**: For simplicity, these examples run with mTLS disabled (`PLUGIN_AUTO_MTLS=False` is set by `example_utils.configure_for_example()`). In production, mTLS is highly recommended. See `examples/05_security_mtls.py` for mTLS setup.
 
-**1. The Plugin Server (`examples/00_dummy_server.py`)**
+**1. The Plugin Server Executable (`examples/00_dummy_server.py`)**
 
-This server is a minimal executable plugin. It uses a basic protocol and a simple handler.
+This script acts as a minimal executable plugin. When run, it starts an RPC server using a basic protocol and a simple handler. It's designed to be launched by a client process.
 
 ```python
 # Condensed from examples/00_dummy_server.py
 import asyncio
+# Imports for pyvider.rpcplugin, logger, and example_utils are present in the actual file
+# from example_utils import configure_for_example
+# configure_for_example() # Sets up paths and default config (like disabling mTLS)
+
 from pyvider.rpcplugin import plugin_protocol, plugin_server
 from pyvider.telemetry import logger
-# Assuming example_utils.configure_for_example is available for setup
 
-class DummyHandler:
-    async def NoOp(self, request, context): # Basic method
-        logger.info("DummyHandler: NoOp called")
+class DummyHandler: # Basic handler
+    async def NoOp(self, request, context):
+        logger.info("DummyHandler: NoOp called (should not occur in this example)")
         return {}
 
-async def run_dummy_server():
-    # configure_for_example() # Sets up default cookie, log level etc.
+async def main():
+    # configure_for_example() is called at module level.
+    # It sets default magic cookie (key & value) and disables mTLS.
+    # The launching client is expected to set the correct magic cookie environment variable.
     protocol = plugin_protocol() # Basic protocol
     server = plugin_server(protocol=protocol, handler=DummyHandler())
-    logger.info("Dummy server starting...")
-    await server.serve() # Prints handshake, then serves
+    logger.info("Dummy server starting (will print handshake string to stdout)...")
+    await server.serve() # Prints handshake, then serves until stopped by client
+    logger.info("Dummy server stopped.")
 
 # if __name__ == "__main__":
-#     asyncio.run(run_dummy_server())
+#     asyncio.run(main())
 ```
-To run this server independently (e.g., for testing):
-`python examples/00_dummy_server.py`
-(Ensure `PLUGIN_AUTO_MTLS=False` is set, or `configure_for_example` handles it).
+You typically don't run `00_dummy_server.py` directly in this scenario; it's launched by the client. If you were to run it independently (e.g., for direct testing with `01b_direct_client_connection.py`), it would start and wait for connections.
 
-**2. The Client (`examples/01_quick_start.py`)**
+**2. The Client Application (`examples/01_quick_start.py`)**
 
-This client launches and connects to the `00_dummy_server.py` executable.
+This script acts as the client (or host application). It uses `plugin_client` to launch the `00_dummy_server.py` script as a subprocess and then connects to it.
 
 ```python
 # Condensed from examples/01_quick_start.py
 import asyncio
+import sys
 from pathlib import Path
+# Imports for pyvider.rpcplugin, logger, and example_utils are present
+# from example_utils import configure_for_example
+# configure_for_example() # Sets up paths and default config
+
 from pyvider.rpcplugin import plugin_client
 from pyvider.telemetry import logger
-# Assuming example_utils.configure_for_example for setup
 
-async def run_quick_start_client():
-    # configure_for_example(PLUGIN_LOG_LEVEL="DEBUG") # Client-side config
-
-    example_dir = Path(__file__).resolve().parent # If running from examples/
-    dummy_server_command = ["python", str(example_dir / "00_dummy_server.py")]
+async def main():
+    # configure_for_example() called at module level.
+    example_dir = Path(__file__).resolve().parent
+    dummy_server_executable = example_dir / "00_dummy_server.py"
+    dummy_server_command = [sys.executable, str(dummy_server_executable)]
 
     client = None
     try:
-        logger.info(f"Client launching: {' '.join(dummy_server_command)}")
-        # plugin_client will set necessary env vars (like magic cookie)
-        # for the dummy_server_command process based on its own config.
+        logger.info(f"Client launching plugin: {' '.join(dummy_server_command)}")
+        # plugin_client reads its config (e.g., magic cookie key/value from
+        # configure_for_example) and sets the required environment variable
+        # (e.g., PYVIDER_PLUGIN_MAGIC_COOKIE) for the dummy_server_command process.
         client = plugin_client(command=dummy_server_command)
-        await client.start() # Starts the server executable and connects
+        await client.start() # Starts the server executable and connects via handshake
 
-        logger.info("Client connected to dummy_server successfully!")
-        # If the dummy server had methods defined in a .proto,
-        # you would use generated stubs here with client.grpc_channel.
-        # e.g., stub = YourServiceStub(client.grpc_channel)
-        #       await stub.YourMethod(YourRequest())
+        logger.info("Client connected to dummy_server plugin successfully!")
+        # The dummy_server uses a basic protocol with no custom RPC methods.
+        # If it defined services (e.g., via .proto files), you would create a
+        # gRPC stub here using client.grpc_channel and make calls:
+        # stub = YourServiceStub(client.grpc_channel)
+        # response = await stub.YourMethod(YourRequest())
+        await asyncio.sleep(2) # Keep connection alive for a moment
 
     except Exception as e:
         logger.error(f"Client error: {e}", exc_info=True)
     finally:
         if client and client.is_started:
             await client.close() # Stops the server executable too
-            logger.info("Client closed, dummy server stopped.")
+            logger.info("Client closed, dummy_server plugin stopped.")
+        elif client: # If client was created but not started
+            await client.close()
+
 
 # if __name__ == "__main__":
-#     asyncio.run(run_quick_start_client())
+#     asyncio.run(main())
 ```
-To run this client (which in turn runs the server):
+To run this Quick Start example:
 `python examples/01_quick_start.py`
 
-This setup demonstrates the typical plugin model where the client (host application) manages the lifecycle of the plugin executable.
+This setup demonstrates the typical plugin model where the client (host application) manages the lifecycle of the plugin executable. The `plugin_client` handles launching the process, the handshake (including magic cookie authentication and transport negotiation), and establishing the gRPC connection.
 
 ## 🧩 Core Concepts & Use Cases
 

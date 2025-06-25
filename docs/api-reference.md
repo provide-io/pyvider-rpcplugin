@@ -15,43 +15,48 @@ server = plugin_server(
     protocol=my_protocol,
     handler=my_handler,
     transport="tcp",  # or "unix"
-    port=50051,       # for TCP
-    transport_path="/tmp/socket",  # for Unix
-    config={"max_workers": 10}
+    host="127.0.0.1", # Default for TCP
+    port=0,           # Default for TCP (0 means auto-assign)
+    transport_path=None, # Default for Unix (auto-generates if None)
+    config={"PLUGIN_MAX_WORKERS": 10} # Example: Use PLUGIN_ prefixed keys for library config
 )
 ```
 
 **Parameters:**
-- `protocol` (ProtocolT): Protocol implementation
-- `handler` (HandlerT): Service handler implementation  
-- `transport` (str): Transport type ("tcp" or "unix")
-- `port` (int): Port for TCP transport (default: 0 = auto-assign)
-- `host` (str): Host for TCP transport (default: "127.0.0.1")
-- `transport_path` (str|None): Path for Unix socket transport
-- `config` (dict|None): Additional configuration options
+- `protocol` (ProtocolT): Protocol implementation.
+- `handler` (HandlerT): Service handler implementation.
+- `transport` (str): Transport type ("tcp" or "unix"). Defaults to "unix" if available, else "tcp".
+- `host` (str): Host for TCP transport. Defaults to "127.0.0.1".
+- `port` (int): Port for TCP transport. Defaults to `0` (OS assigns an available port).
+- `transport_path` (str | None): Path for Unix socket transport. If `None` (default) and Unix transport is chosen, a path is auto-generated in a temporary directory.
+- `config` (dict | None): Additional configuration options that can override global settings for this server instance. Keys should generally be `PLUGIN_` prefixed.
 
-**Returns:** `RPCPluginServer` instance
+**Returns:** `RPCPluginServer` instance.
 
 ### `plugin_client()`
 
-Create a new plugin client for connecting to servers.
+Create a new plugin client for launching and connecting to plugin executables.
 
 ```python
 from pyvider.rpcplugin import plugin_client
 
+# Example: Launching a plugin executable
 client = plugin_client(
-    command=["./my_plugin_executable"],
-    config={"timeout": 30.0},
-    auto_connect=False
+    command=["python", "./my_plugin_server_script.py"],
+    config={"PLUGIN_HANDSHAKE_TIMEOUT": 15.0} # Example: Override specific config for this client
 )
+
+# After creating the client, you must start it
+# await client.start()
+# ... use client.grpc_channel ...
+# await client.close()
 ```
 
 **Parameters:**
-- `command` (list[str]): Command to execute plugin server
-- `config` (dict|None): Configuration options
-- `auto_connect` (bool): Whether to auto-connect (default: False)
+- `command` (list[str]): The command and its arguments to launch the plugin server executable.
+- `config` (dict | None): Optional configuration dictionary to customize client behavior (e.g., timeouts, specific environment variables for the plugin). These can override global configurations for this client instance.
 
-**Returns:** `RPCPluginClient` instance
+**Returns:** `RPCPluginClient` instance. The client is not automatically started; you must call `await client.start()` to launch the plugin and establish a connection.
 
 ### `plugin_protocol()`
 
@@ -140,14 +145,6 @@ Return gRPC service descriptors.
 ```python
 async def get_grpc_descriptors(self):
     return my_pb2_grpc, "MyService"
-```
-
-##### `get_method_type(method_name)`
-Return the gRPC method type.
-
-```python
-def get_method_type(self, method_name: str) -> str:
-    return "unary_unary"  # or "unary_stream", "stream_unary", "stream_stream"
 ```
 
 ##### `async add_to_server(server, handler)`
@@ -373,57 +370,52 @@ os.environ.update({
 server = plugin_server(
     protocol=protocol,
     handler=handler,
-    transport="tcp",
-    config={"security_enabled": True}
+        transport="tcp"
+        # mTLS is configured via environment variables or pyvider.rpcplugin.configure()
+        # For example, ensure PLUGIN_AUTO_MTLS="true" and certificate paths are set.
 )
 ```
 
 ## Configuration Options
 
-### Server Configuration
+Configuration is primarily managed through environment variables (e.g., `PLUGIN_LOG_LEVEL`) or programmatically using `pyvider.rpcplugin.configure()`. The `config` parameter in `plugin_server` or `plugin_client` can override these for specific instances. Refer to `docs/configuration.md` for a full list of `PLUGIN_` prefixed variables.
 
+**Example Server-Side Overrides (passed to `plugin_server` `config`):**
 ```python
-server_config = {
-    "max_workers": 50,                    # Maximum worker threads
-    "max_concurrent_rpcs": 1000,          # Maximum concurrent RPCs
-    "keepalive_time": 30,                 # Keepalive time (seconds)
-    "keepalive_timeout": 5,               # Keepalive timeout (seconds)
-    "max_connection_idle": 300,           # Max connection idle time
-    "max_connection_age": 3600,           # Max connection age
-    "security_enabled": True,             # Enable security features
-    "log_level": "INFO"                   # Logging level
+server_instance_config = {
+    "PLUGIN_MAX_WORKERS": 50,       # Max gRPC worker threads for this server
+    "PLUGIN_LOG_LEVEL": "DEBUG"     # Specific log level for this server
 }
 ```
 
-### Client Configuration
-
+**Example Client-Side Overrides (passed to `plugin_client` `config`):**
 ```python
-client_config = {
-    "timeout": 30.0,                      # Connection timeout
-    "max_retries": 3,                     # Maximum retry attempts
-    "retry_delay": 1.0,                   # Delay between retries
-    "keepalive_time": 30,                 # Keepalive time
-    "max_receive_message_length": 1024*1024*4,  # 4MB max message
-    "max_send_message_length": 1024*1024*4      # 4MB max message
+client_instance_config = {
+    "PLUGIN_HANDSHAKE_TIMEOUT": 20.0, # Custom handshake timeout for this client
+    "PLUGIN_CLIENT_MAX_RETRIES": 5    # Custom max retries for this client
 }
 ```
+These dictionaries are examples of what you *could* pass to the `config` parameter. The actual effective gRPC options (like keepalive, max message size) are often set internally by `pyvider-rpcplugin` or can be influenced by underlying `grpcio` environment variables if not directly exposed.
 
 ## Environment Variables
 
+`pyvider-rpcplugin` uses environment variables prefixed with `PLUGIN_` for global configuration. See `docs/configuration.md` for a comprehensive list. Key variables include:
+
 ### Security Variables
+- `PLUGIN_AUTO_MTLS`: Enable automatic mTLS ("true"/"false"). Default: "true".
+- `PLUGIN_SERVER_CERT`: Path to server's own certificate file (PEM or file:// URI).
+- `PLUGIN_SERVER_KEY`: Path to server's private key file.
+- `PLUGIN_CLIENT_ROOT_CERTS`: Path to CA certificate(s) server uses to verify clients.
+- `PLUGIN_CLIENT_CERT`: Path to client's own certificate file (for client executables).
+- `PLUGIN_CLIENT_KEY`: Path to client's private key file.
+- `PLUGIN_SERVER_ROOT_CERTS`: Path to CA certificate(s) client uses to verify the server.
 
-- `PLUGIN_AUTO_MTLS`: Enable automatic mTLS ("true"/"false")
-- `PLUGIN_CA_CERT`: Path to CA certificate
-- `PLUGIN_SERVER_CERT`: Path to server certificate
-- `PLUGIN_SERVER_KEY`: Path to server private key
-- `PLUGIN_CLIENT_CERT`: Path to client certificate
-- `PLUGIN_CLIENT_KEY`: Path to client private key
-
-### Plugin Variables
-
-- `PLUGIN_MAGIC_COOKIE_KEY`: Magic cookie key for handshake
-- `PLUGIN_MAGIC_COOKIE_VALUE`: Magic cookie value for handshake
-- `PLUGIN_LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR)
+### Core Plugin Variables
+- `PLUGIN_MAGIC_COOKIE_KEY`: Name of the env var the plugin host expects the plugin to provide the cookie in. Default: "PLUGIN_MAGIC_COOKIE".
+- `PLUGIN_MAGIC_COOKIE_VALUE`: The secret cookie value the plugin host expects. Default: "rpcplugin-default-cookie".
+- `PLUGIN_LOG_LEVEL`: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL). Default: "INFO".
+- `PLUGIN_SERVER_TRANSPORTS`: Comma-separated list of server's preferred transports (e.g., "unix,tcp"). Default: "unix,tcp".
+- `PLUGIN_HANDSHAKE_TIMEOUT`: Handshake timeout in seconds. Default: 10.0.
 
 ## Best Practices
 
