@@ -21,13 +21,14 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
-    configure,
-    plugin_protocol,  # Changed
+    # configure, # No longer needed
+    plugin_protocol,
     plugin_server,
 )
 from pyvider.rpcplugin.config import (  # noqa: E402
-    RPCPluginConfig,
+    rpcplugin_config, # Use this for reading active config
 )
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402 # For type hint
 from pyvider.rpcplugin.types import (  # noqa: E402 # For type hint
@@ -139,45 +140,43 @@ async def example_8_environment_configuration() -> None:
     print(" Demonstrates: Configuration via environment variables")
     print("=" * 60)
 
-    # Save original environment
-    original_env = {}
-    env_vars_to_set = {
-        "PLUGIN_MAGIC_COOKIE_VALUE": "production-secret-2024",
+    # This example primarily shows how one *might* use environment variables.
+    # With example_utils, direct os.environ manipulation is less common for examples.
+    # We'll use configure_for_example to simulate environment-like setup.
+
+    # Simulate "production" settings using configure_for_example
+    clear_plugin_env_vars() # Start clean
+    prod_config_params = {
+        "PLUGIN_MAGIC_COOKIE_VALUE": "production-secret-08a", # Unique cookie
         "PLUGIN_LOG_LEVEL": "INFO",
-        "PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
-        "PLUGIN_AUTO_MTLS": "true",
-        "PLUGIN_HANDSHAKE_TIMEOUT": "30.0",
-        "PLUGIN_CONNECTION_TIMEOUT": "300.0",
-        "PLUGIN_SERVER_ENDPOINT": "0.0.0.0:50051",
-        "PYVIDER_SERVICE_NAME": "production-rpc-service",
-        "PYVIDER_LOG_LEVEL": "INFO",
+        "PLUGIN_SERVER_TRANSPORTS": ["unix", "tcp"], # Example list
+        "PLUGIN_AUTO_MTLS": True, # Example boolean
+        "PLUGIN_HANDSHAKE_TIMEOUT": 30.0,
+        "PLUGIN_CONNECTION_TIMEOUT": 300.0,
+        "PLUGIN_SERVER_ENDPOINT": "0.0.0.0:50051", # Example
+        # PYVIDER_SERVICE_NAME and PYVIDER_LOG_LEVEL are not part of rpcplugin config
+        # but could be app-specific env vars. We won't set them via configure_for_example.
     }
+    configure_for_example(**prod_config_params)
 
-    try:
-        # Set production environment variables
-        for key, value in env_vars_to_set.items():
-            original_env[key] = os.environ.get(key)
-            os.environ[key] = value
+    logger.info(
+        "Production-like environment configured using example_utils",
+        domain="config",
+        action="env_setup_simulated",
+        status="success",
+        environment="production_simulated",
+        config_keys_set=list(prod_config_params.keys()),
+    )
 
-        logger.info(
-            "Production environment configured",
-            domain="config",
-            action="env_setup",
-            status="success",
-            environment="production",
-            config_vars=list(env_vars_to_set.keys()),
-        )
+    # Verify configuration values from the active rpcplugin_config
+    # RPCPluginConfig.instance() is discouraged; use the imported rpcplugin_config
+    active_config = rpcplugin_config
+    magic_cookie = active_config.get("PLUGIN_MAGIC_COOKIE_VALUE")
+    transports = active_config.get_list("PLUGIN_SERVER_TRANSPORTS") # Use get_list
+    auto_mtls = active_config.get_bool("PLUGIN_AUTO_MTLS") # Use get_bool
 
-        # Load configuration from environment
-        config = RPCPluginConfig.instance()
-
-        # Verify configuration values
-        magic_cookie = config.get("PLUGIN_MAGIC_COOKIE_VALUE")
-        transports = config.get("PLUGIN_SERVER_TRANSPORTS")
-        auto_mtls = config.get("PLUGIN_AUTO_MTLS")
-
-        logger.info(
-            "Configuration loaded from environment",
+    logger.info(
+        "Configuration loaded (simulated from environment via example_utils)",
             domain="config",
             action="env_load",
             status="success",
@@ -216,13 +215,8 @@ async def example_8_environment_configuration() -> None:
                 config=env_config,
             )
 
-    finally:
-        # Restore original environment
-        for key, original_value in original_env.items():
-            if original_value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = original_value
+    # No finally block needed to restore os.environ, as example_utils
+    # and clear_plugin_env_vars handle this pattern.
 
 
 async def example_8_production_server_deployment() -> None:
@@ -237,20 +231,20 @@ async def example_8_production_server_deployment() -> None:
     print(" Demonstrates: Production-ready server with monitoring")
     print("=" * 60)
 
-    # Production configuration
-    # For this example to run without full cert setup, ensure PLUGIN_AUTO_MTLS is False.
-    # Actual mTLS is demonstrated in 05_security_mtls.py.
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="production-server-2024",
+    # Production configuration using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="production-server-08b", # Unique cookie
         PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["tcp"],  # TCP for production deployments
-        PLUGIN_AUTO_MTLS=False,  # Changed to False to allow running without certs
+        PLUGIN_SERVER_TRANSPORTS=["tcp"],
+        PLUGIN_AUTO_MTLS=False, # For simplicity in this example, mTLS is in ex05
         PLUGIN_HANDSHAKE_TIMEOUT=30.0,
-        PLUGIN_CONNECTION_TIMEOUT=600.0,  # 10 minutes for long-running operations
+        PLUGIN_CONNECTION_TIMEOUT=600.0,
+        PLUGIN_LOG_LEVEL="INFO", # Production logging might be INFO or WARNING
     )
 
     logger.info(
-        "Configuring production server",
+        "Configuring production server using example_utils",
         domain="deployment",
         action="configure",
         status="starting",

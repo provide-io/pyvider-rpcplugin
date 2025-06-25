@@ -23,10 +23,11 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
-    configure,
+    # configure, # No longer needed
     plugin_client,
-    plugin_protocol,  # Changed
+    plugin_protocol,
     plugin_server,
 )
 from pyvider.rpcplugin.exception import (  # noqa: E402
@@ -437,12 +438,12 @@ async def example_7_basic_error_handling() -> None:
     print(" Demonstrates: Fundamental error handling techniques")
     print("=" * 60)
 
-    # Configure for error handling demonstration
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
+    # Configure for error handling demonstration using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="error-handling-cookie-07a", # Unique cookie
         PLUGIN_SERVER_TRANSPORTS=["unix"],
-        PLUGIN_AUTO_MTLS=False,
+        PLUGIN_AUTO_MTLS=False, # Keep it simple for error handling focus
         PLUGIN_HANDSHAKE_TIMEOUT=5.0,
         PLUGIN_CONNECTION_TIMEOUT=30.0,
     )

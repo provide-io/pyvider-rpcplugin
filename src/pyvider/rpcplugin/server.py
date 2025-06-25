@@ -386,6 +386,9 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:  # Simplified generic para
             raise TransportError(f"gRPC server failed to start: {e}") from e
 
     async def _negotiate_handshake(self) -> None:
+        # Call validate_magic_cookie without arguments.
+        # It will use rpcplugin_config for expected key/value
+        # and check os.environ for the provided cookie.
         validate_magic_cookie()
         self._protocol_version = negotiate_protocol_version(
             self._handshake_config.protocol_versions

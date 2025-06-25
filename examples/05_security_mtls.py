@@ -19,8 +19,9 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 # First-party imports (after sys.path modification)
-from pyvider.rpcplugin import configure, plugin_protocol, plugin_server  # noqa: E402
-from pyvider.rpcplugin.config import rpcplugin_config  # noqa: E402
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
+from pyvider.rpcplugin import plugin_protocol, plugin_server # noqa: E402, configure removed
+from pyvider.rpcplugin.config import rpcplugin_config # For reading active config
 from pyvider.rpcplugin.crypto.certificate import Certificate  # noqa: E402
 from pyvider.rpcplugin.exception import CertificateError  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
@@ -199,26 +200,25 @@ async def example_5_mtls_server_setup(
     print(" Demonstrates: Server with mutual TLS authentication")
     print("=" * 60)
 
-    # Configure mTLS settings
-    configure(
-        magic_cookie="secure-mtls-cookie-2024",
-        protocol_versions=[1],  # Changed from protocol_version
-        transports=["tcp"],  # mTLS typically used with TCP
-        auto_mtls=True,  # Enable automatic mTLS
-        handshake_timeout=30.0,
-        connection_timeout=300.0,
+    # Configure mTLS settings using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="secure-mtls-cookie-05b", # Unique cookie
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_SERVER_TRANSPORTS=["tcp"], # mTLS typically used with TCP
+        PLUGIN_AUTO_MTLS=True,  # Enable automatic mTLS
+        PLUGIN_HANDSHAKE_TIMEOUT=30.0,
+        PLUGIN_CONNECTION_TIMEOUT=300.0,
         # Server identity: CA-signed server certificate and its private key.
-        server_cert=f"file://{cert_paths['server_cert']}",
-        server_key=f"file://{cert_paths['server_key']}",
+        PLUGIN_SERVER_CERT=f"file://{cert_paths['server_cert']}",
+        PLUGIN_SERVER_KEY=f"file://{cert_paths['server_key']}",
         # For mTLS, server needs to verify clients. It uses the CA certificate for this.
         # The relevant config key is PLUGIN_CLIENT_ROOT_CERTS.
-        # `configure()` doesn't have a direct parameter for PLUGIN_CLIENT_ROOT_CERTS.
-        # So, we set it directly using rpcplugin_config *after* other configurations.
-        # `client_cert` in `configure()` sets PLUGIN_CLIENT_CERT (client's own cert),
-        # which is not what the server uses to verify other clients.
+        # This will be set directly on rpcplugin_config by configure_for_example
+        # if we pass it with "PLUGIN_" prefix.
+        PLUGIN_CLIENT_ROOT_CERTS=f"file://{cert_paths['ca_cert']}"
     )
-    # Set client root CAs for server to validate client certificates in mTLS.
-    rpcplugin_config.set("PLUGIN_CLIENT_ROOT_CERTS", f"file://{cert_paths['ca_cert']}")
+    # Note: configure_for_example handles setting these on the global rpcplugin_config instance.
 
     logger.info(
         "Configuring mTLS server",
@@ -286,19 +286,24 @@ async def example_5_mtls_client_connection(cert_paths: dict[str, str]) -> None:
     print(" Demonstrates: Client with mutual TLS authentication")
     print("=" * 60)
 
-    # Configure client mTLS settings
-    configure(
-        magic_cookie="secure-mtls-cookie-2024",
-        protocol_versions=[1],  # Changed from protocol_version
-        transports=["tcp"],
-        auto_mtls=True,
-        connection_timeout=60.0,
-        handshake_timeout=20.0,
-        # Client certificate configuration
-        client_cert=f"file://{cert_paths['client_cert']}",
-        client_key=f"file://{cert_paths['client_key']}",
-        # Server certificate validation
-        server_cert=f"file://{cert_paths['ca_cert']}",  # CA for server validation
+    # Configure client mTLS settings using example_utils
+    # This needs to happen *after* the server is configured and running,
+    # or at least in a way that this config is active when the client part runs.
+    # For this example structure, we assume server_setup was called first,
+    # then this client part runs. We clear and reconfigure for the client.
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="secure-mtls-cookie-05b", # Must match server's expectation
+        PLUGIN_PROTOCOL_VERSIONS=[1],
+        PLUGIN_CLIENT_TRANSPORTS=["tcp"], # Client uses TCP
+        PLUGIN_AUTO_MTLS=True, # Client also participates in mTLS
+        PLUGIN_CONNECTION_TIMEOUT=60.0,
+        PLUGIN_HANDSHAKE_TIMEOUT=20.0,
+        # Client's own identity
+        PLUGIN_CLIENT_CERT=f"file://{cert_paths['client_cert']}",
+        PLUGIN_CLIENT_KEY=f"file://{cert_paths['client_key']}",
+        # How client verifies the server (using the CA cert)
+        PLUGIN_CLIENT_ROOT_CERTS=f"file://{cert_paths['ca_cert']}",
     )
 
     logger.info(

@@ -17,13 +17,14 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
-    configure,
+    # configure, # No longer needed directly
     plugin_client,
-    plugin_protocol,  # Changed
+    plugin_protocol,
     plugin_server,
 )
-from pyvider.rpcplugin.config import rpcplugin_config  # noqa: E402
+from pyvider.rpcplugin.config import rpcplugin_config # For reading active config
 from pyvider.telemetry import logger  # noqa: E402
 
 
@@ -75,14 +76,14 @@ async def example_4_unix_socket_performance() -> None:
     print(" Demonstrates: High-performance local IPC with Unix sockets")
     print("=" * 60)
 
-    # Configure for Unix socket optimization
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="unix-benchmark-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
+    # Configure for Unix socket optimization using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="unix-benchmark-cookie-04a", # Unique cookie
         PLUGIN_SERVER_TRANSPORTS=["unix"],
-        PLUGIN_AUTO_MTLS=False,  # Disable mTLS for max performance
+        PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=5.0,
-        PLUGIN_CONNECTION_TIMEOUT=30.0,  # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=30.0,
     )
 
     # Create protocol and handler
@@ -173,14 +174,14 @@ async def example_4_tcp_socket_performance() -> None:
     print(" Demonstrates: Network-capable TCP transport characteristics")
     print("=" * 60)
 
-    # Configure for TCP optimization
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="tcp-benchmark-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
+    # Configure for TCP optimization using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="tcp-benchmark-cookie-04b", # Unique cookie
         PLUGIN_SERVER_TRANSPORTS=["tcp"],
-        PLUGIN_AUTO_MTLS=False,  # Disable mTLS for baseline performance
+        PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=10.0,
-        PLUGIN_CONNECTION_TIMEOUT=60.0,  # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=60.0,
     )
 
     # Create protocol and handler
@@ -413,17 +414,17 @@ async def example_4_dual_transport_setup() -> None:
     print(" Demonstrates: Supporting both Unix and TCP simultaneously")
     print("=" * 60)
 
-    # Configure for dual transport
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="dual-transport-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
+    # Configure for dual transport using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="dual-transport-cookie-04d", # Unique cookie
         PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
         PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=15.0,
-        PLUGIN_CONNECTION_TIMEOUT=120.0,  # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=120.0,
     )
 
-    protocol = plugin_protocol()  # Changed
+    protocol = plugin_protocol()
     handler = BenchmarkHandler("dual")
 
     # Create server with dual transport support
