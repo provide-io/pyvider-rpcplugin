@@ -17,7 +17,7 @@ class CustomProtocol(RPCPluginProtocol):
     def __init__(self, service_name: str = "CustomService"):
         super().__init__()
         self.service_name = service_name
-        self.middleware_stack = []
+        self.middleware_stack: list[Any] = []
     
     async def get_grpc_descriptors(self):
         """Get gRPC service descriptors."""

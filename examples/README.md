@@ -79,13 +79,17 @@ python examples/kvproto/py_rpc/py_kv_client.py get mykey
 - For `demo/` examples: `protoc` compiler (for generating .proto files)
 
 ### **Environment Setup**
-```bash
-# Install dependencies (if using as standalone)
-pip install pyvider-rpcplugin
 
-# Or if running from source
-export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
+The examples are designed to be run from the root of the `pyvider-rpcplugin` repository.
+Each example script (e.g., `01_quick_start.py`) typically includes:
+```python
+from example_utils import configure_for_example
+configure_for_example()
 ```
+This utility function automatically adjusts `sys.path` to ensure that the `pyvider.rpcplugin` library from the `src/` directory and `example_utils` itself are correctly imported.
+Therefore, manually setting `PYTHONPATH` is usually not required if running examples from the project root (e.g., `python examples/01_quick_start.py`) or from within the `examples/` directory (e.g., `cd examples; python 01_quick_start.py`).
+
+If you have `pyvider-rpcplugin` installed as a package (e.g., via `pip install pyvider-rpcplugin` or `uv add pyvider-rpcplugin`), the examples should also work by finding the installed package, provided the import paths are correctly resolved by your Python environment.
 
 ### **Running Individual Examples**
 ```bash
@@ -168,14 +172,10 @@ python py_kv_client.py get mykey
 ### **Common Issues**
 
 #### Import Errors
-```bash
-# Ensure Python path is set correctly
-export PYTHONPATH="${PWD}/src:${PYTHONPATH}"
-
-# Or run from project root
-cd /path/to/pyvider-rpcplugin
-python examples/01_quick_start.py
-```
+If you encounter import errors like `ModuleNotFoundError: No module named 'pyvider'` or `No module named 'example_utils'`:
+- Ensure you are running the example script from the project's root directory (e.g., `python examples/01_quick_start.py`) or from within the `examples/` directory itself (e.g., `cd examples; python 01_quick_start.py`).
+- The `example_utils.configure_for_example()` call at the beginning of each script is designed to set up `sys.path` correctly. Make sure this line is present and executed.
+- If you've installed `pyvider-rpcplugin` as a package, ensure your Python environment can locate it.
 
 #### Port Already in Use
 ```bash

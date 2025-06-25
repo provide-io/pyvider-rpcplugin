@@ -45,7 +45,7 @@ async def connection_pooling_example():
     class MockConnectionPool:
         def __init__(self, pool_size: int = 10):
             self.pool_size = pool_size
-            self.connections = []
+            self.connections: list[Any] = []
             self.active_connections = 0
         
         async def get_connection(self):

@@ -238,8 +238,8 @@ def validate_magic_cookie(
             logger.error("CRITICAL: cookie_key is None or empty before env lookup.")
             # This case should ideally be prevented by config validation or defaults.
             # If it still occurs, it's a severe misconfiguration.
-            raise HandshakeError(
-                message="Internal config error: cookie_key missing for lookup.",
+            raise HandshakeError( # ruff: noqa E501
+                message="Internal configuration error: cookie_key is missing for lookup.",
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
         cookie_provided = os.environ.get(str(cookie_key))
