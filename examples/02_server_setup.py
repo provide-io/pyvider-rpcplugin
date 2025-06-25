@@ -37,7 +37,17 @@ async def tcp_server_example():
         transport="tcp",
         host="127.0.0.1",
         port=get_example_port(),
-        config={"max_workers": 4}
+        # The 'config' param here can override global settings.
+        # For gRPC specific options like max_workers, these are typically
+        # passed directly to the grpc.aio.server. pyvider.rpcplugin.plugin_server
+        # might not directly map all arbitrary keys to gRPC options.
+        # Standard pyvider.rpcplugin config keys are PLUGIN_ prefixed.
+        # This example assumes 'max_workers' might be handled by a custom server
+        # or is illustrative for general config passing.
+        # If targeting a standard gRPC option, it might need to be
+        # PLUGIN_GRPC_OPTIONS='[("grpc.max_concurrent_streams", 100)]' or similar.
+        # For this example, we'll assume it's illustrative or for a custom handler.
+        config={"APP_MAX_WORKERS": 4} # Using APP_ prefix for clarity
     )
     
     logger.info("✅ TCP server configured")
@@ -52,7 +62,8 @@ async def unix_server_example():
         handler=BasicHandler(),
         transport="unix",
         transport_path="/tmp/pyvider_example.sock",
-        config={"max_workers": 2}
+        # See comment in tcp_server_example regarding the 'config' dict.
+        config={"APP_MAX_WORKERS": 2} # Using APP_ prefix for clarity
     )
     
     logger.info("✅ Unix socket server configured")

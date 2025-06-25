@@ -448,16 +448,18 @@ diagnose_certificate_issues("/path/to/cert.crt", "/path/to/ca.crt")
    # Generate new certificate (using corrected API)
    # Ensure ca_cert is your loaded CA Certificate object
    new_server_cert = Certificate.create_signed_certificate(
-       ca_certificate=ca_cert,
+       ca_certificate=ca_cert, # Certificate object of the CA
        common_name="your-server.com",
+       organization_name="Your Org", # organization_name is required
        validity_days=90,
        is_client_cert=False # For a server certificate
+       # key_type, ecdsa_curve, etc., can also be specified if non-default
    )
    # new_server_cert.cert and new_server_cert.key contain the PEM data
-   # new_cert.save_to_file("new_server.crt", "new_server.key") # save_to_file might not exist, handle manually:
-   with open("new_server.crt", "w") as f: f.write(new_server_cert.cert)
-   if new_server_cert.key:
-       with open("new_server.key", "w") as f: f.write(new_server_cert.key)
+   # Example saving:
+   # with open("new_server.crt", "w") as f: f.write(new_server_cert.cert)
+   # if new_server_cert.key:
+   #     with open("new_server.key", "w") as f: f.write(new_server_cert.key)
    ```
 
 2. **Fix certificate chain:**
@@ -466,7 +468,8 @@ diagnose_certificate_issues("/path/to/cert.crt", "/path/to/ca.crt")
    # Ensure ca_cert is your loaded CA Certificate object
    new_server_cert = Certificate.create_signed_certificate(
        ca_certificate=ca_cert,  # Use same CA for client validation
-       common_name="server",
+       common_name="server.example.com",
+       organization_name="Your Org", # Required
        validity_days=90,
        is_client_cert=False # For a server certificate
    )
@@ -490,63 +493,72 @@ def test_mtls_connection(host: str, port: int, cert_file: str, key_file: str, ca
     
     try:
         # Create SSL context
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        context.load_cert_chain(cert_file, key_file)
-        context.load_verify_locations(ca_file)
-        context.check_hostname = False  # For testing
+        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=ca_file)
+        # For client-side, Purpose.SERVER_AUTH is correct. Server loads CA to verify client.
+        # Client loads CA to verify server.
+        context.load_cert_chain(certfile=cert_file, keyfile=key_file)
+        context.check_hostname = True # Should generally be True
         
         # Create connection
         with socket.create_connection((host, port), timeout=10) as sock:
-            with context.wrap_socket(sock, server_hostname=host) as ssock:
-                print(f"✅ mTLS connection successful")
-                print(f"Protocol: {ssock.version()}")
-                print(f"Cipher: {ssock.cipher()}")
+            with context.wrap_socket(sock, server_hostname=host) as ssock: # server_hostname is important for SNI and validation
+                print(f"✅ mTLS connection successful to {host}:{port}")
+                print(f"   Protocol: {ssock.version()}")
+                print(f"   Cipher: {ssock.cipher()}")
                 
                 # Get peer certificate
                 peer_cert = ssock.getpeercert()
-                print(f"Peer certificate subject: {peer_cert.get('subject')}")
+                print(f"   Peer certificate subject: {peer_cert.get('subject')}")
                 
     except Exception as e:
-        print(f"❌ mTLS connection failed: {e}")
+        print(f"❌ mTLS connection failed to {host}:{port}: {e}")
 
-# Usage
-test_mtls_connection("127.0.0.1", 50051, "client.crt", "client.key", "ca.crt")
+# Usage example (ensure paths are correct and certs are valid for the roles)
+# test_mtls_connection("127.0.0.1", 50051, "client.crt", "client.key", "ca.crt")
 ```
 
 **Solutions:**
 1. **Verify certificate chain:**
    ```bash
-   # Verify certificate chain with OpenSSL
-   openssl verify -CAfile ca.crt server.crt
-   openssl verify -CAfile ca.crt client.crt
+   # Verify server certificate against its CA
+   openssl verify -CAfile /path/to/ca.crt /path/to/server.crt
+   # Verify client certificate against its CA (if using mTLS)
+   openssl verify -CAfile /path/to/ca.crt /path/to/client.crt
    ```
 
-2. **Check certificate Subject Alternative Names:**
+2. **Check certificate Subject Alternative Names (SANs):**
+   The hostname/IP the client connects to must be present in the server certificate's SANs.
    ```bash
-   # Check SAN entries
-   openssl x509 -in server.crt -text -noout | grep -A5 "Subject Alternative Name"
+   # Check SAN entries in server.crt
+   openssl x509 -in /path/to/server.crt -text -noout | grep -A1 "Subject Alternative Name"
    ```
 
-3. **Regenerate certificate chain:**
+3. **Regenerate certificate chain with correct parameters:**
    ```python
-   # Regenerate complete certificate chain (using corrected API)
-   ca_cert = Certificate.create_ca(common_name="My CA", validity_days=365) # organization_name is also a param
+   # Ensure ca_cert is a Certificate object representing your CA
+   ca_cert = Certificate.create_ca(
+       common_name="My Example CA",
+       organization_name="My Org", # Required
+       validity_days=365
+   )
    
    server_cert = Certificate.create_signed_certificate(
        ca_certificate=ca_cert,
-       common_name="localhost",
-       alt_names=["localhost", "127.0.0.1"], # Corrected parameter name
+       common_name="rpc.example.com", # This (or SANs) must match what client connects to
+       organization_name="My Org",    # Required
+       alt_names=["rpc.example.com", "localhost", "127.0.0.1"], # Add all relevant SANs
        validity_days=90,
        is_client_cert=False
    )
    
    client_cert = Certificate.create_signed_certificate(
        ca_certificate=ca_cert,
-       common_name="client-001",
+       common_name="my-client-id",
+       organization_name="My Org", # Required
        validity_days=30,
        is_client_cert=True
    )
-   # Remember to save these certs using .cert and .key attributes
+   # Remember to save these certs (.cert and .key attributes) and distribute appropriately.
    ```
 
 ## Transport Layer Issues
@@ -720,23 +732,22 @@ async def monitor_memory_usage(duration_seconds: int = 60):
    ```python
    # Always close clients and servers
    # For RPCPluginClient (executable plugins):
-   # client = plugin_client(server_path="...")
+   # client = plugin_client(command=["./my_plugin_executable"]) # Use 'command'
    # try:
    #     await client.start()
    #     # Use client
    # finally:
-   #     await client.close()
+   #     if client: # Check if client was successfully created
+   #         await client.close()
    
-   # Use context managers for RPCPluginClient
-   # async with plugin_client(server_path="...") as client: # This syntax for factory is conceptual
-       # await client.start() # Start would need to be part of __aenter__ or called after
-       # # Use client
-   # A correct usage of async with client instance:
-   # client_instance = plugin_client(server_path="...")
+   # Correct usage of async with client instance:
+   # client_instance = plugin_client(command=["./my_plugin_executable"])
    # async with client_instance:
-   #    # client.start() might be called by __aenter__ or you call it here
-   #    # use client
-   print("Note: Ensure client.close() is called, or use async with on an RPCPluginClient instance.")
+   #    # client_instance.start() is called by __aenter__
+   #    # logger.info(f"Client active, connected to: {client_instance.target_endpoint}")
+   #    # ... use client_instance.grpc_channel ...
+   # # client_instance.close() is called by __aexit__
+   print("Note: Ensure client.close() is called, or use async with on an RPCPluginClient instance for proper cleanup.")
    ```
 
 2. **Monitor connection pools:**

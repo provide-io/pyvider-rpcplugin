@@ -159,8 +159,10 @@ cert_dir.mkdir(exist_ok=True)
 # Its private key should be very securely stored.
 ca_cert_obj = Certificate.create_ca(
     common_name="My Example Corp CA",
-    organization_name="My Example Corp",
-    validity_days=1095  # e.g., 3 years for a root CA
+    organization_name="My Example Corp", # organization_name is required
+    validity_days=1095,  # e.g., 3 years for a root CA
+    key_type="ecdsa", # Default, but explicit
+    ecdsa_curve="secp384r1" # Default, but explicit
 )
 
 # Save the CA certificate and its private key
@@ -168,8 +170,8 @@ ca_cert_path = cert_dir / "ca.crt"
 ca_key_path = cert_dir / "ca.key"
 with open(ca_cert_path, "w", encoding="utf-8") as f:
     f.write(ca_cert_obj.cert)
-with open(ca_key_path, "w", encoding="utf-8") as f:
-    if ca_cert_obj.key: # Key will be present for generated CA
+if ca_cert_obj.key: # Key will be present for generated CA
+    with open(ca_key_path, "w", encoding="utf-8") as f:
         f.write(ca_cert_obj.key)
 print(f"CA certificate saved to: {ca_cert_path}")
 print(f"CA private key saved to: {ca_key_path} (KEEP THIS KEY VERY SECURE!)")
@@ -178,12 +180,12 @@ print(f"CA private key saved to: {ca_key_path} (KEEP THIS KEY VERY SECURE!)")
 # Step 2: Create a Server Certificate signed by the CA
 # The server certificate is used by the RPC server to identify itself to clients.
 server_cert_obj = Certificate.create_signed_certificate(
-    ca_certificate=ca_cert_obj,  # The CA object created above
-    common_name="rpc-server.example.com",  # Primary domain name of the server
-    organization_name="My Example Corp Servers",
-    validity_days=90,  # Shorter validity for end-entity certificates
-    alt_names=["rpc-server.internal.example.com", "localhost", "127.0.0.1"], # Subject Alternative Names
-    is_client_cert=False  # This is a server certificate
+    ca_certificate=ca_cert_obj,
+    common_name="rpc-server.example.com",
+    organization_name="My Example Corp Servers", # organization_name is required
+    validity_days=90,
+    alt_names=["rpc-server.internal.example.com", "localhost", "127.0.0.1"],
+    is_client_cert=False # This is a server certificate
 )
 
 # Save the server certificate and its private key
@@ -191,8 +193,8 @@ server_cert_path = cert_dir / "server.crt"
 server_key_path = cert_dir / "server.key"
 with open(server_cert_path, "w", encoding="utf-8") as f:
     f.write(server_cert_obj.cert)
-with open(server_key_path, "w", encoding="utf-8") as f:
-    if server_cert_obj.key:
+if server_cert_obj.key: # Key will be present
+    with open(server_key_path, "w", encoding="utf-8") as f:
         f.write(server_cert_obj.key)
 print(f"Server certificate saved to: {server_cert_path}")
 print(f"Server private key saved to: {server_key_path}")
@@ -201,12 +203,11 @@ print(f"Server private key saved to: {server_key_path}")
 # Step 3: Create a Client Certificate signed by the CA
 # The client certificate is used by RPC clients to identify themselves to the server.
 client_cert_obj = Certificate.create_signed_certificate(
-    ca_certificate=ca_cert_obj,  # The CA object created above
-    common_name="client-id-007",  # Unique identifier for the client
-    organization_name="My Example Corp Clients",
-    validity_days=30,  # Can be shorter for clients, or match operational needs
-    is_client_cert=True  # This is a client certificate
-    # alt_names can be added if the client might also act as a server or needs SANs
+    ca_certificate=ca_cert_obj,
+    common_name="client-id-007",
+    organization_name="My Example Corp Clients", # organization_name is required
+    validity_days=30,
+    is_client_cert=True # This is a client certificate
 )
 
 # Save the client certificate and its private key
@@ -214,8 +215,8 @@ client_cert_path = cert_dir / "client.crt"
 client_key_path = cert_dir / "client.key"
 with open(client_cert_path, "w", encoding="utf-8") as f:
     f.write(client_cert_obj.cert)
-with open(client_key_path, "w", encoding="utf-8") as f:
-    if client_cert_obj.key:
+if client_cert_obj.key: # Key will be present
+    with open(client_key_path, "w", encoding="utf-8") as f:
         f.write(client_cert_obj.key)
 print(f"Client certificate saved to: {client_cert_path}")
 print(f"Client private key saved to: {client_key_path}")
@@ -228,125 +229,145 @@ print(f"Client private key saved to: {client_key_path}")
 
 ### Certificate Validation
 
-Implement certificate validation:
+Implement certificate validation. The `Certificate` class itself handles parsing and basic structural validation on load. For chain validation, you can use OpenSSL or other tools. `pyvider.rpcplugin` relies on `grpcio`'s underlying TLS implementation for chain validation during the handshake when CAs are configured.
 
 ```python
-# --- Function validate_certificate_chain removed by script ---
-
+from pyvider.rpcplugin.crypto.certificate import Certificate # Already imported
 from datetime import UTC, datetime # Ensure imports for date logic
-def check_certificate_expiry(cert_path: str, days_warning: int = 30) -> bool:
-    """Check if certificate expires soon."""
-    cert = Certificate(cert_pem_or_uri=f"file://{cert_path}") # Corrected load
-    # TODO: Implement expiry check, e.g., using: days_until_expiry = (cert._base.not_valid_after - datetime.now(UTC)).days
-    # TODO: The following block depends on days_until_expiry.
-    # if days_until_expiry <= days_warning:
-    #     logger.warning(
-    #         "Certificate expiring soon",
-    #         cert_path=cert_path,
-    #         days_until_expiry=days_until_expiry
-    #     )
-    #     return True
-    return False # Defaulting to False as expiry check is a TODO
+
+# Example: Checking if a certificate is expired
+def check_certificate_expiry(cert_pem_or_uri: str, days_warning: int = 30) -> bool:
+    """Check if certificate at given path or PEM string expires soon."""
+    try:
+        cert = Certificate(cert_pem_or_uri=cert_pem_or_uri)
+        if not cert.is_valid: # is_valid checks not_valid_before and not_valid_after
+            # Calculate days until expiry for logging, even if already expired
+            # Note: Certificate._base.not_valid_after is already timezone-aware (UTC)
+            days_left = (cert._base.not_valid_after - datetime.now(UTC)).days
+            if days_left < 0:
+                logger.error(f"Certificate '{cert.subject}' HAS EXPIRED {abs(days_left)} days ago.")
+            else: # Should not happen if cert.is_valid is False and it's due to future validity
+                 logger.warning(f"Certificate '{cert.subject}' is not currently valid (e.g. not_valid_before is in future).")
+            return True # Indicates an issue (expired or not yet valid)
+
+        days_left = (cert._base.not_valid_after - datetime.now(UTC)).days
+        if days_left <= days_warning:
+            logger.warning(
+                f"Certificate '{cert.subject}' is expiring in {days_left} days (warning threshold: {days_warning} days)."
+            )
+            return True # Indicates it's expiring soon or has an issue
+        logger.info(f"Certificate '{cert.subject}' is valid and not expiring within {days_warning} days.")
+        return False # No immediate expiry issue
+    except Exception as e:
+        logger.error(f"Error checking certificate expiry for '{cert_pem_or_uri}': {e}")
+        return True # Treat errors as a potential issue
+
+# To validate a chain (e.g., server_cert against ca_cert):
+# This is typically handled by the TLS library (grpcio) during connection.
+# For manual/programmatic validation, you might use cryptography library directly
+# or shell out to OpenSSL:
+# `openssl verify -CAfile /path/to/ca.crt /path/to/server.crt`
 ```
 
 ### Certificate Rotation
 
-Implement automated certificate rotation:
+Implement automated certificate rotation. The example below is conceptual for rotation logic.
+Actual rotation involves securely distributing new certs/keys and gracefully restarting/reloading services.
 
 ```python
 import asyncio
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta # Already imported if needed from above
+import os # For os.rename
 
 class CertificateRotator:
-    def __init__(self, ca_cert: Certificate):
-        self.ca_cert = ca_cert
-        self.rotation_threshold_days = 7
+    def __init__(self, ca_cert_obj: Certificate): # Takes a Certificate object for the CA
+        self.ca_cert_obj = ca_cert_obj
+        self.rotation_threshold_days = 7 # Rotate if cert expires within 7 days
 
     async def rotate_certificate_if_needed(
         self,
-        cert_path: str,
-        key_path: str,
+        cert_pem_uri: str, # e.g., "file:///path/to/current.crt"
+        key_pem_uri: str,  # e.g., "file:///path/to/current.key"
         common_name: str,
-        cert_type: str = "server"
+        organization_name: str, # Added, as it's required by create_signed_certificate
+        alt_names: list[str] | None = None, # Added for completeness
+        is_client_cert: bool = False,
+        validity_days: int = 90 # Validity for the new certificate
     ) -> bool:
         """Rotate certificate if expiring soon."""
+        try:
+            current_cert = Certificate(cert_pem_or_uri=cert_pem_uri, key_pem_or_uri=key_pem_uri)
 
-        current_cert = Certificate(cert_pem_or_uri=f"file://{cert_path}") # Corrected load
+            # Check expiry
+            now = datetime.now(UTC)
+            if not hasattr(current_cert, '_base'): # Should not happen if loaded correctly
+                 logger.error(f"Cannot rotate {common_name}: current certificate not loaded properly.")
+                 return False
 
-        # TODO: Implement expiry check for current_cert, e.g., using: (current_cert._base.not_valid_after - datetime.now(UTC)).days <= self.rotation_threshold_days:
-        if False: # Placeholder for the condition above
-            logger.info(
-                "Rotating certificate",
-                cert_path=cert_path
-                # days_until_expiry=current_cert.days_until_expiry() # This would also need to be calculated
+            if (current_cert._base.not_valid_after - now).days > self.rotation_threshold_days:
+                logger.info(f"Certificate for {common_name} does not need rotation yet.")
+                return False
+
+            logger.info(f"Rotating certificate for {common_name} (expiring soon or expired).")
+
+            new_cert = Certificate.create_signed_certificate(
+                ca_certificate=self.ca_cert_obj,
+                common_name=common_name,
+                organization_name=organization_name, # Pass through
+                validity_days=validity_days, # Use specified validity for new cert
+                alt_names=alt_names,
+                is_client_cert=is_client_cert
             )
 
-            # Generate new certificate
-            if cert_type == "server":
-                new_cert = Certificate.create_signed_certificate( # Corrected method
-                    ca_certificate=self.ca_cert, # Corrected parameter
-                    common_name=common_name,
-                    organization_name="Rotated Cert",
-                    validity_days=90,
-                    is_client_cert=False # Added parameter
-                )
-            else:
-                new_cert = Certificate.create_signed_certificate( # Corrected method
-                    ca_certificate=self.ca_cert, # Corrected parameter
-                    common_name=common_name,
-                    organization_name="Rotated Cert",
-                    validity_days=30,
-                    is_client_cert=True # Added parameter
-                )
+            # Securely write new cert and key then replace old ones (atomic rename)
+            # This example assumes cert_pem_uri and key_pem_uri are file URIs
+            cert_path_str = cert_pem_uri.replace("file://", "")
+            key_path_str = key_pem_uri.replace("file://", "")
 
-            # Atomic replacement
-            temp_cert_path = f"{cert_path}.new"
-            temp_key_path = f"{key_path}.new"
+            temp_cert_path = f"{cert_path_str}.new"
+            temp_key_path = f"{key_path_str}.new"
 
             with open(temp_cert_path, "w", encoding="utf-8") as f:
                 f.write(new_cert.cert)
-            if new_cert.key: # Ensure key exists before trying to write it
+            if new_cert.key:
                 with open(temp_key_path, "w", encoding="utf-8") as f:
                     f.write(new_cert.key)
 
-            # Atomic move
-            os.rename(temp_cert_path, cert_path)
-            # Only rename key path if it was written (i.e. new_cert.key was not None)
+            # Atomic move (on POSIX, os.rename is atomic if src/dest are on same filesystem)
+            os.rename(temp_cert_path, cert_path_str)
             if new_cert.key:
-                os.rename(temp_key_path, key_path)
+                os.rename(temp_key_path, key_path_str)
 
-            logger.info("Certificate rotation completed", cert_path=cert_path)
+            logger.info(f"Certificate rotation completed for {common_name}.")
+            # IMPORTANT: The application using this certificate must be signaled to reload it.
+            # This logic is outside the scope of this example.
             return True
-
-        return False
-
-# Setup automatic rotation
-async def certificate_rotation_service():
-    """Background service for certificate rotation."""
-
-    rotator = CertificateRotator(ca_cert)
-
-    while True:
-        try:
-            await rotator.rotate_certificate_if_needed(
-                "/etc/ssl/certs/server.crt",
-                "/etc/ssl/private/server.key",
-                "rpc-server.yourdomain.com",
-                "server"
-            )
-
-            await rotator.rotate_certificate_if_needed(
-                "/etc/ssl/certs/client.crt",
-                "/etc/ssl/private/client.key",
-                "rpc-client-001",
-                "client"
-            )
-
         except Exception as e:
-            logger.error("Certificate rotation failed", error=str(e))
+            logger.error(f"Error during certificate rotation for {common_name}: {e}", exc_info=True)
+            return False
 
-        # Check daily
-        await asyncio.sleep(24 * 60 * 60)
+# Conceptual: Setup automatic rotation (requires a running CA cert object `ca_cert`)
+# async def certificate_rotation_service(ca_cert_for_signing: Certificate):
+#     """Background service for certificate rotation."""
+#     rotator = CertificateRotator(ca_cert=ca_cert_for_signing)
+#     server_cert_details = {
+#         "cert_pem_uri": "file:///etc/ssl/certs/server.crt",
+#         "key_pem_uri": "file:///etc/ssl/private/server.key",
+#         "common_name": "rpc-server.yourdomain.com",
+#         "organization_name": "My Server Org",
+#         "alt_names": ["rpc-server.yourdomain.com", "localhost"],
+#         "is_client_cert": False,
+#         "validity_days": 90
+#     }
+#     # Add client cert details similarly
+#
+#     while True:
+#         try:
+#             await rotator.rotate_certificate_if_needed(**server_cert_details)
+#             # await rotator.rotate_certificate_if_needed(**client_cert_details)
+#         except Exception as e:
+#             logger.error(f"Certificate rotation service error: {e}")
+#         await asyncio.sleep(24 * 60 * 60) # Check daily
 ```
 
 ## Transport Security
@@ -462,13 +483,33 @@ def validate_magic_cookie(provided_cookie: str, expected_cookie: str) -> bool:
     import secrets
     return secrets.compare_digest(provided_cookie, expected_cookie)
 
-# Configure magic cookie (using correct PLUGIN_ prefixed keys)
-configure(
-    PLUGIN_MAGIC_COOKIE_VALUE="your-super-secret-cookie-value-2024",
-    PLUGIN_PROTOCOL_VERSIONS=[1] # Protocol versions should be a list
-)
+# Server-side configuration for expected magic cookie:
+# This is typically set via environment variables or pyvider.rpcplugin.configure()
+# at server startup.
+# Example:
+# from pyvider.rpcplugin import configure
+# configure(
+#    PLUGIN_MAGIC_COOKIE_KEY="MY_APP_PLUGIN_SECRET_TOKEN", # Name of env var client sets
+#    PLUGIN_MAGIC_COOKIE_VALUE="actual-secret-value-for-server-to-expect"
+# )
+# The server will then use these values to validate the cookie provided by the client
+# (which the client sends in the environment variable named by PLUGIN_MAGIC_COOKIE_KEY).
+# See docs/configuration.md for the full magic cookie flow.
 
-# Magic cookie validation happens automatically during handshake if server/client use this config
+# Client-side (if using plugin_client to launch an executable):
+# The plugin_client factory will automatically read its own configured
+# PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE, and set the
+# corresponding environment variable for the launched plugin process.
+# Example:
+# client_config = {
+#     "PLUGIN_MAGIC_COOKIE_KEY": "MY_APP_PLUGIN_SECRET_TOKEN",
+#     "PLUGIN_MAGIC_COOKIE_VALUE": "actual-secret-value-for-server-to-expect"
+# }
+# client = plugin_client(command=["./my_plugin"], config=client_config)
+# await client.start()
+# This ensures the launched "./my_plugin" has MY_APP_PLUGIN_SECRET_TOKEN set.
+
+# Magic cookie validation happens automatically during the handshake process.
 ```
 
 ### Role-Based Access Control (RBAC)
@@ -1050,9 +1091,20 @@ When `PLUGIN_AUTO_MTLS` is set to `true` (either explicitly or by default) and n
 
 3.  **Trust Establishment (Server Authentication Only):**
     *   During the handshake, the client receives the server's auto-generated, self-signed certificate.
-    *   The client then uses this server certificate as its trusted root CA to validate the server.
-    *   In this specific auto-generation scenario on both sides, the client *does not* present its own auto-generated client certificate to the server for validation.
-    *   Similarly, the server, lacking specific `PLUGIN_CLIENT_ROOT_CERTS` to validate against, does not require or validate a client certificate.
-    *   This results in a **server-only TLS authentication**, where the client verifies the server's identity using its auto-generated certificate, but the server does not authenticate the client via its certificate. The connection is still encrypted.
+    *   The client, upon receiving the server's auto-generated certificate in the handshake, will use this certificate as its ad-hoc root CA to validate the server. This establishes server authentication.
+    *   **Client Authentication (Behavior):**
+        *   If the client also auto-generates its certificate (because `PLUGIN_AUTO_MTLS=True` and no `PLUGIN_CLIENT_CERT`/`PLUGIN_CLIENT_KEY` are provided for it), it *will* use this auto-generated certificate during the TLS handshake.
+        *   The server, having auto-generated its own cert (which acts as its own CA) and not having `PLUGIN_CLIENT_ROOT_CERTS` configured to specify external CAs for client verification, will typically *not* be configured to require and validate client certificates against a specific CA set.
+        *   However, gRPC server-side TLS can be configured to `request` client certificates without `requiring` them and validating against a specific CA. If a client presents a certificate (even self-signed and auto-generated), it might be available to the server application layer for inspection (e.g., via `context.peer_identity_key()`).
+    *   **Effective Security Level**: This setup primarily ensures **server authentication** (client validates the server using the server's self-signed cert) and **encryption**. True mutual authentication (where the server cryptographically verifies the client against a trusted CA) is not achieved unless the server is configured with `PLUGIN_CLIENT_ROOT_CERTS` and the client presents a certificate signed by a CA listed in those roots. If `PLUGIN_CLIENT_ROOT_CERTS` is *not* set on the server, it usually won't strictly require valid client certs.
 
-This behavior allows for secure, encrypted communication out-of-the-box without manual certificate setup, suitable for development or scenarios where both client and server are known entities launched within a controlled environment. For production scenarios requiring strict mutual client authentication, providing explicitly generated CA-signed certificates and configuring the appropriate root CAs on both client and server is recommended as detailed in other sections.
+This auto-mTLS behavior with self-signed certificates provides encrypted communication and server identity verification (based on the ephemeral, self-signed server cert) without manual certificate setup. It's suitable for development or scenarios where client and server are launched in a trusted, controlled environment.
+
+**For production environments requiring strong, verifiable mutual authentication:**
+- Generate a proper CA.
+- Issue server and client certificates signed by this CA.
+- Configure `PLUGIN_SERVER_CERT`, `PLUGIN_SERVER_KEY` on the server.
+- Configure `PLUGIN_CLIENT_ROOT_CERTS` on the server (with your CA's cert) to enable client certificate validation.
+- Configure `PLUGIN_CLIENT_CERT`, `PLUGIN_CLIENT_KEY` on the client.
+- Configure `PLUGIN_SERVER_ROOT_CERTS` on the client (with your CA's cert) to validate the server.
+This ensures both parties cryptographically verify each other against a common trusted authority.
