@@ -3,7 +3,15 @@
 import os
 import sys
 
-# Ensure /app/src and /app are in sys.path for module resolution
+# Simple, robust path setup
+examples_dir = Path(__file__).resolve().parent.parent.parent
+project_root = examples_dir.parent
+src_dir = project_root / "src"
+
+if src_dir.exists() and str(src_dir) not in sys.path:
+    sys.path.insert(0, str(src_dir))
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
 # Workaround for PYTHONPATH/editable install issues in test env.
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src"))

@@ -1,518 +1,114 @@
 #!/usr/bin/env python3
-# examples/08_production_config.py
-"""Production-ready configuration and deployment patterns with pyvider-rpcplugin."""
+"""
+Production Configuration - Production deployment patterns and configurations.
+"""
 
 import asyncio
-import os
-import sys
+import json
 from pathlib import Path
-from typing import (
-    Any,
-    cast,
-)
+from example_utils import configure_for_example
+configure_for_example()
 
-import grpc  # For ServicerContext
-from attrs import define, field
+from pyvider.telemetry import logger
 
-# Add src to path for examples
-example_dir = Path(__file__).resolve().parent
-project_root = example_dir.parent
-src_path = project_root / "src"
-if src_path.exists() and str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
-from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
-from pyvider.rpcplugin import (  # noqa: E402
-    # configure, # No longer needed
-    plugin_protocol,
-    plugin_server,
-)
-from pyvider.rpcplugin.config import (  # noqa: E402
-    rpcplugin_config, # Use this for reading active config
-)
-from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402 # For type hint
-from pyvider.rpcplugin.types import (  # noqa: E402 # For type hint
-    RPCPluginProtocol as TypesRPCPluginProtocol,
-)
-from pyvider.telemetry import logger  # noqa: E402
-
-
-@define(frozen=True, slots=True)
-class ProductionReply:
-    """A structured reply for the production service."""
-
-    response: str = field()
-
-
-class ProductionServiceHandler:
-    """Production-grade service handler with comprehensive logging and metrics."""
-
-    start_time: float  # Class variable annotation
-
-    def __init__(self, service_name: str = "ProductionService") -> None:
-        self.service_name = service_name
-        self.request_count = 0
-        self.error_count = 0
-        self.start_time = asyncio.get_event_loop().time()
-
-    async def ProcessRequest(
-        self, request: Any, context: grpc.aio.ServicerContext
-    ) -> ProductionReply:
-        """Handle production requests with full observability."""
-        request_id = f"req_{self.request_count + 1}"
-        self.request_count += 1
-
-        start_time = asyncio.get_event_loop().time()
-
-        logger.info(
-            "Processing production request",
-            domain="service",
-            action="process_request",
-            status="starting",
-            service_name=self.service_name,
-            request_id=request_id,
-            total_requests=self.request_count,
-        )
-
-        try:
-            # Simulate request processing
-            message = getattr(request, "message", "production_request")
-            processing_time = 0.05  # Simulate 50ms processing
-            await asyncio.sleep(processing_time)
-
-            response_data = f"Production Response [{request_id}]: {message}"
-
-            end_time = asyncio.get_event_loop().time()
-            duration_ms = (end_time - start_time) * 1000
-
-            logger.info(
-                "Request processed successfully",
-                domain="service",
-                action="process_request",
-                status="success",
-                request_id=request_id,
-                duration_ms=round(duration_ms, 2),
-                response_size=len(response_data),
-            )
-
-            # Log metrics for monitoring
-            uptime_seconds = end_time - self.start_time
-            logger.info(
-                "Service metrics",
-                domain="metrics",
-                action="report",
-                status="current",
-                service_uptime_seconds=round(uptime_seconds, 1),
-                total_requests=self.request_count,
-                error_count=self.error_count,
-                error_rate=self.error_count / self.request_count
-                if self.request_count > 0
-                else 0,
-                avg_response_time_ms=round(duration_ms, 2),
-            )
-
-            return ProductionReply(response=response_data)
-
-        except Exception as e:
-            self.error_count += 1
-
-            logger.error(
-                "Request processing failed",
-                domain="service",
-                action="process_request",
-                status="error",
-                request_id=request_id,
-                error=str(e),
-                error_count=self.error_count,
-            )
-            raise
-
-
-async def example_8_environment_configuration() -> None:
-    """
-    Example 8A: Demonstrates environment-based configuration.
-
-    Shows how to configure RPC plugins using environment variables
-    for different deployment environments (dev, staging, production).
-    """
-    print("\n" + "=" * 60)
-    print("🌍 Example 8A: Environment-Based Configuration")
-    print(" Demonstrates: Configuration via environment variables")
-    print("=" * 60)
-
-    # This example primarily shows how one *might* use environment variables.
-    # With example_utils, direct os.environ manipulation is less common for examples.
-    # We'll use configure_for_example to simulate environment-like setup.
-
-    # Simulate "production" settings using configure_for_example
-    clear_plugin_env_vars() # Start clean
-    prod_config_params = {
-        "PLUGIN_MAGIC_COOKIE_VALUE": "production-secret-08a", # Unique cookie
-        "PLUGIN_LOG_LEVEL": "INFO",
-        "PLUGIN_SERVER_TRANSPORTS": ["unix", "tcp"], # Example list
-        "PLUGIN_AUTO_MTLS": True, # Example boolean
-        "PLUGIN_HANDSHAKE_TIMEOUT": 30.0,
-        "PLUGIN_CONNECTION_TIMEOUT": 300.0,
-        "PLUGIN_SERVER_ENDPOINT": "0.0.0.0:50051", # Example
-        # PYVIDER_SERVICE_NAME and PYVIDER_LOG_LEVEL are not part of rpcplugin config
-        # but could be app-specific env vars. We won't set them via configure_for_example.
+async def production_server_config():
+    """Example: Production server configuration."""
+    logger.info("🏭 Production Server Configuration")
+    
+    config = {
+        "server": {
+            "max_workers": 50,
+            "max_concurrent_rpcs": 1000,
+            "keepalive_time": 30,
+            "keepalive_timeout": 5,
+            "max_connection_idle": 300,
+            "max_connection_age": 3600
+        },
+        "security": {
+            "mtls_enabled": True,
+            "ca_cert_path": "/etc/ssl/certs/ca.crt",
+            "server_cert_path": "/etc/ssl/certs/server.crt",
+            "server_key_path": "/etc/ssl/private/server.key",
+            "cipher_suites": [
+                "ECDHE-RSA-AES256-GCM-SHA384",
+                "ECDHE-RSA-AES128-GCM-SHA256"
+            ]
+        },
+        "monitoring": {
+            "metrics_enabled": True,
+            "health_check_interval": 30,
+            "log_level": "INFO",
+            "structured_logging": True
+        },
+        "transport": {
+            "type": "tcp",
+            "host": "0.0.0.0",
+            "port": 50051,
+            "backlog": 128
+        }
     }
-    configure_for_example(**prod_config_params)
+    
+    logger.info("📋 Production configuration:")
+    logger.info(json.dumps(config, indent=2))
+    
+    logger.info("✅ Production server config example completed")
 
-    logger.info(
-        "Production-like environment configured using example_utils",
-        domain="config",
-        action="env_setup_simulated",
-        status="success",
-        environment="production_simulated",
-        config_keys_set=list(prod_config_params.keys()),
-    )
-
-    # Verify configuration values from the active rpcplugin_config
-    # RPCPluginConfig.instance() is discouraged; use the imported rpcplugin_config
-    active_config = rpcplugin_config
-    magic_cookie = active_config.get("PLUGIN_MAGIC_COOKIE_VALUE")
-    transports = active_config.get_list("PLUGIN_SERVER_TRANSPORTS") # Use get_list
-    auto_mtls = active_config.get_bool("PLUGIN_AUTO_MTLS") # Use get_bool
-
-    logger.info(
-        "Configuration loaded (simulated from environment via example_utils)",
-            domain="config",
-            action="env_load",
-            status="success",
-            magic_cookie_set=bool(magic_cookie),
-            transports=transports,
-            mtls_enabled=auto_mtls,
-            security_level="production",
-        )
-
-    # Demonstrate different environment profiles
-    env_profiles = {
-        "development": {
-            "PLUGIN_LOG_LEVEL": "DEBUG",
-            "PLUGIN_AUTO_MTLS": "false",
-            "PLUGIN_SERVER_TRANSPORTS": "unix",
-        },
-        "staging": {
-            "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_AUTO_MTLS": "true",
-            "PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
-        },
-        "production": {
-            "PLUGIN_LOG_LEVEL": "WARNING",
-            "PLUGIN_AUTO_MTLS": "true",
-            "PLUGIN_SERVER_TRANSPORTS": "tcp",
-        },
+async def environment_configuration():
+    """Example: Environment-based configuration."""
+    logger.info("🌍 Environment Configuration")
+    
+    import os
+    
+    # Environment-based settings
+    env_config = {
+        "PYVIDER_LOG_LEVEL": os.getenv("PYVIDER_LOG_LEVEL", "INFO"),
+        "PYVIDER_METRICS_ENABLED": os.getenv("PYVIDER_METRICS_ENABLED", "true").lower() == "true",
+        "PYVIDER_MAX_WORKERS": int(os.getenv("PYVIDER_MAX_WORKERS", "10")),
+        "PYVIDER_TLS_CERT_PATH": os.getenv("PYVIDER_TLS_CERT_PATH", "/etc/ssl/certs/server.crt"),
+        "PYVIDER_TLS_KEY_PATH": os.getenv("PYVIDER_TLS_KEY_PATH", "/etc/ssl/private/server.key")
     }
+    
+    logger.info("🔧 Environment configuration:")
+    for key, value in env_config.items():
+        logger.info(f"  {key}: {value}")
+    
+    logger.info("✅ Environment configuration example completed")
 
-    for env_name, env_config in env_profiles.items():
-        logger.info(
-            f"Environment profile: {env_name}",
-            domain="config",
-            action="profile_demo",
-            status="reference",
-            profile=env_name,
-            config=env_config,
-        )
-
-    # No finally block needed to restore os.environ, as example_utils
-    # and clear_plugin_env_vars handle this pattern.
-
-
-async def example_8_production_server_deployment() -> None:
-    """
-    Example 8B: Demonstrates production server deployment patterns.
-
-    Shows how to deploy an RPC server with production-grade
-    configuration, monitoring, and operational features.
-    """
-    print("\n" + "=" * 60)
-    print("🏭 Example 8C: Production Server Deployment")
-    print(" Demonstrates: Production-ready server with monitoring")
-    print("=" * 60)
-
-    # Production configuration using example_utils
-    clear_plugin_env_vars()
-    configure_for_example(
-        PLUGIN_MAGIC_COOKIE_VALUE="production-server-08b", # Unique cookie
-        PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["tcp"],
-        PLUGIN_AUTO_MTLS=False, # For simplicity in this example, mTLS is in ex05
-        PLUGIN_HANDSHAKE_TIMEOUT=30.0,
-        PLUGIN_CONNECTION_TIMEOUT=600.0,
-        PLUGIN_LOG_LEVEL="INFO", # Production logging might be INFO or WARNING
-    )
-
-    logger.info(
-        "Configuring production server using example_utils",
-        domain="deployment",
-        action="configure",
-        status="starting",
-        environment="production",
-        security_level="mtls_disabled_for_example",  # Updated log
-    )
-
-    # Create production protocol and handler
-    protocol: TypesRPCPluginProtocol = plugin_protocol()  # Changed and annotated
-    handler = ProductionServiceHandler("ProductionRPCService")
-
-    # Note: The 'max_workers', 'max_connections', etc., keys in this config dict
-    # are illustrative of potential gRPC server settings. RPCPluginServer uses
-    # default gRPC options and doesn't dynamically apply these specific keys
-    # from 'config' for gRPC server tuning.
-    # This dictionary is primarily for application-specific settings.
-    # Create production server
-    server: RPCPluginServer = plugin_server(  # Annotated
-        protocol=protocol,
-        handler=handler,
-        transport="tcp",
-        host="0.0.0.0",  # nosec B104 # Example for production-like config, binding to 0.0.0.0 is intentional here. # Accept connections from any IP
-        port=50051,  # Standard gRPC port
-        config={
-            # General application config can be passed here.
-            # Note: Low-level gRPC options (max_workers, keepalive, etc.) are not
-            # directly configurable via this 'config' dict.
-            # They'd require direct grpc.aio.server instantiation.
-            "app_performance_profile": "high_throughput",
-        },
-    )
-
-    logger.info(
-        "Starting production server",
-        domain="deployment",
-        action="startup",
-        status="starting",
-        bind_address="0.0.0.0:50051",
-        # max_workers, max_connections are conceptual for this example's logging
-    )
-
-    # Start server in background
-    server_task = asyncio.create_task(server.serve())
-
-    # Simulate server initialization time
-    await server.wait_for_server_ready(timeout=5.0)  # Changed
-
-    logger.info(
-        "Production server started successfully",
-        domain="deployment",
-        action="startup",
-        status="success",
-        endpoint="0.0.0.0:50051",
-        ready_for_traffic=True,
-        health_status="healthy",
-    )
-
-    # Simulate health monitoring
-    for i in range(3):
-        await asyncio.sleep(0.2)
-
-        logger.info(
-            f"Health check {i + 1}",
-            domain="monitoring",
-            action="health_check",
-            status="healthy",
-            check_number=i + 1,
-            server_status="running",
-            memory_usage_mb=128 + (i * 10),  # Simulate increasing memory
-            cpu_usage_percent=15 + (i * 5),
-            active_connections=10 + (i * 3),
-        )
-
-    # Graceful shutdown
-    logger.info(
-        "Initiating graceful shutdown",
-        domain="deployment",
-        action="shutdown",
-        status="starting",
-        reason="example_completion",
-    )
-
-    await server.stop()
-    await server_task
-
-    logger.info(
-        "Production server shutdown completed",
-        domain="deployment",
-        action="shutdown",
-        status="success",
-        cleanup="complete",
-    )
-
-
-async def example_8_monitoring_and_observability() -> None:
-    """
-    Example 8D: Demonstrates monitoring and observability patterns.
-
-    Shows how to implement comprehensive monitoring, metrics,
-    and observability for production RPC services.
-    """
-    print("\n" + "=" * 60)
-    print("📊 Example 8D: Monitoring & Observability")
-    print(" Demonstrates: Production monitoring and metrics")
-    print("=" * 60)
-
-    # Simulate production metrics collection
-    metrics: dict[str, dict[str, Any]] = {  # Annotated
-        "service_info": {
-            "name": "production-rpc-service",
-            "version": "1.0.0",
-            "environment": "production",
-            "instance_id": "rpc-prod-01",
-        },
-        "performance": {
-            "requests_per_second": 1250,
-            "avg_response_time_ms": 15.3,
-            "p95_response_time_ms": 45.2,
-            "p99_response_time_ms": 89.1,
-            "error_rate": 0.002,  # 0.2%
-        },
-        "resources": {
-            "cpu_usage_percent": 23.5,
-            "memory_usage_mb": 512,
-            "memory_usage_percent": 15.8,
-            "open_connections": 145,
-            "max_connections": 1000,
-        },
-        "health": {
-            "status": "healthy",
-            "uptime_seconds": 86400,  # 24 hours
-            "last_restart": "2024-06-08T10:30:00Z",
-            "deployment_version": "v1.2.3",
-        },
-    }
-
-    logger.info(
-        "Service information",
-        domain="monitoring",
-        action="service_info",
-        status="current",
-        **metrics["service_info"],
-    )
-
-    logger.info(
-        "Performance metrics",
-        domain="monitoring",
-        action="performance",
-        status="current",
-        **metrics["performance"],
-    )
-
-    logger.info(
-        "Resource utilization",
-        domain="monitoring",
-        action="resources",
-        status="current",
-        **metrics["resources"],
-    )
-
-    logger.info(
-        "Health status",
-        domain="monitoring",
-        action="health",
-        # status="current", # Removed to avoid conflict with status in metrics["health"]
-        **metrics["health"],
-    )
-
-    # Simulate alerting thresholds
-    alert_conditions: list[dict[str, str | float | bool | int]] = [  # Annotated
-        {
-            "metric": "error_rate",
-            "threshold": 0.05,
-            "current": metrics["performance"]["error_rate"],
-            "status": "ok",
-        },
-        {
-            "metric": "cpu_usage_percent",
-            "threshold": 80.0,
-            "current": metrics["resources"]["cpu_usage_percent"],
-            "status": "ok",
-        },
-        {
-            "metric": "memory_usage_percent",
-            "threshold": 85.0,
-            "current": metrics["resources"]["memory_usage_percent"],
-            "status": "ok",
-        },
-        {
-            "metric": "avg_response_time_ms",
-            "threshold": 100.0,
-            "current": metrics["performance"]["avg_response_time_ms"],
-            "status": "ok",
-        },
+async def deployment_checklist():
+    """Production deployment checklist."""
+    logger.info("📋 Production Deployment Checklist")
+    
+    checklist = [
+        "🔒 TLS/mTLS certificates configured and valid",
+        "🔑 Private keys secured with proper permissions",
+        "🌐 Firewall rules configured for required ports",
+        "📊 Monitoring and alerting configured",
+        "📝 Log aggregation configured",
+        "🔄 Health checks implemented",
+        "📈 Resource limits configured",
+        "🚀 Graceful shutdown handling",
+        "🔧 Configuration management in place",
+        "🧪 Load testing completed",
+        "📚 Runbooks and documentation updated",
+        "🔒 Security audit completed"
     ]
+    
+    for item in checklist:
+        logger.info(f"  {item}")
+    
+    logger.info("✅ Deployment checklist review completed")
 
-    for condition in alert_conditions:
-        current_val = cast(int | float, condition["current"])
-        threshold_val = cast(int | float, condition["threshold"])
-        is_alert = current_val > threshold_val
-
-        logger.info(
-            f"Alert check: {str(condition['metric'])}",  # Shortened
-            domain="alerting",
-            action="threshold_check",
-            status="alert" if is_alert else "ok",
-            metric=condition["metric"],
-            current_value=condition["current"],
-            threshold=condition["threshold"],
-            alert_triggered=is_alert,
-        )
-
-    # Demonstrate operational best practices
-    best_practices = [
-        "📊 Monitor key metrics: RPS, latency, error rate, resource usage",
-        "🚨 Set up alerting for critical thresholds and service health",
-        "📋 Implement structured logging with correlation IDs",
-        "🔍 Use distributed tracing for request flow visibility",
-        "📈 Create dashboards for real-time operational visibility",
-        "🏥 Implement health check endpoints for load balancer integration",
-        "🔄 Set up automated deployment and rollback procedures",
-        "💾 Implement persistent logging and metrics storage",
-    ]
-
-    logger.info(
-        "Production monitoring best practices",
-        domain="monitoring",
-        action="best_practices",
-        status="reference",
-        practices=best_practices,
-    )
-
-
-async def main() -> None:
-    """Run all production configuration examples."""
-    print("🏭 pyvider-rpcplugin Production Configuration Examples")
-    print("====================================================")
-
-    try:
-        # Run each production configuration example
-        await example_8_environment_configuration()
-        await example_8_production_server_deployment()
-        await example_8_monitoring_and_observability()
-
-        print("\n" + "=" * 60)
-        print("✅ All Production Configuration Examples Completed Successfully!")
-        print("=" * 60)
-        print("\n🏭 Production Checklist:")
-        print("  • Environment-based configuration for different stages")
-        print("  • mTLS security enabled for all environments")
-        print("  • Comprehensive monitoring and alerting")
-        print("  • Health checks and graceful shutdown procedures")
-        print("  • Resource limits and performance tuning")
-        print("\n📖 Next Steps:")
-        print("  • Review docs/architecture.md for system design patterns")
-        print("  • Check docs/security.md for production security guidelines")
-        print("  • See example 10_performance_tuning.py for optimization")
-
-    except Exception as e:
-        logger.error(
-            "Production configuration example failed",
-            domain="examples",
-            action="run",
-            status="error",
-            error=str(e),
-        )
-        raise
-
+async def main():
+    """Run production configuration examples."""
+    logger.info("🚀 Production Configuration Examples")
+    
+    await production_server_config()
+    await environment_configuration()
+    await deployment_checklist()
+    
+    logger.info("✅ All production examples completed")
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 🐍🏭
