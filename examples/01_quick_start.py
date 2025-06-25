@@ -17,12 +17,11 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_client,
-    plugin_protocol,
-    plugin_server,
 )
-from pyvider.rpcplugin.config import rpcplugin_config  # noqa: E402
+# plugin_protocol, plugin_server, rpcplugin_config are not directly used by this client example
 from pyvider.telemetry import logger  # noqa: E402
 
 
@@ -35,11 +34,20 @@ async def main() -> None:
     print("=========================================")
 
     # This example now demonstrates connecting a client to 00_dummy_server.py
+    # Ensure a clean environment and then configure for the example
+    clear_plugin_env_vars()
+    configure_for_example(PLUGIN_LOG_LEVEL="DEBUG") # Use example defaults for cookie etc.
+
     client = None
+    # The 00_dummy_server.py itself will be configured by its own call to
+    # configure_for_example when it starts up.
     dummy_server_command = ["python", str(example_dir / "00_dummy_server.py")]
 
     try:
         logger.info(f"Attempting to start client with command: {' '.join(dummy_server_command)}")
+        # The client will use the config set by configure_for_example() above
+        # to determine how to set environment variables (like magic cookie)
+        # for the dummy_server_command process.
         client = plugin_client(command=dummy_server_command)
         await client.start() # This starts 00_dummy_server.py and connects
         logger.info("Client connected to 00_dummy_server.py successfully!")

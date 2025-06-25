@@ -17,12 +17,13 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
-    configure,
-    plugin_protocol,  # Changed from create_basic_protocol
+    # configure, # No longer needed directly, use example_utils
+    plugin_protocol,
     plugin_server,
 )
-from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: E402
+from pyvider.rpcplugin.config import rpcplugin_config # Use this for reading if needed, not RPCPluginConfig directly for examples
 from pyvider.telemetry import logger  # noqa: E402
 
 
@@ -74,14 +75,14 @@ async def example_2_unix_socket_server() -> None:
     print(" Demonstrates: Unix domain socket transport setup")
     print("=" * 60)
 
-    # Configure for Unix socket communication
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="example-unix-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
+    # Configure for Unix socket communication using example_utils
+    clear_plugin_env_vars() # Ensure clean environment
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="example-unix-cookie-02a", # Unique cookie for this sub-example
         PLUGIN_SERVER_TRANSPORTS=["unix"],
-        PLUGIN_AUTO_MTLS=False,  # Disable mTLS for local communication
+        PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=10.0,
-        PLUGIN_CONNECTION_TIMEOUT=60.0,  # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=60.0,
     )
 
     # Create protocol and handler
@@ -141,14 +142,14 @@ async def example_2_tcp_server() -> None:
     print(" Demonstrates: TCP transport with custom host/port")
     print("=" * 60)
 
-    # Configure for TCP communication
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="example-tcp-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
+    # Configure for TCP communication using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="example-tcp-cookie-02b", # Unique cookie
         PLUGIN_SERVER_TRANSPORTS=["tcp"],
-        PLUGIN_AUTO_MTLS=False,  # Will enable mTLS in security example
+        PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=15.0,
-        PLUGIN_CONNECTION_TIMEOUT=120.0,  # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=120.0,
     )
 
     # Create protocol and handler
@@ -212,14 +213,14 @@ async def example_2_dual_transport_server() -> None:
     print(" Demonstrates: Unix + TCP transport with auto-negotiation")
     print("=" * 60)
 
-    # Configure for dual transport support
-    configure(
-        PLUGIN_MAGIC_COOKIE_VALUE="example-dual-cookie",
-        PLUGIN_PROTOCOL_VERSIONS=[1],
-        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
+    # Configure for dual transport support using example_utils
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="example-dual-cookie-02c", # Unique cookie
+        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"], # Server will try unix first, then tcp
         PLUGIN_AUTO_MTLS=False,
         PLUGIN_HANDSHAKE_TIMEOUT=20.0,
-        PLUGIN_CONNECTION_TIMEOUT=180.0,  # Corrected key
+        PLUGIN_CONNECTION_TIMEOUT=180.0,
     )
 
     # Create protocol and handler
@@ -298,70 +299,71 @@ async def example_2_advanced_configuration() -> None:
     print(" Demonstrates: Config files, env vars, and programmatic setup")
     print("=" * 60)
 
-    # Method 1: Programmatic configuration
+    # Method 1: Programmatic configuration using example_utils
     logger.info(
-        "Configuring via programmatic API",
+        "Configuring via programmatic API (using example_utils)",
         domain="config",
         action="setup",
         status="starting",
-        method="programmatic",
+        method="programmatic_via_utils",
     )
+    clear_plugin_env_vars()
+    configure_for_example(
+        PLUGIN_MAGIC_COOKIE_VALUE="advanced-config-cookie-02d", # Unique cookie
+        PLUGIN_LOG_LEVEL="DEBUG",
+        PLUGIN_HANDSHAKE_TIMEOUT=30.0,
+        PLUGIN_CONNECTION_TIMEOUT=300.0,
+        PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"], # Example of setting it
+        PLUGIN_AUTO_MTLS=False, # Example of setting it
+    )
+    # rpcplugin_config is now set by configure_for_example
 
-    config = RPCPluginConfig()
-    config.set("PLUGIN_MAGIC_COOKIE_VALUE", "production-cookie-2024")
-    config.set("PLUGIN_LOG_LEVEL", "DEBUG")
-    config.set("PLUGIN_HANDSHAKE_TIMEOUT", 30.0)
-    config.set("PLUGIN_CONNECTION_TIMEOUT", 300.0)
-
-    # Method 2: Environment variable configuration
-    import os
-
-    os.environ["PLUGIN_SERVER_TRANSPORTS"] = "unix,tcp"
-    os.environ["PLUGIN_AUTO_MTLS"] = "false"
+    # Method 2: Environment variable configuration (less emphasized now with utils)
+    # For demonstration, one could still set os.environ vars *before* calling
+    # configure_for_example if they are not PLUGIN_ prefixed, or rely on
+    # configure_for_example to set the PLUGIN_ ones.
+    # The example_utils.clear_plugin_env_vars() is important if mixing.
 
     logger.info(
-        "Configuration methods demonstrated",
+        "Configuration methods demonstrated (primarily via configure_for_example)",
         domain="config",
         action="setup",
         status="success",
-        methods=["programmatic", "environment_variables"],
-        production_note="Use config files for complex production setups",
+        methods=["programmatic_via_utils"],
+        production_note="Use config files or well-defined env vars for production",
     )
 
     # Create server with advanced configuration
-    protocol = plugin_protocol()  # Changed
+    # The plugin_server will pick up settings from rpcplugin_config
+    # which was populated by configure_for_example.
+    protocol = plugin_protocol()
     handler = EchoServiceHandler("AdvancedConfigService")
 
+    # Custom non-PLUGIN_ prefixed config can still be passed if your app uses it.
     server_adv = plugin_server(
         protocol=protocol,
         handler=handler,
         config={
-            "custom_option_1": "advanced_value",
-            "custom_option_2": 42,
-            "performance_mode": "high_throughput",
+            "custom_app_option_1": "advanced_value_app",
+            "custom_app_option_2": 100,
         },
     )
     # Start server, let it initialize briefly, then stop it for cleanup
     server_task_adv = asyncio.create_task(server_adv.serve())
     await server_adv.wait_for_server_ready(
         timeout=5.0
-    )  # Added wait, longer timeout for potentially complex setup
+    )
 
     logger.info(
         "Advanced configuration server created",
         domain="server",
         action="create",
         status="success",
-        config_complexity="advanced",
-        ready_for="production",
+        config_source="configure_for_example",
+        custom_app_options_passed=True,
     )
 
-    # Cleanup environment variables
-    if "PLUGIN_SERVER_TRANSPORTS" in os.environ:
-        del os.environ["PLUGIN_SERVER_TRANSPORTS"]
-    if "PLUGIN_AUTO_MTLS" in os.environ:
-        del os.environ["PLUGIN_AUTO_MTLS"]
-
+    # No need to manually cleanup PLUGIN_ env vars if clear_plugin_env_vars was used prior.
     # Graceful shutdown for the advanced config server
     await server_adv.stop()
     await server_task_adv

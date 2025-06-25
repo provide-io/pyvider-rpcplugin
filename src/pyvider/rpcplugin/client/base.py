@@ -497,9 +497,30 @@ class RPCPluginClient:
 
         env["PYTHONUNBUFFERED"] = "1"
 
+        # Ensure the magic cookie environment variable is set for the plugin server
+        # The server will expect to find the cookie value in the environment variable
+        # named by PLUGIN_MAGIC_COOKIE_KEY.
+        cookie_key = rpcplugin_config.magic_cookie_key()
+        cookie_value = rpcplugin_config.magic_cookie_value()
+        if cookie_key and cookie_value:
+            env[cookie_key] = cookie_value
+            logger.debug(
+                f"🖥️ Setting environment variable for plugin subprocess: "
+                f"{cookie_key}='{cookie_value}'"
+            )
+        else:
+            logger.warning(
+                "🖥️ Magic cookie key or value not configured; "
+                "plugin subprocess may fail handshake."
+            )
+
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
-            rpcplugin_config.get("PLUGIN_CLIENT_CERT", "")
+            # The following line seems to be a leftover or incorrect,
+            # as rpcplugin_config.get() is usually for reading, not setting.
+            # If the intent was to ensure it's in the client's own config,
+            # it should be handled during client's config loading.
+            # rpcplugin_config.get("PLUGIN_CLIENT_CERT", "") # Commented out
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:

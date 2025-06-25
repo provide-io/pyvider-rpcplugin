@@ -26,9 +26,10 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_client,
-    plugin_protocol,  # Changed
+    plugin_protocol,
     plugin_server,
 )
 from pyvider.telemetry import logger  # noqa: E402
@@ -169,6 +170,7 @@ async def example_6_async_context_managers() -> None:
             self.server = None
             self.client = None
             self.server_task = None
+            self.dummy_handshaker_path: Path | None = None # For dummy client executable
 
         async def __aenter__(self: _TAsyncRPCManager) -> _TAsyncRPCManager:
             logger.info(
@@ -179,20 +181,56 @@ async def example_6_async_context_managers() -> None:
                 transport=self.transport,
             )
 
+            # Configure for this specific server instance within the manager
+            # Use a unique cookie to avoid clashes if multiple managers run
+            manager_cookie = f"async-manager-cookie-{self.transport}-{time.monotonic_ns()}"
+            clear_plugin_env_vars() # Clear before this specific config
+            configure_for_example(
+                PLUGIN_MAGIC_COOKIE_VALUE=manager_cookie,
+                PLUGIN_SERVER_TRANSPORTS=[self.transport],
+                PLUGIN_CLIENT_TRANSPORTS=[self.transport] # Client should match
+            )
+
             # Setup server
             protocol: TypesRPCPluginProtocol = plugin_protocol()
-            handler = AsyncStreamHandler()
+            handler = AsyncStreamHandler() # Assuming this handler is okay for the dummy calls
+
+            server_socket_path_str = None
+            if self.transport == "unix":
+                server_socket_path_str = f"/tmp/async_manager_{time.monotonic_ns()}.sock" # nosec B108
 
             self.server = plugin_server(
-                protocol=protocol, handler=handler, transport=self.transport
+                protocol=protocol,
+                handler=handler,
+                transport=self.transport,
+                transport_path=server_socket_path_str # Only for unix
             )
 
             # Start server
             self.server_task = asyncio.create_task(self.server.serve())
             await self.server.wait_for_server_ready(timeout=5.0)
 
-            # Create client
-            self.client = plugin_client(command=[str(example_dir / "dummy_server.sh")])
+            # Create a dummy handshaker script for the client to connect to this server
+            from pyvider.rpcplugin.config import rpcplugin_config as current_config
+            core_version = current_config.get("PLUGIN_CORE_VERSION")
+            plugin_version = getattr(self.server, "_protocol_version", current_config.get_list("PLUGIN_PROTOCOL_VERSIONS")[0])
+            network_type = self.transport
+            address = getattr(getattr(self.server, "_transport", None), "endpoint", "error_getting_endpoint")
+            if address == "error_getting_endpoint":
+                 raise RuntimeError("Failed to get server endpoint for dummy handshaker")
+
+            handshake_string = f"{core_version}|{plugin_version}|{network_type}|{address}|grpc|"
+
+            self.dummy_handshaker_path = Path(f"./dummy_async_manager_{time.monotonic_ns()}.sh")
+            with open(self.dummy_handshaker_path, "w") as f:
+                f.write("#!/bin/sh\n")
+                f.write(f'echo "{handshake_string}"\n')
+            self.dummy_handshaker_path.chmod(0o755)
+
+            # Create client - it will use the same configure_for_example settings
+            # The client's _launch_process will set the correct magic cookie env var
+            self.client = plugin_client(command=[str(self.dummy_handshaker_path.resolve())])
+            await self.client.start() # Start the client
 
             logger.info(
                 "Async RPC context ready",
@@ -229,6 +267,11 @@ async def example_6_async_context_managers() -> None:
 
             if self.server_task:
                 await self.server_task
+
+            if self.dummy_handshaker_path and self.dummy_handshaker_path.exists():
+                self.dummy_handshaker_path.unlink()
+                logger.debug(f"Cleaned up dummy handshaker: {self.dummy_handshaker_path}")
+
 
             logger.info(
                 "Async RPC context cleanup completed",

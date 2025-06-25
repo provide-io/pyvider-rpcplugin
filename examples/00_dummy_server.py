@@ -20,6 +20,7 @@ if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 # pyvider.rpcplugin imports
+from example_utils import configure_for_example # noqa: E402
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
@@ -40,26 +41,28 @@ async def main() -> None:
     """Sets up and runs the dummy server."""
     logger.info("Starting 00_dummy_server.py...")
 
-    # Configure for Unix socket by default, simple setup
-    # In a real scenario, these might come from env vars set by the plugin host
-    # For this dummy server, we'll rely on defaults or minimal explicit config
-    # if plugin_server defaults are sufficient.
-    # os.environ.setdefault("PLUGIN_MAGIC_COOKIE_KEY", "DUMMY_SERVER_COOKIE_KEY")
-    # os.environ.setdefault("PLUGIN_MAGIC_COOKIE_VALUE", "dummysecret")
+    # Configure using the centralized utility
+    # For this dummy server, we use default example settings.
+    # If this server were launched by a client, the client would ensure
+    # the correct magic cookie env var (e.g., PYVIDER_PLUGIN_MAGIC_COOKIE) is set.
+    configure_for_example(PLUGIN_LOG_LEVEL="DEBUG")
 
     protocol: TypesRPCPluginProtocol = plugin_protocol()
     handler = DummyHandler()
 
     # Let plugin_server choose transport (defaults to unix if not specified)
+    # It will use configurations set by `configure_for_example`.
     server: RPCPluginServer = plugin_server(
-        protocol=protocol,  # MyPy might require cast here
+        protocol=protocol,
         handler=handler,
-        # transport="unix" # Default
-        # transport_path="/tmp/dummy_server.sock" # Example path
     )
 
     try:
         logger.info("Dummy server attempting to start and serve...")
+        # The server's handshake logic will use PLUGIN_MAGIC_COOKIE_KEY and
+        # PLUGIN_MAGIC_COOKIE_VALUE from the config (set by configure_for_example)
+        # to know what to expect. It will then check os.environ for the key named
+        # by PLUGIN_MAGIC_COOKIE_KEY.
         await server.serve()  # This will print handshake to stdout and then run
         logger.info(
             "Dummy server finished serving (should not happen if started by client)."

@@ -19,6 +19,7 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
+from example_utils import configure_for_example, clear_plugin_env_vars # noqa: E402
 from pyvider.rpcplugin import (  # noqa: E402
     plugin_server,
 )
@@ -192,23 +193,29 @@ class CustomProtocolHandler:
 
 
 async def example_9_custom_streaming_protocol() -> None:
+    clear_plugin_env_vars()
+    configure_for_example(PLUGIN_MAGIC_COOKIE_VALUE="custom-streaming-cookie-09a")
     streaming_protocol = CustomDataStreamProtocol("DataStreamService")
     handler = CustomProtocolHandler("StreamingHandler")
     server: RPCPluginServer = plugin_server(
         protocol=cast(TypesRPCPluginProtocol, streaming_protocol),
         handler=handler,
-        transport="unix",
+        transport="unix", # Uses config from configure_for_example
     )
     server_task = asyncio.create_task(server.serve())
     await server.wait_for_server_ready(timeout=5.0)
     try:
-        logger.info("Simulating streaming client ops...")
+        logger.info("Simulating streaming client ops for custom_streaming_protocol...")
+        # Add a small delay to simulate work or client interaction
+        await asyncio.sleep(0.1)
     finally:
         await server.stop()
         await server_task
 
 
 async def example_9_adaptive_compression() -> None:
+    clear_plugin_env_vars()
+    configure_for_example(PLUGIN_MAGIC_COOKIE_VALUE="adaptive-compression-cookie-09b")
     compression_protocol = AdaptiveCompressionProtocol("AdaptiveService")
     handler = CustomProtocolHandler("CompressionHandler")
     server: RPCPluginServer = plugin_server(
@@ -219,13 +226,16 @@ async def example_9_adaptive_compression() -> None:
     server_task = asyncio.create_task(server.serve())
     await server.wait_for_server_ready(timeout=5.0)
     try:
-        logger.info("Simulating adaptive client ops...")
+        logger.info("Simulating adaptive client ops for adaptive_compression...")
+        await asyncio.sleep(0.1)
     finally:
         await server.stop()
         await server_task
 
 
 async def example_9_versioned_api() -> None:
+    clear_plugin_env_vars()
+    configure_for_example(PLUGIN_MAGIC_COOKIE_VALUE="versioned-api-cookie-09c")
     versioned_protocol = VersionedProtocol("VersionedService", ["v1", "v2"])
     handler = CustomProtocolHandler("VersionedHandler")
     server: RPCPluginServer = plugin_server(
@@ -236,7 +246,8 @@ async def example_9_versioned_api() -> None:
     server_task = asyncio.create_task(server.serve())
     await server.wait_for_server_ready(timeout=5.0)
     try:
-        logger.info("Simulating versioned client ops...")
+        logger.info("Simulating versioned client ops for versioned_api...")
+        await asyncio.sleep(0.1)
     finally:
         await server.stop()
         await server_task
@@ -317,6 +328,8 @@ class CachingMiddleware:
 
 
 async def example_9_protocol_composition() -> None:
+    clear_plugin_env_vars()
+    configure_for_example(PLUGIN_MAGIC_COOKIE_VALUE="protocol-composition-cookie-09d")
     composite_protocol = CompositeProtocol("CompositeService")
     composite_protocol.add_middleware(LoggingMiddleware())
     composite_protocol.add_middleware(MetricsMiddleware())
@@ -329,7 +342,8 @@ async def example_9_protocol_composition() -> None:
     server_task = asyncio.create_task(server.serve())
     await server.wait_for_server_ready(timeout=5.0)
     try:
-        logger.info("Simulating composite client ops...")
+        logger.info("Simulating composite client ops for protocol_composition...")
+        await asyncio.sleep(0.1)
     finally:
         await server.stop()
         await server_task
