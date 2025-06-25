@@ -12,6 +12,7 @@ from pathlib import Path
 
 # First-party imports (project-specific)
 from example_utils import configure_for_example
+
 from pyvider.rpcplugin import (
     RPCPluginClient,  # For type hinting
     RPCPluginError,
@@ -68,12 +69,12 @@ async def functional_mtls_example() -> None:
             f.write(ca_cert.cert)
         with open(server_cert_path, "w") as f:
             f.write(server_cert.cert)
-        assert server_cert.key is not None, "Server key should have been generated"
+        assert server_cert.key is not None, "Server key should have been generated"  # nosec B101
         with open(server_key_path, "w") as f:
             f.write(server_cert.key)
         with open(client_cert_path, "w") as f:
             f.write(client_cert.cert)
-        assert client_cert.key is not None, "Client key should have been generated"
+        assert client_cert.key is not None, "Client key should have been generated"  # nosec B101
         with open(client_key_path, "w") as f:
             f.write(client_cert.key)
         logger.info(f"🔑 Certificates saved to {temp_dir_path}")
@@ -115,8 +116,7 @@ async def functional_mtls_example() -> None:
                 f"{' '.join(dummy_server_command)}"
             )
             client = plugin_client(
-                command=dummy_server_command,
-                config={"env": server_env_vars}
+                command=dummy_server_command, config={"env": server_env_vars}
             )
 
             await client.start()
@@ -151,6 +151,7 @@ async def functional_mtls_example() -> None:
 async def main() -> None:
     """Run mTLS example."""
     await functional_mtls_example()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -53,7 +53,7 @@ def configure_for_example() -> None:
 
     # Configure basic logging
     import logging
-    from typing import cast, Any # Added for cast
+    from typing import cast  # Added for cast
 
     logging.basicConfig(
         level=logging.INFO,
@@ -122,7 +122,6 @@ def configure_for_example() -> None:
                 ht_val = cast(float | None, mapped_args.get("handshake_timeout"))
                 ct_val = cast(float | None, mapped_args.get("connection_timeout"))
 
-
                 # Filter other_kwargs to only include keys not explicitly handled
                 # and that are actual PLUGIN_ prefixed keys from example_defaults
                 # that configure() would expect in its **kwargs.
@@ -142,8 +141,8 @@ def configure_for_example() -> None:
                 pyvider_configure(
                     magic_cookie=str(mc_val) if mc_val is not None else None,
                     auto_mtls=bool(am_val) if am_val is not None else None,
-                    handshake_timeout=ht_val, # Now correctly float | None
-                    connection_timeout=ct_val, # Now correctly float | None
+                    handshake_timeout=ht_val,  # Now correctly float | None
+                    connection_timeout=ct_val,  # Now correctly float | None
                     # protocol_version, transports not in example_defaults
                     # server_cert, server_key, etc. not in example_defaults
                     # The type: ignore below is for **kwargs, which can be hard for mypy
