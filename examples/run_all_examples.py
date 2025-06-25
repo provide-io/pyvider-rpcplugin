@@ -3,56 +3,64 @@
 """
 Runs all relevant Python example scripts and checks for unexpected failures.
 """
+
 import asyncio
 import os
 import subprocess  # nosec B404
 import sys
 from pathlib import Path
-from typing import List, Tuple, Dict, Any, Optional # Added Optional
+from typing import Any  # Added Optional
 
 # Ensure sources are importable by example scripts
 project_root = Path(__file__).resolve().parent.parent
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
-if str(project_root) not in sys.path: # For `from examples.demo...`
+if str(project_root) not in sys.path:  # For `from examples.demo...`
     sys.path.insert(0, str(project_root))
 
 
 # Configure logger for this script
 # (Using print for simplicity in this test runner for now)
 
+
 def print_section(title: str) -> None:
     print("\n" + "=" * 70)
     print(f"📋 {title}")
     print("=" * 70)
 
-def print_result(script_name: str, success: bool, stdout: str, stderr: str, exit_code: int) -> None:
+
+def print_result(
+    script_name: str, success: bool, stdout: str, stderr: str, exit_code: int
+) -> None:
     status = "✅ PASSED" if success else "❌ FAILED"
     print(f"\n--- {script_name} --- {status} ---")
     if stdout:
         print("--- STDOUT ---")
         print(stdout.strip())
-    if stderr and not success : # Only print stderr if failed, or if specifically requested
+    if (
+        stderr and not success
+    ):  # Only print stderr if failed, or if specifically requested
         print("--- STDERR ---")
         print(stderr.strip())
     if not success:
         print(f"Exit Code: {exit_code}")
     print("." * 70)
 
+
 async def run_script(
     script_path: Path,
     timeout: int = 30,
-    args: Optional[List[str]] = None,
-    cwd: Optional[Path] = None,
+    args: list[str] | None = None,
+    cwd: Path | None = None,
     expected_to_fail: bool = False,
-    expected_stderr_contains: Optional[str] = None,
-    magic_cookie_value: Optional[str] = None,
+    expected_stderr_contains: str | None = None,
+    magic_cookie_value: str | None = None,
     # This key is what the server part of the example script will look for in os.environ
     # It should match what example_utils.configure_for_example sets as PLUGIN_MAGIC_COOKIE_KEY
     # which is example_utils.DEFAULT_MAGIC_COOKIE_KEY ("PYVIDER_PLUGIN_MAGIC_COOKIE")
-    magic_cookie_env_var_name: str = "PYVIDER_PLUGIN_MAGIC_COOKIE"
-) -> Tuple[bool, str, str, int]:
+    magic_cookie_env_var_name: str = "PYVIDER_PLUGIN_MAGIC_COOKIE",
+) -> tuple[bool, str, str, int]:
     """Runs a script and returns its success status, stdout, stderr, and exit code."""
     if args is None:
         args = []
@@ -80,19 +88,25 @@ async def run_script(
         # example_utils.DEFAULT_MAGIC_COOKIE_KEY is "PYVIDER_PLUGIN_MAGIC_COOKIE"
         env["PLUGIN_MAGIC_COOKIE_KEY"] = magic_cookie_env_var_name
 
-        print(f"    Setting env {magic_cookie_env_var_name}={magic_cookie_value}, "
-              f"PLUGIN_MAGIC_COOKIE_KEY={magic_cookie_env_var_name}, "
-              f"and PLUGIN_MAGIC_COOKIE_VALUE={magic_cookie_value} for {script_path.name}")
+        print(
+            f"    Setting env {magic_cookie_env_var_name}={magic_cookie_value}, "
+            f"PLUGIN_MAGIC_COOKIE_KEY={magic_cookie_env_var_name}, "
+            f"and PLUGIN_MAGIC_COOKIE_VALUE={magic_cookie_value} for {script_path.name}"
+        )
 
     try:
         process = await asyncio.create_subprocess_exec(
             *command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            cwd=str(effective_cwd), # Run script from its own directory or specified CWD
-            env=env # Pass the modified environment
+            cwd=str(
+                effective_cwd
+            ),  # Run script from its own directory or specified CWD
+            env=env,  # Pass the modified environment
         )
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(), timeout=timeout)
+        stdout_bytes, stderr_bytes = await asyncio.wait_for(
+            process.communicate(), timeout=timeout
+        )
         stdout = stdout_bytes.decode().strip()
         stderr = stderr_bytes.decode().strip()
         raw_exit_code = process.returncode
@@ -105,15 +119,15 @@ async def run_script(
             if exit_code != 0:
                 if expected_stderr_contains and expected_stderr_contains in stderr:
                     success = True
-                elif not expected_stderr_contains: # Any non-zero exit is fine
+                elif not expected_stderr_contains:  # Any non-zero exit is fine
                     success = True
-            else: # Expected to fail but didn't
+            else:  # Expected to fail but didn't
                 stderr += "\nERROR: Script was expected to fail but exited with 0."
         elif exit_code == 0:
             success = True
 
         return success, stdout, stderr, exit_code
-    except asyncio.TimeoutError:
+    except TimeoutError:
         if process:
             process.terminate()
             await process.wait()
@@ -121,32 +135,117 @@ async def run_script(
     except Exception as e:
         return False, "", f"Execution error: {e}", -1
 
+
 async def main() -> None:
     examples_dir = Path(__file__).resolve().parent
     overall_success = True
-    results: List[Tuple[str, bool, str, str, int]] = []
+    results: list[tuple[str, bool, str, str, int]] = []
 
     # List of examples to run. Each entry is a dictionary.
     # Keys: "file" (str), "args" (List[str]), "exp_fail" (bool),
     #       "exp_stderr" (Optional[str]), "cookie" (Optional[str])
     # Note: Paths for commands inside scripts (like to 00_dummy_server.py) assume examples_dir is CWD or in PYTHONPATH.
 
-    scripts_to_run: List[Dict[str, Any]] = [
-        {"file": "00_dummy_server.py", "args": ["--help"], "exp_fail": False, "exp_stderr": None, "cookie": None},
-        {"file": "01_quick_start.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": None}, # Starts dummy_server itself
-        {"file": "02_server_setup.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "example-unix-cookie"},
-        {"file": "03_client_connection.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "client-conn-cookie"},
-        {"file": "04_transport_options.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "unix-benchmark-cookie"},
+    scripts_to_run: list[dict[str, Any]] = [
+        {
+            "file": "00_dummy_server.py",
+            "args": ["--help"],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": None,
+        },
+        {
+            "file": "01_quick_start.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": None,
+        },  # Starts dummy_server itself
+        {
+            "file": "02_server_setup.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "example-unix-cookie",
+        },
+        {
+            "file": "03_client_connection.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "client-conn-cookie",
+        },
+        {
+            "file": "04_transport_options.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "unix-benchmark-cookie",
+        },
         # 05_security_mtls.py requires cert generation, skip for now
-        {"file": "06_async_patterns.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "async-patterns-cookie"},
-        {"file": "07_error_handling.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "error-handling-cookie"}, # This script simulates errors but should exit 0
-        {"file": "08_production_config.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "production-server-2024"},
-        {"file": "09_custom_protocols.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "custom-stream-cookie"},
-        {"file": "10_performance_tuning.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "perf-tuning-cookie"},
-        {"file": "11_end_to_end.py", "args": [], "exp_fail": False, "exp_stderr": None, "cookie": "e2e-test-cookie"},
-        {"file": str(Path("demo") / "echo_client.py"), "args": [], "exp_fail": False, "exp_stderr": None, "cookie": None}, # Starts its own server
-        {"file": str(Path("kvproto") / "py_rpc" / "py_kv_client.py"), "args": ["put", "testkey", "testvalue"], "exp_fail": False, "exp_stderr": None, "cookie": None}, # Starts its own server
-        {"file": str(Path("kvproto") / "py_rpc" / "py_kv_client.py"), "args": ["get", "testkey"], "exp_fail": False, "exp_stderr": None, "cookie": None}, # Starts its own server
+        {
+            "file": "06_async_patterns.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "async-patterns-cookie",
+        },
+        {
+            "file": "07_error_handling.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "error-handling-cookie",
+        },  # This script simulates errors but should exit 0
+        {
+            "file": "08_production_config.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "production-server-2024",
+        },
+        {
+            "file": "09_custom_protocols.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "custom-stream-cookie",
+        },
+        {
+            "file": "10_performance_tuning.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "perf-tuning-cookie",
+        },
+        {
+            "file": "11_end_to_end.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": "e2e-test-cookie",
+        },
+        {
+            "file": str(Path("demo") / "echo_client.py"),
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": None,
+        },  # Starts its own server
+        {
+            "file": str(Path("kvproto") / "py_rpc" / "py_kv_client.py"),
+            "args": ["put", "testkey", "testvalue"],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": None,
+        },  # Starts its own server
+        {
+            "file": str(Path("kvproto") / "py_rpc" / "py_kv_client.py"),
+            "args": ["get", "testkey"],
+            "exp_fail": False,
+            "exp_stderr": None,
+            "cookie": None,
+        },  # Starts its own server
     ]
 
     print_section("Running All Examples")
@@ -168,10 +267,10 @@ async def main() -> None:
         success, stdout, stderr, exit_code = await run_script(
             script_path,
             args=script_args,
-            cwd=project_root, # Run from project root so "examples.demo" imports work
+            cwd=project_root,  # Run from project root so "examples.demo" imports work
             expected_to_fail=exp_fail,
             expected_stderr_contains=exp_stderr,
-            magic_cookie_value=cookie_val
+            magic_cookie_value=cookie_val,
         )
         results.append((script_path.name, success, stdout, stderr, exit_code))
         if not success:
@@ -182,7 +281,7 @@ async def main() -> None:
     all_passed_count = 0
     for name, success, _, _, _ in results:
         if success:
-            all_passed_count +=1
+            all_passed_count += 1
         print(f"{'✅ PASSED' if success else '❌ FAILED'}: {name}")
 
     if overall_success:
@@ -192,6 +291,7 @@ async def main() -> None:
         failed_count = len(results) - all_passed_count
         print(f"\n❌ {failed_count} example(s) failed out of {len(results)}.")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

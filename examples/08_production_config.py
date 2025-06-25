@@ -47,7 +47,9 @@ async def production_server_config() -> None:
             "log_level": "INFO",
             "structured_logging": True,
         },
-        "transport": {"type": "tcp", "host": "0.0.0.0", "port": 50051, "backlog": 128},
+        # The "0.0.0.0" host is illustrative for a production config;
+        # in a real deployment, this would be carefully considered for security.
+        "transport": {"type": "tcp", "host": "0.0.0.0", "port": 50051, "backlog": 128},  # nosec B104
     }
 
     logger.info("📋 Production configuration:")
@@ -126,9 +128,7 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
         pyvider_configure(**final_configure_args)
         logger.info("  Illustrative pyvider.rpcplugin.configure() called.")
     else:
-        logger.info(
-            "  No conceptual settings mapped for pyvider_configure."
-        )
+        logger.info("  No conceptual settings mapped for pyvider_configure.")
 
     logger.info("✅ Illustrative application of conceptual config completed.")
 
@@ -213,7 +213,9 @@ async def main() -> None:
             "log_level": "DEBUG",  # Changed for demo
             "structured_logging": True,
         },
-        "transport": {"type": "tcp", "host": "0.0.0.0", "port": 50051, "backlog": 128},
+        # The "0.0.0.0" host is illustrative for a production config;
+        # in a real deployment, this would be carefully considered for security.
+        "transport": {"type": "tcp", "host": "0.0.0.0", "port": 50051, "backlog": 128},  # nosec B104
     }
     await production_server_config()
     await apply_conceptual_config_to_pyvider(conceptual_config_data)
