@@ -1,4 +1,5 @@
 import asyncio
+import os # Added import
 import grpc
 import pytest
 from typing import Any
@@ -28,27 +29,55 @@ class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServicerImpl]):
 
 @pytest.fixture
 def server_config_override_rl(request):
-    original_values = {}
+    original_config_values = {}
+    original_env_values = {}
     default_params = {
         "PLUGIN_RATE_LIMIT_ENABLED": "true",
         "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": 100.0,
         "PLUGIN_RATE_LIMIT_BURST_CAPACITY": 200.0,
         "PLUGIN_SHUTDOWN_FILE_PATH": None,
         "PLUGIN_AUTO_MTLS": "false",
+        # Add magic cookie for the server to validate its own handshake
+        "PLUGIN_MAGIC_COOKIE_KEY": "PYTEST_PLUGIN_MAGIC_COOKIE", # Use a distinct key for test
+        "PLUGIN_MAGIC_COOKIE_VALUE": "pytest_server_cookie_value",
+    }
+
+    # This env var needs to be set for the server's own handshake validation
+    env_vars_to_set = {
+        "PYTEST_PLUGIN_MAGIC_COOKIE": "pytest_server_cookie_value"
     }
 
     params_to_apply = default_params.copy()
     if hasattr(request, "param") and request.param is not None:
         params_to_apply.update(request.param)
 
+    # Set rpcplugin_config values
     for key, value in params_to_apply.items():
-        original_values[key] = rpcplugin_config.get(key)
+        original_config_values[key] = rpcplugin_config.get(key)
         rpcplugin_config.set(key, value)
+
+    # Set environment variables
+    for key, value in env_vars_to_set.items():
+        original_env_values[key] = os.environ.get(key)
+        if value is None: # pragma: no cover
+            if key in os.environ:
+                del os.environ[key]
+        else:
+            os.environ[key] = str(value)
 
     yield
 
-    for key, value in original_values.items():
+    # Restore rpcplugin_config values
+    for key, value in original_config_values.items():
         rpcplugin_config.set(key, value)
+
+    # Restore environment variables
+    for key, value in original_env_values.items():
+        if value is None:
+            if key in os.environ: # pragma: no cover
+                del os.environ[key]
+        else: # pragma: no cover
+            os.environ[key] = value
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
@@ -83,6 +112,7 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
 
             with pytest.raises(grpc.aio.AioRpcError) as exc_info:
                 await stub.Echo(echo_pb2.EchoRequest(message="hello rate-limited"))
+            # Removed print statements
             assert exc_info.value.code() == grpc.StatusCode.RESOURCE_EXHAUSTED
 
             await asyncio.sleep(1.0)

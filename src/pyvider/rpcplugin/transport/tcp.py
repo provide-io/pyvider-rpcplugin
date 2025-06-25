@@ -232,6 +232,10 @@ class TCPSocketTransport(RPCPluginTransport):
         if writer is None:
             return
 
+        transport_to_abort = None
+        if hasattr(writer, "transport"):
+            transport_to_abort = writer.transport
+
         try:
             # writer.close() is synchronous and signals the intent to close.
             if not writer.is_closing():  # Check if already closing
@@ -245,9 +249,30 @@ class TCPSocketTransport(RPCPluginTransport):
                 "🔌🔒⚠️ Timeout closing writer for endpoint "
                 f"{self.endpoint if self.endpoint else 'unknown'}"
             )
+            # If timeout occurs, also attempt to abort the transport
+            if (
+                transport_to_abort
+                and hasattr(transport_to_abort, "abort")
+                and callable(transport_to_abort.abort)
+            ):
+                logger.warning(
+                    "🔌🔒✍️ Timeout, attempting direct abort of transport: "
+                    f"{transport_to_abort!r}"
+                )
+                transport_to_abort.abort()
         except Exception as e:
-            logger.error(f"🔌🔒⚠️ Error closing writer: {e}")
-            # Don't propagate exception to avoid crashing cleanup.
+            logger.error(f"🔌🔒⚠️ Error closing writer: {e}", exc_info=True)
+            # If any other exception occurs, also attempt to abort
+            if (
+                transport_to_abort
+                and hasattr(transport_to_abort, "abort")
+                and callable(transport_to_abort.abort)
+            ):
+                logger.warning(
+                    "🔌🔒✍️ Exception, attempting direct abort of transport: "
+                    f"{transport_to_abort!r}"
+                )
+                transport_to_abort.abort()
 
     async def close(self) -> None:
         """
