@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package example13.service_b;
+
+import "examples/example13_multi_service_fault_injection/service_c.proto"; // Importing ServiceC messages
+
+option go_package = "example13/service_b_pb";
+
+message RequestB {
+    string input_data_from_A = 1;
+    bool trigger_internal_call_to_c = 2;
+}
+
+message ResponseB {
+    string processed_data_B = 1;
+    example13.service_c.ResponseC data_from_C = 2; // Using message from ServiceC
+}
+
+// ServiceB: Called by ServiceA, can call ServiceC
+service ServiceB {
+    rpc ProcessDataB(RequestB) returns (ResponseB);
+}
