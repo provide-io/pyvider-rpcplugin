@@ -31,11 +31,9 @@ class DummyHandler:
 
     async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
         # This method won't actually be called if launched by plugin_client
-        # and no actual RPC calls are made to it.
+        # with the basic protocol and no actual RPC calls are made to it.
         # It's here for completeness if the server were used differently.
-        logger.info(
-            "DummyHandler: NoOp called (should not happen in typical plugin launch)"
-        )
+        logger.info("DummyHandler: NoOp called")
         return {}
 
 

@@ -412,22 +412,31 @@ graph TB
 
 ```python
 # Optimize for high throughput
-server = plugin_server(
-    protocol=protocol,
-    handler=handler,
-    transport="unix",  # Fastest for local IPC
-    config={
-        "PLUGIN_CONNECTION_TIMEOUT": 60.0,
-        "PLUGIN_HANDSHAKE_TIMEOUT": 10.0
-        # Note: Detailed gRPC server options (like max workers) are typically
-        # configured directly on the grpc.aio.server if not exposed by RPCPluginServer.
-    }
-)
+# Configure first using environment variables or the configure() function.
+# Example using configure() (ensure 'protocol' and 'handler' are defined appropriately):
+# from pyvider.rpcplugin import configure, plugin_server
+# protocol = ...
+# handler = ...
+# configure(
+#     PLUGIN_CONNECTION_TIMEOUT=60.0,
+#     PLUGIN_HANDSHAKE_TIMEOUT=10.0
+#     # For detailed gRPC server options (like max_workers), these are generally
+#     # managed internally by RPCPluginServer or via grpcio environment variables.
+#     # Specific `PLUGIN_` prefixed variables might exist for some common gRPC options.
+#     # Check docs/configuration.md for available options.
+# )
+
+# Then create the server
+# server = plugin_server(
+#     protocol=protocol,
+#     handler=handler,
+#     transport="unix"  # Fastest for local IPC
+# )
 
 # For client-side optimization, manage client instances appropriately.
 # If connecting to multiple different plugin executables, create separate
 # RPCPluginClient instances for each.
-# client = plugin_client(server_path="./path_to_your_plugin_executable")
+# client = plugin_client(command=["python", "./path_to_your_plugin_executable.py"])
 # await client.start()
 # # ... use client ...
 # await client.close()
@@ -437,23 +446,124 @@ server = plugin_server(
 
 ### Custom Transport Implementation
 
-```python
-from pyvider.rpcplugin.transport.base import RPCPluginTransport
+While `pyvider.rpcplugin` provides robust TCP and Unix socket transports, you might encounter scenarios requiring a different underlying communication mechanism. The framework is designed with some level of extensibility.
 
-class CustomTransport(RPCPluginTransport):
-    async def listen(self) -> str:
-        # Implement custom server listening logic
-        pass
+**Understanding `RPCPluginServer` and Transports:**
+The `RPCPluginServer`'s `__init__` method expects the `transport` argument to be a string key (e.g., `"tcp"`, `"unix"`) which it uses to look up and instantiate a known transport class from its internal `_transport_map`. It does **not** directly accept a pre-instantiated custom transport object in its `transport` parameter.
+
+**Path for Custom Transports (Advanced):**
+
+If you need to use a truly custom transport mechanism (not based on simple variations of TCP/Unix streams), the most viable approach involves deeper integration:
+
+1.  **Implement `RPCPluginTransport` ABC:**
+    Create your custom transport class, inheriting from `pyvider.rpcplugin.transport.base.RPCPluginTransport` and implementing all its abstract methods (`listen`, `connect`, `close`, `get_client_connection_type`, `is_serving`, `stop_listening`).
+
+    ```python
+    from pyvider.rpcplugin.transport.base import RPCPluginTransport, ConnectionT
+    from pyvider.rpcplugin.transport.types import ConnectionType
+    # from pyvider.telemetry import logger # Assuming logger is available
+    import asyncio # For async operations
+
+    # class MyCustomConnection: ... # Implement your ConnectionT compliant class
     
-    async def connect(self, endpoint: str) -> None:
-        # Implement custom client connection logic  
-        pass
+    class MyCustomTransport(RPCPluginTransport):
+        def __init__(self, custom_param: str, *args, **kwargs):
+            super().__init__(*args, **kwargs) # Pass through any base class args
+            self.custom_param = custom_param
+            self._endpoint_str: str | None = None
+            self._server_task: asyncio.Task | None = None
+            # ... other initializations ...
 
-# To use a custom transport, instantiate RPCPluginServer directly:
-# custom_transport_instance = CustomTransport()
-# server = RPCPluginServer(protocol=protocol, handler=handler, transport=custom_transport_instance)
-# rather than using the plugin_server() factory.
-```
+        async def listen(self) -> str:
+            self._endpoint_str = f"custom:{self.custom_param}"
+            # Example: self._server_task = asyncio.create_task(self._run_my_server_loop())
+            # logger.info(f"MyCustomTransport listening at {self._endpoint_str}")
+            self._serving = True
+            if self._endpoint_str is None: # Should be set by logic above
+                raise RuntimeError("Endpoint not set after listen logic")
+            return self._endpoint_str
+
+        async def connect(self, endpoint: str) -> ConnectionT:
+            # logger.info(f"MyCustomTransport connecting to {endpoint}")
+            # return MyCustomConnection(endpoint) # Replace with actual connection logic
+            raise NotImplementedError("Custom transport connect not implemented.")
+
+        async def close(self) -> None:
+            # logger.info("MyCustomTransport closing.")
+            self._serving = False
+            if self._server_task and not self._server_task.done():
+                self._server_task.cancel()
+                try:
+                    await self._server_task
+                except asyncio.CancelledError:
+                    # logger.info("Custom transport server task cancelled.")
+                    pass
+            # ... close active connections ...
+
+        def get_client_connection_type(self) -> ConnectionType:
+            # return MyCustomConnection # Replace with your connection class
+            raise NotImplementedError("Custom transport connection type not specified.")
+
+        async def handle_client(self, reader, writer) -> None:
+            # This is primarily for asyncio stream-based transports.
+            # Adapt or remove if your custom transport is not stream-based.
+            pass
+
+        @property
+        def endpoint(self) -> str | None:
+            return self._endpoint_str
+    ```
+
+2.  **Subclass `RPCPluginServer`:**
+    To use your `MyCustomTransport`, you would typically subclass `RPCPluginServer` and override its transport handling logic, particularly `_setup_transport`.
+
+    ```python
+    from pyvider.rpcplugin.server import RPCPluginServer
+    # from pyvider.rpcplugin import RPCPluginProtocol # For type hinting
+    # from typing import Any # For HandlerT
+    # from pyvider.telemetry import logger
+
+    # class MyHandler: ... # Define your handler
+    # class MyProtocol(RPCPluginProtocol): ... # Define your protocol
+
+    class ServerWithCustomTransport(RPCPluginServer):
+        def __init__(self, custom_transport_instance: MyCustomTransport, protocol, handler, **kwargs):
+            # Store your custom transport instance
+            self._custom_transport_override = custom_transport_instance
+
+            # Call super().__init__ but ensure it doesn't try to create a default transport
+            # by passing a transport string. We will handle it in _setup_transport.
+            # The 'transport' kwarg in RPCPluginServer.__init__ expects a string.
+            # We are bypassing that by directly setting self.transport in _setup_transport.
+            super().__init__(protocol=protocol, handler=handler, transport=None, **kwargs) # Pass transport=None
+
+        async def _setup_transport(self) -> None:
+            # Override to use your custom transport instance
+            self.transport = self._custom_transport_override # Directly assign your instance
+            if self.transport is None:
+                raise RuntimeError("Custom transport not provided to ServerWithCustomTransport")
+
+            self._endpoint = await self.transport.listen()
+            # logger.info(f"ServerWithCustomTransport: Custom transport listening at {self.endpoint}")
+
+    # Example Usage (conceptual):
+    # my_protocol_instance = MyProtocol()
+    # my_handler_instance = MyHandler()
+    # custom_transport = MyCustomTransport(custom_param="example_value")
+    # server = ServerWithCustomTransport(
+    #     custom_transport_instance=custom_transport,
+    #     protocol=my_protocol_instance,
+    #     handler=my_handler_instance
+    # )
+    # await server.serve()
+    ```
+
+**Important Considerations:**
+*   **Complexity:** This is an advanced customization. Ensure your custom transport correctly handles connection lifecycle, error propagation, and integrates with the `RPCPluginProtocol` you define.
+*   **Handshake:** If your custom transport needs to participate in the initial handshake string exchange (common in `go-plugin` like systems), you'll need to ensure it correctly outputs the handshake string or that your `RPCPluginServer` subclass manages this.
+*   **gRPC Integration:** If your services are gRPC-based, your custom transport must ultimately provide a way for the gRPC server (within `RPCPluginServer`) to bind to it or receive connections it can handle.
+
+For most scenarios, using the built-in "tcp" or "unix" transports with `plugin_server()` is the recommended and much simpler approach.
 
 ### Protocol Factories
 
@@ -482,10 +592,10 @@ from pyvider.rpcplugin import configure
 configure(
     PLUGIN_MAGIC_COOKIE_VALUE="production-secret-key", # Or PLUGIN_MAGIC_COOKIE
     PLUGIN_PROTOCOL_VERSIONS=[1], # Server announces its supported versions
-    # For server transport capabilities (server announces what it can do):
-    PLUGIN_SERVER_TRANSPORTS=["unix", "tcp"],
-    # For client transport preferences (client announces what it prefers):
-    # PLUGIN_CLIENT_TRANSPORTS=["unix"],
+    # Transport negotiation is primarily handled by the server announcing its
+    # single active transport (e.g., "unix" or "tcp" as configured) and the
+    # client deciding if it can connect. Client-side preference can be influenced
+    # by PLUGIN_TRANSPORT_PREFERENCE_ORDER (see docs/configuration.md).
     PLUGIN_AUTO_MTLS=True,
     PLUGIN_HANDSHAKE_TIMEOUT=30.0,
     PLUGIN_CONNECTION_TIMEOUT=300.0,
