@@ -8,6 +8,9 @@ import os
 import sys
 from pathlib import Path
 
+from pyvider.rpcplugin import configure as pyvider_configure
+from pyvider.rpcplugin.config import CONFIG_SCHEMA, rpcplugin_config
+
 
 def setup_example_environment() -> Path:
     """
@@ -30,12 +33,27 @@ def setup_example_environment() -> Path:
     return project_root
 
 
+def clear_plugin_env_vars() -> None:
+    """
+    Clear any existing plugin environment variables that might interfere with
+    examples.
+    """
+    plugin_vars = [k for k in os.environ.keys() if k.startswith("PLUGIN_")]
+    for var in plugin_vars:
+        if var in os.environ:  # Check if var actually exists before deleting
+            del os.environ[var]
+
+
 def configure_for_example() -> None:
     """Configure environment for example execution."""
+    # Clear any existing PLUGIN_* env vars to ensure examples run in a clean state
+    clear_plugin_env_vars()
+
     setup_example_environment()
 
     # Configure basic logging
     import logging
+    from typing import cast, Any # Added for cast
 
     logging.basicConfig(
         level=logging.INFO,
@@ -43,17 +61,12 @@ def configure_for_example() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Import configure from the library
+    # Import configure from the library (already at top)
     try:
-        from pyvider.rpcplugin import configure as pyvider_configure
-        from pyvider.rpcplugin.config import (
-            rpcplugin_config,
-            CONFIG_SCHEMA,  # Import CONFIG_SCHEMA directly
-        )
-
         # Set some safe defaults for examples if not already set by environment.
         # This helps examples run consistently without requiring extensive env setup.
-        # We use specific keys to avoid accidentally overriding user-set complex configs.
+        # We use specific keys to avoid accidentally overriding user-set complex
+        # configs.
         example_defaults = {
             "PLUGIN_AUTO_MTLS": False,
             "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE",
@@ -76,7 +89,8 @@ def configure_for_example() -> None:
             elif key == "PLUGIN_AUTO_MTLS" and current_val is None:
                 config_to_apply_programmatically[key] = example_value
 
-        # Call pyvider_configure with specific keyword arguments that match its signature
+        # Call pyvider_configure with specific keyword arguments that match its
+        # signature
         if config_to_apply_programmatically:
             # Prepare arguments for pyvider_configure, mapping PLUGIN_ prefixed keys
             # to the function's parameter names.
@@ -87,7 +101,8 @@ def configure_for_example() -> None:
                 if key == "PLUGIN_AUTO_MTLS":
                     mapped_args["auto_mtls"] = value
                 elif key == "PLUGIN_MAGIC_COOKIE_VALUE":
-                    mapped_args["magic_cookie"] = value # This sets both value and fallback
+                    # This sets both value and fallback
+                    mapped_args["magic_cookie"] = value
                 elif key == "PLUGIN_HANDSHAKE_TIMEOUT":
                     mapped_args["handshake_timeout"] = value
                 elif key == "PLUGIN_CONNECTION_TIMEOUT":
@@ -102,38 +117,43 @@ def configure_for_example() -> None:
                 # Ensure types for explicitly named arguments or pass None
                 mc_val = mapped_args.get("magic_cookie")
                 am_val = mapped_args.get("auto_mtls")
-                ht_val = mapped_args.get("handshake_timeout")
-                ct_val = mapped_args.get("connection_timeout")
+                # Cast to expected types from Any, as .get() returns Any
+                # Values in example_defaults are already correctly typed (bool, float)
+                ht_val = cast(float | None, mapped_args.get("handshake_timeout"))
+                ct_val = cast(float | None, mapped_args.get("connection_timeout"))
+
 
                 # Filter other_kwargs to only include keys not explicitly handled
                 # and that are actual PLUGIN_ prefixed keys from example_defaults
                 # that configure() would expect in its **kwargs.
                 explicitly_handled_plugin_keys = [
-                    "PLUGIN_AUTO_MTLS", "PLUGIN_MAGIC_COOKIE_VALUE",
-                    "PLUGIN_HANDSHAKE_TIMEOUT", "PLUGIN_CONNECTION_TIMEOUT"
+                    "PLUGIN_AUTO_MTLS",
+                    "PLUGIN_MAGIC_COOKIE_VALUE",
+                    "PLUGIN_HANDSHAKE_TIMEOUT",
+                    "PLUGIN_CONNECTION_TIMEOUT",
                 ]
                 final_other_kwargs = {
-                    k: v for k, v in other_kwargs.items()
-                    if k not in explicitly_handled_plugin_keys and k.startswith("PLUGIN_")
+                    k: v
+                    for k, v in other_kwargs.items()
+                    if k not in explicitly_handled_plugin_keys
+                    and k.startswith("PLUGIN_")
                 }
 
-
-                # The following call to pyvider_configure might report type errors with
-                # mypy due to dynamic construction of arguments.
-                # In a strict mypy environment, specific # type: ignore[arg-type]
-                # comments might be needed for the lines where ht_val or ct_val are used,
-                # or for the **final_other_kwargs if mypy cannot resolve them.
-                # For the purpose of these examples, the functional behavior is prioritized.
                 pyvider_configure(
                     magic_cookie=str(mc_val) if mc_val is not None else None,
                     auto_mtls=bool(am_val) if am_val is not None else None,
-                    handshake_timeout=float(ht_val) if ht_val is not None else None, # type: ignore[arg-type]
-                    connection_timeout=float(ct_val) if ct_val is not None else None, # type: ignore[arg-type]
-                    # protocol_version and transports are not in example_defaults currently
-                    # server_cert, server_key, client_cert, client_key also not in example_defaults
-                    **final_other_kwargs # type: ignore[arg-type]
+                    handshake_timeout=ht_val, # Now correctly float | None
+                    connection_timeout=ct_val, # Now correctly float | None
+                    # protocol_version, transports not in example_defaults
+                    # server_cert, server_key, etc. not in example_defaults
+                    # The type: ignore below is for **kwargs, which can be hard for mypy
+                    **final_other_kwargs,  # type: ignore[arg-type]
                 )
-                # logging.info(f"Applied example default configurations. Mapped: {mapped_args}, Others: {final_other_kwargs}")
+                # Example log:
+                # logging.info(
+                #   f"Applied example default configurations. "
+                #   f"Mapped: {mapped_args}, Others: {final_other_kwargs}"
+                # )
 
     except ImportError:
         logging.error(
@@ -142,17 +162,6 @@ def configure_for_example() -> None:
         )
     except Exception as e:
         logging.error(f"Error applying example default configurations: {e}")
-
-
-def clear_plugin_env_vars() -> None:
-    """
-    Clear any existing plugin environment variables that might interfere with
-    examples.
-    """
-    plugin_vars = [k for k in os.environ.keys() if k.startswith("PLUGIN_")]
-    for var in plugin_vars:
-        if var in os.environ: # Check if var actually exists before deleting
-            del os.environ[var]
 
 
 def get_example_port(base_port: int = 50051) -> int:
