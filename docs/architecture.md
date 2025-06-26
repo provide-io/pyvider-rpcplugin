@@ -114,7 +114,7 @@ The framework uses factory functions as the primary API for creating components:
 ```python
 # High-level factory functions
 server = plugin_server(protocol, handler, transport="tcp")
-client = plugin_client(command=["./path_to_executable"]) # Corrected: uses 'command'
+client = plugin_client(command=["./path_to_executable"]) # Use 'command' (list of strings)
 protocol = plugin_protocol(service_name, descriptor_module, servicer_add_fn)
 
 # Lower-level direct instantiation
@@ -477,11 +477,11 @@ class Certificate:
     def create_ca(
         cls,
         common_name: str,
-        organization_name: str, # Corrected: was 'Optional[str] = None'
+        organization_name: str, # Required
         validity_days: int,
-        key_type: str = "ecdsa", # Added, matches code
-        key_size: int = 2048,    # Added, matches code
-        ecdsa_curve: str = "secp384r1" # Added, matches code
+        key_type: str = "ecdsa",
+        key_size: int = 2048,
+        ecdsa_curve: str = "secp384r1"
     ) -> "Certificate": # Use "Certificate" for self-reference
         """Generate self-signed CA certificate."""
         # Implementation in crypto/certificate.py
@@ -489,14 +489,14 @@ class Certificate:
     @classmethod
     def create_signed_certificate(
         cls,
-        ca_certificate: "Certificate", # Corrected: type is Certificate
+        ca_certificate: "Certificate",
         common_name: str,
-        organization_name: str, # Corrected: was 'Optional[str] = None'
+        organization_name: str, # Required
         validity_days: int,
-        alt_names: list[str] | None = None, # Corrected: List[str] | None
-        key_type: str = "ecdsa",        # Added, matches code
-        key_size: int = 2048,           # Added, matches code
-        ecdsa_curve: str = "secp384r1", # Added, matches code
+        alt_names: list[str] | None = None,
+        key_type: str = "ecdsa",
+        key_size: int = 2048,
+        ecdsa_curve: str = "secp384r1",
         is_client_cert: bool = False
     ) -> "Certificate":
         """Generate server or client certificate signed by CA."""
@@ -829,11 +829,15 @@ class GzipCompression(CompressionStrategy):
         return gzip.decompress(data)
 
 # Configurable compression
-server = plugin_server(
-    protocol=protocol,
-    handler=handler,
-    compression_strategy=GzipCompression()
-)
+# Note: gRPC compression is typically configured at the channel level (client-side)
+# or server options (server-side), not directly via a strategy pattern in plugin_server.
+# Example (conceptual for gRPC channel options):
+# channel_options = [('grpc.default_compression_algorithm', grpc.Compression.Gzip)]
+# channel = grpc.aio.secure_channel(target, credentials, options=channel_options)
+# server_options = [('grpc.default_compression_algorithm', grpc.Compression.Gzip)]
+# server = grpc.aio.server(options=server_options)
+# pyvider.rpcplugin abstracts some of these; direct compression strategy injection
+# into plugin_server isn't a current feature.
 ```
 
 This architecture provides a solid foundation for building high-performance, secure, and maintainable RPC-based applications while remaining flexible enough to accommodate diverse use cases and requirements.

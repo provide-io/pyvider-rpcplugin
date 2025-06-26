@@ -519,11 +519,6 @@ class RPCPluginClient:
 
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
-            # The following line seems to be a leftover or incorrect,
-            # as rpcplugin_config.get() is usually for reading, not setting.
-            # If the intent was to ensure it's in the client's own config,
-            # it should be handled during client's config loading.
-            # rpcplugin_config.get("PLUGIN_CLIENT_CERT", "") # Commented out
 
         logger.debug(f"🖥️ Launching plugin subprocess with command: {self.command}")
         try:
