@@ -1,0 +1,176 @@
+# pyvider-rpcplugin/pyproject.toml
+
+[project]
+name = "pyvider-rpcplugin"
+description = "Pyvider RPC Plugin"
+version = "0.0.11"
+requires-python = ">=3.13"
+readme = "README.md"
+authors = [
+    {name = "Tim Perkins", email = "code@tim.life"}
+]
+
+dependencies = [
+    "attrs>=25.1.0",
+    "cryptography>=44.0.1",
+    "google>=3.0.0",
+    "grpcio>=1.70.0",
+    "grpcio-health-checking>=1.70.0",
+    "protobuf>=5.29.3",
+    "pyvider-telemetry>=0.0.4",
+    "structlog>=25.1.0",
+]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.3",
+    "grpc-stubs>=1.53.0.6",
+    "grpcio-tools>=1.70.0",
+    "hatch>=1.14.0",
+    "hypothesis>=6.127.1",
+    "mypy>=1.15.0",
+    "pynguin>=0.40.0",
+    "pyre-check>=0.9.23",
+    "pyre-extensions>=0.0.32",
+    "pyrefly>=0.18.1",
+    "pyright>=1.1.394",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0", # Added pytest-mock
+    "pytest-testmon>=2.1.3",
+    "pytest-xdist>=3.6.1",
+    "ruff>=0.9.7",
+    "sapp>=0.4",
+    "tabulate>=0.9.0",
+    "ty>=0.0.1a6",
+    "types-grpcio>=1.0.0.20250603",
+    "types-protobuf>=6.30.2.20250516",
+    "uv>=0.6.5",
+    "viztracer>=1.0.2",
+]
+
+################################################################################
+# hatch
+################################################################################
+
+[tool.hatch.envs.default]
+dependencies = []
+
+[tool.hatch.envs.test.scripts]
+test = "pytest {args:tests}"
+coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing"
+lint = "ruff check src tests"
+format = "ruff format src tests"
+typecheck = "pyre check"
+security = "bandit -r src"
+
+[tool.hatch.envs.default.scripts]
+test = "pytest -n auto"
+run = "python3"
+
+[tool.hatch.metadata.targets.wheel]
+packages = [
+    { include = "pyvider.rpcplugin", from = "src" }
+]
+
+################################################################################
+# pytest
+################################################################################
+
+[tool.pytest.ini_options]
+log_cli = true
+# log_cli_level = "DEBUG"
+
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+markers = [
+    "long_running: marks tests as long_running (deselect with -m \"not long_running\")"
+]
+
+filterwarnings = [
+    "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
+    "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
+]
+
+norecursedirs = [
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "**/*pb2*.py",
+]
+
+################################################################################
+# Ruff (Linter & Formatter)
+################################################################################
+
+[tool.ruff]
+line-length = 88
+exclude = ["tests/*", "**/*pb2*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "ANN", "B"]
+ignore = [
+    "ANN401", # Implicit `Any` return, consider fixing where possible
+    "B008",   # Function call in default argument
+]
+
+[tool.ruff.format]
+# Standard ruff format options, no overrides needed for now.
+
+################################################################################
+# coverage
+################################################################################
+
+[tool.coverage]
+source = ["pyvider.rpcplugin"]
+branch = true
+
+[tool.coverage.report]
+# Improve report readability with missing lines
+show_missing = true
+skip_covered = false  # Show all lines, even if 100% covered
+precision = 2  # Decimal places in report output
+
+[tool.coverage.html]
+directory = "htmlcov"  # Output directory for HTML coverage reports
+
+[tool.coverage.xml]
+output = "coverage.xml"  # Output XML for CI/CD tools
+
+[tool.coverage.annotate]
+directory = "cover"  # Annotate files with coverage info
+
+################################################################################
+# pyre
+################################################################################
+
+[tool.pyre]
+source_directories = ["src"]
+exclude = ["tests/*", "**/*pb2*.py"]
+strict = true
+
+################################################################################
+# mypy
+################################################################################
+[tool.mypy]
+ignore_missing_imports = false # Default, but explicit
+# disable_error_code = ["import-untyped"] # Globally disable for now to test
+
+# Add specific ignores for problematic protobuf imports
+[[tool.mypy.overrides]]
+module = [
+    "google.protobuf.internal",
+    "google.protobuf.descriptor", # Often imported by generated code
+    "google.protobuf.message",    # Base class for messages
+    "google.protobuf.empty_pb2",  # For google.protobuf.empty_pb2
+    "google.protobuf"             # General fallback for the google.protobuf namespace
+]
+ignore_missing_imports = true
+
+# 🐍🏗️📋
