@@ -34,6 +34,7 @@ Each script automatically configures the Python path to find the `pyvider` modul
 | **`08_production_config.py`** | 🏭 Production deployment patterns | Advanced | Operations experience |
 | **`09_custom_protocols.py`** | 🔧 Custom protocol definitions & middleware | Advanced | Framework understanding |
 | **`10_performance_tuning.py`** | 📈 Performance benchmarking & optimization | Advanced | System knowledge |
+| **`11_end_to_end.py`**       | 🎬 In-process E2E test - Simulates full client-server lifecycle (including handshake via dummy script) in one process. Features a Greeter service. | Advanced | Client-server model, handshake process |
 
 ### **Complete Demos** (`demo/` directory)
 
@@ -122,6 +123,9 @@ python 09_custom_protocols.py
 
 # Performance tuning
 python 10_performance_tuning.py
+
+# In-process E2E test
+python 11_end_to_end.py
 ```
 
 ### **Running Complete Demos**
@@ -166,6 +170,7 @@ python py_kv_client.py get mykey
 2. Deploy using `08_production_config.py` - Production setup
 3. Analyze `09_custom_protocols.py` for protocol extensions
 4. Optimize with `10_performance_tuning.py` - Performance patterns
+5. Study `11_end_to_end.py` - Understand in-process testing and handshake simulation
 
 ## 🔧 Troubleshooting
 

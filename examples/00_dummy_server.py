@@ -8,7 +8,6 @@ Prints its handshake string to stdout upon successful startup.
 
 import asyncio
 from typing import Any  # Standard imports at top
-from pathlib import Path # Added import
 
 import grpc  # Standard imports at top
 
@@ -21,7 +20,6 @@ configure_for_example()  # Must be called before other pyvider imports
 # pyvider.rpcplugin imports
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
-from pyvider.rpcplugin.transport import UnixSocketTransport # Added import
 from pyvider.rpcplugin.types import (
     RPCPluginProtocol as TypesRPCPluginProtocol,  # noqa: E402
 )
@@ -69,22 +67,6 @@ async def main() -> None:
         # via handshake, or the server announces its capabilities.
         # `plugin_server` defaults to Unix if available, then TCP.
     )
-
-    # If using Unix transport, write the socket path to a file for 01b example
-    # Ensure we import Path from pathlib
-    from pathlib import Path # Add this import if not already present at top
-    from pyvider.rpcplugin.transport import UnixSocketTransport # Add this import
-
-    if isinstance(server.transport, UnixSocketTransport) and server.transport.path:
-        # Determine project root to place dummy_server_socket.txt at the project root
-        example_dir = Path(__file__).resolve().parent
-        project_root = example_dir.parent
-        socket_comm_file = project_root / "dummy_server_socket.txt"
-        try:
-            socket_comm_file.write_text(server.transport.path)
-            logger.info(f"Dummy server: Wrote Unix socket path to {socket_comm_file}")
-        except Exception as e:
-            logger.error(f"Dummy server: Failed to write socket path to file: {e}")
 
     try:
         logger.info(
