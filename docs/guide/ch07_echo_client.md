@@ -4,16 +4,17 @@ After successfully establishing a connection to a plugin server using `RPCPlugin
 
 A gRPC stub is a client-side object, generated from your `.proto` file, that provides local methods corresponding to the RPC methods defined in your service. When you call a method on the stub, it handles the serialization of your request, sends it to the server over the established gRPC channel, receives the server's response, and deserializes it for you.
 
-## Example: Echo Client Implementation (`examples/demo/echo_client.py`)
+## Example: Echo Client Implementation (Conceptual)
 
-This client application is designed to interact with the `echo_server.py` (from Chapter 5). It demonstrates how to:
-1.  Launch the `echo_server.py` plugin using `RPCPluginClient`.
+This conceptual client application is designed to interact with an Echo server (like the one conceptualized in Chapter 5, using `examples/proto/echo.proto`). It demonstrates how to:
+1.  Launch an echo server plugin using `RPCPluginClient`.
 2.  Create an `EchoServiceStub` using the `client.grpc_channel`.
 3.  Call the `Echo` RPC method on the server.
+(Note: The original `examples/demo/echo_client.py` file was removed; this is a general guide.)
 
 ```python
 #!/usr/bin/env python3
-# examples/demo/echo_client.py
+# conceptual_echo_client.py (Illustrative)
 import asyncio
 import logging # Using standard logging for this example
 import os
@@ -22,31 +23,32 @@ from pathlib import Path
 from typing import Any
 import grpc
 
-# Path setup for pyvider.rpcplugin
+# Path setup for pyvider.rpcplugin and examples.proto
 # (Ensures 'src' and project root are in sys.path for imports)
-project_root_path = Path(__file__).resolve().parent.parent.parent
+project_root_path = Path(__file__).resolve().parent.parent.parent # Adjust if structure differs
 src_path_abs = project_root_path / "src"
 if src_path_abs.exists() and str(src_path_abs) not in sys.path:
     sys.path.insert(0, str(src_path_abs))
-if str(project_root_path) not in sys.path: # For 'from examples.demo...'
+if str(project_root_path) not in sys.path: # For 'from examples.proto...'
     sys.path.insert(0, str(project_root_path))
 
 
-from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.client import RPCPluginClient # Assuming this is the correct import
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 # Import generated protobuf code for Echo service
 try:
     # Assumes this script is run from a context where 'examples' is a package
-    from examples.demo import echo_pb2, echo_pb2_grpc
+    from examples.proto import echo_pb2, echo_pb2_grpc
 except ImportError:
-    # Fallback if run directly from examples/demo and '.' is in path
-    import echo_pb2
-    import echo_pb2_grpc
+    # Fallback if run directly from a directory containing compiled protos and '.' is in path
+    # This fallback might be less relevant if always running from project root.
+    import echo_pb2 # This would require echo_pb2.py to be directly in PYTHONPATH
+    import echo_pb2_grpc # Same as above
 
 class EchoClient:
-    server_script_path: str
+    server_script_path: str # Path to the echo server executable
     _client: RPCPluginClient | None = None
     _stub: echo_pb2_grpc.EchoServiceStub | None = None
     client_config: dict[str, Any]
