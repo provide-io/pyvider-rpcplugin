@@ -8,31 +8,19 @@ The following functions appear to be unused across the main `src/`, `tests/`, an
 
 *   **Function:** `main`
     *   **File:** `src/pyvider/rpcplugin/rate_limiter.py`
-    *   **Description:** This function seems to be an example usage or test stub within the `rate_limiter.py` module itself. It's not called by any other part of the library, tests, or examples.
-    *   **Recommendation:** Remove this function to clean up the module.
+    *   **Description:** This function seems to be an example usage or test stub within the `rate_limiter.py` module itself. It's not called by any other part of the library, tests, or examples. Its `if __name__ == "__main__":` block is also unused in the context of the library.
+    *   **Recommendation:** Remove this function and the corresponding `if __name__ == "__main__":` block to clean up the module.
 
-*   **Function:** `display_cert_details`
-    *   **File:** `src/pyvider/rpcplugin/crypto/debug.py`
-    *   **Description:** A debugging utility to print details of an X.509 certificate. It is not used in the main codebase, tests, or examples.
-    *   **Recommendation:** Remove if it's a leftover developer utility and not intended for broader use or future debugging sessions.
+## 2. Unused or Test-Only Functions / Potential Redundancy
 
-*   **Function:** `display_key_details`
-    *   **File:** `src/pyvider/rpcplugin/crypto/debug.py`
-    *   **Description:** A debugging utility to print details of a private key. Similar to `display_cert_details`, it's not used elsewhere.
-    *   **Recommendation:** Remove if it's a leftover developer utility.
-
-## 2. Test-Only Functions / Potential Redundancy
-
-The following function is currently only used within the test suite.
+The following function appears to be defined in the source code but is not used by the main library code, examples, or even the test suite anymore.
 
 *   **Function:** `parse_and_validate_handshake`
     *   **File:** `src/pyvider/rpcplugin/handshake.py`
-    *   **Used in:** `tests/handshake/test_handshake_process_io.py`
+    *   **Original Use (as per prior documentation):** `tests/handshake/test_handshake_process_io.py` (however, current analysis shows it is not used there or anywhere else).
     *   **Description:** This function parses and validates a plugin handshake string. Its functionality is very similar to `parse_handshake_response` found in the same `handshake.py` file, which is used by `RPCPluginClient`.
-    *   **Recommendation:**
-        *   Evaluate if `parse_and_validate_handshake` provides any unique validation logic not present in `parse_handshake_response` that is critical for tests.
-        *   If its logic is entirely redundant or can be covered by tests for `parse_handshake_response`, consider removing `parse_and_validate_handshake` and adapting tests to use `parse_handshake_response` directly or with test-specific helpers. This would reduce code duplication.
-    *   **Potential Duplicate Code Snippets:**
+    *   **Recommendation:** Remove this function as it is unused and its functionality is covered by `parse_handshake_response`.
+    *   **Potential Duplicate Code Snippets (comparison with `parse_handshake_response`):**
         *   Both functions involve:
             *   Splitting the handshake string by `|`.
             *   Checking for the correct number of parts (6).
@@ -56,7 +44,7 @@ The following function is currently only used within the test suite.
         # ... further parsing and validation ...
         ```
 
-        **`parse_and_validate_handshake` (test-only):**
+        **`parse_and_validate_handshake` (previously test-only, now unused):**
         ```python
         # Snippet from parse_and_validate_handshake
         parts = handshake_line.strip().split("|")
@@ -72,7 +60,13 @@ The following function is currently only used within the test suite.
         # ... further parsing and validation ...
         ```
 
-## 3. Other Minor Observations (Not necessarily requiring immediate action)
+## 3. Addressed Items (Previously Listed)
+
+*   **Functions:** `display_cert_details`, `display_key_details`
+    *   **File:** `src/pyvider/rpcplugin/crypto/debug.py`
+    *   **Status:** These functions have been removed from the codebase. The `debug.py` file is now empty of functional code.
+
+## 4. Other Minor Observations (Not necessarily requiring immediate action)
 
 *   **Client Retry Logic:** The `_connect_and_handshake_with_retry` method in `src/pyvider/rpcplugin/client/base.py` contains substantial retry logic. If similar retry patterns are needed elsewhere, consider refactoring it into a more generic, reusable utility.
 *   **Configuration Getters:** The `RPCPluginConfig` class in `src/pyvider/rpcplugin/config.py` has numerous simple getter methods. This is a common pattern and generally acceptable, but worth noting if a different configuration access pattern is desired in the future.
