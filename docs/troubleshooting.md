@@ -123,10 +123,10 @@ async def health_check():
     
     # 5. Client Connection Check
     try:
-        # client = plugin_client(command=["./dummy_server.sh"]) # Example for an executable
+        # client = plugin_client(server_path="./dummy_server.sh") # Example for an executable
         # await client.start() # This would attempt to connect
         # await client.close()
-        logger.info("Client creation check (conceptual: use with an actual executable command)")
+        logger.info("Client creation check (conceptual: use with an actual executable)")
         results["client_connect"] = True
         
     except Exception as e:
@@ -577,7 +577,7 @@ TransportError: Unix socket not found: /tmp/rpc.sock
    # server = plugin_server(protocol, handler, transport="unix")
    # Server must be running for client to connect.
    # Client (for executable) would be:
-   # client = plugin_client(command=["/path/to/executable"])
+   # client = plugin_client(server_path="/path/to/executable")
    # await client.start()
    print("Note: Client connection requires a running server or executable.")
    ```
