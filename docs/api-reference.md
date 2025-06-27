@@ -14,7 +14,7 @@ from pyvider.rpcplugin import plugin_server
 server = plugin_server(
     protocol=my_protocol,
     handler=my_handler,
-    transport="unix",  # or "tcp"
+    transport="tcp",  # or "unix"
     host="127.0.0.1", # Default for TCP
     port=0,           # Default for TCP (0 means auto-assign)
     transport_path=None, # Default for Unix (auto-generates if None)
@@ -43,8 +43,7 @@ from pyvider.rpcplugin import plugin_client
 # Example: Launching a plugin executable
 client = plugin_client(
     command=["python", "./my_plugin_server_script.py"],
-    config={"PLUGIN_HANDSHAKE_TIMEOUT": 15.0}, # Example: Override specific config for this client
-    auto_connect=False # Recommended to set to False and call await client.start() explicitly
+    config={"PLUGIN_HANDSHAKE_TIMEOUT": 15.0} # Example: Override specific config for this client
 )
 
 # After creating the client, you must start it
@@ -56,7 +55,6 @@ client = plugin_client(
 **Parameters:**
 - `command` (list[str]): The command and its arguments to launch the plugin server executable.
 - `config` (dict | None): Optional configuration dictionary to customize client behavior (e.g., timeouts, specific environment variables for the plugin). These can override global configurations for this client instance.
-- `auto_connect` (bool): Defaults to `True`. If `True`, the synchronous factory logs a warning because `client.start()` (which performs connection) is async and must be `await`ed by the caller. Set to `False` to avoid the warning and manage `client.start()` explicitly.
 
 **Returns:** `RPCPluginClient` instance. The client is not automatically started; you must call `await client.start()` to launch the plugin and establish a connection.
 
@@ -73,19 +71,9 @@ protocol = plugin_protocol(service_name="MyService")
 # Custom protocol class
 protocol = plugin_protocol(
     protocol_class=MyCustomProtocol,
-    handler_class=MyCustomHandler, # Optional: if your protocol needs a specific handler base
-    service_name="CustomService",
-    custom_arg_for_protocol="example_value" # Example of using **kwargs
+    service_name="CustomService"
 )
 ```
-
-**Parameters:**
-- `protocol_class` (type[ProtocolT] | None): The class to instantiate for the protocol. If `None`, `BasicRPCPluginProtocol` is used.
-- `handler_class` (type[HandlerT] | None): Optional: Specifies the expected base class for handlers compatible with this protocol. (Currently informational, not strictly enforced by the basic factory).
-- `service_name` (str | None): The name of the service. If `protocol_class` is not provided (i.e., `BasicRPCPluginProtocol` is used), this name is passed as `service_name_override` to `BasicRPCPluginProtocol`.
-- `**kwargs` (Any): Additional keyword arguments passed to the constructor of `protocol_class`.
-
-**Returns:** An instance of the specified (or default) protocol class.
 
 ## Core Classes
 
@@ -102,14 +90,19 @@ Start the server and begin accepting connections.
 await server.serve()
 ```
 
-##### `async stop()`
-Stop the server gracefully. A fixed grace period of 0.5 seconds is used for the underlying gRPC server shutdown.
+##### `async stop(grace_period=None)`
+Stop the server gracefully.
 
 ```python
-await server.stop()
+await server.stop(grace_period=5.0)
 ```
 
-The server's listening address can be obtained from its `transport.endpoint` attribute after the transport has successfully listened (e.g., after `server.serve()` has been called and the server is running). Example: `server.transport.endpoint`.
+##### `get_address()`
+Get the server's listening address.
+
+```python
+address = server.get_address()  # e.g., "127.0.0.1:50051"
+```
 
 ### `RPCPluginClient`
 
@@ -124,17 +117,11 @@ Start the client and establish connection.
 await client.start()
 ```
 
-##### `async close()`
-Stop the client, close connections, and terminate the plugin subprocess if launched by this client.
+##### `async stop()`
+Stop the client and close connections.
 
 ```python
-await client.close()
-```
-
-##### `async shutdown_plugin()`
-Request graceful shutdown of the plugin server process (if applicable). Does not close the client itself; `close()` should still be called.
-```python
-await client.shutdown_plugin()
+await client.stop()
 ```
 
 ##### `property grpc_channel`
@@ -166,16 +153,6 @@ Register the service with a gRPC server.
 ```python
 async def add_to_server(self, server, handler):
     my_pb2_grpc.add_MyServiceServicer_to_server(handler, server)
-```
-
-##### `get_method_type(self, method_name: str) -> str`
-Gets the gRPC method type for a given method name (e.g., "unary_unary", "stream_stream").
-```python
-def get_method_type(self, method_name: str) -> str:
-    # Implementation depends on the protocol
-    if "Stream" in method_name:
-        return "stream_stream" # Example logic
-    return "unary_unary"
 ```
 
 ## Transport Classes
@@ -262,18 +239,6 @@ class SecurityError(RPCPluginError):
     """Errors related to security operations."""
 ```
 
-### `CertificateError`
-Errors related to security certificates, private keys, or other credential validation and management issues.
-```python
-class CertificateError(SecurityError):
-    """Errors related to certificate operations."""
-```
-
-```python
-class SecurityError(RPCPluginError):
-    """Errors related to security operations."""
-```
-
 ## Type Definitions
 
 ### Core Types
@@ -286,10 +251,10 @@ HandlerT = TypeVar('HandlerT')
 ProtocolT = TypeVar('ProtocolT', bound=RPCPluginProtocol)
 
 # Transport type for communication layers
-TransportT = TypeVar('TransportT', bound=RPCPluginTransport) # from pyvider.rpcplugin.types
+TransportT = TypeVar('TransportT', bound=RPCPluginTransport)
 
 # Configuration type
-ConfigT = TypeVar("ConfigT", bound="RPCPluginConfig") # from pyvider.rpcplugin.config
+ConfigT = Dict[str, Any]
 ```
 
 ### Transport Types
@@ -303,10 +268,10 @@ TRANSPORT_TYPES = Literal["unix", "tcp"]
 
 ```python
 # gRPC channel type
-GrpcChannelType = grpc.aio.Channel | grpc.Channel # Can be sync or async
+GrpcChannelType = grpc.aio.Channel
 
 # gRPC credentials type
-GrpcCredentialsType = grpc.ChannelCredentials | None
+GrpcCredentialsType = grpc.ChannelCredentials
 
 # RPC configuration type
 RpcConfigType = Dict[str, Any]
@@ -394,12 +359,9 @@ import os
 
 os.environ.update({
     "PLUGIN_AUTO_MTLS": "true",
-    # For client to verify server:
-    "PLUGIN_SERVER_ROOT_CERTS": "/path/to/your_ca_or_server_ca.crt",
-    # For server to verify client (if mTLS):
-    "PLUGIN_CLIENT_ROOT_CERTS": "/path/to/your_ca_or_client_ca.crt",
-    "PLUGIN_SERVER_CERT": "/path/to/server.crt", # Server's own cert
-    "PLUGIN_SERVER_KEY": "/path/to/server.key",  # Server's own key
+    "PLUGIN_CA_CERT": "/path/to/ca.crt",
+    "PLUGIN_SERVER_CERT": "/path/to/server.crt",
+    "PLUGIN_SERVER_KEY": "/path/to/server.key",
     "PLUGIN_CLIENT_CERT": "/path/to/client.crt",
     "PLUGIN_CLIENT_KEY": "/path/to/client.key"
 })
@@ -420,26 +382,20 @@ Configuration is primarily managed through environment variables (e.g., `PLUGIN_
 
 **Example Server-Side Overrides (passed to `plugin_server` `config`):**
 ```python
-# These PLUGIN_ prefixed keys will be passed to an internal pyvider.rpcplugin.configure()
-# call for this server instance, allowing instance-specific overrides of global settings.
 server_instance_config = {
-    "PLUGIN_LOG_LEVEL": "DEBUG",              # Specific log level for this server
-    "PLUGIN_HANDSHAKE_TIMEOUT": 25.0,       # Custom handshake timeout
-    "PLUGIN_RATE_LIMIT_ENABLED": "true",      # Enable rate limiting for this server
-    "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": 50.0
+    "PLUGIN_MAX_WORKERS": 50,       # Max gRPC worker threads for this server
+    "PLUGIN_LOG_LEVEL": "DEBUG"     # Specific log level for this server
 }
 ```
 
 **Example Client-Side Overrides (passed to `plugin_client` `config`):**
 ```python
-# Similar to server, these PLUGIN_ prefixed keys customize this client instance.
 client_instance_config = {
     "PLUGIN_HANDSHAKE_TIMEOUT": 20.0, # Custom handshake timeout for this client
-    "PLUGIN_CLIENT_MAX_RETRIES": 5,   # Custom max retries for this client
-    "PLUGIN_LOG_LEVEL": "DEBUG"
+    "PLUGIN_CLIENT_MAX_RETRIES": 5    # Custom max retries for this client
 }
 ```
-The `config` parameter in factory functions like `plugin_server` and `plugin_client` primarily processes `PLUGIN_` prefixed keys by passing them to an internal `pyvider.rpcplugin.configure()` call for that specific instance. This allows overriding global settings for that instance. Non-`PLUGIN_` prefixed keys are generally stored on the instance's `config` attribute but not automatically used by the core library. For direct gRPC server/channel options not exposed via `PLUGIN_` variables, further customization of server/channel creation might be needed (e.g., by subclassing or using gRPC specific environment variables if supported by `grpcio`).
+These dictionaries are examples of what you *could* pass to the `config` parameter. The actual effective gRPC options (like keepalive, max message size) are often set internally by `pyvider-rpcplugin` or can be influenced by underlying `grpcio` environment variables if not directly exposed.
 
 ## Environment Variables
 

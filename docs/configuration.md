@@ -158,13 +158,13 @@ Below is a detailed list of all supported environment variables, their purposes,
 ### `PLUGIN_MAGIC_COOKIE_VALUE`
 - **Description**: Specifies the **secret value** that the plugin host (server) expects for authentication. This value is compared against the value provided by the plugin executable (which the server obtains by reading the environment variable named by `PLUGIN_MAGIC_COOKIE_KEY` from the plugin's environment, or by using the fallback `PLUGIN_MAGIC_COOKIE`).
 - **Type**: `str`
-- **Default**: `"test_cookie_value"`
+- **Default**: `"rpcplugin-default-cookie"`
 - **`.env` Alias**: `PYVIDER_MAGIC_COOKIE`, `PYVIDER_MAGIC_COOKIE_VALUE` (Note: `PYVIDER_MAGIC_COOKIE` is often used as a shorthand for setting this expected value in `.env` files, which then maps to `PLUGIN_MAGIC_COOKIE_VALUE`.)
 
 ### `PLUGIN_MAGIC_COOKIE`
 - **Description**: This variable serves as a **fallback value** for the cookie provided by the plugin executable. During server-side validation, if the environment variable specified by `PLUGIN_MAGIC_COOKIE_KEY` (e.g., `PLUGIN_MAGIC_COOKIE`) is *not found* in the plugin's environment, the value of this `PLUGIN_MAGIC_COOKIE` variable (from the server's own configuration) will be used as the 'provided cookie' for comparison against `PLUGIN_MAGIC_COOKIE_VALUE`. Typically, the primary mechanism should be the host setting the correct environment variable for the plugin as specified by `PLUGIN_MAGIC_COOKIE_KEY`.
 - **Type**: `str`
-- **Default**: `"test_cookie_value"`
+- **Default**: `"rpcplugin-default-cookie"`
 
 ### `PLUGIN_PROTOCOL_VERSIONS`
 - **Description**: List of supported protocol versions.

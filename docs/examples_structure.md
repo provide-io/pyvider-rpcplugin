@@ -15,9 +15,8 @@ examples/
 ├── 08_production_config.py      # Production deployment patterns
 ├── 09_custom_protocols.py       # Custom protocol definitions & middleware
 ├── 10_performance_tuning.py     # Performance benchmarking & optimization
-├── 11_end_to_end.py             # In-process E2E test with handshake simulation
 ├── __init__.py                  # Makes 'examples' a package (if needed)
-├── 00_dummy_server.py           # Minimal executable plugin server for other examples
+├── dummy_server.sh              # Dummy server script for some examples
 ├── demo/                        # Subdirectory for the Echo demo
 │   ├── __init__.py
 │   ├── echo.proto
