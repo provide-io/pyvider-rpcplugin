@@ -4,16 +4,18 @@ This checklist tracks the refactoring tasks identified in `docs/REFACTOR.md`.
 
 ## Tasks
 
-- [ ] **Remove `main` function from `rate_limiter.py`**
+- [x] **Remove `main` function from `rate_limiter.py`**
     - **File:** `src/pyvider/rpcplugin/rate_limiter.py`
     - **Action:** Delete the `main()` function.
     - **Action:** Delete the `if __name__ == "__main__":` block that calls `main()`.
     - **Reason:** Unused example/test code within the library module.
+    - **Status:** Completed.
 
-- [ ] **Remove `parse_and_validate_handshake` function from `handshake.py`**
+- [x] **Remove `parse_and_validate_handshake` function from `handshake.py`**
     - **File:** `src/pyvider/rpcplugin/handshake.py`
     - **Action:** Delete the `parse_and_validate_handshake()` function.
     - **Reason:** Unused function. Its functionality is covered by `parse_handshake_response()`, and it is not used by the library, examples, or tests.
+    - **Status:** Completed.
 
 ## Minor Observations (For Future Consideration)
 
