@@ -6,29 +6,33 @@ from pathlib import Path
 
 import grpc  # For potential status codes
 
-# Adjust path to import from examples/demo and src
+# Adjust path to import from examples/proto and src
 script_dir = Path(__file__).resolve().parent
 project_root = script_dir.parent
-examples_demo_path = project_root / "examples/demo"
+examples_proto_path = project_root / "examples/proto" # Changed from examples/demo
 src_path = project_root / "src"
 
 # Add paths for imports
-if str(examples_demo_path) not in sys.path:
-    sys.path.insert(0, str(examples_demo_path))
+# Ensure project_root is in sys.path to allow "from examples.proto import ..."
+if str(project_root) not in sys.path:
+    sys.path.insert(0, str(project_root))
+# examples_proto_path itself might not be needed if importing via examples.proto
+# if str(examples_proto_path) not in sys.path:
+#     sys.path.insert(0, str(examples_proto_path))
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 
-# Protocol / gRPC imports from examples/demo
+# Protocol / gRPC imports from examples.proto
 try:
-    import echo_pb2
-    import echo_pb2_grpc
+    from examples.proto import echo_pb2
+    from examples.proto import echo_pb2_grpc
     # create_servicer_class is not found, so it will be removed.
     # We will make the handler inherit from the gRPC servicer directly.
 except ImportError as e:
-    print(f"Error importing demo protocol files or pyvider.rpcplugin: {e}")
+    print(f"Error importing examples.proto protocol files or pyvider.rpcplugin: {e}")
     print(
-        f"Please ensure examples/demo content (echo_pb2.py, echo_pb2_grpc.py) is available at {examples_demo_path}"
+        f"Please ensure examples/proto content (echo_pb2.py, echo_pb2_grpc.py) is available at {examples_proto_path}"
     )
     print(f"and pyvider.rpcplugin is available at {src_path}.")
     sys.exit(1)
