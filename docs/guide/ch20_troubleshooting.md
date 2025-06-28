@@ -88,9 +88,9 @@ These errors occur *after* a successful connection and handshake, during an actu
     *   Set `PLUGIN_LOG_LEVEL="DEBUG"` for both the client (host application) and the plugin server process. This provides verbose logging from `pyvider.rpcplugin` and `pyvider.telemetry`.
     *   The emoji matrix (`PLUGIN_SHOW_EMOJI_MATRIX="true"`) can help visually trace operations.
 2.  **Isolate the Problem**:
-    *   **Server Standalone**: If possible, try running your plugin server script directly (e.g., `python my_plugin_server.py`). If it has basic environment variable defaults (like `examples/ch05_echo_server.py` does), it should start and print its handshake string. This helps verify the server can initialize correctly.
-    *   **Client with Dummy Server**: Test your client application against the `examples/ch02_dummy_server.py` to ensure the client's launch and basic handshake logic is working.
-    *   **Direct gRPC Connection**: For a running server, use a tool like `grpcurl` or a minimal direct `grpc.aio` client (like `examples/ch08_direct_client_connection.py`) to test gRPC connectivity and specific RPC methods, bypassing the `pyvider.rpcplugin` client-side handshake initially.
+    *   **Server Standalone**: If possible, try running your plugin server script directly (e.g., `python my_plugin_server.py`). If it has basic environment variable defaults (like `echo_server.py` does), it should start and print its handshake string. This helps verify the server can initialize correctly.
+    *   **Client with Dummy Server**: Test your client application against the `examples/00_dummy_server.py` to ensure the client's launch and basic handshake logic is working.
+    *   **Direct gRPC Connection**: For a running server, use a tool like `grpcurl` or a minimal direct `grpc.aio` client (like `examples/01b_direct_client_connection.py`) to test gRPC connectivity and specific RPC methods, bypassing the `pyvider.rpcplugin` client-side handshake initially.
 3.  **Check `example_utils.py`**: If you are running or adapting the provided examples, ensure `example_utils.configure_for_example()` is called at the beginning of your scripts. This helper sets up Python paths and some default configurations (like disabling mTLS for basic examples) that are important for the examples to run correctly.
 4.  **Simplify**: When troubleshooting, start with the simplest possible configuration:
     *   Disable mTLS (`PLUGIN_AUTO_MTLS="false"` on both client and server).

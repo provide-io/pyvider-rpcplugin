@@ -33,13 +33,13 @@ While `pyvider.rpcplugin` is designed for high performance, especially when usin
     *   Use a recent version of Python (3.13+ as recommended by `pyvider.rpcplugin`) as newer versions often include performance improvements in `asyncio` and other core libraries.
     *   Keep `grpcio` and other dependencies updated.
 
-## Example: Performance Tuning Techniques (`examples/ch14_performance_tuning_concepts.py`)
+## Example: Performance Tuning Techniques (`examples/10_performance_tuning.py`)
 
-The `ch14_performance_tuning_concepts.py` example script demonstrates several general programming patterns that contribute to better performance, such as batch processing and choosing memory-efficient data structures. While not all directly manipulate `pyvider.rpcplugin` configurations, the principles are applicable to how you design your plugin's logic.
+The `10_performance_tuning.py` example script demonstrates several general programming patterns that contribute to better performance, such as batch processing and choosing memory-efficient data structures. While not all directly manipulate `pyvider.rpcplugin` configurations, the principles are applicable to how you design your plugin's logic.
 
 ```python
 #!/usr/bin/env python3
-# examples/ch14_performance_tuning_concepts.py
+# examples/10_performance_tuning.py
 import asyncio
 import time
 import sys # For sys.getsizeof

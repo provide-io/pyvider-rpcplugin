@@ -130,4 +130,4 @@ This is the first production-ready release of pyvider-rpcplugin, providing a com
 - Future versions will provide clear migration instructions
 - Semantic versioning will be strictly followed for API stability
 
-For detailed upgrade instructions and breaking changes in future releases, refer to future release notes and relevant documentation.
+For detailed upgrade instructions and breaking changes in future releases, see the [Migration Guide](docs/migration.md).

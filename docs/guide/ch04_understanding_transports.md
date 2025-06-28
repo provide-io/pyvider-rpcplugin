@@ -14,13 +14,13 @@
 
 The choice of transport is typically negotiated during the handshake. The server announces its supported transports (e.g., `["unix", "tcp"]`), and the client selects one based on its own preferences or capabilities.
 
-## Example: Transport Options (`examples/ch04_transport_options_demo.py`)
+## Example: Transport Options (`examples/04_transport_options.py`)
 
 This example demonstrates the direct instantiation and configuration of `TCPSocketTransport` and `UnixSocketTransport` objects. While `plugin_server` and `plugin_client` often handle transport creation internally, understanding these classes is useful for custom scenarios or direct transport manipulation.
 
 ```python
 #!/usr/bin/env python3
-# examples/ch04_transport_options_demo.py
+# examples/04_transport_options.py
 import asyncio
 import tempfile
 from pathlib import Path

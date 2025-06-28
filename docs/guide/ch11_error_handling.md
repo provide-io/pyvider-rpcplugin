@@ -42,13 +42,13 @@ Common `grpc.StatusCode` values to handle:
 *   `DEADLINE_EXCEEDED`: The call took longer than its configured timeout.
 *   `PERMISSION_DENIED` / `UNAUTHENTICATED`: Authentication or authorization issues at the gRPC or service level.
 
-## Example: Error Handling Strategies (`examples/ch11_error_handling_demo.py`)
+## Example: Error Handling Strategies (`examples/07_error_handling.py`)
 
 This example demonstrates how to catch and handle various exceptions from `pyvider.rpcplugin` and provides conceptual patterns for building resilient applications.
 
 ```python
 #!/usr/bin/env python3
-# examples/ch11_error_handling_demo.py
+# examples/07_error_handling.py
 import asyncio
 from example_utils import configure_for_example
 configure_for_example() # Basic example setup
@@ -120,7 +120,7 @@ async def graceful_degradation_example():
     logger.info(f"✅ Final result from operation: {final_result}")
     logger.info("✅ Graceful degradation example completed")
 
-# The SimpleCircuitBreaker class and its usage example from ch11_error_handling_demo.py
+# The SimpleCircuitBreaker class and its usage example from 07_error_handling.py
 # can also be included here to demonstrate more advanced resilience patterns.
 # For brevity in this generated documentation, it's summarized.
 # A circuit breaker can be useful if a plugin becomes intermittently unavailable,
