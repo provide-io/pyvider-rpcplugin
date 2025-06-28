@@ -4,30 +4,48 @@ After successfully establishing a connection to a plugin server using `RPCPlugin
 
 A gRPC stub is a client-side object, generated from your `.proto` file, that provides local methods corresponding to the RPC methods defined in your service. When you call a method on the stub, it handles the serialization of your request, sends it to the server over the established gRPC channel, receives the server's response, and deserializes it for you.
 
-## Example: Echo Client Implementation (`examples/07_echo_client.py`)
+## Example: Echo Client Implementation (Conceptual)
 
-This client application, `examples/07_echo_client.py`, is designed to interact with the Echo server `examples/05_echo_server.py` (detailed in Chapter 5). It demonstrates how to:
-1.  Launch the `05_echo_server.py` plugin using `RPCPluginClient`.
+This conceptual client application is designed to interact with an Echo server (like the one conceptualized in Chapter 5, using `examples/proto/echo.proto`). It demonstrates how to:
+1.  Launch an echo server plugin using `RPCPluginClient`.
 2.  Create an `EchoServiceStub` using the `client.grpc_channel`.
 3.  Call the `Echo` RPC method on the server.
+(Note: The original `examples/demo/echo_client.py` file was removed; this is a general guide.)
 
 ```python
 #!/usr/bin/env python3
-# examples/07_echo_client.py
+# conceptual_echo_client.py (Illustrative)
 import asyncio
+import logging # Using standard logging for this example
 import os
 import sys
 from pathlib import Path
 from typing import Any
 import grpc
 
-# Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.telemetry import logger # Changed from standard logging
+# Path setup for pyvider.rpcplugin and examples.proto
+# (Ensures 'src' and project root are in sys.path for imports)
+project_root_path = Path(__file__).resolve().parent.parent.parent # Adjust if structure differs
+src_path_abs = project_root_path / "src"
+if src_path_abs.exists() and str(src_path_abs) not in sys.path:
+    sys.path.insert(0, str(src_path_abs))
+if str(project_root_path) not in sys.path: # For 'from examples.proto...'
+    sys.path.insert(0, str(project_root_path))
+
+
+from pyvider.rpcplugin.client import RPCPluginClient # Assuming this is the correct import
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 # Import generated protobuf code for Echo service
-# Assumes 'examples' is in PYTHONPATH or you run from project root.
-from examples.proto import echo_pb2, echo_pb2_grpc
+try:
+    # Assumes this script is run from a context where 'examples' is a package
+    from examples.proto import echo_pb2, echo_pb2_grpc
+except ImportError:
+    # Fallback if run directly from a directory containing compiled protos and '.' is in path
+    # This fallback might be less relevant if always running from project root.
+    import echo_pb2 # This would require echo_pb2.py to be directly in PYTHONPATH
+    import echo_pb2_grpc # Same as above
 
 class EchoClient:
     server_script_path: str # Path to the echo server executable
@@ -37,24 +55,20 @@ class EchoClient:
 
     def __init__(self, server_script_path: str) -> None:
         self.server_script_path = server_script_path
-        # Environment variables for the 05_echo_server.py subprocess.
-        # These must match what 05_echo_server.py expects for its handshake.
+        # Environment variables for the echo_server.py subprocess.
+        # These must match what echo_server.py expects for its handshake.
         self.client_config = {"env": {
             "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE_EXAMPLE", # Server looks for this key
             "PLUGIN_MAGIC_COOKIE_VALUE": "echo-super-secret-cookie", # Server expects this value
-            # RPCPluginClient will generate the actual PLUGIN_MAGIC_COOKIE from _VALUE
-            # Other env vars like PLUGIN_AUTO_MTLS can be set here if needed
+            "PLUGIN_MAGIC_COOKIE": "echo-super-secret-cookie", # Client sends this actual cookie
+            # Other env vars like PLUGIN_AUTO_MTLS can be set here if needed by the server example
         }}
-        # If the server is expected to run with specific pyvider config, set them here too.
-        # e.g., if server needs PLUGIN_LOG_LEVEL for its pyvider.telemetry.logger
-        # self.client_config["env"]["PLUGIN_LOG_LEVEL"] = "DEBUG"
-
 
     async def start(self) -> bool:
         logger.info(f"Attempting to launch and connect to server: {self.server_script_path}")
         try:
             self._client = RPCPluginClient(
-                command=[sys.executable, self.server_script_path], # Use sys.executable
+                command=[sys.executable, self.server_script_path],
                 config=self.client_config, # Passes env vars to the server process
             )
             # Start client, launch server, perform handshake, establish gRPC channel
@@ -88,14 +102,14 @@ class EchoClient:
             # Create the request message object (from echo_pb2.py)
             request = echo_pb2.EchoRequest(message=message)
             # Make the RPC call using the stub
-            response = await asyncio.wait_for(self._stub.Echo(request), timeout=10.0) # Increased timeout slightly
+            response = await asyncio.wait_for(self._stub.Echo(request), timeout=5.0)
             logger.info(f"Received Echo reply from server: '{response.reply}'")
             return response.reply
         except TimeoutError:
             logger.error("RPC call to Echo method timed out.")
             return None
         except grpc.aio.AioRpcError as e: # Catch gRPC specific errors
-            logger.error(f"gRPC Error during Echo call: Code={e.code()} Details='{e.details()}'")
+            logger.error(f"gRPC Error during Echo call: {e.code()} - {e.details()}")
             return None
         except Exception as e:
             logger.error(f"Unexpected error during Echo call: {e}", exc_info=True)
@@ -110,27 +124,10 @@ class EchoClient:
             logger.info("Client resources cleaned up.")
 
 async def run_client() -> None:
-    # Determine path to the server script relative to this client script,
-    # assuming they are both in the 'examples' directory.
-    # Path(__file__).parent gives the directory of the current script (07_echo_client.py)
-    # So, server_script will point to examples/05_echo_server.py
-    current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "05_echo_server.py"
+    client_dir = Path(__file__).parent
+    server_script = client_dir / "echo_server.py" # Path to the server script
 
-    if not server_script_path.exists():
-        # Fallback if running from a different CWD, try to find it from project root perspective
-        project_root = Path.cwd() # Or a more robust way to find project root
-        if not (project_root / "examples" / "05_echo_server.py").exists():
-             # Try one level up if cwd is examples/
-            project_root = Path.cwd().parent
-        server_script_path = project_root / "examples" / "05_echo_server.py"
-        if not server_script_path.exists():
-            logger.error(f"Could not find 05_echo_server.py. Tried {current_dir / '05_echo_server.py'} and {server_script_path}")
-            return
-
-
-    logger.info(f"Client (07_echo_client.py) will use server script: {server_script_path}")
-    client = EchoClient(str(server_script_path))
+    client = EchoClient(str(server_script))
 
     if not await client.start():
         logger.error("Client initialization failed. Exiting.")
@@ -151,18 +148,13 @@ async def run_client() -> None:
         logger.warning("Verification: Did not receive a valid reply for the second call.")
 
     await client.close()
-    logger.info("Client example (07_echo_client.py) finished.")
+    logger.info("Client example finished.")
 
 if __name__ == "__main__":
-    from examples.example_utils import configure_for_example
-    configure_for_example() # For path setup, global config defaults
-
-    # Ensure PYTHONIOENCODING is set for subprocesses, good practice
-    os.environ['PYTHONIOENCODING'] = 'UTF-8'
     asyncio.run(run_client())
 ```
 
-**Explanation of `07_echo_client.py`:**
+**Explanation:**
 
 1.  **Import Generated Code**: The client imports `echo_pb2` (for message types like `EchoRequest`, `EchoResponse`) and `echo_pb2_grpc` (for the `EchoServiceStub`).
 2.  **`EchoClient.__init__`**:
