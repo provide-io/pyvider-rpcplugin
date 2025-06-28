@@ -586,14 +586,24 @@ def configure(
     connection_timeout: float | None = None,
     server_cert: str | None = None,
     server_key: str | None = None,
-    client_cert: str | None = None,
-    client_key: str | None = None,
+    client_cert: str | None = None, # Direct PEM or file URI for client's own cert
+    client_key: str | None = None,   # Direct PEM or file URI for client's own key
+    server_root_certs: str | None = None, # Direct PEM or file URI for CAs client trusts for server
+    # For convenience, accept _path variants as well for these three
+    client_cert_path: str | None = None,
+    client_key_path: str | None = None,
+    server_root_certs_path: str | None = None,
     **kwargs: Any,
 ) -> None:
     """
     Configure Pyvider RPC plugin with simplified options.
     """
     logger.debug("⚙️🔄 Running simplified configuration")
+
+    # Handle path variants by aliasing them to the main config keys
+    effective_client_cert = client_cert or client_cert_path
+    effective_client_key = client_key or client_key_path
+    effective_server_root_certs = server_root_certs or server_root_certs_path
 
     if magic_cookie is not None:
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
@@ -648,16 +658,22 @@ def configure(
         rpcplugin_config.set("PLUGIN_SERVER_KEY", server_key)
         logger.debug("⚙️📝 Set server key")
 
-    if client_cert is not None:
-        rpcplugin_config.set("PLUGIN_CLIENT_CERT", client_cert)
+    if effective_client_cert is not None:
+        rpcplugin_config.set("PLUGIN_CLIENT_CERT", effective_client_cert)
         logger.debug("⚙️📝 Set client certificate")
 
-    if client_key is not None:
-        rpcplugin_config.set("PLUGIN_CLIENT_KEY", client_key)
+    if effective_client_key is not None:
+        rpcplugin_config.set("PLUGIN_CLIENT_KEY", effective_client_key)
         logger.debug("⚙️📝 Set client key")
 
+    if effective_server_root_certs is not None:
+        rpcplugin_config.set("PLUGIN_SERVER_ROOT_CERTS", effective_server_root_certs)
+        logger.debug("⚙️📝 Set server root certs for client")
+
     for key, value in kwargs.items():
-        config_key = f"PLUGIN_{key.upper()}"
+        config_key = key.upper()
+        if not config_key.startswith("PLUGIN_"):
+            config_key = f"PLUGIN_{config_key}"
         rpcplugin_config.set(config_key, value)
         logger.debug(f"⚙️📝 Set additional config {config_key} = {value}")
 
