@@ -1,11 +1,11 @@
 # Chapter 15: End-to-End Example Walkthrough
 
-This chapter walks through a refactored end-to-end example that demonstrates a `RPCPluginClient` launching a separate `RPCPluginServer` process and making a real gRPC call. This replaces the previous in-process example that used a dummy shell script.
+This chapter walks through an end-to-end example that demonstrates a `RPCPluginClient` launching a separate `RPCPluginServer` process and making a real gRPC call.
 
-The new example consists of three main parts:
+The example consists of three main parts:
 1.  A Protobuf definition for a simple `Greeter` service (`examples/proto/e2e_greeting.proto`).
-2.  A plugin server script (`examples/11_e2e_server.py`) that implements this `Greeter` service.
-3.  A client script (`examples/11_e2e_client.py`) that launches the server and calls its `Greet` method.
+2.  A plugin server script (`examples/ch15_e2e_server.py`) that implements this `Greeter` service.
+3.  A client script (`examples/ch15_e2e_client.py`) that launches the server and calls its `Greet` method.
 
 ## 1. Protobuf Definition (`examples/proto/e2e_greeting.proto`)
 
@@ -36,13 +36,13 @@ message GreetingReply {
 ```
 This `.proto` file is compiled using `grpc_tools.protoc` to generate `e2e_greeting_pb2.py` (containing message classes) and `e2e_greeting_pb2_grpc.py` (containing client stubs and server base classes). These generated files are placed in `examples/proto/`.
 
-## 2. The Plugin Server (`examples/11_e2e_server.py`)
+## 2. The Plugin Server (`examples/ch15_e2e_server.py`)
 
 This script implements the `Greeter` service and runs an `RPCPluginServer`.
 
 ```python
 #!/usr/bin/env python3
-# examples/11_e2e_server.py
+# examples/ch15_e2e_server.py
 """
 End-to-End Greeter Plugin Server.
 """
@@ -131,16 +131,16 @@ if __name__ == "__main__":
 *   `E2EGreetingProtocol` implements `RPCPluginProtocol` to provide descriptors from `e2e_greeting_pb2_grpc` and register the `GreeterServiceHandler`.
 *   The `main` function sets up and runs the `RPCPluginServer`.
 
-## 3. The Client Application (`examples/11_e2e_client.py`)
+## 3. The Client Application (`examples/ch15_e2e_client.py`)
 
-This script launches the `11_e2e_server.py` and makes an RPC call to it.
+This script launches the `ch15_e2e_server.py` and makes an RPC call to it.
 
 ```python
 #!/usr/bin/env python3
-# examples/11_e2e_client.py
+# examples/ch15_e2e_client.py
 """
 End-to-End Greeter Plugin Client.
-Launches the 11_e2e_server.py and makes a gRPC call.
+Launches the ch15_e2e_server.py and makes a gRPC call.
 """
 import asyncio
 import os
@@ -223,12 +223,12 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 **Key points for the client:**
-*   It creates an `RPCPluginClient` instance, providing the command to run `11_e2e_server.py`.
+*   It creates an `RPCPluginClient` instance, providing the command to run `ch15_e2e_server.py`.
 *   After `await client.start()` successfully connects, it uses `client.grpc_channel` to create a `GreeterStub`.
 *   It then makes a true RPC call: `await stub.Greet(request_pb)`.
 
-This refactored example now accurately demonstrates the client-launches-server pattern with actual gRPC communication mediated by `pyvider.rpcplugin`.
+This example accurately demonstrates the client-launches-server pattern with actual gRPC communication mediated by `pyvider.rpcplugin`.
 To run this example:
 1.  Navigate to the project root.
-2.  Execute the client: `python examples/11_e2e_client.py`
+2.  Execute the client: `python examples/ch15_e2e_client.py`
 The client will launch the server, make the call, and then both will shut down.
