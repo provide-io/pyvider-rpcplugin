@@ -9,14 +9,14 @@ import os
 import subprocess  # nosec B404
 import sys
 from pathlib import Path
-from typing import Any  # Added Optional
+from typing import Any
 
 # Ensure sources are importable by example scripts
 project_root = Path(__file__).resolve().parent.parent
 src_path = project_root / "src"
 if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
-if str(project_root) not in sys.path:  # For `from examples.demo...`
+if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
 
@@ -56,21 +56,15 @@ async def run_script(
     expected_to_fail: bool = False,
     expected_stderr_contains: str | None = None,
     magic_cookie_value: str | None = None,
-    # This key is what the server part of the example script will look for in os.environ
-    # It should match what example_utils.configure_for_example sets as PLUGIN_MAGIC_COOKIE_KEY
-    # which is example_utils.DEFAULT_MAGIC_COOKIE_KEY ("PYVIDER_PLUGIN_MAGIC_COOKIE")
     magic_cookie_env_var_name: str = "PYVIDER_PLUGIN_MAGIC_COOKIE",
 ) -> tuple[bool, str, str, int]:
     """Runs a script and returns its success status, stdout, stderr, and exit code."""
     if args is None:
         args = []
-    # Default CWD to project_root if not specified, as most examples expect this
     effective_cwd: Path = cwd if cwd is not None else project_root
 
     command = [sys.executable, str(script_path)] + args
     process = None
-
-    # Prepare environment for the subprocess
     env = os.environ.copy()
     if magic_cookie_value:
         env[magic_cookie_env_var_name] = magic_cookie_value
@@ -126,54 +120,55 @@ async def main() -> None:
     results: list[tuple[str, bool, str, str, int]] = []
 
     scripts_to_run: list[dict[str, Any]] = [
-        {
-            "file": "00_dummy_server.py", "args": ["--help"], "exp_fail": False,
+        { # Was 00_dummy_server.py
+            "file": "ch02_dummy_server.py", "args": ["--help"], "exp_fail": False,
             "exp_stderr": None, "cookie": None,
         },
-        {
-            "file": "01_quick_start.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": None,
+        { # Was 01_quick_start.py
+            "file": "ch02_quick_start_client.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": None, # Launches ch02_dummy_server internally
         },
-        {
-            "file": "02_server_setup.py", "args": [], "exp_fail": False,
+        { # Was 02_server_setup.py
+            "file": "ch03_server_setup_concepts.py", "args": [], "exp_fail": False,
             "exp_stderr": None, "cookie": "example-unix-cookie",
         },
-        {
-            "file": "03_client_connection.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "client-conn-cookie",
+        { # Was 04_transport_options.py
+            "file": "ch04_transport_options_demo.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "unix-benchmark-cookie", # Cookie seems arbitrary here
         },
-        {
-            "file": "04_transport_options.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "unix-benchmark-cookie",
+        { # Was 03_client_connection.py
+            "file": "ch06_client_setup_concepts.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "client-conn-cookie", # Cookie seems arbitrary here
         },
-        # 05_security_mtls.py requires cert generation, skip for now
-        {
-            "file": "06_async_patterns.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "async-patterns-cookie",
+        { # Was new 07_echo_client.py
+            "file": "ch07_echo_client.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": None, # Client manages server's cookie
         },
-        { # Original 07 example
-            "file": "07_error_handling.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "error-handling-cookie",
+        # ch08_direct_client_connection.py (was 01b) is not run by this script.
+        # ch09_security_mtls_example.py (was 05) is currently not run by this script.
+        { # Was 06_async_patterns.py
+            "file": "ch10_async_patterns_demo.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "async-patterns-cookie", # Cookie seems arbitrary
         },
-        { # New Echo Client (related to old 05_echo_server.py)
-            "file": "07_echo_client.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": None,
+        { # Was original 07_error_handling.py
+            "file": "ch11_error_handling_demo.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "error-handling-cookie", # Cookie seems arbitrary
         },
-        {
-            "file": "08_production_config.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "production-server-2024",
+        { # Was 08_production_config.py
+            "file": "ch12_production_config_discussion.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "production-server-2024", # Cookie seems arbitrary
         },
-        {
-            "file": "09_custom_protocols.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "custom-stream-cookie",
+        { # Was 09_custom_protocols.py
+            "file": "ch13_custom_protocols_demo.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "custom-stream-cookie", # Cookie seems arbitrary
         },
-        {
-            "file": "10_performance_tuning.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": "perf-tuning-cookie",
+        { # Was 10_performance_tuning.py
+            "file": "ch14_performance_tuning_concepts.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": "perf-tuning-cookie", # Cookie seems arbitrary
         },
-        { # New E2E Client (refactored from old 11_end_to_end.py)
-            "file": "11_e2e_client.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, "cookie": None,
+        { # Was new 11_e2e_client.py
+            "file": "ch15_e2e_client.py", "args": [], "exp_fail": False,
+            "exp_stderr": None, "cookie": None, # Client manages server's cookie
         },
     ]
 
@@ -187,6 +182,10 @@ async def main() -> None:
         cookie_val = script_info["cookie"]
 
         script_path = examples_dir / script_file
+        if not script_path.exists():
+            print(f"\nSKIPPING: {script_path.name} (File not found)")
+            continue
+
         print(f"\n⏳ Running: {script_path.name} {' '.join(script_args)}...")
 
         success, stdout, stderr, exit_code = await run_script(

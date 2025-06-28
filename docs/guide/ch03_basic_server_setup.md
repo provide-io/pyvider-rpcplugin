@@ -17,13 +17,13 @@ At the heart of a `pyvider.rpcplugin` server are three main components:
 
 3.  **Handler (gRPC Servicer)**: This is the class where you write the actual logic for your RPC methods. It inherits from the gRPC-generated `YourServiceServicer` class (e.g., `EchoServiceServicer`). Each method in your handler corresponds to an RPC method defined in your `.proto` file.
 
-## Example: Server Configuration (`examples/02_server_setup.py`)
+## Example: Server Configuration (`examples/ch03_server_setup_concepts.py`)
 
-The `02_server_setup.py` example illustrates how to configure an `RPCPluginServer` instance, though it doesn't run a fully operational server that waits for connections. Instead, it demonstrates the configuration options.
+The `ch03_server_setup_concepts.py` example illustrates how to configure an `RPCPluginServer` instance, though it doesn't run a fully operational server that waits for connections. Instead, it demonstrates the configuration options.
 
 ```python
 #!/usr/bin/env python3
-# examples/02_server_setup.py
+# examples/ch03_server_setup_concepts.py
 import asyncio
 from example_utils import configure_for_example, get_example_port
 

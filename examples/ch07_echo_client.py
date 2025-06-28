@@ -102,24 +102,24 @@ class EchoClient:
 async def run_client() -> None:
     # Determine path to the server script relative to this client script,
     # assuming they are both in the 'examples' directory.
-    # Path(__file__).parent gives the directory of the current script (07_echo_client.py)
-    # So, server_script will point to examples/05_echo_server.py
+    # Path(__file__).parent gives the directory of the current script (ch07_echo_client.py)
+    # So, server_script will point to examples/ch05_echo_server.py
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "05_echo_server.py"
+    server_script_path = current_dir / "ch05_echo_server.py" # Updated name
 
     if not server_script_path.exists():
         # Fallback if running from a different CWD, try to find it from project root perspective
         project_root = Path.cwd() # Or a more robust way to find project root
-        if not (project_root / "examples" / "05_echo_server.py").exists():
+        if not (project_root / "examples" / "ch05_echo_server.py").exists():
              # Try one level up if cwd is examples/
             project_root = Path.cwd().parent
-        server_script_path = project_root / "examples" / "05_echo_server.py"
+        server_script_path = project_root / "examples" / "ch05_echo_server.py"
         if not server_script_path.exists():
-            logger.error(f"Could not find 05_echo_server.py. Tried {current_dir / '05_echo_server.py'} and {server_script_path}")
+            logger.error(f"Could not find ch05_echo_server.py. Tried {current_dir / 'ch05_echo_server.py'} and {server_script_path}")
             return
 
 
-    logger.info(f"Client (07_echo_client.py) will use server script: {server_script_path}")
+    logger.info(f"Client (ch07_echo_client.py) will use server script: {server_script_path}")
     client = EchoClient(str(server_script_path))
 
     if not await client.start():
