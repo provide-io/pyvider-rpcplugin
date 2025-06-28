@@ -38,13 +38,13 @@ When preparing your plugin and host application for production, focus on the fol
 *   **Client-Side Retries**:
     *   The built-in client retry mechanism for initial connection/handshake (`PLUGIN_CLIENT_RETRY_ENABLED="true"`) is generally good for production. Tune `PLUGIN_CLIENT_MAX_RETRIES`, backoff, and total timeout settings based on your plugin's startup characteristics and network reliability.
 
-## Example: Production Configuration (`examples/08_production_config.py`)
+## Example: Production Configuration (`examples/ch12_production_config_discussion.py`)
 
-The `08_production_config.py` script discusses these production considerations conceptually and shows how some of these might be mapped to `pyvider.rpcplugin` settings using the `configure` function or by setting environment variables.
+The `ch12_production_config_discussion.py` script discusses these production considerations conceptually and shows how some of these might be mapped to `pyvider.rpcplugin` settings using the `configure` function or by setting environment variables.
 
 ```python
 #!/usr/bin/env python3
-# examples/08_production_config.py
+# examples/ch12_production_config_discussion.py
 import asyncio
 import json
 import os

@@ -17,24 +17,24 @@ In these cases, you bypass `RPCPluginClient` and use the underlying gRPC library
 
 You will not go through the `pyvider.rpcplugin` handshake protocol (magic cookie, stdout-based handshake string) because that's handled by `RPCPluginClient` specifically when it launches the plugin. A direct connection assumes the server is already past that stage and is simply listening for gRPC connections on its configured transport.
 
-## Example: Direct Client Connection (`examples/01b_direct_client_connection.py`)
+## Example: Direct Client Connection (`examples/ch08_direct_client_connection.py`)
 
 This example demonstrates how a Python script can connect directly to an already running `pyvider.rpcplugin` server, assuming it's listening on a known Unix domain socket and is *not* using mTLS for simplicity.
 
 **To make this example work:**
 
-1.  **Start a server manually**: Run `examples/00_dummy_server.py` in one terminal.
-    *   The `00_dummy_server.py` (when run directly via `python examples/00_dummy_server.py`) is set up by `example_utils.configure_for_example()` to:
+1.  **Start a server manually**: Run `examples/ch02_dummy_server.py` in one terminal.
+    *   The `ch02_dummy_server.py` (when run directly via `python examples/ch02_dummy_server.py`) is set up by `example_utils.configure_for_example()` to:
         *   Use a default magic cookie (e.g., "pyvider-example-cookie" with key "PYVIDER_PLUGIN_MAGIC_COOKIE").
         *   Disable mTLS (`PLUGIN_AUTO_MTLS=False`).
         *   Listen on a Unix socket (usually the default).
-    *   Crucially, for this `01b` example to find the socket, the `00_dummy_server.py` has a special behavior (added for example purposes) where it writes its active Unix socket path to a file named `dummy_server_socket.txt` in the project root. Note this down.
+    *   Crucially, for this `ch08` example to find the socket, the `ch02_dummy_server.py` has a special behavior (added for example purposes) where it writes its active Unix socket path to a file named `dummy_server_socket.txt` in the project root. Note this down.
 
-2.  **Run `01b_direct_client_connection.py`**: In another terminal, run this script. It will attempt to read the socket path from `dummy_server_socket.txt` and connect.
+2.  **Run `ch08_direct_client_connection.py`**: In another terminal, run this script. It will attempt to read the socket path from `dummy_server_socket.txt` and connect.
 
 ```python
 #!/usr/bin/env python3
-# examples/01b_direct_client_connection.py
+# examples/ch08_direct_client_connection.py
 import asyncio
 import sys
 from pathlib import Path
@@ -42,9 +42,9 @@ import grpc # For direct gRPC channel usage
 from example_utils import clear_plugin_env_vars, configure_for_example
 from pyvider.telemetry import logger
 
-# Path to the file where 00_dummy_server.py (when run standalone)
+# Path to the file where ch02_dummy_server.py (when run standalone)
 # is expected to write its socket path.
-# This path assumes 01b_direct_client_connection.py is in examples/
+# This path assumes ch08_direct_client_connection.py is in examples/
 # and dummy_server_socket.txt is in the project root (examples/../)
 SOCKET_COMM_FILE = Path(__file__).resolve().parent.parent / "dummy_server_socket.txt"
 
@@ -52,7 +52,7 @@ async def run_direct_client():
     logger.info("🚀 pyvider-rpcplugin Direct Client Connection Example")
     socket_path_read = None
     try:
-        # Read the socket path written by the standalone 00_dummy_server.py
+        # Read the socket path written by the standalone ch02_dummy_server.py
         socket_path_read = SOCKET_COMM_FILE.read_text().strip()
         if not socket_path_read:
             raise FileNotFoundError("Socket path in file is empty.")

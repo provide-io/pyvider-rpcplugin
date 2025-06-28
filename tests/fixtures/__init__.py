@@ -9,7 +9,6 @@ from tests.fixtures.dummy import (
     DummyReader,
     DummyWriter,
     DummyGRPCServer,
-    DummyAioServer,
     dummy_writer,
     dummy_reader,
 )
@@ -76,7 +75,6 @@ __all__ = [
     "DummyReader",
     "DummyWriter",
     "DummyGRPCServer",
-    "DummyAioServer",
     "dummy_writer",
     "dummy_reader",
     # mocks
