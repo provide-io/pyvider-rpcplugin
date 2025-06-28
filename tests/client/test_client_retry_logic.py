@@ -215,12 +215,26 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
     # 2nd call: inside loop, before sleep (attempt 1)
     # (asyncio.sleep for initial_backoff_ms (20ms) would happen here)
     # 3rd call: inside loop, before sleep (attempt 2) - this should exceed total_timeout_s_config
-    monotonic_return_values = [
+    monotonic_values_sequence = [
         0.0,  # Initial overall_start_time
         0.01, # First check in loop (attempt 1)
-        total_timeout_s_config + 0.01 # Second check in loop (attempt 2), now exceeds timeout
+        # Value for the time check that leads to timeout:
+        total_timeout_s_config + 0.01 # Ensures time.monotonic() - overall_start_time > total_timeout_s
     ]
-    mock_time_monotonic.side_effect = monotonic_return_values
+    monotonic_iterator = iter(monotonic_values_sequence)
+    # After the sequence, keep returning a value that maintains the timeout condition
+    final_monotonic_value_after_timeout = total_timeout_s_config + 0.05
+
+    def mock_monotonic_side_effect_func():
+        try:
+            val = next(monotonic_iterator)
+            client_instance.logger.debug(f"Mock time.monotonic returning: {val}")
+            return val
+        except StopIteration:
+            client_instance.logger.debug(f"Mock time.monotonic returning final value: {final_monotonic_value_after_timeout}")
+            return final_monotonic_value_after_timeout
+
+    mock_time_monotonic.side_effect = mock_monotonic_side_effect_func
 
     # We need actual sleep to allow monotonic time to be checked correctly if not fully mocked
     # For this test, fully mocking monotonic is better.
@@ -240,20 +254,15 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
     assert mock_perform_handshake.call_count >= 1 # It should make at least one attempt
 
     # Check logger calls
+    # This path is taken when the current attempt has failed, and scheduling the *next* sleep
+    # would push the total time over the limit.
     mock_logger_error.assert_any_call(
-        f"Client connection/handshake retry sequence timed out after {total_timeout_s_config}s. Last error: {simulated_error}"
+        f"Next retry would exceed total timeout. Aborting. Last error: {simulated_error}"
     )
     assert client_instance._handshake_failed_event.is_set()
 
-    # Restore original poll only if it was a mock and we changed its side_effect,
-    # or if we explicitly replaced a non-mock.
-    # This is mainly to ensure test isolation if the fixture is session/module scoped,
-    # though client_instance_local is function-scoped.
-    if hasattr(client_instance._process, 'poll'):
-        if not isinstance(original_poll, MagicMock) and original_poll is not client_instance._process.poll:
-             client_instance._process.poll = original_poll
-        elif isinstance(original_poll, MagicMock) and original_poll.side_effect is not mock_poll_side_effect:
-             client_instance._process.poll.side_effect = original_poll.side_effect
+    # Cleanup of original_poll is not needed here as it's not modified in this test
+    # and client_instance_local is function-scoped.
 
 
 @pytest.mark.asyncio
