@@ -125,7 +125,7 @@ from pyvider.telemetry import logger
 async def main():
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")
     example_dir = Path(__file__).resolve().parent
-    dummy_server_executable = example_dir / "ch02_dummy_server.py" # Updated name
+    dummy_server_executable = example_dir / "ch02_dummy_server.py" # Path to the dummy server script
     dummy_server_command = [sys.executable, str(dummy_server_executable)]
 
     # configure_for_example() sets client-side config (e.g., magic cookie values to *send*).

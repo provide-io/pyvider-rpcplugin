@@ -68,24 +68,87 @@ async def main() -> None:
         # `plugin_server` defaults to Unix if available, then TCP.
     )
 
+    # Determine if running as main for the special socket path writing behavior
+    is_running_as_main = __name__ == "__main__"
+    server_task = None
+    project_root_for_socket_file = Path(__file__).resolve().parent.parent
+    socket_comm_file = project_root_for_socket_file / "dummy_server_socket.txt"
+
     try:
         logger.info(
             "Dummy server attempting to start and serve (will print handshake)..."
         )
-        # When launched as a plugin, server.serve() will print the handshake string
-        # to stdout and then block, serving requests until stopped.
-        await server.serve()
-        # If server.serve() returns, it means it was stopped.
+
+        if is_running_as_main:
+            # To write the socket path, we need to run serve() in a task
+            # and wait for the server to be ready.
+            async def serve_and_write_socket_path():
+                await server.serve()
+
+            server_task = asyncio.create_task(serve_and_write_socket_path())
+
+            # Wait for the server to actually start and establish its transport endpoint
+            await server.wait_for_server_ready(timeout=10.0) # Add timeout
+
+            if server.transport and server.transport.endpoint:
+                if server._transport_name == "unix": # Only write for unix transport
+                    logger.info(f"Running as main, server ready. Writing socket path: {server.transport.endpoint} to {socket_comm_file}")
+                    try:
+                        with open(socket_comm_file, "w") as f:
+                            f.write(str(server.transport.endpoint))
+                        logger.info(f"Successfully wrote socket path to {socket_comm_file}")
+                    except IOError as e:
+                        logger.error(f"Failed to write socket path to {socket_comm_file}: {e}")
+                else:
+                    logger.info(f"Running as main, but transport is {server._transport_name}, not unix. Socket path not written.")
+            else:
+                logger.warning("Running as main, but server transport or endpoint not available after start. Cannot write socket path.")
+
+            # Now wait for the server task to complete (e.g., on KeyboardInterrupt)
+            if server_task: # server_task might not be set if wait_for_server_ready times out
+                 await server_task # This will re-raise exceptions from serve_and_write_socket_path
+
+        else: # Not running as main, just run serve() normally
+            await server.serve()
+
         logger.info("Dummy server finished serving.")
+
     except KeyboardInterrupt:  # pragma: no cover
         logger.info("Dummy server stopped by user (KeyboardInterrupt).")
+        if server_task and not server_task.done():
+            server_task.cancel()
     except Exception as e:  # pragma: no cover
         logger.error(f"Dummy server encountered an error: {e}", exc_info=True)
+        if server_task and not server_task.done():
+            server_task.cancel()
     finally:
         logger.info("Dummy server shutting down.")
-        # server.stop() is implicitly called by RPCPluginServer.serve()'s finally block.
+        if server_task and not server_task.done(): # Ensure task is awaited if it exists
+            with suppress(asyncio.CancelledError):
+                await server_task
+        # server.stop() is implicitly called by RPCPluginServer.serve()'s finally block,
+        # or explicitly if server_task was used and an exception occurred.
+        # If we ran serve() in a task, we should ensure server.stop() is called if not already.
+        if is_running_as_main and server and hasattr(server, '_server') and server._server is not None:
+             if not server._serving_future.done(): # Check if server is still marked as serving
+                logger.info("Ensuring server.stop() is called in finally block for main execution.")
+                await server.stop()
+
+        if is_running_as_main and socket_comm_file.exists():
+            try:
+                logger.info(f"Cleaning up {socket_comm_file}")
+                socket_comm_file.unlink()
+            except OSError as e:
+                logger.warning(f"Could not remove {socket_comm_file}: {e}")
 
 
 if __name__ == "__main__":
     # This allows the script to be run directly as a plugin executable.
-    asyncio.run(main())
+    # Additional imports for the new logic if run as main
+    from pathlib import Path
+    from contextlib import suppress
+
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt: # Gracefully handle Ctrl+C at the asyncio.run level too
+        logger.info("Main execution interrupted by user.")

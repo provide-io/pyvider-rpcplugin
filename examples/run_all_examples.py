@@ -63,12 +63,8 @@ async def run_script(
 
     command = [sys.executable, str(script_path)] + args
     process = None
-    # Ensure env is always set up, even if not modified by cookies
     env = os.environ.copy()
-    # Removed automatic magic cookie setup from here.
-    # If a specific test needs a magic cookie, it should be passed via `env`
-    # in the `script_info` dictionary for that test, or the example script
-    # itself should handle default/test cookies if run standalone.
+    # Removed automatic magic cookie setup from here, will be passed if needed by specific tests.
 
     try:
         process = await asyncio.create_subprocess_exec(
@@ -188,7 +184,7 @@ async def main() -> None:
             cwd=project_root,
             expected_to_fail=exp_fail,
             expected_stderr_contains=exp_stderr,
-            # magic_cookie_value is no longer passed here
+            magic_cookie_value=cookie_val,
         )
         results.append((script_path.name, success, stdout, stderr, exit_code))
         if not success:

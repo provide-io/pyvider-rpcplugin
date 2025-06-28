@@ -103,7 +103,7 @@ class E2EGreetingProtocol(RPCPluginProtocol):
 
 # --- Main Server Logic ---
 async def main() -> None:
-    logger.info("Starting E2E Greeting Plugin Server (11_e2e_server.py)...")
+    logger.info("Starting E2E Greeting Plugin Server (ch15_e2e_server.py)...")
 
     handler = GreeterServiceHandler()
     e2e_protocol_instance = cast(TypesRPCPluginProtocol, E2EGreetingProtocol())
@@ -118,7 +118,7 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"E2E Greeting Server execution failed: {e}", exc_info=True)
     finally:
-        logger.info("E2E Greeting Server (11_e2e_server.py) shutting down.")
+        logger.info("E2E Greeting Server (ch15_e2e_server.py) shutting down.")
 
 if __name__ == "__main__":
     from examples.example_utils import configure_for_example
@@ -159,10 +159,10 @@ from examples.proto import e2e_greeting_pb2_grpc
 
 
 async def main() -> None:
-    logger.info("🚀 Starting E2E Greeting Client (11_e2e_client.py)")
+    logger.info("🚀 Starting E2E Greeting Client (ch15_e2e_client.py)")
 
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "11_e2e_server.py"
+    server_script_path = current_dir / "ch15_e2e_server.py"
 
     if not server_script_path.exists():
         logger.error(f"Could not find server script: {server_script_path}")
