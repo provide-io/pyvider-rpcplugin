@@ -18,7 +18,6 @@ import asyncio
 import os
 import subprocess  # nosec B404 # For process type hint only
 import time
-import traceback
 from enum import Enum, auto
 from typing import Literal, TypeGuard, cast
 
@@ -238,7 +237,7 @@ def validate_magic_cookie(
             logger.error("CRITICAL: cookie_key is None or empty before env lookup.")
             # This case should ideally be prevented by config validation or defaults.
             # If it still occurs, it's a severe misconfiguration.
-            raise HandshakeError( # ruff: noqa E501
+            raise HandshakeError(  # ruff: noqa E501
                 message="Internal configuration error: cookie_key is missing for lookup.",
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )

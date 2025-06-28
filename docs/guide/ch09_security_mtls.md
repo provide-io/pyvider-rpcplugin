@@ -174,7 +174,7 @@ if __name__ == "__main__":
     *   `server_root_certs` is set to the path of the CA certificate. This tells the client to trust server certificates signed by this CA.
     *   Magic cookie variables are also configured.
 3.  **Server Subprocess Environment**:
-    *   A dictionary `server_env_vars` is prepared. These environment variables will be passed to the `00_dummy_server.py` subprocess when it's launched by `RPCPluginClient`.
+    *   A dictionary `server_env_vars` is prepared. These environment variables will be passed to the `ch02_dummy_server.py` subprocess when it's launched by `RPCPluginClient`.
     *   `PLUGIN_AUTO_MTLS="True"` tells the dummy server to enable mTLS.
     *   `PLUGIN_SERVER_CERT` and `PLUGIN_SERVER_KEY` point to the server's certificate and key.
     *   `PLUGIN_CLIENT_ROOT_CERTS` points to the CA certificate, which the server will use to verify the client's certificate during the mTLS handshake.

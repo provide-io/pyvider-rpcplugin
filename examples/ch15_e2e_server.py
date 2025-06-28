@@ -60,7 +60,7 @@ class E2EGreetingProtocol(RPCPluginProtocol):
 
 # --- Main Server Logic ---
 async def main() -> None:
-    logger.info("Starting E2E Greeting Plugin Server (11_e2e_server.py)...")
+    logger.info("Starting E2E Greeting Plugin Server (ch15_e2e_server.py)...")
 
     # example_utils.configure_for_example() called in __main__ will set up defaults
     # like magic cookie key if not set by the launching client.
@@ -80,7 +80,7 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"E2E Greeting Server execution failed: {e}", exc_info=True)
     finally:
-        logger.info("E2E Greeting Server (11_e2e_server.py) shutting down.")
+        logger.info("E2E Greeting Server (ch15_e2e_server.py) shutting down.")
 
 if __name__ == "__main__":
     # It's important that example_utils.configure_for_example() is called

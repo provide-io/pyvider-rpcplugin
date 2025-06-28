@@ -28,7 +28,7 @@ This example demonstrates how a Python script can connect directly to an already
         *   Use a default magic cookie (e.g., "pyvider-example-cookie" with key "PYVIDER_PLUGIN_MAGIC_COOKIE").
         *   Disable mTLS (`PLUGIN_AUTO_MTLS=False`).
         *   Listen on a Unix socket (usually the default).
-    *   Crucially, for this `ch08` example to find the socket, the `ch02_dummy_server.py` has a special behavior (added for example purposes) where it writes its active Unix socket path to a file named `dummy_server_socket.txt` in the project root. Note this down.
+    *   Crucially, for this `ch08` example to find the socket, the `ch02_dummy_server.py` (after modifications in this plan) will write its active Unix socket path to a file named `dummy_server_socket.txt` in the project root. Note this down.
 
 2.  **Run `ch08_direct_client_connection.py`**: In another terminal, run this script. It will attempt to read the socket path from `dummy_server_socket.txt` and connect.
 
@@ -60,7 +60,7 @@ async def run_direct_client():
     except FileNotFoundError:
         logger.error(
             f"Socket communication file not found: {SOCKET_COMM_FILE}. "
-            "Ensure 00_dummy_server.py ran successfully and wrote this file, "
+            "Ensure ch02_dummy_server.py ran successfully and wrote this file, "
             "or manually create it with the correct socket path."
         )
         return

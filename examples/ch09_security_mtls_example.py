@@ -99,13 +99,8 @@ async def functional_mtls_example() -> None:
             "PLUGIN_SERVER_CERT": f"file://{server_cert_path}",
             "PLUGIN_SERVER_KEY": f"file://{server_key_path}",
             "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_path}",
-            # This tells the server what env var name contains the cookie value
-            "PLUGIN_MAGIC_COOKIE_KEY": client_magic_cookie_key,
-            # This is the env var (named by the above key) that holds the actual cookie
             client_magic_cookie_key: client_magic_cookie_value,
-            # This tells the server directly what value to expect for its own PLUGIN_MAGIC_COOKIE_VALUE config
-            "PLUGIN_MAGIC_COOKIE_VALUE": client_magic_cookie_value,
-            "PLUGIN_LOG_LEVEL": "DEBUG", # Changed to DEBUG for more server log insight
+            "PLUGIN_LOG_LEVEL": "INFO",
             "PLUGIN_HANDSHAKE_TIMEOUT": "20.0",
         }
 
