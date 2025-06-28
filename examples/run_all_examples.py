@@ -226,13 +226,12 @@ async def main() -> None:
             "cookie": "e2e-test-cookie",
         },
         {
-            "file": "07_echo_client.py", # New echo client
+            "file": str(Path("demo") / "echo_client.py"),
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
-            "cookie": None, # Client manages server's cookie expectations internally
-        },
-        # Old demo/echo_client.py entry removed.
+            "cookie": None,
+        },  # Starts its own server
         {
             "file": str(Path("kvproto") / "py_rpc" / "py_kv_client.py"),
             "args": ["put", "testkey", "testvalue"],
