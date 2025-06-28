@@ -31,13 +31,13 @@ Mutual TLS (mTLS) is a critical security feature for plugin architectures, ensur
 **Certificate Generation:**
 The `pyvider.rpcplugin.crypto.Certificate` class provides helper methods like `Certificate.create_ca()`, `Certificate.create_signed_certificate()`, and `Certificate.create_self_signed_server_cert()` to assist in generating the necessary PEM-encoded certificates and keys.
 
-## Example: mTLS Setup (`examples/05_security_mtls.py`)
+## Example: mTLS Setup (`examples/ch09_security_mtls_example.py`)
 
-This example provides a functional demonstration of setting up an mTLS-secured connection between a client and a plugin server (the `00_dummy_server.py` example). It programmatically generates all necessary certificates (CA, server, client) and configures both the client and the server subprocess to use them.
+This example provides a functional demonstration of setting up an mTLS-secured connection between a client and a plugin server (the `ch02_dummy_server.py` example). It programmatically generates all necessary certificates (CA, server, client) and configures both the client and the server subprocess to use them.
 
 ```python
 #!/usr/bin/env python3
-# examples/05_security_mtls.py
+# examples/ch09_security_mtls_example.py
 import asyncio
 import sys
 import tempfile
@@ -125,7 +125,7 @@ async def functional_mtls_example() -> None:
 
         # 4. Launch Server and Connect Client
         example_dir = Path(__file__).resolve().parent
-        dummy_server_executable = example_dir / "00_dummy_server.py"
+        dummy_server_executable = example_dir / "ch02_dummy_server.py"
         dummy_server_command = [sys.executable, str(dummy_server_executable)]
 
         client: RPCPluginClient | None = None

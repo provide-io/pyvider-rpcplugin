@@ -7,30 +7,7 @@ import asyncio
 import os
 import tempfile
 from pyvider.telemetry import logger
-from pyvider.rpcplugin.server import RPCPluginServer
-
-
-# rom pyvider.rpcplugin.logger import logger
-# from pyvider.rpcplugin.client import RPCPluginClient
-# from pyvider.rpcplugin.protocol import RPCPluginProtocol
-#
-# # from pyvider.rpcplugin.security import (
-# #     create_self_signed_x509_certificate,
-# #     generate_keypair,
-# #     Certificate,
-# # )
-# from pyvider.rpcplugin.server import RPCPluginServer
-# from pyvider.rpcplugin.transport.types import TransportT
-# from pyvider.rpcplugin.transport import (
-#     RPCPluginTransport,
-#     TCPSocketTransport,
-#     UnixSocketTransport,
-# )
-#
-# from pyvider.rpcplugin.types import ConfigT
-#
-# from tests.fixtures import *
-#
+# from pyvider.rpcplugin.server import RPCPluginServer # RPCPluginServer is not used in this file
 
 
 @pytest_asyncio.fixture(scope="function")

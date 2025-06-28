@@ -11,13 +11,13 @@ The `pyvider.rpcplugin` library is designed to be asynchronous from the ground u
 *   **`asyncio.gather`**: A utility to run multiple awaitables (often tasks) concurrently and wait for all of them to complete.
 *   **Asynchronous Iterators (`async for`)**: Used for handling streaming RPCs, where multiple messages can be sent or received over time.
 
-## Example: Advanced Async Patterns (`examples/06_async_patterns.py`)
+## Example: Advanced Async Patterns (`examples/ch10_async_patterns_demo.py`)
 
 This example script demonstrates several common asynchronous programming patterns that are relevant when working with `pyvider.rpcplugin`, even though the example itself doesn't directly use `RPCPluginClient` or `RPCPluginServer` for these specific demonstrations. The patterns are applicable to how you might structure your client or server logic.
 
 ```python
 #!/usr/bin/env python3
-# examples/06_async_patterns.py
+# examples/ch10_async_patterns_demo.py
 import asyncio
 from collections.abc import AsyncGenerator # For type hinting async generators
 from example_utils import configure_for_example
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
 *   **Concurrent Client Calls**: If your host application needs to communicate with multiple plugins simultaneously, or make multiple non-blocking calls to a single plugin, you can create `asyncio.Task` objects for each `client.start()` or `stub.YourMethod()` call and then use `await asyncio.gather(...)`.
 *   **Server-Side Concurrency**: Your `RPCPluginServer` and its gRPC handlers are inherently asynchronous. If an RPC method needs to perform multiple I/O-bound operations (e.g., querying different databases, calling other microservices), you can use `await asyncio.gather(...)` within the handler method to perform these concurrently.
-*   **Streaming RPCs**: If your `.proto` defines streaming methods (client-streaming, server-streaming, or bidirectional-streaming), your gRPC stubs and servicer methods will use asynchronous generators (`async for ... yield ...`). The `examples/demo/echo_server.py` and `echo_client.py` could be extended to show this if a streaming RPC was added to `echo.proto`. `RPCPluginClient` itself uses this for its STDIO log streaming feature.
+*   **Streaming RPCs**: If your `.proto` defines streaming methods (client-streaming, server-streaming, or bidirectional-streaming), your gRPC stubs and servicer methods will use asynchronous generators (`async for ... yield ...`). The `examples/ch05_echo_server.py` and `examples/ch07_echo_client.py` could be extended to show this if a streaming RPC was added to `echo.proto`. `RPCPluginClient` itself uses this for its STDIO log streaming feature.
 *   **Timeouts**:
     *   `RPCPluginClient.start()` has built-in timeouts for handshake and connection phases, configured by `PLUGIN_HANDSHAKE_TIMEOUT` and `PLUGIN_CONNECTION_TIMEOUT`.
     *   For individual gRPC calls made via stubs, you can pass a `timeout` argument: `await stub.YourMethod(request, timeout=5.0)`.

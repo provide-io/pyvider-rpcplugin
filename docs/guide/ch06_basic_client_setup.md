@@ -15,13 +15,13 @@ The primary class for this purpose is `RPCPluginClient`. It encapsulates the log
 
 The `pyvider.rpcplugin.plugin_client` factory function is a convenient way to create an `RPCPluginClient` instance, especially when the client is responsible for launching the plugin executable.
 
-## Example: Client Connection Concepts (`examples/03_client_connection.py`)
+## Example: Client Connection Concepts (`examples/ch06_client_setup_concepts.py`)
 
-The `03_client_connection.py` script provides a conceptual outline of setting up a client and thinking about error handling. It doesn't connect to a live plugin but serves to illustrate the patterns.
+The `ch06_client_setup_concepts.py` script provides a conceptual outline of setting up a client and thinking about error handling. It doesn't connect to a live plugin but serves to illustrate the patterns.
 
 ```python
 #!/usr/bin/env python3
-# examples/03_client_connection.py
+# examples/ch06_client_setup_concepts.py
 import asyncio
 from example_utils import configure_for_example
 
