@@ -31,15 +31,15 @@ While `pyvider.rpcplugin` itself doesn't have a dedicated middleware framework s
 1.  **gRPC Interceptors**: This is the standard and recommended way to intercept RPC calls on both the client and server side in gRPC.
     *   **Server Interceptors**: Implemented as classes inheriting from `grpc.aio.ServerInterceptor`. They can inspect and modify requests and responses, or execute logic before or after an RPC method is called. `RPCPluginServer` allows you to pass a list of interceptors when it creates the `grpc.aio.Server`.
     *   **Client Interceptors**: Implemented similarly (e.g., `grpc.aio.ClientInterceptor`) and can be applied when creating a gRPC channel or stub.
-2.  **Decorators or Wrappers**: You can wrap your handler methods with decorators or create wrapper classes around your handler instance to inject behavior. The `examples/09_custom_protocols.py` demonstrates a conceptual version of this.
+2.  **Decorators or Wrappers**: You can wrap your handler methods with decorators or create wrapper classes around your handler instance to inject behavior. The `examples/ch13_custom_protocols_demo.py` demonstrates a conceptual version of this.
 
-### Example: Custom Protocols and Conceptual Middleware (`examples/09_custom_protocols.py`)
+### Example: Custom Protocols and Conceptual Middleware (`examples/ch13_custom_protocols_demo.py`)
 
 This example shows how a custom protocol might be structured and how one could conceptually apply middleware by wrapping handler methods. **Note**: For actual RPC interception, gRPC Interceptors are preferred over the manual `__getattr__` wrapping shown in this example for middleware.
 
 ```python
 #!/usr/bin/env python3
-# examples/09_custom_protocols.py
+# examples/ch13_custom_protocols_demo.py
 import asyncio
 from typing import Any
 from example_utils import configure_for_example
