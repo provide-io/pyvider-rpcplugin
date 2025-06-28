@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/00_dummy_server.py
+# examples/ch02_dummy_server.py
 """
 A minimal RPC plugin server for use by other examples.
 It uses the BasicRPCPluginProtocol and a no-op handler.
@@ -44,7 +44,7 @@ async def main() -> None:
     It expects its environment (magic cookie) to be set by the launching client.
     """
     # configure_for_example() called at module level to set up paths and basic config
-    logger.info("🚀 00_dummy_server.py: Starting as an executable plugin...")
+    logger.info("🚀 ch02_dummy_server.py: Starting as an executable plugin...")
 
     # The `configure_for_example()` utility should have set:
     # - PLUGIN_AUTO_MTLS=False

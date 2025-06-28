@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/11_e2e_server.py
+# examples/ch15_e2e_server.py
 """
 End-to-End Greeter Plugin Server.
 """
@@ -64,7 +64,7 @@ async def main() -> None:
 
     # example_utils.configure_for_example() called in __main__ will set up defaults
     # like magic cookie key if not set by the launching client.
-    # The client (11_e2e_client.py) will set the expected PLUGIN_MAGIC_COOKIE_KEY
+    # The client (ch15_e2e_client.py) will set the expected PLUGIN_MAGIC_COOKIE_KEY
     # and PLUGIN_MAGIC_COOKIE_VALUE in the environment for this server.
 
     handler = GreeterServiceHandler()
