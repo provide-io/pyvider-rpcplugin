@@ -873,40 +873,78 @@ class RPCPluginClient:
         logger.debug(f"🚢🔍 Creating gRPC channel with target: {target}")
         self.target_endpoint = target
 
-        if self._server_cert:
-            full_pem = self._rebuild_x509_pem(self._server_cert)
+        if self._server_cert: # Indicates server is likely using TLS/mTLS (sent its cert in handshake)
+            # Client's own credentials for mTLS (loaded during _setup_client_certificates)
+            client_own_cert_pem = self.client_cert
+            client_own_key_pem = self.client_key_pem
 
-            explicit_client_cert_configured = bool(
-                rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-            )
+            # CA certificate client uses to verify the server's certificate
+            # This comes from client's configuration (e.g., PLUGIN_SERVER_ROOT_CERTS)
+            server_ca_certs_pem_from_config = rpcplugin_config.get("PLUGIN_SERVER_ROOT_CERTS")
 
-            if (
-                explicit_client_cert_configured
-                and self.client_cert
-                and self.client_key_pem
-            ):
-                logger.debug(
-                    "🔐 Creating mTLS channel with explicitly configured client "
-                    "certs + server root."
+            if not server_ca_certs_pem_from_config:
+                # If auto_mtls is on and server sent a cert, client MUST have a way to verify it.
+                if rpcplugin_config.auto_mtls_enabled():
+                    logger.error("mTLS enabled, server sent cert, but client has no PLUGIN_SERVER_ROOT_CERTS configured.")
+                    raise SecurityError(
+                        message="Client mTLS error: PLUGIN_SERVER_ROOT_CERTS is not configured.",
+                        hint="Ensure the client configuration includes the CA certificate(s) for verifying the server."
+                    )
+                # If not auto_mtls but server still sent a cert (e.g. server-side TLS only),
+                # and no root CAs provided by client, this implies client might not verify.
+                # However, gRPC usually requires root_certificates for secure_channel.
+                # For simplicity, if server sends cert, we expect client to have root CAs.
+                logger.warning("Server sent a certificate, but client has no PLUGIN_SERVER_ROOT_CERTS. Secure channel might fail or be insecure.")
+                # Fallback to insecure or handle as error might be needed depending on strictness.
+                # Forcing an error if server_cert is present but no way to verify:
+                raise SecurityError(
+                    message="Server sent certificate, but client's PLUGIN_SERVER_ROOT_CERTS is missing.",
+                    hint="Configure PLUGIN_SERVER_ROOT_CERTS on the client to verify the server."
                 )
-                credentials = grpc.ssl_channel_credentials(
-                    root_certificates=full_pem.encode(),
-                    private_key=self.client_key_pem.encode(),
-                    certificate_chain=self.client_cert.encode(),
-                )
+
+
+            server_ca_certs_pem_content: str
+            if server_ca_certs_pem_from_config.startswith("file://"):
+                try:
+                    ca_path = server_ca_certs_pem_from_config[7:]
+                    with open(ca_path, 'r', encoding='utf-8') as f:
+                        server_ca_certs_pem_content = f.read()
+                except Exception as e:
+                    logger.error(f"Failed to load server CA cert from {server_ca_certs_pem_from_config}: {e}")
+                    raise SecurityError(f"Failed to load server CA cert from file: {e}") from e
             else:
-                logger.debug(
-                    "🔐 Creating TLS channel (server auth only) using server's "
-                    "cert as root CA. Client certs (if auto-generated) will not "
-                    "be presented."
-                )
-                credentials = grpc.ssl_channel_credentials(
-                    root_certificates=full_pem.encode()
-                )
+                server_ca_certs_pem_content = server_ca_certs_pem_from_config
 
-            self.grpc_channel = grpc.aio.secure_channel(
-                target,
-                credentials,
+            if client_own_cert_pem and client_own_key_pem and rpcplugin_config.auto_mtls_enabled(): # Full mTLS
+                logger.debug("🔐 Creating mTLS channel using client cert/key and server CA root.")
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=server_ca_certs_pem_content.encode('utf-8'),
+                    private_key=client_own_key_pem.encode('utf-8'),
+                    certificate_chain=client_own_cert_pem.encode('utf-8'),
+                )
+            elif rpcplugin_config.auto_mtls_enabled(): # Server-side TLS, client verifies server but doesn't send its own cert
+                                                 # Or mTLS expected but client cert/key missing
+                logger.warning("🔐 mTLS enabled, but client cert or key is missing. Attempting server-auth TLS. Client will not be authenticated by server via mTLS.")
+                credentials = grpc.ssl_channel_credentials(
+                    root_certificates=server_ca_certs_pem_content.encode('utf-8')
+                )
+            else: # Should not happen if _server_cert is present and auto_mtls is false, but as a fallback
+                logger.warning("Server sent a certificate, but auto_mtls is false on client. Creating insecure channel as fallback (UNEXPECTED).")
+                self.grpc_channel = grpc.aio.insecure_channel(target)
+                # Early exit for insecure channel if this path is taken
+                try:
+                    await asyncio.wait_for(self.grpc_channel.channel_ready(), timeout=rpcplugin_config.get("PLUGIN_CONNECTION_TIMEOUT", 5.0))
+                    logger.debug("🚢✅ gRPC channel (insecure fallback) ready and connected.")
+                    return
+                except TimeoutError as e_timeout_insecure:
+                    # ... (timeout error handling as below) ...
+                    raise TransportError("Insecure fallback channel timed out.") from e_timeout_insecure
+
+
+            if self.grpc_channel is None: # If not taken the insecure fallback path
+                self.grpc_channel = grpc.aio.secure_channel(
+                    target,
+                    credentials,
                 options=[
                     ("grpc.ssl_target_name_override", "localhost"),
                     ("grpc.max_receive_message_length", 32 * 1024 * 1024),

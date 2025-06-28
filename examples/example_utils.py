@@ -68,26 +68,34 @@ def configure_for_example() -> None:
         # We use specific keys to avoid accidentally overriding user-set complex
         # configs.
         example_defaults = {
-            "PLUGIN_AUTO_MTLS": False,
-            "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",
-            "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_HANDSHAKE_TIMEOUT": 15.0,
-            "PLUGIN_CONNECTION_TIMEOUT": 10.0,
+            "PLUGIN_AUTO_MTLS": False,  # Example default: usually insecure for simplicity
+            "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE", # Example default
+            "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",   # Example default
+            "PLUGIN_LOG_LEVEL": "INFO", # Example default
+            "PLUGIN_HANDSHAKE_TIMEOUT": 15.0, # Example default
+            "PLUGIN_CONNECTION_TIMEOUT": 10.0, # Example default
         }
 
         config_to_apply_programmatically = {}
+        # Apply example defaults only if the corresponding environment variable is not already set.
+        # This allows environment (e.g., set by a test runner like ch09_security_mtls_example.py)
+        # to take precedence over these example-specific defaults.
         for key, example_value in example_defaults.items():
-            current_val = rpcplugin_config.get(key)
-            # Use the imported CONFIG_SCHEMA
-            schema_default = CONFIG_SCHEMA.get(key, {}).get("default")
+            if os.environ.get(key) is None:
+                # If the environment variable for this config key is not set,
+                # then we apply the example's default value.
+                config_to_apply_programmatically[key] = example_value
+            # If os.environ.get(key) *is* set, rpcplugin_config would have already
+            # picked it up during its initial load, so we don't override it here
+            # with an example_default.
 
-            # Apply if current value is the schema default, or if key isn't in
-            # schema (custom for example), or if it's a log level we want to enforce.
-            if current_val == schema_default or key == "PLUGIN_LOG_LEVEL":
-                config_to_apply_programmatically[key] = example_value
-            elif key == "PLUGIN_AUTO_MTLS" and current_val is None:
-                config_to_apply_programmatically[key] = example_value
+        # Explicit overrides passed as arguments to this function (if they were defined in its signature)
+        # would take precedence here. For example:
+        # if log_level_override_arg is not None: # Assuming log_level_override_arg was a param to configure_for_example
+        #     config_to_apply_programmatically["PLUGIN_LOG_LEVEL"] = log_level_override_arg
+        # if auto_mtls_override_arg is not None: # Assuming auto_mtls_override_arg was a param
+        #     config_to_apply_programmatically["PLUGIN_AUTO_MTLS"] = auto_mtls_override_arg
+        # Since configure_for_example currently has no such parameters, this section is conceptual.
 
         # Call pyvider_configure with specific keyword arguments that match its
         # signature
