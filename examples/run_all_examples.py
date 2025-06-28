@@ -135,7 +135,10 @@ async def main() -> None:
             "exp_stderr": None, # Client manages server's cookie
         },
         # ch08_direct_client_connection.py (was 01b) is not run by this script.
-        # ch09_security_mtls_example.py (was 05) is currently not run by this script.
+        {
+            "file": "ch09_security_mtls_example.py", "args": [], "exp_fail": False, # Was 05
+            "exp_stderr": None, # Client manages server's cookie and mTLS certs
+        },
         { # Was 06_async_patterns.py
             "file": "ch10_async_patterns_demo.py", "args": [], "exp_fail": False,
             "exp_stderr": None,
