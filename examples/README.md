@@ -28,33 +28,39 @@ Each script automatically configures the Python path to find the `pyvider` modul
 | **`02_server_setup.py`** | ⚙️ Server configuration patterns | Beginner | Basic Python async |
 | **`03_client_connection.py`** | 🔗 Client implementation examples | Beginner | Understanding of 02 |
 | **`04_transport_options.py`** | 🚚 Unix socket vs TCP configuration | Intermediate | Basic networking |
+| **`05_echo_server.py`** | 📢 Echo service: Server implementation | Intermediate | Paired with `07_echo_client.py` |
 | **`05_security_mtls.py`** | 🔒 mTLS certificate setup & security patterns | Advanced | PKI knowledge |
 | **`06_async_patterns.py`** | ⚡ Advanced async best practices | Advanced | Asyncio proficiency |
+| **`07_echo_client.py`** | 💻 Echo service: Client implementation | Intermediate | Requires `05_echo_server.py` running |
 | **`07_error_handling.py`** | ⚠️ Robust error management patterns | Intermediate | Exception handling |
 | **`08_production_config.py`** | 🏭 Production deployment patterns | Advanced | Operations experience |
 | **`09_custom_protocols.py`** | 🔧 Custom protocol definitions & middleware | Advanced | Framework understanding |
 | **`10_performance_tuning.py`** | 📈 Performance benchmarking & optimization | Advanced | System knowledge |
 
-### **Complete Demos** (`demo/` directory)
+### **Service Examples**
 
-#### **Echo Service** (`examples/demo/`)
-A complete, production-ready echo service implementation.
+#### **Echo Service** (using `05_echo_server.py` and `07_echo_client.py`)
+A fundamental client-server example demonstrating basic RPC communication.
+The `echo.proto` for this service is located in `examples/proto/echo.proto`.
 
-```bash
-# Start the server
-python examples/demo/echo_server.py --transport tcp --port 50051
+**Running the Echo Service:**
+1.  **Start the server:**
+    ```bash
+    # From the project root directory:
+    python examples/05_echo_server.py
+    ```
+    The server will start and print logging information, including the transport it's using (typically a Unix socket by default).
 
-# In another terminal, run the client
-python examples/demo/echo_client.py localhost:50051
-```
-
-**Files:**
-- `examples/demo/echo.proto` - Protocol buffer service definition
-- `examples/demo/echo_server.py` - Server implementation
-- `examples/demo/echo_client.py` - Client implementation
+2.  **Run the client (in a separate terminal):**
+    ```bash
+    # From the project root directory:
+    python examples/07_echo_client.py
+    ```
+    The client will launch the server, connect to it, send a message, and print the reply.
 
 #### **Key-Value Service** (`examples/kvproto/py_rpc/`)
-Advanced key-value store with persistence and atomic operations.
+Advanced key-value store with persistence and atomic operations. This example also includes Go client/server interoperability.
+The protobuf definitions are within `examples/kvproto/py_rpc/proto/` and `examples/kvproto/go-rpc/proto/`.
 
 ```bash
 # Start the KV server
@@ -105,11 +111,17 @@ python 03_client_connection.py
 # Transport comparison
 python 04_transport_options.py
 
+# Echo Service (Server - run this first in one terminal)
+python 05_echo_server.py
+
 # Security and mTLS
 python 05_security_mtls.py
 
 # Advanced async patterns
 python 06_async_patterns.py
+
+# Echo Service (Client - run this in another terminal after starting the server)
+python 07_echo_client.py
 
 # Error handling
 python 07_error_handling.py
@@ -124,39 +136,18 @@ python 09_custom_protocols.py
 python 10_performance_tuning.py
 ```
 
-### **Running Complete Demos**
-
-#### Echo Service Demo
-```bash
-# Terminal 1: Start server
-cd examples/demo/
-python echo_server.py
-
-# Terminal 2: Run client
-python echo_client.py
-```
-
-#### Key-Value Demo
-```bash
-# Terminal 1: Start KV server  
-cd examples/kvproto/py_rpc/
-python py_kv_server.py --transport tcp
-
-# Terminal 2: Run KV client
-python py_kv_client.py put mykey myvalue
-python py_kv_client.py get mykey
-```
+*(Note: For service examples like Echo and Key-Value, see the "Service Examples" section above for specific running instructions, as they often involve running a server and a client script separately.)*
 
 ## 📚 Learning Path
 
 ### **For Beginners**
-1. Start with `01_quick_start.py` - Understand basic concepts
-2. Explore `02_server_setup.py` - Learn server configuration
-3. Try `03_client_connection.py` - Understand client patterns
-4. Run the complete `examples/demo/` (echo demo) - See everything together
+1. Start with `01_quick_start.py` - Understand basic concepts.
+2. Explore `02_server_setup.py` - Learn server configuration.
+3. Try `03_client_connection.py` - Understand client patterns.
+4. Run the **Echo Service** (`05_echo_server.py` and `07_echo_client.py`) - See a basic client/server interaction.
 
 ### **For Intermediate Users**
-1. Study `04_transport_options.py` - Compare Unix vs TCP
+1. Study `04_transport_options.py` - Compare Unix vs TCP.
 2. Review `07_error_handling.py` for robust applications
 3. Study `06_async_patterns.py` for async best practices
 4. Experiment with `examples/kvproto/py_rpc/` (KV demo) - Complex service implementation

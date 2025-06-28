@@ -1,17 +1,3 @@
-# Chapter 7: Client-Side of the Echo Demo
-
-After successfully establishing a connection to a plugin server using `RPCPluginClient` (as shown in Chapter 6), your host application can start making Remote Procedure Calls (RPCs). This is done using **gRPC stubs**.
-
-A gRPC stub is a client-side object, generated from your `.proto` file, that provides local methods corresponding to the RPC methods defined in your service. When you call a method on the stub, it handles the serialization of your request, sends it to the server over the established gRPC channel, receives the server's response, and deserializes it for you.
-
-## Example: Echo Client Implementation (`examples/07_echo_client.py`)
-
-This client application, `examples/07_echo_client.py`, is designed to interact with the Echo server `examples/05_echo_server.py` (detailed in Chapter 5). It demonstrates how to:
-1.  Launch the `05_echo_server.py` plugin using `RPCPluginClient`.
-2.  Create an `EchoServiceStub` using the `client.grpc_channel`.
-3.  Call the `Echo` RPC method on the server.
-
-```python
 #!/usr/bin/env python3
 # examples/07_echo_client.py
 import asyncio
@@ -160,26 +146,3 @@ if __name__ == "__main__":
     # Ensure PYTHONIOENCODING is set for subprocesses, good practice
     os.environ['PYTHONIOENCODING'] = 'UTF-8'
     asyncio.run(run_client())
-```
-
-**Explanation of `07_echo_client.py`:**
-
-1.  **Import Generated Code**: The client imports `echo_pb2` (for message types like `EchoRequest`, `EchoResponse`) and `echo_pb2_grpc` (for the `EchoServiceStub`).
-2.  **`EchoClient.__init__`**:
-    *   Stores the path to the server script.
-    *   Sets up `client_config` with an `env` dictionary. This dictionary contains environment variables that `RPCPluginClient` will pass to the `echo_server.py` subprocess when it's launched. Crucially, this includes the magic cookie key and value that the server expects for the handshake.
-3.  **`EchoClient.start`**:
-    *   Creates an `RPCPluginClient` instance, providing the command to run the server and the `client_config`.
-    *   Calls `await self._client.start()`. This is where `pyvider.rpcplugin` launches the server, handles the handshake, and establishes the gRPC channel.
-    *   If successful, `self._client.grpc_channel` becomes available.
-    *   An `EchoServiceStub` is then created using this channel: `self._stub = echo_pb2_grpc.EchoServiceStub(self._client.grpc_channel)`.
-4.  **`EchoClient.call_echo`**:
-    *   Checks if the client is ready and the stub is available.
-    *   Creates an `EchoRequest` message object: `request = echo_pb2.EchoRequest(message=message)`.
-    *   Calls the `Echo` method on the stub: `response = await self._stub.Echo(request)`. This is the actual RPC call. It's an `async` call, so it's `await`ed.
-    *   Processes the `EchoResponse` returned by the server.
-5.  **`EchoClient.close`**:
-    *   Calls `await self._client.close()` to shut down the connection and terminate the server subprocess.
-6.  **`run_client`**: The main asynchronous function that orchestrates creating the `EchoClient`, starting it, making calls, and closing it.
-
-This example demonstrates the typical workflow for a client application using `pyvider.rpcplugin` to interact with a plugin that it launches and manages.
