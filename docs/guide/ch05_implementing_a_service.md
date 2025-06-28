@@ -36,7 +36,7 @@ You would then use the gRPC tools for Python (`grpcio-tools`) to compile this `.
     *   Server servicer base classes (`EchoServiceServicer`) that you inherit from to implement the service.
     *   A function to register your servicer with a gRPC server (`add_EchoServiceServicer_to_server`).
 
-The `examples/proto/` directory in the `pyvider.rpcplugin` repository contains `echo.proto` and its pre-generated Python files (`echo_pb2.py`, `echo_pb2_grpc.py`).
+The `examples/proto/` directory in the `pyvider.rpcplugin` repository now contains `echo.proto` and its pre-generated Python files (`echo_pb2.py`, `echo_pb2_grpc.py`).
 
 Command to compile (run from the directory containing `echo.proto`, e.g., `examples/proto/`):
 ```bash

@@ -136,9 +136,19 @@ async def test_close_writer_exception(monkeypatch) -> None:
             raise Exception("Fake wait_closed error")
 
     fake_writer = FakeWriter()
-    # _close_writer should catch the exception and log an error.
-    await transport._close_writer(fake_writer) # No longer need type: ignore if FakeWriter is closer to StreamWriter
-    # No exception should propagate.
+    try:
+        # _close_writer should catch the exception and log an error.
+        await transport._close_writer(fake_writer)
+        # No exception should propagate.
+    finally:
+        await transport.close() # Explicitly close the transport instance
+        if hasattr(fake_writer, 'transport'):
+            # Attempt to help GC by breaking reference to the mock transport
+            fake_writer.transport = None
+        del fake_writer # Explicitly delete the mock
+        import gc
+        gc.collect() # Force garbage collection
+        await asyncio.sleep(0.01) # Allow loop to run other callbacks, slightly longer
 
 
 @pytest.mark.asyncio

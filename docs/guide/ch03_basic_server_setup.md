@@ -89,7 +89,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-Key takeaways from `ch03_server_setup_concepts.py`:
+Key takeaways from `02_server_setup.py`:
 *   The `plugin_server` factory function is used to instantiate `RPCPluginServer`.
 *   You provide your `RPCPluginProtocol` implementation and your handler instance.
 *   The `transport` parameter can be set to `"tcp"` or `"unix"`.
