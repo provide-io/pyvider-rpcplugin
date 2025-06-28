@@ -41,6 +41,7 @@ This example shows how a custom protocol might be structured and how one could c
 #!/usr/bin/env python3
 # examples/ch13_custom_protocols_demo.py
 import asyncio
+import time # Added import for time.perf_counter()
 from typing import Any
 from example_utils import configure_for_example
 configure_for_example() # Basic example setup

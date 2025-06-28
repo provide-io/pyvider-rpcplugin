@@ -144,10 +144,10 @@ If you encounter import errors like `ModuleNotFoundError: No module named 'pyvid
 
 ## 📖 Additional Resources
 
-- **API Documentation**: See `docs/api-reference.md` (Chapter 17)
-- **Architecture Guide**: See `docs/architecture.md` (Chapter 16)
-- **Security Guide**: See `docs/security.md` (Chapter 9 also covers mTLS)
-- **Production Deployment**: See `docs/production.md` (Chapter 12 also covers production config)
+- **API Documentation**: See `docs/guide/ch17_api_reference.md` (Chapter 17)
+- **Architecture Guide**: See `docs/guide/ch16_core_architecture.md` (Chapter 16)
+- **Security Guide**: See `docs/guide/ch09_security_mtls.md` (Chapter 9 also covers mTLS)
+- **Production Deployment**: See `docs/guide/ch12_production_config.md` (Chapter 12 also covers production config)
 
 ## 🤝 Contributing Examples
 

@@ -13,7 +13,7 @@ This client application, `examples/ch07_echo_client.py`, is designed to interact
 
 ```python
 #!/usr/bin/env python3
-# examples/07_echo_client.py
+# examples/ch07_echo_client.py
 import asyncio
 import os
 import sys
@@ -37,8 +37,8 @@ class EchoClient:
 
     def __init__(self, server_script_path: str) -> None:
         self.server_script_path = server_script_path
-        # Environment variables for the 05_echo_server.py subprocess.
-        # These must match what 05_echo_server.py expects for its handshake.
+        # Environment variables for the ch05_echo_server.py subprocess.
+        # These must match what ch05_echo_server.py expects for its handshake.
         self.client_config = {"env": {
             "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE_EXAMPLE", # Server looks for this key
             "PLUGIN_MAGIC_COOKIE_VALUE": "echo-super-secret-cookie", # Server expects this value
@@ -129,7 +129,7 @@ async def run_client() -> None:
             return
 
 
-    logger.info(f"Client (ch07_echo_client.py) will use server script: {server_script_path}")
+    logger.info(f"Client (examples/ch07_echo_client.py) will use server script: {server_script_path}")
     client = EchoClient(str(server_script_path))
 
     if not await client.start():
@@ -151,7 +151,7 @@ async def run_client() -> None:
         logger.warning("Verification: Did not receive a valid reply for the second call.")
 
     await client.close()
-    logger.info("Client example (07_echo_client.py) finished.")
+    logger.info("Client example (examples/ch07_echo_client.py) finished.")
 
 if __name__ == "__main__":
     from examples.example_utils import configure_for_example
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     asyncio.run(run_client())
 ```
 
-**Explanation of `07_echo_client.py`:**
+**Explanation of `ch07_echo_client.py`:**
 
 1.  **Import Generated Code**: The client imports `echo_pb2` (for message types like `EchoRequest`, `EchoResponse`) and `echo_pb2_grpc` (for the `EchoServiceStub`).
 2.  **`EchoClient.__init__`**:

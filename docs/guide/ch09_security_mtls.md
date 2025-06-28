@@ -112,7 +112,7 @@ async def functional_mtls_example() -> None:
         logger.info("🔧 Client-side mTLS configured programmatically using global rpcplugin_config.")
 
         # 3. Prepare Environment Variables for the Server Subprocess
-        # These will be passed when RPCPluginClient launches the dummy_server_executable.
+        # These will be passed when RPCPluginClient launches the ch02_dummy_server.py executable.
         server_env_vars = {
             "PLUGIN_AUTO_MTLS": "True", # Instruct server to use mTLS
             "PLUGIN_SERVER_CERT": f"file://{server_cert_path}",
