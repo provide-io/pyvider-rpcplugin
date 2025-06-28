@@ -1,219 +1,234 @@
 # Chapter 15: End-to-End Example Walkthrough
 
-This chapter walks through the `examples/11_end_to_end.py` script. This example is somewhat unique as it demonstrates running both an `RPCPluginServer` and an `RPCPluginClient` (that launches a mock executable) within the *same Python process*. This setup is primarily for illustrative and testing purposes to show the components interacting without needing separate file executions.
+This chapter walks through a refactored end-to-end example that demonstrates a `RPCPluginClient` launching a separate `RPCPluginServer` process and making a real gRPC call. This replaces the previous in-process example that used a dummy shell script.
 
-In a typical production scenario, the plugin server and the host application (client) would be in separate processes, often launched as distinct executables.
+The new example consists of three main parts:
+1.  A Protobuf definition for a simple `Greeter` service (`examples/proto/e2e_greeting.proto`).
+2.  A plugin server script (`examples/11_e2e_server.py`) that implements this `Greeter` service.
+3.  A client script (`examples/11_e2e_client.py`) that launches the server and calls its `Greet` method.
 
-## The `11_end_to_end.py` Example
+## 1. Protobuf Definition (`examples/proto/e2e_greeting.proto`)
 
-The goal of this example is to:
-1.  Define a simple gRPC-like service structure (though it doesn't use actual `.proto` compilation for this specific internal demo).
-2.  Start an `RPCPluginServer` in the background, configured to listen on a Unix domain socket.
-3.  Create a temporary "dummy executable" shell script. This script's role is to print a valid handshake string to its standard output, mimicking what a real plugin executable would do. The handshake string will point to the Unix socket our server is listening on.
-4.  Create an `RPCPluginClient` configured to "launch" this dummy shell script.
-5.  Have the client `start()`, which will execute the dummy script, read its handshake output, and connect to the server running in the same process.
-6.  Simulate an RPC call to demonstrate the connection is live.
-7.  Clean up all resources (client, server, dummy script, socket file).
+This file defines the service interface using Protocol Buffers.
+
+```protobuf
+syntax = "proto3";
+
+package examples.e2e_greeting;
+
+option go_package = "github.com/provide-io/pyvider-rpcplugin/examples/proto/e2e_greeting"; // Example Go package
+
+// The Greeter service definition.
+service Greeter {
+  // Sends a greeting
+  rpc Greet (GreetingRequest) returns (GreetingReply) {}
+}
+
+// The request message containing the name to greet.
+message GreetingRequest {
+  string name = 1;
+}
+
+// The response message containing the greeting.
+message GreetingReply {
+  string message = 1;
+}
+```
+This `.proto` file is compiled using `grpc_tools.protoc` to generate `e2e_greeting_pb2.py` (containing message classes) and `e2e_greeting_pb2_grpc.py` (containing client stubs and server base classes). These generated files are placed in `examples/proto/`.
+
+## 2. The Plugin Server (`examples/11_e2e_server.py`)
+
+This script implements the `Greeter` service and runs an `RPCPluginServer`.
 
 ```python
 #!/usr/bin/env python3
-# examples/11_end_to_end.py
+# examples/11_e2e_server.py
 """
-A complete, self-contained end-to-end example of a pyvider-rpcplugin server
-and client running in the same process.
+End-to-End Greeter Plugin Server.
 """
-
 import asyncio
+import os
+from typing import Any, cast
+
+import grpc
+
+# Import pyvider components
+from pyvider.rpcplugin.factories import plugin_server
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
+from pyvider.telemetry import logger
+
+# Import generated protobuf code for E2E Greeting service
+from examples.proto import e2e_greeting_pb2
+from examples.proto import e2e_greeting_pb2_grpc
+
+
+# --- Implement the Handler (Servicer) ---
+class GreeterServiceHandler(e2e_greeting_pb2_grpc.GreeterServicer):
+    """
+    Implements the Greeter service.
+    """
+    async def Greet(
+        self, request: e2e_greeting_pb2.GreetingRequest, context: grpc.aio.ServicerContext
+    ) -> e2e_greeting_pb2.GreetingReply:
+        logger.info(
+            "GreeterServiceHandler: Received Greet request",
+            client_name=request.name,
+        )
+        message = f"Hello, {request.name}! This is a real end-to-end call from the E2E server."
+        return e2e_greeting_pb2.GreetingReply(message=message)
+
+# --- Implement the Protocol Wrapper ---
+class E2EGreetingProtocol(RPCPluginProtocol):
+    """
+    RPCPluginProtocol implementation for the E2E Greeter service.
+    """
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
+        # Return the generated _pb2_grpc module and the Service name string
+        return e2e_greeting_pb2_grpc, "examples.e2e_greeting.Greeter"
+
+    def get_method_type(self, method_name: str) -> str:
+        if "Greet" in method_name:
+            return "unary_unary"
+        logger.warning(f"Unknown method {method_name} in E2EGreetingProtocol, defaulting to unary_unary.")
+        return "unary_unary"
+
+    async def add_to_server(self, server: Any, handler: Any) -> None:
+        # Register the handler with the gRPC server
+        e2e_greeting_pb2_grpc.add_GreeterServicer_to_server(
+            cast(GreeterServiceHandler, handler), server
+        )
+        logger.info("GreeterService handler registered with gRPC server.")
+
+# --- Main Server Logic ---
+async def main() -> None:
+    logger.info("Starting E2E Greeting Plugin Server (11_e2e_server.py)...")
+
+    handler = GreeterServiceHandler()
+    e2e_protocol_instance = cast(TypesRPCPluginProtocol, E2EGreetingProtocol())
+
+    server: RPCPluginServer = plugin_server(
+        protocol=e2e_protocol_instance,
+        handler=handler,
+    )
+
+    try:
+        await server.serve()
+    except Exception as e:
+        logger.error(f"E2E Greeting Server execution failed: {e}", exc_info=True)
+    finally:
+        logger.info("E2E Greeting Server (11_e2e_server.py) shutting down.")
+
+if __name__ == "__main__":
+    from examples.example_utils import configure_for_example
+    configure_for_example()
+
+    asyncio.run(main())
+```
+**Key points for the server:**
+*   `GreeterServiceHandler` inherits from `e2e_greeting_pb2_grpc.GreeterServicer` and implements the `Greet` method using the generated protobuf message types.
+*   `E2EGreetingProtocol` implements `RPCPluginProtocol` to provide descriptors from `e2e_greeting_pb2_grpc` and register the `GreeterServiceHandler`.
+*   The `main` function sets up and runs the `RPCPluginServer`.
+
+## 3. The Client Application (`examples/11_e2e_client.py`)
+
+This script launches the `11_e2e_server.py` and makes an RPC call to it.
+
+```python
+#!/usr/bin/env python3
+# examples/11_e2e_client.py
+"""
+End-to-End Greeter Plugin Client.
+Launches the 11_e2e_server.py and makes a gRPC call.
+"""
+import asyncio
+import os
 import sys
 from pathlib import Path
 from typing import Any
 
-from attrs import define, field
-
-# Add src to path for examples
-project_root = Path(__file__).resolve().parent.parent
-src_path = project_root / "src"
-if src_path.exists() and str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
-# Import pyvider.rpcplugin components
-from pyvider.rpcplugin import (
-    plugin_client,
-    plugin_protocol, # Using the basic protocol factory
-    plugin_server,
-)
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.types import (
-    RPCPluginProtocol as TypesRPCPluginProtocol,
-)
+# Import pyvider components
+from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.exception import RPCPluginError
 from pyvider.telemetry import logger
-from pyvider.rpcplugin.config import rpcplugin_config # For constructing handshake
 
-# Define simple request/reply structures (like Protobuf messages)
-@define(frozen=True, slots=True)
-class GreetingRequest:
-    name: str = field()
+# Import generated protobuf code for E2E Greeting service
+from examples.proto import e2e_greeting_pb2
+from examples.proto import e2e_greeting_pb2_grpc
 
-@define(frozen=True, slots=True)
-class GreetingReply:
-    message: str = field()
-
-# Define a simple service handler
-class GreeterServiceHandler:
-    async def Greet(
-        self, request: GreetingRequest, context: Any # Context is gRPC context, Any for this sim
-    ) -> GreetingReply:
-        logger.info(
-            "Server (Handler): Received Greet request",
-            client_name=request.name,
-        )
-        message = f"Hello, {request.name}! This is a live end-to-end call."
-        return GreetingReply(message=message)
 
 async def main() -> None:
-    logger.info("🚀 pyvider-rpcplugin End-to-End In-Process Example")
+    logger.info("🚀 Starting E2E Greeting Client (11_e2e_client.py)")
 
-    # 1. Define Protocol and Handler
-    # Using the basic protocol provided by plugin_protocol() factory
-    protocol_instance: TypesRPCPluginProtocol = plugin_protocol(service_name="E2EService")
-    handler_instance = GreeterServiceHandler()
+    current_dir = Path(__file__).resolve().parent
+    server_script_path = current_dir / "11_e2e_server.py"
 
-    # Define a Unix socket path for the server
-    server_socket_path = Path("./e2e_server_demo.sock").resolve()
+    if not server_script_path.exists():
+        logger.error(f"Could not find server script: {server_script_path}")
+        return
 
-    # 2. Create and start the RPCPluginServer in a background task
-    server_instance: RPCPluginServer = plugin_server(
-        protocol=protocol_instance,
-        handler=handler_instance,
-        transport="unix",
-        transport_path=str(server_socket_path),
-    )
+    client_config = {
+        "env": {
+            "PLUGIN_MAGIC_COOKIE_KEY": "E2E_PLUGIN_COOKIE_EXAMPLE",
+            "PLUGIN_MAGIC_COOKIE_VALUE": "e2e-super-secret-cookie",
+            "PLUGIN_LOG_LEVEL": os.environ.get("PLUGIN_LOG_LEVEL", "DEBUG")
+        }
+    }
 
-    logger.info(f"Server starting in background, listening on {server_socket_path}...")
-    server_task = asyncio.create_task(server_instance.serve())
-
+    client: RPCPluginClient | None = None
     try:
-        # Wait for the server to be ready
-        await server_instance.wait_for_server_ready(timeout=5.0)
-        logger.info("Server is ready.")
+        logger.info(f"Client launching plugin server: {server_script_path}")
+        client = RPCPluginClient(
+            command=[sys.executable, str(server_script_path)],
+            config=client_config
+        )
 
-        # 3. Construct the handshake string that the dummy executable will output.
-        # This mimics what a real plugin server would print to stdout.
-        core_v = rpcplugin_config.get("PLUGIN_CORE_VERSION")
-        # Get actual protocol version negotiated by the server if possible, else default
-        proto_v = getattr(server_instance, "_protocol_version", "1")
-        # Get actual endpoint from the running server's transport
-        server_transport_endpoint = getattr(getattr(server_instance, "_transport", None), "endpoint", None)
+        logger.info("Starting client and connecting to plugin server...")
+        await client.start()
 
-        if not server_transport_endpoint:
-            raise RuntimeError("Server transport endpoint not available after server ready.")
+        if not client.grpc_channel:
+            logger.error("Client connected but gRPC channel is not available.")
+            return
 
-        # Handshake: CORE_VER|PLUGIN_VER|NET_TYPE|NET_ADDR|PROTOCOL_NAME|CERT_BODY
-        # For this example, PROTOCOL_NAME is 'grpc' (standard for go-plugin compatibility)
-        # and CERT_BODY is empty as we are not using mTLS here.
-        handshake_output_string = f"{core_v}|{proto_v}|unix|{server_transport_endpoint}|grpc|"
-        logger.info(f"Dummy executable will output handshake: {handshake_output_string}")
+        logger.info("✅ Client connected to E2E Greeting server successfully!")
 
-        # Create the dummy executable shell script
-        dummy_executable_file = Path("./dummy_e2e_handshaker.sh").resolve()
-        with open(dummy_executable_file, "w") as f:
-            f.write("#!/bin/sh\n")
-            f.write(f"echo '{handshake_output_string}'\n") # Script just echoes the handshake
-        dummy_executable_file.chmod(0o755) # Make it executable
+        stub = e2e_greeting_pb2_grpc.GreeterStub(client.grpc_channel)
+        request_pb = e2e_greeting_pb2.GreetingRequest(name="Real E2E User")
 
-        # 4. Create and start the RPCPluginClient
-        client_instance = None
-        try:
-            logger.info(f"Client will launch dummy executable: {dummy_executable_file}")
-            # The client is configured to run our dummy shell script.
-            client_instance = plugin_client(command=[str(dummy_executable_file)])
-            await client_instance.start() # Launches script, reads handshake, connects
-            logger.info("Client connected to in-process server successfully via dummy executable.")
+        logger.info(f"📞 Calling Greet method with name: '{request_pb.name}'...")
+        response_pb = await stub.Greet(request_pb, timeout=10.0)
 
-            # 5. Simulate an RPC call
-            # Since BasicRPCPluginProtocol doesn't register a real gRPC service/stub,
-            # we can't make a gRPC call through client.grpc_channel easily without one.
-            # Instead, we'll directly call the handler method on the server instance
-            # to prove the server is running and the concept works.
-            if client_instance.is_started:
-                logger.info("Client is connected. Simulating RPC call to server's handler...")
-                request_obj = GreetingRequest(name="E2E Demo User")
-                # Directly calling the handler method on the server instance
-                reply_obj = await handler_instance.Greet(request_obj, None) # Context is None for this sim
-                logger.info(f"Simulated RPC Reply from server: '{reply_obj.message}'")
-                assert "E2E Demo User" in reply_obj.message
-            else:
-                logger.error("Client failed to connect as expected.")
+        logger.info(f"💬 Server replied: '{response_pb.message}'")
+        assert "Real E2E User" in response_pb.message
+        assert "from the E2E server" in response_pb.message
 
-        except Exception as client_err:
-            logger.error(f"Error during client operations: {client_err}", exc_info=True)
-        finally:
-            if client_instance:
-                await client_instance.close() # This also "terminates" the dummy script
-                logger.info("Client closed.")
-            if dummy_executable_file.exists():
-                dummy_executable_file.unlink()
-                logger.info("Dummy executable cleaned up.")
-
+    except RPCPluginError as e:
+        logger.error(f"❌ Client RPCPluginError: {e.message}", exc_info=True)
+        if e.hint:
+            logger.error(f"   Hint: {e.hint}")
     except Exception as e:
-        logger.error(f"An error occurred in the main E2E example: {e}", exc_info=True)
+        logger.error(f"❌ An unexpected error occurred: {e}", exc_info=True)
     finally:
-        # Stop the server and wait for its task to complete
-        logger.info("Stopping in-process server...")
-        await server_instance.stop()
-        if not server_task.done():
-            server_task.cancel()
-            try:
-                await server_task
-            except asyncio.CancelledError:
-                logger.info("Server task cancelled.")
-        logger.info("Server stopped.")
-
-        # Clean up the server's socket file
-        if server_socket_path.exists():
-            try:
-                server_socket_path.unlink()
-                logger.info("Server socket file cleaned up.")
-            except OSError as e:
-                logger.warning(f"Could not remove server socket file {server_socket_path}: {e}")
-
-    logger.info("✅ End-to-end example finished.")
+        if client:
+            logger.info("Shutting down client and plugin server...")
+            await client.close()
+            logger.info("Client and plugin server shut down.")
 
 if __name__ == "__main__":
-    # Configure for example runs (e.g. sets default magic cookie for server if not set by client)
-    from example_utils import configure_for_example
+    from examples.example_utils import configure_for_example
     configure_for_example()
+
+    os.environ['PYTHONIOENCODING'] = 'UTF-8'
     asyncio.run(main())
 ```
+**Key points for the client:**
+*   It creates an `RPCPluginClient` instance, providing the command to run `11_e2e_server.py`.
+*   After `await client.start()` successfully connects, it uses `client.grpc_channel` to create a `GreeterStub`.
+*   It then makes a true RPC call: `await stub.Greet(request_pb)`.
 
-**Breakdown of `11_end_to_end.py`:**
-
-1.  **Service Definition (Conceptual)**:
-    *   `GreetingRequest` and `GreetingReply` are `attrs` classes mimicking Protobuf messages.
-    *   `GreeterServiceHandler` is a simple class with an `async def Greet` method, acting like a gRPC servicer.
-
-2.  **Server Setup**:
-    *   A `BasicRPCPluginProtocol` (via `plugin_protocol()`) and the `GreeterServiceHandler` are used to create an `RPCPluginServer`.
-    *   The server is configured to use a Unix domain socket (`e2e_server.sock`).
-    *   `server_instance.serve()` is run in a background `asyncio.task`.
-    *   The script waits for the server to be ready using `await server_instance.wait_for_server_ready()`.
-
-3.  **Dummy Executable Creation**:
-    *   A crucial part of this example is creating a *fake* plugin executable (`dummy_e2e_handshaker.sh`).
-    *   This shell script does only one thing: `echo` the exact handshake string that a real plugin (our `server_instance`) would produce.
-    *   The handshake string is carefully constructed using the `RPCPluginServer`'s actual negotiated details (core version, protocol version, and its Unix socket endpoint).
-
-4.  **Client Setup and Connection**:
-    *   An `RPCPluginClient` is created, with its `command` set to execute the `dummy_e2e_handshaker.sh` script.
-    *   When `await client_instance.start()` is called:
-        *   The shell script runs.
-        *   It prints the pre-calculated handshake string to its stdout.
-        *   The `RPCPluginClient` reads this, parses it, and "connects" to the Unix socket where `server_instance` (running in the same process) is listening.
-
-5.  **Simulated RPC Call**:
-    *   Because `BasicRPCPluginProtocol` doesn't register any real gRPC services that the client could call via a stub, the example directly calls `handler_instance.Greet(...)`. This isn't a true RPC call over the established channel but demonstrates that the server-side logic is reachable and the conceptual flow is complete. A real end-to-end test with custom services would involve generating and using gRPC stubs.
-
-6.  **Cleanup**:
-    *   The client, dummy executable, server, and socket file are all cleaned up.
-
-This example, while a bit artificial due to the in-process nature and the dummy executable, effectively tests and demonstrates the core handshake and connection mechanisms of `RPCPluginClient` and `RPCPluginServer` working together.
+This refactored example now accurately demonstrates the client-launches-server pattern with actual gRPC communication mediated by `pyvider.rpcplugin`.
+To run this example:
+1.  Navigate to the project root.
+2.  Execute the client: `python examples/11_e2e_client.py`
+The client will launch the server, make the call, and then both will shut down.
