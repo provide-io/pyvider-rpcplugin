@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# examples/11_e2e_client.py
+# examples/ch15_e2e_client.py
 """
 End-to-End Greeter Plugin Client.
-Launches the 11_e2e_server.py and makes a gRPC call.
+Launches the ch15_e2e_server.py and makes a gRPC call.
 """
 import asyncio
 import os
@@ -34,7 +34,7 @@ from pyvider.telemetry import logger
 
 
 async def main() -> None:
-    logger.info("🚀 Starting E2E Greeting Client (11_e2e_client.py)")
+    logger.info("🚀 Starting E2E Greeting Client (ch15_e2e_client.py)")
 
     # Import proto modules here, after sys.path is configured
     import examples.proto # Import the package itself

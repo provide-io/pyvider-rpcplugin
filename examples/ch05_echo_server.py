@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/05_echo_server.py
+# examples/ch05_echo_server.py
 import asyncio
 import os
 from typing import Any, cast
@@ -47,7 +47,7 @@ class EchoProtocol(RPCPluginProtocol):
 
 # --- Main Server Logic ---
 async def main() -> None:
-    logger.info("Starting Echo Plugin Server (05_echo_server.py)...")
+    logger.info("Starting Echo Plugin Server (ch05_echo_server.py)...")
 
     # Basic env setup for standalone run, mimicking what a client might set.
     # In a real plugin scenario, these are set by the host application.
@@ -86,7 +86,7 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"Server execution failed: {e}", exc_info=True)
     finally:
-        logger.info("Echo server (05_echo_server.py) shutting down.")
+        logger.info("Echo server (ch05_echo_server.py) shutting down.")
         # server.stop() is called within RPCPluginServer.serve()'s finally block.
 
 if __name__ == "__main__":

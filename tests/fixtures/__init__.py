@@ -50,7 +50,6 @@ from tests.fixtures.transport import (
     unused_tcp_port,
     unix_transport,
     managed_unix_socket_path,
-    transport_cleanup,
 )
 from tests.fixtures.client import (
     client_command,
@@ -112,7 +111,6 @@ __all__ = [
     "unused_tcp_port",
     "unix_transport",
     "managed_unix_socket_path",
-    "transport_cleanup",
     # client
     "client_command",
     "client_instance",

@@ -85,9 +85,11 @@ async def functional_mtls_example() -> None:
 
         configure(
             auto_mtls=True,
-            client_cert_path=f"file://{client_cert_path}",
-            client_key_path=f"file://{client_key_path}",
-            server_root_certs_path=f"file://{ca_cert_path}",
+            client_cert=f"file://{client_cert_path}",
+            client_key=f"file://{client_key_path}",
+            # For the client to verify the server, it needs the CA that signed the server's cert.
+            # This is passed via kwargs to become PLUGIN_SERVER_ROOT_CERTS
+            SERVER_ROOT_CERTS=f"file://{ca_cert_path}",
             magic_cookie_key=client_magic_cookie_key,
             magic_cookie=client_magic_cookie_value,
         )

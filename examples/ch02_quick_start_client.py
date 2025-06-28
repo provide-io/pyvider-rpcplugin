@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Quick Start Example - Client launching an executable plugin server.
-This example demonstrates the `plugin_client` launching the `00_dummy_server.py`
+This example demonstrates the `plugin_client` launching the `ch02_dummy_server.py`
 executable and establishing a connection.
 """
 
@@ -34,7 +34,7 @@ async def main():
 
     if not dummy_server_executable.exists():
         logger.error(f"Dummy server executable not found at: {dummy_server_executable}")
-        logger.error("Please ensure 00_dummy_server.py is in the same directory.")
+        logger.error("Please ensure ch02_dummy_server.py is in the same directory.")
         return
 
     # The command to launch the plugin server
@@ -83,7 +83,7 @@ async def main():
     finally:
         if client and client.is_started:
             logger.info("Shutting down client and plugin...")
-            # This will also request the plugin server (00_dummy_server.py) to shut down
+            # This will also request the plugin server (ch02_dummy_server.py) to shut down
             # via its controller service, and then terminate the process if needed.
             await client.close()
             logger.info("Client and plugin shut down.")
