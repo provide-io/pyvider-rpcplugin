@@ -41,7 +41,7 @@ async def main() -> None:
 
     # Determine path to the server script
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "11_e2e_server.py"
+    server_script_path = current_dir / "ch15_e2e_server.py" # Updated name
 
     if not server_script_path.exists():
         logger.error(f"Could not find server script: {server_script_path}")

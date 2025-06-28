@@ -44,13 +44,13 @@ Before diving into examples, let's briefly cover the main components of the `pyv
 
 This example demonstrates the most common use case: a host application (client) launching a plugin server (which is a separate Python script acting as an executable) and establishing a connection.
 
-**1. The Plugin Server Executable (`examples/00_dummy_server.py`)**
+**1. The Plugin Server Executable (`examples/ch02_dummy_server.py`)**
 
-First, let's look at a minimal plugin server. This script (`00_dummy_server.py` in the `examples` directory) is designed to be run as an executable by our client. It starts an RPC server using a basic, built-in protocol and a simple handler that doesn't perform any specific actions. Its main role here is to participate in the handshake.
+First, let's look at a minimal plugin server. This script (`ch02_dummy_server.py` in the `examples` directory) is designed to be run as an executable by our client. It starts an RPC server using a basic, built-in protocol and a simple handler that doesn't perform any specific actions. Its main role here is to participate in the handshake.
 
 ```python
 #!/usr/bin/env python3
-# examples/00_dummy_server.py
+# examples/ch02_dummy_server.py
 """
 A minimal RPC plugin server for use by other examples.
 It uses the BasicRPCPluginProtocol and a no-op handler.
@@ -74,7 +74,7 @@ class DummyHandler:
         return {}
 
 async def main() -> None:
-    logger.info("🚀 00_dummy_server.py: Starting as an executable plugin...")
+    logger.info("🚀 ch02_dummy_server.py: Starting as an executable plugin...")
     # configure_for_example() at module level sets default magic cookie and disables mTLS.
     # The launching client is expected to set the correct magic cookie environment variable.
     protocol: TypesRPCPluginProtocol = plugin_protocol() # Uses BasicRPCPluginProtocol
@@ -96,20 +96,20 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-Key points about `00_dummy_server.py`:
+Key points about `ch02_dummy_server.py`:
 *   It uses `configure_for_example()` to set up basic configurations suitable for examples (like disabling mTLS by default and setting a default magic cookie key/value).
 *   It employs `plugin_protocol()` to get a basic protocol implementation and `plugin_server()` to create an `RPCPluginServer` instance.
 *   The `server.serve()` call is crucial: it performs the server-side handshake (including printing the handshake string to its standard output) and then starts listening for RPC calls.
 
-You typically don't run `00_dummy_server.py` directly in this scenario; it's launched as a subprocess by the client.
+You typically don't run `ch02_dummy_server.py` directly in this scenario; it's launched as a subprocess by the client.
 
-**2. The Client Application (`examples/01_quick_start.py`)**
+**2. The Client Application (`examples/ch02_quick_start_client.py`)**
 
-Now, let's examine the client application (`examples/01_quick_start.py`) that will launch and connect to our dummy server.
+Now, let's examine the client application (`ch02_quick_start_client.py`) that will launch and connect to our dummy server.
 
 ```python
 #!/usr/bin/env python3
-# examples/01_quick_start.py
+# examples/ch02_quick_start_client.py
 import asyncio
 import sys
 from pathlib import Path
@@ -125,7 +125,7 @@ from pyvider.telemetry import logger
 async def main():
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")
     example_dir = Path(__file__).resolve().parent
-    dummy_server_executable = example_dir / "00_dummy_server.py"
+    dummy_server_executable = example_dir / "ch02_dummy_server.py" # Updated name
     dummy_server_command = [sys.executable, str(dummy_server_executable)]
 
     # configure_for_example() sets client-side config (e.g., magic cookie values to *send*).
@@ -168,11 +168,11 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-Key points about `01_quick_start.py`:
+Key points about `ch02_quick_start_client.py`:
 *   It defines the command to execute the plugin server (`dummy_server_command`).
 *   It uses the `plugin_client` factory function to create an `RPCPluginClient` instance. This factory is a convenient way to get a client that's pre-configured to launch an executable.
 *   `client.start()` is the core method that:
-    *   Launches the `00_dummy_server.py` script as a subprocess.
+    *   Launches the `ch02_dummy_server.py` script as a subprocess.
     *   Sets up necessary environment variables for the subprocess (like the magic cookie).
     *   Reads the handshake string from the server's stdout.
     *   Parses the handshake to determine how to connect (e.g., which Unix socket or TCP port).
@@ -184,6 +184,6 @@ Key points about `01_quick_start.py`:
 
 1.  Ensure you have `pyvider.rpcplugin` installed.
 2.  Navigate to the `examples/` directory in your terminal (or ensure the `examples` directory is in your Python path if running from the project root).
-3.  Run the client: `python 01_quick_start.py`
+3.  Run the client: `python ch02_quick_start_client.py`
 
 You should see log output from both the client and the server, indicating a successful connection and shutdown. This demonstrates the fundamental client-launches-plugin pattern.

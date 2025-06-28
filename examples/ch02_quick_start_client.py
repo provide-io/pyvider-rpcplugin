@@ -28,9 +28,9 @@ async def main():
         "🚀 Starting pyvider-rpcplugin Quick Start Example (Client Launching Plugin)"
     )
 
-    # Determine the path to the 00_dummy_server.py executable
+    # Determine the path to the ch02_dummy_server.py executable
     example_dir = Path(__file__).resolve().parent
-    dummy_server_executable = example_dir / "00_dummy_server.py"
+    dummy_server_executable = example_dir / "ch02_dummy_server.py" # Updated name
 
     if not dummy_server_executable.exists():
         logger.error(f"Dummy server executable not found at: {dummy_server_executable}")

@@ -6,12 +6,12 @@ pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
 This contrasts with examples that use `plugin_client` to launch the server.
 To run this example:
-1. Start a compatible server first (e.g., `examples/00_dummy_server.py` configured for Unix socket).
-   Example: `python examples/00_dummy_server.py`
+1. Start a compatible server first (e.g., `examples/ch02_dummy_server.py` configured for Unix socket).
+   Example: `python examples/ch02_dummy_server.py`
    (Ensure it's configured with PLUGIN_AUTO_MTLS=False or certs are set up if True)
    Note the Unix socket path it prints (e.g., /tmp/pyvider-XXXX.sock)
 2. Update `SOCKET_PATH` in this script to match the server's socket path.
-3. Run this script: `python examples/01b_direct_client_connection.py`
+3. Run this script: `python examples/ch08_direct_client_connection.py`
 """
 
 import asyncio
@@ -31,7 +31,7 @@ from example_utils import clear_plugin_env_vars, configure_for_example  # noqa: 
 
 from pyvider.telemetry import logger  # noqa: E402
 
-# Path to the file where 00_dummy_server.py writes its socket path
+# Path to the file where ch02_dummy_server.py writes its socket path
 SOCKET_COMM_FILE = project_root / "dummy_server_socket.txt"
 
 
@@ -49,7 +49,7 @@ async def run_direct_client():
     except FileNotFoundError:
         logger.error(
             f"Socket communication file not found: {SOCKET_COMM_FILE}. "
-            "Ensure 00_dummy_server.py ran successfully and wrote this file."
+            "Ensure ch02_dummy_server.py ran successfully and wrote this file."
         )
         print(f"❌ Socket path file not found: {SOCKET_COMM_FILE}. Start server first.")
         return

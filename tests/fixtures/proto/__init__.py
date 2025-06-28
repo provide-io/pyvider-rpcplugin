@@ -1,4 +1,4 @@
-# This file makes Python treat the 'proto' directory as a package.
+# This file makes Python treat the 'examples/proto' directory as a package.
 
 from . import echo_pb2
 from . import echo_pb2_grpc
