@@ -27,7 +27,7 @@ This glossary defines key terms and concepts used throughout the `pyvider.rpcplu
 
 *   **IPC (Inter-Process Communication)**: Mechanisms that allow different processes, potentially running on the same machine or across a network, to exchange data and synchronize their actions.
 
-*   **Magic Cookie**: A shared secret (string value) used during the handshake for basic authentication. The client passes it to the plugin server (typically via an environment variable), and the server verifies it against its expected value. This helps ensure that the plugin is being run by a trusted host. Configured via `PLUGIN_MAGIC_COOKIE_KEY` and `PLUGIN_MAGIC_COOKIE_VALUE`.
+*   **Magic Cookie**: A shared secret string used for basic authentication during the handshake. The client is configured with a `PLUGIN_MAGIC_COOKIE_VALUE` (the secret string) and a `PLUGIN_MAGIC_COOKIE_KEY` (the name of an environment variable). The client sets this environment variable for the plugin server process, with the `PLUGIN_MAGIC_COOKIE_VALUE` as its value. The server, also configured with the same `PLUGIN_MAGIC_COOKIE_KEY` and expected `PLUGIN_MAGIC_COOKIE_VALUE`, reads the environment variable and verifies its value. This helps ensure the plugin is run by a trusted host.
 
 *   **mTLS (Mutual Transport Layer Security)**: A security protocol where both the client and the server authenticate each other using X.509 digital certificates before establishing a secure, encrypted communication channel.
 

@@ -77,12 +77,6 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
         "description": "The expected magic cookie value for validation.",
         "type": "str",
     },
-    "PLUGIN_MAGIC_COOKIE": {
-        "required": True,
-        "default": "test_cookie_value",
-        "description": "The actual cookie provided by the client.",
-        "type": "str",
-    },
     "PLUGIN_PROTOCOL_VERSIONS": {
         "required": True,
         "default": [1],
@@ -587,8 +581,7 @@ def configure(
 
     if magic_cookie is not None:
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
-        rpcplugin_config.set("PLUGIN_MAGIC_COOKIE", magic_cookie)
-        logger.debug(f"⚙️📝 Set magic cookie: {magic_cookie}")
+        logger.debug(f"⚙️📝 Set magic cookie value: {magic_cookie}")
 
     if protocol_version is not None:
         if protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:

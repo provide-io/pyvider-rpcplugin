@@ -95,9 +95,6 @@ def test_validate_config_value_valid():
     key_no_valid_values = "PLUGIN_MAGIC_COOKIE_VALUE"
     meta_no_valid_values = CONFIG_SCHEMA[key_no_valid_values]
     assert validate_config_value(key_no_valid_values, "any-cookie", meta_no_valid_values) is True
-    key_required = "PLUGIN_MAGIC_COOKIE"
-    meta_required = CONFIG_SCHEMA[key_required]
-    assert validate_config_value(key_required, "a-cookie", meta_required) is True
 
 def test_validate_config_value_missing_required():
     key = "PLUGIN_MAGIC_COOKIE_KEY"
@@ -278,7 +275,7 @@ def test_configure_all_options(mock_rpc_set):
     )
     expected_calls = [
         call("PLUGIN_MAGIC_COOKIE_VALUE", "test-cookie"),
-        call("PLUGIN_MAGIC_COOKIE", "test-cookie"),
+        # call("PLUGIN_MAGIC_COOKIE", "test-cookie"), # Removed
         call("PLUGIN_PROTOCOL_VERSIONS", [5]),
         call("PLUGIN_SERVER_TRANSPORTS", ["unix", "tcp"]),
         call("PLUGIN_CLIENT_TRANSPORTS", ["unix", "tcp"]),
@@ -299,7 +296,7 @@ def test_configure_minimal_options(mock_rpc_set):
     configure(magic_cookie="minimal-cookie", auto_mtls=False)
     expected_calls = [
         call("PLUGIN_MAGIC_COOKIE_VALUE", "minimal-cookie"),
-        call("PLUGIN_MAGIC_COOKIE", "minimal-cookie"),
+        # call("PLUGIN_MAGIC_COOKIE", "minimal-cookie"), # Removed
         call("PLUGIN_AUTO_MTLS", "false"),
     ]
     mock_rpc_set.assert_has_calls(expected_calls, any_order=True)

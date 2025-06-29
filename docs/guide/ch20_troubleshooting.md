@@ -11,13 +11,13 @@ Handshake errors occur during the initial establishment of a connection between 
 *   **Magic Cookie Mismatch**:
     *   **Symptom**: Error message similar to: `"[HandshakeError] Magic cookie mismatch. Expected: 'expected_value', Received: 'wrong_value'."`
     *   **Cause**: This usually means a mismatch in the magic cookie's secret value or the environment variable name used to pass it. Specifically:
-        *   The value set by the client (from its `PLUGIN_MAGIC_COOKIE_VALUE` config, placed into an environment variable for the server using the name from its `PLUGIN_MAGIC_COOKIE_KEY` config) does not match the `PLUGIN_MAGIC_COOKIE_VALUE` the server is configured to expect and validate against.
-        *   Alternatively, the environment variable *name* used by the client (from its `PLUGIN_MAGIC_COOKIE_KEY` config) might not be the same variable *name* the server is configured to read (from its `PLUGIN_MAGIC_COOKIE_KEY` config).
+        *   The **client** is configured with a `PLUGIN_MAGIC_COOKIE_KEY` (e.g., `"ACTUAL_COOKIE_ENV_VAR"`) and a `PLUGIN_MAGIC_COOKIE_VALUE` (e.g., `"the_secret"`). The client will set `ACTUAL_COOKIE_ENV_VAR="the_secret"` in the plugin server's environment.
+        *   The **server** is also configured with its own `PLUGIN_MAGIC_COOKIE_KEY` (which must match the client's, e.g., `"ACTUAL_COOKIE_ENV_VAR"`) and its own expected `PLUGIN_MAGIC_COOKIE_VALUE` (e.g., `"the_secret"`).
+        *   A mismatch occurs if the server's expected `PLUGIN_MAGIC_COOKIE_VALUE` does not match the value it reads from the environment variable (named by its `PLUGIN_MAGIC_COOKIE_KEY`). Or, if the `PLUGIN_MAGIC_COOKIE_KEY` itself differs between client and server configuration, the server might be looking at the wrong environment variable or none at all.
     *   **Solution**:
-        1.  Verify the `PLUGIN_MAGIC_COOKIE_KEY` setting on the server. This is the name of the environment variable the server will check.
-        2.  Verify the `PLUGIN_MAGIC_COOKIE_VALUE` setting on the server. This is the secret string the server expects.
-        3.  Ensure the client process (or the environment it prepares for the plugin subprocess) sets an environment variable matching `PLUGIN_MAGIC_COOKIE_KEY` to the exact `PLUGIN_MAGIC_COOKIE_VALUE`.
-        4.  Check for typos, case sensitivity issues, or extra whitespace in cookie values or keys.
+        1.  Ensure the `PLUGIN_MAGIC_COOKIE_KEY` is configured identically on both the client (for setting the environment variable) and the server (for reading it).
+        2.  Ensure the `PLUGIN_MAGIC_COOKIE_VALUE` is configured identically on both the client (as the value to send) and the server (as the value to expect).
+        3.  Check for typos, case sensitivity issues, or extra whitespace in these configuration values.
 
 *   **Protocol Version Mismatch**:
     *   **Symptom**: Error message like `"[HandshakeError] No mutually supported protocol version."`
@@ -99,6 +99,6 @@ These errors occur *after* a successful connection and handshake, during an actu
     *   Use Unix domain sockets first, as they have fewer external dependencies than TCP (like firewalls).
     *   Use a very simple "hello world" or "echo" gRPC service.
     *   Once the basic setup works, incrementally add features like mTLS or more complex services.
-5.  **Environment Variables**: Double-check that environment variables are correctly set and propagated to the plugin subprocess, especially `PLUGIN_MAGIC_COOKIE_KEY`, `PLUGIN_MAGIC_COOKIE_VALUE` (for the server to expect), and the actual magic cookie value (sent by the client via the env var named by `PLUGIN_MAGIC_COOKIE_KEY`).
+5.  **Environment Variables**: Double-check that environment variables are correctly set and propagated to the plugin subprocess, especially `PLUGIN_MAGIC_COOKIE_KEY` and `PLUGIN_MAGIC_COOKIE_VALUE`. The client uses its `PLUGIN_MAGIC_COOKIE_VALUE` to set an environment variable (named by its `PLUGIN_MAGIC_COOKIE_KEY`) for the server. The server reads this environment variable (using its own `PLUGIN_MAGIC_COOKIE_KEY` config) and compares the value to its own `PLUGIN_MAGIC_COOKIE_VALUE` config.
 6.  **File Paths**: For configurations involving file paths (certificates, Unix sockets), ensure paths are absolute or correctly relative, and that the processes have the necessary read/write/execute permissions. Remember that `file:///` URIs are supported.
 7.  **Python Path (`sys.path`)**: If your plugin has local dependencies or is part of a larger project structure, ensure `PYTHONPATH` is set correctly for the plugin subprocess so it can find its modules. The `examples/example_utils.py` script attempts to manage this for the examples.
