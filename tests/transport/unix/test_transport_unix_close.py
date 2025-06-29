@@ -187,42 +187,12 @@ async def test_unix_socket_close_unlink_fails_persistently(mocker, managed_unix_
     # Patch sleep to avoid actual delays during the transport.close() logic itself
     mock_asyncio_sleep = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
 
-    try:
-        with pytest.raises(TransportError, match="Failed to remove socket file after multiple attempts"):
-            await transport.close()
-    finally:
-        # Unpatch asyncio.sleep so our explicit sleep below works correctly
-        # It's important to clean up mocks that might interfere with subsequent operations
-        # However, pytest-mock automatically undoes patches at the end of the test.
-        # For this specific case, let's ensure the *real* asyncio.sleep is used for final cleanup.
-        # pytest-mock automatically undoes patches, so explicit stop might not be needed
-        # and could be causing the new RuntimeWarning.
-        # mock_asyncio_sleep.stop() # Stop the general mock for asyncio.sleep - pytest-mock handles this
-
-        import gc # Import garbage collector
-        gc.collect() # Explicitly trigger garbage collection
-
-        # Attempt to cancel pending tasks to help cleanup
-        try:
-            loop = asyncio.get_running_loop()
-            current_task = asyncio.current_task(loop)
-            tasks = [task for task in asyncio.all_tasks(loop) if task is not current_task]
-            if tasks:
-                for task in tasks:
-                    task.cancel()
-                # Give cancelled tasks a moment to process their cancellation
-                await asyncio.gather(*tasks, return_exceptions=True)
-        except RuntimeError: # Loop might be closed
-            pass
-        except Exception as e_task_cancel: # Catch any other error during task cancellation
-            # Log this, as it's unexpected during cleanup
-            print(f"Error during task cancellation in finally block: {e_task_cancel}")
-
-
-        await asyncio.sleep(0.1) # Give event loop time to process cleanup
+    with pytest.raises(TransportError, match="Failed to remove socket file after multiple attempts"):
+        await transport.close()
+    # The managed_unix_socket_path fixture and pytest-mock will handle cleanup of the file and mocks.
+    # Explicit gc.collect() and task cancellation are removed as they might cause the warning.
 
     assert mock_unlink.call_count == 3 # Should try 3 times
-    # managed_unix_socket_path fixture will handle cleanup of the actual file
 
 @pytest.mark.asyncio
 async def test_unix_socket_close_unlink_generic_exception(mocker, managed_unix_socket_path):
