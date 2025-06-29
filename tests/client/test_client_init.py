@@ -118,7 +118,7 @@ async def test_setup_client_certificates_without_mtls(mock_logger_info, mock_log
     # Ensure isEnabledFor(logging.DEBUG) returns True for this test - Not needed if not called
     # mock_is_enabled_for.return_value = True
 
-    mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", return_value=False)
+    mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", side_effect=lambda: False) # Use side_effect
     mock_cert_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate")
 
     await client_instance._setup_client_certificates()
