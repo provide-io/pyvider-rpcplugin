@@ -21,19 +21,6 @@ from pyvider.rpcplugin.transport import (
 )
 
 
-# Helper contexts to capture stdout/stderr
-@contextmanager
-def capture_stdout():
-    """Context manager to capture stdout."""
-    original_stdout = sys.stdout
-    buffer = io.StringIO()
-    sys.stdout = buffer
-    try:
-        yield buffer
-    finally:
-        sys.stdout = original_stdout
-
-
 class MockProtocol:
     """Create an actual protocol implementation for server tests."""
 
