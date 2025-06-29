@@ -1,17 +1,18 @@
 # tests/client/test_client_init.py
-
+import logging
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock, call # Ensure call is imported
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
 from pyvider.rpcplugin.crypto.certificate import Certificate
+# Import the module itself to patch its logger instance's methods
+from pyvider.rpcplugin.client import base as client_base_module
 
 
 def test_client_initialization(test_client_command):
     """Test basic initialization of the RPCPluginClient class."""
     client = RPCPluginClient(command=test_client_command)
 
-    # Check initialization of important attributes
     assert client.command == test_client_command
     assert client.config is None
     assert client._process is None
@@ -33,130 +34,124 @@ def test_client_initialization_with_config(test_client_command):
 
 
 @pytest.mark.asyncio
-async def test_setup_client_certificates_with_auto_mtls(client_instance):
-    """Test client certificate setup with auto-mTLS enabled and no pre-existing certs."""
-    with (
-        patch(
-            "pyvider.rpcplugin.client.base.rpcplugin_config.auto_mtls_enabled",
-            return_value=True,
-        ) as mock_auto_mtls_enabled,
-        patch(
-            "pyvider.rpcplugin.client.base.rpcplugin_config.get"
-        ) as mock_get_for_certs,
-        patch("pyvider.rpcplugin.client.base.Certificate") as mock_cert_class,
-    ):
+@patch.object(client_base_module.logger, 'info')
+async def test_setup_client_certificates_with_auto_mtls(mock_logger_info, client_instance, mocker):
+    mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", return_value=True)
 
-        def side_effect_for_certs(key, default=None):
-            if key == "PLUGIN_CLIENT_CERT":
-                return None  # Simulate no pre-existing cert
-            elif key == "PLUGIN_CLIENT_KEY":
-                return None  # Simulate no pre-existing key
-            return default
+    mock_get_for_certs = mocker.patch.object(client_base_module.rpcplugin_config, "get")
+    def side_effect_for_certs(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT": return None
+        if key == "PLUGIN_CLIENT_KEY": return None
+        return default
+    mock_get_for_certs.side_effect = side_effect_for_certs
 
-        mock_get_for_certs.side_effect = side_effect_for_certs
+    mock_cert_instance = MagicMock(spec=Certificate)
+    mock_cert_instance.cert = "test-cert"
+    mock_cert_instance.key = "test-key"
 
-        mock_cert_instance = MagicMock()
-        mock_cert_instance.cert = "test-cert"
-        mock_cert_instance.key = "test-key"
-        mock_cert_class.return_value = mock_cert_instance
+    mock_cert_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate", return_value=mock_cert_instance)
 
-        await client_instance._setup_client_certificates()
+    await client_instance._setup_client_certificates()
 
-        mock_auto_mtls_enabled.assert_called_once()
-        # Check that get was called for PLUGIN_CLIENT_CERT and PLUGIN_CLIENT_KEY
-        mock_get_for_certs.assert_any_call("PLUGIN_CLIENT_CERT")
-        mock_get_for_certs.assert_any_call("PLUGIN_CLIENT_KEY")
+    client_base_module.rpcplugin_config.auto_mtls_enabled.assert_called_once()
 
-        mock_cert_class.assert_called_once()  # New cert should be generated
-        assert client_instance.client_cert == "test-cert"
-        assert client_instance.client_key_pem == "test-key"
+    # Robust check for calls to rpcplugin_config.get
+    expected_get_calls = [
+        call("PLUGIN_CLIENT_CERT", None),
+        call("PLUGIN_CLIENT_KEY", None)
+    ]
+    # Check if each expected call is in the actual call list
+    for expected_call in expected_get_calls:
+        assert expected_call in mock_get_for_certs.call_args_list, \
+            f"Expected call {expected_call} not found in {mock_get_for_certs.call_args_list}"
 
 
-@pytest.mark.asyncio
-async def test_setup_client_certificates_with_existing_certs(client_instance):
-    """Test client certificate setup with auto-mTLS enabled and pre-existing certs."""
-    with (
-        patch(
-            "pyvider.rpcplugin.client.base.rpcplugin_config.auto_mtls_enabled",
-            return_value=True,
-        ) as mock_auto_mtls_enabled,
-        patch(
-            "pyvider.rpcplugin.client.base.rpcplugin_config.get"
-        ) as mock_get_for_certs,
-        patch("pyvider.rpcplugin.client.base.Certificate") as mock_cert_class,
-    ):  # Still need to mock Certificate to prevent actual creation
+    mock_cert_class.assert_called_once_with(generate_keypair=True, key_type="ecdsa")
+    assert client_instance.client_cert == "test-cert"
+    assert client_instance.client_key_pem == "test-key"
 
-        def side_effect_for_existing_certs(key, default=None):
-            if key == "PLUGIN_CLIENT_CERT":
-                return "existing-cert"
-            elif key == "PLUGIN_CLIENT_KEY":
-                return "existing-key"
-            return default
-
-        mock_get_for_certs.side_effect = side_effect_for_existing_certs
-
-        await client_instance._setup_client_certificates()
-
-        mock_auto_mtls_enabled.assert_called_once()
-        # Check that get was called for PLUGIN_CLIENT_CERT and PLUGIN_CLIENT_KEY
-        mock_get_for_certs.assert_any_call("PLUGIN_CLIENT_CERT")
-        mock_get_for_certs.assert_any_call("PLUGIN_CLIENT_KEY")
-
-        mock_cert_class.assert_not_called()  # New cert should NOT be generated
-        assert client_instance.client_cert == "existing-cert"
-        assert client_instance.client_key_pem == "existing-key"
+    mock_logger_info.assert_any_call("🔐 Generating ephemeral self-signed client certificate.")
 
 
 @pytest.mark.asyncio
-async def test_setup_client_certificates_without_mtls(client_instance):
-    """Test client certificate setup with mTLS disabled."""
-    # Mock auto_mtls_enabled directly to return False
-    with patch(
-        "pyvider.rpcplugin.client.base.rpcplugin_config.auto_mtls_enabled",
-        return_value=False,
-    ) as mock_auto_mtls_disabled:
-        await client_instance._setup_client_certificates()
+@patch.object(client_base_module.logger, 'info')
+async def test_setup_client_certificates_with_existing_certs(mock_logger_info, client_instance, mocker):
+    mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", return_value=True)
 
-        # Ensure the mock was called (optional but good practice)
-        mock_auto_mtls_disabled.assert_called_once()
+    mock_get_for_certs = mocker.patch.object(client_base_module.rpcplugin_config, "get")
+    def side_effect_for_existing_certs(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT": return "existing-cert"
+        if key == "PLUGIN_CLIENT_KEY": return "existing-key"
+        return default
+    mock_get_for_certs.side_effect = side_effect_for_existing_certs
 
-        # No certificates should be set
-        assert client_instance.client_cert is None
-        assert client_instance.client_key_pem is None
+    mock_cert_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate")
+
+    await client_instance._setup_client_certificates()
+
+    client_base_module.rpcplugin_config.auto_mtls_enabled.assert_called_once()
+
+    expected_get_calls = [
+        call("PLUGIN_CLIENT_CERT", None),
+        call("PLUGIN_CLIENT_KEY", None)
+    ]
+    for expected_call in expected_get_calls:
+        assert expected_call in mock_get_for_certs.call_args_list, \
+            f"Expected call {expected_call} not found in {mock_get_for_certs.call_args_list}"
+
+    mock_cert_class.assert_not_called()
+
+    assert client_instance.client_cert == "existing-cert"
+    assert client_instance.client_key_pem == "existing-key"
+
+    mock_logger_info.assert_any_call("🔐 Using existing client cert/key from config.")
 
 
 @pytest.mark.asyncio
-async def test_setup_client_certificates_mtls_missing_key(client_instance, mocker):
-    """Test mTLS enabled, cert provided, but key is missing -> should generate."""
-    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.auto_mtls_enabled", return_value=True)
+@patch.object(client_base_module.logger, 'debug')
+@patch.object(client_base_module.logger, 'info')
+@patch.object(client_base_module.logger, 'isEnabledFor')
+async def test_setup_client_certificates_without_mtls(mock_is_enabled_for, mock_logger_info, mock_logger_debug, client_instance, mocker):
+    # Ensure isEnabledFor(logging.DEBUG) returns True for this test
+    mock_is_enabled_for.return_value = True
 
-    mock_get_config = mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.get")
+    mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", return_value=False)
+    mock_cert_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate")
+
+    await client_instance._setup_client_certificates()
+
+    client_base_module.rpcplugin_config.auto_mtls_enabled.assert_called_once()
+    mock_cert_class.assert_not_called()
+
+    assert client_instance.client_cert is None
+    assert client_instance.client_key_pem is None
+
+    mock_logger_info.assert_any_call("🔐 mTLS not enabled; operating in insecure mode.")
+    mock_logger_debug.assert_any_call("🔐 mTLS is disabled, skipping client certificate setup.")
+    mock_is_enabled_for.assert_any_call(logging.DEBUG) # Check that isEnabledFor was actually queried
+
+
+@pytest.mark.asyncio
+@patch.object(client_base_module.logger, 'info')
+async def test_setup_client_certificates_mtls_missing_key(mock_logger_info, client_instance, mocker):
+    mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", return_value=True)
+
+    mock_get_config = mocker.patch.object(client_base_module.rpcplugin_config, "get")
     def config_side_effect(key, default=None):
-        if key == "PLUGIN_CLIENT_CERT":
-            return "dummy-cert-pem"
-        if key == "PLUGIN_CLIENT_KEY":
-            return None # Key is missing
+        if key == "PLUGIN_CLIENT_CERT": return "dummy-cert-pem"
+        if key == "PLUGIN_CLIENT_KEY": return None
         return default
     mock_get_config.side_effect = config_side_effect
 
-    # We need to mock the Certificate class from the correct module
     mock_cert_generated_instance = MagicMock(spec=Certificate)
     mock_cert_generated_instance.cert = "generated-cert"
     mock_cert_generated_instance.key = "generated-key"
-
-    # Ensure this path matches where Certificate is imported in client/base.py
     mock_certificate_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate", return_value=mock_cert_generated_instance)
-
-    # Mock the logger on the client_instance if it's used internally and part of RPCPluginClient
-    # Assuming client_instance.logger is already a mock from a fixture or setup
-    if not hasattr(client_instance, 'logger') or not isinstance(client_instance.logger, MagicMock):
-         # If logger is not already a mock, patch it for this test
-        client_instance.logger = MagicMock()
-
 
     await client_instance._setup_client_certificates()
 
     mock_certificate_class.assert_called_once_with(generate_keypair=True, key_type="ecdsa")
     assert client_instance.client_cert == "generated-cert"
     assert client_instance.client_key_pem == "generated-key"
-    client_instance.logger.info.assert_any_call("🔐 Generating ephemeral self-signed client certificate.")
+
+    mock_logger_info.assert_any_call("🔐 Generating ephemeral self-signed client certificate.")
