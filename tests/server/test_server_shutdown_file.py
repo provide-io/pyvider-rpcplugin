@@ -38,17 +38,17 @@ def temp_shutdown_file():
 async def test_server_shuts_down_on_file_creation(temp_shutdown_file, mocker):
     shutdown_file_path_str = str(temp_shutdown_file)
     mocker.patch.object(rpcplugin_config, 'shutdown_file_path', return_value=shutdown_file_path_str)
-    
+
     protocol = DummyProtocol()
     handler = DummyHandler()
     server = RPCPluginServer(protocol=protocol, handler=handler)
 
-    # FIX: Use a side_effect to robustly set attributes that _negotiate_handshake would set.
+
     async def mock_negotiate_side_effect():
         server._protocol_version = 1
         server._transport_name = "unix"
         server._transport = UnixSocketTransport(path="/tmp/dummy_for_shutdown_test.sock")
-    
+
     mocker.patch.object(server, '_negotiate_handshake', side_effect=mock_negotiate_side_effect)
 
     mocker.patch.object(server, '_register_signal_handlers')
@@ -59,14 +59,14 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, mocker):
     serve_task = asyncio.create_task(server.serve())
     try:
         await asyncio.sleep(0.2)
-        
+
         assert server._shutdown_watcher_task is not None, "Shutdown watcher task not started"
 
         with open(shutdown_file_path_str, "w") as f:
             f.write("shutdown")
 
         await asyncio.wait_for(serve_task, timeout=5.0)
-        
+
         assert server._serving_future.done(), "Server's serving future was not done after shutdown."
 
     finally:

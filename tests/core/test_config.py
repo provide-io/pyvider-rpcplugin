@@ -188,7 +188,7 @@ def test_get_config_fetch_raises_error(mock_fetch, mock_validate):
         else "ok"
     )
 
-    # FIX: Expect ConfigError as get_config wraps the exception
+
     with pytest.raises(ConfigError, match="Unexpected validation or fetch error for PLUGIN_MAGIC_COOKIE_VALUE: Fetch failed"):
         get_config()
 
@@ -208,7 +208,7 @@ def test_get_config_validate_raises_error(mock_fetch, mock_validate):
         else True
     )
 
-    # FIX: Expect ConfigError as get_config wraps the exception
+
     with pytest.raises(ConfigError, match="Unexpected validation or fetch error for PLUGIN_LOG_LEVEL: Validate failed"):
         get_config()
 
