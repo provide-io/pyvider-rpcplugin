@@ -91,4 +91,20 @@ async def touch_loop_on_cleanup(): # Made async as it's an asyncio fixture now
     await asyncio.sleep(0.01)
 
 
+# Utility imports for capture_stdout
+import io
+import sys
+from contextlib import contextmanager
+
+@contextmanager
+def capture_stdout():
+    """Context manager to capture stdout."""
+    original_stdout = sys.stdout
+    buffer = io.StringIO()
+    sys.stdout = buffer
+    try:
+        yield buffer
+    finally:
+        sys.stdout = original_stdout
+
 ### 🐍🏗🧪️
