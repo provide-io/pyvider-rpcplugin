@@ -168,10 +168,13 @@ async def main() -> None:
         logger.error(f"Could not find server script: {server_script_path}")
         return
 
+    # configure_for_example() called in main sets the client's expected magic cookie value
+    # to "pyvider-example-cookie" and key to "PYVIDER_PLUGIN_MAGIC_COOKIE".
+    # We ensure the server subprocess is launched with these same values.
     client_config = {
         "env": {
-            "PLUGIN_MAGIC_COOKIE_KEY": "E2E_PLUGIN_COOKIE_EXAMPLE",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "e2e-super-secret-cookie",
+            "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE", # Must match client's config for key name
+            "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie", # Must match client's expected value
             "PLUGIN_LOG_LEVEL": os.environ.get("PLUGIN_LOG_LEVEL", "DEBUG")
         }
     }
