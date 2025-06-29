@@ -3,7 +3,7 @@ import gc
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-# FIX: Import ConfigError from config.py to match the exception's source module
+
 from pyvider.rpcplugin.config import ConfigError
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.server import RPCPluginServer
@@ -60,7 +60,7 @@ async def test_serve_setup_server_raises_exception(
     mocker.patch.object(server, "_register_signal_handlers")
     mocker.patch.object(server, "_negotiate_handshake", new_callable=AsyncMock)
     mocker.patch.object(server, "_read_client_cert", return_value=None)
-    
+
     mocker.patch.object(
         server,
         "_setup_server",

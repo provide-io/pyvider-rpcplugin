@@ -139,7 +139,7 @@ def test_mock_server_credentials_validation_with_certs(
         )
 
 
-# FIX: Removed @pytest.mark.asyncio and changed to `def` as the test is synchronous.
+
 def test_mock_channel_credentials_none_values(client_cert) -> None:
     """Test channel credentials with optional parameters as None."""
     creds = mock_ssl_channel_credentials(
