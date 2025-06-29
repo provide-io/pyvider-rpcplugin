@@ -103,9 +103,6 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:  # Simplified generic para
     _main_service_name: str = field(
         default="pyvider.default.plugin.Service", init=False
     )
-    _graceful_shutdown_attempted: bool = field(default=False, init=False)
-    _first_interrupt_time: float = field(default=0.0, init=False)
-    _force_exit_window_seconds: float = field(default=2.0, init=False) # Time window for second Ctrl-C
 
     def __attrs_post_init__(self) -> None:
         try:
@@ -416,30 +413,10 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:  # Simplified generic para
             with contextlib.suppress(RuntimeError, NotImplementedError):
                 loop.add_signal_handler(sig, self._shutdown_requested)
 
-    def _shutdown_requested(self, *args: Any) -> None: # type: ignore[misc]
-        """Handles shutdown requests, including staged Ctrl-C."""
-        import time # For time.monotonic()
-
-        current_time = time.monotonic()
-        if self._graceful_shutdown_attempted:
-            # This is at least the second interrupt.
-            # Check if it's within the force-exit window.
-            if (current_time - self._first_interrupt_time) < self._force_exit_window_seconds:
-                logger.critical("🚨 Second interrupt received within window. Forcing immediate exit.")
-                os._exit(1)  # Force exit
-            else:
-                # Second interrupt, but outside the window. Treat as a new first interrupt for graceful.
-                logger.warning("Graceful shutdown already in progress. Press Ctrl-C again quickly to force exit.")
-                self._first_interrupt_time = current_time # Reset timer for next potential double-press
-        else:
-            # This is the first interrupt.
-            logger.info("🚦 Graceful shutdown initiated by signal...")
-            self._graceful_shutdown_attempted = True
-            self._first_interrupt_time = current_time
-            if not self._serving_future.done():
-                self._serving_future.set_result(None)
-            self._shutdown_event.set()
-
+    def _shutdown_requested(self, *args: Any) -> None:
+        if not self._serving_future.done():
+            self._serving_future.set_result(None)
+        self._shutdown_event.set()
 
     async def serve(self) -> None:
         try:

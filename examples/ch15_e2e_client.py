@@ -57,7 +57,8 @@ async def main() -> None:
     client_config = {
         "env": {
             # Propagate the client's log level to the server for example consistency.
-            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO")
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
+            "PLUGIN_AUTO_MTLS": "False" # Explicitly disable mTLS for the server process
         }
     }
 
