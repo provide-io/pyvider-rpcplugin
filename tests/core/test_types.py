@@ -20,7 +20,7 @@ from pyvider.rpcplugin import types as types_module_logger_ref
 
 
 # Test for is_valid_handler
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 def test_is_valid_handler_true(mocker):
@@ -159,6 +159,136 @@ def test_is_valid_serializable_true(mocker):
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2
+
+
+# --- New tests for covering missed branches ---
+
+# SerializableT Not Callable
+def test_is_valid_serializable_false_to_dict_not_callable(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class NotCallableDict:
+        to_dict = 123 # Not callable
+        @classmethod
+        def from_dict(cls, data): return cls()
+    assert is_valid_serializable(NotCallableDict()) is False
+    mock_logger_debug.assert_any_call("SerializableT: Attribute to_dict is not callable.")
+
+def test_is_valid_serializable_false_from_dict_not_callable(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class NotCallableFromDict:
+        def to_dict(self): return {}
+        from_dict = 123 # Not callable
+    assert is_valid_serializable(NotCallableFromDict()) is False
+    mock_logger_debug.assert_any_call("SerializableT: Attribute from_dict is not callable.")
+
+# SerializableT Inspect Signature Fails
+import inspect # Ensure inspect is imported
+
+def test_is_valid_serializable_inspect_signature_to_dict_fails(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class TargetForInspectFail:
+        def to_dict(self): return {}
+        @classmethod
+        def from_dict(cls, data): return cls()
+
+    with patch("inspect.signature", side_effect=TypeError("Inspect fail for to_dict!")): # Changed to TypeError
+        assert is_valid_serializable(TargetForInspectFail()) is False
+    mock_logger_debug.assert_any_call("SerializableT: Could not inspect to_dict signature.")
+
+def test_is_valid_serializable_inspect_signature_from_dict_fails(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class TargetForInspectFail:
+        def to_dict(self): return {}
+        @classmethod
+        def from_dict(cls, data): return cls()
+
+    original_inspect_signature = inspect.signature
+    def inspect_side_effect_selective(obj_to_inspect):
+        # Check if it's the 'from_dict' method of our target class
+        if hasattr(obj_to_inspect, "__qualname__") and "TargetForInspectFail.from_dict" in obj_to_inspect.__qualname__:
+            raise ValueError("Inspect fail for from_dict!")
+        return original_inspect_signature(obj_to_inspect)
+
+    with patch("inspect.signature", side_effect=inspect_side_effect_selective):
+        assert is_valid_serializable(TargetForInspectFail()) is False
+    mock_logger_debug.assert_any_call("SerializableT: Could not inspect from_dict signature.")
+
+
+# ConnectionT Not Callable
+def test_is_valid_connection_method_not_callable(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class ConnSendNotCallable:
+        send_data = 123
+        async def receive_data(self, size=16384): return b""
+        async def close(self): pass
+    assert is_valid_connection(ConnSendNotCallable()) is False
+    mock_logger_debug.assert_any_call("ConnectionT: Attribute send_data is not callable.")
+
+    mock_logger_debug.reset_mock()
+    class ConnReceiveNotCallable:
+        async def send_data(self, data): pass
+        receive_data = 123
+        async def close(self): pass
+    assert is_valid_connection(ConnReceiveNotCallable()) is False
+    mock_logger_debug.assert_any_call("ConnectionT: Attribute receive_data is not callable.")
+
+    mock_logger_debug.reset_mock()
+    class ConnCloseNotCallable:
+        async def send_data(self, data): pass
+        async def receive_data(self, size=16384): return b""
+        close = 123
+    assert is_valid_connection(ConnCloseNotCallable()) is False
+    mock_logger_debug.assert_any_call("ConnectionT: Attribute close is not callable.")
+
+# ConnectionT Inspect Signature Fails (example for one method)
+def test_is_valid_connection_inspect_signature_fails(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class ConnTargetForInspectFail:
+        async def send_data(self, data): pass
+        async def receive_data(self, size=16384): return b""
+        async def close(self): pass
+
+    original_inspect_signature = inspect.signature
+    def inspect_side_effect_selective_conn(obj_to_inspect):
+        if hasattr(obj_to_inspect, "__qualname__") and "ConnTargetForInspectFail.send_data" in obj_to_inspect.__qualname__:
+            raise ValueError("Inspect fail for send_data!")
+        return original_inspect_signature(obj_to_inspect)
+
+    with patch("inspect.signature", side_effect=inspect_side_effect_selective_conn):
+        assert is_valid_connection(ConnTargetForInspectFail()) is False
+    mock_logger_debug.assert_any_call("ConnectionT: Could not inspect send_data signature.")
+
+
+# SecureRpcClientT Not Callable
+def test_is_valid_secure_rpc_client_method_not_callable(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class ClientPerformHandshakeNotCallable:
+        _perform_handshake = 123
+        async def _setup_tls(self): pass
+        async def _create_grpc_channel(self): pass
+        async def close(self): pass
+    assert is_valid_secure_rpc_client(ClientPerformHandshakeNotCallable()) is False
+    mock_logger_debug.assert_any_call("SecureRpcClientT: Attribute _perform_handshake is not callable.")
+    # Similar tests can be added for _setup_tls, _create_grpc_channel, close
+
+# SecureRpcClientT Inspect Signature Fails (example for one method)
+def test_is_valid_secure_rpc_client_inspect_signature_fails(mocker):
+    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+    class ClientTargetForInspectFail:
+        async def _perform_handshake(self): pass
+        async def _setup_tls(self): pass
+        async def _create_grpc_channel(self): pass
+        async def close(self): pass
+
+    original_inspect_signature = inspect.signature
+    def inspect_side_effect_selective_secure_client(obj_to_inspect):
+        if hasattr(obj_to_inspect, "__qualname__") and "ClientTargetForInspectFail._perform_handshake" in obj_to_inspect.__qualname__:
+            raise ValueError("Inspect fail for _perform_handshake!")
+        return original_inspect_signature(obj_to_inspect)
+
+    with patch("inspect.signature", side_effect=inspect_side_effect_selective_secure_client):
+        assert is_valid_secure_rpc_client(ClientTargetForInspectFail()) is False
+    mock_logger_debug.assert_any_call("SecureRpcClientT: Could not inspect _perform_handshake signature.")
 
 
 def test_is_valid_serializable_false_missing_methods(mocker):
