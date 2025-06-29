@@ -172,7 +172,7 @@ async def main() -> None:
         script_args = script_info.get("args", []) # Use .get for safety
         exp_fail = script_info.get("exp_fail", False)
         exp_stderr = script_info.get("exp_stderr")
-        # cookie_val = script_info.get("cookie") # Removed cookie from general loop
+        cookie_val = script_info.get("cookie") # Removed cookie from general loop
 
         script_path = examples_dir / script_file
         if not script_path.exists():
@@ -186,8 +186,8 @@ async def main() -> None:
             args=script_args,
             cwd=project_root,
             expected_to_fail=exp_fail,
-            expected_stderr_contains=exp_stderr,
-            magic_cookie_value=cookie_val,
+            expected_stderr_contains=exp_stderr
+            # Removed magic_cookie_value=cookie_val, as it's not in function def
         )
         results.append((script_path.name, success, stdout, stderr, exit_code))
         if not success:
