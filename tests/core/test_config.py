@@ -424,3 +424,110 @@ def test_configure_invalid_transport_type():
         match=r"Unknown transport type specified: 'bogus_transport'.*Valid transport types are:.*",
     ):
         configure(transports=["unix", "bogus_transport"])
+
+
+import tempfile # Add this import
+
+# ... (other tests)
+
+def test_fetch_env_variable_file_uri_success(monkeypatch, tmp_path):
+    key = "PLUGIN_SERVER_CERT" # A key that accepts string, can be file URI
+    meta = CONFIG_SCHEMA[key]
+
+    content = "-----BEGIN CERT-----\nTESTCERT\n-----END CERT-----"
+    temp_file = tmp_path / "test_cert.pem"
+    temp_file.write_text(content)
+
+    monkeypatch.setenv(key, f"file://{temp_file}")
+
+    assert fetch_env_variable(key, meta) == content
+
+def test_fetch_env_variable_file_uri_read_error(monkeypatch, tmp_path):
+    key = "PLUGIN_SERVER_KEY"
+    meta = CONFIG_SCHEMA[key]
+
+    non_existent_file = tmp_path / "non_existent.key"
+    # Ensure file does not exist
+    if non_existent_file.exists(): non_existent_file.unlink()
+
+    monkeypatch.setenv(key, f"file://{non_existent_file}")
+
+    with pytest.raises(ConfigError, match=f"Failed to read configuration file specified for '{key}'.*Path: {non_existent_file}"):
+        fetch_env_variable(key, meta)
+
+# Test for line 312 (list_str fallback)
+def test_fetch_env_variable_list_str_fallback_iterable(monkeypatch):
+    key = "PLUGIN_SERVER_TRANSPORTS"
+    meta = CONFIG_SCHEMA[key]
+    # Simulate os.getenv returning a tuple instead of string or default list
+    monkeypatch.setattr(os, 'getenv', lambda k, d: ("unix", "tcp") if k == key else d)
+    RPCPluginConfig._instance = None
+    assert fetch_env_variable(key, meta) == ["unix", "tcp"] # Should be list(value)
+
+# Test for line 318 (list_int fallback)
+def test_fetch_env_variable_list_int_fallback_single_convertible(monkeypatch):
+    key = "PLUGIN_PROTOCOL_VERSIONS"
+    meta = CONFIG_SCHEMA[key]
+    monkeypatch.setattr(os, 'getenv', lambda k, d: 5 if k == key else d) # Return an int
+    RPCPluginConfig._instance = None
+    assert fetch_env_variable(key, meta) == [5]
+
+    monkeypatch.setattr(os, 'getenv', lambda k, d: "7" if k == key else d) # Return a string int
+    RPCPluginConfig._instance = None
+    assert fetch_env_variable(key, meta) == [7]
+
+
+# Test for line 323 (unknown type)
+def test_fetch_env_variable_unknown_type(monkeypatch, caplog):
+    key = "PLUGIN_UNKNOWN_TYPE_TEST"
+    meta_unknown = {
+        "required": False, "default": "some_default", "type": "unknown_type_blah"
+    }
+    original_config_schema_entry = CONFIG_SCHEMA.get(key)
+    CONFIG_SCHEMA[key] = meta_unknown
+
+    monkeypatch.setenv(key, "some_value_for_unknown")
+    RPCPluginConfig._instance = None
+
+    assert fetch_env_variable(key, meta_unknown) == "some_value_for_unknown"
+    assert f"Unknown type unknown_type_blah for {key}" in caplog.text
+
+    if original_config_schema_entry is None:
+        del CONFIG_SCHEMA[key]
+    else:
+        CONFIG_SCHEMA[key] = original_config_schema_entry # type: ignore[assignment]
+    RPCPluginConfig._instance = None
+
+
+# Test for RPCPluginConfig.set fallbacks (lines 486, 495)
+def test_rpcpluginconfig_set_list_fallbacks():
+    RPCPluginConfig._instance = None
+    config_manager = RPCPluginConfig.instance()
+
+    config_manager.set("PLUGIN_SERVER_TRANSPORTS", ("unix", "tcp"))
+    assert config_manager.get("PLUGIN_SERVER_TRANSPORTS") == ["unix", "tcp"]
+    config_manager.set("PLUGIN_SERVER_TRANSPORTS", "http")
+    assert config_manager.get("PLUGIN_SERVER_TRANSPORTS") == ["http"]
+
+    config_manager.set("PLUGIN_PROTOCOL_VERSIONS", (1, 2))
+    assert config_manager.get("PLUGIN_PROTOCOL_VERSIONS") == [1, 2]
+    config_manager.set("PLUGIN_PROTOCOL_VERSIONS", 3)
+    assert config_manager.get("PLUGIN_PROTOCOL_VERSIONS") == [3]
+    config_manager.set("PLUGIN_PROTOCOL_VERSIONS", "5")
+    assert config_manager.get("PLUGIN_PROTOCOL_VERSIONS") == [5]
+
+# Test for RPCPluginConfig.set exception (lines 498, 502-515)
+def test_rpcpluginconfig_set_type_conversion_error():
+    RPCPluginConfig._instance = None
+    config_manager = RPCPluginConfig.instance()
+    with pytest.raises(ConfigError, match="Invalid value format for configuration key 'PLUGIN_CORE_VERSION' during set"):
+        config_manager.set("PLUGIN_CORE_VERSION", "not-an-integer")
+
+# Test for logger.warning on setting unknown key (line 456)
+def test_rpcpluginconfig_set_unknown_key_no_prefix_logs_warning(caplog):
+    RPCPluginConfig._instance = None
+    config_manager = RPCPluginConfig.instance()
+    key = "MY_OTHER_CUSTOM_SETTING"
+    with pytest.raises(ConfigError):
+        config_manager.set(key, "value")
+    assert f"Setting unknown config key: {key}" in caplog.text

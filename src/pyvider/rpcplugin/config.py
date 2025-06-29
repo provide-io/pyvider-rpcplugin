@@ -498,14 +498,18 @@ class RPCPluginConfig:
                         processed_value = [str(v) for v in value]
                     elif isinstance(value, str):
                         processed_value = [v.strip() for v in value.split(",")]
-                    else:
+                    elif isinstance(value, (tuple, set)): # Handle common iterables
+                        processed_value = [str(v) for v in value]
+                    else: # Fallback for single items
                         processed_value = [str(value)]
                 elif type_string == "list_int":
                     if isinstance(value, list):
                         processed_value = [int(v) for v in value]
                     elif isinstance(value, str):
                         processed_value = [int(v.strip()) for v in value.split(",")]
-                    else:
+                    elif isinstance(value, (tuple, set)): # Handle common iterables
+                        processed_value = [int(v) for v in value]
+                    else: # Fallback for single items
                         processed_value = [int(value)]
             except (ValueError, TypeError) as e:
                 logger.error(
