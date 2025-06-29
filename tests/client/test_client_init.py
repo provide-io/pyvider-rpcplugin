@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
+from pyvider.rpcplugin.crypto.certificate import Certificate
 
 
 def test_client_initialization(test_client_command):
@@ -122,3 +123,40 @@ async def test_setup_client_certificates_without_mtls(client_instance):
         # No certificates should be set
         assert client_instance.client_cert is None
         assert client_instance.client_key_pem is None
+
+
+@pytest.mark.asyncio
+async def test_setup_client_certificates_mtls_missing_key(client_instance, mocker):
+    """Test mTLS enabled, cert provided, but key is missing -> should generate."""
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.auto_mtls_enabled", return_value=True)
+
+    mock_get_config = mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.get")
+    def config_side_effect(key, default=None):
+        if key == "PLUGIN_CLIENT_CERT":
+            return "dummy-cert-pem"
+        if key == "PLUGIN_CLIENT_KEY":
+            return None # Key is missing
+        return default
+    mock_get_config.side_effect = config_side_effect
+
+    # We need to mock the Certificate class from the correct module
+    mock_cert_generated_instance = MagicMock(spec=Certificate)
+    mock_cert_generated_instance.cert = "generated-cert"
+    mock_cert_generated_instance.key = "generated-key"
+
+    # Ensure this path matches where Certificate is imported in client/base.py
+    mock_certificate_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate", return_value=mock_cert_generated_instance)
+
+    # Mock the logger on the client_instance if it's used internally and part of RPCPluginClient
+    # Assuming client_instance.logger is already a mock from a fixture or setup
+    if not hasattr(client_instance, 'logger') or not isinstance(client_instance.logger, MagicMock):
+         # If logger is not already a mock, patch it for this test
+        client_instance.logger = MagicMock()
+
+
+    await client_instance._setup_client_certificates()
+
+    mock_certificate_class.assert_called_once_with(generate_keypair=True, key_type="ecdsa")
+    assert client_instance.client_cert == "generated-cert"
+    assert client_instance.client_key_pem == "generated-key"
+    client_instance.logger.info.assert_any_call("🔐 Generating ephemeral self-signed client certificate.")

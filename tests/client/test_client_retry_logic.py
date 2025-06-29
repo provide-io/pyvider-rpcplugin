@@ -173,6 +173,124 @@ async def test_connect_handshake_retry_process_exits(client_instance_local, mock
 
 
 @pytest.mark.asyncio
+async def test_connect_handshake_total_timeout_immediately(client_instance_local, mocker):
+    client_instance = client_instance_local
+    mock_config_get = mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get")
+    config_values = {
+        "PLUGIN_CLIENT_RETRY_ENABLED": "true",
+        "PLUGIN_CLIENT_MAX_RETRIES": 3,
+        "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": 10,
+        "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": 0.0, # Immediate timeout
+    }
+    mock_config_get.side_effect = lambda key, default=None: config_values.get(key, default)
+
+    # Control time.monotonic sequence
+    monotonic_values_sequence = [
+        0.0,  # Initial overall_start_time for _connect_and_handshake_with_retry
+        0.01, # First check in loop (for while condition), time() - overall_start_time = 0.01
+              # total_timeout_s is 0.0. So 0.01 > 0.0 is true.
+    ]
+    monotonic_iterator = iter(monotonic_values_sequence)
+    final_monotonic_value_after_timeout = 0.05
+
+    def mock_monotonic_side_effect_func():
+        nonlocal monotonic_iterator # Ensure we're using the one from the outer scope
+        nonlocal final_monotonic_value_after_timeout
+        try:
+            val = next(monotonic_iterator)
+            # client_instance.logger.debug(f"Mock time.monotonic returning: {val}") # Optional: for debugging test
+            return val
+        except StopIteration:
+            # client_instance.logger.debug(f"Mock time.monotonic returning final value: {final_monotonic_value_after_timeout}")
+            return final_monotonic_value_after_timeout
+
+    mocker.patch("pyvider.rpcplugin.client.base.time.monotonic", side_effect=mock_monotonic_side_effect_func)
+    mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock) # Prevent actual sleep
+
+    if not client_instance._process:
+        client_instance._process = MagicMock(spec=subprocess.Popen) # type: ignore[attr-defined]
+    client_instance._process.poll.return_value = None # type: ignore[attr-defined]
+
+
+    with pytest.raises(HandshakeError, match="Retry sequence timed out."):
+        await client_instance._connect_and_handshake_with_retry()
+
+    client_instance.logger.error.assert_any_call(
+        "Client connection/handshake retry sequence timed out after 0.0s. Last error: N/A"
+    )
+    assert client_instance._handshake_failed_event.is_set()
+
+
+@pytest.mark.asyncio
+async def test_connect_handshake_retry_disabled_failure(client_instance_local, mocker):
+    client_instance = client_instance_local
+    mock_config_get = mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get")
+    # Ensure retry_enabled is false
+    mock_config_get.side_effect = lambda key, default=None: "false" if key == "PLUGIN_CLIENT_RETRY_ENABLED" else default
+
+    mocker.patch(
+        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        new_callable=AsyncMock,
+        side_effect=HandshakeError("Simulated handshake failure, retries disabled")
+    )
+    # Ensure _process exists for the logger call in the except block
+    if not client_instance._process:
+        client_instance._process = MagicMock(spec=subprocess.Popen) # type: ignore[attr-defined]
+        client_instance._process.pid = 1234 # type: ignore[attr-defined]
+
+    with pytest.raises(HandshakeError, match="Simulated handshake failure, retries disabled"):
+        await client_instance._connect_and_handshake_with_retry()
+
+    assert client_instance._handshake_failed_event.is_set()
+    client_instance.logger.error.assert_any_call(
+        "Failed to connect and handshake with plugin (retries disabled): [HandshakeError] Simulated handshake failure, retries disabled",
+        exc_info=True
+    )
+    # New assertion for the info log
+    client_instance.logger.info.assert_any_call(
+        "Client retries disabled. Attempting connection and handshake once."
+    )
+
+
+@pytest.mark.asyncio
+async def test_connect_handshake_retry_transport_close_fails(client_instance_local, mocker):
+    client_instance = client_instance_local
+    mock_config_get = mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get")
+    config_values = { "PLUGIN_CLIENT_RETRY_ENABLED": "true", "PLUGIN_CLIENT_MAX_RETRIES": 1 }
+    mock_config_get.side_effect = lambda key, default=None: config_values.get(key, default)
+
+    mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock)
+
+    # First attempt fails, triggering retry path
+    mock_perform_handshake = mocker.patch(
+        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        new_callable=AsyncMock,
+        side_effect=HandshakeError("Simulated first failure")
+    )
+
+    # Mock transport that will be set during the (failed) handshake attempt
+    mock_transport_instance = AsyncMock()
+    mock_transport_instance.close = AsyncMock(side_effect=Exception("Transport close failed"))
+
+    # Ensure _perform_handshake sets up a transport that will then fail to close
+    async def perform_handshake_sets_transport_then_fails():
+        client_instance._transport = mock_transport_instance # Assign the mock transport
+        raise HandshakeError("Simulated first failure")
+    mock_perform_handshake.side_effect = perform_handshake_sets_transport_then_fails
+
+    if not client_instance._process:
+        client_instance._process = MagicMock(spec=subprocess.Popen) # type: ignore[attr-defined]
+    client_instance._process.poll.return_value = None # type: ignore[attr-defined]
+
+
+    with pytest.raises(HandshakeError, match="Simulated first failure"): # Expect the final error
+        await client_instance._connect_and_handshake_with_retry()
+
+    # Verify that transport.close() was called and the exception was swallowed
+    mock_transport_instance.close.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_connect_handshake_total_timeout_exceeded(client_instance_local, mocker):
     """Test retry logic when the total retry timeout is exceeded."""
     client_instance = client_instance_local
