@@ -113,12 +113,14 @@ async def main() -> None:
 
         logger.info("Dummy server finished serving.")
 
-    except KeyboardInterrupt:  # pragma: no cover
-        logger.info("Dummy server stopped by user (KeyboardInterrupt).")
-        if server_task and not server_task.done():
-            server_task.cancel()
+    # KeyboardInterrupt is now primarily handled by RPCPluginServer's signal handler (for graceful, then hard exit)
+    # or by the top-level except block around asyncio.run().
+    # except KeyboardInterrupt:  # pragma: no cover
+    #     logger.info("Dummy server stopped by user (KeyboardInterrupt in main coroutine).")
+    #     if server_task and not server_task.done():
+    #         server_task.cancel()
     except Exception as e:  # pragma: no cover
-        logger.error(f"Dummy server encountered an error: {e}", exc_info=True)
+        logger.error(f"Dummy server encountered an error in main coroutine: {e}", exc_info=True)
         if server_task and not server_task.done():
             server_task.cancel()
     finally:

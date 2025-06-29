@@ -10,7 +10,7 @@ import grpc
 # Call configure_for_example() early to set up sys.path
 # Import example_utils directly, as it's in the same directory.
 import example_utils
-example_utils.configure_for_example()
+example_utils.configure_for_example(clear_env=True) # Client context
 
 # Import pyvider components
 from pyvider.rpcplugin.client import RPCPluginClient
@@ -26,18 +26,21 @@ class EchoClient:
     client_config: dict[str, Any]
 
     def __init__(self, server_script_path: str) -> None:
+        from pyvider.rpcplugin import rpcplugin_config # Import for default log level
+
         self.server_script_path = server_script_path
-        # Environment variables for the 05_echo_server.py subprocess.
-        # These must match what 05_echo_server.py expects for its handshake.
+        # The client's `example_utils.configure_for_example(clear_env=True)` sets up the client's
+        # rpcplugin_config. `RPCPluginClient._launch_process` will use these
+        # client-side config values (PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE)
+        # to set the correct environment variable for the server.
+        # The server (`ch05_echo_server.py`), also calling `configure_for_example(clear_env=False)`,
+        # will have matching default expectations for these key and value from its own config.
+        # Thus, no specific "env" overrides are needed here for the cookie.
         self.client_config = {"env": {
-            "PLUGIN_MAGIC_COOKIE_KEY": "ECHO_PLUGIN_COOKIE_EXAMPLE", # Server looks for this key
-            "PLUGIN_MAGIC_COOKIE_VALUE": "echo-super-secret-cookie", # Server expects this value
-            # RPCPluginClient will generate the actual PLUGIN_MAGIC_COOKIE from _VALUE
-            # Other env vars like PLUGIN_AUTO_MTLS can be set here if needed
+            # Propagate the client's log level to the server for example consistency.
+            # Uses the client's current rpcplugin_config log level.
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO")
         }}
-        # If the server is expected to run with specific pyvider config, set them here too.
-        # e.g., if server needs PLUGIN_LOG_LEVEL for its pyvider.telemetry.logger
-        # self.client_config["env"]["PLUGIN_LOG_LEVEL"] = "DEBUG"
 
 
     async def start(self) -> bool:

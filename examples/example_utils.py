@@ -44,10 +44,18 @@ def clear_plugin_env_vars() -> None:
             del os.environ[var]
 
 
-def configure_for_example() -> None:
-    """Configure environment for example execution."""
-    # Clear any existing PLUGIN_* env vars to ensure examples run in a clean state
-    clear_plugin_env_vars()
+def configure_for_example(clear_env: bool = False) -> None:
+    """
+    Configure environment for example execution.
+
+    Args:
+        clear_env: If True, clears existing PLUGIN_* environment variables.
+                   Should typically be True for client examples that launch servers,
+                   and False for server examples that expect env vars from a client.
+    """
+    if clear_env:
+        # Clear any existing PLUGIN_* env vars to ensure examples run in a clean state
+        clear_plugin_env_vars()
 
     setup_example_environment()
 
@@ -72,8 +80,8 @@ def configure_for_example() -> None:
             "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE",
             "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",
             "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_HANDSHAKE_TIMEOUT": 15.0,
-            "PLUGIN_CONNECTION_TIMEOUT": 10.0,
+            "PLUGIN_HANDSHAKE_TIMEOUT": 5.0,  # Updated to 5 seconds
+            "PLUGIN_CONNECTION_TIMEOUT": 5.0, # Updated to 5 seconds
         }
 
         config_to_apply_programmatically = {}
