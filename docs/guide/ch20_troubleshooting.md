@@ -38,12 +38,12 @@ Handshake errors occur during the initial establishment of a connection between 
 
 *   **Handshake Timeout**:
     *   **Symptom**: `"[HandshakeError] Timed out waiting for handshake response from plugin."`
-    *   **Cause**: The plugin executable either failed to start, crashed immediately upon launch, or did not print the complete handshake string to its standard output within the `PLUGIN_HANDSHAKE_TIMEOUT` period.
+    *   **Cause**: The plugin executable either failed to start, crashed immediately upon launch, or did not print the complete handshake string to its standard output within the `PLUGIN_HANDSHAKE_TIMEOUT` period (library default is 10s, examples default to 5s via `example_utils.py`).
     *   **Solution**:
         *   Check logs from the plugin server for startup errors.
         *   Verify the plugin command is correct and the executable has permissions.
         *   Ensure the plugin is compatible and correctly implements the handshake output.
-        *   If the plugin legitimately takes longer to initialize and print the handshake, consider increasing `PLUGIN_HANDSHAKE_TIMEOUT`.
+        *   If the plugin legitimately takes longer to initialize and print the handshake, consider increasing `PLUGIN_HANDSHAKE_TIMEOUT` via environment variable or client configuration.
 
 **2. Transport Errors (`TransportError`)**
 
@@ -83,6 +83,19 @@ These errors occur *after* a successful connection and handshake, during an actu
     *   Examine `error.code()` and `error.details()` for specific information.
     *   Check server-side logs for corresponding error messages and stack traces, especially for `INTERNAL` errors.
     *   Verify that request messages are correctly populated by the client.
+
+**5. Server Shutdown / Interrupts (Ctrl-C)**
+
+*   **Server Not Exiting Promptly on Ctrl-C**:
+    *   **Behavior**: The `RPCPluginServer` is designed for robust shutdown. When Ctrl-C (SIGINT) is pressed, it initiates a graceful shutdown. This involves stopping the gRPC server (which may have a grace period, e.g., 0.5 seconds by default in `RPCPluginServer.stop()`), closing transports, and cleaning up resources. This process can take a moment.
+    *   **Symptom**: Server seems to hang after one Ctrl-C, or requires multiple presses to exit.
+    *   **Cause**:
+        *   The graceful shutdown process is taking time (e.g., waiting for active requests to complete during the gRPC server's grace period, or transport cleanup delays).
+        *   Standard Python/asyncio signal handling can sometimes require a second Ctrl-C to interrupt a process if it's busy or in the middle of certain operations, forcing a more abrupt `KeyboardInterrupt` exception.
+    *   **Solution**:
+        *   Allow a few seconds for graceful shutdown after the first Ctrl-C.
+        *   If the process appears unresponsive, a second Ctrl-C may be necessary to raise a `KeyboardInterrupt` more forcefully.
+        *   If issues persist with graceful shutdown not completing, check for custom tasks or operations in your server code that might not be handling `asyncio.CancelledError` correctly during shutdown, thus blocking the completion of `server.stop()`.
 
 ## General Debugging Tips
 
