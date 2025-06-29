@@ -135,7 +135,7 @@ A class for generating, loading, and managing X.509 certificates and private key
     *   `.issuer: str`: The certificate's issuer distinguished name.
     *   `.public_key: PublicKey | None`: The public key object.
     *   `.serial_number: int | None`: The certificate's serial number.
-*   **`verify_trust(self, other_cert: Certificate) -> bool`**: Verifies if `other_cert` is trusted based on `self.trust_chain`. (Note: Trust chain management is basic in the current impl.)
+*   **`verify_trust(self, other_cert: Certificate) -> bool`**: Verifies if `other_cert` is trusted based on `self.trust_chain`.
 
 ## Exceptions
 

@@ -57,13 +57,15 @@ async def test_setup_client_certificates_with_auto_mtls(mock_logger_info, client
 
     # Robust check for calls to rpcplugin_config.get
     expected_get_calls = [
-        call("PLUGIN_CLIENT_CERT", None),
-        call("PLUGIN_CLIENT_KEY", None)
+            call("PLUGIN_CLIENT_CERT"), # Default arg is not used in actual code for these keys
+            call("PLUGIN_CLIENT_KEY")   # Default arg is not used in actual code for these keys
     ]
     # Check if each expected call is in the actual call list
-    for expected_call in expected_get_calls:
-        assert expected_call in mock_get_for_certs.call_args_list, \
-            f"Expected call {expected_call} not found in {mock_get_for_certs.call_args_list}"
+    # We need to check the .args attribute of each call object
+    actual_calls_args = [c.args for c in mock_get_for_certs.call_args_list]
+    for expected_call_args in [ec.args for ec in expected_get_calls]:
+        assert expected_call_args in actual_calls_args, \
+                f"Expected call args {expected_call_args} not found in {actual_calls_args}"
 
 
     mock_cert_class.assert_called_once_with(generate_keypair=True, key_type="ecdsa")
@@ -92,12 +94,13 @@ async def test_setup_client_certificates_with_existing_certs(mock_logger_info, c
     client_base_module.rpcplugin_config.auto_mtls_enabled.assert_called_once()
 
     expected_get_calls = [
-        call("PLUGIN_CLIENT_CERT", None),
-        call("PLUGIN_CLIENT_KEY", None)
+        call("PLUGIN_CLIENT_CERT"), # Default arg is not used in actual code
+        call("PLUGIN_CLIENT_KEY")   # Default arg is not used in actual code
     ]
-    for expected_call in expected_get_calls:
-        assert expected_call in mock_get_for_certs.call_args_list, \
-            f"Expected call {expected_call} not found in {mock_get_for_certs.call_args_list}"
+    actual_calls_args = [c.args for c in mock_get_for_certs.call_args_list]
+    for expected_call_args in [ec.args for ec in expected_get_calls]:
+        assert expected_call_args in actual_calls_args, \
+            f"Expected call args {expected_call_args} not found in {actual_calls_args}"
 
     mock_cert_class.assert_not_called()
 
@@ -110,10 +113,10 @@ async def test_setup_client_certificates_with_existing_certs(mock_logger_info, c
 @pytest.mark.asyncio
 @patch.object(client_base_module.logger, 'debug')
 @patch.object(client_base_module.logger, 'info')
-@patch.object(client_base_module.logger, 'isEnabledFor')
-async def test_setup_client_certificates_without_mtls(mock_is_enabled_for, mock_logger_info, mock_logger_debug, client_instance, mocker):
-    # Ensure isEnabledFor(logging.DEBUG) returns True for this test
-    mock_is_enabled_for.return_value = True
+# @patch.object(client_base_module.logger, 'isEnabledFor') # Removed: isEnabledFor is not called by the tested code path
+async def test_setup_client_certificates_without_mtls(mock_logger_info, mock_logger_debug, client_instance, mocker): # Removed mock_is_enabled_for
+    # Ensure isEnabledFor(logging.DEBUG) returns True for this test - Not needed if not called
+    # mock_is_enabled_for.return_value = True
 
     mocker.patch.object(client_base_module.rpcplugin_config, "auto_mtls_enabled", return_value=False)
     mock_cert_class = mocker.patch("pyvider.rpcplugin.client.base.Certificate")

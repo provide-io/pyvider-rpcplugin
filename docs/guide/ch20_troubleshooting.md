@@ -10,7 +10,9 @@ Handshake errors occur during the initial establishment of a connection between 
 
 *   **Magic Cookie Mismatch**:
     *   **Symptom**: Error message similar to: `"[HandshakeError] Magic cookie mismatch. Expected: 'expected_value', Received: 'wrong_value'."`
-    *   **Cause**: The `PLUGIN_MAGIC_COOKIE_VALUE` configured on the server side does not match the value sent by the client. The client sends the value of the environment variable whose name is specified by the server's `PLUGIN_MAGIC_COOKIE_KEY`.
+    *   **Cause**: This usually means a mismatch in the magic cookie's secret value or the environment variable name used to pass it. Specifically:
+        *   The value set by the client (from its `PLUGIN_MAGIC_COOKIE_VALUE` config, placed into an environment variable for the server using the name from its `PLUGIN_MAGIC_COOKIE_KEY` config) does not match the `PLUGIN_MAGIC_COOKIE_VALUE` the server is configured to expect and validate against.
+        *   Alternatively, the environment variable *name* used by the client (from its `PLUGIN_MAGIC_COOKIE_KEY` config) might not be the same variable *name* the server is configured to read (from its `PLUGIN_MAGIC_COOKIE_KEY` config).
     *   **Solution**:
         1.  Verify the `PLUGIN_MAGIC_COOKIE_KEY` setting on the server. This is the name of the environment variable the server will check.
         2.  Verify the `PLUGIN_MAGIC_COOKIE_VALUE` setting on the server. This is the secret string the server expects.
