@@ -14,7 +14,7 @@ from pathlib import Path
 # and setting a default magic cookie) is applied for examples.
 from example_utils import configure_for_example
 
-configure_for_example()
+configure_for_example(clear_env=True) # Client context, clear its own env
 
 from pyvider.rpcplugin import plugin_client  # noqa: E402
 from pyvider.rpcplugin.client.base import RPCPluginClient  # noqa: E402

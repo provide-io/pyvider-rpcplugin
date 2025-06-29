@@ -23,7 +23,8 @@ from pyvider.rpcplugin.crypto import Certificate
 from pyvider.telemetry import logger
 
 # Apply base configuration for examples (paths, logging)
-configure_for_example()
+# Client context, clear its own env before specific mTLS config.
+configure_for_example(clear_env=True)
 
 
 async def functional_mtls_example() -> None:
@@ -92,18 +93,28 @@ async def functional_mtls_example() -> None:
             SERVER_ROOT_CERTS=f"file://{ca_cert_path}",
             magic_cookie_key=client_magic_cookie_key,
             magic_cookie=client_magic_cookie_value,
+            # Set shorter timeouts for the client for this test
+            handshake_timeout=25.0,
+            connection_timeout=20.0
         )
         logger.info("🔧 Client-side mTLS configured programmatically.")
 
         # 3. Prepare Environment for Server Subprocess
         server_env_vars = {
             "PLUGIN_AUTO_MTLS": "True",
+            "PLUGIN_AUTO_MTLS": "True",
             "PLUGIN_SERVER_CERT": f"file://{server_cert_path}",
             "PLUGIN_SERVER_KEY": f"file://{server_key_path}",
-            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_path}",
+            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_path}", # Server uses this to verify client cert
+
             client_magic_cookie_key: client_magic_cookie_value,
-            "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_HANDSHAKE_TIMEOUT": "20.0",
+
+            "PLUGIN_MAGIC_COOKIE_KEY": client_magic_cookie_key,
+            "PLUGIN_MAGIC_COOKIE_VALUE": client_magic_cookie_value,
+
+            "PLUGIN_LOG_LEVEL": "DEBUG",
+            "PLUGIN_HANDSHAKE_TIMEOUT": "20.0", # Server-side handshake timeout
+            "PLUGIN_CONNECTION_TIMEOUT": "15.0" # Server-side connection related timeout (less relevant for server)
         }
 
         # 4. Launch Server and Connect Client

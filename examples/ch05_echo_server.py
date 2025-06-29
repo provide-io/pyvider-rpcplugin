@@ -5,6 +5,11 @@ import os
 from typing import Any, cast
 import grpc
 
+# Ensure 'src' and project root are in sys.path for direct execution of examples
+# This needs to happen BEFORE attempting to import from 'examples.proto'
+from example_utils import configure_for_example
+configure_for_example(clear_env=False) # Server context, do not clear client-set env vars
+
 # Import generated code from the examples/proto directory
 # Assumes 'examples' is in PYTHONPATH or you run from project root.
 from examples.proto import echo_pb2, echo_pb2_grpc
@@ -91,8 +96,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
-        from examples.example_utils import configure_for_example
-        configure_for_example() # For path setup, global config defaults
+        # configure_for_example() is now called at the top of the module
         asyncio.run(main())
     except KeyboardInterrupt: # pragma: no cover
         logger.info("Server stopped by user.")

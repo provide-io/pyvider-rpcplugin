@@ -47,17 +47,17 @@ async def main() -> None:
         logger.error(f"Could not find server script: {server_script_path}")
         return
 
-    # Configure environment variables for the server subprocess
-    # These would typically match what the server expects for its handshake.
-    # example_utils.configure_for_example() in the client sets defaults
-    # that plugin_client() then passes to the server.
+    # The client's `example_utils.configure_for_example(clear_env=True)` sets up its
+    # rpcplugin_config. `RPCPluginClient._launch_process` will use these
+    # client-side config values (PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE)
+    # to set the correct environment variable for the server.
+    # The server (`ch15_e2e_server.py`), also calling `configure_for_example(clear_env=False)`,
+    # will have matching default expectations for these.
+    from pyvider.rpcplugin import rpcplugin_config # Import for default log level
     client_config = {
         "env": {
-            # These are examples; ensure they match what the server's
-            # configure_for_example() and handshake logic expect or set.
-            "PLUGIN_MAGIC_COOKIE_KEY": "E2E_PLUGIN_COOKIE_EXAMPLE",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "e2e-super-secret-cookie",
-            "PLUGIN_LOG_LEVEL": os.environ.get("PLUGIN_LOG_LEVEL", "DEBUG") # Propagate client's log level
+            # Propagate the client's log level to the server for example consistency.
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO")
         }
     }
 
@@ -103,7 +103,8 @@ async def main() -> None:
 
 if __name__ == "__main__":
     from examples.example_utils import configure_for_example
-    configure_for_example() # Sets up client-side path and default configs
+    # Client context, clear its own env before specific example logic.
+    configure_for_example(clear_env=True)
 
     # Ensure PYTHONIOENCODING is set for subprocesses, good practice
     os.environ['PYTHONIOENCODING'] = 'UTF-8'

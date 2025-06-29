@@ -9,6 +9,11 @@ from typing import Any, cast
 
 import grpc
 
+# Ensure 'src' and project root are in sys.path for direct execution of examples
+# This needs to happen BEFORE attempting to import from 'examples.proto'
+from example_utils import configure_for_example
+configure_for_example(clear_env=False) # Server context, do not clear client-set env vars
+
 # Import pyvider components
 from pyvider.rpcplugin.factories import plugin_server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
@@ -86,7 +91,7 @@ if __name__ == "__main__":
     # It's important that example_utils.configure_for_example() is called
     # to set up necessary paths and default configurations if this server
     # is run directly, or to respect environment set by a client.
-    from examples.example_utils import configure_for_example
-    configure_for_example()
+    # from examples.example_utils import configure_for_example # No longer needed here
+    # configure_for_example() # Called at module top
 
     asyncio.run(main())
