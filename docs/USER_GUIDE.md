@@ -37,6 +37,7 @@ Welcome to the comprehensive guide for Pyvider RPCPlugin. This document serves a
 *   [Chapter 19: Contributing to Pyvider RPCPlugin](./guide/ch19_contributing.md)
 *   [Chapter 20: Troubleshooting](./guide/ch20_troubleshooting.md)
 *   [Chapter 21: Glossary](./guide/ch21_glossary.md)
+*   [Chapter 22: Comparison with HashiCorp's go-plugin](./guide/ch22_go_plugin_comparison.md)
 
 ---
 
