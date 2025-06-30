@@ -25,7 +25,12 @@ from attrs import define, field
 from grpc.aio import server as GRPCServer
 from grpc_health.v1 import health_pb2_grpc
 
-from pyvider.rpcplugin.config import CONFIG_SCHEMA, ConfigError, rpcplugin_config, _convert_value_to_schema_type
+from pyvider.rpcplugin.config import (
+    CONFIG_SCHEMA,
+    ConfigError,
+    _convert_value_to_schema_type,
+    rpcplugin_config,
+)
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import (
     ProtocolError,
@@ -107,36 +112,65 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
             schema_info = CONFIG_SCHEMA.get(key, {})
             schema_type = schema_info.get("type")
 
-            if schema_type and isinstance(val, str): # Only convert if it's a string and schema type is known
+            if schema_type and isinstance(
+                val, str
+            ):  # Only convert if it's a string and schema type is known
                 try:
                     return _convert_value_to_schema_type(val, schema_type, key)
-                except ConfigError as e: # Catch conversion error to provide context
-                    logger.warning(f"Failed to convert instance config value for {key} ('{val}') to {schema_type}: {e}. Using global or default.")
+                except ConfigError as e:  # Catch conversion error to provide context
+                    logger.warning(
+                        f"Failed to convert instance config value for {key} ('{val}') "
+                        f"to {schema_type}: {e}. Using global or default."
+                    )
                     # Fall through to global config if instance conversion fails
-            elif schema_type and val is None and schema_type in ("list_str", "list_int"):
-                 # If instance config explicitly sets a list type to None, return empty list
+            elif (
+                schema_type
+                and val is None
+                and schema_type in ("list_str", "list_int")
+            ):
+                # If instance config explicitly sets a list type to None,
+                # return empty list
                 return []
-            elif val is not None: # If not a string needing conversion, or no schema_type, return as is
+            elif (
+                val is not None
+            ):  # If not a string needing conversion, or no schema_type, return as is
                 return val
             # If val is None and not a list type, fall through to global/default
 
-        # Fallback to global config if key not in self.config, self.config is None,
-        # or if instance value was None and not a list type (to allow global default to apply).
+        # Fallback to global config if key not in self.config,
+        # self.config is None, or if instance value was None and not a list
+        # type (to allow global default to apply).
         return rpcplugin_config.get(key, default_value)
-
 
     def __attrs_post_init__(self) -> None:
         try:
             # Ensure that default_value for list types is an empty list
-            # so that _get_config_value can correctly process it if the key is entirely missing.
-            pv_default = rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS") if not self.config or "PLUGIN_PROTOCOL_VERSIONS" not in self.config else []
-            st_default = rpcplugin_config.get_list("PLUGIN_SERVER_TRANSPORTS") if not self.config or "PLUGIN_SERVER_TRANSPORTS" not in self.config else []
+            # so that _get_config_value can correctly process it if the key
+            # is entirely missing.
+            pv_default = (
+                rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")
+                if not self.config or "PLUGIN_PROTOCOL_VERSIONS" not in self.config
+                else []
+            )
+            st_default = (
+                rpcplugin_config.get_list("PLUGIN_SERVER_TRANSPORTS")
+                if not self.config or "PLUGIN_SERVER_TRANSPORTS" not in self.config
+                else []
+            )
 
             self._handshake_config = HandshakeConfig(
-                magic_cookie_key=self._get_config_value("PLUGIN_MAGIC_COOKIE_KEY", rpcplugin_config.magic_cookie_key()),
-                magic_cookie_value=self._get_config_value("PLUGIN_MAGIC_COOKIE_VALUE", rpcplugin_config.magic_cookie_value()),
-                protocol_versions=self._get_config_value("PLUGIN_PROTOCOL_VERSIONS", pv_default),
-                supported_transports=self._get_config_value("PLUGIN_SERVER_TRANSPORTS", st_default)
+                magic_cookie_key=self._get_config_value(
+                    "PLUGIN_MAGIC_COOKIE_KEY", rpcplugin_config.magic_cookie_key()
+                ),
+                magic_cookie_value=self._get_config_value(
+                    "PLUGIN_MAGIC_COOKIE_VALUE", rpcplugin_config.magic_cookie_value()
+                ),
+                protocol_versions=self._get_config_value(
+                    "PLUGIN_PROTOCOL_VERSIONS", pv_default
+                ),
+                supported_transports=self._get_config_value(
+                    "PLUGIN_SERVER_TRANSPORTS", st_default
+                ),
             )
         except Exception as e:
             raise ConfigError(
@@ -150,22 +184,32 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
         self._serving_future = asyncio.Future()
         self._shutdown_file_path = self._get_config_value("PLUGIN_SHUTDOWN_FILE_PATH")
 
-        if self._get_config_value("PLUGIN_RATE_LIMIT_ENABLED", rpcplugin_config.rate_limit_enabled()):
-            capacity = self._get_config_value("PLUGIN_RATE_LIMIT_BURST_CAPACITY", rpcplugin_config.rate_limit_burst_capacity())
-            refill_rate = self._get_config_value("PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND", rpcplugin_config.rate_limit_requests_per_second())
+        if self._get_config_value(
+            "PLUGIN_RATE_LIMIT_ENABLED", rpcplugin_config.rate_limit_enabled()
+        ):
+            capacity = self._get_config_value(
+                "PLUGIN_RATE_LIMIT_BURST_CAPACITY",
+                rpcplugin_config.rate_limit_burst_capacity(),
+            )
+            refill_rate = self._get_config_value(
+                "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND",
+                rpcplugin_config.rate_limit_requests_per_second(),
+            )
             if capacity > 0 and refill_rate > 0:
                 self._rate_limiter = TokenBucketRateLimiter(
                     capacity=capacity, refill_rate=refill_rate
                 )
 
         if hasattr(self.protocol, "service_name") and isinstance(
-            getattr(self.protocol, "service_name"), str
+            self.protocol.service_name, str
         ):
-            protocol_class_service_name = getattr(self.protocol, "service_name")
+            protocol_class_service_name = self.protocol.service_name
             if protocol_class_service_name:
                 self._main_service_name = protocol_class_service_name
 
-        if self._get_config_value("PLUGIN_HEALTH_SERVICE_ENABLED", rpcplugin_config.health_service_enabled()):
+        if self._get_config_value(
+            "PLUGIN_HEALTH_SERVICE_ENABLED", rpcplugin_config.health_service_enabled()
+        ):
             self._health_servicer = HealthServicer(
                 app_is_healthy_callable=self._is_main_app_healthy,
                 service_name=self._main_service_name,
@@ -251,18 +295,25 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
         except (TransportError, OSError) as e:
             raise TransportError(f"Server readiness check failed: {e}") from e
 
-    def _read_client_cert(self) -> str | None: # Not strictly needed if _get_config_value is used directly
+    def _read_client_cert(
+        self,
+    ) -> str | None:  # Not strictly needed if _get_config_value is used directly
         return self._get_config_value("PLUGIN_CLIENT_CERT")
 
     def _generate_server_credentials(self) -> grpc.ServerCredentials | None:
         server_cert_conf = self._get_config_value("PLUGIN_SERVER_CERT")
         server_key_conf = self._get_config_value("PLUGIN_SERVER_KEY")
         # For boolean, use the specific global helper as default for clarity
-        auto_mtls = self._get_config_value("PLUGIN_AUTO_MTLS", rpcplugin_config.auto_mtls_enabled())
+        auto_mtls = self._get_config_value(
+            "PLUGIN_AUTO_MTLS", rpcplugin_config.auto_mtls_enabled()
+        )
         client_root_certs_conf = self._get_config_value("PLUGIN_CLIENT_ROOT_CERTS")
 
         if not auto_mtls and not (server_cert_conf and server_key_conf):
-            logger.info("auto_mtls is false and no server cert/key provided. Operating insecurely.")
+            logger.info(
+                "auto_mtls is false and no server cert/key provided. "
+                "Operating insecurely."
+            )
             return None
 
         if server_cert_conf and server_key_conf:
@@ -282,13 +333,22 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
                     validity_days=365,
                     alt_names=["localhost"],
                 )
-                logger.info(f"📜🔑🏭 Created new self-signed SERVER certificate for CN={getattr(self._server_cert_obj, 'common_name', 'Unknown')}")
+                common_name_val = getattr(
+                    self._server_cert_obj, "common_name", "Unknown"
+                )
+                logger.info(
+                    "📜🔑🏭 Created new self-signed SERVER certificate for "
+                    f"CN={common_name_val}"
+                )
             except Exception as e:
                 raise SecurityError(
                     f"Failed to auto-generate server certificate: {e}"
                 ) from e
         else:
-            logger.warning("No server cert/key configured and auto_mtls is false. Proceeding insecurely.")
+            logger.warning(
+                "No server cert/key configured and auto_mtls is false. "
+                "Proceeding insecurely."
+            )
             return None
 
         if not (
@@ -297,7 +357,8 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
             and self._server_cert_obj.key
         ):
             raise SecurityError(
-                "Server certificate object is invalid or missing PEM data after processing."
+                "Server certificate object is invalid or missing PEM data "
+                "after processing."
             )
 
         key_bytes = self._server_cert_obj.key.encode("utf-8")
@@ -308,7 +369,9 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
         if auto_mtls and client_root_certs_conf:
             require_auth = True
             try:
-                if isinstance(client_root_certs_conf, str) and client_root_certs_conf.startswith("file://"):
+                if isinstance(
+                    client_root_certs_conf, str
+                ) and client_root_certs_conf.startswith("file://"):
                     with open(client_root_certs_conf[7:], "rb") as f:
                         client_ca_pem_bytes = f.read()
                 elif isinstance(client_root_certs_conf, str):
@@ -316,7 +379,10 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
             except Exception as e:
                 raise SecurityError(f"Failed to load client root CAs: {e}") from e
         elif auto_mtls:
-            logger.warning("auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. Client certs will not be required/verified.")
+            logger.warning(
+                "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. "
+                "Client certs will not be required/verified."
+            )
             require_auth = False
 
         return grpc.ssl_server_credentials(
@@ -325,7 +391,9 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
             require_client_auth=require_auth,
         )
 
-    async def _setup_server(self, client_cert_str: str | None) -> None: # client_cert_str not used
+    async def _setup_server(
+        self, client_cert_str: str | None
+    ) -> None:  # client_cert_str not used
         try:
             interceptors_list: list[grpc.aio.ServerInterceptor] = (
                 [RateLimitingInterceptor(self._rate_limiter)]
@@ -377,56 +445,97 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
             port_num = 0
             if creds:
                 port_num = server_for_port.add_secure_port(bind_address, creds)
-                logger.info(f"🔒 Server starting in secure mode on {bind_address} (port_num: {port_num})")
+                logger.info(
+                    f"🔒 Server starting in secure mode on {bind_address} "
+                    f"(port_num: {port_num})"
+                )
             else:
                 port_num = server_for_port.add_insecure_port(bind_address)
-                logger.info(f"🔌 Server starting in insecure mode on {bind_address} (port_num: {port_num})")
+                logger.info(
+                    f"🔌 Server starting in insecure mode on {bind_address} "
+                    f"(port_num: {port_num})"
+                )
 
             if isinstance(active_transport_checked, TCPSocketTransport):
-                # Determine if a specific port was requested initially, either via injected
-                # transport or via PLUGIN_SERVER_ENDPOINT configuration.
-                initial_requested_port_val = 0 # Default to ephemeral
+                # Determine if a specific port was requested initially,
+                # either via injected transport or via PLUGIN_SERVER_ENDPOINT
+                # configuration.
+                initial_requested_port_val = 0  # Default to ephemeral
 
-                # Check if self.transport (the one RPCPluginServer was initialized with, if any)
-                # had a specific port.
-                # self.transport is the transport instance passed to RPCPluginServer's constructor.
-                # active_transport_checked is self._transport, which might be from self.transport or negotiated.
-                # In the failing test, self.transport is set, and is the same as active_transport_checked.
-                original_transport_config_port = -1 # Sentinel for not configured via direct transport
-                if self.transport is not None and hasattr(self.transport, 'port'):
-                     # Check the port value of the transport instance provided at server construction
+                # Check if self.transport (the one RPCPluginServer was
+                # initialized with, if any) had a specific port.
+                # self.transport is the transport instance passed to
+                # RPCPluginServer's constructor.
+                # active_transport_checked is self._transport, which might be
+                # from self.transport or negotiated.
+                # In the failing test, self.transport is set, and is the same as
+                # active_transport_checked.
+                original_transport_config_port = (
+                    -1
+                )  # Sentinel for not configured via direct transport
+                if self.transport is not None and hasattr(self.transport, "port"):
+                    # Check the port value of the transport instance provided
+                    # at server construction
                     if isinstance(self.transport, TCPSocketTransport):
                         original_transport_config_port = self.transport.port
 
-                if original_transport_config_port != -1 and original_transport_config_port != 0:
+                if (
+                    original_transport_config_port != -1
+                    and original_transport_config_port != 0
+                ):
                     # A specific port was provided via the transport object itself
                     initial_requested_port_val = original_transport_config_port
                 else:
-                    # No specific port on direct transport, or no direct transport, check config
+                    # No specific port on direct transport, or no direct
+                    # transport, check config
                     endpoint_conf = self._get_config_value("PLUGIN_SERVER_ENDPOINT")
-                    if endpoint_conf and isinstance(endpoint_conf, str) and ":" in endpoint_conf:
+                    if (
+                        endpoint_conf
+                        and isinstance(endpoint_conf, str)
+                        and ":" in endpoint_conf
+                    ):
                         try:
-                            # This part is tricky because is_valid_tcp_endpoint isn't accessible here easily.
-                            # We rely on simple split and int conversion.
-                            initial_requested_port_val = int(endpoint_conf.split(':')[-1])
+                            # This part is tricky because is_valid_tcp_endpoint
+                            # isn't accessible here easily. We rely on simple
+                            # split and int conversion.
+                            initial_requested_port_val = int(
+                                endpoint_conf.split(":")[-1]
+                            )
                         except ValueError:
-                             logger.warning(f"Could not parse port from PLUGIN_SERVER_ENDPOINT='{endpoint_conf}'. Assuming ephemeral.")
-                             initial_requested_port_val = 0 # Fallback to ephemeral if parse fails
+                            logger.warning(
+                                "Could not parse port from "
+                                f"PLUGIN_SERVER_ENDPOINT='{endpoint_conf}'. "
+                                "Assuming ephemeral."
+                            )
+                            initial_requested_port_val = (
+                                0  # Fallback to ephemeral if parse fails
+                            )
                     else:
-                        # No PLUGIN_SERVER_ENDPOINT or it's not a typical host:port string, assume ephemeral
+                        # No PLUGIN_SERVER_ENDPOINT or it's not a typical
+                        # host:port string, assume ephemeral
                         initial_requested_port_val = 0
 
+                is_specific_port_requested = initial_requested_port_val != 0
 
-                is_specific_port_requested = (initial_requested_port_val != 0)
-
-                # port_num is the result from grpc_server.add_insecure_port(bind_address)
+                # port_num is the result from
+                # grpc_server.add_insecure_port(bind_address)
                 if port_num == 0 and is_specific_port_requested:
-                    raise TransportError(f"Failed to bind to specifically requested TCP port in {bind_address} (requested port was {initial_requested_port_val}). Port returned by gRPC was 0.")
+                    raise TransportError(
+                        "Failed to bind to specifically requested TCP port in "
+                        f"{bind_address} (requested port was "
+                        f"{initial_requested_port_val}). Port returned by gRPC was 0."
+                    )
 
-                self._port = port_num # Store the actual bound port
-                active_transport_checked.port = port_num # Update transport's port with actual
+                self._port = port_num  # Store the actual bound port
+                active_transport_checked.port = (
+                    port_num  # Update transport's port with actual
+                )
 
-                current_host = active_transport_checked.host if active_transport_checked.host else "0.0.0.0"
+                current_host = (
+                    active_transport_checked.host
+                    if active_transport_checked.host
+                    else "0.0.0.0"
+                )
                 active_transport_checked.endpoint = f"{current_host}:{port_num}"
 
             server_to_start = cast(grpc.aio.Server, self._server)
@@ -439,7 +548,7 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
     async def _negotiate_handshake(self) -> None:
         validate_magic_cookie(
             magic_cookie_key=self._handshake_config.magic_cookie_key,
-            magic_cookie_value=self._handshake_config.magic_cookie_value
+            magic_cookie_value=self._handshake_config.magic_cookie_value,
         )
         self._protocol_version = negotiate_protocol_version(
             self._handshake_config.protocol_versions
@@ -520,5 +629,6 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
 
         if not self._serving_future.done():
             self._serving_future.set_result(None)
+
 
 # 🐍🏗️🔌

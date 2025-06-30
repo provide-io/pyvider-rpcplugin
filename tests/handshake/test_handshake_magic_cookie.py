@@ -31,7 +31,7 @@ from pyvider.rpcplugin.handshake import _SENTINEL_INSTANCE
             "PLUGIN_MAGIC_COOKIE_KEY",
             "expected_value",
             None,
-            r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'PLUGIN_MAGIC_COOKIE_KEY'\..*Hint:.*",
+                r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'PLUGIN_MAGIC_COOKIE_KEY' \(if not passed directly to validation\)\..*Hint:.*",
         ),
         # Error: Cookie mismatch - THIS IS THE TARGETED CASE
         (
@@ -84,7 +84,7 @@ def test_validate_magic_cookie_config_scenarios(
         (
             "PLUGIN_MAGIC_COOKIE",
             None,
-            r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'PLUGIN_MAGIC_COOKIE'\..*Hint:.*",
+                r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'PLUGIN_MAGIC_COOKIE' \(if not passed directly to validation\)\..*Hint:.*",
         ),
         (
             None,
@@ -230,7 +230,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
 
     with pytest.raises(
         HandshakeError,
-        match=r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'K'\..*",
+            match=r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'K' \(if not passed directly to validation\)\..*",
     ):
         validate_magic_cookie(
             magic_cookie_key="K", magic_cookie_value="V", magic_cookie=None

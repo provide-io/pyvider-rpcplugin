@@ -216,41 +216,44 @@ def validate_magic_cookie(
         if magic_cookie_key is _SENTINEL_INSTANCE
         else magic_cookie_key
     )
-    cookie_value = (
-        rpcplugin_config.magic_cookie_value()
-        if magic_cookie_value is _SENTINEL_INSTANCE
-        else magic_cookie_value
-    )
 
-    # Determine the actual cookie value that was provided.
-    # 1. If magic_cookie is explicitly passed, use that (for direct tests or
-    #    client-side validation).
-    # 2. Otherwise (typically server-side), read from the environment variable
-    #    whose name is defined by `cookie_key`.
-    if magic_cookie is not _SENTINEL_INSTANCE and magic_cookie is not None:
-        cookie_provided = magic_cookie
-        logger.debug(f"Using explicitly passed magic_cookie: '{cookie_provided}'")
+    # Determine the expected cookie value for the logic, resolving sentinel.
+    # Parameter 'magic_cookie_value' can be str | None | _SentinelType.
+    # 'rpcplugin_config.magic_cookie_value()' returns str.
+    # So, 'expected_value_for_logic' will be str | None.
+    expected_value_for_logic: str | None
+    if magic_cookie_value is _SENTINEL_INSTANCE:
+        expected_value_for_logic = rpcplugin_config.magic_cookie_value()
     else:
-        if (
-            cookie_key is None or cookie_key == ""
-        ):  # Should not happen if default from config is used
+        expected_value_for_logic = magic_cookie_value
+
+
+    # Determine the actual cookie value that was provided by the client/environment.
+    # Parameter 'magic_cookie' can be str | None | _SentinelType.
+    cookie_provided_by_caller: str | None
+    if magic_cookie is _SENTINEL_INSTANCE:
+        # If magic_cookie param is sentinel, then we MUST read from env.
+        if cookie_key is None or cookie_key == "":
             logger.error("CRITICAL: cookie_key is None or empty before env lookup.")
-            # This case should ideally be prevented by config validation or defaults.
-            # If it still occurs, it's a severe misconfiguration.
-            raise HandshakeError(  # ruff: noqa E501
+            raise HandshakeError(
                 message="Internal configuration error: cookie_key is missing for lookup.",
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
-        cookie_provided = os.environ.get(str(cookie_key))
+        cookie_provided_by_caller = os.environ.get(str(cookie_key))
         logger.debug(
-            f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided}'"
+            f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided_by_caller}'"
         )
+    else:
+        # If magic_cookie param was explicitly passed (even if None), use that.
+        cookie_provided_by_caller = magic_cookie
+        logger.debug(f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'")
+
 
     logger.debug(f"Final cookie_key for validation: {cookie_key}")
-    logger.debug(f"cookie_value (expected): {cookie_value}")
-    logger.debug(f"cookie_provided (received): {cookie_provided}")
+    logger.debug(f"Expected cookie value (for logic): {expected_value_for_logic}")
+    logger.debug(f"Cookie provided by caller/env: {cookie_provided_by_caller}")
 
-    if cookie_key is None or cookie_key == "":
+    if cookie_key is None or cookie_key == "": # This check is for the config of the key itself
         logger.error("Configuration error: magic_cookie_key is not set in config.")
         raise HandshakeError(
             message="Magic cookie key is not configured.",
@@ -260,7 +263,7 @@ def validate_magic_cookie(
             ),
         )
 
-    if cookie_value is None or cookie_value == "":
+    if expected_value_for_logic is None or expected_value_for_logic == "":
         logger.error(
             "Configuration error: magic_cookie_value (expected) is not set in config."
         )
@@ -272,7 +275,7 @@ def validate_magic_cookie(
             ),
         )
 
-    if cookie_provided is None or cookie_provided == "":
+    if cookie_provided_by_caller is None or cookie_provided_by_caller == "":
         logger.error(
             "Magic cookie not provided by the client.",
             extra={"cookie_key_expected": cookie_key},
@@ -280,28 +283,28 @@ def validate_magic_cookie(
         raise HandshakeError(
             message=(
                 "Magic cookie not provided by the client. Expected via environment "
-                f"variable '{cookie_key}'."
+                f"variable '{cookie_key}' (if not passed directly to validation)."
             ),
             hint=(
                 "Ensure the client process (e.g., Terraform or other plugin host) "
                 f"is configured to send the '{cookie_key}' environment variable "
-                "with the correct magic cookie value."
+                "with the correct magic cookie value, or that it's passed directly."
             ),
         )
 
-    if cookie_provided != cookie_value:
+    if cookie_provided_by_caller != expected_value_for_logic:
         logger.error(
             "Magic cookie mismatch.",
             extra={
-                "expected": cookie_value,
-                "received": cookie_provided,
+                "expected": expected_value_for_logic,
+                "received": cookie_provided_by_caller,
                 "cookie_key": cookie_key,
             },
         )
         raise HandshakeError(
             message=(
-                f"Magic cookie mismatch. Expected: '{cookie_value}', Received: "
-                f"'{cookie_provided}'."
+                f"Magic cookie mismatch. Expected: '{expected_value_for_logic}', Received: "
+                f"'{cookie_provided_by_caller}'."
             ),
             hint=(
                 f"Verify that the environment variable '{cookie_key}' set by the "
