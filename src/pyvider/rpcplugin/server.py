@@ -383,16 +383,48 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
                 logger.info(f"🔌 Server starting in insecure mode on {bind_address} (port_num: {port_num})")
 
             if isinstance(active_transport_checked, TCPSocketTransport):
-                requested_port_str = self._get_config_value("PLUGIN_SERVER_ENDPOINT", "0.0.0.0:0").split(':')[-1]
-                try:
-                    is_requested_port_zero = (int(requested_port_str) == 0)
-                except ValueError:
-                    is_requested_port_zero = False
+                # Determine if a specific port was requested initially, either via injected
+                # transport or via PLUGIN_SERVER_ENDPOINT configuration.
+                initial_requested_port_val = 0 # Default to ephemeral
 
-                if port_num == 0 and not is_requested_port_zero:
-                    raise TransportError(f"Failed to bind to TCP port: {bind_address}. Port returned was 0.")
-                self._port = port_num
-                active_transport_checked.port = port_num
+                # Check if self.transport (the one RPCPluginServer was initialized with, if any)
+                # had a specific port.
+                # self.transport is the transport instance passed to RPCPluginServer's constructor.
+                # active_transport_checked is self._transport, which might be from self.transport or negotiated.
+                # In the failing test, self.transport is set, and is the same as active_transport_checked.
+                original_transport_config_port = -1 # Sentinel for not configured via direct transport
+                if self.transport is not None and hasattr(self.transport, 'port'):
+                     # Check the port value of the transport instance provided at server construction
+                    if isinstance(self.transport, TCPSocketTransport):
+                        original_transport_config_port = self.transport.port
+
+                if original_transport_config_port != -1 and original_transport_config_port != 0:
+                    # A specific port was provided via the transport object itself
+                    initial_requested_port_val = original_transport_config_port
+                else:
+                    # No specific port on direct transport, or no direct transport, check config
+                    endpoint_conf = self._get_config_value("PLUGIN_SERVER_ENDPOINT")
+                    if endpoint_conf and isinstance(endpoint_conf, str) and ":" in endpoint_conf:
+                        try:
+                            # This part is tricky because is_valid_tcp_endpoint isn't accessible here easily.
+                            # We rely on simple split and int conversion.
+                            initial_requested_port_val = int(endpoint_conf.split(':')[-1])
+                        except ValueError:
+                             logger.warning(f"Could not parse port from PLUGIN_SERVER_ENDPOINT='{endpoint_conf}'. Assuming ephemeral.")
+                             initial_requested_port_val = 0 # Fallback to ephemeral if parse fails
+                    else:
+                        # No PLUGIN_SERVER_ENDPOINT or it's not a typical host:port string, assume ephemeral
+                        initial_requested_port_val = 0
+
+
+                is_specific_port_requested = (initial_requested_port_val != 0)
+
+                # port_num is the result from grpc_server.add_insecure_port(bind_address)
+                if port_num == 0 and is_specific_port_requested:
+                    raise TransportError(f"Failed to bind to specifically requested TCP port in {bind_address} (requested port was {initial_requested_port_val}). Port returned by gRPC was 0.")
+
+                self._port = port_num # Store the actual bound port
+                active_transport_checked.port = port_num # Update transport's port with actual
 
                 current_host = active_transport_checked.host if active_transport_checked.host else "0.0.0.0"
                 active_transport_checked.endpoint = f"{current_host}:{port_num}"

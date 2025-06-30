@@ -5,50 +5,55 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
-import grpc
 
 # Call configure_for_example() early to set up sys.path
 # Import example_utils directly, as it's in the same directory.
 import example_utils
-example_utils.configure_for_example(clear_env=True) # Client context
+import grpc
 
-# Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.telemetry import logger # Changed from standard logging
-
-# Import generated protobuf code for Echo service
+# Import pyvider components first, then specific example modules
 from examples.proto import echo_pb2, echo_pb2_grpc
+from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.telemetry import logger  # Changed from standard logging
+
+example_utils.configure_for_example(clear_env=True)  # Client context
+
 
 class EchoClient:
-    server_script_path: str # Path to the echo server executable
+    server_script_path: str  # Path to the echo server executable
     _client: RPCPluginClient | None = None
     _stub: echo_pb2_grpc.EchoServiceStub | None = None
     client_config: dict[str, Any]
 
     def __init__(self, server_script_path: str) -> None:
-        from pyvider.rpcplugin import rpcplugin_config # Import for default log level
+        from pyvider.rpcplugin import rpcplugin_config  # Import for default log level
 
         self.server_script_path = server_script_path
-        # The client's `example_utils.configure_for_example(clear_env=True)` sets up the client's
-        # rpcplugin_config. `RPCPluginClient._launch_process` will use these
-        # client-side config values (PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE)
+        # The client's `example_utils.configure_for_example(clear_env=True)`
+        # sets up the client's rpcplugin_config.
+        # `RPCPluginClient._launch_process` will use these client-side config
+        # values (PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE)
         # to set the correct environment variable for the server.
-        # The server (`ch05_echo_server.py`), also calling `configure_for_example(clear_env=False)`,
-        # will have matching default expectations for these key and value from its own config.
+        # The server (`ch05_echo_server.py`), also calling
+        # `configure_for_example(clear_env=False)`, will have matching
+        # default expectations for these key and value from its own config.
         # Thus, no specific "env" overrides are needed here for the cookie.
-        self.client_config = {"env": {
-            # Propagate the client's log level to the server for example consistency.
-            # Uses the client's current rpcplugin_config log level.
-            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO")
-        }}
-
+        self.client_config = {
+            "env": {
+                # Propagate the client's log level to the server for example
+                # consistency. Uses the client's current rpcplugin_config log level.
+                "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO")
+            }
+        }
 
     async def start(self) -> bool:
-        logger.info(f"Attempting to launch and connect to server: {self.server_script_path}")
+        logger.info(
+            f"Attempting to launch and connect to server: {self.server_script_path}"
+        )
         try:
             self._client = RPCPluginClient(
-                command=[sys.executable, self.server_script_path], # Use sys.executable
-                config=self.client_config, # Passes env vars to the server process
+                command=[sys.executable, self.server_script_path],  # Use sys.executable
+                config=self.client_config,  # Passes env vars to the server process
             )
             # Start client, launch server, perform handshake, establish gRPC channel
             await asyncio.wait_for(self._client.start(), timeout=15.0)
@@ -63,7 +68,9 @@ class EchoClient:
             logger.info("Client started and connected successfully. Echo stub created.")
             return True
         except TimeoutError:
-            logger.error("Timeout during client start (launching/connecting to server).")
+            logger.error(
+                "Timeout during client start (launching/connecting to server)."
+            )
             await self.close()
             return False
         except Exception as e:
@@ -81,14 +88,18 @@ class EchoClient:
             # Create the request message object (from echo_pb2.py)
             request = echo_pb2.EchoRequest(message=message)
             # Make the RPC call using the stub
-            response = await asyncio.wait_for(self._stub.Echo(request), timeout=10.0) # Increased timeout slightly
+            response = await asyncio.wait_for(
+                self._stub.Echo(request), timeout=10.0
+            )  # Increased timeout slightly
             logger.info(f"Received Echo reply from server: '{response.reply}'")
             return response.reply
         except TimeoutError:
             logger.error("RPC call to Echo method timed out.")
             return None
-        except grpc.aio.AioRpcError as e: # Catch gRPC specific errors
-            logger.error(f"gRPC Error during Echo call: Code={e.code()} Details='{e.details()}'")
+        except grpc.aio.AioRpcError as e:  # Catch gRPC specific errors
+            logger.error(
+                f"gRPC Error during Echo call: Code={e.code()} Details='{e.details()}'"
+            )
             return None
         except Exception as e:
             logger.error(f"Unexpected error during Echo call: {e}", exc_info=True)
@@ -102,27 +113,35 @@ class EchoClient:
             self._stub = None
             logger.info("Client resources cleaned up.")
 
+
 async def run_client() -> None:
     # Determine path to the server script relative to this client script,
     # assuming they are both in the 'examples' directory.
-    # Path(__file__).parent gives the directory of the current script (ch07_echo_client.py)
-    # So, server_script will point to examples/ch05_echo_server.py
+    # Path(__file__).parent gives the directory of the current script
+    # (ch07_echo_client.py). So, server_script will point to
+    # examples/ch05_echo_server.py
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "ch05_echo_server.py" # Updated name
+    server_script_path = current_dir / "ch05_echo_server.py"  # Updated name
 
     if not server_script_path.exists():
-        # Fallback if running from a different CWD, try to find it from project root perspective
-        project_root = Path.cwd() # Or a more robust way to find project root
+        # Fallback if running from a different CWD, try to find it
+        # from project root perspective
+        project_root = Path.cwd()  # Or a more robust way to find project root
         if not (project_root / "examples" / "ch05_echo_server.py").exists():
-             # Try one level up if cwd is examples/
+            # Try one level up if cwd is examples/
             project_root = Path.cwd().parent
         server_script_path = project_root / "examples" / "ch05_echo_server.py"
         if not server_script_path.exists():
-            logger.error(f"Could not find ch05_echo_server.py. Tried {current_dir / 'ch05_echo_server.py'} and {server_script_path}")
+            logger.error(
+                f"Could not find ch05_echo_server.py. "
+                f"Tried {current_dir / 'ch05_echo_server.py'} "
+                f"and {server_script_path}"
+            )
             return
 
-
-    logger.info(f"Client (ch07_echo_client.py) will use server script: {server_script_path}")
+    logger.info(
+        f"Client (ch07_echo_client.py) will use server script: {server_script_path}"
+    )
     client = EchoClient(str(server_script_path))
 
     if not await client.start():
@@ -134,22 +153,28 @@ async def run_client() -> None:
     if reply:
         logger.info(f"Verification: Client received reply -> '{reply}'")
     else:
-        logger.warning("Verification: Did not receive a valid reply for the first call.")
+        logger.warning(
+            "Verification: Did not receive a valid reply for the first call."
+        )
 
     # Example of calling again
     reply_again = await client.call_echo("Testing RPC call again!")
     if reply_again:
         logger.info(f"Verification: Second reply -> '{reply_again}'")
     else:
-        logger.warning("Verification: Did not receive a valid reply for the second call.")
+        logger.warning(
+            "Verification: Did not receive a valid reply for the second call."
+        )
 
     await client.close()
-    logger.info("Client example (07_echo_client.py) finished.")
+    logger.info(f"Client example ({Path(__file__).name}) finished.")
+
 
 if __name__ == "__main__":
     from examples.example_utils import configure_for_example
-    configure_for_example() # For path setup, global config defaults
+
+    configure_for_example()  # For path setup, global config defaults
 
     # Ensure PYTHONIOENCODING is set for subprocesses, good practice
-    os.environ['PYTHONIOENCODING'] = 'UTF-8'
+    os.environ["PYTHONIOENCODING"] = "UTF-8"
     asyncio.run(run_client())
