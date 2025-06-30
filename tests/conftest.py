@@ -4,6 +4,7 @@ import os
 import pytest
 from pyvider.rpcplugin.config import RPCPluginConfig, CONFIG_SCHEMA
 from tests.fixtures import *
+from tests.fixtures.server import rpc_plugin_server_manager # Import the new fixture
 
 @pytest.fixture(autouse=True, scope="function")
 def reset_rpcplugin_config_singleton():
