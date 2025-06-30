@@ -77,88 +77,83 @@ async def test_start_complete_flow(client_instance, mocker):
         except asyncio.CancelledError: pass
 
 @pytest.mark.asyncio
-async def test_close_with_tasks(client_instance, mocker):
-    client_instance.is_started = True
-    client_instance._stdio_task = asyncio.create_task(asyncio.sleep(0.1), name="StdioCloseTestTask")
-    client_instance._broker_task = asyncio.create_task(asyncio.sleep(0.1), name="BrokerCloseTestTask")
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
-    client_instance.grpc_channel = AsyncMock()
-    local_grpc_channel = client_instance.grpc_channel
-    assert local_grpc_channel is not None, "local_grpc_channel should be an AsyncMock after assignment"
-    local_grpc_channel.close = AsyncMock()
-    mock_process_for_close = MagicMock(spec=asyncio.subprocess.Process)
-    mock_process_for_close.poll = MagicMock(return_value=None)
-    mock_process_for_close.terminate = MagicMock()
-    mock_process_for_close.wait = MagicMock() # Changed from AsyncMock to MagicMock
-    client_instance._process = mock_process_for_close
-    client_instance._transport = AsyncMock()
-    local_transport = client_instance._transport
-    local_transport.close = AsyncMock()
-    local_stdio_task = client_instance._stdio_task
-    local_broker_task = client_instance._broker_task
-    if local_stdio_task:
-        mocker.spy(local_stdio_task, "cancel")
-    if local_broker_task:
-        mocker.spy(local_broker_task, "cancel")
-    await client_instance.close()
-    if local_stdio_task and hasattr(local_stdio_task, "cancel") and local_stdio_task.cancel.called:
-         local_stdio_task.cancel.assert_called_once()
-    if local_broker_task and hasattr(local_broker_task, "cancel") and local_broker_task.cancel.called:
-         local_broker_task.cancel.assert_called_once()
-    if local_stdio_task:
-        assert local_stdio_task.done()
-    if local_broker_task:
-        assert local_broker_task.done()
-    local_grpc_channel.close.assert_called_once()
-    assert mock_process_for_close.terminate.called
-    assert hasattr(local_transport, 'close'), "local_transport mock should have a close attribute"
-    local_transport.close.assert_called_once()
+async def test_close_with_tasks(started_client_instance, mocker): # Use started_client_instance
+    client = started_client_instance  # Rename for clarity within test
+
+    # Override tasks with real tasks for this specific test, as it checks their cancellation and completion
+    client._stdio_task = asyncio.create_task(asyncio.sleep(0.1), name="StdioCloseTestTask")
+    client._broker_task = asyncio.create_task(asyncio.sleep(0.1), name="BrokerCloseTestTask")
+
+    # Fixture already mocks shutdown_plugin, grpc_channel.close, process.terminate, transport.close
+
+    local_stdio_task = client._stdio_task
+    local_broker_task = client._broker_task
+
+    # Spy on the cancel methods of the real tasks
+    mocker.spy(local_stdio_task, "cancel")
+    mocker.spy(local_broker_task, "cancel")
+
+    await client.close()
+
+    # Assertions
+    local_stdio_task.cancel.assert_called_once()
+    local_broker_task.cancel.assert_called_once()
+
+    assert local_stdio_task.done()
+    assert local_broker_task.done()
+
+    client.grpc_channel.close.assert_called_once()
+    client._process.terminate.assert_called_once()
+    client._transport.close.assert_called_once()
 
 @pytest.mark.asyncio
-async def test_close_with_errors(client_instance, mocker, caplog):
-    client_instance.is_started = True
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock, side_effect=Exception("Shutdown plugin error"))
-    client_instance._stdio_task = AsyncMock(spec=asyncio.Task)
-    client_instance._stdio_task.done = MagicMock(return_value=False)
-    client_instance._stdio_task.cancel = MagicMock(side_effect=Exception("Cancel stdio error"))
-    client_instance._broker_task = AsyncMock(spec=asyncio.Task)
-    client_instance._broker_task.done = MagicMock(return_value=False)
-    client_instance._broker_task.cancel = MagicMock(side_effect=Exception("Cancel broker error"))
-    client_instance.grpc_channel = AsyncMock()
-    client_instance.grpc_channel.close = AsyncMock(side_effect=Exception("Channel close error"))
-    mock_process_for_error_close = MagicMock(spec=asyncio.subprocess.Process)
-    mock_process_for_error_close.poll = MagicMock(return_value=None)
-    mock_process_for_error_close.terminate = MagicMock(side_effect=OSError("Terminate error"))
-    mock_process_for_error_close.wait = AsyncMock()
-    client_instance._process = mock_process_for_error_close
-    client_instance._transport = AsyncMock()
-    client_instance._transport.close = AsyncMock(side_effect=Exception("Transport close error"))
+async def test_close_with_errors(started_client_instance, mocker, caplog): # Use started_client_instance
+    client = started_client_instance # Rename for clarity
+
+    # Override mocks from fixture for error conditions
+    # The shutdown_plugin mock is already on RPCPluginClient by the fixture
+    RPCPluginClient.shutdown_plugin.side_effect = Exception("Shutdown plugin error")
+
+    # client._stdio_task is an AsyncMock from the fixture. Configure its side_effect.
+    client._stdio_task.cancel.side_effect = Exception("Cancel stdio error")
+    client._stdio_task.done.return_value = False # Ensure it's not considered done for this test
+
+    # client._broker_task is an AsyncMock. Configure its side_effect.
+    client._broker_task.cancel.side_effect = Exception("Cancel broker error")
+    client._broker_task.done.return_value = False # Ensure it's not considered done
+
+    # client.grpc_channel is an AsyncMock. Configure its close method's side_effect.
+    client.grpc_channel.close.side_effect = Exception("Channel close error")
+
+    # client._process is a MagicMock. Configure its terminate method's side_effect.
+    client._process.terminate.side_effect = OSError("Terminate error")
+
+    # client._transport is an AsyncMock. Configure its close method's side_effect.
+    client._transport.close.side_effect = Exception("Transport close error")
+
     from pyvider.rpcplugin.client import base as client_base_module
     mock_logger_debug = mocker.patch.object(client_base_module.logger, "debug")
+
     with pytest.raises(Exception, match="Cancel stdio error"):
-        await client_instance.close()
-    client_instance._stdio_task.cancel.assert_called_once()
-    client_instance._broker_task.cancel.assert_not_called()
-    client_instance.grpc_channel.close.assert_not_called()
+        await client.close() # Use the renamed 'client'
+
+    client._stdio_task.cancel.assert_called_once()
+    client._broker_task.cancel.assert_not_called() # Because stdio cancel raised
+    client.grpc_channel.close.assert_not_called() # Because stdio cancel raised
+
     mock_logger_debug.assert_any_call("🔄 Closing RPCPluginClient...")
-    assert client_instance.is_started is True
-    assert client_instance.grpc_channel is not None # Because close was aborted
-    assert client_instance._process is not None # Because close was aborted
-    assert client_instance._transport is not None # Because close was aborted
+    assert client.is_started is True # State remains true as close aborted
+    assert client.grpc_channel is not None
+    assert client._process is not None
+    assert client._transport is not None
 
 @pytest.mark.asyncio
-async def test_close_process_wait_timeout(client_instance, mocker, caplog):
-    client_instance.is_started = True
-    mock_proc = MagicMock() # spec=real_subprocess.Popen removed
-    mock_proc.poll = MagicMock(return_value=None)
-    mock_proc.terminate = MagicMock()
-    mock_proc.wait = MagicMock(side_effect=real_subprocess.TimeoutExpired(cmd=client_instance.command, timeout=7.0))
-    client_instance._process = mock_proc
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
-    client_instance._stdio_task = AsyncMock(spec=asyncio.Task); client_instance._stdio_task.done.return_value = True
-    client_instance._broker_task = AsyncMock(spec=asyncio.Task); client_instance._broker_task.done.return_value = True
-    client_instance.grpc_channel = AsyncMock(); client_instance.grpc_channel.close = AsyncMock()
-    client_instance._transport = AsyncMock(); client_instance._transport.close = AsyncMock()
+async def test_close_process_wait_timeout(started_client_instance, mocker, caplog): # Use started_client_instance
+    client = started_client_instance # Rename
+
+    # Override process.wait behavior
+    client._process.wait.side_effect = real_subprocess.TimeoutExpired(cmd=client.command, timeout=7.0)
+    # Ensure other parts from fixture are as expected (shutdown_plugin is mocked, tasks are done, channel/transport have close)
     from pyvider.rpcplugin.client import base as client_base_module
     mock_logger_error = mocker.patch.object(client_base_module.logger, "error")
     await client_instance.close()
@@ -174,21 +169,14 @@ async def test_close_process_wait_timeout(client_instance, mocker, caplog):
                 found_log_call = True
                 break
     assert found_log_call, f"Expected logger.error call for process wait timeout not found or not logged with details. Actual calls: {mock_logger_error.call_args_list}"
-    assert client_instance._process is None
+    assert client._process is None # Use renamed client
 
 @pytest.mark.asyncio
-async def test_close_process_terminate_error(client_instance, mocker, caplog):
-    client_instance.is_started = True
-    mock_proc = MagicMock(spec=asyncio.subprocess.Process)
-    mock_proc.poll = MagicMock(return_value=None)
-    mock_proc.terminate.side_effect = OSError("Failed to terminate process")
-    mock_proc.wait = AsyncMock()
-    client_instance._process = mock_proc
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
-    client_instance._stdio_task = AsyncMock(spec=asyncio.Task); client_instance._stdio_task.done.return_value = True
-    client_instance._broker_task = AsyncMock(spec=asyncio.Task); client_instance._broker_task.done.return_value = True
-    client_instance.grpc_channel = AsyncMock(); client_instance.grpc_channel.close = AsyncMock()
-    client_instance._transport = AsyncMock(); client_instance._transport.close = AsyncMock()
+async def test_close_process_terminate_error(started_client_instance, mocker, caplog): # Use fixture
+    client = started_client_instance # Rename
+
+    # Override process.terminate behavior
+    client._process.terminate.side_effect = OSError("Failed to terminate process")
     from pyvider.rpcplugin.client import base as client_base_module
     mock_logger_error = mocker.patch.object(client_base_module.logger, "error")
     await client_instance.close()
@@ -207,21 +195,14 @@ async def test_close_process_terminate_error(client_instance, mocker, caplog):
             found_log_call = True
             break
     assert found_log_call, f"Expected logger.error call with substring '{expected_message_substring}' not found. Actual calls: {mock_logger_error.call_args_list}"
-    assert client_instance._process is None
+    assert client._process is None # Use renamed client
 
 @pytest.mark.asyncio
-async def test_close_process_wait_generic_exception(client_instance, mocker, caplog):
-    client_instance.is_started = True
-    mock_proc = MagicMock() # spec=real_subprocess.Popen removed
-    mock_proc.poll = MagicMock(return_value=None)
-    mock_proc.terminate = MagicMock()
-    mock_proc.wait = MagicMock(side_effect=Exception("Generic wait error"))
-    client_instance._process = mock_proc
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
-    client_instance._stdio_task = AsyncMock(spec=asyncio.Task); client_instance._stdio_task.done.return_value = True
-    client_instance._broker_task = AsyncMock(spec=asyncio.Task); client_instance._broker_task.done.return_value = True
-    client_instance.grpc_channel = AsyncMock(); client_instance.grpc_channel.close = AsyncMock()
-    client_instance._transport = AsyncMock(); client_instance._transport.close = AsyncMock()
+async def test_close_process_wait_generic_exception(started_client_instance, mocker, caplog): # Use fixture
+    client = started_client_instance # Rename
+
+    # Override process.wait behavior
+    client._process.wait.side_effect = Exception("Generic wait error")
     from pyvider.rpcplugin.client import base as client_base_module
     mock_logger_error = mocker.patch.object(client_base_module.logger, "error")
     await client_instance.close()
@@ -238,10 +219,10 @@ async def test_close_process_wait_generic_exception(client_instance, mocker, cap
                 found_log_call = True
                 break
     assert found_log_call, f"Expected logger.error call for generic wait error not found or not logged with details. Actual calls: {mock_logger_error.call_args_list}"
-    assert client_instance._process is None
+    assert client._process is None # Use renamed client
 
 @pytest.mark.asyncio
-async def test_start_generic_exception(client_instance, mocker):
+async def test_start_generic_exception(client_instance, mocker): # client_instance is fine here as it's not 'started'
     mocker.patch.object(RPCPluginClient, "_setup_client_certificates", new_callable=AsyncMock, side_effect=Exception("Generic setup error"))
     mock_class_close = mocker.patch.object(RPCPluginClient, "close", autospec=True)
     with pytest.raises(Exception, match="Generic setup error"):
@@ -250,19 +231,15 @@ async def test_start_generic_exception(client_instance, mocker):
     assert client_instance.is_started is False
 
 @pytest.mark.asyncio
-async def test_close_grpc_channel_exception(client_instance, mocker, caplog):
-    client_instance.is_started = True
-    mock_channel_on_instance = AsyncMock()
-    mock_channel_on_instance.close = AsyncMock(side_effect=Exception("Channel close error"))
-    client_instance.grpc_channel = mock_channel_on_instance
-    local_mock_channel = client_instance.grpc_channel
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
-    client_instance._stdio_task = AsyncMock(spec=asyncio.Task); client_instance._stdio_task.done.return_value = True
-    client_instance._broker_task = AsyncMock(spec=asyncio.Task); client_instance._broker_task.done.return_value = True
-    mock_process = MagicMock(spec=asyncio.subprocess.Process)
-    mock_process.poll = MagicMock(return_value=0)
-    client_instance._process = mock_process
-    client_instance._transport = AsyncMock(); client_instance._transport.close = AsyncMock()
+async def test_close_grpc_channel_exception(started_client_instance, mocker, caplog): # Use fixture
+    client = started_client_instance # Rename
+
+    # Override grpc_channel.close behavior
+    client.grpc_channel.close.side_effect = Exception("Channel close error")
+    local_mock_channel = client.grpc_channel # For assertion
+
+    # Ensure process poll returns 0 so it's considered exited and wait() isn't problematic
+    client._process.poll.return_value = 0
     from pyvider.rpcplugin.client import base as client_base_module
     mock_logger_error = mocker.patch.object(client_base_module.logger, "error")
     await client_instance.close()
@@ -278,22 +255,18 @@ async def test_close_grpc_channel_exception(client_instance, mocker, caplog):
                  found_log_call = True
                  break
     assert found_log_call, f"Expected logger.error call for grpc_channel close error not found. Actual calls: {mock_logger_error.call_args_list}"
-    assert client_instance.grpc_channel is None
+    assert client.grpc_channel is None # Use renamed client
 
 @pytest.mark.asyncio
-async def test_close_transport_exception(client_instance, mocker, caplog):
-    client_instance.is_started = True
-    mock_transport_on_instance = AsyncMock()
-    mock_transport_on_instance.close = AsyncMock(side_effect=Exception("Transport close error"))
-    client_instance._transport = mock_transport_on_instance
-    local_mock_transport = client_instance._transport
-    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
-    client_instance._stdio_task = AsyncMock(spec=asyncio.Task); client_instance._stdio_task.done.return_value = True
-    client_instance._broker_task = AsyncMock(spec=asyncio.Task); client_instance._broker_task.done.return_value = True
-    client_instance.grpc_channel = AsyncMock(); client_instance.grpc_channel.close = AsyncMock()
-    mock_process = MagicMock(spec=asyncio.subprocess.Process)
-    mock_process.poll = MagicMock(return_value=0)
-    client_instance._process = mock_process
+async def test_close_transport_exception(started_client_instance, mocker, caplog): # Use fixture
+    client = started_client_instance # Rename
+
+    # Override transport.close behavior
+    client._transport.close.side_effect = Exception("Transport close error")
+    local_mock_transport = client._transport # For assertion
+
+    # Ensure process poll returns 0
+    client._process.poll.return_value = 0
     from pyvider.rpcplugin.client import base as client_base_module
     mock_logger_error = mocker.patch.object(client_base_module.logger, "error")
     await client_instance.close()

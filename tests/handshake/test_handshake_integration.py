@@ -21,30 +21,8 @@ from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
 
-
-class MockProtocol:
-    """Create an actual protocol implementation for server tests."""
-
-    async def add_to_server(self, handler, server):
-        """Mock implementation of add_to_server."""
-        pass
-
-    def get_grpc_descriptors(self):
-        """Mock implementation of get_grpc_descriptors."""
-        return None, "MockService"
-
-
-@pytest.fixture
-def mock_protocol():
-    """Create a mock protocol for server tests."""
-    return MockProtocol()
-
-
-@pytest.fixture
-def mock_handler():
-    """Create a mock handler for server tests."""
-    handler = MagicMock()
-    return handler
+# Removed local MockProtocol class and mock_protocol, mock_handler fixtures.
+# These will now be sourced from tests.fixtures.mocks via tests/conftest.py
 
 
 @pytest.fixture
@@ -148,7 +126,7 @@ async def test_full_handshake_cycle():
 
 @pytest.mark.asyncio
 async def test_server_handshake_integration(
-    setup_environment, rpc_plugin_server_manager, mocker, mock_protocol, mock_handler
+    setup_environment, rpc_plugin_server_manager, mocker, mock_server_protocol, mock_server_handler
 ):
     """Test integration of handshake with the server using rpc_plugin_server_manager."""
 
@@ -187,8 +165,8 @@ async def test_server_handshake_integration(
         # which is what the original test used.
         server, endpoint = await rpc_plugin_server_manager(
             config_overrides=config_overrides,
-            protocol=mock_protocol, # Pass the fixture explicitly
-            handler=mock_handler,   # Pass the fixture explicitly
+            protocol=mock_server_protocol, # Pass the fixture explicitly
+            handler=mock_server_handler,   # Pass the fixture explicitly
             transport_type="unix",   # Explicitly use unix as in original test logic
             auto_start=True # The manager will start it and wait for ready
         )
