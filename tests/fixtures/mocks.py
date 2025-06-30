@@ -221,16 +221,18 @@ def mock_server_config(monkeypatch):
 
     for key, value in test_defaults.items():
         # rpcplugin_config.config should exist after .instance() call.
-        # If it might not (e.g. very first test run and complex init), add defensive check.
         if rpcplugin_config.config is not None:
             monkeypatch.setitem(rpcplugin_config.config, key, value)
         else:
-            # This state would be problematic for tests relying on this fixture.
             logger.error(
                 "CRITICAL: rpcplugin_config.config is None in mock_server_config fixture! This should not happen."
             )
+            # Ensure config is not None for the yield, even if it's just defaults
+            rpcplugin_config.config = {k: v_meta.get("default") for k, v_meta in CONFIG_SCHEMA.items()}
 
-    yield rpcplugin_config
+
+    # Yield a copy of the config dictionary, not the object itself
+    yield rpcplugin_config.config.copy()
     # Monkeypatch automatically handles teardown/restoration of original values.
 
 
