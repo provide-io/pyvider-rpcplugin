@@ -248,5 +248,16 @@ async def server_with_mocks(
     try:
         yield server
     finally:
-        with suppress(Exception):
-            await server.stop()
+        with suppress(Exception): # Use suppress for cleaner error handling on stop
+            if server: # Check if server was successfully created
+                await server.stop()
+
+@pytest.fixture(scope="function")
+def mock_server_config_dict_fixture(mock_server_config):
+    """
+    Provides the server configuration as a dictionary.
+    Depends on mock_server_config to ensure config is populated.
+    """
+    # mock_server_config fixture yields the rpcplugin_config object.
+    # We want to return a copy of its .config dictionary.
+    return mock_server_config.config.copy()
