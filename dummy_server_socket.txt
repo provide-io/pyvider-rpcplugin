@@ -1,1 +1,0 @@
-/tmp/pyvider-325ff4b5.sock
