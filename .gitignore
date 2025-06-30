@@ -403,4 +403,3 @@ result.json*.bf.txt
 # examples/kvproto/
 bin/
 code.sh
-*.sock
