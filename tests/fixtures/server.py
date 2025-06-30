@@ -13,11 +13,14 @@ from pyvider.rpcplugin.server import RPCPluginServer
 def valid_server_env(monkeypatch) -> None:
     monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     monkeypatch.setenv(
-        "PLUGIN_MAGIC_COOKIE",
-        "hello",
+        "PLUGIN_MAGIC_COOKIE",  # This is the env var name the client sets for the server.
+        "hello",  # This is the value the client passes in that env var.
     )
+    # For a server to validate this, its own PLUGIN_MAGIC_COOKIE_VALUE must be "hello".
+    # The client's PLUGIN_MAGIC_COOKIE_KEY determines the name of the env var ("PLUGIN_MAGIC_COOKIE" here).
+    monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_VALUE", "hello") # Server's expected value.
     monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "1,2,3,4,5,6,7")
-    monkeypatch.setenv("PLUGIN_TRANSPORTS", "tcp")
+    monkeypatch.setenv("PLUGIN_SERVER_TRANSPORTS", "tcp") # Corrected from PLUGIN_TRANSPORTS
 
 
 @pytest_asyncio.fixture(scope="function") # Changed scope to function
@@ -124,6 +127,7 @@ async def rpc_plugin_server_manager(managed_unix_socket_path, unused_tcp_port, m
             logger.debug(f"RPCPluginServerManager: Auto-starting server ({transport_type})...")
             # RPCPluginServer.serve() is blocking. Run it in a task.
             serve_task = asyncio.create_task(server.serve())
+            await asyncio.sleep(0)  # Yield control to allow serve_task to start
             try:
                 await server.wait_for_server_ready(timeout=10.0) # Increased timeout
                 # After server is ready, its transport should have the actual endpoint
