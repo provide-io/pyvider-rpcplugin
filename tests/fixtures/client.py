@@ -91,11 +91,11 @@ async def started_client_instance(client_instance, mocker):
     client_instance.is_started = True
 
     # Mock process
-        mock_proc = MagicMock() # Removed spec
-        mock_proc.poll = MagicMock(return_value=None)
-        mock_proc.terminate = MagicMock()
-        mock_proc.wait = AsyncMock()
-        client_instance._process = mock_proc
+    mock_proc = MagicMock() # Removed spec
+    mock_proc.poll = MagicMock(return_value=None)
+    mock_proc.terminate = MagicMock()
+    mock_proc.wait = AsyncMock()
+    client_instance._process = mock_proc
 
     # Mock tasks (often checked if done or cancelled)
     client_instance._stdio_task = AsyncMock(spec=asyncio.Task)
