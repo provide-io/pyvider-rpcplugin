@@ -37,7 +37,18 @@ def temp_shutdown_file():
 @pytest.mark.asyncio
 async def test_server_shuts_down_on_file_creation(temp_shutdown_file, mocker):
     shutdown_file_path_str = str(temp_shutdown_file)
-    mocker.patch.object(rpcplugin_config, 'shutdown_file_path', return_value=shutdown_file_path_str)
+
+    # Mock rpcplugin_config.get to return the temp_shutdown_file path for the specific key
+    original_get = rpcplugin_config.get
+    def mock_get_config(key, default=None):
+        if key == "PLUGIN_SHUTDOWN_FILE_PATH":
+            return shutdown_file_path_str
+        # For other keys, fall back to the original implementation or a simplified version
+        # This ensures other parts of the server init that might use config get expected values
+        # For this test, we only care about PLUGIN_SHUTDOWN_FILE_PATH
+        return original_get(key, default)
+
+    mocker.patch.object(rpcplugin_config, 'get', side_effect=mock_get_config)
 
     protocol = DummyProtocol()
     handler = DummyHandler()
