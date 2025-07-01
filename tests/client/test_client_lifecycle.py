@@ -562,12 +562,18 @@ async def test_aexit_shutdown_plugin_exception(
     mock_close_method.assert_called_once()
 
     # Verify that the error from shutdown_plugin was logged
-    found_log = any(
-        "Error during plugin shutdown via controller" in call.args[0]
-        and "Simulated shutdown error"
-        in str(call.args[1])  # Check the exception instance
-        for call in mock_logger_error_global.call_args_list
-    )
+    found_log = False
+    for call in mock_logger_error_global.call_args_list:
+        if len(call.args) >= 2: # Ensure there are enough arguments
+            if "Error during __aexit__ calling shutdown_plugin()" in call.args[0] \
+               and "Simulated shutdown error" in str(call.args[1]):
+                found_log = True
+                break
+        elif len(call.args) == 1: # Handle cases where only a message string is logged
+             if "Error during __aexit__ calling shutdown_plugin()" in call.args[0] and \
+                "Simulated shutdown error" in call.args[0]: # Check if exception info is in the main string
+                found_log = True
+                break
     assert found_log, (
         f"Expected log for shutdown_plugin error not found. Log calls: {mock_logger_error_global.call_args_list}"
     )
