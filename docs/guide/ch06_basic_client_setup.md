@@ -60,7 +60,7 @@ async def error_handling_example():
         # raise TransportError("Simulated network issue during connection")
         # raise HandshakeError("Simulated authentication or handshake protocol failure")
         # raise RPCPluginError("A generic plugin system error during setup")
-        logger.info("✅ Connection successful")
+        logger.info("✅ Simulated connection successful (for demo purposes)")
     except TransportError as e:
         logger.error(f"🚫 Transport error: {e}")
     except HandshakeError as e:

@@ -102,59 +102,41 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
 
     if applied_settings:
         logger.info(f"  Calling pyvider_configure with: {applied_settings}")
-        # Note: `pyvider_configure` takes specific args like `auto_mtls`.
-        # It also takes **kwargs for other `PLUGIN_` prefixed keys.
-        # We map conceptual keys to these.
+        # Note: `pyvider_configure` takes specific direct arguments (like `auto_mtls`,
+        # `server_cert_pem_or_uri`, etc.) and also `**kwargs` for other settings
+        # (e.g., `LOG_LEVEL="DEBUG"` which maps to `PLUGIN_LOG_LEVEL`).
 
-        final_configure_args: dict[str, Any] = {}
-        # Map to direct arguments of pyvider_configure
+        direct_args: dict[str, Any] = {}
+        forward_kwargs: dict[str, Any] = {}
+
+        # Map conceptual settings to direct arguments of pyvider_configure
         if "PLUGIN_AUTO_MTLS" in applied_settings:
-            final_configure_args["auto_mtls"] = applied_settings.pop("PLUGIN_AUTO_MTLS")
+            direct_args["auto_mtls"] = applied_settings["PLUGIN_AUTO_MTLS"]
         if "PLUGIN_SERVER_CERT" in applied_settings:
-            final_configure_args["server_cert"] = applied_settings.pop( # Corrected key
-                "PLUGIN_SERVER_CERT"
-            )
+            direct_args["server_cert_pem_or_uri"] = applied_settings["PLUGIN_SERVER_CERT"]
         if "PLUGIN_SERVER_KEY" in applied_settings:
-            final_configure_args["server_key"] = applied_settings.pop( # Corrected key
-                "PLUGIN_SERVER_KEY"
-            )
-
-        # PLUGIN_CLIENT_ROOT_CERTS is not a direct arg, will be passed via **kwargs
-        # So, we ensure it remains in applied_settings if present, or map it to its kwarg form.
-        # For clarity, let's map it explicitly to the expected kwarg name if using that pattern.
-        # The configure function expects kwargs like `SERVER_ROOT_CERTS` or `CLIENT_ROOT_CERTS`.
-        # `applied_settings` contains `PLUGIN_CLIENT_ROOT_CERTS`.
-        # The loop `for key, value in kwargs.items(): config_key = f"PLUGIN_{key.upper()}"`
-        # means `configure(CLIENT_ROOT_CERTS="path")` sets `PLUGIN_CLIENT_ROOT_CERTS`.
-        # So, if we have `PLUGIN_CLIENT_ROOT_CERTS` in `applied_settings`, it should be passed
-        # as `CLIENT_ROOT_CERTS` to `pyvider_configure`'s kwargs.
-
+            direct_args["server_key_pem_or_uri"] = applied_settings["PLUGIN_SERVER_KEY"]
+        # Assuming this conceptual config is for a server, PLUGIN_CLIENT_ROOT_CERTS refers to
+        # the CAs the server uses to verify client certificates.
         if "PLUGIN_CLIENT_ROOT_CERTS" in applied_settings:
-            final_configure_args["CLIENT_ROOT_CERTS"] = applied_settings.pop(
-                "PLUGIN_CLIENT_ROOT_CERTS"
-            )
+            direct_args["client_root_certs_pem_or_uri"] = applied_settings["PLUGIN_CLIENT_ROOT_CERTS"]
 
-        # Remaining settings in applied_settings are kwargs (should be PLUGIN_ prefixed,
-        # but configure() expects them without PLUGIN_ if they are to be processed by its **kwargs)
-        # Let's adjust how remaining kwargs are passed.
-        # The configure function's **kwargs are for keys like `LOG_LEVEL`, not `PLUGIN_LOG_LEVEL`.
-
-        remaining_kwargs_for_configure = {}
+        # Map other PLUGIN_ prefixed settings to **kwargs (stripping PLUGIN_ prefix)
+        # These are settings like PLUGIN_LOG_LEVEL -> LOG_LEVEL for kwargs.
         for key, value in applied_settings.items():
-            if key.startswith("PLUGIN_"):
-                # Convert PLUGIN_LOG_LEVEL to LOG_LEVEL for **kwargs
+            if key.startswith("PLUGIN_") and key not in [
+                "PLUGIN_AUTO_MTLS", "PLUGIN_SERVER_CERT", "PLUGIN_SERVER_KEY",
+                "PLUGIN_CLIENT_ROOT_CERTS" # These were handled for direct_args
+            ]:
                 kwarg_key = key[len("PLUGIN_"):]
-                remaining_kwargs_for_configure[kwarg_key] = value
-            else:
-                # This case should ideally not happen if applied_settings only contains PLUGIN_ keys
-                remaining_kwargs_for_configure[key] = value
+                forward_kwargs[kwarg_key] = value
 
-        final_configure_args.update(remaining_kwargs_for_configure)
-
-        pyvider_configure(**final_configure_args)
-        logger.info("  Illustrative pyvider.rpcplugin.configure() called.")
-    else:
-        logger.info("  No conceptual settings mapped for pyvider_configure.")
+        if direct_args or forward_kwargs:
+            logger.info(f"  Calling pyvider_configure with direct_args: {direct_args}, forward_kwargs: {forward_kwargs}")
+            pyvider_configure(**direct_args, **forward_kwargs)
+            logger.info("  Illustrative pyvider.rpcplugin.configure() called.")
+        else:
+            logger.info("  No conceptual settings mapped for pyvider_configure.")
 
     logger.info("✅ Illustrative application of conceptual config completed.")
 
