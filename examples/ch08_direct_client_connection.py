@@ -73,9 +73,12 @@ async def run_direct_client():
     # Configure client-side aspects if necessary (e.g., logging)
     # No magic cookie env vars needed by this client as it's not launching the server.
     clear_plugin_env_vars()
-    configure_for_example(
-        PLUGIN_LOG_LEVEL="DEBUG", PLUGIN_AUTO_MTLS=False
-    )  # Match typical dummy server config
+    configure_for_example() # For basic path setup and example defaults
+
+    # Specifically configure logging and mTLS for this direct client scenario
+    from pyvider.rpcplugin import configure as pyvider_core_configure
+    pyvider_core_configure(log_level="DEBUG", auto_mtls=False)
+
 
     # THIS IS THE LINE THAT HAD THE TYPO - USING socket_path_read (lowercase)
     target = f"unix:{socket_path_read}"
