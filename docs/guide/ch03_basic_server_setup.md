@@ -95,4 +95,6 @@ Key takeaways from `ch03_server_setup_concepts.py`:
 *   The `transport` parameter can be set to `"tcp"` or `"unix"`.
     *   For TCP, `host` and `port` can be specified. If `port` is 0 (or omitted), an ephemeral port is chosen.
     *   For Unix, `transport_path` specifies the socket file path.
-*   An optional `config` dictionary can be passed to provide application-specific settings or override global `pyvider.rpcplugin` configurations for that server instance.
+*   An optional `config` dictionary can be passed.
+    *   Keys in this dictionary that match `PLUGIN_` prefixed variables (e.g., `PLUGIN_LOG_LEVEL`) will override the global `pyvider.rpcplugin` configurations for this specific server instance.
+    *   Other keys can be used for application-specific settings that your server might use, as demonstrated with `APP_MAX_WORKERS` in the example.

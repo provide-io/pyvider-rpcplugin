@@ -88,10 +88,15 @@ async def main() -> None:
         logger.info("E2E Greeting Server (ch15_e2e_server.py) shutting down.")
 
 if __name__ == "__main__":
-    # It's important that example_utils.configure_for_example() is called
-    # to set up necessary paths and default configurations if this server
-    # is run directly, or to respect environment set by a client.
-    # from examples.example_utils import configure_for_example # No longer needed here
-    # configure_for_example() # Called at module top
-
+    # For standalone server execution, ensure the magic cookie env var is set
+    # so it can pass its own handshake validation.
+    # configure_for_example() is called at module top, so rpcplugin_config is populated.
+    from pyvider.rpcplugin import rpcplugin_config # Get config after example_utils
+    cookie_key_to_set = rpcplugin_config.magic_cookie_key()
+    cookie_value_to_set = rpcplugin_config.magic_cookie_value()
+    os.environ[cookie_key_to_set] = cookie_value_to_set
+    logger.info(
+        f"Standalone server mode (ch15): Set env var '{cookie_key_to_set}' to "
+        f"'{cookie_value_to_set}' for self-handshake."
+    )
     asyncio.run(main())

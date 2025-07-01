@@ -15,6 +15,7 @@ import grpc  # Standard imports at top
 # This setup is done by example_utils.configure_for_example()
 from example_utils import configure_for_example
 
+# This setup is done by example_utils.configure_for_example()
 configure_for_example()  # Must be called before other pyvider imports
 
 # pyvider.rpcplugin imports

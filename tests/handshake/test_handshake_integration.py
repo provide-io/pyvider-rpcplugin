@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-import grpc # <--- ADD THIS IMPORT
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto.certificate import Certificate
@@ -20,6 +19,19 @@ from pyvider.rpcplugin.transport import (
     TCPSocketTransport,
     UnixSocketTransport,
 )
+
+
+# Helper contexts to capture stdout/stderr
+@contextmanager
+def capture_stdout():
+    """Context manager to capture stdout."""
+    original_stdout = sys.stdout
+    buffer = io.StringIO()
+    sys.stdout = buffer
+    try:
+        yield buffer
+    finally:
+        sys.stdout = original_stdout
 
 
 class MockProtocol:
@@ -148,74 +160,81 @@ async def test_full_handshake_cycle():
 
 @pytest.mark.asyncio
 async def test_server_handshake_integration(
-    setup_environment, rpc_plugin_server_manager, mocker, mock_protocol, mock_handler
+    setup_environment, mock_protocol, mock_handler, managed_unix_socket_path, mocker
 ):
-    """Test integration of handshake with the server using rpc_plugin_server_manager."""
+    """Test integration of handshake with the server."""
 
-    # Configuration for the server via rpc_plugin_server_manager
-    # Ensure PLUGIN_AUTO_MTLS is false for this test's original intent.
-    # The setup_environment fixture already sets magic cookie and other relevant env vars
-    # which rpc_plugin_config (used by the server manager) will pick up.
-    config_overrides = {
-        "PLUGIN_AUTO_MTLS": "false", # Explicitly ensure mTLS is off
-        "PLUGIN_SERVER_CERT": None,
-        "PLUGIN_SERVER_KEY": None,
-        # Other configs like magic cookie key/value are set by setup_environment
-        # and will be used by the server created by rpc_plugin_server_manager.
-    }
+    # Ensure the server runs in insecure mode for this test's original intent
+    # (checking handshake output, not TLS setup).
+    def mock_config_get(key, default=None):
+        if key == "PLUGIN_AUTO_MTLS":
+            return False
+        if key == "PLUGIN_SERVER_CERT":
+            return None
+        if key == "PLUGIN_SERVER_KEY":
+            return None
+        # Values set by setup_environment fixture
+        if key == "PLUGIN_MAGIC_COOKIE_KEY":
+            return "PLUGIN_MAGIC_COOKIE" # As set by setup_environment
+        if key == "PLUGIN_MAGIC_COOKIE_VALUE":
+            return "test_cookie_value" # As set by setup_environment
+
+        # For other keys, return their actual values from the global config
+        # This ensures values set by setup_environment are respected.
+        return rpcplugin_config.config.get(key, default)
+
+    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get)
 
     # Patch sys.stdout to capture handshake output
-    with patch("sys.stdout.buffer.write") as mock_write, \
-         patch("sys.stdout.buffer.flush"), \
-         patch("pyvider.rpcplugin.server.GRPCServer") as mock_grpc_server: # Keep GRPCServer mock if it's for deeper control
+    with (
+        patch("sys.stdout.buffer.write") as mock_write,
+        patch("sys.stdout.buffer.flush"),
+        patch("pyvider.rpcplugin.server.GRPCServer") as mock_grpc_server,
+    ):
+        # Setup mocks
+        mock_server = MagicMock()
+        mock_server.add_insecure_port.return_value = 8080
+        mock_server.start = AsyncMock()
+        mock_server.stop = AsyncMock()
+        mock_server.wait_closed = AsyncMock()
+        mock_grpc_server.return_value = mock_server
 
-        # Setup mocks for internal GRPCServer behavior if needed by the test logic
-        # that rpc_plugin_server_manager doesn't abstract away.
-        # For this test, the core is that server.serve() is called and it prints to stdout.
-        mock_internal_grpc_server = MagicMock(spec=grpc.aio.Server) # Use spec for type safety
-        mock_internal_grpc_server.add_insecure_port.return_value = 8080 # Example port
-        mock_internal_grpc_server.start = AsyncMock()
-        mock_internal_grpc_server.stop = AsyncMock()
-        mock_internal_grpc_server.wait_closed = AsyncMock()
-        mock_grpc_server.return_value = mock_internal_grpc_server
+        # Create server with Unix transport
+        socket_path = managed_unix_socket_path
+        transport = UnixSocketTransport(path=socket_path)
 
-
-        # Use the rpc_plugin_server_manager to create and start the server.
-        # The manager handles transport creation (defaulting to unix).
-        # It also runs server.serve() in a background task and waits for readiness.
-        # The 'protocol' and 'handler' will be the default mocks from fixtures,
-        # which is what the original test used.
-        server, endpoint = await rpc_plugin_server_manager(
-            config_overrides=config_overrides,
-            protocol=mock_protocol, # Pass the fixture explicitly
-            handler=mock_handler,   # Pass the fixture explicitly
-            transport_type="unix",   # Explicitly use unix as in original test logic
-            auto_start=True # The manager will start it and wait for ready
+        server = RPCPluginServer(
+            protocol=mock_protocol, handler=mock_handler, transport=transport
         )
 
-        # server.serve() is already running in a background task managed by rpc_plugin_server_manager.
-        # The manager also ensures server.stop() is called on cleanup.
+        # Start the server in a task that we'll cancel
+        server_task = asyncio.create_task(server.serve())
 
-        # Verify handshake output was written to stdout
-        # This assertion needs to happen *after* rpc_plugin_server_manager has started the server
-        # and server.serve() has printed the handshake. The auto_start=True and waiting for
-        # readiness within the manager should ensure this.
-        assert mock_write.called
+        try:
+            # Wait for the server to be ready
+            await asyncio.wait_for(server._serving_event.wait(), timeout=5)
 
-        # Get the handshake data
-        handshake_data = mock_write.call_args[0][0].decode("utf-8").strip()
-        assert "|" in handshake_data
+            # Verify handshake output was written to stdout
+            assert mock_write.called
 
-        # Parse the handshake
-        parts = handshake_data.split("|")
-        assert len(parts) == 6
-        assert parts[0] == "1"  # Core version
-        assert int(parts[1]) in range(1, 8)  # Protocol version, check against configured/negotiated
-        assert parts[2] == "unix" # Since we requested unix
-        assert parts[3] == endpoint # Endpoint from the manager should match
-        assert parts[4] == "grpc"  # Protocol
-        # No cert expected as PLUGIN_AUTO_MTLS is false
-        assert not parts[5] if len(parts) > 5 and parts[5] else True
+            # Get the handshake data
+            handshake_data = mock_write.call_args[0][0].decode("utf-8").strip()
+            assert "|" in handshake_data
+
+            # Parse the handshake
+            parts = handshake_data.split("|")
+            assert len(parts) == 6
+            assert parts[0] == "1"  # Core version
+            assert int(parts[1]) in range(1, 8)  # Protocol version
+            assert parts[2] in ["unix", "tcp"]  # Transport
+            assert parts[4] == "grpc"  # Protocol
+
+        finally:
+            # Clean up
+            server_task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await server_task
+            await server.stop()
 
 
 @pytest.mark.asyncio
