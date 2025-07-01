@@ -96,7 +96,22 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
-        # configure_for_example() is now called at the top of the module
+        # For standalone server execution, ensure the magic cookie env var is set
+        # so it can pass its own handshake validation. This is now handled by
+        # ensuring configure_for_example() is called at the top and then,
+        # if this script is main, setting the necessary environment variable.
+        # The `example_utils.configure_for_example` already sets a default
+        # PLUGIN_MAGIC_COOKIE_VALUE. We need to ensure the environment variable
+        # named by PLUGIN_MAGIC_COOKIE_KEY gets this value.
+        from pyvider.rpcplugin import rpcplugin_config # Get config after example_utils
+        cookie_key_to_set = rpcplugin_config.magic_cookie_key()
+        cookie_value_to_set = rpcplugin_config.magic_cookie_value()
+        os.environ[cookie_key_to_set] = cookie_value_to_set
+        logger.info(
+            f"Standalone server mode (ch05): Set env var '{cookie_key_to_set}' to "
+            f"'{cookie_value_to_set}' for self-handshake."
+        )
+
         asyncio.run(main())
     except KeyboardInterrupt: # pragma: no cover
         logger.info("Server stopped by user.")

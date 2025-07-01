@@ -9,15 +9,22 @@ from typing import Any
 # Call configure_for_example() early to set up sys.path
 # Import example_utils directly, as it's in the same directory.
 import example_utils
+example_utils.configure_for_example(clear_env=True)  # Client context
+
+# ---- START DIAGNOSTIC ----
+# Manually ensure project root is in sys.path for this specific import
+_project_root_diag = Path(__file__).resolve().parent.parent
+if str(_project_root_diag) not in sys.path:
+    sys.path.insert(0, str(_project_root_diag))
+# print(f"CH07_ECHO_CLIENT SYS.PATH: {sys.path}")
+# ---- END DIAGNOSTIC ----
+
 import grpc
 
 # Import pyvider components first, then specific example modules
 from examples.proto import echo_pb2, echo_pb2_grpc
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.telemetry import logger  # Changed from standard logging
-
-example_utils.configure_for_example(clear_env=True)  # Client context
-
 
 class EchoClient:
     server_script_path: str  # Path to the echo server executable

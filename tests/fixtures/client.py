@@ -2,6 +2,7 @@
 
 import pytest_asyncio
 import sys
+import asyncio # Import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
@@ -83,5 +84,44 @@ async def test_client_command():
     """Test command to launch the plugin process."""
     return ["python", "-m", "dummy_plugin"]
 
+
+@pytest_asyncio.fixture
+async def started_client_instance(client_instance, mocker):
+    """Provides a client_instance that is mocked to appear as 'started'."""
+    client_instance.is_started = True
+
+    # Mock process
+    mock_proc = MagicMock() # Removed spec
+    mock_proc.poll = MagicMock(return_value=None)
+    mock_proc.terminate = MagicMock()
+    mock_proc.wait = AsyncMock()
+    client_instance._process = mock_proc
+
+    # Mock tasks (often checked if done or cancelled)
+    client_instance._stdio_task = AsyncMock(spec=asyncio.Task)
+    client_instance._stdio_task.done = MagicMock(return_value=True) # Default to done
+    client_instance._stdio_task.cancel = MagicMock()
+
+    client_instance._broker_task = AsyncMock(spec=asyncio.Task)
+    client_instance._broker_task.done = MagicMock(return_value=True) # Default to done
+    client_instance._broker_task.cancel = MagicMock()
+
+    # Mock gRPC channel
+    client_instance.grpc_channel = AsyncMock()
+    client_instance.grpc_channel.close = AsyncMock()
+
+    # Mock transport
+    client_instance._transport = AsyncMock()
+    client_instance._transport.close = AsyncMock()
+
+    # Mock stubs (these are usually set in _init_stubs after channel creation)
+    client_instance._controller_stub = AsyncMock()
+    client_instance._stdio_stub = AsyncMock()
+    client_instance._broker_stub = AsyncMock()
+
+    # Mock the shutdown_plugin method itself, as tests often check its call or side effects
+    mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
+
+    return client_instance
 
 ### 🐍🏗🧪️
