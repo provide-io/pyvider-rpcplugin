@@ -35,7 +35,7 @@ async def main() -> None:
     """
     # configure_for_example() called at module level to set up paths and basic config
     logger.info(
-        "🚀 common_dummy_server_for_ch08.py: Starting as an executable plugin..."
+        "🚀 ch08_dummy_server.py: Starting as an executable plugin..."
     )
 
     # The `configure_for_example()` utility should have set:
@@ -214,7 +214,7 @@ if __name__ == "__main__":
         pyvider_core_configure(PLUGIN_MAGIC_COOKIE_KEY=env_var_name_for_cookie)
 
         logger.info(
-            f"Standalone server mode (common_dummy_server_for_ch08): "
+            f"Standalone server mode (ch08_dummy_server): "
             f"Set os.environ['{env_var_name_for_cookie}'] = "
             f"'{expected_cookie_value}'. Configured RPCPlugin to use "
             f"'{env_var_name_for_cookie}' as the cookie key name."
