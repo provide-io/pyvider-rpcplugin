@@ -186,7 +186,7 @@ def test_validate_magic_cookie(
         monkeypatch.delenv(set_key, raising=False)
 
     if expect_error:
-        with pytest.raises(HandshakeError, match=error_regex): # type: ignore
+        with pytest.raises(HandshakeError, match=error_regex):  # type: ignore
             validate_magic_cookie()
     else:
         validate_magic_cookie()

@@ -1,12 +1,16 @@
 # tests/client/test_client_transport.py
 
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+
+from pyvider.rpcplugin.client.base import RPCPluginClient
 from pyvider.rpcplugin.exception import TransportError  # Added import
 
 
 @pytest.mark.asyncio
-async def test_launch_process(client_instance):
+async def test_launch_process(client_instance: RPCPluginClient) -> None:
     """Test the _launch_process method."""
     client_instance._process = None  # Ensure process is not considered running
     with patch("pyvider.rpcplugin.client.base.subprocess.Popen") as mock_popen:
@@ -27,7 +31,9 @@ async def test_launch_process(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_launch_process_with_client_cert(client_instance):
+async def test_launch_process_with_client_cert(
+    client_instance: RPCPluginClient,
+) -> None:
     """Test process launch with client cert in environment."""
     client_instance._process = None  # Ensure process is not considered running
     client_instance.client_cert = "test-cert"
@@ -46,7 +52,9 @@ async def test_launch_process_with_client_cert(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_launch_process_already_running(client_instance):
+async def test_launch_process_already_running(
+    client_instance: RPCPluginClient,
+) -> None:
     """Test _launch_process when process already exists."""
     client_instance._process = MagicMock()  # Process already exists
 
@@ -58,18 +66,20 @@ async def test_launch_process_already_running(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_launch_process_error(client_instance):
+async def test_launch_process_error(client_instance: RPCPluginClient) -> None:
     """Test _launch_process handling errors."""
     with patch("pyvider.rpcplugin.client.base.subprocess.Popen") as mock_popen:
         mock_popen.side_effect = OSError("Failed to launch")
 
-        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Failed to launch"
+        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Failed to launch"  # noqa: E501
         with pytest.raises(TransportError, match=expected_msg_regex):
             await client_instance._launch_process()
 
 
 @pytest.mark.asyncio
-async def test_launch_process_with_config_env(client_instance, mocker):
+async def test_launch_process_with_config_env(
+    client_instance: RPCPluginClient, mocker: Any
+) -> None:
     """Test that _launch_process correctly uses env vars from client config."""
     client_instance._process = None  # Ensure process is not considered running
     client_instance.config = {"env": {"MY_VAR": "my_value", "OTHER_VAR": "other_value"}}
@@ -95,7 +105,9 @@ async def test_launch_process_with_config_env(client_instance, mocker):
 
 
 @pytest.mark.asyncio
-async def test_connect_tcp_transport(client_instance):  # Removed mock_transport fixture
+async def test_connect_tcp_transport(
+    client_instance: RPCPluginClient,
+) -> None:  # Removed mock_transport fixture
     """Test connecting to a TCP transport."""
     mock_tcp_transport = AsyncMock()
     mock_tcp_transport.connect = AsyncMock()
@@ -109,8 +121,8 @@ async def test_connect_tcp_transport(client_instance):  # Removed mock_transport
 
 @pytest.mark.asyncio
 async def test_connect_unix_transport(
-    client_instance,
-):  # Removed mock_unix_transport fixture
+    client_instance: RPCPluginClient,
+) -> None:  # Removed mock_unix_transport fixture
     """Test connecting to a Unix socket transport."""
     mock_unix_socket_transport = AsyncMock()
     mock_unix_socket_transport.connect = AsyncMock()
@@ -123,11 +135,11 @@ async def test_connect_unix_transport(
 
 
 @pytest.mark.asyncio
-async def test_launch_process_generic_error(client_instance):
+async def test_launch_process_generic_error(client_instance: RPCPluginClient) -> None:
     """Test _launch_process handling generic errors."""
     with patch("pyvider.rpcplugin.client.base.subprocess.Popen") as mock_popen:
         mock_popen.side_effect = Exception("Generic Popen failure")
 
-        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Generic Popen failure"
+        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Generic Popen failure"  # noqa: E501
         with pytest.raises(TransportError, match=expected_msg_regex):
             await client_instance._launch_process()

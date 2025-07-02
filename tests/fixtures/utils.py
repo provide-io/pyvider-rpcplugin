@@ -72,7 +72,7 @@ class LoopToucher:
         try:
             asyncio.get_event_loop()
         except RuntimeError:
-            pass # Fine if no loop running at init
+            pass  # Fine if no loop running at init
 
     def __del__(self):
         try:
@@ -82,8 +82,9 @@ class LoopToucher:
             # print("LoopToucher.__del__ loop already closed") # For debugging
             pass
 
+
 @pytest_asyncio.fixture(scope="function", autouse=True)
-async def touch_loop_on_cleanup(): # Made async as it's an asyncio fixture now
+async def touch_loop_on_cleanup():  # Made async as it's an asyncio fixture now
     toucher = LoopToucher()
     yield toucher
     # Deliberately do nothing with toucher, just let it get GC'd
@@ -96,6 +97,7 @@ import io
 import sys
 from contextlib import contextmanager
 
+
 @contextmanager
 def capture_stdout():
     """Context manager to capture stdout."""
@@ -106,5 +108,6 @@ def capture_stdout():
         yield buffer
     finally:
         sys.stdout = original_stdout
+
 
 ### 🐍🏗🧪️

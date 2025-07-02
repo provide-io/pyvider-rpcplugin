@@ -11,7 +11,7 @@ from typing import Tuple
 class IncompleteProtocol(RPCPluginProtocol):
     """A protocol implementation that doesn't implement all abstract methods."""
 
-    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]: # Made async
+    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:  # Made async
         return (MagicMock(), "TestService")
 
     # Missing add_to_server implementation
@@ -20,7 +20,7 @@ class IncompleteProtocol(RPCPluginProtocol):
 class ConcreteProtocol(RPCPluginProtocol):
     """A concrete implementation of the protocol with all methods."""
 
-    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]: # Made async
+    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:  # Made async
         descriptors = MagicMock()
         service_name = "TestService"
         return descriptors, service_name

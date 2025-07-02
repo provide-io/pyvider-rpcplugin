@@ -1,29 +1,29 @@
 # tests/rpcplugin/test_factories.py
 
+import asyncio  # asyncio import re-added
+from typing import Any
+from unittest.mock import MagicMock, patch
+
 import pytest
 from attrs import define
-import asyncio # asyncio import re-added
-from unittest.mock import MagicMock, patch
-import os
 
+from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.factories import (
     create_basic_protocol,
+    plugin_client,
     plugin_protocol,
     plugin_server,
-    plugin_client,
 )
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.exception import TransportError
 
 
 # Basic Mocks/Stubs for dependencies
 @define
 class MockProtocol(RPCPluginProtocol):
-    async def get_grpc_descriptors(self):
+    async def get_grpc_descriptors(self) -> tuple[None, str]:
         return None, "MockService"
 
-    async def add_to_server(self, handler, server):
+    async def add_to_server(self, handler: Any, server: Any) -> None:
         pass
 
 
@@ -35,10 +35,12 @@ class MockHandler:
 # TODO: Add more mocks as needed for server/client tests
 
 
-def test_create_basic_protocol():
+def test_create_basic_protocol() -> None:
     """Test that create_basic_protocol returns a valid RPCPluginProtocol."""
     ProtocolClass = create_basic_protocol()
-    protocol_instance = ProtocolClass(service_name_override="TestService") # Override for test
+    protocol_instance = ProtocolClass(
+        service_name_override="TestService"
+    )  # Override for test
     assert isinstance(protocol_instance, RPCPluginProtocol)
 
     # Test get_grpc_descriptors
@@ -52,19 +54,19 @@ def test_create_basic_protocol():
 
 
 @pytest.mark.asyncio
-async def test_plugin_protocol_basic_default():
+async def test_plugin_protocol_basic_default() -> None:
     """Test plugin_protocol defaulting to BasicRPCPluginProtocol."""
     protocol_instance = plugin_protocol(service_name="MyBasicService")
 
     # Verify it's an instance of the type returned by create_basic_protocol
     # This is a bit indirect, but checks it's the default path.
-    # BasicProtoClass = create_basic_protocol() # Call only once by checking type of protocol_instance
+    # BasicProtoClass = create_basic_protocol() # Call only once by checking type of protocol_instance # noqa: E501
     assert type(protocol_instance).__name__ == "BasicRPCPluginProtocol"
     assert protocol_instance.service_name == "MyBasicService"
 
     # Test get_grpc_descriptors for BasicRPCPluginProtocol
     descriptors, service_name = await protocol_instance.get_grpc_descriptors()
-    assert descriptors is None # BasicRPCPluginProtocol returns None for descriptors
+    assert descriptors is None  # BasicRPCPluginProtocol returns None for descriptors
     assert service_name == "MyBasicService"
 
     # Test add_to_server for BasicRPCPluginProtocol (it's a no-op)
@@ -73,27 +75,30 @@ async def test_plugin_protocol_basic_default():
     await protocol_instance.add_to_server(mock_handler, mock_grpc_server)
     # No specific call to assert as it's a pass, just ensure no error.
 
+
 @pytest.mark.asyncio
-async def test_plugin_protocol_custom_class():
+async def test_plugin_protocol_custom_class() -> None:
     """Test plugin_protocol with a custom protocol_class."""
 
     class CustomTestProtocol(RPCPluginProtocol):
-        service_name = "CustomService"
+        service_name: str = "CustomService"
 
-        def __init__(self, custom_arg: str, service_name_override: str | None = None):
+        def __init__(
+            self, custom_arg: str, service_name_override: str | None = None
+        ) -> None:
             super().__init__()
             self.custom_arg = custom_arg
             if service_name_override:
-                 self.service_name = service_name_override # Allow override for testing
+                self.service_name = service_name_override  # Allow override for testing
 
-        async def get_grpc_descriptors(self):
+        async def get_grpc_descriptors(self) -> tuple[str, str]:
             return "custom_descriptors", self.service_name
 
-        async def add_to_server(self, handler, server):
+        async def add_to_server(self, handler: Any, server: Any) -> None:
             # Simulate adding to server, e.g., by calling a handler method
-            if hasattr(handler, 'register'):
+            if hasattr(handler, "register"):
                 handler.register(server, self.service_name)
-            pass # For this test, just ensuring it's called is enough
+            pass  # For this test, just ensuring it's called is enough
 
         def get_method_type(self, method_name: str) -> str:
             return "custom_unary_unary"
@@ -107,12 +112,14 @@ async def test_plugin_protocol_custom_class():
     # Scenario 1: Custom class with its own args
     custom_protocol_instance = plugin_protocol(
         protocol_class=CustomTestProtocol,
-        # service_name="IgnoredWhenClassHasOwn", # This will be ignored if CustomTestProtocol doesn't take service_name in __init__
-        custom_arg="my_value" # Pass args for CustomTestProtocol
+        # service_name="IgnoredWhenClassHasOwn", # This will be ignored if CustomTestProtocol doesn't take service_name in __init__ # noqa: E501
+        custom_arg="my_value",  # Pass args for CustomTestProtocol
     )
     assert isinstance(custom_protocol_instance, CustomTestProtocol)
     assert custom_protocol_instance.custom_arg == "my_value"
-    assert custom_protocol_instance.service_name == "CustomService" # Default from class
+    assert (
+        custom_protocol_instance.service_name == "CustomService"
+    )  # Default from class
 
     desc, name = await custom_protocol_instance.get_grpc_descriptors()
     assert desc == "custom_descriptors"
@@ -121,8 +128,8 @@ async def test_plugin_protocol_custom_class():
     # Scenario 2: Custom class with service_name override (if __init__ supports it)
     custom_protocol_instance_override = plugin_protocol(
         protocol_class=CustomTestProtocol,
-        service_name="OverriddenService", # This kwarg is passed to CustomTestProtocol
-        custom_arg="another_value"
+        service_name="OverriddenService",  # This kwarg is passed to CustomTestProtocol
+        custom_arg="another_value",
     )
     assert custom_protocol_instance_override.service_name == "OverriddenService"
     assert custom_protocol_instance_override.custom_arg == "another_value"
@@ -134,8 +141,8 @@ async def test_plugin_protocol_custom_class():
 @patch("pyvider.rpcplugin.factories.RPCPluginServer")
 @patch("pyvider.rpcplugin.factories.UnixSocketTransport")
 def test_plugin_server_unix_transport_default_path(
-    mock_unix_transport_cls, mock_rpc_plugin_server_cls
-):
+    mock_unix_transport_cls: MagicMock, mock_rpc_plugin_server_cls: MagicMock
+) -> None:
     """Test plugin_server with unix transport and default path."""
     mock_protocol_inst = MockProtocol()
     mock_handler_inst = MockHandler()
@@ -157,8 +164,8 @@ def test_plugin_server_unix_transport_default_path(
 @patch("pyvider.rpcplugin.factories.RPCPluginServer")
 @patch("pyvider.rpcplugin.factories.UnixSocketTransport")
 def test_plugin_server_unix_transport_custom_path(
-    mock_unix_transport_cls, mock_rpc_plugin_server_cls
-):
+    mock_unix_transport_cls: MagicMock, mock_rpc_plugin_server_cls: MagicMock
+) -> None:
     """Test plugin_server with unix transport and a custom path."""
     mock_protocol_inst = MockProtocol()
     mock_handler_inst = MockHandler()
@@ -186,8 +193,8 @@ def test_plugin_server_unix_transport_custom_path(
 @patch("pyvider.rpcplugin.factories.RPCPluginServer")
 @patch("pyvider.rpcplugin.factories.TCPSocketTransport")
 def test_plugin_server_tcp_transport_default_host_port(
-    mock_tcp_transport_cls, mock_rpc_plugin_server_cls
-):
+    mock_tcp_transport_cls: MagicMock, mock_rpc_plugin_server_cls: MagicMock
+) -> None:
     """Test plugin_server with tcp transport and default host/port."""
     mock_protocol_inst = MockProtocol()
     mock_handler_inst = MockHandler()
@@ -209,12 +216,12 @@ def test_plugin_server_tcp_transport_default_host_port(
 @patch("pyvider.rpcplugin.factories.RPCPluginServer")
 @patch("pyvider.rpcplugin.factories.TCPSocketTransport")
 def test_plugin_server_tcp_transport_custom_host_port(
-    mock_tcp_transport_cls, mock_rpc_plugin_server_cls
-):
+    mock_tcp_transport_cls: MagicMock, mock_rpc_plugin_server_cls: MagicMock
+) -> None:
     """Test plugin_server with tcp transport and custom host/port."""
     mock_protocol_inst = MockProtocol()
     mock_handler_inst = MockHandler()
-    custom_host = "0.0.0.0"
+    custom_host = "0.0.0.0"  # nosec B104
     custom_port = 12345
     custom_config = {"baz": "qux"}
 
@@ -237,12 +244,14 @@ def test_plugin_server_tcp_transport_custom_host_port(
     assert server is mock_rpc_plugin_server_cls.return_value
 
 
-def test_plugin_server_invalid_transport():
+def test_plugin_server_invalid_transport() -> None:
     """Test plugin_server with an invalid transport type."""
     mock_protocol_inst = MockProtocol()
     mock_handler_inst = MockHandler()
 
-    with pytest.raises(ValueError, match="Unsupported transport type: bogus"): # Changed to ValueError
+    with pytest.raises(
+        ValueError, match="Unsupported transport type: bogus"
+    ):  # Changed to ValueError
         plugin_server(
             protocol=mock_protocol_inst, handler=mock_handler_inst, transport="bogus"
         )
@@ -252,12 +261,14 @@ def test_plugin_server_invalid_transport():
 
 
 @patch("pyvider.rpcplugin.factories.RPCPluginClient")
-def test_plugin_client_basic(mock_rpc_client_cls):
+def test_plugin_client_basic(mock_rpc_client_cls: MagicMock) -> None:
     """Test plugin_client basic functionality."""
-    server_command = ["/fake/server"]
+    server_command: list[str] = ["/fake/server"]
     client_config = {"some_config": "value"}
 
-    client = plugin_client(command=server_command, config=client_config, auto_connect=False)
+    client = plugin_client(
+        command=server_command, config=client_config, auto_connect=False
+    )
 
     mock_rpc_client_cls.assert_called_once_with(
         command=server_command, config=client_config
@@ -267,10 +278,10 @@ def test_plugin_client_basic(mock_rpc_client_cls):
 
 @patch("pyvider.rpcplugin.factories.RPCPluginClient")
 def test_plugin_client_with_options_and_auto_connect_warning(
-    mock_rpc_client_cls
-):
+    mock_rpc_client_cls: MagicMock,
+) -> None:
     """Test plugin_client with auto_connect=True issues a warning."""
-    server_command = ["/fake/server_exec"]
+    server_command: list[str] = ["/fake/server_exec"]
     custom_config = {"VAR": "val", "timeout": 5.0, "extra_option": "test_val"}
 
     mock_client_instance = MagicMock(spec=RPCPluginClient)
@@ -280,7 +291,7 @@ def test_plugin_client_with_options_and_auto_connect_warning(
         client = plugin_client(
             command=server_command,
             config=custom_config,
-            auto_connect=True # This should trigger the warning
+            auto_connect=True,  # This should trigger the warning
         )
 
         mock_rpc_client_cls.assert_called_once_with(
@@ -296,9 +307,9 @@ def test_plugin_client_with_options_and_auto_connect_warning(
         mock_client_instance.start.assert_not_called()
 
 
-# The tests for server_not_found and server_not_executable are no longer relevant
-# as the factory doesn't do path checking. These responsibilities are now with the caller
-# or within the RPCPluginClient itself if it were to do such checks.
-# For now, removing them as the factory's responsibility changed.
+# The tests for server_not_found and server_not_executable are no longer
+# relevant as the factory doesn't do path checking. These responsibilities are
+# now with the caller or within the RPCPluginClient itself if it were to do
+# such checks. For now, removing them as the factory's responsibility changed.
 
 # 🐍🧪🏭

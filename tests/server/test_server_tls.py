@@ -13,6 +13,7 @@ from tests.conftest import (
     mock_server_handler,
 )
 
+
 @pytest.mark.asyncio
 async def test_generate_server_credentials_failure(
     monkeypatch, mock_server_protocol, mock_server_handler
@@ -37,5 +38,8 @@ async def test_generate_server_credentials_failure(
         config=None,
     )
 
-    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key: Diagnosing CertificateError message"):
+    with pytest.raises(
+        SecurityError,
+        match=r"Failed to load server certificate/key: Diagnosing CertificateError message",
+    ):
         server._generate_server_credentials()

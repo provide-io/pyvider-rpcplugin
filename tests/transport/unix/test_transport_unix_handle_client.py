@@ -3,7 +3,7 @@
 import asyncio
 import os
 import pytest
-from unittest.mock import AsyncMock, MagicMock # Added
+from unittest.mock import AsyncMock, MagicMock  # Added
 
 from pyvider.telemetry import logger
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
@@ -103,34 +103,35 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
 
 @pytest.mark.asyncio
 async def test_handle_client_cancelled(mocker):
-    transport = UnixSocketTransport(path="/tmp/dummy_cancel.sock") # Path doesn't need to exist for this unit test
+    transport = UnixSocketTransport(path="/tmp/dummy_cancel.sock")  # nosec B108 # Path doesn't need to exist for this unit test
     reader = AsyncMock(spec=asyncio.StreamReader)
     writer = AsyncMock(spec=asyncio.StreamWriter)
     writer.get_extra_info.return_value = "peer_cancelled"
-    writer.is_closing.return_value = False # Simulate writer is open
+    writer.is_closing.return_value = False  # Simulate writer is open
 
     # Make reader.read() allow the loop to run once, then subsequent calls can be interrupted
     read_call_count = 0
+
     async def read_side_effect(*args, **kwargs):
         nonlocal read_call_count
         read_call_count += 1
         if read_call_count == 1:
             return b"initial data"
         # For subsequent calls, we'll let the task be cancelled externally
-        await asyncio.sleep(0.1) # Give a chance for cancellation
+        await asyncio.sleep(0.1)  # Give a chance for cancellation
         return b"should not be reached if cancelled"
 
     reader.read = read_side_effect
 
     # Mock the lock as it's used in _handle_client
-    mocker.patch.object(transport, '_lock', AsyncMock(spec=asyncio.Lock))
-    transport._running = True # To allow the while loop in _handle_client to run
+    mocker.patch.object(transport, "_lock", AsyncMock(spec=asyncio.Lock))
+    transport._running = True  # To allow the while loop in _handle_client to run
 
     handle_client_task = asyncio.create_task(transport._handle_client(reader, writer))
 
-    await asyncio.sleep(0.01) # Ensure the task starts and enters the loop
+    await asyncio.sleep(0.01)  # Ensure the task starts and enters the loop
 
-    handle_client_task.cancel() # Cancel the task externally
+    handle_client_task.cancel()  # Cancel the task externally
 
     try:
         await asyncio.wait_for(handle_client_task, timeout=0.5)
@@ -138,7 +139,9 @@ async def test_handle_client_cancelled(mocker):
         pytest.fail("_handle_client task did not complete after cancellation.")
 
     assert handle_client_task.done()
-    assert handle_client_task.exception() is None # Should not have an unhandled exception
+    assert (
+        handle_client_task.exception() is None
+    )  # Should not have an unhandled exception
 
     # Assertions to ensure cleanup was attempted
     writer.close.assert_called_once()
@@ -146,5 +149,6 @@ async def test_handle_client_cancelled(mocker):
     # Check if the connection was removed from the pool (if it was added)
     # This requires checking transport._connections, which might need another mock or inspection.
     # For now, focus on cancellation handling and cleanup calls.
+
 
 ################################################################################

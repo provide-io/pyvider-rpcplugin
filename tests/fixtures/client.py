@@ -2,7 +2,7 @@
 
 import pytest_asyncio
 import sys
-import asyncio # Import asyncio
+import asyncio  # Import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
@@ -62,9 +62,9 @@ async def mock_transport():
 async def mock_unix_transport():
     """Mock Unix socket transport for testing."""
     transport = AsyncMock(spec=UnixSocketTransport)
-    transport.path = "/tmp/test.sock"
-    transport.endpoint = "/tmp/test.sock"
-    transport.listen = AsyncMock(return_value="/tmp/test.sock")
+    transport.path = "/tmp/test.sock"  # nosec B108
+    transport.endpoint = "/tmp/test.sock"  # nosec B108
+    transport.listen = AsyncMock(return_value="/tmp/test.sock")  # nosec B108
     transport.connect = AsyncMock()
     transport.close = AsyncMock()
     return transport
@@ -91,7 +91,7 @@ async def started_client_instance(client_instance, mocker):
     client_instance.is_started = True
 
     # Mock process
-    mock_proc = MagicMock() # Removed spec
+    mock_proc = MagicMock()  # Removed spec
     mock_proc.poll = MagicMock(return_value=None)
     mock_proc.terminate = MagicMock()
     mock_proc.wait = AsyncMock()
@@ -99,11 +99,11 @@ async def started_client_instance(client_instance, mocker):
 
     # Mock tasks (often checked if done or cancelled)
     client_instance._stdio_task = AsyncMock(spec=asyncio.Task)
-    client_instance._stdio_task.done = MagicMock(return_value=True) # Default to done
+    client_instance._stdio_task.done = MagicMock(return_value=True)  # Default to done
     client_instance._stdio_task.cancel = MagicMock()
 
     client_instance._broker_task = AsyncMock(spec=asyncio.Task)
-    client_instance._broker_task.done = MagicMock(return_value=True) # Default to done
+    client_instance._broker_task.done = MagicMock(return_value=True)  # Default to done
     client_instance._broker_task.cancel = MagicMock()
 
     # Mock gRPC channel
@@ -123,5 +123,6 @@ async def started_client_instance(client_instance, mocker):
     mocker.patch.object(RPCPluginClient, "shutdown_plugin", new_callable=AsyncMock)
 
     return client_instance
+
 
 ### 🐍🏗🧪️

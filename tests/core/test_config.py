@@ -1,55 +1,66 @@
 # tests/rpcplugin/test_config.py
 
 import os
-import logging
-import pytest
-from unittest.mock import patch, mock_open, call
+from typing import Any
+from unittest.mock import MagicMock, call, patch
 
+import pytest
+from pytest import MonkeyPatch
+
+from pyvider.rpcplugin import config as rpcplugin_config_module
 from pyvider.rpcplugin.config import (
-    fetch_env_variable,
-    validate_config_value,
-    get_config,
+    CONFIG_SCHEMA,
+    ConfigError,
     RPCPluginConfig,
     configure,
-    ConfigError,
-    CONFIG_SCHEMA,
+    fetch_env_variable,
+    get_config,
+    validate_config_value,
 )
-from pyvider.rpcplugin import config as rpcplugin_config_module
 
 
-def test_fetch_env_variable_from_os_environ(monkeypatch):
+def test_fetch_env_variable_from_os_environ(monkeypatch: MonkeyPatch) -> None:
     key = "PLUGIN_MAGIC_COOKIE_VALUE"
     expected_value = "test-cookie-from-env"
     monkeypatch.setenv(key, expected_value)
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) == expected_value
 
-def test_fetch_env_variable_default_value(monkeypatch):
+
+def test_fetch_env_variable_default_value(monkeypatch: MonkeyPatch) -> None:
     key = "PLUGIN_LOG_LEVEL"
     monkeypatch.delenv(key, raising=False)
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) == meta["default"]
 
-def test_fetch_env_variable_none_default(monkeypatch):
+
+def test_fetch_env_variable_none_default(monkeypatch: MonkeyPatch) -> None:
     key = "PLUGIN_SERVER_ENDPOINT"
     monkeypatch.delenv(key, raising=False)
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) is None
 
-def test_fetch_env_variable_type_conversion_int(monkeypatch):
+
+def test_fetch_env_variable_type_conversion_int(monkeypatch: MonkeyPatch) -> None:
     key = "PLUGIN_CORE_VERSION"
     monkeypatch.setenv(key, "123")
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) == 123
 
-def test_fetch_env_variable_type_conversion_bool_true(monkeypatch):
+
+def test_fetch_env_variable_type_conversion_bool_true(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_AUTO_MTLS"
     meta = CONFIG_SCHEMA[key]
     for true_val in ["true", "YES", "1", "oN"]:
         monkeypatch.setenv(key, true_val)
         assert fetch_env_variable(key, meta) is True
 
-def test_fetch_env_variable_type_conversion_bool_false(monkeypatch):
+
+def test_fetch_env_variable_type_conversion_bool_false(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_AUTO_MTLS"
     meta = CONFIG_SCHEMA[key]
     for false_val in ["false", "NO", "0", "oFF", "anyotherstring"]:
@@ -63,13 +74,19 @@ def test_fetch_env_variable_type_conversion_bool_false(monkeypatch):
     assert fetch_env_variable(key, meta) is True
     meta["default"] = original_default
 
-def test_fetch_env_variable_type_conversion_list_str(monkeypatch):
+
+def test_fetch_env_variable_type_conversion_list_str(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_SERVER_TRANSPORTS"
     monkeypatch.setenv(key, "unix, tcp , http")
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) == ["unix", "tcp", "http"]
 
-def test_fetch_env_variable_type_conversion_list_int(monkeypatch):
+
+def test_fetch_env_variable_type_conversion_list_int(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_PROTOCOL_VERSIONS"
     monkeypatch.setenv(key, "1, 2 , 5")
     meta = CONFIG_SCHEMA[key]
@@ -78,46 +95,59 @@ def test_fetch_env_variable_type_conversion_list_int(monkeypatch):
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) == meta["default"]
 
-def test_fetch_env_variable_invalid_type_conversion(monkeypatch):
+
+def test_fetch_env_variable_invalid_type_conversion(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_CORE_VERSION"
     monkeypatch.setenv(key, "not-an-int")
     meta = CONFIG_SCHEMA[key]
     with pytest.raises(
         ConfigError,
-        match=f"Invalid value format for configuration key '{key}'.*Expected type 'int'",
+        match=f"Invalid value format for configuration key '{key}'.*Expected type 'int'",  # noqa: E501
     ):
         fetch_env_variable(key, meta)
 
-def test_validate_config_value_valid():
+
+def test_validate_config_value_valid() -> None:
     key = "PLUGIN_LOG_LEVEL"
     meta = CONFIG_SCHEMA[key]
     assert validate_config_value(key, "INFO", meta) is True
     key_no_valid_values = "PLUGIN_MAGIC_COOKIE_VALUE"
     meta_no_valid_values = CONFIG_SCHEMA[key_no_valid_values]
-    assert validate_config_value(key_no_valid_values, "any-cookie", meta_no_valid_values) is True
+    assert (
+        validate_config_value(key_no_valid_values, "any-cookie", meta_no_valid_values)
+        is True
+    )
 
-def test_validate_config_value_missing_required():
+
+def test_validate_config_value_missing_required() -> None:
     key = "PLUGIN_MAGIC_COOKIE_KEY"
     meta = CONFIG_SCHEMA[key]
-    with pytest.raises(ConfigError, match=f"Missing required configuration key: '{key}'"):
+    with pytest.raises(
+        ConfigError, match=f"Missing required configuration key: '{key}'"
+    ):
         validate_config_value(key, None, meta)
 
-def test_validate_config_value_none_for_not_required():
+
+def test_validate_config_value_none_for_not_required() -> None:
     key = "PLUGIN_SERVER_ENDPOINT"
     meta = CONFIG_SCHEMA[key]
     assert validate_config_value(key, None, meta) is True
 
-def test_validate_config_value_invalid_choice():
+
+def test_validate_config_value_invalid_choice() -> None:
     key = "PLUGIN_LOG_LEVEL"
     meta = CONFIG_SCHEMA[key]
     invalid_level = "TRACE"
-    expected_message = f"Invalid value '{invalid_level}' provided for configuration key '{key}'.*Allowed values are:.*{meta['valid_values']}"
+    expected_message = f"Invalid value '{invalid_level}' provided for configuration key '{key}'.*Allowed values are:.*{meta['valid_values']}"  # noqa: E501
     with pytest.raises(ConfigError, match=expected_message):
         validate_config_value(key, invalid_level, meta)
 
+
 @patch("pyvider.rpcplugin.config.validate_config_value")
 @patch("pyvider.rpcplugin.config.fetch_env_variable")
-def test_get_config_success(mock_fetch, mock_validate):
+def test_get_config_success(mock_fetch: MagicMock, mock_validate: MagicMock) -> None:
     mock_fetch.side_effect = lambda key, meta: f"fetched_value_for_{key}"
     mock_validate.return_value = True
     config = get_config()
@@ -127,23 +157,32 @@ def test_get_config_success(mock_fetch, mock_validate):
         mock_validate.assert_any_call(key, f"fetched_value_for_{key}", meta_val)
         assert config[key] == f"fetched_value_for_{key}"
 
+
 @patch("pyvider.rpcplugin.config.validate_config_value")
 @patch("pyvider.rpcplugin.config.fetch_env_variable")
-def test_get_config_fetch_raises_error(mock_fetch, mock_validate):
+def test_get_config_fetch_raises_error(
+    mock_fetch: MagicMock, mock_validate: MagicMock
+) -> None:
     error_key = "PLUGIN_MAGIC_COOKIE_VALUE"
     mock_fetch.side_effect = (
         lambda key, meta: (_ for _ in ()).throw(ValueError("Fetch failed"))
         if key == error_key
         else "ok"
     )
-    with pytest.raises(ConfigError, match="Unexpected validation or fetch error for PLUGIN_MAGIC_COOKIE_VALUE: Fetch failed"):
+    with pytest.raises(
+        ConfigError,
+        match="Unexpected validation or fetch error for PLUGIN_MAGIC_COOKIE_VALUE: Fetch failed",  # noqa: E501
+    ):
         get_config()
     for call_args in mock_validate.call_args_list:
         assert call_args[0][0] != error_key
 
+
 @patch("pyvider.rpcplugin.config.validate_config_value")
 @patch("pyvider.rpcplugin.config.fetch_env_variable")
-def test_get_config_validate_raises_error(mock_fetch, mock_validate):
+def test_get_config_validate_raises_error(
+    mock_fetch: MagicMock, mock_validate: MagicMock
+) -> None:
     error_key = "PLUGIN_LOG_LEVEL"
     mock_fetch.return_value = "fetched_value"
     mock_validate.side_effect = (
@@ -151,12 +190,16 @@ def test_get_config_validate_raises_error(mock_fetch, mock_validate):
         if key == error_key
         else True
     )
-    with pytest.raises(ConfigError, match="Unexpected validation or fetch error for PLUGIN_LOG_LEVEL: Validate failed"):
+    with pytest.raises(
+        ConfigError,
+        match="Unexpected validation or fetch error for PLUGIN_LOG_LEVEL: Validate failed",  # noqa: E501
+    ):
         get_config()
     mock_fetch.assert_any_call(error_key, CONFIG_SCHEMA[error_key])
     mock_validate.assert_any_call(error_key, "fetched_value", CONFIG_SCHEMA[error_key])
 
-def test_rpcpluginconfig_singleton():
+
+def test_rpcpluginconfig_singleton() -> None:
     instance1 = RPCPluginConfig.instance()
     instance2 = RPCPluginConfig.instance()
     assert instance1 is instance2
@@ -165,8 +208,9 @@ def test_rpcpluginconfig_singleton():
     assert instance1 is not instance3
     assert instance3 is RPCPluginConfig.instance()
 
+
 @patch("pyvider.rpcplugin.config.get_config")
-def test_rpcpluginconfig_initialization(mock_get_config):
+def test_rpcpluginconfig_initialization(mock_get_config: MagicMock) -> None:
     expected_config = {"TEST_KEY": "test_value"}
     mock_get_config.return_value = expected_config
     RPCPluginConfig._instance = None
@@ -174,43 +218,49 @@ def test_rpcpluginconfig_initialization(mock_get_config):
     mock_get_config.assert_called_once()
     assert config_manager.config == expected_config
 
+
 @patch("pyvider.rpcplugin.config.get_config")
-def test_rpcpluginconfig_initialization_error(mock_get_config):
+def test_rpcpluginconfig_initialization_error(mock_get_config: MagicMock) -> None:
     mock_get_config.side_effect = ValueError("Init failed")
     RPCPluginConfig._instance = None
     with pytest.raises(ValueError, match="Init failed"):
         RPCPluginConfig.instance()
     mock_get_config.assert_called_once()
 
-def test_rpcpluginconfig_get_existing_key():
+
+def test_rpcpluginconfig_get_existing_key() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "PLUGIN_MAGIC_COOKIE_VALUE"
     expected_value = CONFIG_SCHEMA[key]["default"]
     assert config_manager.get(key) == expected_value
 
-def test_rpcpluginconfig_get_non_existing_key_with_default():
+
+def test_rpcpluginconfig_get_non_existing_key_with_default() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     default_val = "my_custom_default"
     assert config_manager.get("NON_EXISTENT_KEY_XYZ", default_val) == default_val
 
-def test_rpcpluginconfig_get_non_existing_key_no_default():
+
+def test_rpcpluginconfig_get_non_existing_key_no_default() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     assert config_manager.get("NON_EXISTENT_KEY_ABC") is None
 
-def test_rpcpluginconfig_get_list():
+
+def test_rpcpluginconfig_get_list() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "PLUGIN_SERVER_TRANSPORTS"
-    expected_list = CONFIG_SCHEMA[key]["default"]
+    expected_list: list[str] = CONFIG_SCHEMA[key]["default"]
     assert config_manager.get_list(key) == expected_list
     config_manager.set(key, "single_value")
     assert config_manager.get_list(key) == ["single_value"]
     assert config_manager.get_list("NON_EXISTENT_LIST_KEY") == []
 
-def test_rpcpluginconfig_set_known_key():
+
+def test_rpcpluginconfig_set_known_key() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "PLUGIN_LOG_LEVEL"
@@ -218,7 +268,8 @@ def test_rpcpluginconfig_set_known_key():
     config_manager.set(key, new_value)
     assert config_manager.get(key) == new_value
 
-def test_rpcpluginconfig_set_unknown_key_plugin_prefix():
+
+def test_rpcpluginconfig_set_unknown_key_plugin_prefix() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "PLUGIN_MY_CUSTOM_SETTING"
@@ -226,21 +277,25 @@ def test_rpcpluginconfig_set_unknown_key_plugin_prefix():
     config_manager.set(key, value)
     assert config_manager.get(key) == value
 
-def test_rpcpluginconfig_set_unknown_key_no_prefix_raises_error():
+
+def test_rpcpluginconfig_set_unknown_key_no_prefix_raises_error() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "MY_OTHER_CUSTOM_SETTING"
     value = "another_value"
-    with pytest.raises(ConfigError, match=f"Attempted to set an unknown configuration key: '{key}'."):
+    with pytest.raises(
+        ConfigError, match=f"Attempted to set an unknown configuration key: '{key}'."
+    ):
         config_manager.set(key, value)
 
-def test_rpcpluginconfig_helper_methods():
+
+def test_rpcpluginconfig_helper_methods() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     config_manager.set("PLUGIN_MAGIC_COOKIE_KEY", "TestCookieKey")
     config_manager.set("PLUGIN_MAGIC_COOKIE_VALUE", "TestCookieValue123")
     config_manager.set("PLUGIN_SERVER_TRANSPORTS", ["test_unix", "test_tcp"])
-    config_manager.set("PLUGIN_SERVER_ENDPOINT", "/tmp/test.sock")
+    config_manager.set("PLUGIN_SERVER_ENDPOINT", "/tmp/test.sock")  # nosec B108
     config_manager.set("PLUGIN_CLIENT_TRANSPORTS", ["test_tcp"])
     config_manager.set("PLUGIN_CLIENT_ENDPOINT", "localhost:1234")
     config_manager.set("PLUGIN_AUTO_MTLS", True)
@@ -249,7 +304,7 @@ def test_rpcpluginconfig_helper_methods():
     assert config_manager.magic_cookie_key() == "TestCookieKey"
     assert config_manager.magic_cookie_value() == "TestCookieValue123"
     assert config_manager.server_transports() == ["test_unix", "test_tcp"]
-    assert config_manager.server_endpoint() == "/tmp/test.sock"
+    assert config_manager.server_endpoint() == "/tmp/test.sock"  # nosec B108
     assert config_manager.client_transports() == ["test_tcp"]
     assert config_manager.client_endpoint() == "localhost:1234"
     assert config_manager.auto_mtls_enabled() is True
@@ -258,8 +313,9 @@ def test_rpcpluginconfig_helper_methods():
     config_manager.set("PLUGIN_AUTO_MTLS", False)
     assert config_manager.auto_mtls_enabled() is False
 
+
 @patch("pyvider.rpcplugin.config.rpcplugin_config.set")
-def test_configure_all_options(mock_rpc_set):
+def test_configure_all_options(mock_rpc_set: MagicMock) -> None:
     configure(
         magic_cookie="test-cookie",
         protocol_version=5,
@@ -291,8 +347,9 @@ def test_configure_all_options(mock_rpc_set):
     mock_rpc_set.assert_has_calls(expected_calls, any_order=True)
     assert mock_rpc_set.call_count == len(expected_calls)
 
+
 @patch("pyvider.rpcplugin.config.rpcplugin_config.set")
-def test_configure_minimal_options(mock_rpc_set):
+def test_configure_minimal_options(mock_rpc_set: MagicMock) -> None:
     configure(magic_cookie="minimal-cookie", auto_mtls=False)
     expected_calls = [
         call("PLUGIN_MAGIC_COOKIE_VALUE", "minimal-cookie"),
@@ -302,27 +359,32 @@ def test_configure_minimal_options(mock_rpc_set):
     mock_rpc_set.assert_has_calls(expected_calls, any_order=True)
     assert mock_rpc_set.call_count == len(expected_calls)
 
-@patch.object(rpcplugin_config_module.logger, 'warning')
+
+@patch.object(rpcplugin_config_module.logger, "warning")
 @patch("pyvider.rpcplugin.config.rpcplugin_config.set")
-def test_configure_unsupported_protocol_version(mock_rpc_set, mock_logger_warning): # Order of mocks matters for patch
+def test_configure_unsupported_protocol_version(
+    mock_rpc_set: MagicMock, mock_logger_warning: MagicMock
+) -> None:  # Order of mocks matters for patch
     unsupported_version = 99
     configure(protocol_version=unsupported_version)
     mock_logger_warning.assert_called_once_with(
-        f"⚙️⚠️ Unsupported protocol version: {unsupported_version}", # Adjusted emoji
+        f"⚙️⚠️ Unsupported protocol version: {unsupported_version}",  # Adjusted emoji
         extra={"supported": CONFIG_SCHEMA["SUPPORTED_PROTOCOL_VERSIONS"]["default"]},
     )
     mock_rpc_set.assert_any_call("PLUGIN_PROTOCOL_VERSIONS", [unsupported_version])
 
-def test_configure_invalid_transport_type():
+
+def test_configure_invalid_transport_type() -> None:
     with pytest.raises(
         ConfigError,
-        match=r"Unknown transport type specified: 'bogus_transport'.*Valid transport types are:.*",
+        match=r"Unknown transport type specified: 'bogus_transport'.*Valid transport types are:.*",  # noqa: E501
     ):
         configure(transports=["unix", "bogus_transport"])
 
-import tempfile
 
-def test_fetch_env_variable_file_uri_success(monkeypatch, tmp_path):
+def test_fetch_env_variable_file_uri_success(
+    monkeypatch: MonkeyPatch, tmp_path: Any
+) -> None:
     key = "PLUGIN_SERVER_CERT"
     meta = CONFIG_SCHEMA[key]
     content = "-----BEGIN CERT-----\nTESTCERT\n-----END CERT-----"
@@ -331,53 +393,77 @@ def test_fetch_env_variable_file_uri_success(monkeypatch, tmp_path):
     monkeypatch.setenv(key, f"file://{temp_file}")
     assert fetch_env_variable(key, meta) == content
 
-def test_fetch_env_variable_file_uri_read_error(monkeypatch, tmp_path):
+
+def test_fetch_env_variable_file_uri_read_error(
+    monkeypatch: MonkeyPatch, tmp_path: Any
+) -> None:
     key = "PLUGIN_SERVER_KEY"
     meta = CONFIG_SCHEMA[key]
     non_existent_file = tmp_path / "non_existent.key"
-    if non_existent_file.exists(): non_existent_file.unlink()
+    if non_existent_file.exists():
+        non_existent_file.unlink()
     monkeypatch.setenv(key, f"file://{non_existent_file}")
-    with pytest.raises(ConfigError, match=f"Failed to read configuration file specified for '{key}'.*Path: {non_existent_file}"):
+    with pytest.raises(
+        ConfigError,
+        match=f"Failed to read configuration file specified for '{key}'.*Path: {non_existent_file}",  # noqa: E501
+    ):
         fetch_env_variable(key, meta)
 
-def test_fetch_env_variable_list_str_fallback_iterable(monkeypatch):
+
+def test_fetch_env_variable_list_str_fallback_iterable(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_SERVER_TRANSPORTS"
     meta = CONFIG_SCHEMA[key]
-    monkeypatch.setattr(os, 'getenv', lambda k, d: ("unix", "tcp") if k == key else d)
+    monkeypatch.setattr(os, "getenv", lambda k, d: ("unix", "tcp") if k == key else d)
     RPCPluginConfig._instance = None
     assert fetch_env_variable(key, meta) == ["unix", "tcp"]
 
-def test_fetch_env_variable_list_int_fallback_single_convertible(monkeypatch):
+
+def test_fetch_env_variable_list_int_fallback_single_convertible(
+    monkeypatch: MonkeyPatch,
+) -> None:
     key = "PLUGIN_PROTOCOL_VERSIONS"
     meta = CONFIG_SCHEMA[key]
-    monkeypatch.setattr(os, 'getenv', lambda k, d: 5 if k == key else d)
+    monkeypatch.setattr(os, "getenv", lambda k, d: 5 if k == key else d)
     RPCPluginConfig._instance = None
     assert fetch_env_variable(key, meta) == [5]
-    monkeypatch.setattr(os, 'getenv', lambda k, d: "7" if k == key else d)
+    monkeypatch.setattr(os, "getenv", lambda k, d: "7" if k == key else d)
     RPCPluginConfig._instance = None
     assert fetch_env_variable(key, meta) == [7]
 
-@patch.object(rpcplugin_config_module.logger, 'warning')
-def test_fetch_env_variable_unknown_type(mock_logger_warning, monkeypatch):
+
+@patch.object(rpcplugin_config_module.logger, "warning")
+def test_fetch_env_variable_unknown_type(
+    mock_logger_warning: MagicMock, monkeypatch: MonkeyPatch
+) -> None:
     key = "PLUGIN_UNKNOWN_TYPE_TEST"
-    meta_unknown = {"required": False, "default": "some_default", "type": "unknown_type_blah"}
+    meta_unknown: dict[str, Any] = {
+        "required": False,
+        "default": "some_default",
+        "type": "unknown_type_blah",
+    }
     original_config_schema_entry = CONFIG_SCHEMA.get(key)
-    CONFIG_SCHEMA[key] = meta_unknown
+    CONFIG_SCHEMA[key] = meta_unknown  # type: ignore[assignment]
     monkeypatch.setenv(key, "some_value_for_unknown")
     RPCPluginConfig._instance = None
 
     assert fetch_env_variable(key, meta_unknown) == "some_value_for_unknown"
     # Adjusted emoji to match actual output
-    expected_log_message = f"⚙️⚠️ Unknown type unknown_type_blah for {key}, returning raw value"
+    expected_log_message = (
+        f"⚙️⚠️ Unknown type unknown_type_blah for {key}, returning raw value"
+    )
     mock_logger_warning.assert_called_once_with(expected_log_message)
 
     if original_config_schema_entry is None:
-        if key in CONFIG_SCHEMA: del CONFIG_SCHEMA[key]
+        if key in CONFIG_SCHEMA:
+            del CONFIG_SCHEMA[key]
     else:
         CONFIG_SCHEMA[key] = original_config_schema_entry
     RPCPluginConfig._instance = None
 
-def test_rpcpluginconfig_set_list_fallbacks():
+
+def test_rpcpluginconfig_set_list_fallbacks() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     config_manager.set("PLUGIN_SERVER_TRANSPORTS", ("unix", "tcp"))
@@ -391,14 +477,21 @@ def test_rpcpluginconfig_set_list_fallbacks():
     config_manager.set("PLUGIN_PROTOCOL_VERSIONS", "5")
     assert config_manager.get("PLUGIN_PROTOCOL_VERSIONS") == [5]
 
-def test_rpcpluginconfig_set_type_conversion_error():
+
+def test_rpcpluginconfig_set_type_conversion_error() -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
-    with pytest.raises(ConfigError, match="Invalid value format for configuration key 'PLUGIN_CORE_VERSION' during set"):
+    with pytest.raises(
+        ConfigError,
+        match="Invalid value format for configuration key 'PLUGIN_CORE_VERSION' during set",  # noqa: E501
+    ):
         config_manager.set("PLUGIN_CORE_VERSION", "not-an-integer")
 
-@patch.object(rpcplugin_config_module.logger, 'warning')
-def test_rpcpluginconfig_set_unknown_key_no_prefix_logs_warning(mock_logger_warning, monkeypatch):
+
+@patch.object(rpcplugin_config_module.logger, "warning")
+def test_rpcpluginconfig_set_unknown_key_no_prefix_logs_warning(
+    mock_logger_warning: MagicMock, monkeypatch: MonkeyPatch
+) -> None:
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "MY_OTHER_CUSTOM_SETTING"

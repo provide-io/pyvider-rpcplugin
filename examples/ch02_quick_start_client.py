@@ -12,9 +12,9 @@ from pathlib import Path
 # Setup example environment by calling configure_for_example()
 # This ensures paths are set and basic configuration (like disabling mTLS by default
 # and setting a default magic cookie) is applied for examples.
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
-configure_for_example(clear_env=True) # Client context, clear its own env
+configure_for_example(clear_env=True)  # Client context, clear its own env
 
 from pyvider.rpcplugin import plugin_client  # noqa: E402
 from pyvider.rpcplugin.client.base import RPCPluginClient  # noqa: E402
@@ -22,7 +22,7 @@ from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
 
 
-async def main():
+async def main() -> None:
     """Run the quick start client example."""
     logger.info(
         "🚀 Starting pyvider-rpcplugin Quick Start Example (Client Launching Plugin)"
@@ -30,7 +30,7 @@ async def main():
 
     # Determine the path to the ch02_dummy_server.py executable
     example_dir = Path(__file__).resolve().parent
-    dummy_server_executable = example_dir / "ch02_dummy_server.py" # Updated name
+    dummy_server_executable = example_dir / "ch02_dummy_server.py"  # Updated name
 
     if not dummy_server_executable.exists():
         logger.error(f"Dummy server executable not found at: {dummy_server_executable}")
@@ -83,8 +83,9 @@ async def main():
     finally:
         if client and client.is_started:
             logger.info("Shutting down client and plugin...")
-            # This will also request the plugin server (ch02_dummy_server.py) to shut down
-            # via its controller service, and then terminate the process if needed.
+            # This will also request the plugin server (ch02_dummy_server.py)
+            # to shut down via its controller service, and then terminate
+            # the process if needed.
             await client.close()
             logger.info("Client and plugin shut down.")
         elif client:  # If client was created but not started (e.g. error before start)

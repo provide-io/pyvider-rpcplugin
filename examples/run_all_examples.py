@@ -50,7 +50,8 @@ def print_result(
 
 async def run_script(
     script_path: Path,
-    timeout: int = 20, # Reduced from 30s to better reflect 5s internal example timeouts
+    timeout: int = 20,  # Reduced from 30s to better reflect 5s internal
+                        # example timeouts
     args: list[str] | None = None,
     cwd: Path | None = None,
     expected_to_fail: bool = False,
@@ -64,7 +65,8 @@ async def run_script(
     command = [sys.executable, str(script_path)] + args
     process = None
     env = os.environ.copy()
-    # Removed automatic magic cookie setup from here, will be passed if needed by specific tests.
+    # Removed automatic magic cookie setup from here,
+    # will be passed if needed by specific tests.
 
     try:
         process = await asyncio.create_subprocess_exec(
@@ -110,58 +112,84 @@ async def main() -> None:
     results: list[tuple[str, bool, str, str, int]] = []
 
     scripts_to_run: list[dict[str, Any]] = [
-        { # Was 00_dummy_server.py
-            "file": "ch02_dummy_server.py", "args": ["--help"], "exp_fail": False,
+        {  # Was 00_dummy_server.py
+            "file": "ch02_dummy_server.py",
+            "args": ["--help"],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was 01_quick_start.py
-            "file": "ch02_quick_start_client.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, # Launches ch02_dummy_server internally
+        {  # Was 01_quick_start.py
+            "file": "ch02_quick_start_client.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,  # Launches ch02_dummy_server internally
         },
-        { # Was 02_server_setup.py
-            "file": "ch03_server_setup_concepts.py", "args": [], "exp_fail": False,
+        {  # Was 02_server_setup.py
+            "file": "ch03_server_setup_concepts.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was 04_transport_options.py
-            "file": "ch04_transport_options_demo.py", "args": [], "exp_fail": False,
+        {  # Was 04_transport_options.py
+            "file": "ch04_transport_options_demo.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was 03_client_connection.py
-            "file": "ch06_client_setup_concepts.py", "args": [], "exp_fail": False,
+        {  # Was 03_client_connection.py
+            "file": "ch06_client_setup_concepts.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was new 07_echo_client.py
-            "file": "ch07_echo_client.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, # Client manages server's cookie
+        {  # Was new 07_echo_client.py
+            "file": "ch07_echo_client.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,  # Client manages server's cookie
         },
         # ch08_direct_client_connection.py (was 01b) is not run by this script.
         {
-            "file": "ch09_security_mtls_example.py", "args": [], "exp_fail": False, # Was 05
-            "exp_stderr": None, # Client manages server's cookie and mTLS certs
+            "file": "ch09_security_mtls_example.py",
+            "args": [],
+            "exp_fail": False,  # Was 05
+            "exp_stderr": None,  # Client manages server's cookie and mTLS certs
         },
-        { # Was 06_async_patterns.py
-            "file": "ch10_async_patterns_demo.py", "args": [], "exp_fail": False,
+        {  # Was 06_async_patterns.py
+            "file": "ch10_async_patterns_demo.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was original 07_error_handling.py
-            "file": "ch11_error_handling_demo.py", "args": [], "exp_fail": False,
+        {  # Was original 07_error_handling.py
+            "file": "ch11_error_handling_demo.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was 08_production_config.py
-            "file": "ch12_production_config_discussion.py", "args": [], "exp_fail": False,
+        {  # Was 08_production_config.py
+            "file": "ch12_production_config_discussion.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was 09_custom_protocols.py
-            "file": "ch13_custom_protocols_demo.py", "args": [], "exp_fail": False,
+        {  # Was 09_custom_protocols.py
+            "file": "ch13_custom_protocols_demo.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was 10_performance_tuning.py
-            "file": "ch14_performance_tuning_concepts.py", "args": [], "exp_fail": False,
+        {  # Was 10_performance_tuning.py
+            "file": "ch14_performance_tuning_concepts.py",
+            "args": [],
+            "exp_fail": False,
             "exp_stderr": None,
         },
-        { # Was new 11_e2e_client.py
-            "file": "ch15_e2e_client.py", "args": [], "exp_fail": False,
-            "exp_stderr": None, # Client manages server's cookie
+        {  # Was new 11_e2e_client.py
+            "file": "ch15_e2e_client.py",
+            "args": [],
+            "exp_fail": False,
+            "exp_stderr": None,  # Client manages server's cookie
         },
     ]
 
@@ -169,10 +197,10 @@ async def main() -> None:
 
     for script_info in scripts_to_run:
         script_file = script_info["file"]
-        script_args = script_info.get("args", []) # Use .get for safety
+        script_args = script_info.get("args", [])  # Use .get for safety
         exp_fail = script_info.get("exp_fail", False)
         exp_stderr = script_info.get("exp_stderr")
-        cookie_val = script_info.get("cookie") # Removed cookie from general loop
+        # cookie_val = script_info.get("cookie") # Removed cookie from general loop
 
         script_path = examples_dir / script_file
         if not script_path.exists():
@@ -186,7 +214,7 @@ async def main() -> None:
             args=script_args,
             cwd=project_root,
             expected_to_fail=exp_fail,
-            expected_stderr_contains=exp_stderr
+            expected_stderr_contains=exp_stderr,
             # Removed magic_cookie_value=cookie_val, as it's not in function def
         )
         results.append((script_path.name, success, stdout, stderr, exit_code))

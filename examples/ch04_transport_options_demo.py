@@ -7,15 +7,18 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-from example_utils import configure_for_example, get_example_port
+from example_utils import (  # type: ignore[import-not-found]
+    configure_for_example,
+    get_example_port,
+)
 
 configure_for_example()
 
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport # noqa: E402
+from pyvider.telemetry import logger # noqa: E402
 
 
-async def tcp_transport_demo():
+async def tcp_transport_demo() -> None:
     """Demonstrate TCP transport configuration."""
     logger.info("🌐 TCP Transport Demo")
 
@@ -25,7 +28,7 @@ async def tcp_transport_demo():
     logger.info("✅ TCP transport demo completed")
 
 
-async def unix_transport_demo():
+async def unix_transport_demo() -> None:
     """Demonstrate Unix socket transport configuration."""
     logger.info("🔌 Unix Socket Transport Demo")
 
@@ -42,7 +45,7 @@ async def unix_transport_demo():
     Path(socket_path).unlink(missing_ok=True)
 
 
-async def main():
+async def main() -> None:
     """Compare transport options."""
     logger.info("🚀 Transport Options Comparison")
 

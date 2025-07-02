@@ -81,7 +81,7 @@ def configure_for_example(clear_env: bool = False) -> None:
             "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",
             "PLUGIN_LOG_LEVEL": "INFO",
             "PLUGIN_HANDSHAKE_TIMEOUT": 5.0,  # Updated to 5 seconds
-            "PLUGIN_CONNECTION_TIMEOUT": 5.0, # Updated to 5 seconds
+            "PLUGIN_CONNECTION_TIMEOUT": 5.0,  # Updated to 5 seconds
         }
 
         config_to_apply_programmatically = {}
@@ -92,9 +92,18 @@ def configure_for_example(clear_env: bool = False) -> None:
 
             # Apply if current value is the schema default, or if key isn't in
             # schema (custom for example), or if it's a log level we want to enforce.
-            if current_val == schema_default or key == "PLUGIN_LOG_LEVEL":
-                config_to_apply_programmatically[key] = example_value
-            elif key == "PLUGIN_AUTO_MTLS" and current_val is None:
+
+            # For PLUGIN_AUTO_MTLS, if its current parsed value True (the schema default "true" parsed),
+            # then we want to apply the example_value (False).
+            if key == "PLUGIN_AUTO_MTLS":
+                # The schema default for PLUGIN_AUTO_MTLS is "true", which parses to True.
+                # example_defaults["PLUGIN_AUTO_MTLS"] is False.
+                # We want to set it to False if it's currently True (from schema default).
+                if current_val is True:
+                    config_to_apply_programmatically[key] = example_value
+                elif current_val is None: # If it was somehow None (e.g. schema default was None)
+                    config_to_apply_programmatically[key] = example_value
+            elif current_val == schema_default or key == "PLUGIN_LOG_LEVEL": # Original logic for other keys
                 config_to_apply_programmatically[key] = example_value
 
         # Call pyvider_configure with specific keyword arguments that match its

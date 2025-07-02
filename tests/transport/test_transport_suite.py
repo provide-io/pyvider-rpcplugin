@@ -9,6 +9,7 @@ import socket
 import stat  # Added
 import tempfile
 from pathlib import Path
+from typing import Any  # Import Any
 import uuid
 
 import pytest
@@ -144,12 +145,12 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
     async def create(
         transport_type: str, tcp_port_for_server: int | None = None
     ) -> tuple[BaseTransportT, BaseTransportT]:
-        server_kwargs: dict[str, Any] = ( # Type hint for server_kwargs
+        server_kwargs: dict[str, Any] = (  # Type hint for server_kwargs
             {"port": tcp_port_for_server}
             if transport_type == "tcp" and tcp_port_for_server is not None
             else {}
         )
-        client_kwargs: dict[str, Any] = {} # Type hint for client_kwargs
+        client_kwargs: dict[str, Any] = {}  # Type hint for client_kwargs
 
         server_transport = await transport_factory(transport_type, **server_kwargs)
 
@@ -174,11 +175,11 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
     for server, client in pairs:
         try:
             await client.close()
-        except Exception:
+        except Exception:  # nosec B110
             pass
         try:
             await server.close()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
 
@@ -190,10 +191,18 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_server_lifecycle_and_connectivity(
-    transport_type, transport_factory, server_factory, unused_tcp_port, mocker, monkeypatch # Added monkeypatch
+    transport_type,
+    transport_factory,
+    server_factory,
+    unused_tcp_port,
+    mocker,
+    monkeypatch,  # Added monkeypatch
 ):
     # Set the expected magic cookie in the environment for the server to validate
-    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
+    monkeypatch.setenv(
+        rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"),
+        rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"),
+    )
 
     # Configure for an insecure setup for both tcp and unix variants
     def mock_config_get_insecure(key, default=None):

@@ -1,17 +1,20 @@
 # tests/client/test_client_grpc.py
 
+from typing import Any
+from unittest.mock import ANY, AsyncMock, MagicMock, patch  # ANY added back
+
 import pytest
-import asyncio  # Added
-from unittest.mock import patch, MagicMock, AsyncMock, ANY  # ANY added back
-from pyvider.rpcplugin.transport import (
-    UnixSocketTransport,
-    TCPSocketTransport,
-)  # Import added
+
+from pyvider.rpcplugin.client.base import RPCPluginClient
 from pyvider.rpcplugin.exception import TransportError  # Added import
+from pyvider.rpcplugin.transport import (  # Import added
+    TCPSocketTransport,
+    UnixSocketTransport,
+)
 
 
 @pytest.mark.asyncio
-async def test_rebuild_x509_pem(client_instance):
+async def test_rebuild_x509_pem(client_instance: RPCPluginClient) -> None:
     """Test rebuilding X.509 certificate to PEM format."""
     # Test with raw base64 data (no headers)
     raw_cert = "MIIEpAIBADANBgkqhkiG9w0BAQEFAASCBJYwggSSAgEAAoIBAQDBj08sp"
@@ -23,7 +26,7 @@ async def test_rebuild_x509_pem(client_instance):
     assert raw_cert in result
 
     # Test with already formatted PEM
-    pem_cert = "-----BEGIN CERTIFICATE-----\nMIIEpAIBADANBgkqhkiG9w0BAQEFAASCBJYwggSSAgEAAoIBAQDBj08sp\n-----END CERTIFICATE-----"
+    pem_cert = "-----BEGIN CERTIFICATE-----\nMIIEpAIBADANBgkqhkiG9w0BAQEFAASCBJYwggSSAgEAAoIBAQDBj08sp\n-----END CERTIFICATE-----"  # noqa: E501
     result = client_instance._rebuild_x509_pem(pem_cert)
 
     # Should be unchanged
@@ -31,7 +34,9 @@ async def test_rebuild_x509_pem(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_with_tls(client_instance):
+async def test_create_grpc_channel_with_tls(
+    client_instance: RPCPluginClient,
+) -> None:
     """Test creating a gRPC channel with TLS."""
     # Setup
     client_instance._transport = MagicMock()
@@ -66,9 +71,10 @@ async def test_create_grpc_channel_with_tls(client_instance):
             assert client_instance.grpc_channel == mock_channel
 
 
-
 @pytest.mark.asyncio
-async def test_create_grpc_channel_with_mtls(client_instance, mocker):
+async def test_create_grpc_channel_with_mtls(
+    client_instance: RPCPluginClient, mocker: Any
+) -> None:
     """Test creating a gRPC channel with mutual TLS."""
     # Setup instance attributes that _setup_client_certificates would normally set
     # based on config, or that are set before _create_grpc_channel is called.
@@ -78,22 +84,27 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
 
     client_instance.client_cert = dummy_client_cert_pem
     client_instance.client_key_pem = dummy_client_key_pem
-    client_instance._server_cert = dummy_server_root_pem # Used if PLUGIN_SERVER_ROOT_CERTS is not primary
+    client_instance._server_cert = (
+        dummy_server_root_pem  # Used if PLUGIN_SERVER_ROOT_CERTS is not primary
+    )
 
     # Mock rpcplugin_config.get
-    def mock_config_get_side_effect(key, default=None):
+    def mock_config_get_side_effect(key: str, default: Any = None) -> Any:
         if key == "PLUGIN_AUTO_MTLS":
-            return True # Enable mTLS path
+            return True  # Enable mTLS path
         elif key == "PLUGIN_CLIENT_CERT":
-            return dummy_client_cert_pem # Explicit client cert configured
+            return dummy_client_cert_pem  # Explicit client cert configured
         elif key == "PLUGIN_CLIENT_KEY":
-            return dummy_client_key_pem   # Explicit client key configured
+            return dummy_client_key_pem  # Explicit client key configured
         elif key == "PLUGIN_SERVER_ROOT_CERTS":
-            return dummy_server_root_pem # Explicit server root CAs
+            return dummy_server_root_pem  # Explicit server root CAs
         # Default for other config values if any are checked by the method implicitly
         return default
 
-    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.get", side_effect=mock_config_get_side_effect)
+    mocker.patch(
+        "pyvider.rpcplugin.client.base.rpcplugin_config.get",
+        side_effect=mock_config_get_side_effect,
+    )
 
     client_instance._transport = MagicMock()
     client_instance._transport_name = "tcp"
@@ -119,18 +130,22 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
             await client_instance._create_grpc_channel()
 
             # Verify mTLS credentials were used
-            expected_root_certs_pem = client_instance._rebuild_x509_pem(dummy_server_root_pem)
+            expected_root_certs_pem = client_instance._rebuild_x509_pem(
+                dummy_server_root_pem
+            )
             mock_ssl_creds.assert_called_once_with(
                 root_certificates=expected_root_certs_pem.encode(),
                 private_key=dummy_client_key_pem.encode(),
-                certificate_chain=dummy_client_cert_pem.encode()
+                certificate_chain=dummy_client_cert_pem.encode(),
             )
             mock_secure_channel.assert_called_once()
             assert client_instance.grpc_channel == mock_channel
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_insecure(client_instance):
+async def test_create_grpc_channel_insecure(
+    client_instance: RPCPluginClient,
+) -> None:
     """Test creating an insecure gRPC channel."""
     # Setup
     client_instance._transport = MagicMock()
@@ -156,14 +171,16 @@ async def test_create_grpc_channel_insecure(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_unix_socket(client_instance):
+async def test_create_grpc_channel_unix_socket(
+    client_instance: RPCPluginClient,
+) -> None:
     """Test creating a gRPC channel for Unix socket transport."""
     # Setup
     client_instance._transport = AsyncMock(
         spec=UnixSocketTransport
     )  # Changed to use spec
     client_instance._transport_name = "unix"  # This is correct for the logic path
-    client_instance._address = "/tmp/test.sock"  # This is the raw path
+    client_instance._address = "/tmp/test.sock"  # nosec B108 # This is the raw path
     client_instance._server_cert = None  # To ensure insecure_channel is called
 
     with patch(
@@ -182,16 +199,18 @@ async def test_create_grpc_channel_unix_socket(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
+async def test_create_grpc_channel_ready_timeout_unix(
+    client_instance: RPCPluginClient, mocker: Any
+) -> None:
     """Test channel ready timeout for Unix socket."""
     client_instance._transport = mocker.MagicMock(spec=UnixSocketTransport)
     client_instance._transport_name = "unix"
-    client_instance._address = "/tmp/test_timeout.sock"  # Actual path used by transport
+    client_instance._address = "/tmp/test_timeout.sock"  # nosec B108 # Actual path used by transport
     client_instance._server_cert = None  # Insecure channel
 
     mock_channel = AsyncMock()
     mock_channel.channel_ready = AsyncMock(
-        side_effect=asyncio.TimeoutError("Channel timed out")
+        side_effect=TimeoutError("Channel timed out")
     )
 
     mocker.patch(
@@ -205,7 +224,7 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
 
     with pytest.raises(
         TransportError,
-        match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to unix:/tmp/test_timeout.sock.*",
+        match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to unix:/tmp/test_timeout.sock.*",  # noqa: E501
     ):
         await client_instance._create_grpc_channel()
 
@@ -218,7 +237,9 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
+async def test_create_grpc_channel_ready_timeout_tcp(
+    client_instance: RPCPluginClient, mocker: Any
+) -> None:
     """Test channel ready timeout for TCP socket."""
     client_instance._transport = mocker.MagicMock(
         spec=TCPSocketTransport
@@ -229,7 +250,7 @@ async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
 
     mock_channel = AsyncMock()
     mock_channel.channel_ready = AsyncMock(
-        side_effect=asyncio.TimeoutError("Channel timed out")
+        side_effect=TimeoutError("Channel timed out")
     )
 
     mocker.patch(
@@ -240,11 +261,11 @@ async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
 
     with pytest.raises(
         TransportError,
-        match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to 127.0.0.1:12345.*",
+        match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to 127.0.0.1:12345.*",  # noqa: E501
     ):
         await client_instance._create_grpc_channel()
 
-    # Ensure the primary timeout log is there, but not the Unix-specific socket diagnostic
+    # Ensure primary timeout log is there, not Unix-specific socket diagnostic
     mock_logger_error.assert_any_call(
         "🚢❌ gRPC channel failed to become ready (timeout)"
     )
@@ -254,7 +275,9 @@ async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_ready_generic_exception(client_instance, mocker):
+async def test_create_grpc_channel_ready_generic_exception(
+    client_instance: RPCPluginClient, mocker: Any
+) -> None:
     """Test generic exception during channel_ready."""
     client_instance._transport = mocker.MagicMock(spec=TCPSocketTransport)
     client_instance._transport_name = "tcp"
@@ -274,7 +297,7 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
 
     with pytest.raises(
         TransportError,
-        match=r"\[TransportError\] Failed to establish gRPC channel to plugin at 127.0.0.1:12345: Other connection issue.*Hint: Verify plugin server is running.*",
+        match=r"\[TransportError\] Failed to establish gRPC channel to plugin at 127.0.0.1:12345: Other connection issue.*Hint: Verify plugin server is running.*",  # noqa: E501
     ):
         await client_instance._create_grpc_channel()
 

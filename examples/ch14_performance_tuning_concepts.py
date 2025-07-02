@@ -7,24 +7,24 @@ import asyncio
 import time
 from typing import Any  # Import Any
 
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 configure_for_example()
 
-from pyvider.telemetry import logger
+from pyvider.telemetry import logger # noqa: E402
 
 
 class PerformanceMonitor:
     """Simple performance monitoring utility."""
 
-    def __init__(self):
-        self.metrics = {}
+    def __init__(self) -> None:
+        self.metrics: dict[str, dict[str, Any]] = {}
 
-    def start_timer(self, name: str):
+    def start_timer(self, name: str) -> None:
         """Start timing an operation."""
         self.metrics[name] = {"start": time.perf_counter()}
 
-    def end_timer(self, name: str):
+    def end_timer(self, name: str) -> None:
         """End timing an operation."""
         if name in self.metrics:
             end_time = time.perf_counter()
@@ -34,7 +34,7 @@ class PerformanceMonitor:
         """Get duration of a timed operation."""
         return self.metrics.get(name, {}).get("duration", 0.0)
 
-    def report(self):
+    def report(self) -> None:
         """Report performance metrics."""
         logger.info("📊 Performance Report:")
         for name, data in self.metrics.items():
@@ -42,17 +42,17 @@ class PerformanceMonitor:
                 logger.info(f"  ⏱️  {name}: {data['duration']:.3f}s")
 
 
-async def connection_pooling_example():
+async def connection_pooling_example() -> None:
     """Example: Connection pooling optimization."""
     logger.info("🏊 Connection Pooling Example")
 
     class MockConnectionPool:
-        def __init__(self, pool_size: int = 10):
+        def __init__(self, pool_size: int = 10) -> None:
             self.pool_size = pool_size
             self.connections: list[Any] = []
             self.active_connections = 0
 
-        async def get_connection(self):
+        async def get_connection(self) -> Any:
             """Get connection from pool."""
             if self.active_connections < self.pool_size:
                 self.active_connections += 1
@@ -63,7 +63,7 @@ async def connection_pooling_example():
                 await asyncio.sleep(0.01)  # Wait for available connection
                 return await self.get_connection()
 
-        async def release_connection(self, connection_id: str):
+        async def release_connection(self, connection_id: str) -> None:
             """Release connection back to pool."""
             logger.info(f"🔓 Released connection: {connection_id}")
             self.active_connections -= 1
@@ -77,10 +77,10 @@ async def connection_pooling_example():
     tasks = []
     for i in range(10):
 
-        async def use_connection(request_id):
+        async def use_connection(request_id: int) -> str:
             conn = await pool.get_connection()
             await asyncio.sleep(0.1)  # Simulate work
-            await pool.release_connection(conn)
+            await pool.release_connection(conn) # Assuming conn is the id str
             return f"Request {request_id} completed"
 
         tasks.append(use_connection(i))
@@ -92,16 +92,16 @@ async def connection_pooling_example():
     monitor.report()
 
 
-async def batch_processing_example():
+async def batch_processing_example() -> None:
     """Example: Batch processing optimization."""
     logger.info("📦 Batch Processing Example")
 
-    async def process_single_item(item):
+    async def process_single_item(item: str) -> str:
         """Process a single item (inefficient)."""
         await asyncio.sleep(0.01)  # Simulate processing overhead
         return f"processed_{item}"
 
-    async def process_batch(items: list[str]):
+    async def process_batch(items: list[str]) -> list[str]:
         """Process items in batch (efficient)."""
         await asyncio.sleep(0.05)  # Simulate batch processing overhead
         return [f"batch_processed_{item}" for item in items]
@@ -137,19 +137,20 @@ async def batch_processing_example():
     speedup = single_duration / batch_duration if batch_duration > 0 else 0
     logger.info(f"🚀 Batch processing speedup: {speedup:.2f}x")
 
+from collections.abc import Generator # Added for create_generator
 
-async def memory_optimization_example():
+async def memory_optimization_example() -> None:
     """Example: Memory optimization techniques."""
     logger.info("💾 Memory Optimization Example")
 
     import sys
 
     # Generator vs list comparison
-    def create_large_list(size: int):
+    def create_large_list(size: int) -> list[str]:
         """Create large list (memory intensive)."""
         return [f"item_{i}" for i in range(size)]
 
-    def create_generator(size: int):
+    def create_generator(size: int) -> Generator[str, None, None]:
         """Create generator (memory efficient)."""
         for i in range(size):
             yield f"item_{i}"
@@ -168,13 +169,14 @@ async def memory_optimization_example():
 
     memory_savings = list_size - gen_size
     logger.info(
-        f"💰 Memory savings: {memory_savings:,} bytes ({memory_savings / list_size * 100:.1f}%)"
+        f"💰 Memory savings: {memory_savings:,} bytes "
+        f"({memory_savings / list_size * 100:.1f}%)"
     )
 
     logger.info("✅ Memory optimization example completed")
 
 
-async def main():
+async def main() -> None:
     """Run performance tuning examples."""
     logger.info("🚀 Performance Tuning Examples")
 

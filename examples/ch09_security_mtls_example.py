@@ -12,7 +12,7 @@ import tempfile
 from pathlib import Path
 
 # First-party imports (project-specific)
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 from pyvider.rpcplugin import (
     RPCPluginClient,
@@ -44,7 +44,7 @@ async def functional_mtls_example() -> None:
         "PLUGIN_CLIENT_KEY",
         "PLUGIN_SERVER_ROOT_CERTS",
         "PLUGIN_MAGIC_COOKIE_KEY",
-        "PLUGIN_MAGIC_COOKIE_VALUE"
+        "PLUGIN_MAGIC_COOKIE_VALUE",
     ]
     for key in env_keys_to_manage:
         if key in os.environ:
@@ -87,16 +87,19 @@ async def functional_mtls_example() -> None:
         # Save to temp files primarily for the server subprocess
         server_cert_file_path = temp_dir_path / "server.crt"
         server_key_file_path = temp_dir_path / "server.key"
-        ca_cert_file_path = temp_dir_path / "ca_for_server_to_verify_client.crt" # Server uses this to verify client
+        ca_cert_file_path = (
+            temp_dir_path / "ca_for_server_to_verify_client.crt"
+        )  # Server uses this to verify client
 
         with open(server_cert_file_path, "w") as f:
             f.write(server_cert_pem)
         with open(server_key_file_path, "w") as f:
             f.write(server_key_pem)
-        with open(ca_cert_file_path, "w") as f: # This CA is for server to verify client
+        with open(
+            ca_cert_file_path, "w"
+        ) as f:  # This CA is for server to verify client
             f.write(ca_cert_pem)
         logger.info(f"🔑 Server-related certificates saved to {temp_dir_path}")
-
 
         # 2. Configure Client-Side mTLS (for this script's RPCPluginClient instance)
         #    using direct PEM strings.
@@ -105,21 +108,25 @@ async def functional_mtls_example() -> None:
 
         configure(
             auto_mtls=True,
-            client_cert=client_cert_pem,         # Pass PEM string
-            client_key=client_key_pem,           # Pass PEM string
-            SERVER_ROOT_CERTS=ca_cert_pem,       # Pass CA PEM string (for client to verify server)
+            client_cert=client_cert_pem,  # Pass PEM string
+            client_key=client_key_pem,  # Pass PEM string
+            server_root_certs=ca_cert_pem,       # Pass CA PEM string
+                                                 # (for client to verify server)
             magic_cookie_key=client_magic_cookie_key,
             magic_cookie=client_magic_cookie_value,
-            handshake_timeout=30.0, # Increased timeouts
-            connection_timeout=25.0
+            handshake_timeout=30.0,  # Increased timeouts
+            connection_timeout=25.0,
         )
-        logger.info("🔧 Client-side mTLS configured programmatically using PEM strings via configure().")
+        logger.info(
+            "🔧 Client-side mTLS configured programmatically using PEM strings via configure()."
+        )
 
-        # No need to set os.environ for client-side certs if configure() is respected
-        # and not reset before client use. The main issue is ensuring the configure() call's
-        # effect persists until RPCPluginClient reads it. The autouse fixture in conftest.py
-        # might reset it. Forcing it into env is one way, but direct PEM should be more robust
-        # if the config object isn't swapped out.
+        # No need to set os.environ for client-side certs if configure() is
+        # respected and not reset before client use. The main issue is ensuring
+        # the configure() call's effect persists until RPCPluginClient reads it.
+        # The autouse fixture in conftest.py might reset it. Forcing it into
+        # env is one way, but direct PEM should be more robust if the config
+        # object isn't swapped out.
 
         # 3. Prepare Environment for Server Subprocess
         # Server subprocess will need file paths.
@@ -127,15 +134,17 @@ async def functional_mtls_example() -> None:
             "PLUGIN_AUTO_MTLS": "True",
             "PLUGIN_SERVER_CERT": f"file://{server_cert_file_path}",
             "PLUGIN_SERVER_KEY": f"file://{server_key_file_path}",
-            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_file_path}", # Server uses this CA to verify client cert
-
-            client_magic_cookie_key: client_magic_cookie_value, # Actual cookie env var for server
-            "PLUGIN_MAGIC_COOKIE_KEY": client_magic_cookie_key, # Server's config for which key to read
-            "PLUGIN_MAGIC_COOKIE_VALUE": client_magic_cookie_value, # Server's config for expected value
-
+            # Server uses this CA to verify client cert
+            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_file_path}",
+            client_magic_cookie_key: client_magic_cookie_value,  # Actual cookie env
+                                                              # var for server
+            # Server's config for which key to read
+            "PLUGIN_MAGIC_COOKIE_KEY": client_magic_cookie_key,
+            # Server's config for expected value
+            "PLUGIN_MAGIC_COOKIE_VALUE": client_magic_cookie_value,
             "PLUGIN_LOG_LEVEL": "DEBUG",
             "PLUGIN_HANDSHAKE_TIMEOUT": "25.0",
-            "PLUGIN_CONNECTION_TIMEOUT": "20.0"
+            "PLUGIN_CONNECTION_TIMEOUT": "20.0",
         }
 
         # 4. Launch Server and Connect Client
@@ -156,7 +165,7 @@ async def functional_mtls_example() -> None:
             await client.start()
             logger.info("✅ Successfully connected to mTLS-enabled server!")
 
-            if client._controller_stub: # Accessing private member for example check
+            if client._controller_stub:  # Accessing private member for example check
                 logger.info(
                     "✅ Controller stub available, basic connection seems okay."
                 )
@@ -186,7 +195,7 @@ async def functional_mtls_example() -> None:
             if value is not None:
                 os.environ[key] = value
             else:
-                if key in os.environ: # Check if key exists before trying to delete
+                if key in os.environ:  # Check if key exists before trying to delete
                     del os.environ[key]
         # Also remove keys that were added if they weren't in original_env
         for key in env_keys_to_manage:

@@ -59,11 +59,12 @@ from tests.fixtures.client import (
     mock_unix_transport,
     mock_grpc_channel,
     test_client_command,
-    started_client_instance, # Add the new fixture here
+    started_client_instance,  # Add the new fixture here
 )
 from tests.fixtures.server import (
     valid_server_env,
     server_instance,
+    rpc_plugin_server_manager,
 )
 
 __all__ = [
@@ -120,8 +121,9 @@ __all__ = [
     "mock_unix_transport",
     "mock_grpc_channel",
     "test_client_command",
-    "started_client_instance", # And here
+    "started_client_instance",  # And here
     # server
     "valid_server_env",
     "server_instance",
+    "rpc_plugin_server_manager",
 ]

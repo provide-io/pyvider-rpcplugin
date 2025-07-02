@@ -24,7 +24,7 @@ def test_abstract_methods_must_be_implemented() -> None:
     # Implementing just one method is still not enough
     class PartialProtocol(RPCPluginProtocol):
         def get_grpc_descriptors(self):
-            return MagicMock(), "TestService" # type: ignore[override] # Intentionally non-async for test
+            return MagicMock(), "TestService"  # type: ignore[override] # Intentionally non-async for test
 
     with pytest.raises(TypeError) as excinfo:
         PartialProtocol()  # type: ignore[abstract]

@@ -29,7 +29,10 @@ src_path = project_root / "src"
 if src_path.exists() and str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
-from example_utils import clear_plugin_env_vars, configure_for_example  # noqa: E402
+from example_utils import (  # type: ignore[import-not-found] # noqa: E402
+    clear_plugin_env_vars,
+    configure_for_example,
+)
 
 from pyvider.telemetry import logger  # noqa: E402
 
@@ -37,7 +40,7 @@ from pyvider.telemetry import logger  # noqa: E402
 SOCKET_COMM_FILE = project_root / "dummy_server_socket.txt"
 
 
-async def run_direct_client():
+async def run_direct_client() -> None:
     """Connects to an independently running server."""
     print("🚀 pyvider-rpcplugin Direct Client Connection Example")
     print("======================================================")
@@ -81,7 +84,8 @@ async def run_direct_client():
     target = f"unix:{socket_path_read}"
     channel = None
     try:
-        # For a server script not launched by this client, connect directly using grpc.aio.
+        # For a server script not launched by this client, connect directly
+        # using grpc.aio.
         # This example assumes an insecure channel (no mTLS).
         # For mTLS, you would use grpc.aio.secure_channel() with credentials.
         logger.info(f"Creating insecure gRPC channel to {target}...")
@@ -92,8 +96,8 @@ async def run_direct_client():
         logger.info(f"Successfully connected to {target}")
         print(f"\n✅ Successfully connected to server at {target}")
 
-        # At this point, you would typically use a gRPC stub generated from your .proto file
-        # to make RPC calls. For example:
+        # At this point, you would typically use a gRPC stub generated
+        # from your .proto file to make RPC calls. For example:
         # stub = YourServiceStub(channel)
         # response = await stub.YourMethod(YourRequest(data="hello from direct client"))
         # logger.info(f"Received response: {response.message}")
@@ -107,7 +111,8 @@ async def run_direct_client():
         )
         # Corrected to use socket_path_read in print message
         print(
-            f"❌ Timeout connecting to {target}. Check server status and socket path '{socket_path_read}'."
+            f"❌ Timeout connecting to {target}. Check server status "
+            f"and socket path '{socket_path_read}'."
         )
     except grpc.aio.AioRpcError as e:
         logger.error(

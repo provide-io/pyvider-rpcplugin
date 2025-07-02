@@ -1,44 +1,46 @@
 import os
+
 from pyvider.rpcplugin.config import (
-    RPCPluginConfig,
-    rpcplugin_config,
-    configure,
     CONFIG_SCHEMA,
+    RPCPluginConfig,
+    configure,
+    rpcplugin_config,
 )
 from pyvider.telemetry import logger
 
 # Backup original environment variables that might be modified by tests
-ORIGINAL_ENV_BACKUP = {}
+ORIGINAL_ENV_BACKUP: dict[str, str | None] = {}
 
 
-def backup_env_vars(keys_to_backup):
+def backup_env_vars(keys_to_backup: list[str]) -> None:
     for key in keys_to_backup:
         if key in os.environ:
             ORIGINAL_ENV_BACKUP[key] = os.environ[key]
         elif key in ORIGINAL_ENV_BACKUP:
-            # If key was already backed up and then deleted from os.environ by a test,
-            # ensure its backed-up state reflects it's "not set" for subsequent restores.
+            # If key was already backed up and then deleted from os.environ by a test, # noqa: E501
+            # ensure its backed-up state reflects it's "not set" for subsequent restores. # noqa: E501
             # This might be overly cautious depending on test structure.
             del ORIGINAL_ENV_BACKUP[key]
 
 
-def restore_env_vars(keys_to_restore):
+def restore_env_vars(keys_to_restore: list[str]) -> None:
     for key in keys_to_restore:
         if key in ORIGINAL_ENV_BACKUP:
-            os.environ[key] = ORIGINAL_ENV_BACKUP[key]
+            assert ORIGINAL_ENV_BACKUP[key] is not None
+            os.environ[key] = ORIGINAL_ENV_BACKUP[key]  # type: ignore[assignment]
         elif key in os.environ:  # If it was set during test but not originally present
             del os.environ[key]
 
 
-def reinit_config():
-    """Just re-initializes RPCPluginConfig, assuming os.environ is already set as desired."""
+def reinit_config() -> RPCPluginConfig:
+    """Just re-initializes RPCPluginConfig, assuming os.environ is already set as desired."""  # noqa: E501
     RPCPluginConfig._instance = None
     return RPCPluginConfig.instance()
 
 
-def clear_all_known_plugin_env_vars():
+def clear_all_known_plugin_env_vars() -> None:
     """Clears all environment variables that correspond to CONFIG_SCHEMA keys."""
-    cleared_keys = []
+    cleared_keys: list[str] = []
     # Make sure CONFIG_SCHEMA is available (it's imported)
     for key in CONFIG_SCHEMA.keys():
         if key in os.environ:
@@ -58,7 +60,7 @@ logger.info("--- Testing configure() precedence over environment variables ---")
 env_var_key = "PLUGIN_HANDSHAKE_TIMEOUT"
 env_var_val_str = "25.5"
 configure_val = 15.0
-schema_default_val = float(CONFIG_SCHEMA[env_var_key]["default"])
+schema_default_val = float(CONFIG_SCHEMA[env_var_key]["default"])  # noqa: F841
 
 # Backup the state of env_var_key if it exists from a parent environment
 backup_env_vars([env_var_key])
@@ -73,7 +75,7 @@ logger.debug(f"Set {env_var_key}={os.environ[env_var_key]} in environment for te
 config = reinit_config()
 loaded_env_val = config.handshake_timeout()
 assert loaded_env_val == float(env_var_val_str), (
-    f"Config should reflect env var. Expected {float(env_var_val_str)}, got {loaded_env_val}"
+    f"Config should reflect env var. Expected {float(env_var_val_str)}, got {loaded_env_val}"  # noqa: E501
 )
 logger.info(f"Config correctly loaded from env: {env_var_key}={loaded_env_val}")
 
@@ -86,7 +88,7 @@ configure(handshake_timeout=configure_val)
 # rpcplugin_config is the global singleton instance, which configure() updates
 updated_config_val = rpcplugin_config.handshake_timeout()
 assert updated_config_val == configure_val, (
-    f"configure() should override env var. Expected {configure_val}, got {updated_config_val}"
+    f"configure() should override env var. Expected {configure_val}, got {updated_config_val}"  # noqa: E501
 )
 logger.info(
     f"configure() correctly overrode env var: {env_var_key}={updated_config_val}"
@@ -94,7 +96,7 @@ logger.info(
 
 # 4. Verify environment variable itself is unchanged by configure()
 assert os.environ[env_var_key] == env_var_val_str, (
-    f"Environment variable should remain unchanged. Expected {env_var_val_str}, got {os.environ[env_var_key]}"
+    f"Environment variable should remain unchanged. Expected {env_var_val_str}, got {os.environ[env_var_key]}"  # noqa: E501
 )
 logger.info(
     f"Environment variable correctly unchanged: {env_var_key}={os.environ[env_var_key]}"
@@ -106,7 +108,7 @@ del os.environ[env_var_key]  # Remove the one we set for the test
 # Restore original environment variables that were present before this script ran
 # And ensure config is reset based on that restored (or cleared) environment
 restore_env_vars(list(ORIGINAL_ENV_BACKUP.keys()))  # Restore all backed up
-clear_all_known_plugin_env_vars()  # Clear again to ensure clean state for next test section
+clear_all_known_plugin_env_vars()  # Clear again to ensure clean state for next test section # noqa: E501
 reinit_config()
 logger.info("--- Test `configure()` precedence: PASSED ---")
 
@@ -146,7 +148,7 @@ config = reinit_config()
 expected_list_int = [2, 3, 4]
 actual_list_int = config.get(key_protocol_versions)
 assert actual_list_int == expected_list_int, (
-    f"{key_protocol_versions} type conversion failed. Expected {expected_list_int}, got {actual_list_int}"
+    f"{key_protocol_versions} type conversion failed. Expected {expected_list_int}, got {actual_list_int}"  # noqa: E501
 )
 logger.info(
     f"{key_protocol_versions} type conversion to list_int: OK ({actual_list_int})"

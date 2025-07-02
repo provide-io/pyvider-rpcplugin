@@ -54,7 +54,7 @@ async def test_complete_implementation_methods() -> None:
     protocol = CompleteTestProtocol()
 
     # Test get_grpc_descriptors
-    descriptors, service_name = await protocol.get_grpc_descriptors() # Added await
+    descriptors, service_name = await protocol.get_grpc_descriptors()  # Added await
     assert service_name == "TestService"
     assert descriptors is not None
 

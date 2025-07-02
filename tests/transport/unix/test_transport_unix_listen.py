@@ -175,21 +175,26 @@ async def test_unix_listen_chmod_error(mocker, managed_unix_socket_path):
     # We'll check that listen still "succeeds" in setting up the endpoint.
     endpoint = await transport.listen()
     assert endpoint == managed_unix_socket_path
-    mock_chmod.assert_called_once() # Verify chmod was attempted
+    mock_chmod.assert_called_once()  # Verify chmod was attempted
 
     # Ensure the server object was stored
     assert transport._server == mock_server_instance
     await transport.close()
 
+
 @pytest.mark.asyncio
 async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     mocker.patch("os.makedirs", return_value=None)
-    mocker.patch("os.unlink", return_value=None) # Assume unlink works if file exists
-    mocker.patch("os.chmod", return_value=None) # Assume chmod works
-    mocker.patch("asyncio.start_unix_server", side_effect=OSError("start_unix_server failed"))
+    mocker.patch("os.unlink", return_value=None)  # Assume unlink works if file exists
+    mocker.patch("os.chmod", return_value=None)  # Assume chmod works
+    mocker.patch(
+        "asyncio.start_unix_server", side_effect=OSError("start_unix_server failed")
+    )
 
-    with pytest.raises(TransportError, match="Failed to create Unix socket: start_unix_server failed"):
+    with pytest.raises(
+        TransportError, match="Failed to create Unix socket: start_unix_server failed"
+    ):
         await transport.listen()
 
     # Ensure transport is cleaned up or in a state where close can be called safely
@@ -200,7 +205,7 @@ async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
 
 @pytest.mark.asyncio
 async def test_unix_listen_path_no_directory(mocker):
-    socket_name = "socket_in_cwd.sock" # A path without directory separators
+    socket_name = "socket_in_cwd.sock"  # A path without directory separators
     transport = UnixSocketTransport(path=socket_name)
 
     # Ensure that os.path.dirname(socket_name) would be empty
@@ -208,7 +213,9 @@ async def test_unix_listen_path_no_directory(mocker):
 
     mock_makedirs = mocker.patch("os.makedirs")
     # Mock other fs operations that might occur
-    mocker.patch("os.path.exists", return_value=False) # Assume socket does not exist initially
+    mocker.patch(
+        "os.path.exists", return_value=False
+    )  # Assume socket does not exist initially
     mocker.patch("os.unlink", return_value=None)
     mocker.patch("os.chmod", return_value=None)
 
@@ -217,14 +224,15 @@ async def test_unix_listen_path_no_directory(mocker):
 
     endpoint = await transport.listen()
     assert endpoint == socket_name
-    mock_makedirs.assert_not_called() # Key assertion: makedirs not called for empty dir_path
+    mock_makedirs.assert_not_called()  # Key assertion: makedirs not called for empty dir_path
 
     # Cleanup - ensure the socket file created in CWD (if any) is removed
     if os.path.exists(socket_name):
         try:
             os.unlink(socket_name)
         except OSError:
-             pass # Ignore if it's already gone or other issues during cleanup
+            pass  # Ignore if it's already gone or other issues during cleanup
     await transport.close()
+
 
 ### 🐍🏗🧪️

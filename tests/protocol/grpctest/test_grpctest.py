@@ -3,7 +3,7 @@
 import asyncio
 import pytest
 import pytest_asyncio
-from typing import AsyncGenerator # Added import
+from typing import AsyncGenerator  # Added import
 import grpc
 from google.protobuf import empty_pb2
 
@@ -77,7 +77,7 @@ async def grpc_channel(grpc_server: str) -> AsyncGenerator[grpc.aio.Channel, Non
     channel = grpc.aio.insecure_channel(grpc_server)
     await channel.channel_ready()
     yield channel
-    await channel.close()
+    await channel.close(grace=0.1)
 
 
 # Fixtures for the client stubs.

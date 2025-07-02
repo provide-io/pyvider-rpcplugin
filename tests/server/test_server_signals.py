@@ -10,6 +10,7 @@ from tests.conftest import (
     mock_server_handler,
 )
 
+
 @pytest.mark.asyncio
 async def test_register_signal_handlers_suppresses_errors(
     mocker,

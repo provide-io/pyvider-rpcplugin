@@ -6,14 +6,14 @@ Advanced Async Patterns - Best practices for async RPC operations.
 import asyncio
 from collections.abc import AsyncGenerator
 
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 configure_for_example()
 
-from pyvider.telemetry import logger
+from pyvider.telemetry import logger # noqa: E402
 
 
-async def concurrent_requests_example():
+async def concurrent_requests_example() -> None:
     """Example: Handling concurrent RPC requests."""
     logger.info("⚡ Concurrent Requests Example")
 
@@ -36,7 +36,7 @@ async def concurrent_requests_example():
     logger.info("✅ Concurrent requests completed")
 
 
-async def streaming_example():
+async def streaming_example() -> None:
     """Example: Async streaming patterns."""
     logger.info("📡 Streaming Example")
 
@@ -53,7 +53,7 @@ async def streaming_example():
     logger.info("✅ Streaming example completed")
 
 
-async def timeout_and_retry_example():
+async def timeout_and_retry_example() -> None:
     """Example: Timeout and retry patterns."""
     logger.info("⏱️  Timeout and Retry Example")
 
@@ -87,7 +87,7 @@ async def timeout_and_retry_example():
     logger.info("✅ Timeout and retry example completed")
 
 
-async def main():
+async def main() -> None:
     """Run async pattern examples."""
     logger.info("🚀 Advanced Async Patterns")
 

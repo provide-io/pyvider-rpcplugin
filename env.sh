@@ -284,9 +284,10 @@ if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-client" ]; then alias go-kv-client="'${GO_PL
 if [ -f "${GO_PLUGIN_BIN_DIR}/kv-go-server" ]; then alias go-kv-server="'${GO_PLUGIN_BIN_DIR}/kv-go-server'"; else echo_info "Go server alias not set."; fi
 export PLUGIN_SERVER_PATH=${PLUGIN_SERVER_PATH:-"${PY_KV_EXAMPLES_DIR}/py_kv_server.py"}
 
-# Prepend project's src directory to PYTHONPATH to ensure correct namespace package handling
-# This is crucial for pyvider.rpcplugin to be found correctly alongside pyvider.telemetry
-export PYTHONPATH="${ENV_SCRIPT_DIR_ABS}/src${PYTHONPATH:+:$PYTHONPATH}"
+# Prepend project's src directory and project root to PYTHONPATH
+# This helps MyPy find local packages like 'examples.example_utils' or 'examples.proto'
+# and ensures correct namespace package handling for 'pyvider'.
+export PYTHONPATH="${ENV_SCRIPT_DIR_ABS}:${ENV_SCRIPT_DIR_ABS}/src${PYTHONPATH:+:$PYTHONPATH}"
 echo_info "PYTHONPATH set to: $PYTHONPATH"
 
 echo_info "Environment setup script finished successfully."
