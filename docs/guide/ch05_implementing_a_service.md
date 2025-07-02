@@ -8,24 +8,24 @@ gRPC services are typically defined using Protocol Buffers (Protobufs). You crea
 
 **Example `echo.proto`:**
 ```protobuf
+// echo.proto
 syntax = "proto3";
 
-package echo; // Defines the package, useful for preventing name collisions.
+package echo;
 
-// The Echo service definition.
-service EchoService {
-  // Sends a message and receives the same message back.
-  rpc Echo (EchoRequest) returns (EchoResponse) {}
-}
-
-// The request message containing the message to be echoed.
+// The request message containing the text to echo
 message EchoRequest {
   string message = 1;
 }
 
-// The response message containing the echoed message.
+// The response message containing the echoed text
 message EchoResponse {
   string reply = 1;
+}
+
+// The service definition
+service EchoService {
+  rpc Echo(EchoRequest) returns (EchoResponse);
 }
 ```
 **Compilation:**

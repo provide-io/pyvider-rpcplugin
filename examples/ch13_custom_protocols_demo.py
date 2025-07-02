@@ -50,15 +50,15 @@ class CustomProtocol(RPCPluginProtocol):
 
     def add_middleware(self, middleware_factory: Callable[[Any], Any]) -> None:
         """Add middleware to the protocol."""
-        self.middleware_stack.append(middleware)
-        logger.info(f"➕ Added middleware: {middleware.__class__.__name__}")
+        self.middleware_factories.append(middleware_factory)
+        logger.info(f"➕ Added middleware factory: {middleware_factory.__name__ if hasattr(middleware_factory, '__name__') else middleware_factory}")
 
-    def _apply_middleware(self, handler):
+    def _apply_middleware(self, handler: Any) -> Any:
         """Apply middleware stack to handler."""
-        wrapped = handler
-        for middleware in reversed(self.middleware_stack):
-            wrapped = middleware(wrapped)
-        return wrapped
+        wrapped_handler = handler
+        for factory in reversed(self.middleware_factories):
+            wrapped_handler = factory(wrapped_handler)
+        return wrapped_handler
 
 
 class LoggingMiddleware:

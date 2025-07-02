@@ -27,13 +27,17 @@ from example_utils import configure_for_example
 
 configure_for_example()
 
-from pyvider.rpcplugin.exception import HandshakeError, TransportError, RPCPluginError # RPCPluginError added
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.exception import HandshakeError, RPCPluginError, TransportError # noqa: E402
+from pyvider.telemetry import logger # noqa: E402
 
-async def basic_client_example():
+
+async def basic_client_example() -> None:
+    """Example: Basic client connection."""
     logger.info("🔗 Basic Client Connection Example")
+
     # Note: This is conceptual - real usage requires an executable plugin
-    client_config = {"timeout": 10.0, "max_retries": 3} # Conceptual config options
+    client_config = {"timeout": 10.0, "max_retries": 3}
+
     logger.info("💡 Client configuration prepared")
     logger.info(f"📋 Config: {client_config}")
 
@@ -52,28 +56,45 @@ async def basic_client_example():
     # await client.close() # This stops the plugin and cleans up
     logger.info("✅ Basic client example completed (conceptual)")
 
-async def error_handling_example():
+
+async def error_handling_example() -> None:
+    """Example: Client error handling patterns."""
     logger.info("⚠️  Client Error Handling Example")
+
     try:
+        # Simulate client operations
         logger.info("🔄 Attempting client connection (simulated)...")
+
         # In a real scenario, client.start() might raise these:
         # raise TransportError("Simulated network issue during connection")
         # raise HandshakeError("Simulated authentication or handshake protocol failure")
         # raise RPCPluginError("A generic plugin system error during setup")
         logger.info("✅ Connection successful")
+
     except TransportError as e:
         logger.error(f"🚫 Transport error: {e}")
+        # Handle transport-specific errors
     except HandshakeError as e:
         logger.error(f"🤝 Handshake error: {e}")
-    except RPCPluginError as e: # Catching the base plugin error
+        # Handle authentication/handshake errors
+    except RPCPluginError as e:  # Catching the base plugin error
         logger.error(f"🔌 RPC Plugin System Error: {e}")
-    except Exception as e: # Catch any other unexpected errors
+    except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
+        # Handle other errors
+
     logger.info("✅ Error handling example completed")
 
-async def main():
+
+async def main() -> None:
+    """Run client connection examples."""
+    logger.info("🚀 Client Connection Examples")
+
     await basic_client_example()
     await error_handling_example()
+
+    logger.info("✅ All client examples completed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

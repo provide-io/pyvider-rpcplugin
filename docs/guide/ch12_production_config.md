@@ -40,136 +40,255 @@ When preparing your plugin and host application for production, focus on the fol
 
 ## Example: Production Configuration (`examples/ch12_production_config_discussion.py`)
 
-The `ch12_production_config_discussion.py` script discusses these production considerations conceptually and shows how some of these might be mapped to `pyvider.rpcplugin` settings using the `configure` function or by setting environment variables.
+The `ch12_production_config_discussion.py` script discusses these production considerations conceptually and shows how some of these might be mapped to `pyvider.rpcplugin` settings. The example code below demonstrates these concepts through several functions:
 
 ```python
 #!/usr/bin/env python3
 # examples/ch12_production_config_discussion.py
+"""
+Production Configuration - Production deployment patterns and configurations.
+"""
+
 import asyncio
 import json
-import os
-from typing import Any
-from example_utils import configure_for_example
+import os  # For environment_configuration example
+from typing import Any  # For type hinting dict
+
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 # Import pyvider.rpcplugin.configure for the new demonstration function
-from pyvider.rpcplugin import configure as pyvider_configure
 from pyvider.telemetry import logger
 
 # Apply base configuration for examples
-configure_for_example() # Sets up paths, basic logging for the example script itself.
+configure_for_example()
 
-async def production_server_config_display() -> None:
-    logger.info("🏭 Production Server Configuration (Conceptual Discussion)")
 
-    # This is a conceptual configuration structure a user might have for their application
-    conceptual_prod_config = {
-        "server_settings": { # Conceptual grouping
-            "max_workers": 50, # Example: for a thread pool if the app uses one
-            "max_concurrent_rpcs": 1000, # Example: for gRPC server options
+async def production_server_config() -> None:
+    """Example: Production server configuration."""
+    logger.info("🏭 Production Server Configuration")
+
+    config = {
+        "server": {
+            "max_workers": 50,
+            "max_concurrent_rpcs": 1000,
+            "keepalive_time": 30,
+            "keepalive_timeout": 5,
+            "max_connection_idle": 300,
+            "max_connection_age": 3600,
         },
-        "security_settings": {
-            "enable_mtls": True,
-            "ca_certificate_file": "/etc/pyvider/certs/ca.pem",
-            "server_certificate_file": "/etc/pyvider/certs/server.pem",
-            "server_private_key_file": "/etc/pyvider/keys/server.key",
-            "client_ca_for_server_verification": "/etc/pyvider/certs/client_ca.pem",
-            "expected_magic_cookie": "a-very-strong-production-secret-cookie-value"
+        "security": {
+            "mtls_enabled": True,
+            "ca_cert_path": "/etc/ssl/certs/ca.crt",
+            "server_cert_path": "/etc/ssl/certs/server.crt",
+            "server_key_path": "/etc/ssl/private/server.key",
+            "cipher_suites": [
+                "ECDHE-RSA-AES256-GCM-SHA384",
+                "ECDHE-RSA-AES128-GCM-SHA256",
+            ],
         },
-        "logging_monitoring": {
-            "log_level": "INFO", # Standard production log level
-            "enable_grpc_health_service": True,
-            "enable_rate_limiting": True,
-            "requests_per_second": 50.0,
-            "burst_capacity": 100.0
+        "monitoring": {
+            "metrics_enabled": True,
+            "health_check_interval": 30,
+            "log_level": "INFO",
+            "structured_logging": True,
         },
-        "transport_config": {
-            "type": "tcp", # e.g., TCP for network accessibility
-            "host": "0.0.0.0", # Listen on all interfaces (common in containers)
-            "port": 9090,
-            "handshake_timeout_seconds": 20.0,
-            "connection_timeout_seconds": 60.0
-        }
-    }
-    logger.info(f"📋 Conceptual Production Config:\n{json.dumps(conceptual_prod_config, indent=2)}")
-
-    # Now, let's show how these conceptual settings might map to pyvider.rpcplugin's
-    # configuration using the `pyvider_configure` function or by setting env vars.
-
-    pyvider_settings_to_apply = {
-        # From security_settings
-        "auto_mtls": conceptual_prod_config["security_settings"]["enable_mtls"],
-        "server_cert": f"file://{conceptual_prod_config['security_settings']['server_certificate_file']}",
-        "server_key": f"file://{conceptual_prod_config['security_settings']['server_private_key_file']}",
-        "client_root_certs": f"file://{conceptual_prod_config['security_settings']['client_ca_for_server_verification']}",
-        # For client-side to verify server, it would use a similar root cert:
-        # "server_root_certs": f"file://{conceptual_prod_config['security_settings']['ca_certificate_file']}",
-        "magic_cookie": conceptual_prod_config["security_settings"]["expected_magic_cookie"],
-
-        # From logging_monitoring
-        # Note: pyvider_configure takes kwargs for PLUGIN_ prefixed vars not in its direct signature
-        "PLUGIN_LOG_LEVEL": conceptual_prod_config["logging_monitoring"]["log_level"],
-        "PLUGIN_HEALTH_SERVICE_ENABLED": conceptual_prod_config["logging_monitoring"]["enable_grpc_health_service"],
-        "PLUGIN_RATE_LIMIT_ENABLED": conceptual_prod_config["logging_monitoring"]["enable_rate_limiting"],
-        "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": conceptual_prod_config["logging_monitoring"]["requests_per_second"],
-        "PLUGIN_RATE_LIMIT_BURST_CAPACITY": conceptual_prod_config["logging_monitoring"]["burst_capacity"],
-
-        # From transport_config
-        "transports": [conceptual_prod_config["transport_config"]["type"]], # Assuming server supports one type
-        "handshake_timeout": conceptual_prod_config["transport_config"]["handshake_timeout_seconds"],
-        "connection_timeout": conceptual_prod_config["transport_config"]["connection_timeout_seconds"],
-        # For server endpoint, it's usually dynamic or set via PLUGIN_SERVER_ENDPOINT
-        # For this example, we are showing how `pyvider_configure` might be used.
-        # If setting a static server endpoint:
-        # "PLUGIN_SERVER_ENDPOINT": f"{conceptual_prod_config['transport_config']['host']}:{conceptual_prod_config['transport_config']['port']}"
+        # The "0.0.0.0" host is illustrative for a production config;
+        # in a real deployment, this would be carefully considered for security.
+        "transport": {"type": "tcp", "host": "0.0.0.0", "port": 50051, "backlog": 128},  # nosec B104
     }
 
-    logger.info(f"🔧 Corresponding pyvider.rpcplugin settings via `configure()`:\n{json.dumps(pyvider_settings_to_apply, indent=2)}")
+    logger.info("📋 Production configuration:")
+    logger.info(json.dumps(config, indent=2))
+
+    logger.info("✅ Production server config example completed")
+
+
+async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) -> None:
+    """
+    Demonstrates applying parts of a conceptual config to pyvider.rpcplugin.
+    This is illustrative; in a real app, this logic would be more robust.
+    This version aligns with the structure shown in the ch12 documentation.
+    """
+    logger.info(
+        "🔧 Applying conceptual config to pyvider.rpcplugin settings (simplified mapping)..."
+    )
+
+    # Construct settings for pyvider_configure based on the conceptual_config
+    # This matches the simpler structure from the ch12 markdown.
+    pyvider_settings_to_apply: dict[str, Any] = {
+        "auto_mtls": conceptual_config.get("security", {}).get("mtls_enabled", False),
+        "server_cert": (
+            f"file://{conceptual_config.get('security', {}).get('server_cert_path', '')}"
+        ),
+        "server_key": (
+            f"file://{conceptual_config.get('security', {}).get('server_key_path', '')}"
+        ),
+        # For server-side, this would be client_root_certs for verifying clients
+        "client_root_certs": (
+            f"file://{conceptual_config.get('security', {}).get('ca_cert_path', '')}"
+        ),
+        # If configuring client-side, it would be server_root_certs:
+        # "server_root_certs": (
+        #     f"file://{conceptual_config.get('security', {}).get('ca_cert_path', '')}"
+        # ),
+        "magic_cookie": conceptual_config.get("security", {}).get(
+            "expected_magic_cookie", ""
+        ),
+        # Kwargs for pyvider_configure (will be prefixed with PLUGIN_ internally by it)
+        "LOG_LEVEL": conceptual_config.get("monitoring", {}).get("log_level", "INFO"),
+        "HEALTH_SERVICE_ENABLED": conceptual_config.get("monitoring", {}).get(
+            "enable_grpc_health_service", True
+        ),
+        "RATE_LIMIT_ENABLED": conceptual_config.get("monitoring", {}).get(
+            "enable_rate_limiting", False
+        ),
+        "RATE_LIMIT_REQUESTS_PER_SECOND": conceptual_config.get("monitoring", {}).get(
+            "requests_per_second", 100.0
+        ),
+        "RATE_LIMIT_BURST_CAPACITY": conceptual_config.get("monitoring", {}).get(
+            "burst_capacity", 200.0
+        ),
+        "server_transports": [
+            conceptual_config.get("transport", {}).get("type", "tcp")
+        ],
+        "handshake_timeout": conceptual_config.get("transport", {}).get(
+            "handshake_timeout_seconds", 10.0
+        ),
+        "connection_timeout": conceptual_config.get("transport", {}).get(
+            "connection_timeout_seconds", 30.0
+        ),
+        # Example for setting server endpoint if needed,
+        # passed as a PLUGIN_ prefixed kwarg
+        "SERVER_ENDPOINT": (
+            f"{conceptual_config.get('transport', {}).get('host', '0.0.0.0')}:"
+            f"{conceptual_config.get('transport', {}).get('port', 0)}"
+        ),  # nosec B104 # nosec B108
+    }
+
+    # Filter out settings with empty paths for certs/keys if mtls is false
+    if not pyvider_settings_to_apply.get("auto_mtls"):
+        for key in [
+            "server_cert",
+            "server_key",
+            "client_root_certs",
+            "server_root_certs",
+        ]:
+            if (
+                key in pyvider_settings_to_apply
+                and pyvider_settings_to_apply[key] == "file://"
+            ):
+                del pyvider_settings_to_apply[key]
+
+    logger.info(
+        f"  Calling pyvider_configure with: "
+        f"{json.dumps(pyvider_settings_to_apply, indent=2)}"
+    )
     # In a real app, you'd call:
-    # pyvider_configure(**pyvider_settings_to_apply)
-    # This would update the global rpcplugin_config singleton.
-    # RPCPluginServer and RPCPluginClient instances created afterwards would use these.
-    logger.info("✅ Production server config mapping demonstration completed.")
+    from pyvider.rpcplugin import configure as pyvider_configure # Ensure import
+    pyvider_configure(**pyvider_settings_to_apply)
+    logger.info(
+        "  Called pyvider.rpcplugin.configure() with mapped settings."
+    )
+
+    logger.info("✅ Illustrative application of conceptual config completed.")
 
 
-async def environment_configuration_demo():
-    logger.info("🌍 Environment Configuration Demonstration")
-    logger.info("   In production, you would typically set these via your deployment system:")
-    logger.info("   export PLUGIN_LOG_LEVEL=INFO")
-    logger.info("   export PLUGIN_AUTO_MTLS=True")
-    logger.info("   export PLUGIN_SERVER_CERT=\"file:///etc/ssl/certs/server.crt\"")
-    logger.info("   export PLUGIN_SERVER_KEY=\"file:///etc/ssl/private/server.key\"")
-    logger.info("   export PLUGIN_CLIENT_ROOT_CERTS=\"file:///etc/ssl/certs/ca.crt\"")
-    logger.info("   export PLUGIN_MAGIC_COOKIE_KEY=\"MYAPP_PLUGIN_AUTH_TOKEN\"")
-    logger.info("   export PLUGIN_MAGIC_COOKIE_VALUE=\"super-secret-prod-cookie\"")
-    logger.info("   # ... and so on for other relevant PLUGIN_ variables.")
-    logger.info("✅ Environment configuration demonstration completed.")
+async def environment_configuration() -> None:
+    """Example: Environment-based configuration."""
+    logger.info("🌍 Environment Configuration")
 
-async def deployment_checklist_display(): # Renamed
-    logger.info("📋 Production Deployment Checklist (Conceptual)")
+    # `os` module imported at the top of the file.
+    # Environment-based settings
+    env_config = {
+        "PYVIDER_LOG_LEVEL": os.getenv("PYVIDER_LOG_LEVEL", "INFO"),
+        "PYVIDER_METRICS_ENABLED": os.getenv("PYVIDER_METRICS_ENABLED", "true").lower()
+        == "true",
+        "PYVIDER_MAX_WORKERS": int(os.getenv("PYVIDER_MAX_WORKERS", "10")),
+        "PYVIDER_TLS_CERT_PATH": os.getenv(
+            "PYVIDER_TLS_CERT_PATH", "/etc/ssl/certs/server.crt"
+        ),
+        "PYVIDER_TLS_KEY_PATH": os.getenv(
+            "PYVIDER_TLS_KEY_PATH", "/etc/ssl/private/server.key"
+        ),
+    }
+
+    logger.info("🔧 Environment configuration:")
+    for key, value in env_config.items():
+        logger.info(f"  {key}: {value}")
+
+    logger.info("✅ Environment configuration example completed")
+
+
+async def deployment_checklist() -> None:
+    """Production deployment checklist."""
+    logger.info("📋 Production Deployment Checklist")
+
     checklist = [
-        "Secure mTLS: CA, Server, Client certificates & keys properly configured and secured.",
-        "Strong Magic Cookie: Unique and securely managed `PLUGIN_MAGIC_COOKIE_VALUE`.",
-        "Appropriate Transport: Unix Sockets for local, TCP for network; firewall rules for TCP.",
-        "Logging: `PLUGIN_LOG_LEVEL` set to INFO/WARNING; integrated with central logging.",
-        "Timeouts: `PLUGIN_HANDSHAKE_TIMEOUT`, `PLUGIN_CONNECTION_TIMEOUT` tuned.",
-        "Resource Limits: CPU/memory for plugin processes set in orchestrator.",
-        "Health Checks: `PLUGIN_HEALTH_SERVICE_ENABLED=True`; probes configured.",
-        "Rate Limiting: Configured if plugin is exposed to high/untrusted traffic.",
-        "Configuration Management: Securely manage all `PLUGIN_` variables.",
-        "Plugin Packaging: Plugin packaged as a reliable executable.",
-        "Orchestration: Plugin lifecycle (start, stop, restart) managed.",
+        "🔒 TLS/mTLS certificates configured and valid",
+        "🔑 Private keys secured with proper permissions",
+        "🌐 Firewall rules configured for required ports",
+        "📊 Monitoring and alerting configured",
+        "📝 Log aggregation configured",
+        "🔄 Health checks implemented",
+        "📈 Resource limits configured",
+        "🚀 Graceful shutdown handling",
+        "🔧 Configuration management in place",
+        "🧪 Load testing completed",
+        "📚 Runbooks and documentation updated",
+        "🔒 Security audit completed",
     ]
-    for item in checklist: logger.info(f"  [ ] {item}")
-    logger.info("✅ Deployment checklist review completed.")
 
-async def main():
-    await production_server_config_display()
-    await environment_configuration_demo()
-    await deployment_checklist_display()
-    logger.info("✅ All production configuration examples completed.")
+    for item in checklist:
+        logger.info(f"  {item}")
+
+    logger.info("✅ Deployment checklist review completed")
+
+
+async def main() -> None:
+    """Run production configuration examples."""
+    logger.info("🚀 Production Configuration Examples")
+
+    conceptual_config_data: dict[str, Any] = {
+        "server": {
+            "max_workers": 50,
+            "max_concurrent_rpcs": 1000,
+            "keepalive_time": 30,
+            "keepalive_timeout": 5,
+            "max_connection_idle": 300,
+            "max_connection_age": 3600,
+        },
+        "security": {
+            "mtls_enabled": True,
+            "ca_cert_path": "/etc/ssl/certs/ca.crt",
+            "server_cert_path": "/etc/ssl/certs/server.crt",
+            "server_key_path": "/etc/ssl/private/server.key",
+            "cipher_suites": [
+                "ECDHE-RSA-AES256-GCM-SHA384",
+                "ECDHE-RSA-AES128-GCM-SHA256",
+            ],
+        },
+        "monitoring": {
+            "metrics_enabled": True,
+            "health_check_interval": 30,
+            "log_level": "DEBUG",  # Changed for demo
+            "structured_logging": True,
+        },
+        # The "0.0.0.0" host is illustrative for a production config;
+        # in a real deployment, this would be carefully considered for security.
+        "transport": {"type": "tcp", "host": "0.0.0.0", "port": 50051, "backlog": 128},  # nosec B104
+    }
+    await production_server_config()
+    await apply_conceptual_config_to_pyvider(conceptual_config_data)
+    await environment_configuration()
+    await deployment_checklist()
+
+    logger.info("✅ All production examples completed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 🐍🏭
 ```
 
 **Deployment Strategies:**

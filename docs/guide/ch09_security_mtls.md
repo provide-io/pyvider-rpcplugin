@@ -47,13 +47,15 @@ from pyvider.rpcplugin import RPCPluginClient, RPCPluginError, configure, plugin
 from pyvider.rpcplugin.crypto import Certificate
 from pyvider.telemetry import logger
 
-# We call pyvider.rpcplugin.configure directly for mTLS settings later
-# so global configure_for_example() isn't strictly needed here for that,
-# but it can set up paths or initial logging if desired.
-# For clarity, this example will manage its own mTLS config explicitly.
+# Apply base configuration for examples (paths, logging)
+# Client context, clear its own env before specific mTLS config.
+configure_for_example(clear_env=True)
+
 
 async def functional_mtls_example() -> None:
+    """Functional example of mTLS configuration and operation."""
     logger.info("🔒🐍 Functional mTLS Configuration Example")
+
     temp_dir_obj = tempfile.TemporaryDirectory(prefix="pyvider_mtls_example_")
     temp_dir_path = Path(temp_dir_obj.name)
     logger.info(f"🔑 Created temporary directory for certificates: {temp_dir_path}")
@@ -61,66 +63,80 @@ async def functional_mtls_example() -> None:
     try:
         # 1. Generate Certificates
         logger.info("🔑 Generating CA, Server, and Client certificates...")
-        ca_cert = Certificate.create_ca(
-            common_name="ExampleTestCA",
-            organization_name="Pyvider Test Org",
-            validity_days=1
+        ca_cert_obj = Certificate.create_ca(
+            common_name="Example Corp CA",
+            organization_name="Pyvider Example Corp",
+            validity_days=1,
         )
         server_cert_obj = Certificate.create_signed_certificate(
-            ca_certificate=ca_cert,
-            common_name="test-server.example.internal",
-            organization_name="Pyvider Test Servers",
-            alt_names=["localhost", "127.0.0.1"], # Important for server cert validation
-            is_client_cert=False, # This is a server certificate
-            validity_days=1
+            ca_certificate=ca_cert_obj,
+            common_name="mtls-server.example.com",
+            organization_name="Pyvider Example Corp Servers",
+            alt_names=["localhost", "127.0.0.1"],
+            is_client_cert=False,
+            validity_days=1,
         )
         client_cert_obj = Certificate.create_signed_certificate(
-            ca_certificate=ca_cert,
-            common_name="test-client.example.internal",
-            organization_name="Pyvider Test Clients",
-            is_client_cert=True, # This is a client certificate
-            validity_days=1
+            ca_certificate=ca_cert_obj,
+            common_name="mtls-client.example.com",
+            organization_name="Pyvider Example Corp Clients",
+            is_client_cert=True,
+            validity_days=1,
         )
 
-        # Save certificates to temporary files
-        ca_cert_path = temp_dir_path / "ca.crt"
-        server_cert_path = temp_dir_path / "server.crt"
-        server_key_path = temp_dir_path / "server.key"
-        client_cert_path = temp_dir_path / "client.crt"
-        client_key_path = temp_dir_path / "client.key"
+        # Get PEM strings directly
+        ca_cert_pem = ca_cert_obj.cert
+        client_cert_pem = client_cert_obj.cert
+        client_key_pem = client_cert_obj.key
+        server_cert_pem = server_cert_obj.cert
+        server_key_pem = server_cert_obj.key
 
-        ca_cert_path.write_text(ca_cert.cert)
-        server_cert_path.write_text(server_cert_obj.cert)
-        server_key_path.write_text(server_cert_obj.key) # Assumes key is not None
-        client_cert_path.write_text(client_cert_obj.cert)
-        client_key_path.write_text(client_cert_obj.key) # Assumes key is not None
-        logger.info(f"🔑 Certificates saved to {temp_dir_path}")
+        assert client_key_pem is not None, "Client key PEM is None"
+        assert server_key_pem is not None, "Server key PEM is None"
+
+        # Save to temp files primarily for the server subprocess
+        server_cert_file_path = temp_dir_path / "server.crt"
+        server_key_file_path = temp_dir_path / "server.key"
+        # This CA is for server to verify client, and client to verify server
+        ca_file_path_for_server_to_verify_client = temp_dir_path / "ca_for_server.crt"
+
+        server_cert_file_path.write_text(server_cert_pem)
+        server_key_file_path.write_text(server_key_pem)
+        ca_file_path_for_server_to_verify_client.write_text(ca_cert_pem)
+        logger.info(f"🔑 Server-related certificates saved to {temp_dir_path}")
 
         # 2. Configure Client-Side mTLS (for this script's RPCPluginClient instance)
-        # These settings will apply to the RPCPluginClient created by plugin_client()
+        #    using direct PEM strings.
         client_magic_cookie_key = "PYVIDER_MTLS_EXAMPLE_COOKIE"
         client_magic_cookie_value = "mtls-is-super-secure-123"
 
         configure(
-            auto_mtls=True,  # Enable mTLS for the client
-            client_cert=f"file://{client_cert_path}",
-            client_key=f"file://{client_key_path}",
-            server_root_certs=f"file://{ca_cert_path}", # Client trusts CAs that signed server cert
-            magic_cookie_key=client_magic_cookie_key, # Server will expect cookie via this env var name
-            magic_cookie=client_magic_cookie_value    # Client will pass this cookie value
+            auto_mtls=True,
+            client_cert=client_cert_pem,  # Pass PEM string
+            client_key=client_key_pem,  # Pass PEM string
+            server_root_certs=ca_cert_pem, # Client trusts this CA for server cert
+            magic_cookie_key=client_magic_cookie_key,
+            magic_cookie=client_magic_cookie_value,
+            handshake_timeout=30.0,
+            connection_timeout=25.0,
         )
-        logger.info("🔧 Client-side mTLS configured programmatically using global rpcplugin_config.")
+        logger.info(
+            "🔧 Client-side mTLS configured programmatically using PEM strings via configure()."
+        )
 
-        # 3. Prepare Environment Variables for the Server Subprocess
-        # These will be passed when RPCPluginClient launches the ch02_dummy_server.py executable.
+        # 3. Prepare Environment for Server Subprocess
+        # Server subprocess will need file paths.
         server_env_vars = {
-            "PLUGIN_AUTO_MTLS": "True", # Instruct server to use mTLS
-            "PLUGIN_SERVER_CERT": f"file://{server_cert_path}",
-            "PLUGIN_SERVER_KEY": f"file://{server_key_path}",
-            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_path}", # Server trusts CAs that signed client cert
-            client_magic_cookie_key: client_magic_cookie_value, # Server expects this cookie
-            "PLUGIN_LOG_LEVEL": "DEBUG", # For verbose server logs during testing
-            "PLUGIN_HANDSHAKE_TIMEOUT": "20.0", # Generous handshake timeout
+            "PLUGIN_AUTO_MTLS": "True",
+            "PLUGIN_SERVER_CERT": f"file://{server_cert_file_path}",
+            "PLUGIN_SERVER_KEY": f"file://{server_key_file_path}",
+            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_file_path_for_server_to_verify_client}", # Server trusts this CA for client cert
+            client_magic_cookie_key: client_magic_cookie_value, # Actual cookie env var for server
+            "PLUGIN_MAGIC_COOKIE_KEY": client_magic_cookie_key, # Server's config for which key to read
+            "PLUGIN_MAGIC_COOKIE_VALUE": client_magic_cookie_value, # Server's config for expected value
+            "PLUGIN_LOG_LEVEL": "DEBUG",
+            "PLUGIN_HANDSHAKE_TIMEOUT": "25.0", # Server handshake timeout
+            "PLUGIN_CONNECTION_TIMEOUT": "20.0", # Server connection timeout
         }
 
         # 4. Launch Server and Connect Client

@@ -19,44 +19,40 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
-import grpc
+import grpc # noqa: E402
 
 # Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.telemetry import logger # Changed from standard logging
+from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402
 
 # Import generated protobuf code for Echo service
 # Assumes 'examples' is in PYTHONPATH or you run from project root.
-from examples.proto import echo_pb2, echo_pb2_grpc
+from examples.proto import echo_pb2, echo_pb2_grpc # noqa: E402
 
 class EchoClient:
-    server_script_path: str # Path to the echo server executable
+    server_script_path: str  # Path to the echo server executable
     _client: RPCPluginClient | None = None
     _stub: echo_pb2_grpc.EchoServiceStub | None = None
     client_config: dict[str, Any]
 
     def __init__(self, server_script_path: str) -> None:
+        from pyvider.rpcplugin import rpcplugin_config  # For reading client's config
+
         self.server_script_path = server_script_path
         # Environment variables for the ch05_echo_server.py subprocess.
         # These must match what ch05_echo_server.py expects for its handshake.
-        # The configure_for_example() in the client's main execution block sets the
-        # client's expected magic cookie value to "pyvider-example-cookie".
-        # So, we configure the server subprocess to also use this value.
+        # The client's `configure_for_example()` sets the client's own config
+        # for MAGIC_COOKIE_KEY and MAGIC_COOKIE_VALUE.
+        # RPCPluginClient._launch_process will use these to set the env var for the server.
+        # For this example, we explicitly define what the server process should receive,
+        # mirroring the client's configuration for clarity.
         self.client_config = {"env": {
-            # The server will read its PLUGIN_MAGIC_COOKIE_KEY from its env (or use its default from config).
-            # The client sets this specific env var for the server.
-            # configure_for_example() sets the client's config to use "PYVIDER_PLUGIN_MAGIC_COOKIE" as the key.
-            "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE",
-            # This value is what the server will use in its handshake string.
-            # It must match what the client's rpcplugin_config.magic_cookie_value() expects.
-            "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",
-            # Other env vars like PLUGIN_AUTO_MTLS can be set here if needed
-            # configure_for_example() sets PLUGIN_AUTO_MTLS to False by default for examples.
+            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
+            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
+            # Set AUTO_MTLS for server based on client's config for consistency in example
+            "PLUGIN_AUTO_MTLS": str(rpcplugin_config.auto_mtls_enabled()).lower()
         }}
-        # If the server is expected to run with specific pyvider config, set them here too.
-        # e.g., if server needs PLUGIN_LOG_LEVEL for its pyvider.telemetry.logger
-        # self.client_config["env"]["PLUGIN_LOG_LEVEL"] = "DEBUG"
-
 
     async def start(self) -> bool:
         logger.info(f"Attempting to launch and connect to server: {self.server_script_path}")

@@ -12,20 +12,12 @@ import example_utils  # type: ignore[import-not-found]
 
 example_utils.configure_for_example(clear_env=True)  # Client context
 
-# ---- START DIAGNOSTIC ----
-# Manually ensure project root is in sys.path for this specific import
-_project_root_diag = Path(__file__).resolve().parent.parent
-if str(_project_root_diag) not in sys.path:
-    sys.path.insert(0, str(_project_root_diag))
-# print(f"CH07_ECHO_CLIENT SYS.PATH: {sys.path}")
-# ---- END DIAGNOSTIC ----
-
 import grpc # noqa: E402
 
 # Import pyvider components first, then specific example modules
 from examples.proto import echo_pb2, echo_pb2_grpc # noqa: E402
 from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402 # Changed from standard logging
+from pyvider.telemetry import logger  # noqa: E402
 
 
 class EchoClient:
@@ -35,25 +27,23 @@ class EchoClient:
     client_config: dict[str, Any]
 
     def __init__(self, server_script_path: str) -> None:
-        from pyvider.rpcplugin import rpcplugin_config  # Import for default log level
+        from pyvider.rpcplugin import rpcplugin_config  # For reading client's config
 
         self.server_script_path = server_script_path
-        # The client's `example_utils.configure_for_example(clear_env=True)`
-        # sets up the client's rpcplugin_config.
-        # `RPCPluginClient._launch_process` will use these client-side config
-        # values (PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE)
-        # to set the correct environment variable for the server.
-        # The server (`ch05_echo_server.py`), also calling
-        # `configure_for_example(clear_env=False)`, will have matching
-        # default expectations for these key and value from its own config.
-        # Thus, no specific "env" overrides are needed here for the cookie.
-        self.client_config = {
-            "env": {
-                # Propagate the client's log level to the server for example
-                # consistency. Uses the client's current rpcplugin_config log level.
-                "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO")
-            }
-        }
+        # Environment variables for the ch05_echo_server.py subprocess.
+        # These must match what ch05_echo_server.py expects for its handshake.
+        # The client's `configure_for_example()` sets the client's own config
+        # for MAGIC_COOKIE_KEY and MAGIC_COOKIE_VALUE.
+        # RPCPluginClient._launch_process will use these to set the env var for the server.
+        # For this example, we explicitly define what the server process should receive,
+        # mirroring the client's configuration for clarity.
+        self.client_config = {"env": {
+            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
+            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
+            # Set AUTO_MTLS for server based on client's config for consistency in example
+            "PLUGIN_AUTO_MTLS": str(rpcplugin_config.auto_mtls_enabled()).lower()
+        }}
 
     async def start(self) -> bool:
         logger.info(

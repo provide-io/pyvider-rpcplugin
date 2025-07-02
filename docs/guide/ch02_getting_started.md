@@ -70,20 +70,18 @@ from pyvider.telemetry import logger
 
 class DummyHandler:
     async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
-        logger.info("DummyHandler: NoOp called")
+        logger.info("DummyHandler: NoOp called (not expected in basic client launch)")
         return {}
 
 async def main() -> None:
     logger.info("🚀 ch02_dummy_server.py: Starting as an executable plugin...")
-    # configure_for_example() at module level sets default magic cookie and disables mTLS.
-    # The launching client is expected to set the correct magic cookie environment variable.
-    protocol: TypesRPCPluginProtocol = plugin_protocol() # Uses BasicRPCPluginProtocol
+    protocol: TypesRPCPluginProtocol = plugin_protocol()
     handler = DummyHandler()
     server: RPCPluginServer = plugin_server(protocol=protocol, handler=handler)
 
     try:
         logger.info("Dummy server attempting to start and serve (will print handshake)...")
-        await server.serve() # Prints handshake to stdout, then serves.
+        await server.serve()
         logger.info("Dummy server finished serving.")
     except KeyboardInterrupt: # pragma: no cover
         logger.info("Dummy server stopped by user.")
@@ -110,15 +108,18 @@ Now, let's examine the client application (`ch02_quick_start_client.py`) that wi
 ```python
 #!/usr/bin/env python3
 # examples/ch02_quick_start_client.py
+"""
+Quick Start Example - Client launching an executable plugin server.
+"""
 import asyncio
 import sys
 from pathlib import Path
 from example_utils import configure_for_example
 
-configure_for_example() # Sets up paths and client-side default config
+configure_for_example(clear_env=True) # Client context
 
 from pyvider.rpcplugin import plugin_client
-from pyvider.rpcplugin.client.base import RPCPluginClient
+from pyvider.rpcplugin.client.base import RPCPluginClient # Retaining for clarity if user inspects client object
 from pyvider.rpcplugin.exception import RPCPluginError
 from pyvider.telemetry import logger
 
@@ -126,20 +127,20 @@ async def main():
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")
     example_dir = Path(__file__).resolve().parent
     dummy_server_executable = example_dir / "ch02_dummy_server.py"
+
+    if not dummy_server_executable.exists(): # Good practice check
+        logger.error(f"Dummy server executable not found at: {dummy_server_executable}")
+        return
+
     dummy_server_command = [sys.executable, str(dummy_server_executable)]
-
-    # configure_for_example() sets client-side config (e.g., magic cookie values to *send*).
-    # The plugin_client factory reads this config and sets the necessary
-    # environment variable (e.g., PYVIDER_PLUGIN_MAGIC_COOKIE="pyvider-example-cookie")
-    # for the dummy_server_command process it launches.
-
     client: RPCPluginClient | None = None
+
     try:
         logger.info(f"Client launching plugin: {' '.join(dummy_server_command)}")
         client = plugin_client(command=dummy_server_command)
 
         logger.info("Starting client and connecting to plugin...")
-        await client.start() # Launches subprocess, performs handshake, establishes connection.
+        await client.start()
 
         logger.info("✅ Client connected to dummy_server plugin successfully!")
         logger.info("   The dummy_server uses a basic protocol with no custom RPC methods.")
@@ -158,9 +159,9 @@ async def main():
     finally:
         if client and client.is_started:
             logger.info("Shutting down client and plugin...")
-            await client.close() # Stops the server executable too
+            await client.close()
             logger.info("Client and plugin shut down.")
-        elif client:
+        elif client: # Handle case where client was instantiated but not started
             await client.close()
             logger.info("Client (not started) resources cleaned up.")
 

@@ -40,141 +40,204 @@ The `ch14_performance_tuning_concepts.py` example script demonstrates several ge
 ```python
 #!/usr/bin/env python3
 # examples/ch14_performance_tuning_concepts.py
+"""
+Performance Tuning - Performance benchmarking and optimization patterns.
+"""
+
 import asyncio
 import time
+from typing import Any  # Import Any
 import sys # For sys.getsizeof
-from typing import Any # For type hints
-from example_utils import configure_for_example
-configure_for_example() # Basic example setup
-from pyvider.telemetry import logger
+
+from example_utils import configure_for_example  # type: ignore[import-not-found]
+
+configure_for_example()
+
+from pyvider.telemetry import logger # noqa: E402
+
 
 class PerformanceMonitor:
     """Simple performance monitoring utility."""
-    def __init__(self):
-        self.metrics: dict[str, dict[str, Any]] = {} # Added type hint
 
-    def start_timer(self, name: str) -> None: # Added type hint
+    def __init__(self) -> None:
+        self.metrics: dict[str, dict[str, Any]] = {}
+
+    def start_timer(self, name: str) -> None:
+        """Start timing an operation."""
         self.metrics[name] = {"start": time.perf_counter()}
 
-    def end_timer(self, name: str) -> None: # Added type hint
+    def end_timer(self, name: str) -> None:
+        """End timing an operation."""
         if name in self.metrics:
             end_time = time.perf_counter()
             self.metrics[name]["duration"] = end_time - self.metrics[name]["start"]
 
     def get_duration(self, name: str) -> float:
+        """Get duration of a timed operation."""
         return self.metrics.get(name, {}).get("duration", 0.0)
 
-    def report(self) -> None: # Added type hint
+    def report(self) -> None:
+        """Report performance metrics."""
         logger.info("📊 Performance Report:")
         for name, data in self.metrics.items():
             if "duration" in data:
                 logger.info(f"  ⏱️  {name}: {data['duration']:.3f}s")
 
-async def connection_pooling_example(): # Conceptual for this library
-    logger.info("🏊 Connection Pooling Example (Conceptual for RPC Plugins)")
-    # In a typical pyvider.rpcplugin setup, RPCPluginClient manages a single
-    # persistent connection to its plugin. Connection pooling is more relevant
-    # if a single application were acting as a client to many different services
-    # or a traditional database.
-    # For plugins, if you have many host processes talking to one plugin server,
-    # the gRPC server within the plugin handles concurrent connections.
-    logger.info("   (Note: RPCPluginClient typically manages one main connection per plugin instance.)")
-    logger.info("✅ Connection pooling concept discussed.")
 
-async def batch_processing_example():
+async def connection_pooling_example() -> None:
+    """Example: Connection pooling optimization."""
+    logger.info("🏊 Connection Pooling Example")
+
+    class MockConnectionPool:
+        def __init__(self, pool_size: int = 10) -> None:
+            self.pool_size = pool_size
+            self.connections: list[Any] = []
+            self.active_connections = 0
+
+        async def get_connection(self) -> Any:
+            """Get connection from pool."""
+            if self.active_connections < self.pool_size:
+                self.active_connections += 1
+                connection_id = f"conn_{self.active_connections}"
+                logger.info(f"🔌 Created new connection: {connection_id}")
+                return connection_id
+            else:
+                await asyncio.sleep(0.01)  # Wait for available connection
+                return await self.get_connection()
+
+        async def release_connection(self, connection_id: str) -> None:
+            """Release connection back to pool."""
+            logger.info(f"🔓 Released connection: {connection_id}")
+            self.active_connections -= 1
+
+    pool = MockConnectionPool(pool_size=5)
+    monitor = PerformanceMonitor()
+
+    # Test connection pooling performance
+    monitor.start_timer("connection_test")
+
+    tasks = []
+    for i in range(10):
+
+        async def use_connection(request_id: int) -> str:
+            conn = await pool.get_connection()
+            await asyncio.sleep(0.1)  # Simulate work
+            await pool.release_connection(conn) # Assuming conn is the id str
+            return f"Request {request_id} completed"
+
+        tasks.append(use_connection(i))
+
+    results = await asyncio.gather(*tasks)
+    monitor.end_timer("connection_test")
+
+    logger.info(f"✅ Processed {len(results)} requests")
+    monitor.report()
+
+
+async def batch_processing_example() -> None:
+    """Example: Batch processing optimization."""
     logger.info("📦 Batch Processing Example")
-    async def process_single_item(item: str) -> str: # Added type hint
-        await asyncio.sleep(0.01) # Simulate processing overhead for a single item
+
+    async def process_single_item(item: str) -> str:
+        """Process a single item (inefficient)."""
+        await asyncio.sleep(0.01)  # Simulate processing overhead
         return f"processed_{item}"
 
-    async def process_batch(items: list[str]) -> list[str]: # Added type hint
-        await asyncio.sleep(0.05) # Simulate a slightly larger overhead for batch setup
-        # In a real scenario, processing items in a batch might be much faster
-        # per item due to reduced fixed overheads (e.g., one DB call for many items).
+    async def process_batch(items: list[str]) -> list[str]:
+        """Process items in batch (efficient)."""
+        await asyncio.sleep(0.05)  # Simulate batch processing overhead
         return [f"batch_processed_{item}" for item in items]
 
-    items_to_process = [f"item_{i}" for i in range(100)]
+    items = [f"item_{i}" for i in range(100)]
     monitor = PerformanceMonitor()
 
     # Test single item processing
-    monitor.start_timer("single_item_processing_total")
+    monitor.start_timer("single_processing")
     single_results = []
-    for item in items_to_process:
+    for item in items:
         result = await process_single_item(item)
         single_results.append(result)
-    monitor.end_timer("single_item_processing_total")
+    monitor.end_timer("single_processing")
 
     # Test batch processing
-    monitor.start_timer("batch_item_processing_total")
+    monitor.start_timer("batch_processing")
     batch_size = 10
     batch_results = []
-    for i in range(0, len(items_to_process), batch_size):
-        current_batch = items_to_process[i : i + batch_size]
-        results_from_batch = await process_batch(current_batch)
-        batch_results.extend(results_from_batch)
-    monitor.end_timer("batch_item_processing_total")
+    for i in range(0, len(items), batch_size):
+        batch = items[i : i + batch_size]
+        results = await process_batch(batch)
+        batch_results.extend(results)
+    monitor.end_timer("batch_processing")
 
-    logger.info(f"📊 Processed {len(single_results)} items individually.")
-    logger.info(f"📊 Processed {len(batch_results)} items in batches of {batch_size}.")
+    logger.info(f"📊 Single processing: {len(single_results)} items")
+    logger.info(f"📊 Batch processing: {len(batch_results)} items")
     monitor.report()
 
-    single_duration = monitor.get_duration("single_item_processing_total")
-    batch_duration = monitor.get_duration("batch_item_processing_total")
-    if batch_duration > 0 and single_duration > 0:
-        speedup = single_duration / batch_duration
-        logger.info(f"🚀 Illustrative batch processing speedup: {speedup:.2f}x (depends heavily on actual work)")
-    logger.info("✅ Batch processing example completed.")
+    # Calculate speedup
+    single_duration = monitor.get_duration("single_processing")
+    batch_duration = monitor.get_duration("batch_processing")
+    speedup = single_duration / batch_duration if batch_duration > 0 else 0
+    logger.info(f"🚀 Batch processing speedup: {speedup:.2f}x")
+
+from collections.abc import Generator # Added for create_generator
+
+async def memory_optimization_example() -> None:
+    """Example: Memory optimization techniques."""
+    logger.info("💾 Memory Optimization Example")
+
+    # Generator vs list comparison
+    def create_large_list(size: int) -> list[str]:
+        """Create large list (memory intensive)."""
+        return [f"item_{i}" for i in range(size)]
+
+    def create_generator(size: int) -> Generator[str, None, None]:
+        """Create generator (memory efficient)."""
+        for i in range(size):
+            yield f"item_{i}"
+
+    size = 10000
+
+    # Measure list memory usage
+    list_data = create_large_list(size)
+    list_size = sys.getsizeof(list_data)
+    logger.info(f"📊 List memory usage: {list_size:,} bytes")
+
+    # Measure generator memory usage
+    gen_data = create_generator(size)
+    gen_size = sys.getsizeof(gen_data)
+    logger.info(f"📊 Generator memory usage: {gen_size:,} bytes")
+
+    memory_savings = list_size - gen_size
+    logger.info(
+        f"💰 Memory savings: {memory_savings:,} bytes "
+        f"({memory_savings / list_size * 100:.1f}%)"
+    )
+
+    logger.info("✅ Memory optimization example completed")
 
 
-async def memory_optimization_example():
-    logger.info("💾 Memory Optimization Example (Generators vs Lists)")
-    size = 100_000 # A larger size to better see memory differences
+async def main() -> None:
+    """Run performance tuning examples."""
+    logger.info("🚀 Performance Tuning Examples")
 
-    def create_large_list(n: int) -> list[str]:
-        return [f"item_detail_{i}" for i in range(n)]
-
-    def create_generator(n: int): # Yields str
-        for i in range(n):
-            yield f"item_detail_{i}"
-
-    # Measure list memory usage (approximate)
-    large_list = create_large_list(size)
-    list_memory_size = sys.getsizeof(large_list)
-    # For a more accurate measure of deep content, one might iterate and sum sizes,
-    # but getsizeof on the list container itself gives a basic idea.
-    logger.info(f"📊 Approximate memory for list of {size} strings: {list_memory_size:,} bytes")
-    del large_list # Free memory
-
-    # Measure generator memory usage (approximate for the generator object itself)
-    generator_obj = create_generator(size)
-    generator_memory_size = sys.getsizeof(generator_obj)
-    logger.info(f"📊 Approximate memory for generator object for {size} strings: {generator_memory_size:,} bytes")
-    # Consume the generator to ensure it's doing work, though memory is used item by item
-    count = 0
-    for _ in generator_obj:
-        count +=1
-    assert count == size
-    del generator_obj
-
-    logger.info("   (Note: Generator memory is low for the object; items are processed one by one.)")
-    logger.info("✅ Memory optimization (generator) example completed.")
-
-async def main():
-    logger.info("🚀 Performance Tuning Examples & Concepts")
     await connection_pooling_example()
     await batch_processing_example()
     await memory_optimization_example()
 
-    logger.info("🏁 Performance Guidelines Summary:")
-    logger.info("  - Choose transports wisely (UDS for local IPC).")
-    logger.info("  - Design efficient Protobuf messages.")
-    logger.info("  - Embrace `async/await` for all I/O in handlers.")
-    logger.info("  - Avoid chatty RPC interfaces; batch operations where sensible.")
-    logger.info("  - Profile your plugin to find real bottlenecks.")
-    logger.info("✅ All performance examples completed.")
+    logger.info("🏁 Performance Guidelines:")
+    logger.info("  🏊 Use connection pooling for high-concurrency scenarios")
+    logger.info("  📦 Batch operations when possible to reduce overhead")
+    logger.info("  💾 Use generators for large datasets to save memory")
+    logger.info("  ⏱️  Profile your application to identify bottlenecks")
+    logger.info("  📊 Monitor key metrics in production")
+
+    logger.info("✅ All performance examples completed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 🐍📈
 ```
 
 **Applying Performance Principles to `pyvider.rpcplugin`:**

@@ -33,17 +33,17 @@ from typing import Tuple, Any, AsyncGenerator  # Added Any, AsyncGenerator
 
 
 class MockProtocol(RPCPluginProtocol):
-    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
+    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]: # Type hint for tuple
         # Mock descriptors for testing
         logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
-        return (None, "MockService")  # Return a 2-tuple (descriptor, service_name)
+        return (None, "MockService")
 
-    async def add_to_server(self, server, handler) -> None:  # Corrected param order
+    async def add_to_server(self, server: Any, handler: Any) -> None: # Matched base signature
         # Mock add_to_server for testing
-        logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
+        logger.debug(f"🔌🚀✅ MockProtocol.add_to_server called with server: {server}, handler: {handler}.")
         pass
 
-    def get_method_type(self, method_name: str) -> str:
+    def get_method_type(self, method_name: str) -> str: # Added return type
         logger.debug("🔌🚀✅ MockProtocol.get_method_type called.")
         return "unary_unary"  # Mock implementation
 
@@ -276,6 +276,6 @@ def mock_server_config_dict_fixture(mock_server_config):
     Provides the server configuration as a dictionary.
     Depends on mock_server_config to ensure config is populated.
     """
-    # mock_server_config fixture yields the rpcplugin_config object.
-    # We want to return a copy of its .config dictionary.
-    return mock_server_config.config.copy()
+    # mock_server_config fixture yields a copy of rpcplugin_config.config.
+    # So, mock_server_config is already the dictionary we need.
+    return mock_server_config

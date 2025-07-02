@@ -138,12 +138,10 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
         f"{json.dumps(pyvider_settings_to_apply, indent=2)}"
     )
     # In a real app, you'd call:
-    # pyvider_configure(**pyvider_settings_to_apply)
-    # For this demo, we just log.
-    # pyvider_configure(**pyvider_settings_to_apply)
+    from pyvider.rpcplugin import configure as pyvider_configure # Ensure import
+    pyvider_configure(**pyvider_settings_to_apply)
     logger.info(
-        "  (Illustrative call to pyvider.rpcplugin.configure() - "
-        "not actually called in this demo script)"
+        "  Called pyvider.rpcplugin.configure() with mapped settings."
     )
 
     logger.info("✅ Illustrative application of conceptual config completed.")

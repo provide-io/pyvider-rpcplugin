@@ -60,6 +60,13 @@ class E2EGreetingProtocol(RPCPluginProtocol):
         # Return the generated _pb2_grpc module and the Service name string
         return e2e_greeting_pb2_grpc, "examples.e2e_greeting.Greeter"
 
+    def get_method_type(self, method_name: str) -> str:
+        # For E2E Greeter service, 'Greet' is unary-unary.
+        if "Greet" in method_name:
+            return "unary_unary"
+        logger.warning(f"Unknown method {method_name} in E2EGreetingProtocol, defaulting to unary_unary.")
+        return "unary_unary" # Default for safety
+
     async def add_to_server(self, server: Any, handler: Any) -> None:
         # Register the handler with the gRPC server
         e2e_greeting_pb2_grpc.add_GreeterServicer_to_server(
