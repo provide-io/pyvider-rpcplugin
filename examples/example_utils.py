@@ -4,12 +4,17 @@ Utility functions for pyvider-rpcplugin examples.
 Provides consistent path resolution and environment setup.
 """
 
+import logging
 import os
 import sys
 from pathlib import Path
+from typing import Any, cast  # For DummyHandler type hint
+
+import grpc  # For DummyHandler type hint
 
 from pyvider.rpcplugin import configure as pyvider_configure
 from pyvider.rpcplugin.config import CONFIG_SCHEMA, rpcplugin_config
+from pyvider.telemetry import logger as dummy_handler_logger
 
 
 def setup_example_environment() -> Path:
@@ -60,61 +65,36 @@ def configure_for_example(clear_env: bool = False) -> None:
     setup_example_environment()
 
     # Configure basic logging
-    import logging
-    from typing import cast  # Added for cast
-
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s [%(levelname)-7s] %(name)s: 🐍 %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-    # Import configure from the library (already at top)
     try:
-        # Set some safe defaults for examples if not already set by environment.
-        # This helps examples run consistently without requiring extensive env setup.
-        # We use specific keys to avoid accidentally overriding user-set complex
-        # configs.
         example_defaults = {
             "PLUGIN_AUTO_MTLS": False,
             "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE",
             "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",
             "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_HANDSHAKE_TIMEOUT": 5.0,  # Updated to 5 seconds
-            "PLUGIN_CONNECTION_TIMEOUT": 5.0,  # Updated to 5 seconds
+            "PLUGIN_HANDSHAKE_TIMEOUT": 5.0,
+            "PLUGIN_CONNECTION_TIMEOUT": 5.0,
         }
 
         config_to_apply_programmatically = {}
         for key, example_value in example_defaults.items():
             current_val = rpcplugin_config.get(key)
-            # Use the imported CONFIG_SCHEMA
             schema_default = CONFIG_SCHEMA.get(key, {}).get("default")
 
-            # Apply if current value is the schema default, or if key isn't in
-            # schema (custom for example), or if it's a log level we want to enforce.
-
-            # For PLUGIN_AUTO_MTLS, if its current parsed value True (the schema default "true" parsed),
-            # then we want to apply the example_value (False).
             if key == "PLUGIN_AUTO_MTLS":
-                # The schema default for PLUGIN_AUTO_MTLS is "true", which parses to True.
-                # example_defaults["PLUGIN_AUTO_MTLS"] is False.
-                # We want to set it to False if it's currently True (from schema default).
                 if current_val is True:
                     config_to_apply_programmatically[key] = example_value
-                elif (
-                    current_val is None
-                ):  # If it was somehow None (e.g. schema default was None)
+                elif current_val is None:
                     config_to_apply_programmatically[key] = example_value
-            elif (
-                current_val == schema_default or key == "PLUGIN_LOG_LEVEL"
-            ):  # Original logic for other keys
+            elif current_val == schema_default or key == "PLUGIN_LOG_LEVEL":
                 config_to_apply_programmatically[key] = example_value
 
-        # Call pyvider_configure with specific keyword arguments that match its
-        # signature
         if config_to_apply_programmatically:
-            # Prepare arguments for pyvider_configure, mapping PLUGIN_ prefixed keys
-            # to the function's parameter names.
             mapped_args = {}
             other_kwargs = {}
 
@@ -122,30 +102,20 @@ def configure_for_example(clear_env: bool = False) -> None:
                 if key == "PLUGIN_AUTO_MTLS":
                     mapped_args["auto_mtls"] = value
                 elif key == "PLUGIN_MAGIC_COOKIE_VALUE":
-                    # This sets both value and fallback
                     mapped_args["magic_cookie"] = value
                 elif key == "PLUGIN_HANDSHAKE_TIMEOUT":
                     mapped_args["handshake_timeout"] = value
                 elif key == "PLUGIN_CONNECTION_TIMEOUT":
                     mapped_args["connection_timeout"] = value
-                # Add other direct mappings if configure() signature expands
                 else:
-                    # Collect remaining PLUGIN_ prefixed keys for **kwargs
                     other_kwargs[key] = value
 
-            # Only call if there's something to configure
             if mapped_args or other_kwargs:
-                # Ensure types for explicitly named arguments or pass None
                 mc_val = mapped_args.get("magic_cookie")
                 am_val = mapped_args.get("auto_mtls")
-                # Cast to expected types from Any, as .get() returns Any
-                # Values in example_defaults are already correctly typed (bool, float)
                 ht_val = cast(float | None, mapped_args.get("handshake_timeout"))
                 ct_val = cast(float | None, mapped_args.get("connection_timeout"))
 
-                # Filter other_kwargs to only include keys not explicitly handled
-                # and that are actual PLUGIN_ prefixed keys from example_defaults
-                # that configure() would expect in its **kwargs.
                 explicitly_handled_plugin_keys = [
                     "PLUGIN_AUTO_MTLS",
                     "PLUGIN_MAGIC_COOKIE_VALUE",
@@ -162,19 +132,10 @@ def configure_for_example(clear_env: bool = False) -> None:
                 pyvider_configure(
                     magic_cookie=str(mc_val) if mc_val is not None else None,
                     auto_mtls=bool(am_val) if am_val is not None else None,
-                    handshake_timeout=ht_val,  # Now correctly float | None
-                    connection_timeout=ct_val,  # Now correctly float | None
-                    # protocol_version, transports not in example_defaults
-                    # server_cert, server_key, etc. not in example_defaults
-                    # The type: ignore below is for **kwargs, which can be hard for mypy
+                    handshake_timeout=ht_val,
+                    connection_timeout=ct_val,
                     **final_other_kwargs,  # type: ignore[arg-type]
                 )
-                # Example log:
-                # logging.info(
-                #   f"Applied example default configurations. "
-                #   f"Mapped: {mapped_args}, Others: {final_other_kwargs}"
-                # )
-
     except ImportError:
         logging.error(
             "Failed to import pyvider.rpcplugin.configure. "
@@ -191,22 +152,6 @@ def get_example_port(base_port: int = 50051) -> int:
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", base_port))
         return s.getsockname()[1]
-
-
-# Added imports for DummyHandler
-from typing import Any  # For DummyHandler type hint
-
-import grpc  # For DummyHandler type hint
-
-# logger is already imported from pyvider.telemetry at the top of the module if needed,
-# but to avoid potential conflicts if example_utils.logger is used elsewhere,
-# we can import it specifically or use the existing one.
-# Let's assume the existing 'logger' from 'pyvider.telemetry' can be used if example_utils
-# doesn't define its own. If it's meant to be a distinct logger, specific import is needed.
-# For now, assuming DummyHandler can use the 'pyvider.telemetry.logger'
-# already imported in other examples or available via 'pyvider.rpcplugin'.
-# To be safe and self-contained for the handler if moved around:
-from pyvider.telemetry import logger as dummy_handler_logger
 
 
 class DummyHandler:

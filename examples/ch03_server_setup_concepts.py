@@ -41,7 +41,7 @@ class BasicProtocol(RPCPluginProtocol):
         # For a real service, this would typically call a function like:
         # your_pb2_grpc.add_YourServiceServicer_to_server(handler, server)
         # The service_name is derived from get_grpc_descriptors.
-        service_name = await self.get_service_name()
+        _, service_name = await self.get_grpc_descriptors()
         logger.info(
             f"🔌 Service '{service_name}' (conceptual) would be "
             f"registered with handler: {type(handler).__name__}"
@@ -54,15 +54,18 @@ class BasicHandler:
     pass
 
 
-
-
 async def tcp_server_example() -> RPCPluginServer:
     """Example: TCP server configuration."""
     logger.info("🌐 TCP Server Configuration Example")
 
+    # Import for type casting
+    from typing import cast
+
+    from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
+
     proto_instance: RPCPluginProtocol = BasicProtocol()
     server: RPCPluginServer = plugin_server(
-        protocol=proto_instance,
+        protocol=cast(TypesRPCPluginProtocol, proto_instance),
         handler=BasicHandler(),
         transport="tcp",
         host="127.0.0.1",
@@ -92,13 +95,17 @@ async def unix_server_example() -> RPCPluginServer:
 
     import os
     import tempfile
+    from typing import cast
+
+    # Import for type casting
+    from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
 
     # Use tempfile for a safer temporary socket path
     socket_path = os.path.join(tempfile.gettempdir(), "pyvider_example.sock")
 
     proto_instance_unix: RPCPluginProtocol = BasicProtocol()
     server: RPCPluginServer = plugin_server(
-        protocol=proto_instance_unix,
+        protocol=cast(TypesRPCPluginProtocol, proto_instance_unix),
         handler=BasicHandler(),
         transport="unix",
         transport_path=socket_path,  # nosec B108

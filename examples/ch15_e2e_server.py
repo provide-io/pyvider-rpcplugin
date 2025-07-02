@@ -14,20 +14,20 @@ import grpc
 # This needs to happen BEFORE attempting to import from 'examples.proto'
 from example_utils import configure_for_example  # type: ignore[import-not-found]
 
+# Import pyvider components
+# Import generated protobuf code for E2E Greeting service
+from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc
+from pyvider.rpcplugin.factories import plugin_server
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.types import (
+    RPCPluginProtocol as TypesRPCPluginProtocol,
+)
+from pyvider.telemetry import logger
+
 configure_for_example(
     clear_env=False
 )  # Server context, do not clear client-set env vars
-
-# Import pyvider components
-# Import generated protobuf code for E2E Greeting service
-from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc  # noqa: E402
-from pyvider.rpcplugin.factories import plugin_server  # noqa: E402
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
-from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
-from pyvider.rpcplugin.types import (
-    RPCPluginProtocol as TypesRPCPluginProtocol,  # noqa: E402
-)
-from pyvider.telemetry import logger  # noqa: E402
 
 
 # --- Implement the Handler (Servicer) ---

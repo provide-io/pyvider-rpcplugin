@@ -4,11 +4,6 @@ Error Handling - Robust error management patterns.
 """
 
 import asyncio
-
-from example_utils import configure_for_example  # type: ignore[import-not-found]
-
-configure_for_example()
-
 from collections.abc import (  # For circuit breaker and attempt_primary_service
     Awaitable,
     Callable,
@@ -18,14 +13,18 @@ from typing import (
     Never,
 )
 
-from pyvider.rpcplugin.exception import (  # noqa: E402
+from example_utils import configure_for_example  # type: ignore[import-not-found]
+
+from pyvider.rpcplugin.exception import (
     HandshakeError,
     ProtocolError,
     RPCPluginError,
     SecurityError,
     TransportError,
 )
-from pyvider.telemetry import logger  # noqa: E402
+from pyvider.telemetry import logger
+
+configure_for_example()
 
 
 async def exception_hierarchy_demo() -> None:
