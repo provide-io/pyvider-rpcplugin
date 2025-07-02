@@ -39,9 +39,9 @@ if TYPE_CHECKING:
 
 
 # Core TypeVars for generic type parameters
-HandlerT = TypeVar("HandlerT", bound="RPCPluginHandler") # pragma: no cover
-ProtocolT = TypeVar("ProtocolT", bound="RPCPluginProtocol") # pragma: no cover
-TransportT = TypeVar("TransportT", bound="RPCPluginTransport") # pragma: no cover
+HandlerT = TypeVar("HandlerT", bound="RPCPluginHandler")  # pragma: no cover
+ProtocolT = TypeVar("ProtocolT", bound="RPCPluginProtocol")  # pragma: no cover
+TransportT = TypeVar("TransportT", bound="RPCPluginTransport")  # pragma: no cover
 ServerT = TypeVar("ServerT", bound="grpc.aio.Server")
 ConfigT = TypeVar("ConfigT", bound="RPCPluginConfig")
 ResultT = TypeVar("ResultT")
@@ -78,7 +78,7 @@ class RPCPluginProtocol(TypeProtocol):
         Returns:
             Tuple containing the protobuf descriptor module and service name string.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def add_to_server(self, handler: Any, server: Any) -> None:
         """
@@ -88,7 +88,7 @@ class RPCPluginProtocol(TypeProtocol):
             handler: The handler implementing the RPC methods
             server: The gRPC async server instance
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     def get_method_type(self, method_name: str) -> str:
         """
@@ -100,7 +100,7 @@ class RPCPluginProtocol(TypeProtocol):
         Returns:
             String representing the method type (e.g., "unary_unary", "stream_stream")
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
 
 @runtime_checkable
@@ -122,7 +122,7 @@ class RPCPluginTransport(TypeProtocol):
             String representation of the endpoint (e.g., "unix:/tmp/socket" or
             "127.0.0.1:50051")
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def connect(self, endpoint: str) -> None:
         """
@@ -131,13 +131,13 @@ class RPCPluginTransport(TypeProtocol):
         Args:
             endpoint: The endpoint to connect to
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def close(self) -> None:
         """
         Close the transport and clean up resources.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
 
 @runtime_checkable
@@ -156,7 +156,7 @@ class SerializableT(TypeProtocol):
         Returns:
             Dictionary representation of the object
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SerializableT:
@@ -169,7 +169,7 @@ class SerializableT(TypeProtocol):
         Returns:
             New instance of the class
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
@@ -241,7 +241,7 @@ class ConnectionT(TypeProtocol):
         Args:
             data: Bytes to send
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def receive_data(self, size: int = 16384) -> bytes:
         """
@@ -253,13 +253,13 @@ class ConnectionT(TypeProtocol):
         Returns:
             Received data as bytes
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def close(self) -> None:
         """
         Close the connection and clean up resources.
         """
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
 
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
@@ -304,24 +304,25 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     logger.debug("ConnectionT: All structural and signature checks passed.")
     return True
 
+    # Type aliases for gRPC Clients
+    GrpcChannelType = (  # pragma: no cover
+        grpc.aio.Channel | grpc.Channel
+    )  # Represents gRPC sync or async channel
 
-# Type aliases for gRPC Clients
-    GrpcChannelType = ( # pragma: no cover
-    grpc.aio.Channel | grpc.Channel
-)  # Represents gRPC sync or async channel
-GrpcServerType = grpc.aio.Server # pragma: no cover
-RpcConfigType = dict[str, Any] # pragma: no cover
-GrpcCredentialsType = ( # pragma: no cover
+
+GrpcServerType = grpc.aio.Server  # pragma: no cover
+RpcConfigType = dict[str, Any]  # pragma: no cover
+GrpcCredentialsType = (  # pragma: no cover
     grpc.ChannelCredentials | None
 )  # gRPC channel credentials, possibly None
-EndpointType = str # pragma: no cover
-AddressType = tuple[str, int] # pragma: no cover
+EndpointType = str  # pragma: no cover
+AddressType = tuple[str, int]  # pragma: no cover
 
 # I/O function type aliases using collections.abc
-SendFuncType = AbcCallable[ # pragma: no cover
+SendFuncType = AbcCallable[  # pragma: no cover
     [bytes], Awaitable[None]
 ]  # Type for a function that sends bytes
-ReceiveFuncType = AbcCallable[ # pragma: no cover
+ReceiveFuncType = AbcCallable[  # pragma: no cover
     [int], Awaitable[bytes]
 ]  # Type for a function that receives bytes
 
@@ -337,19 +338,19 @@ class SecureRpcClientT(TypeProtocol):
 
     async def _perform_handshake(self) -> None:
         """Perform the handshake negotiation with the server."""
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def _setup_tls(self) -> None:
         """Set up TLS credentials for secure communication."""
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def _create_grpc_channel(self) -> None:
         """Create a secure gRPC channel to the server."""
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
     async def close(self) -> None:
         """Close the client connection and clean up resources."""
-        ... # pragma: no cover
+        ...  # pragma: no cover
 
 
 def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
