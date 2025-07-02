@@ -10,16 +10,16 @@ import os
 import sys
 from pathlib import Path
 
-import example_utils # type: ignore[import-not-found]
-example_utils.configure_for_example(clear_env=True) # For client context
+import example_utils  # type: ignore[import-not-found]
+
+example_utils.configure_for_example(clear_env=True)  # For client context
 
 # Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
-from pyvider.rpcplugin.exception import RPCPluginError # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
-
 # Import generated protobuf code for E2E Greeting service
-from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc # noqa: E402
+from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc  # noqa: E402
+from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
+from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402
 
 
 async def main() -> None:
@@ -32,15 +32,18 @@ async def main() -> None:
         logger.error(f"Could not find server script: {server_script_path}")
         return
 
-    from pyvider.rpcplugin import rpcplugin_config # Import for reading client's config
+    from pyvider.rpcplugin import rpcplugin_config  # Import for reading client's config
 
     # Configure environment for the server subprocess
     client_config = {
         "env": {
             "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
             "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
-            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "DEBUG"), # Use client's log level
-            "PLUGIN_AUTO_MTLS": "False" # Explicitly disable mTLS for this example server
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get(
+                "PLUGIN_LOG_LEVEL", "DEBUG"
+            ),  # Use client's log level
+            # Explicitly disable mTLS for this example server
+            "PLUGIN_AUTO_MTLS": "False",
         }
     }
 
@@ -61,10 +64,8 @@ async def main() -> None:
         logger.info("✅ Client connected to E2E Greeting server successfully!")
 
         # Create a stub and make an RPC call
-        stub = examples.proto.e2e_greeting_pb2_grpc.GreeterStub(client.grpc_channel)
-        request_pb = examples.proto.e2e_greeting_pb2.GreetingRequest(
-            name="Real E2E User"
-        )
+        stub = e2e_greeting_pb2_grpc.GreeterStub(client.grpc_channel)
+        request_pb = e2e_greeting_pb2.GreetingRequest(name="Real E2E User")
 
         logger.info(f"📞 Calling Greet method with name: '{request_pb.name}'...")
         response_pb = await stub.Greet(request_pb, timeout=10.0)

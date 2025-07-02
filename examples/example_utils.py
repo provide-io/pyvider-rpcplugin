@@ -188,5 +188,31 @@ def get_example_port(base_port: int = 50051) -> int:
         s.bind(("127.0.0.1", base_port))
         return s.getsockname()[1]
 
+# Added imports for DummyHandler
+import grpc # For DummyHandler type hint
+from typing import Any # For DummyHandler type hint
+# logger is already imported from pyvider.telemetry at the top of the module if needed,
+# but to avoid potential conflicts if example_utils.logger is used elsewhere,
+# we can import it specifically or use the existing one.
+# Let's assume the existing 'logger' from 'pyvider.telemetry' can be used if example_utils
+# doesn't define its own. If it's meant to be a distinct logger, specific import is needed.
+# For now, assuming DummyHandler can use the 'pyvider.telemetry.logger'
+# already imported in other examples or available via 'pyvider.rpcplugin'.
+# To be safe and self-contained for the handler if moved around:
+from pyvider.telemetry import logger as dummy_handler_logger
+
+
+class DummyHandler:
+    """
+    A basic handler for dummy servers in examples.
+    It typically doesn't implement any custom RPC methods that are called by clients,
+    primarily serving to allow the server to complete its handshake and start.
+    """
+
+    async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
+        dummy_handler_logger.info(
+            "DummyHandler: NoOp called (generally not expected in basic examples)"
+        )
+        return {}
 
 # 🐍🛠️
