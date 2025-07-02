@@ -21,23 +21,12 @@ configure_for_example()  # Must be called before other pyvider imports
 # pyvider.rpcplugin imports
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
-from pyvider.rpcplugin.types import ( # noqa: E402
+from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
-
-
-class DummyHandler:
-    """A handler that does nothing, for basic server operation."""
-
-    async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
-        # This method won't actually be called if launched by plugin_client
-        # and no actual RPC calls are made to it.
-        # It's here for completeness if the server were used differently.
-        logger.info(
-            "DummyHandler: NoOp called (should not happen in typical plugin launch)"
-        )
-        return {}
+# Import the shared DummyHandler
+from examples.example_utils import DummyHandler # noqa: E402
 
 
 async def main() -> None:
@@ -45,7 +34,9 @@ async def main() -> None:
     It expects its environment (magic cookie) to be set by the launching client.
     """
     # configure_for_example() called at module level to set up paths and basic config
-    logger.info("🚀 ch02_dummy_server.py: Starting as an executable plugin...")
+    logger.info(
+        "🚀 common_dummy_server_for_ch08.py: Starting as an executable plugin..."
+    )
 
     # The `configure_for_example()` utility should have set:
     # - PLUGIN_AUTO_MTLS=False
@@ -167,7 +158,8 @@ async def main() -> None:
                 not server._serving_future.done()
             ):  # Check if server is still marked as serving
                 logger.info(
-                    "Ensuring server.stop() is called in finally block for main execution."
+                    "Ensuring server.stop() is called in finally block "
+                    "for main execution."
                 )
                 await server.stop()
 
@@ -181,11 +173,53 @@ async def main() -> None:
 
 if __name__ == "__main__":
     # This allows the script to be run directly as a plugin executable.
-    # Additional imports for the new logic if run as main
+    import os  # Import os for environment variable manipulation
     from contextlib import suppress
     from pathlib import Path
 
+    from pyvider.rpcplugin import rpcplugin_config  # To get configured cookie key/value
+
     try:
+        # When running standalone for ch08 direct connection example,
+        # the server needs to set the magic cookie env var for itself
+        # to pass its own handshake validation.
+        # configure_for_example() (called at module top) sets the expected
+        # key/value in rpcplugin_config.
+        cookie_key_to_set_in_env = rpcplugin_config.magic_cookie_key()
+        expected_cookie_value = rpcplugin_config.magic_cookie_value()
+
+        # Also, ensure the config itself knows which key NAME to use for lookup.
+        # This is typically "PYVIDER_PLUGIN_MAGIC_COOKIE" as set by example_utils
+        # for the config setting "PLUGIN_MAGIC_COOKIE_KEY".
+        # If "PLUGIN_MAGIC_COOKIE_KEY" env var was set externally,
+        # rpcplugin_config.magic_cookie_key() would return that.
+        # We use what example_utils sets as the default name.
+        env_var_name_for_cookie = "PYVIDER_PLUGIN_MAGIC_COOKIE"
+        if cookie_key_to_set_in_env != env_var_name_for_cookie:
+            logger.warning(
+                f"Configured magic cookie key '{cookie_key_to_set_in_env}' "
+                f"differs from expected example default "
+                f"'{env_var_name_for_cookie}'. Using configured one."
+            )
+            env_var_name_for_cookie = cookie_key_to_set_in_env
+
+        os.environ[env_var_name_for_cookie] = expected_cookie_value
+
+        # Additionally, ensure the rpcplugin_config reflects that it should be
+        # *looking for* an environment variable with the name
+        # `env_var_name_for_cookie`. This is done by setting the *value* of the
+        # *config setting* named `PLUGIN_MAGIC_COOKIE_KEY`.
+        from pyvider.rpcplugin import configure as pyvider_core_configure
+
+        pyvider_core_configure(PLUGIN_MAGIC_COOKIE_KEY=env_var_name_for_cookie)
+
+        logger.info(
+            f"Standalone server mode (common_dummy_server_for_ch08): "
+            f"Set os.environ['{env_var_name_for_cookie}'] = "
+            f"'{expected_cookie_value}'. Configured RPCPlugin to use "
+            f"'{env_var_name_for_cookie}' as the cookie key name."
+        )
+
         asyncio.run(main())
     except KeyboardInterrupt:  # Gracefully handle Ctrl+C at the asyncio.run level too
         logger.info("Main execution interrupted by user.")

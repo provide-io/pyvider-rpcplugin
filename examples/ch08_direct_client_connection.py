@@ -6,7 +6,8 @@ pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
 This contrasts with examples that use `plugin_client` to launch the server.
 To run this example:
-1. Start a compatible server first, specifically `examples/common_dummy_server_for_ch08.py`.
+1. Start a compatible server first, specifically
+   `examples/common_dummy_server_for_ch08.py`.
    Run: `python examples/common_dummy_server_for_ch08.py`
    This server is configured by default (via example_utils) for Unix socket and
    will write its socket path to `dummy_server_socket.txt` in the project root.
@@ -53,8 +54,8 @@ async def run_direct_client() -> None:
         logger.info(f"Read socket path from {SOCKET_COMM_FILE}: {socket_path_read}")
     except FileNotFoundError:
         logger.error(
-            f"Socket communication file not found: {SOCKET_COMM_FILE}. "
-            "Ensure ch02_dummy_server.py ran successfully and wrote this file."
+            f"Socket communication file not found: {SOCKET_COMM_FILE}. Ensure "
+            "common_dummy_server_for_ch08.py ran successfully and wrote this file."
         )
         print(f"❌ Socket path file not found: {SOCKET_COMM_FILE}. Start server first.")
         return
@@ -75,10 +76,16 @@ async def run_direct_client() -> None:
 
     # Configure client-side aspects if necessary (e.g., logging)
     # No magic cookie env vars needed by this client as it's not launching the server.
-    clear_plugin_env_vars()
-    configure_for_example(
-        PLUGIN_LOG_LEVEL="DEBUG", PLUGIN_AUTO_MTLS=False
-    )  # Match typical dummy server config
+    clear_plugin_env_vars()  # From example_utils
+    configure_for_example()  # Call for basic path setup from example_utils
+
+    from pyvider.rpcplugin import (
+        configure as pyvider_core_configure,
+    )  # Specific configure
+
+    pyvider_core_configure(
+        log_level="DEBUG", auto_mtls=False
+    )  # Match typical dummy server config using pyvider's own configure
 
     # THIS IS THE LINE THAT HAD THE TYPO - USING socket_path_read (lowercase)
     target = f"unix:{socket_path_read}"

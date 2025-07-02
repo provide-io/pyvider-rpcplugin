@@ -6,14 +6,17 @@ Quick Start Example - Client launching an executable plugin server.
 import asyncio
 import sys
 from pathlib import Path
-from example_utils import configure_for_example
+# Changed to relative import for examples package
+from examples.example_utils import configure_for_example # noqa: E402
 
 configure_for_example(clear_env=True) # Client context
 
-from pyvider.rpcplugin import plugin_client
-from pyvider.rpcplugin.client.base import RPCPluginClient # Retaining for clarity if user inspects client object
-from pyvider.rpcplugin.exception import RPCPluginError
-from pyvider.telemetry import logger
+from pyvider.rpcplugin import plugin_client # noqa: E402
+from pyvider.rpcplugin.client.base import ( # noqa: E402
+    RPCPluginClient
+)  # Retaining for clarity if user inspects client object
+from pyvider.rpcplugin.exception import RPCPluginError # noqa: E402
+from pyvider.telemetry import logger # noqa: E402
 
 async def main():
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")

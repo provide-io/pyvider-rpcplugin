@@ -6,13 +6,14 @@ Custom Protocols - Custom protocol definitions and middleware patterns.
 import asyncio
 from typing import Any
 
-from example_utils import configure_for_example
+from examples.example_utils import configure_for_example # noqa: E402
 
 configure_for_example()
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol # noqa: E402
 from pyvider.telemetry import logger # noqa: E402
-from typing import Any, Callable, Awaitable, List, Tuple # For CustomProtocol
+# Changed Tuple to tuple for type hint consistency
+from typing import Any, Callable, Awaitable, List, Tuple as TypingTuple # For CustomProtocol
 from collections.abc import AsyncGenerator # For CustomHandler & StreamData
 
 
@@ -24,7 +25,7 @@ class CustomProtocol(RPCPluginProtocol):
         self.service_name = service_name
         self.middleware_factories: List[Callable[[Any], Any]] = []
 
-    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]:
+    async def get_grpc_descriptors(self) -> TypingTuple[Any | None, str]: # Use aliased Tuple
         """Get gRPC service descriptors."""
         logger.info(f"🔌 Getting descriptors for {self.service_name}")
         return None, self.service_name

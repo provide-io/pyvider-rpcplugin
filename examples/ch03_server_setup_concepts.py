@@ -15,13 +15,14 @@ configure_for_example()
 from pyvider.rpcplugin import plugin_server  # noqa: E402
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
+from typing import Any, Tuple # Moved to top
 
 
 class BasicProtocol(RPCPluginProtocol):
     """Basic protocol for demonstration."""
-    from typing import Any, Tuple # Add Any, Tuple
+    # from typing import Any # Add Any # Moved to top
 
-    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]:
+    async def get_grpc_descriptors(self) -> tuple[Any | None, str]: # Changed Tuple to tuple
         # For a real service, this would return actual gRPC descriptors
         # (e.g., your_pb2_grpc) and the service name string
         # as defined in your .proto file.
@@ -49,8 +50,9 @@ async def tcp_server_example() -> RPCPluginServer:
     """Example: TCP server configuration."""
     logger.info("🌐 TCP Server Configuration Example")
 
-    server = plugin_server(
-        protocol=BasicProtocol(),
+    proto_instance: RPCPluginProtocol = BasicProtocol()
+    server: RPCPluginServer = plugin_server(
+        protocol=proto_instance,
         handler=BasicHandler(),
         transport="tcp",
         host="127.0.0.1",
@@ -83,8 +85,9 @@ async def unix_server_example() -> RPCPluginServer:
     # Use tempfile for a safer temporary socket path
     socket_path = os.path.join(tempfile.gettempdir(), "pyvider_example.sock")
 
-    server = plugin_server(
-        protocol=BasicProtocol(),
+    proto_instance_unix: RPCPluginProtocol = BasicProtocol()
+    server: RPCPluginServer = plugin_server(
+        protocol=proto_instance_unix,
         handler=BasicHandler(),
         transport="unix",
         transport_path=socket_path,  # nosec B108
