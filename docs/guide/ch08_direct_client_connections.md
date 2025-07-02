@@ -60,7 +60,7 @@ async def run_direct_client():
     except FileNotFoundError:
         logger.error(
             f"Socket communication file not found: {SOCKET_COMM_FILE}. "
-            "Ensure ch02_dummy_server.py ran successfully and wrote this file, "
+            "Ensure ch08_dummy_server.py ran successfully and wrote this file, "
             "or manually create it with the correct socket path."
         )
         return
