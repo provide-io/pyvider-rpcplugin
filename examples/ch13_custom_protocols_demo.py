@@ -4,20 +4,19 @@ Custom Protocols - Custom protocol definitions and middleware patterns.
 """
 
 import asyncio
-from typing import Any
-
-from examples.example_utils import configure_for_example  # noqa: E402
-
-configure_for_example()
-
 from collections.abc import (  # For CustomProtocol
     AsyncGenerator,  # For CustomHandler & StreamData
     Callable,
 )
+from typing import Any
 
-# Changed Tuple to tuple for type hint consistency
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402
+# Ensure example_utils is imported before other project modules that might depend on its setup
+import example_utils  # type: ignore[import-not-found]
+
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.telemetry import logger
+
+example_utils.configure_for_example()
 
 
 class CustomProtocol(RPCPluginProtocol):
@@ -30,7 +29,7 @@ class CustomProtocol(RPCPluginProtocol):
 
     async def get_grpc_descriptors(
         self,
-    ) -> tuple[Any | None, str]:  # Use aliased Tuple
+    ) -> tuple[Any | None, str]:
         """Get gRPC service descriptors."""
         logger.info(f"🔌 Getting descriptors for {self.service_name}")
         return None, self.service_name
@@ -46,9 +45,6 @@ class CustomProtocol(RPCPluginProtocol):
         # Conceptually apply middleware to the handler before registration
         wrapped_handler = self._apply_middleware(handler)
 
-        # Placeholder for actual gRPC registration:
-        # your_service_pb2_grpc.add_YourServiceServicer_to_server(
-        #     wrapped_handler, server)
         logger.info(
             f"✅ {self.service_name} (with {len(self.middleware_factories)} middleware "
             f"layers, using handler {type(wrapped_handler).__name__}) would be "
@@ -98,7 +94,7 @@ class LoggingMiddleware:
                     raise
 
             return logged_method
-        return original_method  # Return original if not callable async method
+        return original_method
 
 
 class TimingMiddleware:
@@ -114,9 +110,9 @@ class TimingMiddleware:
         if callable(original_method) and asyncio.iscoroutinefunction(original_method):
 
             async def timed_method(*args: Any, **kwargs: Any) -> Any:
-                import time  # Moved import inside method as it's only used here
+                import time
 
-                start_time = time.perf_counter()  # Use perf_counter for more precision
+                start_time = time.perf_counter()
                 try:
                     result = await original_method(*args, **kwargs)
                     duration = time.perf_counter() - start_time
@@ -130,7 +126,7 @@ class TimingMiddleware:
                     raise
 
             return timed_method
-        return original_method  # Return original if not callable async method
+        return original_method
 
 
 class CustomHandler:
@@ -152,19 +148,11 @@ async def custom_protocol_example() -> None:
     """Example: Custom protocol with middleware."""
     logger.info("🔧 Custom Protocol Example")
 
-    # Create custom protocol
     protocol = CustomProtocol("DataProcessingService")
-
-    # Add middleware
     protocol.add_middleware(LoggingMiddleware)
     protocol.add_middleware(TimingMiddleware)
-
-    # Create handler
     handler = CustomHandler()
-
-    # Simulate protocol registration
     await protocol.add_to_server(None, handler)
-
     logger.info("✅ Custom protocol example completed")
 
 
@@ -188,10 +176,8 @@ async def protocol_composition_example() -> None:
 async def main() -> None:
     """Run custom protocol examples."""
     logger.info("🚀 Custom Protocol Examples")
-
     await custom_protocol_example()
     await protocol_composition_example()
-
     logger.info("✅ All custom protocol examples completed")
 
 
