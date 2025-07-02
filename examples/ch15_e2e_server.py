@@ -20,12 +20,14 @@ configure_for_example(
 
 # Import pyvider components
 # Import generated protobuf code for E2E Greeting service
-from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc # noqa: E402
-from pyvider.rpcplugin.factories import plugin_server # noqa: E402
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol # noqa: E402
-from pyvider.rpcplugin.server import RPCPluginServer # noqa: E402
-from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc  # noqa: E402
+from pyvider.rpcplugin.factories import plugin_server  # noqa: E402
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
+from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
+from pyvider.rpcplugin.types import (
+    RPCPluginProtocol as TypesRPCPluginProtocol,  # noqa: E402
+)
+from pyvider.telemetry import logger  # noqa: E402
 
 
 # --- Implement the Handler (Servicer) ---
@@ -64,8 +66,10 @@ class E2EGreetingProtocol(RPCPluginProtocol):
         # For E2E Greeter service, 'Greet' is unary-unary.
         if "Greet" in method_name:
             return "unary_unary"
-        logger.warning(f"Unknown method {method_name} in E2EGreetingProtocol, defaulting to unary_unary.")
-        return "unary_unary" # Default for safety
+        logger.warning(
+            f"Unknown method {method_name} in E2EGreetingProtocol, defaulting to unary_unary."
+        )
+        return "unary_unary"  # Default for safety
 
     async def add_to_server(self, server: Any, handler: Any) -> None:
         # Register the handler with the gRPC server

@@ -293,18 +293,12 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     return _convert_value_to_schema_type(value, meta["type"], key)
 
 
-def _convert_value_to_schema_type(
-    value: Any, type_string: str, key_for_error: str
-) -> Any:
+def _convert_value_to_schema_type(value: Any, type_string: str, key_for_error: str) -> Any:
     """
     Converts a value to the type specified by type_string.
     Raises ConfigError if conversion fails.
     """
-    if value is None and type_string not in (
-        "str",
-        "list_str",
-        "list_int",
-    ):  # Allow None only if not string/list like
+    if value is None and type_string not in ("str", "list_str", "list_int"): # Allow None only if not string/list like
         # For types like bool, int, float, None should not be converted to 0 or False by default
         # unless the original value was explicitly "0" or "false" string.
         # If the schema default is None, fetch_env_variable would return None before this.
@@ -313,9 +307,7 @@ def _convert_value_to_schema_type(
 
     try:
         if type_string == "str":
-            return (
-                str(value) if value is not None else None
-            )  # Keep None as None for strings if that's the input
+            return str(value) if value is not None else None # Keep None as None for strings if that's the input
         elif type_string == "int":
             return int(value)
         elif type_string == "float":
@@ -325,41 +317,36 @@ def _convert_value_to_schema_type(
                 return value
             if isinstance(value, str):
                 return value.lower() in ("true", "yes", "1", "on")
-            return bool(value)  # General fallback, e.g., int 0 becomes False
+            return bool(value) # General fallback, e.g., int 0 becomes False
         elif type_string == "list_str":
-            if value is None:
-                return []  # Default to empty list if None
+            if value is None: return [] # Default to empty list if None
             if isinstance(value, list):
                 return [str(v) for v in value]
             if isinstance(value, str):
                 return [v.strip() for v in value.split(",")]
             if isinstance(value, (tuple, set)):
                 return [str(v) for v in value]
-            return [str(value)]  # Single item to list
+            return [str(value)] # Single item to list
         elif type_string == "list_int":
-            if value is None:
-                return []  # Default to empty list if None
+            if value is None: return [] # Default to empty list if None
             if isinstance(value, list) and all(isinstance(x, int) for x in value):
-                return value  # Already correctly typed
+                return value # Already correctly typed
             if isinstance(value, list):
                 return [int(v) for v in value]
             if isinstance(value, str):
                 # Handle empty string for list_int as empty list
-                if not value.strip():
-                    return []
+                if not value.strip(): return []
                 return [int(v.strip()) for v in value.split(",")]
             if isinstance(value, (tuple, set)):
                 return [int(v) for v in value]
-            return [int(value)]  # Single item to list
+            return [int(value)] # Single item to list
         else:
             logger.warning(
                 f"⚙️⚠️ Unknown type {type_string} for {key_for_error}, returning raw value"
             )
             return value
     except (ValueError, TypeError) as e:
-        logger.error(
-            f"⚙️❌ Type conversion failed for {key_for_error}", extra={"error": str(e)}
-        )
+        logger.error(f"⚙️❌ Type conversion failed for {key_for_error}", extra={"error": str(e)})
         raise ConfigError(
             message=(
                 f"Invalid value format for configuration key '{key_for_error}'. Expected "
@@ -505,9 +492,7 @@ class RPCPluginConfig:
         processed_value = value
         if meta:
             try:
-                processed_value = _convert_value_to_schema_type(
-                    value, meta["type"], key
-                )
+                processed_value = _convert_value_to_schema_type(value, meta["type"], key)
             except ConfigError as e:
                 # Re-raise with "during set" context if the original error was from conversion
                 if "Invalid value format" in e.message:
@@ -517,10 +502,10 @@ class RPCPluginConfig:
                             f"set. Expected type '{meta['type']}', but received value "
                             f"'{value}'."
                         ),
-                        hint=e.hint,  # Preserve original hint
-                        code=e.code,  # Preserve original code
+                        hint=e.hint, # Preserve original hint
+                        code=e.code  # Preserve original code
                     ) from e
-                raise  # Re-raise other ConfigErrors as is
+                raise # Re-raise other ConfigErrors as is
         # If not in schema (e.g. dynamic PLUGIN_ prefixed key), keep value as is.
 
         self.config[key] = processed_value

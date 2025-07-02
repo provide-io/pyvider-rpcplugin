@@ -12,11 +12,11 @@ import example_utils  # type: ignore[import-not-found]
 
 example_utils.configure_for_example(clear_env=True)  # Client context
 
-import grpc # noqa: E402
+import grpc  # noqa: E402
 
 # Import pyvider components first, then specific example modules
-from examples.proto import echo_pb2, echo_pb2_grpc # noqa: E402
-from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
+from examples.proto import echo_pb2, echo_pb2_grpc  # noqa: E402
+from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
 
 
@@ -34,16 +34,19 @@ class EchoClient:
         # These must match what ch05_echo_server.py expects for its handshake.
         # The client's `configure_for_example()` sets the client's own config
         # for MAGIC_COOKIE_KEY and MAGIC_COOKIE_VALUE.
-        # RPCPluginClient._launch_process will use these to set the env var for the server.
-        # For this example, we explicitly define what the server process should receive,
-        # mirroring the client's configuration for clarity.
-        self.client_config = {"env": {
-            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
-            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
-            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
-            # Set AUTO_MTLS for server based on client's config for consistency in example
-            "PLUGIN_AUTO_MTLS": str(rpcplugin_config.auto_mtls_enabled()).lower()
-        }}
+        # RPCPluginClient._launch_process will use these to set the env var for the
+        # server. For this example, we explicitly define what the server process
+        # should receive, mirroring the client's configuration for clarity.
+        self.client_config = {
+            "env": {
+                "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
+                "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+                "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
+                # Set AUTO_MTLS for server based on client's config for consistency
+                # in example
+                "PLUGIN_AUTO_MTLS": str(rpcplugin_config.auto_mtls_enabled()).lower(),
+            }
+        }
 
     async def start(self) -> bool:
         logger.info(

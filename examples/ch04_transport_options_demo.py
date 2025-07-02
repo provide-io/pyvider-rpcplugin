@@ -14,8 +14,11 @@ from example_utils import (  # type: ignore[import-not-found]
 
 configure_for_example()
 
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from pyvider.rpcplugin.transport import (  # noqa: E402
+    TCPSocketTransport,
+    UnixSocketTransport,
+)
+from pyvider.telemetry import logger  # noqa: E402
 
 
 async def tcp_transport_demo() -> None:

@@ -7,9 +7,6 @@ Prints its handshake string to stdout upon successful startup.
 """
 
 import asyncio
-from typing import Any  # Standard imports at top
-
-import grpc  # Standard imports at top
 
 # Ensure 'src' is in sys.path for direct execution
 # This setup is done by example_utils.configure_for_example()
@@ -19,14 +16,14 @@ from example_utils import configure_for_example  # type: ignore[import-not-found
 configure_for_example()  # Must be called before other pyvider imports
 
 # pyvider.rpcplugin imports
+# Import the shared DummyHandler
+from examples.example_utils import DummyHandler  # noqa: E402
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
-# Import the shared DummyHandler
-from examples.example_utils import DummyHandler # noqa: E402
 
 
 async def main() -> None:
@@ -34,9 +31,7 @@ async def main() -> None:
     It expects its environment (magic cookie) to be set by the launching client.
     """
     # configure_for_example() called at module level to set up paths and basic config
-    logger.info(
-        "🚀 ch08_dummy_server.py: Starting as an executable plugin..."
-    )
+    logger.info("🚀 ch08_dummy_server.py: Starting as an executable plugin...")
 
     # The `configure_for_example()` utility should have set:
     # - PLUGIN_AUTO_MTLS=False
