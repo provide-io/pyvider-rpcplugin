@@ -31,18 +31,27 @@ configure_for_example()
 
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer # For type hints
 from pyvider.telemetry import logger
 
 class BasicProtocol(RPCPluginProtocol):
-    async def get_grpc_descriptors(self):
+    """Basic protocol for demonstration."""
+    from typing import Any, Tuple
+
+    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]:
         return None, "BasicService"
-    async def add_to_server(self, server, handler):
-        logger.info("🔌 Basic service registered")
+
+    async def add_to_server(self, server: Any, handler: Any) -> None:
+        service_name = await self.get_service_name()
+        logger.info(
+            f"🔌 Service '{service_name}' (conceptual) would be registered with handler: {type(handler).__name__}"
+        )
 
 class BasicHandler:
+    """Basic handler for demonstration."""
     pass
 
-async def tcp_server_example():
+async def tcp_server_example() -> RPCPluginServer:
     logger.info("🌐 TCP Server Configuration Example")
     server = plugin_server(
         protocol=BasicProtocol(),
@@ -56,11 +65,11 @@ async def tcp_server_example():
     # Note: server.serve() is not called here, so it doesn't actually start listening.
     return server
 
-async def unix_server_example():
+async def unix_server_example() -> RPCPluginServer:
     logger.info("🔌 Unix Socket Server Configuration Example")
     import os
     import tempfile
-    socket_path = os.path.join(tempfile.gettempdir(), "pyvider_example.sock")
+    socket_path = os.path.join(tempfile.gettempdir(), "pyvider_example.sock") # nosec B108
     server = plugin_server(
         protocol=BasicProtocol(),
         handler=BasicHandler(),
@@ -72,7 +81,7 @@ async def unix_server_example():
     # Note: server.serve() is not called.
     return server
 
-async def main():
+async def main() -> None:
     logger.info("🚀 Server Setup Examples")
     tcp_server = await tcp_server_example()
     unix_server = await unix_server_example()

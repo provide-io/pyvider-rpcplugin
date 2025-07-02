@@ -24,12 +24,18 @@ async def basic_client_example() -> None:
     logger.info(f"📋 Config: {client_config}")
 
     # In real usage:
+    # from pyvider.rpcplugin import plugin_client
     # client = plugin_client(
     #     command=["./path/to/plugin/executable"],
-    #     config=client_config
+    #     # The 'config' dict passed to plugin_client can include an 'env' sub-dictionary
+    #     # to pass specific environment variables to the plugin subprocess.
+    #     # It can also include other keys that RPCPluginClient might use directly.
+    #     config={"env": {"MY_PLUGIN_VAR": "value"}, "timeout": 15.0}
     # )
-    # await client.start()
-
+    # await client.start() # This launches the plugin and connects
+    # # After client.start() succeeds, client.grpc_channel is available
+    # # ... make RPC calls using a stub ...
+    # await client.close() # This stops the plugin and cleans up
     logger.info("✅ Basic client example completed (conceptual)")
 
 
@@ -39,11 +45,12 @@ async def error_handling_example() -> None:
 
     try:
         # Simulate client operations
-        logger.info("🔄 Attempting client connection...")
+        logger.info("🔄 Attempting client connection (simulated)...")
 
-        # This would be real client code:
-        # await client.start()
-
+        # In a real scenario, client.start() might raise these:
+        # raise TransportError("Simulated network issue during connection")
+        # raise HandshakeError("Simulated authentication or handshake protocol failure")
+        # raise RPCPluginError("A generic plugin system error during setup")
         logger.info("✅ Connection successful")
 
     except TransportError as e:

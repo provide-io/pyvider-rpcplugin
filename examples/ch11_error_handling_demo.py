@@ -17,8 +17,7 @@ from pyvider.rpcplugin.exception import ( # noqa: E402
     TransportError,
 )
 from pyvider.telemetry import logger # noqa: E402
-from typing import Any, Callable, Awaitable # For circuit breaker
-from collections.abc import Never # For attempt_primary_service
+from typing import Any, Callable, Awaitable, Never # For circuit breaker and attempt_primary_service
 
 
 async def exception_hierarchy_demo() -> None:

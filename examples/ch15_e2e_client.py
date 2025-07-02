@@ -10,17 +10,8 @@ import os
 import sys
 from pathlib import Path
 
-# Call configure_for_example() early to set up sys.path
-# Import example_utils directly, as it's in the same directory.
-
-# Force project root onto sys.path immediately
-project_root_for_client = str(Path(__file__).resolve().parent.parent)
-if project_root_for_client not in sys.path:
-    sys.path.insert(0, project_root_for_client)
-
-import example_utils  # type: ignore[import-not-found]
-
-example_utils.configure_for_example()
+import example_utils # type: ignore[import-not-found]
+example_utils.configure_for_example(clear_env=True) # For client context
 
 # Import pyvider components
 from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
@@ -28,39 +19,28 @@ from pyvider.rpcplugin.exception import RPCPluginError # noqa: E402
 from pyvider.telemetry import logger # noqa: E402
 
 # Import generated protobuf code for E2E Greeting service
-# This needs to be done after example_utils.configure_for_example() has run.
-# We will import them inside main() or where they are first needed.
+from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc # noqa: E402
 
 
 async def main() -> None:
     logger.info("🚀 Starting E2E Greeting Client (ch15_e2e_client.py)")
 
-    # Import proto modules here, after sys.path is configured
-    import examples.proto  # Import the package itself
-
-    # Determine path to the server script
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "ch15_e2e_server.py"  # Updated name
+    server_script_path = current_dir / "ch15_e2e_server.py"
 
     if not server_script_path.exists():
         logger.error(f"Could not find server script: {server_script_path}")
         return
 
-    # The client's `example_utils.configure_for_example(clear_env=True)` sets up its
-    # rpcplugin_config. `RPCPluginClient._launch_process` will use these
-    # client-side config values (PLUGIN_MAGIC_COOKIE_KEY and PLUGIN_MAGIC_COOKIE_VALUE)
-    # to set the correct environment variable for the server.
-    # The server (`ch15_e2e_server.py`), also calling
-    # `configure_for_example(clear_env=False)`, will have matching default
-    # expectations for these.
-    from pyvider.rpcplugin import rpcplugin_config  # Import for default log level
+    from pyvider.rpcplugin import rpcplugin_config # Import for reading client's config
 
+    # Configure environment for the server subprocess
     client_config = {
         "env": {
-            # Propagate the client's log level to the server for example consistency.
-            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
-            # Explicitly disable mTLS for the server process
-            "PLUGIN_AUTO_MTLS": "False",
+            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
+            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "DEBUG"), # Use client's log level
+            "PLUGIN_AUTO_MTLS": "False" # Explicitly disable mTLS for this example server
         }
     }
 

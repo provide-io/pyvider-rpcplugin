@@ -6,8 +6,8 @@ pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
 This contrasts with examples that use `plugin_client` to launch the server.
 To run this example:
-1. Start a compatible server first, specifically `examples/ch02_dummy_server.py`.
-   Run: `python examples/ch02_dummy_server.py`
+1. Start a compatible server first, specifically `examples/common_dummy_server_for_ch08.py`.
+   Run: `python examples/common_dummy_server_for_ch08.py`
    This server is configured by default (via example_utils) for Unix socket and
    will write its socket path to `dummy_server_socket.txt` in the project root.
    It also defaults to PLUGIN_AUTO_MTLS=False.

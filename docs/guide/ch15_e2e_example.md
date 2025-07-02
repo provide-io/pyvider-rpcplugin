@@ -146,16 +146,16 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-from typing import Any
+# typing.Any is not used in the snippet after changes, so removed from here for brevity in doc
+# from typing import Any
 
 # Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.exception import RPCPluginError
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
+from pyvider.rpcplugin.exception import RPCPluginError # noqa: E402
+from pyvider.telemetry import logger # noqa: E402
 
 # Import generated protobuf code for E2E Greeting service
-from examples.proto import e2e_greeting_pb2
-from examples.proto import e2e_greeting_pb2_grpc
+from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc # noqa: E402
 
 
 async def main() -> None:
@@ -168,14 +168,15 @@ async def main() -> None:
         logger.error(f"Could not find server script: {server_script_path}")
         return
 
-    # configure_for_example() called in main sets the client's expected magic cookie value
-    # to "pyvider-example-cookie" and key to "PYVIDER_PLUGIN_MAGIC_COOKIE".
-    # We ensure the server subprocess is launched with these same values.
+    from pyvider.rpcplugin import rpcplugin_config # Import for reading client's config
+
+    # Configure environment for the server subprocess
     client_config = {
         "env": {
-            "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE", # Must match client's config for key name
-            "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie", # Must match client's expected value
-            "PLUGIN_LOG_LEVEL": os.environ.get("PLUGIN_LOG_LEVEL", "DEBUG")
+            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
+            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "DEBUG"), # Use client's log level
+            "PLUGIN_AUTO_MTLS": "False" # Explicitly disable mTLS for this example server
         }
     }
 

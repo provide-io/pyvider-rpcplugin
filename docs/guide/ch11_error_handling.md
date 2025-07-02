@@ -55,84 +55,136 @@ configure_for_example() # Basic example setup
 
 # Import specific exceptions from the library
 from pyvider.rpcplugin.exception import (
-    HandshakeError, ProtocolError, RPCPluginError, SecurityError, TransportError,
+    HandshakeError,
+    ProtocolError,
+    RPCPluginError,
+    SecurityError,
+    TransportError,
 )
 from pyvider.telemetry import logger
+from typing import Any, Callable, Awaitable # For circuit breaker
+from collections.abc import Never # For attempt_primary_service
 
-async def exception_hierarchy_demo():
-    """Demonstrates catching exceptions from the pyvider.rpcplugin hierarchy."""
+
+async def exception_hierarchy_demo() -> None:
+    """Demonstrate the exception hierarchy."""
     logger.info("⚠️  Exception Hierarchy Demo")
 
-    exceptions_to_raise = [
-        (TransportError, "Simulated network connection failed"),
-        (ProtocolError, "Simulated invalid protocol message"),
-        (HandshakeError, "Simulated authentication failed"),
-        (SecurityError, "Simulated certificate validation failed"),
-        (RPCPluginError, "Simulated generic plugin error"), # Base plugin error
+    exceptions = [
+        (TransportError, "Network connection failed"),
+        (ProtocolError, "Invalid protocol message"),
+        (HandshakeError, "Authentication failed"),
+        (SecurityError, "Certificate validation failed"),
+        (RPCPluginError, "Generic plugin error"),
     ]
 
-    for exc_class, message in exceptions_to_raise:
+    for exc_class, message in exceptions:
         try:
-            # Simulate raising an instance of the exception
-            raise exc_class(message, hint=f"This is a hint for {exc_class.__name__}")
-        except RPCPluginError as e: # Catches any error inheriting from RPCPluginError
-            logger.info(f"🔍 Caught: {e}") # __str__ method of exception includes name, message, hint
-            # You can access specific attributes too:
-            # logger.info(f"   Message: {e.message}")
-            # logger.info(f"   Hint: {e.hint}")
-            # if isinstance(e, HandshakeError):
-            #     logger.info("   This was specifically a HandshakeError.")
-        except Exception: # Should not be reached if all are RPCPluginError subclasses
-            logger.error("   Caught a non-RPCPluginError, which is unexpected here.")
+            raise exc_class(message, hint=f"Check {exc_class.__name__} documentation")
+        except RPCPluginError as e:
+            logger.info(f"🔍 Caught: {e}")
 
     logger.info("✅ Exception hierarchy demo completed")
 
-async def graceful_degradation_example():
-    """Illustrates a conceptual pattern for falling back to alternative logic."""
+
+async def graceful_degradation_example() -> None:
+    """Example: Graceful degradation patterns."""
     logger.info("🛡️  Graceful Degradation Example")
 
-    async def attempt_primary_service():
-        # Simulate an operation that might use pyvider.rpcplugin and fail
-        logger.info("  Trying primary service...")
-        await asyncio.sleep(0.1) # Simulate work
-        raise TransportError("Primary service endpoint unreachable")
+    async def attempt_primary_service() -> Never:
+        """Simulate primary service failure."""
+        raise TransportError("Primary service unavailable")
 
-    async def fallback_service():
-        logger.info("  Primary failed, trying fallback service...")
-        await asyncio.sleep(0.1) # Simulate work for fallback
-        return "Data from fallback service"
+    async def fallback_service() -> str:
+        """Simulate fallback service."""
+        # await asyncio.sleep(0.1) # Original file has no sleep here
+        return "Fallback service response"
 
-    final_result = None
+    result = "Not set" # Initialize result
     try:
-        logger.info("🎯 Attempting primary service operation...")
-        final_result = await attempt_primary_service()
-    except TransportError as e: # Catch a specific, potentially recoverable error
-        logger.warning(f"⚠️  Primary service attempt failed: {e.message}")
-        logger.info("🔄 Falling back to secondary service logic.")
-        final_result = await fallback_service()
-    except RPCPluginError as e: # Catch other plugin system errors
-        logger.error(f"🚫 Plugin system error, cannot proceed: {e.message}")
-        final_result = "Error: Plugin system failure"
-    except Exception as e: # Catch any other unexpected errors
-        logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-        final_result = "Error: Unexpected failure"
+        logger.info("🎯 Attempting primary service")
+        result = await attempt_primary_service()
+    except TransportError as e:
+        logger.warning(f"⚠️  Primary service failed: {e}")
+        logger.info("🔄 Falling back to secondary service")
+        result = await fallback_service()
 
-    logger.info(f"✅ Final result from operation: {final_result}")
+    logger.info(f"✅ Final result: {result}")
     logger.info("✅ Graceful degradation example completed")
 
-# The SimpleCircuitBreaker class and its usage example from ch11_error_handling_demo.py
-# can also be included here to demonstrate more advanced resilience patterns.
-# For brevity in this generated documentation, it's summarized.
-# A circuit breaker can be useful if a plugin becomes intermittently unavailable,
-# to prevent hammering it and to fail fast for a period.
 
-async def main():
+async def circuit_breaker_example() -> None:
+    """Example: Circuit breaker pattern."""
+    logger.info("🔌 Circuit Breaker Example")
+
+    class SimpleCircuitBreaker:
+        def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 5) -> None:
+            self.failure_threshold = failure_threshold
+            self.recovery_timeout = recovery_timeout
+            self.failure_count = 0
+            self.last_failure_time = 0
+            self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+
+        async def call(self, func: Callable[[], Awaitable[Any]]) -> Any:
+            """Execute function with circuit breaker protection."""
+            current_time = asyncio.get_event_loop().time()
+
+            if self.state == "OPEN":
+                if current_time - self.last_failure_time >= self.recovery_timeout:
+                    self.state = "HALF_OPEN"
+                    logger.info("🔄 Circuit breaker: HALF_OPEN")
+                else:
+                    raise TransportError("Circuit breaker is OPEN")
+
+            try:
+                result = await func()
+                if self.state == "HALF_OPEN":
+                    self.state = "CLOSED"
+                    self.failure_count = 0
+                    logger.info("✅ Circuit breaker: CLOSED")
+                return result
+            except Exception as e:
+                self.failure_count += 1
+                self.last_failure_time = current_time
+
+                if self.failure_count >= self.failure_threshold:
+                    self.state = "OPEN"
+                    logger.warning("🚫 Circuit breaker: OPEN")
+                raise e
+
+    async def unreliable_service() -> str:
+        """Simulate unreliable service."""
+        import random
+
+        if random.random() < 0.7:  # nosec B311 # 70% failure rate
+            raise TransportError("Service failure")
+        return "Service success"
+
+    circuit_breaker = SimpleCircuitBreaker()
+
+    # Test circuit breaker
+    for i in range(10):
+        try:
+            result = await circuit_breaker.call(unreliable_service)
+            logger.info(f"✅ Call {i + 1}: {result}")
+        except TransportError as e:
+            logger.warning(f"⚠️  Call {i + 1}: {e}")
+
+        await asyncio.sleep(0.1)
+
+    logger.info("✅ Circuit breaker example completed")
+
+
+async def main() -> None:
+    """Run error handling examples."""
     logger.info("🚀 Error Handling Examples")
+
     await exception_hierarchy_demo()
-    await asyncio.sleep(0.1)
     await graceful_degradation_example()
-    # await circuit_breaker_example() # If including the circuit breaker demo
+    await circuit_breaker_example()
+
     logger.info("✅ All error handling examples completed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

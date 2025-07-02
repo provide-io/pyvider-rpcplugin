@@ -68,7 +68,8 @@ async def tcp_server_example() -> RPCPluginServer:
         config={"APP_MAX_WORKERS": 4},  # Using APP_ prefix for clarity
     )
 
-    logger.info("✅ TCP server configured")
+    # Log the configured endpoint
+    logger.info(f"✅ TCP server configured: {server.transport.endpoint if server.transport else 'No transport'}")
     return server
 
 
@@ -91,7 +92,8 @@ async def unix_server_example() -> RPCPluginServer:
         config={"APP_MAX_WORKERS": 2},  # Using APP_ prefix for clarity
     )
 
-    logger.info("✅ Unix socket server configured")
+    # Log the configured endpoint
+    logger.info(f"✅ Unix socket server configured: {server.transport.endpoint if server.transport else 'No transport'}")
     return server
 
 

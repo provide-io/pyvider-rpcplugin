@@ -37,7 +37,7 @@ async def tcp_transport_demo():
     # port=0 would mean an OS-assigned ephemeral port if this transport were to listen.
     port = get_example_port() # Get a likely available port for demo
     transport = TCPSocketTransport(host="127.0.0.1", port=port)
-    logger.info(f"📡 TCP transport configured: Host={transport.host}, Port={transport.port}")
+    logger.info(f"📡 TCP transport configured: {transport}") # Logs the repr
     # To actually use it for listening:
     # endpoint = await transport.listen()
     # logger.info(f"TCP server would listen on: {endpoint}")
@@ -48,16 +48,16 @@ async def unix_transport_demo():
     logger.info("🔌 Unix Socket Transport Demo")
     with tempfile.NamedTemporaryFile(suffix=".sock", delete=False) as tmp:
         socket_path = tmp.name
-    try:
-        # Directly instantiate UnixSocketTransport
-        transport = UnixSocketTransport(path=socket_path)
-        logger.info(f"📁 Unix socket transport configured: Path={transport.path}")
-        # To actually use it for listening:
-        # endpoint = await transport.listen()
-        # logger.info(f"Unix server would listen on: {endpoint}")
-        # await transport.close()
-    finally:
-        Path(socket_path).unlink(missing_ok=True) # Ensure cleanup
+
+    # Directly instantiate UnixSocketTransport
+    transport = UnixSocketTransport(path=socket_path)
+    logger.info(f"📁 Unix socket transport configured: {transport}") # Logs the repr
+    # To actually use it for listening:
+    # endpoint = await transport.listen()
+    # logger.info(f"Unix server would listen on: {endpoint}")
+    # await transport.close()
+
+    Path(socket_path).unlink(missing_ok=True) # Ensure cleanup
     logger.info("✅ Unix transport demo completed")
 
 async def main():

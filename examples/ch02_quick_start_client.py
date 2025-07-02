@@ -1,78 +1,46 @@
 #!/usr/bin/env python3
+# examples/ch02_quick_start_client.py
 """
 Quick Start Example - Client launching an executable plugin server.
-This example demonstrates the `plugin_client` launching the `ch02_dummy_server.py`
-executable and establishing a connection.
 """
-
 import asyncio
 import sys
 from pathlib import Path
+from example_utils import configure_for_example
 
-# Setup example environment by calling configure_for_example()
-# This ensures paths are set and basic configuration (like disabling mTLS by default
-# and setting a default magic cookie) is applied for examples.
-from example_utils import configure_for_example  # type: ignore[import-not-found]
+configure_for_example(clear_env=True) # Client context
 
-configure_for_example(clear_env=True)  # Client context, clear its own env
+from pyvider.rpcplugin import plugin_client
+from pyvider.rpcplugin.client.base import RPCPluginClient # Retaining for clarity if user inspects client object
+from pyvider.rpcplugin.exception import RPCPluginError
+from pyvider.telemetry import logger
 
-from pyvider.rpcplugin import plugin_client  # noqa: E402
-from pyvider.rpcplugin.client.base import RPCPluginClient  # noqa: E402
-from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402
-
-
-async def main() -> None:
-    """Run the quick start client example."""
-    logger.info(
-        "🚀 Starting pyvider-rpcplugin Quick Start Example (Client Launching Plugin)"
-    )
-
-    # Determine the path to the ch02_dummy_server.py executable
+async def main():
+    logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")
     example_dir = Path(__file__).resolve().parent
-    dummy_server_executable = example_dir / "ch02_dummy_server.py"  # Updated name
+    dummy_server_executable = example_dir / "ch02_dummy_server.py"
 
-    if not dummy_server_executable.exists():
+    if not dummy_server_executable.exists(): # Good practice check
         logger.error(f"Dummy server executable not found at: {dummy_server_executable}")
-        logger.error("Please ensure ch02_dummy_server.py is in the same directory.")
         return
 
-    # The command to launch the plugin server
-    # Using sys.executable ensures we use the same Python interpreter
     dummy_server_command = [sys.executable, str(dummy_server_executable)]
+    client: RPCPluginClient | None = None
 
-    # `configure_for_example()` should have set these:
-    # PLUGIN_AUTO_MTLS=False
-    # PLUGIN_MAGIC_COOKIE_KEY="PYVIDER_PLUGIN_MAGIC_COOKIE"
-    # PLUGIN_MAGIC_COOKIE_VALUE="pyvider-example-cookie"
-    # `plugin_client` will read these from config and set the
-    # PYVIDER_PLUGIN_MAGIC_COOKIE environment variable for the
-    # dummy_server_command process.
-
-    client: RPCPluginClient | None = None  # Ensure client is defined for finally block
     try:
-        logger.info(
-            f"Client attempting to launch plugin: {' '.join(dummy_server_command)}"
-        )
+        logger.info(f"Client launching plugin: {' '.join(dummy_server_command)}")
         client = plugin_client(command=dummy_server_command)
 
         logger.info("Starting client and connecting to plugin...")
-        await client.start()  # This launches the subprocess and performs handshake
+        await client.start()
 
         logger.info("✅ Client connected to dummy_server plugin successfully!")
-        logger.info(
-            "   The dummy_server provides a basic protocol with no custom methods."
-        )
-        logger.info(
-            "   If it had methods defined in a .proto, "
-            "you would use generated stubs here:"
-        )
-        logger.info("   e.g., stub = YourServiceStub(client.grpc_channel)")
-        logger.info("         await stub.YourMethod(YourRequest())")
-        logger.info("   For this example, successful connection is the main goal.")
-
-        # Keep the connection open for a short while to observe
-        await asyncio.sleep(2)  # Show it's running
+        logger.info("   The dummy_server uses a basic protocol with no custom RPC methods.")
+        # If your plugin had defined services (e.g., via .proto files),
+        # you would create a gRPC stub here using client.grpc_channel:
+        # stub = YourServiceStub(client.grpc_channel)
+        # response = await stub.YourMethod(YourRequest())
+        await asyncio.sleep(2) # Keep connection alive for demonstration
 
     except RPCPluginError as e:
         logger.error(f"❌ Client RPCPluginError: {e.message}", exc_info=True)
@@ -83,17 +51,11 @@ async def main() -> None:
     finally:
         if client and client.is_started:
             logger.info("Shutting down client and plugin...")
-            # This will also request the plugin server (ch02_dummy_server.py)
-            # to shut down via its controller service, and then terminate
-            # the process if needed.
             await client.close()
             logger.info("Client and plugin shut down.")
-        elif client:  # If client was created but not started (e.g. error before start)
-            await client.close()  # Still attempt cleanup
+        elif client: # Handle case where client was instantiated but not started
+            await client.close()
             logger.info("Client (not started) resources cleaned up.")
-
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-# 🐍🚀
