@@ -5,26 +5,37 @@ Server Setup Examples - Various server configuration patterns.
 
 import asyncio
 
-from example_utils import configure_for_example, get_example_port
+from example_utils import (  # type: ignore[import-not-found]
+    configure_for_example,
+    get_example_port,
+)
 
 configure_for_example()
 
-from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.telemetry import logger
+from pyvider.rpcplugin import plugin_server  # noqa: E402
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402
 
 
 class BasicProtocol(RPCPluginProtocol):
     """Basic protocol for demonstration."""
+    from typing import Any, Tuple # Add Any, Tuple
 
-    async def get_grpc_descriptors(self):
-        return None, "BasicService"
+    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]:
+        # For a real service, this would return actual gRPC descriptors
+        # (e.g., your_pb2_grpc) and the service name string
+        # as defined in your .proto file.
+        # Example: return your_pb2_grpc, "YourServiceName"
+        return None, "BasicService"  # Placeholder for concept demonstration
 
-    def get_method_type(self, method_name: str) -> str:
-        return "unary_unary"
-
-    async def add_to_server(self, server, handler):
-        logger.info("🔌 Basic service registered")
+    async def add_to_server(self, server: Any, handler: Any) -> None:
+        # For a real service, this would typically call a function like:
+        # your_pb2_grpc.add_YourServiceServicer_to_server(handler, server)
+        # The service_name is derived from get_grpc_descriptors.
+        service_name = await self.get_service_name()
+        logger.info(
+            f"🔌 Service '{service_name}' (conceptual) would be registered with handler: {type(handler).__name__}"
+        )
 
 
 class BasicHandler:
@@ -32,8 +43,9 @@ class BasicHandler:
 
     pass
 
+from pyvider.rpcplugin.server import RPCPluginServer # For return type hint
 
-async def tcp_server_example():
+async def tcp_server_example() -> RPCPluginServer:
     """Example: TCP server configuration."""
     logger.info("🌐 TCP Server Configuration Example")
 
@@ -60,7 +72,7 @@ async def tcp_server_example():
     return server
 
 
-async def unix_server_example():
+async def unix_server_example() -> RPCPluginServer:
     """Example: Unix socket server configuration."""
     logger.info("🔌 Unix Socket Server Configuration Example")
 
@@ -83,15 +95,15 @@ async def unix_server_example():
     return server
 
 
-async def main():
+async def main() -> None:
     """Run server setup examples."""
     logger.info("🚀 Server Setup Examples")
 
     # TCP example
-    tcp_server = await tcp_server_example()
+    await tcp_server_example()
 
     # Unix socket example
-    unix_server = await unix_server_example()
+    await unix_server_example()
 
     logger.info("✅ All server setup examples completed")
 

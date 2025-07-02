@@ -1,23 +1,29 @@
 # tests/conftest.py
-import sys
 import os
+from collections.abc import Generator
+from typing import Any
+
 import pytest
-from pyvider.rpcplugin.config import RPCPluginConfig, CONFIG_SCHEMA
-from tests.fixtures import *
-from tests.fixtures.server import rpc_plugin_server_manager # Import the new fixture
+
+from pyvider.rpcplugin.config import CONFIG_SCHEMA, RPCPluginConfig
+from tests.fixtures import *  # noqa: F403
+
 
 @pytest.fixture(autouse=True, scope="function")
-def reset_rpcplugin_config_singleton():
+def reset_rpcplugin_config_singleton() -> Generator[None]:
     """
-    Fixture to reset the RPCPluginConfig singleton and relevant env vars before each test.
+    Reset RPCPluginConfig singleton and relevant env vars before each test.
+
     This ensures complete test isolation with respect to configuration.
     """
     # Force the singleton to be cleared
     RPCPluginConfig._instance = None
 
     # Backup and clear all environment variables defined in the schema
-    env_keys_to_clear = list(CONFIG_SCHEMA.keys())
-    original_env_values = {key: os.environ.get(key) for key in env_keys_to_clear}
+    env_keys_to_clear: list[str] = list(CONFIG_SCHEMA.keys())
+    original_env_values: dict[str, Any] = {
+        key: os.environ.get(key) for key in env_keys_to_clear
+    }
 
     for key in env_keys_to_clear:
         if key in os.environ:
@@ -33,6 +39,6 @@ def reset_rpcplugin_config_singleton():
             os.environ[key] = value
         elif key in os.environ:
             del os.environ[key]
-    
+
     # Final reset to ensure no state leaks to subsequent test modules
     RPCPluginConfig._instance = None

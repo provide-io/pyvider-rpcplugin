@@ -3,29 +3,29 @@
 
 # Assuming RPCPluginHandler, RPCPluginProtocol, RPCPluginTransport are importable
 # from the SUT (System Under Test - types.py)
+import inspect  # Ensure inspect is imported
+from typing import Any
+from unittest.mock import MagicMock, patch
+
+from pyvider.rpcplugin import types as types_module_logger_ref
 from pyvider.rpcplugin.types import (
     RPCPluginHandler,
     RPCPluginProtocol,
     RPCPluginTransport,
+    is_valid_connection,
     is_valid_handler,
     is_valid_protocol,
+    is_valid_secure_rpc_client,
+    is_valid_serializable,
     is_valid_transport,
-    is_valid_serializable,  # Added import
-    is_valid_connection,  # Added import
-    is_valid_secure_rpc_client,  # Added import
 )
 
-# Import logger from the types module to patch it where it's used by the TypeGuards
-from pyvider.rpcplugin import types as types_module_logger_ref
-
-
 # Test for is_valid_handler
-from unittest.mock import MagicMock, patch
 
 
-def test_is_valid_handler_true(mocker):
+def test_is_valid_handler_true(mocker: Any) -> None:
     """Test is_valid_handler with an object that implements the protocol."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -40,9 +40,9 @@ def test_is_valid_handler_true(mocker):
     )
 
 
-def test_is_valid_handler_false(mocker):
+def test_is_valid_handler_false(mocker: Any) -> None:
     """Test is_valid_handler with an object that does not implement the protocol."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -55,20 +55,20 @@ def test_is_valid_handler_false(mocker):
 
 
 # Test for is_valid_protocol
-def test_is_valid_protocol_true(mocker):
+def test_is_valid_protocol_true(mocker: Any) -> None:
     """Test is_valid_protocol with an object that implements the protocol."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
     class ValidProtocol(RPCPluginProtocol):
-        async def get_grpc_descriptors(self):
+        async def get_grpc_descriptors(self) -> tuple[None, str]:
             return (None, "service")
 
-        async def add_to_server(self, handler, server):
+        async def add_to_server(self, handler: Any, server: Any) -> None:
             pass
 
-        def get_method_type(self, method_name):
+        def get_method_type(self, method_name: str) -> str:
             return "unary_unary"
 
     protocol_instance = ValidProtocol()
@@ -78,9 +78,9 @@ def test_is_valid_protocol_true(mocker):
     )
 
 
-def test_is_valid_protocol_false(mocker):
+def test_is_valid_protocol_false(mocker: Any) -> None:
     """Test is_valid_protocol with an object that does not implement the protocol."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -95,22 +95,22 @@ def test_is_valid_protocol_false(mocker):
 
 
 # Test for is_valid_transport
-def test_is_valid_transport_true(mocker):
+def test_is_valid_transport_true(mocker: Any) -> None:
     """Test is_valid_transport with an object that implements the protocol."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
     class ValidTransport(RPCPluginTransport):
         endpoint: str | None = None
 
-        async def listen(self):
+        async def listen(self) -> str:
             return "endpoint"
 
-        async def connect(self, endpoint):
+        async def connect(self, endpoint: str) -> None:
             pass
 
-        async def close(self):
+        async def close(self) -> None:
             pass
 
     transport_instance = ValidTransport()
@@ -120,9 +120,9 @@ def test_is_valid_transport_true(mocker):
     )
 
 
-def test_is_valid_transport_false(mocker):
+def test_is_valid_transport_false(mocker: Any) -> None:
     """Test is_valid_transport with an object that does not implement the protocol."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -134,9 +134,9 @@ def test_is_valid_transport_false(mocker):
 
 
 # Test for is_valid_serializable
-def test_is_valid_serializable_true(mocker):
-    """Test is_valid_serializable with an object that correctly implements the protocol."""
-    mock_logger_debug = mocker.patch.object(
+def test_is_valid_serializable_true(mocker: Any) -> None:
+    """Test is_valid_serializable with a correctly implemented object."""
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -145,7 +145,7 @@ def test_is_valid_serializable_true(mocker):
             return {"data": "valid"}
 
         @classmethod
-        def from_dict(cls, data: dict[str, object]) -> "ValidSerializable":
+        def from_dict(cls: type[Any], data: dict[str, object]) -> "ValidSerializable":
             instance = cls()
             return instance
 
@@ -153,7 +153,8 @@ def test_is_valid_serializable_true(mocker):
     assert is_valid_serializable(instance) is True
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SerializableT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("SerializableT: All structural and signature checks passed."),
     ]
@@ -163,137 +164,252 @@ def test_is_valid_serializable_true(mocker):
 
 # --- New tests for covering missed branches ---
 
-# SerializableT Not Callable
-def test_is_valid_serializable_false_to_dict_not_callable(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
-    class NotCallableDict:
-        to_dict = 123 # Not callable
-        @classmethod
-        def from_dict(cls, data): return cls()
-    assert is_valid_serializable(NotCallableDict()) is False
-    mock_logger_debug.assert_any_call("SerializableT: Attribute to_dict is not callable.")
 
-def test_is_valid_serializable_false_from_dict_not_callable(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+# SerializableT Not Callable
+def test_is_valid_serializable_false_to_dict_not_callable(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
+    class NotCallableDict:
+        to_dict = 123  # Not callable
+
+        @classmethod
+        def from_dict(cls: type[Any], data: Any) -> "NotCallableDict":
+            return cls()
+
+    assert is_valid_serializable(NotCallableDict()) is False
+    mock_logger_debug.assert_any_call(
+        "SerializableT: Attribute to_dict is not callable."
+    )
+
+
+def test_is_valid_serializable_false_from_dict_not_callable(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class NotCallableFromDict:
-        def to_dict(self): return {}
-        from_dict = 123 # Not callable
+        def to_dict(self) -> dict[str, Any]:
+            return {}
+
+        from_dict = 123  # Not callable
+
     assert is_valid_serializable(NotCallableFromDict()) is False
-    mock_logger_debug.assert_any_call("SerializableT: Attribute from_dict is not callable.")
+    mock_logger_debug.assert_any_call(
+        "SerializableT: Attribute from_dict is not callable."
+    )
+
 
 # SerializableT Inspect Signature Fails
-import inspect # Ensure inspect is imported
 
-def test_is_valid_serializable_inspect_signature_to_dict_fails(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+
+def test_is_valid_serializable_inspect_signature_to_dict_fails(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class TargetForInspectFail:
-        def to_dict(self): return {}
-        @classmethod
-        def from_dict(cls, data): return cls()
+        def to_dict(self) -> dict[str, Any]:
+            return {}
 
-    with patch("inspect.signature", side_effect=TypeError("Inspect fail for to_dict!")): # Changed to TypeError
+        @classmethod
+        def from_dict(cls: type[Any], data: Any) -> "TargetForInspectFail":
+            return cls()
+
+    with patch(
+        "inspect.signature", side_effect=TypeError("Inspect fail for to_dict!")
+    ):  # Changed to TypeError
         assert is_valid_serializable(TargetForInspectFail()) is False
-    mock_logger_debug.assert_any_call("SerializableT: Could not inspect to_dict signature.")
+    mock_logger_debug.assert_any_call(
+        "SerializableT: Could not inspect to_dict signature."
+    )
 
-def test_is_valid_serializable_inspect_signature_from_dict_fails(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+
+def test_is_valid_serializable_inspect_signature_from_dict_fails(
+    mocker: Any,
+) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class TargetForInspectFail:
-        def to_dict(self): return {}
+        def to_dict(self) -> dict[str, Any]:
+            return {}
+
         @classmethod
-        def from_dict(cls, data): return cls()
+        def from_dict(cls: type[Any], data: Any) -> "TargetForInspectFail":
+            return cls()
 
     original_inspect_signature = inspect.signature
-    def inspect_side_effect_selective(obj_to_inspect):
+
+    def inspect_side_effect_selective(obj_to_inspect: Any) -> Any:
         # Check if it's the 'from_dict' method of our target class
-        if hasattr(obj_to_inspect, "__qualname__") and "TargetForInspectFail.from_dict" in obj_to_inspect.__qualname__:
+        if (
+            hasattr(obj_to_inspect, "__qualname__")
+            and "TargetForInspectFail.from_dict" in obj_to_inspect.__qualname__
+        ):
             raise ValueError("Inspect fail for from_dict!")
         return original_inspect_signature(obj_to_inspect)
 
     with patch("inspect.signature", side_effect=inspect_side_effect_selective):
         assert is_valid_serializable(TargetForInspectFail()) is False
-    mock_logger_debug.assert_any_call("SerializableT: Could not inspect from_dict signature.")
+    mock_logger_debug.assert_any_call(
+        "SerializableT: Could not inspect from_dict signature."
+    )
 
 
 # ConnectionT Not Callable
-def test_is_valid_connection_method_not_callable(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+def test_is_valid_connection_method_not_callable(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class ConnSendNotCallable:
         send_data = 123
-        async def receive_data(self, size=16384): return b""
-        async def close(self): pass
+
+        async def receive_data(self, size: int = 16384) -> bytes:
+            return b""
+
+        async def close(self) -> None:
+            pass
+
     assert is_valid_connection(ConnSendNotCallable()) is False
-    mock_logger_debug.assert_any_call("ConnectionT: Attribute send_data is not callable.")
+    mock_logger_debug.assert_any_call(
+        "ConnectionT: Attribute send_data is not callable."
+    )
 
     mock_logger_debug.reset_mock()
+
     class ConnReceiveNotCallable:
-        async def send_data(self, data): pass
+        async def send_data(self, data: bytes) -> None:
+            pass
+
         receive_data = 123
-        async def close(self): pass
+
+        async def close(self) -> None:
+            pass
+
     assert is_valid_connection(ConnReceiveNotCallable()) is False
-    mock_logger_debug.assert_any_call("ConnectionT: Attribute receive_data is not callable.")
+    mock_logger_debug.assert_any_call(
+        "ConnectionT: Attribute receive_data is not callable."
+    )
 
     mock_logger_debug.reset_mock()
+
     class ConnCloseNotCallable:
-        async def send_data(self, data): pass
-        async def receive_data(self, size=16384): return b""
+        async def send_data(self, data: bytes) -> None:
+            pass
+
+        async def receive_data(self, size: int = 16384) -> bytes:
+            return b""
+
         close = 123
+
     assert is_valid_connection(ConnCloseNotCallable()) is False
     mock_logger_debug.assert_any_call("ConnectionT: Attribute close is not callable.")
 
+
 # ConnectionT Inspect Signature Fails (example for one method)
-def test_is_valid_connection_inspect_signature_fails(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+def test_is_valid_connection_inspect_signature_fails(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class ConnTargetForInspectFail:
-        async def send_data(self, data): pass
-        async def receive_data(self, size=16384): return b""
-        async def close(self): pass
+        async def send_data(self, data: bytes) -> None:
+            pass
+
+        async def receive_data(self, size: int = 16384) -> bytes:
+            return b""
+
+        async def close(self) -> None:
+            pass
 
     original_inspect_signature = inspect.signature
-    def inspect_side_effect_selective_conn(obj_to_inspect):
-        if hasattr(obj_to_inspect, "__qualname__") and "ConnTargetForInspectFail.send_data" in obj_to_inspect.__qualname__:
+
+    def inspect_side_effect_selective_conn(obj_to_inspect: Any) -> Any:
+        if (
+            hasattr(obj_to_inspect, "__qualname__")
+            and "ConnTargetForInspectFail.send_data" in obj_to_inspect.__qualname__
+        ):
             raise ValueError("Inspect fail for send_data!")
         return original_inspect_signature(obj_to_inspect)
 
     with patch("inspect.signature", side_effect=inspect_side_effect_selective_conn):
         assert is_valid_connection(ConnTargetForInspectFail()) is False
-    mock_logger_debug.assert_any_call("ConnectionT: Could not inspect send_data signature.")
+    mock_logger_debug.assert_any_call(
+        "ConnectionT: Could not inspect send_data signature."
+    )
 
 
 # SecureRpcClientT Not Callable
-def test_is_valid_secure_rpc_client_method_not_callable(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+def test_is_valid_secure_rpc_client_method_not_callable(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class ClientPerformHandshakeNotCallable:
         _perform_handshake = 123
-        async def _setup_tls(self): pass
-        async def _create_grpc_channel(self): pass
-        async def close(self): pass
+
+        async def _setup_tls(self) -> None:
+            pass
+
+        async def _create_grpc_channel(self) -> None:
+            pass
+
+        async def close(self) -> None:
+            pass
+
     assert is_valid_secure_rpc_client(ClientPerformHandshakeNotCallable()) is False
-    mock_logger_debug.assert_any_call("SecureRpcClientT: Attribute _perform_handshake is not callable.")
+    mock_logger_debug.assert_any_call(
+        "SecureRpcClientT: Attribute _perform_handshake is not callable."
+    )
     # Similar tests can be added for _setup_tls, _create_grpc_channel, close
 
+
 # SecureRpcClientT Inspect Signature Fails (example for one method)
-def test_is_valid_secure_rpc_client_inspect_signature_fails(mocker):
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
+def test_is_valid_secure_rpc_client_inspect_signature_fails(mocker: Any) -> None:
+    mock_logger_debug: MagicMock = mocker.patch.object(
+        types_module_logger_ref.logger, "debug"
+    )
+
     class ClientTargetForInspectFail:
-        async def _perform_handshake(self): pass
-        async def _setup_tls(self): pass
-        async def _create_grpc_channel(self): pass
-        async def close(self): pass
+        async def _perform_handshake(self) -> None:
+            pass
+
+        async def _setup_tls(self) -> None:
+            pass
+
+        async def _create_grpc_channel(self) -> None:
+            pass
+
+        async def close(self) -> None:
+            pass
 
     original_inspect_signature = inspect.signature
-    def inspect_side_effect_selective_secure_client(obj_to_inspect):
-        if hasattr(obj_to_inspect, "__qualname__") and "ClientTargetForInspectFail._perform_handshake" in obj_to_inspect.__qualname__:
+
+    def inspect_side_effect_selective_secure_client(obj_to_inspect: Any) -> Any:
+        if (
+            hasattr(obj_to_inspect, "__qualname__")
+            and "ClientTargetForInspectFail._perform_handshake"
+            in obj_to_inspect.__qualname__
+        ):
             raise ValueError("Inspect fail for _perform_handshake!")
         return original_inspect_signature(obj_to_inspect)
 
-    with patch("inspect.signature", side_effect=inspect_side_effect_selective_secure_client):
+    with patch(
+        "inspect.signature", side_effect=inspect_side_effect_selective_secure_client
+    ):
         assert is_valid_secure_rpc_client(ClientTargetForInspectFail()) is False
-    mock_logger_debug.assert_any_call("SecureRpcClientT: Could not inspect _perform_handshake signature.")
+    mock_logger_debug.assert_any_call(
+        "SecureRpcClientT: Could not inspect _perform_handshake signature."
+    )
 
 
-def test_is_valid_serializable_false_missing_methods(mocker):
+def test_is_valid_serializable_false_missing_methods(mocker: Any) -> None:
     """Test is_valid_serializable with an object missing required methods."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -305,7 +421,8 @@ def test_is_valid_serializable_false_missing_methods(mocker):
     assert is_valid_serializable(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SerializableT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("SerializableT: Method to_dict is missing."),
     ]
@@ -313,9 +430,9 @@ def test_is_valid_serializable_false_missing_methods(mocker):
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_serializable_false_incorrect_signature(mocker):
-    """Test is_valid_serializable with an object having methods with incorrect signatures."""
-    mock_logger_debug = mocker.patch.object(
+def test_is_valid_serializable_false_incorrect_signature(mocker: Any) -> None:
+    """Test is_valid_serializable with methods having incorrect signatures."""
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -325,7 +442,7 @@ def test_is_valid_serializable_false_incorrect_signature(mocker):
 
         @classmethod
         def from_dict(
-            cls, data: dict[str, object], extra_arg: int
+            cls: type[Any], data: dict[str, object], extra_arg: int
         ) -> "InvalidSerializableSignature":
             return cls()
 
@@ -333,7 +450,8 @@ def test_is_valid_serializable_false_incorrect_signature(mocker):
     assert is_valid_serializable(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SerializableT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call(
             "SerializableT: to_dict signature incorrect. Expected 0 params, got 1."
@@ -344,9 +462,9 @@ def test_is_valid_serializable_false_incorrect_signature(mocker):
 
 
 # Test for is_valid_connection
-def test_is_valid_connection_true(mocker):
-    """Test is_valid_connection with an object that correctly implements ConnectionT."""
-    mock_logger_debug = mocker.patch.object(
+def test_is_valid_connection_true(mocker: Any) -> None:
+    """Test is_valid_connection with a correctly implemented ConnectionT object."""
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -364,7 +482,8 @@ def test_is_valid_connection_true(mocker):
     assert is_valid_connection(instance) is True
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements ConnectionT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("ConnectionT: All structural and signature checks passed."),
     ]
@@ -372,9 +491,9 @@ def test_is_valid_connection_true(mocker):
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_connection_false_missing_method(mocker):
+def test_is_valid_connection_false_missing_method(mocker: Any) -> None:
     """Test is_valid_connection with an object missing a required method."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -391,7 +510,8 @@ def test_is_valid_connection_false_missing_method(mocker):
     assert is_valid_connection(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements ConnectionT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("ConnectionT: Method close is missing."),
     ]
@@ -399,9 +519,9 @@ def test_is_valid_connection_false_missing_method(mocker):
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_connection_false_send_data_signature(mocker):
+def test_is_valid_connection_false_send_data_signature(mocker: Any) -> None:
     """Test is_valid_connection with incorrect send_data signature."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -420,7 +540,8 @@ def test_is_valid_connection_false_send_data_signature(mocker):
 
     # Verify key log messages were made
     mock_logger_debug.assert_any_call(
-        "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+        "🧰🔍✅ Checking if object implements ConnectionT protocol "
+        "(manual runtime checks)"
     )
 
     # Check for the specific failure log related to send_data signature
@@ -434,15 +555,15 @@ def test_is_valid_connection_false_send_data_signature(mocker):
             specific_failure_log_made = True
             break
     assert specific_failure_log_made, (
-        f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"
+        f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"  # noqa: E501
     )
 
     assert mock_logger_debug.call_count >= 2
 
 
-def test_is_valid_connection_false_receive_data_signature(mocker):
+def test_is_valid_connection_false_receive_data_signature(mocker: Any) -> None:
     """Test is_valid_connection with incorrect receive_data signature."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -460,7 +581,8 @@ def test_is_valid_connection_false_receive_data_signature(mocker):
     assert is_valid_connection(instance) is False  # Main assertion
 
     mock_logger_debug.assert_any_call(
-        "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+        "🧰🔍✅ Checking if object implements ConnectionT protocol "
+        "(manual runtime checks)"
     )
 
     specific_failure_log_made = False
@@ -473,15 +595,15 @@ def test_is_valid_connection_false_receive_data_signature(mocker):
             specific_failure_log_made = True
             break
     assert specific_failure_log_made, (
-        f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"
+        f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"  # noqa: E501
     )
 
     assert mock_logger_debug.call_count >= 2
 
 
-def test_is_valid_connection_false_close_signature(mocker):
+def test_is_valid_connection_false_close_signature(mocker: Any) -> None:
     """Test is_valid_connection with incorrect close signature."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -492,14 +614,15 @@ def test_is_valid_connection_false_close_signature(mocker):
         async def receive_data(self, size: int = 16384) -> bytes:
             return b""
 
-        async def close(self, extra_arg) -> None:  # Has extra param
+        async def close(self, extra_arg: Any) -> None:  # Has extra param
             pass
 
     instance = InvalidConnectionCloseSig()
     assert is_valid_connection(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements ConnectionT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call(
             "ConnectionT: close signature incorrect. Expected 0 params, got 1."
@@ -509,9 +632,9 @@ def test_is_valid_connection_false_close_signature(mocker):
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_connection_false_not_async(mocker):
+def test_is_valid_connection_false_not_async(mocker: Any) -> None:
     """Test is_valid_connection with a method that is not async."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -529,7 +652,8 @@ def test_is_valid_connection_false_not_async(mocker):
     assert is_valid_connection(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements ConnectionT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("ConnectionT: Method send_data is not async as expected."),
     ]
@@ -538,9 +662,9 @@ def test_is_valid_connection_false_not_async(mocker):
 
 
 # Test for is_valid_secure_rpc_client
-def test_is_valid_secure_rpc_client_true(mocker):
-    """Test is_valid_secure_rpc_client with an object that correctly implements SecureRpcClientT."""
-    mock_logger_debug = mocker.patch.object(
+def test_is_valid_secure_rpc_client_true(mocker: Any) -> None:
+    """Test is_valid_secure_rpc_client with a correctly implemented SecureRpcClientT."""
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -561,7 +685,8 @@ def test_is_valid_secure_rpc_client_true(mocker):
     assert is_valid_secure_rpc_client(instance) is True
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("SecureRpcClientT: All structural and signature checks passed."),
     ]
@@ -569,9 +694,9 @@ def test_is_valid_secure_rpc_client_true(mocker):
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_secure_rpc_client_false_missing_method(mocker):
+def test_is_valid_secure_rpc_client_false_missing_method(mocker: Any) -> None:
     """Test is_valid_secure_rpc_client with an object missing a required method."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -590,7 +715,8 @@ def test_is_valid_secure_rpc_client_false_missing_method(mocker):
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("SecureRpcClientT: Method _create_grpc_channel is missing."),
     ]
@@ -598,14 +724,16 @@ def test_is_valid_secure_rpc_client_false_missing_method(mocker):
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker):
+def test_is_valid_secure_rpc_client_false_perform_handshake_signature(
+    mocker: Any,
+) -> None:
     """Test is_valid_secure_rpc_client with incorrect _perform_handshake signature."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
     class InvalidSecureRpcClientSig:  # Does not inherit SecureRpcClientT
-        async def _perform_handshake(self, extra_arg) -> None:
+        async def _perform_handshake(self, extra_arg: Any) -> None:
             pass  # Incorrect signature
 
         async def _setup_tls(self) -> None:
@@ -621,19 +749,21 @@ def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker):
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call(
-            "SecureRpcClientT: _perform_handshake signature incorrect. Expected 0 params, got 1."
+            "SecureRpcClientT: _perform_handshake signature incorrect. "
+            "Expected 0 params, got 1."
         ),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2
 
 
-def test_is_valid_secure_rpc_client_false_not_async(mocker):
+def test_is_valid_secure_rpc_client_false_not_async(mocker: Any) -> None:
     """Test is_valid_secure_rpc_client with a method that is not async."""
-    mock_logger_debug = mocker.patch.object(
+    mock_logger_debug: MagicMock = mocker.patch.object(
         types_module_logger_ref.logger, "debug", new_callable=MagicMock
     )
 
@@ -654,7 +784,8 @@ def test_is_valid_secure_rpc_client_false_not_async(mocker):
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
         mocker.call(
-            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"
+            "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
+            "(manual runtime checks)"
         ),
         mocker.call("SecureRpcClientT: Method _setup_tls is not async as expected."),
     ]

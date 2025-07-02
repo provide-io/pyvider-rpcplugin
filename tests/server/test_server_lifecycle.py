@@ -14,6 +14,7 @@ from tests.conftest import (
     mock_server_handler,
 )
 
+
 def test_attrs_post_init_handshake_config_error(mocker):
     """
     Tests that a synchronous error during __attrs_post_init__ is correctly handled.
@@ -37,24 +38,25 @@ def test_attrs_post_init_handshake_config_error(mocker):
         pytest.fail("ConfigError was not raised when expected")
     except ConfigError as e:
         # Assert that the caught exception is the one we expect.
-        assert "Failed to initialize handshake configuration: Test rpcplugin_config error" in str(e)
+        assert (
+            "Failed to initialize handshake configuration: Test rpcplugin_config error"
+            in str(e)
+        )
     except Exception as e:
         pytest.fail(f"An unexpected exception was raised: {type(e).__name__}: {e}")
 
 
 @pytest.mark.asyncio
 async def test_serve_setup_server_raises_exception(
-    mocker, # Only one mocker argument
-    rpc_plugin_server_manager, # Use the new fixture
+    mocker,  # Only one mocker argument
+    rpc_plugin_server_manager,  # Use the new fixture
     # mock_server_protocol, mock_server_handler, mock_server_config, mock_server_transport are no longer direct dependencies
     # as rpc_plugin_server_manager will use its own (or defaults).
 ):
     # Create a server instance using the manager, but don't auto-start it.
     # The manager handles transport and basic protocol/handler setup.
     # We use default transport_type "unix" here, can be parameterized if needed.
-    server, _ = await rpc_plugin_server_manager(
-        auto_start=False
-    )
+    server, _ = await rpc_plugin_server_manager(auto_start=False)
 
     # Mock internal methods that precede _setup_server in the serve() call flow, if necessary,
     # or ensure they don't interfere.
@@ -62,9 +64,13 @@ async def test_serve_setup_server_raises_exception(
     # The rpc_plugin_server_manager doesn't call these directly when auto_start=False.
     # They are called by server.serve().
 
-    mocker.patch.object(server, "_register_signal_handlers") # Keep this if still relevant before _setup_server
-    mocker.patch.object(server, "_negotiate_handshake", new_callable=AsyncMock) # Keep this
-    mocker.patch.object(server, "_read_client_cert", return_value=None) # Keep this
+    mocker.patch.object(
+        server, "_register_signal_handlers"
+    )  # Keep this if still relevant before _setup_server
+    mocker.patch.object(
+        server, "_negotiate_handshake", new_callable=AsyncMock
+    )  # Keep this
+    mocker.patch.object(server, "_read_client_cert", return_value=None)  # Keep this
 
     # Mock _setup_server to raise an exception
     mocker.patch.object(

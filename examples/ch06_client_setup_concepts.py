@@ -5,15 +5,15 @@ Client Connection Examples - Various client implementation patterns.
 
 import asyncio
 
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 configure_for_example()
 
-from pyvider.rpcplugin.exception import HandshakeError, TransportError
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.exception import HandshakeError, RPCPluginError, TransportError # noqa: E402
+from pyvider.telemetry import logger # noqa: E402
 
 
-async def basic_client_example():
+async def basic_client_example() -> None:
     """Example: Basic client connection."""
     logger.info("🔗 Basic Client Connection Example")
 
@@ -33,7 +33,7 @@ async def basic_client_example():
     logger.info("✅ Basic client example completed (conceptual)")
 
 
-async def error_handling_example():
+async def error_handling_example() -> None:
     """Example: Client error handling patterns."""
     logger.info("⚠️  Client Error Handling Example")
 
@@ -52,6 +52,8 @@ async def error_handling_example():
     except HandshakeError as e:
         logger.error(f"🤝 Handshake error: {e}")
         # Handle authentication/handshake errors
+    except RPCPluginError as e:  # Catching the base plugin error
+        logger.error(f"🔌 RPC Plugin System Error: {e}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         # Handle other errors
@@ -59,7 +61,7 @@ async def error_handling_example():
     logger.info("✅ Error handling example completed")
 
 
-async def main():
+async def main() -> None:
     """Run client connection examples."""
     logger.info("🚀 Client Connection Examples")
 

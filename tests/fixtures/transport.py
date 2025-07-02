@@ -7,8 +7,8 @@ import asyncio
 
 import os
 import socket
-import sys # Added import
-import tempfile # Added import
+import sys  # Added import
+import tempfile  # Added import
 import uuid
 from pathlib import Path  # Ensure Path is imported
 from typing import AsyncGenerator
@@ -115,7 +115,7 @@ class SocketStateMonitor:
         if os.path.exists(self._path):
             try:
                 # Attempt to make it writable first
-                os.chmod(self._path, 0o770)
+                os.chmod(self._path, 0o770)  # nosec B103
                 os.unlink(self._path)
                 logger.debug(f"Cleaned up socket file: {self._path}")
             except Exception as e:
@@ -146,7 +146,7 @@ async def socket_monitor():
         if os.path.exists(monitor.path):
             try:
                 # Final attempt with elevated permissions
-                os.chmod(monitor.path, 0o770)
+                os.chmod(monitor.path, 0o770)  # nosec B103
                 os.unlink(monitor.path)
                 logger.debug(f"Cleaned up leftover socket: {monitor.path}")
             except Exception as e:
@@ -214,30 +214,36 @@ async def managed_unix_socket_path(
     request: pytest.FixtureRequest,
     tmp_path: Path,
 ) -> AsyncGenerator[str, None]:
-    socket_filename = f"p_{uuid.uuid4().hex[:6]}.s" # Keep the short unique filename
+    socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"  # Keep the short unique filename
 
-    if sys.platform == "darwin": # macOS
+    if sys.platform == "darwin":  # macOS
         # Use /tmp/ directly on macOS to ensure shorter paths
-        base_dir = Path(tempfile.gettempdir()) # Use tempfile.gettempdir() for robustness
+        base_dir = Path(
+            tempfile.gettempdir()
+        )  # Use tempfile.gettempdir() for robustness
         # Ensure /tmp exists and is writable, though it usually is.
         try:
             # Check if base_dir (e.g. /tmp) exists, create if not (unlikely for /tmp)
             if not base_dir.exists():
-                 base_dir.mkdir(parents=True, exist_ok=True)
+                base_dir.mkdir(parents=True, exist_ok=True)
 
             # Attempt to create a temporary file to check writability
             # This is a more reliable check than os.access on some systems/setups
-            with tempfile.NamedTemporaryFile(dir=base_dir, prefix="pyvider-test-") as tf:
-                pass # Successfully created and automatically deleted means writable
+            with tempfile.NamedTemporaryFile(
+                dir=base_dir, prefix="pyvider-test-"
+            ) as tf:
+                pass  # Successfully created and automatically deleted means writable
             socket_path_obj = base_dir / socket_filename
             log_base_path_info = f"/tmp (via tempfile.gettempdir(): {base_dir})"
         except (OSError, PermissionError) as e:
-             # Fallback if /tmp is not writable or accessible as expected
-             logger.warning(f"macOS base directory ('{base_dir}') not usable ({e!r}), falling back to tmp_path for socket.")
-             socket_path_obj = tmp_path / socket_filename # tmp_path is a Path object
-             log_base_path_info = f"tmp_path ({tmp_path})"
-    else: # Other platforms
-        socket_path_obj = tmp_path / socket_filename # tmp_path is a Path object
+            # Fallback if /tmp is not writable or accessible as expected
+            logger.warning(
+                f"macOS base directory ('{base_dir}') not usable ({e!r}), falling back to tmp_path for socket."
+            )
+            socket_path_obj = tmp_path / socket_filename  # tmp_path is a Path object
+            log_base_path_info = f"tmp_path ({tmp_path})"
+    else:  # Other platforms
+        socket_path_obj = tmp_path / socket_filename  # tmp_path is a Path object
         log_base_path_info = f"tmp_path ({tmp_path})"
 
     socket_path = str(socket_path_obj)
@@ -266,7 +272,7 @@ async def managed_unix_socket_path(
         await asyncio.sleep(0.05)
         if os.path.exists(socket_path):  # socket_path_obj should be used here
             try:
-                os.chmod(socket_path, 0o777)  # Ensure permissions allow unlink
+                os.chmod(socket_path, 0o777)  # nosec B103 # Ensure permissions allow unlink
                 os.unlink(
                     socket_path
                 )  # socket_path_obj.unlink(missing_ok=True) is better
@@ -280,17 +286,19 @@ async def managed_unix_socket_path(
                 f"ℹ️ Socket path {socket_path} already cleaned up or never created by this instance."
             )
 
-    async def finalizer_coro(): # Renamed to avoid confusion if we bring back old finalizer name
+    async def finalizer_coro():  # Renamed to avoid confusion if we bring back old finalizer name
         logger.debug(
             f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER (async_finalizer): Finalizing managed socket path: {socket_path}"
         )
-        await asyncio.sleep(0.05) # Keep the sleep, it might be generally helpful
+        await asyncio.sleep(0.05)  # Keep the sleep, it might be generally helpful
         if os.path.exists(socket_path):
             try:
-                os.chmod(socket_path, 0o777)
+                os.chmod(socket_path, 0o777)  # nosec B103
                 os.unlink(socket_path)
-                logger.debug(f"✅ Successfully unlinked socket (async_finalizer): {socket_path}")
-            except Exception as e: # Keep catching generic Exception
+                logger.debug(
+                    f"✅ Successfully unlinked socket (async_finalizer): {socket_path}"
+                )
+            except Exception as e:  # Keep catching generic Exception
                 logger.warning(
                     f"⚠️ Error unlinking socket {socket_path} in async_finalizer (type: {type(e).__name__}): {e}"
                 )

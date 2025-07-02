@@ -36,8 +36,6 @@ from pyvider.telemetry import logger
 class BasicProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self):
         return None, "BasicService"
-    def get_method_type(self, method_name: str) -> str:
-        return "unary_unary"
     async def add_to_server(self, server, handler):
         logger.info("🔌 Basic service registered")
 

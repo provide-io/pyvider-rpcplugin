@@ -7,7 +7,7 @@ import re  # For escaping regex if needed
 
 from pyvider.rpcplugin.handshake import (
     read_handshake_response,
-    parse_handshake_response, # Changed import
+    parse_handshake_response,  # Changed import
     create_stderr_relay,
 )
 from pyvider.rpcplugin.exception import HandshakeError
@@ -114,9 +114,7 @@ async def test_read_handshake_response_timeout(mocker):
     """Test timeout while waiting for handshake response."""
     process = MockProcess()
     mocker.patch("asyncio.sleep", new_callable=AsyncMock)
-    mocker.patch(
-        "time.time", side_effect=[i * 2.0 for i in range(10)]
-    )
+    mocker.patch("time.time", side_effect=[i * 2.0 for i in range(10)])
 
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
@@ -218,8 +216,12 @@ async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_l
             f"custom_run_in_executor called with unexpected func_to_run: {func_to_run}"
         )
 
-    mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop", return_value=event_loop)
-    mocker.patch.object(event_loop, "run_in_executor", side_effect=custom_run_in_executor)
+    mocker.patch(
+        "pyvider.rpcplugin.handshake.asyncio.get_event_loop", return_value=event_loop
+    )
+    mocker.patch.object(
+        event_loop, "run_in_executor", side_effect=custom_run_in_executor
+    )
     tasks_created_by_mock = []
 
     def mock_side_effect_for_create_task(coro_to_schedule, name=None):
@@ -227,7 +229,10 @@ async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_l
         tasks_created_by_mock.append(task)
         return task
 
-    mocker.patch("pyvider.rpcplugin.handshake.asyncio.create_task", side_effect=mock_side_effect_for_create_task)
+    mocker.patch(
+        "pyvider.rpcplugin.handshake.asyncio.create_task",
+        side_effect=mock_side_effect_for_create_task,
+    )
     task_object = await create_stderr_relay(mock_process)
     assert task_object is tasks_created_by_mock[0]
     assert isinstance(task_object, asyncio.Task)
@@ -235,15 +240,19 @@ async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_l
     if task_object:
         try:
             await task_object
-        except Exception: # Catch exception from task if it propagates
+        except Exception:  # nosec B110 # Catch exception from task if it propagates
             pass
 
     found_log = False
     for call_arg in mock_logger_error.call_args_list:
-        if len(call_arg[0]) > 0 and "Error in stderr relay: stderr read error" in str(call_arg[0][0]):
+        if len(call_arg[0]) > 0 and "Error in stderr relay: stderr read error" in str(
+            call_arg[0][0]
+        ):
             found_log = True
             break
-    assert found_log, f"stderr read error was not logged by relay. Logs: {mock_logger_error.call_args_list}"
+    assert found_log, (
+        f"stderr read error was not logged by relay. Logs: {mock_logger_error.call_args_list}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -254,12 +263,21 @@ async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_l
             "1|7|unix|/tmp/socket.sock|grpc|abc123",
             (1, 7, "unix", "/tmp/socket.sock", "grpc", "abc123=="),
         ),
-        ("2|7|unix|/tmp/socket.sock|grpc|abc123", "Unsupported handshake version: 2 (expected: 1)"),
+        (
+            "2|7|unix|/tmp/socket.sock|grpc|abc123",
+            "Unsupported handshake version: 2 (expected: 1)",
+        ),
     ],
 )
-def test_parse_handshake_response_valid_and_core_version_mismatch(handshake_line, expected, mocker):
+def test_parse_handshake_response_valid_and_core_version_mismatch(
+    handshake_line, expected, mocker
+):
     """Test parsing valid handshake lines and core version mismatch."""
-    mocker.patch.object(rpcplugin_config, 'get', lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default)
+    mocker.patch.object(
+        rpcplugin_config,
+        "get",
+        lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default,
+    )
 
     if isinstance(expected, tuple):
         result = parse_handshake_response(handshake_line)
@@ -272,20 +290,39 @@ def test_parse_handshake_response_valid_and_core_version_mismatch(handshake_line
 @pytest.mark.parametrize(
     "handshake_line, error_message_core",
     [
-        ("", "Invalid handshake format. Expected 6 pipe-separated parts, got 1: '...'"), # Added ...
-        ("1|2|3", "Invalid handshake format. Expected 6 pipe-separated parts, got 3: '1|2|3...'"), # Added ...
-        ("1|2|invalid|127.0.0.1:8000|grpc|", "Invalid network type 'invalid' in handshake."),
+        (
+            "",
+            "Invalid handshake format. Expected 6 pipe-separated parts, got 1: '...'",
+        ),  # Added ...
+        (
+            "1|2|3",
+            "Invalid handshake format. Expected 6 pipe-separated parts, got 3: '1|2|3...'",
+        ),  # Added ...
+        (
+            "1|2|invalid|127.0.0.1:8000|grpc|",
+            "Invalid network type 'invalid' in handshake.",
+        ),
         (
             "1|2|tcp||grpc|",
             "Empty address received in handshake string for TCP transport.",
         ),
-        ("abc|1|tcp|host:port|grpc|", "Invalid handshake format. Expected 6 pipe-separated parts, got 6: 'abc|1|tcp|host:port|grpc|...'"),
-        ("1|xyz|tcp|host:port|grpc|", "Invalid handshake format. Expected 6 pipe-separated parts, got 6: '1|xyz|tcp|host:port|grpc|...'"),
+        (
+            "abc|1|tcp|host:port|grpc|",
+            "Invalid handshake format. Expected 6 pipe-separated parts, got 6: 'abc|1|tcp|host:port|grpc|...'",
+        ),
+        (
+            "1|xyz|tcp|host:port|grpc|",
+            "Invalid handshake format. Expected 6 pipe-separated parts, got 6: '1|xyz|tcp|host:port|grpc|...'",
+        ),
     ],
 )
 def test_parse_handshake_response_invalid(handshake_line, error_message_core, mocker):
     """Test parsing handshake with invalid inputs."""
-    mocker.patch.object(rpcplugin_config, 'get', lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default)
+    mocker.patch.object(
+        rpcplugin_config,
+        "get",
+        lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default,
+    )
     # Adjusted regex to match the wrapped error message
     flexible_pattern = rf"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] {re.escape(error_message_core)}"
     with pytest.raises(HandshakeError, match=flexible_pattern):
@@ -299,12 +336,16 @@ async def test_create_stderr_relay_process_stderr_is_none_initially(mocker):
     mock_logger_debug = mocker.patch("pyvider.rpcplugin.handshake.logger.debug")
     task = await create_stderr_relay(mock_process)
     assert task is None
-    mock_logger_debug.assert_any_call("🤝📤⚠️ No process or stderr stream available for relay")
+    mock_logger_debug.assert_any_call(
+        "🤝📤⚠️ No process or stderr stream available for relay"
+    )
+
 
 @pytest.mark.asyncio
 async def test_read_handshake_stdout_becomes_none(mocker):
     mock_process = MagicMock(spec=subprocess.Popen)
     readline_calls = 0
+
     def readline_side_effect():
         nonlocal readline_calls
         readline_calls += 1
@@ -312,9 +353,11 @@ async def test_read_handshake_stdout_becomes_none(mocker):
             return b"partial_line|"
         elif readline_calls == 2:
             mock_process.stdout = None
-            raise asyncio.TimeoutError("Simulated timeout after stdout becomes None for readline")
+            raise asyncio.TimeoutError(
+                "Simulated timeout after stdout becomes None for readline"
+            )
         elif mock_process.stdout is None:
-             raise AttributeError("'NoneType' object has no attribute 'readline'")
+            raise AttributeError("'NoneType' object has no attribute 'readline'")
         return b""
 
     mock_stdout_stream = MagicMock()
@@ -334,8 +377,12 @@ async def test_read_handshake_stdout_becomes_none(mocker):
     time_side_effects = [i * 0.05 for i in range(400)]
     mocker.patch("pyvider.rpcplugin.handshake.time.time", side_effect=time_side_effects)
 
-    with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake response from plugin after \d+\.\d+ seconds"):
+    with pytest.raises(
+        HandshakeError,
+        match=r"Timed out waiting for handshake response from plugin after \d+\.\d+ seconds",
+    ):
         await read_handshake_response(mock_process)
     assert mock_process.stdout is None
+
 
 # 🐍🏗️🤝

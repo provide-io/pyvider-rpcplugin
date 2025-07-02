@@ -1,15 +1,18 @@
 # tests/client/test_client_lifecycle.py
 
 import asyncio  # Make sure asyncio is imported
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pyvider.rpcplugin.client.base import RPCPluginClient
+
 
 @pytest.mark.asyncio
 async def test_start_complete_flow(
-    client_instance,  # type: ignore
-) -> None:  # client_instance fixture still provides the instance
+    client_instance: RPCPluginClient,
+) -> None:
     """Test the full client start flow."""
     with (
         patch(
@@ -47,13 +50,15 @@ async def test_start_complete_flow(
         )
 
         # Configure mock_handshake side_effect
-        async def perform_handshake_side_effect_revised() -> None:  # No 'slf' argument, uses client_instance from outer scope
+        async def perform_handshake_side_effect_revised() -> (
+            None
+        ):  # No 'slf' argument, uses client_instance from outer scope
             client_instance._address = "mock_unix_socket.sock"
             client_instance._transport_name = "unix"
             # The real _perform_handshake also sets:
             # client_instance._protocol_version = 1
             # client_instance._server_cert = None # or some mock cert
-            # client_instance._transport = UnixSocketTransport(path=client_instance._address) # or TCPSocketTransport()
+            # client_instance._transport = UnixSocketTransport(path=client_instance._address) # or TCPSocketTransport() # noqa: E501
             # await client_instance._transport.connect(client_instance._address)
             # For this test, since _create_grpc_channel is mocked,
             # only _address and _transport_name are strictly needed
@@ -70,10 +75,9 @@ async def test_start_complete_flow(
         mock_handshake.assert_called_once()
         mock_create_channel.assert_called_once()
         mock_init_stubs.assert_called_once()
-        # Check that asyncio.create_task was called.
-        # The argument to create_task is the coroutine
-        # returned by mock_read_stdio_logs().
-        # mock_create_task.assert_called_once() # asyncio.create_task is no longer mocked
+        # Check asyncio.create_task was called.
+        # Arg is coroutine from mock_read_stdio_logs().
+        # mock_create_task.assert_called_once() # asyncio.create_task not mocked
         mock_read_stdio_logs.assert_called_once()  # The method itself is called
         # mock_relay_stderr.assert_not_called() # Or called, depending on expectations
 
@@ -87,7 +91,7 @@ async def test_start_complete_flow(
 
 
 @pytest.mark.asyncio
-async def test_close_with_tasks(client_instance: MagicMock) -> None:
+async def test_close_with_tasks(client_instance: RPCPluginClient) -> None:
     """Test closing client with active tasks."""
 
     async def dummy_task_coro() -> None:
@@ -105,26 +109,28 @@ async def test_close_with_tasks(client_instance: MagicMock) -> None:
     original_broker_cancel = broker_task_actual.cancel
 
     # Define side_effect functions that call the original cancel
-    def exec_stdio_cancel_side_effect(*args: list, **kwargs: dict) -> bool: # type: ignore
+    def exec_stdio_cancel_side_effect(
+        *args: list[Any], **kwargs: dict[str, Any]
+    ) -> bool:
         return original_stdio_cancel(*args, **kwargs)  # Call real cancel
 
-    def exec_broker_cancel_side_effect(*args: list, **kwargs: dict) -> bool: # type: ignore
+    def exec_broker_cancel_side_effect(
+        *args: list[Any], **kwargs: dict[str, Any]
+    ) -> bool:
         return original_broker_cancel(*args, **kwargs)
 
     # Apply mocks with side_effect to call the real cancel, but still track calls
     # Instead of direct assignment, if we were using pytest-mock's mocker:
-    # mocker.patch.object(stdio_task_actual, 'cancel', side_effect=exec_stdio_cancel_side_effect)
-    # mocker.patch.object(broker_task_actual, 'cancel', side_effect=exec_broker_cancel_side_effect)
+    # mocker.patch.object(stdio_task_actual, 'cancel', side_effect=exec_stdio_cancel_side_effect) # noqa: E501
+    # mocker.patch.object(broker_task_actual, 'cancel', side_effect=exec_broker_cancel_side_effect) # noqa: E501
     # For now, keeping MagicMock assignment but it's less ideal than patching.
     # Mypy might complain about this assignment to a method.
     # A more mypy-friendly way if not using mocker explicitly here:
-    stdio_task_actual.cancel = MagicMock(wraps=stdio_task_actual.cancel) # type: ignore[method-assign]
-    stdio_task_actual.cancel.side_effect = exec_stdio_cancel_side_effect # type: ignore[assignment]
+    stdio_task_actual.cancel = MagicMock(wraps=stdio_task_actual.cancel)  # type: ignore[method-assign] # noqa: E501
+    stdio_task_actual.cancel.side_effect = exec_stdio_cancel_side_effect  # type: ignore[assignment] # noqa: E501
 
-
-    broker_task_actual.cancel = MagicMock(wraps=broker_task_actual.cancel) # type: ignore[method-assign]
-    broker_task_actual.cancel.side_effect = exec_broker_cancel_side_effect # type: ignore[assignment]
-
+    broker_task_actual.cancel = MagicMock(wraps=broker_task_actual.cancel)  # type: ignore[method-assign] # noqa: E501
+    broker_task_actual.cancel.side_effect = exec_broker_cancel_side_effect  # type: ignore[assignment] # noqa: E501
 
     # Do not mock .done() - we want to check the actual final state.
 
@@ -170,7 +176,7 @@ async def test_close_with_tasks(client_instance: MagicMock) -> None:
 
 
 @pytest.mark.asyncio
-async def test_close_with_errors(client_instance: MagicMock) -> None:
+async def test_close_with_errors(client_instance: RPCPluginClient) -> None:
     """Test closing client when errors occur."""
     with (
         patch.object(
@@ -204,7 +210,7 @@ async def test_close_with_errors(client_instance: MagicMock) -> None:
 
 @pytest.mark.asyncio
 async def test_close_process_wait_timeout(
-    client_instance: MagicMock,
+    client_instance: RPCPluginClient,
 ) -> None:  # Removed capsys, will patch stderr
     """Test client close when process.wait() times out."""
     # Ensure subprocess is imported for TimeoutExpired
@@ -252,7 +258,7 @@ async def test_close_process_wait_timeout(
             # the call to client_instance.close().
 
             # Let's restructure to patch stderr around the relevant call
-            pass  # Placeholder, will restructure below by re-doing the whole test structure
+            pass  # Placeholder, will restructure below
 
         # The assertion needs to be against stderr captured
         # during the *actual* call that logs.
@@ -276,7 +282,7 @@ async def test_close_process_wait_timeout(
         # Let's ensure close is called cleanly here.
 
         # Corrected structure:
-        # Re-initialize relevant parts of client_instance or use a fresh one if possible.
+        # Re-initialize relevant parts of client_instance or use a fresh one.
         # For this specific test, we are testing the behavior of 'close',
         # so we call it once.
 
@@ -324,7 +330,7 @@ async def test_close_process_wait_timeout(
 
 @pytest.mark.asyncio
 async def test_close_process_terminate_error(
-    client_instance: MagicMock, mocker: MagicMock
+    client_instance: RPCPluginClient, mocker: Any
 ) -> None:
     """Test client close when _process.terminate() raises an OSError."""
     mock_channel = mocker.patch.object(
@@ -354,7 +360,7 @@ async def test_close_process_terminate_error(
     # However, if terminate() itself fails,
     # it might be more robust to not proceed to wait() on that process.
     # For now, testing existing behavior.
-    # mock_process.wait.assert_called_once() # This might fail if terminate error path bypasses wait
+    # mock_process.wait.assert_called_once() # This might fail if terminate error path bypasses wait # noqa: E501
 
     mock_transport.close.assert_called_once()  # Should still try to close transport
 
@@ -364,13 +370,11 @@ async def test_close_process_terminate_error(
         args, kwargs = call_args
         if "Error sending terminate signal to plugin process" in args[
             0
-        ] and "Failed to terminate process" in kwargs.get("extra", {}).get(
-            "trace", ""
-        ):
+        ] and "Failed to terminate process" in kwargs.get("extra", {}).get("trace", ""):
             found_terminate_error_log = True
             break
     assert found_terminate_error_log, (
-        f"Expected log for terminate error not found. Actual calls: {mock_logger_error.call_args_list}"
+        f"Expected log for terminate error not found. Actual calls: {mock_logger_error.call_args_list}"  # noqa: E501
     )
 
     assert client_instance._process is None  # Process should be nullified
@@ -378,7 +382,7 @@ async def test_close_process_terminate_error(
 
 @pytest.mark.asyncio
 async def test_close_process_wait_generic_exception(
-    client_instance: MagicMock, mocker: MagicMock
+    client_instance: RPCPluginClient, mocker: Any
 ) -> None:
     """Test client close when process.wait() raises a generic Exception."""
     mock_channel = mocker.patch.object(
@@ -410,7 +414,7 @@ async def test_close_process_wait_generic_exception(
         for call in mock_logger_error.call_args_list
     )
     assert found_log, (
-        f"Expected log for generic wait error not found. Log calls: {mock_logger_error.call_args_list}"
+        f"Expected log for generic wait error not found. Log calls: {mock_logger_error.call_args_list}"  # noqa: E501
     )
 
     assert client_instance._process is None  # Should still be nullified
@@ -420,7 +424,7 @@ async def test_close_process_wait_generic_exception(
 
 @pytest.mark.asyncio
 async def test_start_generic_exception(
-    client_instance: MagicMock, mocker: MagicMock
+    client_instance: RPCPluginClient, mocker: Any
 ) -> None:
     """Test the client start flow when a generic exception occurs."""
     mocker.patch(
@@ -431,7 +435,7 @@ async def test_start_generic_exception(
 
     close_called_event = asyncio.Event()
 
-    async def mock_close_method(*args: list, **kwargs: dict) -> None: # type: ignore
+    async def mock_close_method(*args: list[Any], **kwargs: dict[str, Any]) -> None:
         close_called_event.set()
         # Do nothing else, or raise a specific,
         # different exception if we want to test that propagation
@@ -448,7 +452,7 @@ async def test_start_generic_exception(
 
 @pytest.mark.asyncio
 async def test_close_grpc_channel_exception(
-    client_instance: MagicMock, mocker: MagicMock
+    client_instance: RPCPluginClient, mocker: Any
 ) -> None:
     """Test client close when grpc_channel.close() raises an exception."""
     # Ensure other components are mocked to allow focus on channel close
@@ -470,14 +474,14 @@ async def test_close_grpc_channel_exception(
         for call in mock_logger_error.call_args_list
     )
     assert found_log, (
-        f"Expected log for grpc_channel.close() error not found. Log calls: {mock_logger_error.call_args_list}"
+        f"Expected log for grpc_channel.close() error not found. Log calls: {mock_logger_error.call_args_list}"  # noqa: E501
     )
     assert client_instance.grpc_channel is None  # Should still be nullified
 
 
 @pytest.mark.asyncio
 async def test_close_transport_exception(
-    client_instance: MagicMock, mocker: MagicMock
+    client_instance: RPCPluginClient, mocker: Any
 ) -> None:
     """Test client close when _transport.close() raises an exception."""
     mocker.patch.object(client_instance, "grpc_channel", new_callable=AsyncMock)
@@ -498,14 +502,14 @@ async def test_close_transport_exception(
         for call in mock_logger_error.call_args_list
     )
     assert found_log, (
-        f"Expected log for _transport.close() error not found. Log calls: {mock_logger_error.call_args_list}"
+        f"Expected log for _transport.close() error not found. Log calls: {mock_logger_error.call_args_list}"  # noqa: E501
     )
     assert client_instance._transport is None  # Should still be nullified
 
 
 @pytest.mark.asyncio
 async def test_aexit_shutdown_plugin_exception(
-    client_instance: MagicMock, mocker: MagicMock
+    client_instance: RPCPluginClient, mocker: Any
 ) -> None:
     """Test __aexit__ when shutdown_plugin() raises an exception."""
     # Ensure _controller_stub exists so shutdown_plugin is called
@@ -525,10 +529,10 @@ async def test_aexit_shutdown_plugin_exception(
 
     # Create a new client instance AFTER patching
     from pyvider.rpcplugin.client.base import (
-        RPCPluginClient,
-    )  # Local import for clarity
+        RPCPluginClient as FreshClient,  # Use an alias to avoid confusion
+    )
 
-    client = RPCPluginClient(
+    client = FreshClient(
         command=client_instance.command
     )  # Use command from fixture instance
     client._controller_stub = AsyncMock()  # Ensure this path is taken
@@ -540,7 +544,7 @@ async def test_aexit_shutdown_plugin_exception(
 
     # Mock RPCPluginClient.start at the class level
     # This mock will be called by client.__aenter__()
-    _mock_start_method = mocker.patch( # Assign to unused var to satisfy F841
+    _mock_start_method = mocker.patch(  # Assign to unused var to satisfy F841
         "pyvider.rpcplugin.client.base.RPCPluginClient.start", new_callable=AsyncMock
     )
 
@@ -564,16 +568,19 @@ async def test_aexit_shutdown_plugin_exception(
     # Verify that the error from shutdown_plugin was logged
     found_log = False
     for call in mock_logger_error_global.call_args_list:
-        if len(call.args) >= 2: # Ensure there are enough arguments
-            if "Error during __aexit__ calling shutdown_plugin()" in call.args[0] \
-               and "Simulated shutdown error" in str(call.args[1]):
+        if len(call.args) >= 2:  # Ensure there are enough arguments
+            if "Error during __aexit__ calling shutdown_plugin()" in call.args[
+                0
+            ] and "Simulated shutdown error" in str(call.args[1]):
                 found_log = True
                 break
-        elif len(call.args) == 1: # Handle cases where only a message string is logged
-             if "Error during __aexit__ calling shutdown_plugin()" in call.args[0] and \
-                "Simulated shutdown error" in call.args[0]: # Check if exception info is in the main string
+        elif len(call.args) == 1:  # Handle cases where only a message string is logged
+            if (
+                "Error during __aexit__ calling shutdown_plugin()" in call.args[0]
+                and "Simulated shutdown error" in call.args[0]
+            ):  # Check if exception info is in the main string
                 found_log = True
                 break
     assert found_log, (
-        f"Expected log for shutdown_plugin error not found. Log calls: {mock_logger_error_global.call_args_list}"
+        f"Expected log for shutdown_plugin error not found. Log calls: {mock_logger_error_global.call_args_list}"  # noqa: E501
     )

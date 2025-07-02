@@ -5,21 +5,23 @@ Error Handling - Robust error management patterns.
 
 import asyncio
 
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 configure_for_example()
 
-from pyvider.rpcplugin.exception import (
+from pyvider.rpcplugin.exception import ( # noqa: E402
     HandshakeError,
     ProtocolError,
     RPCPluginError,
     SecurityError,
     TransportError,
 )
-from pyvider.telemetry import logger
+from pyvider.telemetry import logger # noqa: E402
+from typing import Any, Callable, Awaitable # For circuit breaker
+from collections.abc import Never # For attempt_primary_service
 
 
-async def exception_hierarchy_demo():
+async def exception_hierarchy_demo() -> None:
     """Demonstrate the exception hierarchy."""
     logger.info("⚠️  Exception Hierarchy Demo")
 
@@ -40,15 +42,15 @@ async def exception_hierarchy_demo():
     logger.info("✅ Exception hierarchy demo completed")
 
 
-async def graceful_degradation_example():
+async def graceful_degradation_example() -> None:
     """Example: Graceful degradation patterns."""
     logger.info("🛡️  Graceful Degradation Example")
 
-    async def attempt_primary_service():
+    async def attempt_primary_service() -> Never:
         """Simulate primary service failure."""
         raise TransportError("Primary service unavailable")
 
-    async def fallback_service():
+    async def fallback_service() -> str:
         """Simulate fallback service."""
         await asyncio.sleep(0.1)
         return "Fallback service response"
@@ -65,19 +67,19 @@ async def graceful_degradation_example():
     logger.info("✅ Graceful degradation example completed")
 
 
-async def circuit_breaker_example():
+async def circuit_breaker_example() -> None:
     """Example: Circuit breaker pattern."""
     logger.info("🔌 Circuit Breaker Example")
 
     class SimpleCircuitBreaker:
-        def __init__(self, failure_threshold=3, recovery_timeout=5):
+        def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 5) -> None:
             self.failure_threshold = failure_threshold
             self.recovery_timeout = recovery_timeout
             self.failure_count = 0
             self.last_failure_time = 0
             self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
 
-        async def call(self, func):
+        async def call(self, func: Callable[[], Awaitable[Any]]) -> Any:
             """Execute function with circuit breaker protection."""
             current_time = asyncio.get_event_loop().time()
 
@@ -104,7 +106,7 @@ async def circuit_breaker_example():
                     logger.warning("🚫 Circuit breaker: OPEN")
                 raise e
 
-    async def unreliable_service():
+    async def unreliable_service() -> str:
         """Simulate unreliable service."""
         import random
 
@@ -127,7 +129,7 @@ async def circuit_breaker_example():
     logger.info("✅ Circuit breaker example completed")
 
 
-async def main():
+async def main() -> None:
     """Run error handling examples."""
     logger.info("🚀 Error Handling Examples")
 

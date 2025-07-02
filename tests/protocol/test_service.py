@@ -216,20 +216,25 @@ async def collect_stream_data(stream):
 
 
 # @pytest.mark.skip # Still keeping it un-skipped for now
-async def test_stdio_stream_shutdown_terminates_loop(stdio_service, mock_context) -> None: # Renamed test
+async def test_stdio_stream_shutdown_terminates_loop(
+    stdio_service, mock_context
+) -> None:  # Renamed test
     # This test will now primarily verify that StreamStdio terminates on shutdown,
     # even if the queue is empty and .get() would normally block.
 
     results = []
+
     async def consume_stream():
         async for item in stdio_service.StreamStdio(Empty(), mock_context):
             results.append(item)
 
     consume_task = asyncio.create_task(consume_stream())
 
-    await asyncio.sleep(0.01) # Allow the StreamStdio loop to start and block on queue.get()
+    await asyncio.sleep(
+        0.01
+    )  # Allow the StreamStdio loop to start and block on queue.get()
 
-    stdio_service.shutdown() # Signal shutdown
+    stdio_service.shutdown()  # Signal shutdown
 
     # The StreamStdio loop should now break due to self._shutdown being True
     # or context.done() being true (though shutdown is more direct here).
@@ -237,10 +242,10 @@ async def test_stdio_stream_shutdown_terminates_loop(stdio_service, mock_context
     try:
         # If StreamStdio terminates correctly, consume_task will finish.
         await asyncio.wait_for(consume_task, timeout=1.0)
-    except asyncio.TimeoutError: # pragma: no cover
+    except asyncio.TimeoutError:  # pragma: no cover
         pytest.fail("StreamStdio did not terminate within 1s after shutdown.")
 
-    assert len(results) == 0 # No items were put in the queue
+    assert len(results) == 0  # No items were put in the queue
 
 
 @pytest.mark.asyncio

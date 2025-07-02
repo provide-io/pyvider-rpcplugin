@@ -1,7 +1,7 @@
 # tests/handshake/test_handshake_responses.py
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock  # Added AsyncMock
-from pyvider.rpcplugin.transport import UnixSocketTransport # Added import
+from pyvider.rpcplugin.transport import UnixSocketTransport  # Added import
 
 from pyvider.rpcplugin.handshake import (
     build_handshake_response,
@@ -49,7 +49,9 @@ async def test_build_handshake_response_without_tls(
         transport_to_use = mock_server_transport_unix
         if not transport_to_use._running:
             mocker.patch.object(
-                transport_to_use, "listen", return_value="/tmp/mock.sock"
+                transport_to_use,
+                "listen",
+                return_value="/tmp/mock.sock",  # nosec B108
             )
 
     response = await build_handshake_response(
@@ -110,7 +112,7 @@ def test_parse_handshake_response_without_tls():
         assert core_version == 1
         assert plugin_version == 7
         assert network == "unix"
-        assert address == "/tmp/test.sock"
+        assert address == "/tmp/test.sock"  # nosec B108
         assert protocol == "grpc"
         assert server_cert is None
 
@@ -215,7 +217,7 @@ async def test_build_handshake_response_unix_transport_already_running(mocker):
     """Test build_handshake_response with a Unix transport that is already running."""
     mock_transport = MagicMock()
     mock_transport._running = True
-    mock_transport.endpoint = "/tmp/existing.sock"
+    mock_transport.endpoint = "/tmp/existing.sock"  # nosec B108
 
     mocker.patch.object(rpcplugin_config, "get", return_value="1")
 
@@ -225,7 +227,7 @@ async def test_build_handshake_response_unix_transport_already_running(mocker):
         transport=mock_transport,
         server_cert=None,
     )
-    assert "|unix|/tmp/existing.sock|grpc|" in response
+    assert "|unix|/tmp/existing.sock|grpc|" in response  # nosec B108
     mock_transport.listen.assert_not_called()
 
 
@@ -324,29 +326,39 @@ def test_parse_handshake_response_generic_exception(mocker):
 async def test_build_handshake_response_invalid_cert_format(mocker):
     # Use AsyncMock for transport methods that need to be awaitable
     mock_transport = AsyncMock(spec=UnixSocketTransport)
-    mock_transport.listen = AsyncMock(return_value="/tmp/test.sock")
+    mock_transport.listen = AsyncMock(return_value="/tmp/test.sock")  # nosec B108
     mock_transport._running = False
     mock_transport.endpoint = None
 
     mock_server_cert = MagicMock(spec=Certificate)
     # Ensure .cert attribute exists and is a string
-    mock_server_cert.cert = "INVALID\nCERT" # Only 2 lines, will fail len(cert_lines) < 3
+    mock_server_cert.cert = (
+        "INVALID\nCERT"  # Only 2 lines, will fail len(cert_lines) < 3
+    )
 
     # Mock rpcplugin_config.get for PLUGIN_CORE_VERSION as it's used by build_handshake_response
-    mocker.patch.object(rpcplugin_config, "get", return_value="1") # Assuming core version "1"
+    mocker.patch.object(
+        rpcplugin_config, "get", return_value="1"
+    )  # Assuming core version "1"
 
     with pytest.raises(HandshakeError, match="Invalid server certificate format"):
         await build_handshake_response(
             plugin_version=1,
             transport_name="unix",
             transport=mock_transport,
-            server_cert=mock_server_cert # Pass the MagicMock instance
+            server_cert=mock_server_cert,  # Pass the MagicMock instance
         )
+
 
 def test_parse_handshake_response_invalid_network(mocker):
     response_str = "1|1|invalidnet|127.0.0.1:12345|grpc|"
-    mocker.patch.object(rpcplugin_config, "get", return_value="1") # Mock core version check
-    with pytest.raises(HandshakeError, match="Invalid network type 'invalidnet' in handshake."):
+    mocker.patch.object(
+        rpcplugin_config, "get", return_value="1"
+    )  # Mock core version check
+    with pytest.raises(
+        HandshakeError, match="Invalid network type 'invalidnet' in handshake."
+    ):
         parse_handshake_response(response_str)
+
 
 # 🐍🏗️🤝

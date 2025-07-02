@@ -15,6 +15,7 @@ from tests.fixtures.proto import echo_pb2_grpc
 
 from pyvider.telemetry import logger
 
+
 class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     service_name = "echo.EchoService"
 
@@ -23,6 +24,7 @@ class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     ) -> echo_pb2.EchoResponse:
         logger.debug(f"EchoServiceImpl received: {request.message}")
         return echo_pb2.EchoResponse()
+
 
 class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
     service_name = "echo.EchoService"
@@ -59,7 +61,9 @@ def health_test_config_override(request):
 
 
 @pytest.mark.asyncio
-async def test_health_service_enabled_and_serving(health_test_config_override, monkeypatch): # Added monkeypatch
+async def test_health_service_enabled_and_serving(
+    health_test_config_override, monkeypatch
+):  # Added monkeypatch
     # Ensure the magic cookie environment variable is set for direct server instantiation
     cookie_key = rpcplugin_config.magic_cookie_key()
     cookie_value = rpcplugin_config.magic_cookie_value()
@@ -74,7 +78,9 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
         await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
 
         socket_path = server._transport.endpoint
-        assert socket_path, "Could not determine server socket path for client connection."
+        assert socket_path, (
+            "Could not determine server socket path for client connection."
+        )
 
         async with grpc.aio.insecure_channel(f"unix:{socket_path}") as channel:
             health_stub = health_pb2_grpc.HealthStub(channel)
@@ -83,7 +89,9 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
             await echo_stub.Echo(echo_pb2.EchoRequest(message="ping"))
             logger.info("Main Echo service responded.")
 
-            health_check_req = health_pb2.HealthCheckRequest(service=EchoProtocolImpl.service_name)
+            health_check_req = health_pb2.HealthCheckRequest(
+                service=EchoProtocolImpl.service_name
+            )
             response = await health_stub.Check(health_check_req)
             assert response.status == health_pb2.HealthCheckResponse.SERVING
 
@@ -92,7 +100,9 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
             assert response_empty.status == health_pb2.HealthCheckResponse.SERVING
 
             with pytest.raises(grpc.aio.AioRpcError) as exc_info:
-                await health_stub.Check(health_pb2.HealthCheckRequest(service="nonexistent.Service"))
+                await health_stub.Check(
+                    health_pb2.HealthCheckRequest(service="nonexistent.Service")
+                )
             assert exc_info.value.code() == grpc.StatusCode.NOT_FOUND
 
             with pytest.raises(grpc.aio.AioRpcError) as exc_info_watch:

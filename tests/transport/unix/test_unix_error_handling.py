@@ -17,7 +17,7 @@ async def test_unix_socket_error_handling() -> None:
     """Test comprehensive error handling in Unix socket transport."""
 
     # Test 1: Connect to nonexistent socket
-    nonexistent_path = "/tmp/nonexistent_socket_path_12345.sock"
+    nonexistent_path = "/tmp/nonexistent_socket_path_12345.sock"  # nosec B108
     if os.path.exists(nonexistent_path):
         os.unlink(nonexistent_path)
 
@@ -124,7 +124,7 @@ async def test_unix_socket_connect_timeout() -> None:
             f.write("dummy")
 
         # Set valid socket permissions
-        os.chmod(socket_path, 0o777)
+        os.chmod(socket_path, 0o777)  # nosec B103
 
         transport = UnixSocketTransport()
 

@@ -38,7 +38,7 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.telemetry import logger
-from typing import AsyncGenerator # Added import
+from typing import AsyncGenerator  # Added import
 
 
 @attr.s(auto_attribs=True, frozen=True)
@@ -94,7 +94,7 @@ async def grpc_channel(grpc_server_output: ServerFixtureOutput):  # Changed fixt
     """Fixture providing a client channel to the gRPC server."""
     channel = grpc.aio.insecure_channel(grpc_server_output.address)
     yield channel
-    await channel.close()
+    await channel.close(grace=0.1)
 
 
 # Removed old test_stdio_integration; test_stdio_integration_consolidated is preferred.
@@ -132,7 +132,7 @@ async def test_stdio_integration_consolidated(
             log_func("Client: Starting to iterate over stream_call")
             async for data_item in stream_call:
                 log_func(
-                    f"Client: Received item: channel={data_item.channel}, data='{data_item.data.decode()[:30]}...'"
+                    f"Client: Received item: channel={data_item.channel}, data='{data_item.data.decode()[:30]}...'"  # type: ignore[str-bytes-safe]
                 )
                 results.append(data_item)
                 if len(results) >= num_expected_messages:
@@ -309,7 +309,7 @@ async def test_stdio_early_client_disconnect_consolidated(
         await asyncio.sleep(0.1)
 
         # Abruptly close the channel
-        await temp_channel.close()
+        await temp_channel.close(grace=0.1)
 
         # Attempting to iterate over the stream after channel closure should raise an error
         # Common errors include RpcError with status CANCELLED or UNAVAILABLE.
@@ -341,7 +341,7 @@ async def test_stdio_early_client_disconnect_consolidated(
         )
     finally:
         # Ensure the temporary channel is closed if not already
-        await temp_channel.close()
+        await temp_channel.close(grace=0.1)
 
 
 @pytest.mark.asyncio
@@ -385,7 +385,7 @@ async def test_broker_multiple_clients_consolidated(
             logger.error(f"Client {service_id} failed: {e}")
             return False  # Indicate failure
         finally:
-            await client_specific_channel.close()
+            await client_specific_channel.close(grace=0.1)
 
     for i in range(num_clients):
         client_tasks.append(asyncio.create_task(single_client_interaction(i + 1)))

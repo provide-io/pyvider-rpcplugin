@@ -18,11 +18,11 @@ class TestConcreteProtocol(RPCPluginProtocol):
         pass
 
 
-@pytest.mark.asyncio # Made async for await
+@pytest.mark.asyncio  # Made async for await
 async def test_protocol_get_grpc_descriptors() -> None:
     """Test get_grpc_descriptors returns the expected values."""
     protocol = TestConcreteProtocol()
-    descriptors, service_name = await protocol.get_grpc_descriptors() # Added await
+    descriptors, service_name = await protocol.get_grpc_descriptors()  # Added await
 
     assert isinstance(descriptors, MagicMock)
     assert service_name == "TestService"
@@ -35,7 +35,7 @@ async def test_protocol_add_to_server() -> None:
     mock_server = MagicMock()
     mock_handler = MagicMock()
 
-    await protocol.add_to_server(mock_server, mock_handler) # Corrected param order
+    await protocol.add_to_server(mock_server, mock_handler)  # Corrected param order
     # Since our implementation is empty, we just verify it doesn't raise an exception
 
 

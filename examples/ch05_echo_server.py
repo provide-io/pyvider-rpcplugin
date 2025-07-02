@@ -3,23 +3,28 @@
 import asyncio
 import os
 from typing import Any, cast
+
 import grpc
 
 # Ensure 'src' and project root are in sys.path for direct execution of examples
 # This needs to happen BEFORE attempting to import from 'examples.proto'
-from example_utils import configure_for_example
-configure_for_example(clear_env=False) # Server context, do not clear client-set env vars
+from example_utils import configure_for_example  # type: ignore[import-not-found]
+
+configure_for_example(
+    clear_env=False
+)  # Server context, do not clear client-set env vars
 
 # Import generated code from the examples/proto directory
 # Assumes 'examples' is in PYTHONPATH or you run from project root.
-from examples.proto import echo_pb2, echo_pb2_grpc
+from examples.proto import echo_pb2, echo_pb2_grpc # noqa: E402
 
 # Import pyvider components
-from pyvider.rpcplugin.factories import plugin_server
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.factories import plugin_server # noqa: E402
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol # noqa: E402
+from pyvider.rpcplugin.server import RPCPluginServer # noqa: E402
+from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol # noqa: E402
+from pyvider.telemetry import logger # noqa: E402
+
 
 # --- Implement the Handler (Servicer) ---
 class EchoHandler(echo_pb2_grpc.EchoServiceServicer):
@@ -30,18 +35,12 @@ class EchoHandler(echo_pb2_grpc.EchoServiceServicer):
         reply_message = f"Server echoed: {request.message}"
         return echo_pb2.EchoResponse(reply=reply_message)
 
+
 # --- Implement the Protocol Wrapper ---
 class EchoProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         # Return the generated _pb2_grpc module and the Service name string
-        return echo_pb2_grpc, "echo.EchoService" # Matches package.Service from .proto
-
-    def get_method_type(self, method_name: str) -> str:
-        # For this EchoService, 'Echo' is unary-unary.
-        if "Echo" in method_name: # A more robust check might inspect descriptors
-            return "unary_unary"
-        logger.warning(f"Unknown method {method_name} in EchoProtocol, defaulting to unary_unary.")
-        return "unary_unary" # Default for safety
+        return echo_pb2_grpc, "echo.EchoService"  # Matches package.Service from .proto
 
     async def add_to_server(self, server: Any, handler: Any) -> None:
         # Register the handler with the gRPC server
@@ -49,6 +48,7 @@ class EchoProtocol(RPCPluginProtocol):
             cast(EchoHandler, handler), server
         )
         logger.info("EchoService handler registered with gRPC server.")
+
 
 # --- Main Server Logic ---
 async def main() -> None:
@@ -64,15 +64,18 @@ async def main() -> None:
             "PLUGIN_MAGIC_COOKIE_KEY env var not set. Using default for standalone run."
         )
         os.environ["PLUGIN_MAGIC_COOKIE_KEY"] = "ECHO_PLUGIN_COOKIE_EXAMPLE"
-        # The actual cookie value is usually set by the client that launches this server.
+        # The actual cookie value is usually set by the client that
+        # launches this server.
         # For standalone testing, if the client isn't setting it,
         # the server might need a default value for PLUGIN_MAGIC_COOKIE_VALUE
         # if it's directly checking it, rather than just the handshake output.
         # However, standard behavior is server prints handshake, client verifies it.
-        # The server itself doesn't need PLUGIN_MAGIC_COOKIE or PLUGIN_MAGIC_COOKIE_VALUE
-        # to *start*, but it needs to output them correctly during handshake if hardcoded.
+        # The server itself doesn't need PLUGIN_MAGIC_COOKIE or
+        # PLUGIN_MAGIC_COOKIE_VALUE to *start*, but it needs to output them
+        # correctly during handshake if hardcoded.
         # The `plugin_server` factory and `RPCPluginServer` handle handshake output
-        # based on env vars like `PLUGIN_HOST_ADDRESS`, `PLUGIN_MAGIC_COOKIE_VALUE` (if set for it to use).
+        # based on env vars like `PLUGIN_HOST_ADDRESS`,
+        # `PLUGIN_MAGIC_COOKIE_VALUE` (if set for it to use).
         # For this example, we'll rely on the client to set the value.
 
     handler = EchoHandler()
@@ -94,6 +97,7 @@ async def main() -> None:
         logger.info("Echo server (ch05_echo_server.py) shutting down.")
         # server.stop() is called within RPCPluginServer.serve()'s finally block.
 
+
 if __name__ == "__main__":
     try:
         # For standalone server execution, ensure the magic cookie env var is set
@@ -103,7 +107,8 @@ if __name__ == "__main__":
         # The `example_utils.configure_for_example` already sets a default
         # PLUGIN_MAGIC_COOKIE_VALUE. We need to ensure the environment variable
         # named by PLUGIN_MAGIC_COOKIE_KEY gets this value.
-        from pyvider.rpcplugin import rpcplugin_config # Get config after example_utils
+        from pyvider.rpcplugin import rpcplugin_config  # Get config after example_utils
+
         cookie_key_to_set = rpcplugin_config.magic_cookie_key()
         cookie_value_to_set = rpcplugin_config.magic_cookie_value()
         os.environ[cookie_key_to_set] = cookie_value_to_set
@@ -113,5 +118,5 @@ if __name__ == "__main__":
         )
 
         asyncio.run(main())
-    except KeyboardInterrupt: # pragma: no cover
+    except KeyboardInterrupt:  # pragma: no cover
         logger.info("Server stopped by user.")

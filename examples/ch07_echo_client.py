@@ -8,7 +8,8 @@ from typing import Any
 
 # Call configure_for_example() early to set up sys.path
 # Import example_utils directly, as it's in the same directory.
-import example_utils
+import example_utils  # type: ignore[import-not-found]
+
 example_utils.configure_for_example(clear_env=True)  # Client context
 
 # ---- START DIAGNOSTIC ----
@@ -19,12 +20,13 @@ if str(_project_root_diag) not in sys.path:
 # print(f"CH07_ECHO_CLIENT SYS.PATH: {sys.path}")
 # ---- END DIAGNOSTIC ----
 
-import grpc
+import grpc # noqa: E402
 
 # Import pyvider components first, then specific example modules
-from examples.proto import echo_pb2, echo_pb2_grpc
-from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.telemetry import logger  # Changed from standard logging
+from examples.proto import echo_pb2, echo_pb2_grpc # noqa: E402
+from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402 # Changed from standard logging
+
 
 class EchoClient:
     server_script_path: str  # Path to the echo server executable

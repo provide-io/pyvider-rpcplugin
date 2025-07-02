@@ -8,10 +8,9 @@ import json
 import os  # For environment_configuration example
 from typing import Any  # For type hinting dict
 
-from example_utils import configure_for_example
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 # Import pyvider.rpcplugin.configure for the new demonstration function
-from pyvider.rpcplugin import configure as pyvider_configure
 from pyvider.telemetry import logger
 
 # Apply base configuration for examples
@@ -62,99 +61,90 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
     """
     Demonstrates applying parts of a conceptual config to pyvider.rpcplugin.
     This is illustrative; in a real app, this logic would be more robust.
+    This version aligns with the structure shown in the ch12 documentation.
     """
-    logger.info("🔧 Applying conceptual config to pyvider.rpcplugin settings...")
+    logger.info(
+        "🔧 Applying conceptual config to pyvider.rpcplugin settings (simplified mapping)..."
+    )
 
-    applied_settings: dict[str, Any] = {}
+    # Construct settings for pyvider_configure based on the conceptual_config
+    # This matches the simpler structure from the ch12 markdown.
+    pyvider_settings_to_apply: dict[str, Any] = {
+        "auto_mtls": conceptual_config.get("security", {}).get("mtls_enabled", False),
+        "server_cert": (
+            f"file://{conceptual_config.get('security', {}).get('server_cert_path', '')}"
+        ),
+        "server_key": (
+            f"file://{conceptual_config.get('security', {}).get('server_key_path', '')}"
+        ),
+        # For server-side, this would be client_root_certs for verifying clients
+        "client_root_certs": (
+            f"file://{conceptual_config.get('security', {}).get('ca_cert_path', '')}"
+        ),
+        # If configuring client-side, it would be server_root_certs:
+        # "server_root_certs": (
+        #     f"file://{conceptual_config.get('security', {}).get('ca_cert_path', '')}"
+        # ),
+        "magic_cookie": conceptual_config.get("security", {}).get(
+            "expected_magic_cookie", ""
+        ),
+        # Kwargs for pyvider_configure (will be prefixed with PLUGIN_ internally by it)
+        "LOG_LEVEL": conceptual_config.get("monitoring", {}).get("log_level", "INFO"),
+        "HEALTH_SERVICE_ENABLED": conceptual_config.get("monitoring", {}).get(
+            "enable_grpc_health_service", True
+        ),
+        "RATE_LIMIT_ENABLED": conceptual_config.get("monitoring", {}).get(
+            "enable_rate_limiting", False
+        ),
+        "RATE_LIMIT_REQUESTS_PER_SECOND": conceptual_config.get("monitoring", {}).get(
+            "requests_per_second", 100.0
+        ),
+        "RATE_LIMIT_BURST_CAPACITY": conceptual_config.get("monitoring", {}).get(
+            "burst_capacity", 200.0
+        ),
+        "server_transports": [
+            conceptual_config.get("transport", {}).get("type", "tcp")
+        ],
+        "handshake_timeout": conceptual_config.get("transport", {}).get(
+            "handshake_timeout_seconds", 10.0
+        ),
+        "connection_timeout": conceptual_config.get("transport", {}).get(
+            "connection_timeout_seconds", 30.0
+        ),
+        # Example for setting server endpoint if needed,
+        # passed as a PLUGIN_ prefixed kwarg
+        "SERVER_ENDPOINT": (
+            f"{conceptual_config.get('transport', {}).get('host', '0.0.0.0')}:"
+            f"{conceptual_config.get('transport', {}).get('port', 0)}"
+        ),  # nosec B104 # nosec B108
+    }
 
-    if (
-        "monitoring" in conceptual_config
-        and "log_level" in conceptual_config["monitoring"]
-    ):
-        log_level = conceptual_config["monitoring"]["log_level"]
-        applied_settings["PLUGIN_LOG_LEVEL"] = log_level
-        logger.info(
-            f"  Conceptual log_level '{log_level}' would map to PLUGIN_LOG_LEVEL."
-        )
+    # Filter out settings with empty paths for certs/keys if mtls is false
+    if not pyvider_settings_to_apply.get("auto_mtls"):
+        for key in [
+            "server_cert",
+            "server_key",
+            "client_root_certs",
+            "server_root_certs",
+        ]:
+            if (
+                key in pyvider_settings_to_apply
+                and pyvider_settings_to_apply[key] == "file://"
+            ):
+                del pyvider_settings_to_apply[key]
 
-    if (
-        "security" in conceptual_config
-        and "mtls_enabled" in conceptual_config["security"]
-    ):
-        mtls = conceptual_config["security"]["mtls_enabled"]
-        applied_settings["PLUGIN_AUTO_MTLS"] = mtls
-        logger.info(
-            f"  Conceptual mtls_enabled '{mtls}' would map to PLUGIN_AUTO_MTLS."
-        )
-        if mtls:
-            # In a real scenario, we'd also map server_cert_path, etc.
-            applied_settings["PLUGIN_SERVER_CERT"] = conceptual_config["security"].get(
-                "server_cert_path"
-            )
-            applied_settings["PLUGIN_SERVER_KEY"] = conceptual_config["security"].get(
-                "server_key_path"
-            )
-            # Assuming CA for client verification
-            applied_settings["PLUGIN_CLIENT_ROOT_CERTS"] = conceptual_config[
-                "security"
-            ].get("ca_cert_path")
-            logger.info("  Will also map server certs and client root CAs for mTLS.")
-
-    if applied_settings:
-        logger.info(f"  Calling pyvider_configure with: {applied_settings}")
-        # Note: `pyvider_configure` takes specific args like `auto_mtls`.
-        # It also takes **kwargs for other `PLUGIN_` prefixed keys.
-        # We map conceptual keys to these.
-
-        final_configure_args: dict[str, Any] = {}
-        # Map to direct arguments of pyvider_configure
-        if "PLUGIN_AUTO_MTLS" in applied_settings:
-            final_configure_args["auto_mtls"] = applied_settings.pop("PLUGIN_AUTO_MTLS")
-        if "PLUGIN_SERVER_CERT" in applied_settings:
-            final_configure_args["server_cert"] = applied_settings.pop( # Corrected key
-                "PLUGIN_SERVER_CERT"
-            )
-        if "PLUGIN_SERVER_KEY" in applied_settings:
-            final_configure_args["server_key"] = applied_settings.pop( # Corrected key
-                "PLUGIN_SERVER_KEY"
-            )
-
-        # PLUGIN_CLIENT_ROOT_CERTS is not a direct arg, will be passed via **kwargs
-        # So, we ensure it remains in applied_settings if present, or map it to its kwarg form.
-        # For clarity, let's map it explicitly to the expected kwarg name if using that pattern.
-        # The configure function expects kwargs like `SERVER_ROOT_CERTS` or `CLIENT_ROOT_CERTS`.
-        # `applied_settings` contains `PLUGIN_CLIENT_ROOT_CERTS`.
-        # The loop `for key, value in kwargs.items(): config_key = f"PLUGIN_{key.upper()}"`
-        # means `configure(CLIENT_ROOT_CERTS="path")` sets `PLUGIN_CLIENT_ROOT_CERTS`.
-        # So, if we have `PLUGIN_CLIENT_ROOT_CERTS` in `applied_settings`, it should be passed
-        # as `CLIENT_ROOT_CERTS` to `pyvider_configure`'s kwargs.
-
-        if "PLUGIN_CLIENT_ROOT_CERTS" in applied_settings:
-            final_configure_args["CLIENT_ROOT_CERTS"] = applied_settings.pop(
-                "PLUGIN_CLIENT_ROOT_CERTS"
-            )
-
-        # Remaining settings in applied_settings are kwargs (should be PLUGIN_ prefixed,
-        # but configure() expects them without PLUGIN_ if they are to be processed by its **kwargs)
-        # Let's adjust how remaining kwargs are passed.
-        # The configure function's **kwargs are for keys like `LOG_LEVEL`, not `PLUGIN_LOG_LEVEL`.
-
-        remaining_kwargs_for_configure = {}
-        for key, value in applied_settings.items():
-            if key.startswith("PLUGIN_"):
-                # Convert PLUGIN_LOG_LEVEL to LOG_LEVEL for **kwargs
-                kwarg_key = key[len("PLUGIN_"):]
-                remaining_kwargs_for_configure[kwarg_key] = value
-            else:
-                # This case should ideally not happen if applied_settings only contains PLUGIN_ keys
-                remaining_kwargs_for_configure[key] = value
-
-        final_configure_args.update(remaining_kwargs_for_configure)
-
-        pyvider_configure(**final_configure_args)
-        logger.info("  Illustrative pyvider.rpcplugin.configure() called.")
-    else:
-        logger.info("  No conceptual settings mapped for pyvider_configure.")
+    logger.info(
+        f"  Calling pyvider_configure with: "
+        f"{json.dumps(pyvider_settings_to_apply, indent=2)}"
+    )
+    # In a real app, you'd call:
+    # pyvider_configure(**pyvider_settings_to_apply)
+    # For this demo, we just log.
+    # pyvider_configure(**pyvider_settings_to_apply)
+    logger.info(
+        "  (Illustrative call to pyvider.rpcplugin.configure() - "
+        "not actually called in this demo script)"
+    )
 
     logger.info("✅ Illustrative application of conceptual config completed.")
 

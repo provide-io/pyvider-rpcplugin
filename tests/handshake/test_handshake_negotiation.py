@@ -9,8 +9,8 @@ from pyvider.rpcplugin.handshake import (
     negotiate_transport,
 )
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.transport.base import RPCPluginTransport # Added import
-from typing import List # Added import
+from pyvider.rpcplugin.transport.base import RPCPluginTransport  # Added import
+from typing import List  # Added import
 
 
 # Test for Protocol Version Negotiation
@@ -40,7 +40,7 @@ async def test_negotiate_protocol_version_no_common_version() -> None:
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_empty_list() -> None:
     """Test protocol version negotiation when the server provides no versions."""
-    server_versions = []  # Server provides no versions
+    server_versions: List[int] = []  # Server provides no versions
     with pytest.raises(
         ProtocolError,
         match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*",
@@ -51,8 +51,10 @@ async def test_negotiate_protocol_version_empty_list() -> None:
 @pytest.mark.asyncio
 async def test_negotiate_transport_valid_tcp() -> None:
     """Test successful TCP transport negotiation."""
+    transport_name: str
+    transport_instance: RPCPluginTransport
     transport_name, transport_instance = await negotiate_transport(["tcp"])
-    transport: RPCPluginTransport = transport_instance # Type annotation
+    transport: RPCPluginTransport = transport_instance  # Type annotation
     assert transport_name == "tcp"
     assert isinstance(transport, TCPSocketTransport)
 
@@ -60,14 +62,17 @@ async def test_negotiate_transport_valid_tcp() -> None:
 @pytest.mark.asyncio
 async def test_negotiate_transport_valid_unix() -> None:
     """Test successful Unix transport negotiation."""
+    transport_name: str
+    transport_instance: RPCPluginTransport
     transport_name, transport_instance = await negotiate_transport(["unix"])
-    transport: RPCPluginTransport = transport_instance # Type annotation
+    transport: RPCPluginTransport = transport_instance  # Type annotation
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
 
-from unittest.mock import patch # Added for the new tests
-import tempfile # Added for the new tests
+from unittest.mock import patch  # Added for the new tests
+import tempfile  # Added for the new tests
+
 
 @pytest.mark.asyncio
 async def test_negotiate_transport_exception_handling():
@@ -132,7 +137,9 @@ async def test_negotiate_transport_empty_list() -> None:
 @pytest.mark.asyncio
 async def test_negotiate_transport_prefers_unix() -> None:
     """Test that TCP is preferred when multiple transports are available."""
+    transport_name: str
+    transport_instance: RPCPluginTransport
     transport_name, transport_instance = await negotiate_transport(["tcp", "unix"])
-    transport: RPCPluginTransport = transport_instance # Type annotation
+    transport: RPCPluginTransport = transport_instance  # Type annotation
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)

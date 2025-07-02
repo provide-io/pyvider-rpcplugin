@@ -111,7 +111,7 @@ norecursedirs = [
 
 [tool.ruff]
 line-length = 88
-exclude = ["tests/*", "**/*pb2*.py"]
+exclude = ["**/*pb2*.py"] # Removed "tests/*"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "ANN", "B"]
