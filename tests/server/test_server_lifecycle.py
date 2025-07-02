@@ -1,18 +1,9 @@
-import asyncio
-import gc
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 
 from pyvider.rpcplugin.config import ConfigError
-from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.transport import UnixSocketTransport
-
-from tests.conftest import (
-    mock_server_protocol,
-    mock_server_handler,
-)
 
 
 def test_attrs_post_init_handshake_config_error(mocker):

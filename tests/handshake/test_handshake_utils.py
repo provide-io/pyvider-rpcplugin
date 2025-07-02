@@ -6,7 +6,6 @@ from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     is_valid_handshake_parts,
 )
-
 from pyvider.rpcplugin.transport.tcp import is_valid_tcp_endpoint
 
 

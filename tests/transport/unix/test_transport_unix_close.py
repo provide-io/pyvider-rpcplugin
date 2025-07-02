@@ -1,13 +1,14 @@
 # tests/transport/unix/test_transport_unix_close.py
 
-import os
-import pytest
 import asyncio
 import errno  # Added import
-from unittest.mock import patch, AsyncMock, MagicMock  # Added AsyncMock, MagicMock
+import os
+from unittest.mock import AsyncMock, MagicMock, patch  # Added AsyncMock, MagicMock
 
-from pyvider.rpcplugin.exception import TransportError
+import pytest
+
 from pyvider.rpcplugin.client.connection import ClientConnection  # Added import
+from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py
@@ -116,31 +117,38 @@ async def test_unix_socket_close_no_server(unix_transport) -> None:
 @pytest.mark.asyncio
 async def test_close_writer_exception(monkeypatch) -> None:
     """Test handling of exceptions during writer close."""
-    transport = UnixSocketTransport(path="/tmp/dummy.sock")  # nosec B108
+    transport_under_test = UnixSocketTransport(
+        path="/tmp/dummy.sock"
+    )  # Renamed for clarity, nosec B108
 
-    class FakeWriter:
-        def __init__(self):
-            self.transport = (
-                None  # Set to None to avoid issues with AsyncMock as transport
-            )
+    mock_actual_transport = AsyncMock(
+        spec=asyncio.Transport
+    )  # Mock for writer.transport
+    # Ensure is_closing is an AsyncMock if it's awaited, or MagicMock if called synchronously
+    mock_actual_transport.is_closing = MagicMock(
+        return_value=False
+    )  # Simulate not already closing
+    mock_actual_transport.abort = MagicMock()  # abort is synchronous
 
-        def close(self):
-            pass
+    writer = AsyncMock(spec=asyncio.StreamWriter)
+    writer.transport = mock_actual_transport  # Assign the mock transport
+    writer.can_write_eof.return_value = True
+    # writer.close() is synchronous, AsyncMock makes it awaitable by default, which is fine.
+    writer.wait_closed.side_effect = Exception(
+        "Fake wait_closed error"
+    )  # Error to be tested
 
-        async def wait_closed(self):
-            # Original logic for is_closing on self.transport is removed as self.transport is None
-            raise Exception("Fake wait_closed error")
-
-    fake_writer = FakeWriter()
     try:
-        # _close_writer should catch the exception and log an error.
-        await transport._close_writer(fake_writer)  # type: ignore[arg-type]
-        # No exception should propagate.
+        await transport_under_test._close_writer(writer)
+        # Exception should be caught and logged by _close_writer
     finally:
-        await transport.close()  # Explicitly close the transport instance
-        # fake_writer.transport is already None
-        del fake_writer  # Explicitly delete the mock
-        # Removed gc.collect() and asyncio.sleep(0.01) to see if it affects the warning
+        await transport_under_test.close()  # Clean up the UnixSocketTransport
+
+    # Assert that abort was called on the writer's transport
+    assert mock_actual_transport.abort.call_count > 0, (
+        "Expected abort to be called at least once"
+    )
+    writer.close.assert_called_once()  # writer.close() should also have been called
 
 
 @pytest.mark.asyncio

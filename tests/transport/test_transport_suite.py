@@ -8,27 +8,24 @@ import os
 import socket
 import stat  # Added
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Any  # Import Any
-import uuid
 
 import pytest
 import pytest_asyncio
 
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.config import rpcplugin_config  # Added for config manipulation
 from pyvider.rpcplugin.exception import TransportError
-
+from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.base import (
     RPCPluginTransport as BaseTransportT,
 )  # For factory return type
-
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.config import rpcplugin_config  # Added for config manipulation
-
+from pyvider.telemetry import logger
 from tests.fixtures.mocks import (
-    MockProtocol,
     MockHandler,
+    MockProtocol,
 )  # Assumes SocketStateMonitor, MockProtocol, MockHandler are here
 
 # managed_transport context manager seems unused by current tests, can be reviewed later.
@@ -278,7 +275,7 @@ async def test_server_lifecycle_and_connectivity(
     await rpc_server.stop()
     try:
         await asyncio.wait_for(server_task, timeout=5.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         pytest.fail(f"Server task did not complete after stop() for {transport_type}")
     logger.info(f"Server serve task completed for {transport_type}.")
 

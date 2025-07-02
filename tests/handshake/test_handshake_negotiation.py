@@ -1,6 +1,7 @@
 # pyvider/rpcplugin/tests/handshake/test_handshake_negotiate.py
 
 
+
 import pytest
 
 from pyvider.rpcplugin.exception import ProtocolError, TransportError
@@ -10,7 +11,6 @@ from pyvider.rpcplugin.handshake import (
 )
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.base import RPCPluginTransport  # Added import
-from typing import List  # Added import
 
 
 # Test for Protocol Version Negotiation
@@ -18,7 +18,7 @@ from typing import List  # Added import
 async def test_negotiate_protocol_version_valid() -> None:
     """Test successful protocol version negotiation."""
     SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
-    server_versions: List[int] = [1, 2, 3, 4, 5, 6, 7]  # Server supports these versions
+    server_versions: list[int] = [1, 2, 3, 4, 5, 6, 7]  # Server supports these versions
     negotiated_version = negotiate_protocol_version(server_versions)
     assert negotiated_version in SUPPORTED_PROTOCOL_VERSIONS
     assert negotiated_version == max(
@@ -40,7 +40,7 @@ async def test_negotiate_protocol_version_no_common_version() -> None:
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_empty_list() -> None:
     """Test protocol version negotiation when the server provides no versions."""
-    server_versions: List[int] = []  # Server provides no versions
+    server_versions: list[int] = []  # Server provides no versions
     with pytest.raises(
         ProtocolError,
         match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*",
@@ -71,7 +71,6 @@ async def test_negotiate_transport_valid_unix() -> None:
 
 
 from unittest.mock import patch  # Added for the new tests
-import tempfile  # Added for the new tests
 
 
 @pytest.mark.asyncio

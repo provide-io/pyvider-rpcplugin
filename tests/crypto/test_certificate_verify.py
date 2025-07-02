@@ -1,15 +1,9 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_verify.py
 
-import pytest
-
-from datetime import datetime, timedelta, timezone
-
+from datetime import UTC, datetime, timedelta
 from unittest import mock
-# Removed: import sys
-# Removed: from cryptography.hazmat.primitives.asymmetric import ec
-# Removed: from cryptography.exceptions import InvalidSignature
 
-from pyvider.rpcplugin.exception import CertificateError
+import pytest
 
 from pyvider.rpcplugin.crypto.certificate import (
     Certificate,
@@ -17,6 +11,11 @@ from pyvider.rpcplugin.crypto.certificate import (
     CertificateConfig,
     KeyType,
 )
+
+# Removed: import sys
+# Removed: from cryptography.hazmat.primitives.asymmetric import ec
+# Removed: from cryptography.exceptions import InvalidSignature
+from pyvider.rpcplugin.exception import CertificateError
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.crypto import client_cert, server_cert
@@ -247,8 +246,8 @@ async def test_certificate_naive_datetime() -> None:
         not_valid_after=naive_time + timedelta(days=365),
     )
     base, _ = CertificateBase.create(config)
-    assert base.not_valid_before.tzinfo is timezone.utc
-    assert base.not_valid_after.tzinfo is timezone.utc
+    assert base.not_valid_before.tzinfo is UTC
+    assert base.not_valid_after.tzinfo is UTC
 
 
 @pytest.mark.asyncio

@@ -1,19 +1,18 @@
 # tests/transport/test_transport_unix.py
 
 import asyncio
-import os
 import errno
-import stat
+import os
 import socket  # Ensured socket is imported
-
-import pytest
+import stat
 from unittest.mock import (
     MagicMock,
-    AsyncMock,
 )  # Ensured AsyncMock is imported for other tests if needed
 
-from pyvider.telemetry import logger
+import pytest
+
 from pyvider.rpcplugin.transport import UnixSocketTransport
+from pyvider.telemetry import logger
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.transport import unix_transport, managed_unix_socket_path

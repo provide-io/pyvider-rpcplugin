@@ -5,8 +5,8 @@ Performance Tuning - Performance benchmarking and optimization patterns.
 
 import asyncio
 import time
+from collections.abc import Generator  # Added for create_generator
 from typing import Any  # Import Any
-from collections.abc import Generator # Added for create_generator
 
 from example_utils import configure_for_example  # type: ignore[import-not-found]
 
@@ -137,8 +137,6 @@ async def batch_processing_example() -> None:
     batch_duration = monitor.get_duration("batch_processing")
     speedup = single_duration / batch_duration if batch_duration > 0 else 0
     logger.info(f"🚀 Batch processing speedup: {speedup:.2f}x")
-
-
 
 
 async def memory_optimization_example() -> None:

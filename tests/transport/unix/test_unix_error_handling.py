@@ -4,7 +4,7 @@
 import asyncio
 import os
 import tempfile
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -131,7 +131,7 @@ async def test_unix_socket_connect_timeout() -> None:
         # Mock open_unix_connection to raise a timeout
         with patch(
             "asyncio.open_unix_connection",
-            side_effect=asyncio.TimeoutError("Connection timed out"),
+            side_effect=TimeoutError("Connection timed out"),
         ):
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)

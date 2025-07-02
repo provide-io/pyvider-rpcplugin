@@ -3,47 +3,44 @@
 
 import asyncio
 import os
-
+from collections.abc import AsyncGenerator  # Added Any, AsyncGenerator
 from contextlib import suppress
+from typing import Any
 
 import pytest
 import pytest_asyncio
 
-
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.config import rpcplugin_config, CONFIG_SCHEMA  # Import global instance
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
-
 from pyvider.rpcplugin.transport import (
     TCPSocketTransport,
     UnixSocketTransport,
 )
-
-from pyvider.rpcplugin.types import (
-    TransportT,
-    HandlerT,
-    RPCPluginHandler,
-)  # RPCPluginHandler is Any
 from pyvider.rpcplugin.transport.base import (
     RPCPluginTransport,
 )  # Import base for type hint
-from pyvider.rpcplugin.config import rpcplugin_config  # Import global instance
-
-from typing import Tuple, Any, AsyncGenerator  # Added Any, AsyncGenerator
+from pyvider.telemetry import logger
 
 
 class MockProtocol(RPCPluginProtocol):
-    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]: # Type hint for tuple
+    async def get_grpc_descriptors(
+        self,
+    ) -> tuple[Any | None, str]:  # Type hint for tuple
         # Mock descriptors for testing
         logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
         return (None, "MockService")
 
-    async def add_to_server(self, server: Any, handler: Any) -> None: # Matched base signature
+    async def add_to_server(
+        self, server: Any, handler: Any
+    ) -> None:  # Matched base signature
         # Mock add_to_server for testing
-        logger.debug(f"🔌🚀✅ MockProtocol.add_to_server called with server: {server}, handler: {handler}.")
+        logger.debug(
+            f"🔌🚀✅ MockProtocol.add_to_server called with server: {server}, handler: {handler}."
+        )
         pass
 
-    def get_method_type(self, method_name: str) -> str: # Added return type
+    def get_method_type(self, method_name: str) -> str:  # Added return type
         logger.debug("🔌🚀✅ MockProtocol.get_method_type called.")
         return "unary_unary"  # Mock implementation
 
@@ -94,7 +91,7 @@ class MockBytesIO:
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
 async def mock_server_transport(
     request, managed_unix_socket_path: str
-) -> AsyncGenerator[RPCPluginTransport, None]:
+) -> AsyncGenerator[RPCPluginTransport]:
     transport_name = request.param
     transport: RPCPluginTransport | None = (
         None  # Initialize transport with broader type
@@ -139,7 +136,7 @@ async def mock_server_transport(
 
 
 @pytest_asyncio.fixture
-async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport, None]:
+async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport]:
     transport = TCPSocketTransport()  # Define transport before try for finally block
     try:
         yield transport
@@ -172,7 +169,7 @@ async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport, None
 @pytest_asyncio.fixture(scope="function")
 async def mock_server_transport_unix(
     managed_unix_socket_path,
-) -> AsyncGenerator[RPCPluginTransport, None]:
+) -> AsyncGenerator[RPCPluginTransport]:
     """Fixture providing a properly configured Unix transport with unique path."""
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 

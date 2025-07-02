@@ -1,11 +1,11 @@
-import pytest
-import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
+import pytest
+
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
 # Dummy protocol and handler for server instantiation

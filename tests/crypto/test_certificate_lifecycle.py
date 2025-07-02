@@ -1,14 +1,12 @@
 # pyvider/rpcplugin/tests/test_certificate_verify.py
 
-import pytest
-
-from datetime import datetime, timezone
-
+from datetime import UTC, datetime
 from unittest import mock
 
+import pytest
 
-from pyvider.rpcplugin.exception import CertificateError
 from pyvider.rpcplugin.crypto.certificate import Certificate
+from pyvider.rpcplugin.exception import CertificateError
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.crypto import client_cert
@@ -40,7 +38,7 @@ async def test_expired_certificate() -> None:
     # compared to the current real time.
     # datetime.now(timezone.utc) inside the test will be slightly after
     # the datetime.now(timezone.utc) used inside Certificate's __attrs_post_init__.
-    current_real_now = datetime.now(timezone.utc)
+    current_real_now = datetime.now(UTC)
     assert expired_cert._base.not_valid_after < current_real_now, (
         f"Certificate expiry date {expired_cert._base.not_valid_after} should be before current time {current_real_now}"
     )
@@ -51,7 +49,7 @@ async def test_expired_certificate() -> None:
 @pytest.mark.asyncio
 async def test_certificate_validity_period(client_cert) -> None:
     """Test certificate validity period checking."""
-    now = datetime.now(timezone.utc)  # ✅ Ensure timezone-aware datetime
+    now = datetime.now(UTC)  # ✅ Ensure timezone-aware datetime
     assert client_cert._base.not_valid_before <= now
     assert now <= client_cert._base.not_valid_after
     assert client_cert.is_valid  # ✅ No function call () since it's @cached_property

@@ -1,17 +1,18 @@
 # tests/handshake/test_handshake_process_io.py
-import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
-import subprocess  # For Popen spec
 import re  # For escaping regex if needed
+import subprocess  # For Popen spec
+from unittest.mock import AsyncMock, MagicMock
 
-from pyvider.rpcplugin.handshake import (
-    read_handshake_response,
-    parse_handshake_response,  # Changed import
-    create_stderr_relay,
-)
-from pyvider.rpcplugin.exception import HandshakeError
+import pytest
+
 from pyvider.rpcplugin.config import rpcplugin_config  # Import the config object
+from pyvider.rpcplugin.exception import HandshakeError
+from pyvider.rpcplugin.handshake import (
+    create_stderr_relay,
+    parse_handshake_response,  # Changed import
+    read_handshake_response,
+)
 
 
 # Mock Popen object for testing
@@ -77,7 +78,7 @@ async def test_read_handshake_response_multiple_attempts(mocker):
     """Test reading handshake that requires multiple read attempts (chunked)."""
     process = MockProcess()
     # Simulate chunked reading
-    process.stdout.readline.side_effect = asyncio.TimeoutError(
+    process.stdout.readline.side_effect = TimeoutError(
         "Simulated readline timeout to force chunk strategy"
     )
     process.stdout.read.side_effect = [b"1|1|tcp|", b"127.0.0.1:1234", b"|grpc|\n", b""]
@@ -177,7 +178,7 @@ async def test_create_stderr_relay(mocker):
 
     try:
         await asyncio.wait_for(relay_task, timeout=2.0)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         relay_task.cancel()
         with pytest.raises(asyncio.CancelledError):
             await relay_task
@@ -353,7 +354,7 @@ async def test_read_handshake_stdout_becomes_none(mocker):
             return b"partial_line|"
         elif readline_calls == 2:
             mock_process.stdout = None
-            raise asyncio.TimeoutError(
+            raise TimeoutError(
                 "Simulated timeout after stdout becomes None for readline"
             )
         elif mock_process.stdout is None:
@@ -366,7 +367,7 @@ async def test_read_handshake_stdout_becomes_none(mocker):
     def read_side_effect(size):
         if mock_process.stdout is None:
             raise AttributeError("'NoneType' object has no attribute 'read'")
-        raise asyncio.TimeoutError("Simulated timeout for read")
+        raise TimeoutError("Simulated timeout for read")
 
     mock_stdout_stream.read = MagicMock(side_effect=read_side_effect)
     mock_process.stdout = mock_stdout_stream

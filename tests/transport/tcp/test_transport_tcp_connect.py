@@ -2,13 +2,12 @@
 
 import asyncio
 import socket  # Added import
+from unittest.mock import AsyncMock, MagicMock  # Added AsyncMock
 
 import pytest
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
-
-from unittest.mock import MagicMock, AsyncMock  # Added AsyncMock
 
 
 @pytest.mark.asyncio

@@ -1,10 +1,11 @@
 # pyvider/rpcplugin/tests/server/test_server_handshake.py
 
 import pytest
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.exception import HandshakeError
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
+
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import HandshakeError
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
 @pytest.mark.asyncio

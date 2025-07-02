@@ -4,13 +4,14 @@ Server Setup Examples - Various server configuration patterns.
 """
 
 import asyncio
+from typing import Any  # Moved to top, tuple is built-in for 3.9+ for this usage.
 
 from example_utils import (  # type: ignore[import-not-found]
     configure_for_example,
     get_example_port,
 )
-from pyvider.rpcplugin.server import RPCPluginServer # For return type hint
-from typing import Any # Moved to top, tuple is built-in for 3.9+ for this usage.
+
+from pyvider.rpcplugin.server import RPCPluginServer  # For return type hint
 
 configure_for_example()
 
@@ -43,7 +44,8 @@ class BasicProtocol(RPCPluginProtocol):
         service_name = await self.get_service_name()
         logger.info(
             f"🔌 Service '{service_name}' (conceptual) would be "
-            f"registered with handler: {type(handler).__name__}")
+            f"registered with handler: {type(handler).__name__}"
+        )
 
 
 class BasicHandler:
@@ -52,7 +54,6 @@ class BasicHandler:
     pass
 
 
-from pyvider.rpcplugin.server import RPCPluginServer  # For return type hint
 
 
 async def tcp_server_example() -> RPCPluginServer:
@@ -80,7 +81,7 @@ async def tcp_server_example() -> RPCPluginServer:
     )
 
     # Log the configured endpoint
-    endpoint_info = server.transport.endpoint if server.transport else 'No transport'
+    endpoint_info = server.transport.endpoint if server.transport else "No transport"
     logger.info(f"✅ TCP server configured: {endpoint_info}")
     return server
 
@@ -106,7 +107,7 @@ async def unix_server_example() -> RPCPluginServer:
     )
 
     # Log the configured endpoint
-    endpoint_info = server.transport.endpoint if server.transport else 'No transport'
+    endpoint_info = server.transport.endpoint if server.transport else "No transport"
     logger.info(f"✅ Unix socket server configured: {endpoint_info}")
     return server
 

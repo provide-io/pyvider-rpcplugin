@@ -1,8 +1,9 @@
 # tests/fixtures/dummy.py
 
-import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock  # Ensure AsyncMock is imported
+from unittest.mock import AsyncMock, MagicMock  # Ensure AsyncMock is imported
+
+import pytest
 
 
 class DummyReader:

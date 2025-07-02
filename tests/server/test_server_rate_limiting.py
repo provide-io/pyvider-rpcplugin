@@ -1,18 +1,15 @@
 import asyncio
 import os  # Added import
-import grpc
-import pytest
 from typing import Any
 
-from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.server import RPCPluginServer, RateLimitingInterceptor
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.types import ServerT
-from pyvider.telemetry import logger
+import grpc
+import pytest
 
-from tests.fixtures.proto import echo_pb2
-from tests.fixtures.proto import echo_pb2_grpc
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.types import ServerT
+from tests.fixtures.proto import echo_pb2, echo_pb2_grpc
 
 
 class EchoServicerImpl(echo_pb2_grpc.EchoServiceServicer):
