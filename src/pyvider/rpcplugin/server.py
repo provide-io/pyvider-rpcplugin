@@ -124,9 +124,7 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
                     )
                     # Fall through to global config if instance conversion fails
             elif (
-                schema_type
-                and val is None
-                and schema_type in ("list_str", "list_int")
+                schema_type and val is None and schema_type in ("list_str", "list_int")
             ):
                 # If instance config explicitly sets a list type to None,
                 # return empty list
