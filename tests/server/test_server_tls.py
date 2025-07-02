@@ -9,6 +9,7 @@ from pyvider.rpcplugin.exception import SecurityError
 from pyvider.rpcplugin.server import RPCPluginServer
 
 
+
 @pytest.mark.asyncio
 async def test_generate_server_credentials_failure(
     monkeypatch, mock_server_protocol, mock_server_handler
