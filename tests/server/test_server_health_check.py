@@ -13,6 +13,7 @@ from pyvider.telemetry import logger
 from tests.fixtures.proto import echo_pb2, echo_pb2_grpc
 
 
+
 class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     service_name = "echo.EchoService"
 

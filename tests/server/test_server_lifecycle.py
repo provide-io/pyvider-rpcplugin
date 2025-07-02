@@ -6,6 +6,7 @@ from pyvider.rpcplugin.config import ConfigError
 from pyvider.rpcplugin.server import RPCPluginServer
 
 
+
 def test_attrs_post_init_handshake_config_error(mocker):
     """
     Tests that a synchronous error during __attrs_post_init__ is correctly handled.

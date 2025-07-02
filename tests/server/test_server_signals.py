@@ -4,6 +4,7 @@ import pytest
 from pyvider.rpcplugin.server import RPCPluginServer
 
 
+
 @pytest.mark.asyncio
 async def test_register_signal_handlers_suppresses_errors(
     mocker,

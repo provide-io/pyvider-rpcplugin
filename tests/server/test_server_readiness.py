@@ -8,6 +8,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
+
 # Dummy protocol and handler for server instantiation
 class DummyHandler:
     pass
