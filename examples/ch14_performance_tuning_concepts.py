@@ -6,12 +6,13 @@ Performance Tuning - Performance benchmarking and optimization patterns.
 import asyncio
 import time
 from typing import Any  # Import Any
+from collections.abc import Generator # Added for create_generator
 
 from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 configure_for_example()
 
-from pyvider.telemetry import logger # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402
 
 
 class PerformanceMonitor:
@@ -80,7 +81,7 @@ async def connection_pooling_example() -> None:
         async def use_connection(request_id: int) -> str:
             conn = await pool.get_connection()
             await asyncio.sleep(0.1)  # Simulate work
-            await pool.release_connection(conn) # Assuming conn is the id str
+            await pool.release_connection(conn)  # Assuming conn is the id str
             return f"Request {request_id} completed"
 
         tasks.append(use_connection(i))
@@ -137,7 +138,8 @@ async def batch_processing_example() -> None:
     speedup = single_duration / batch_duration if batch_duration > 0 else 0
     logger.info(f"🚀 Batch processing speedup: {speedup:.2f}x")
 
-from collections.abc import Generator # Added for create_generator
+
+
 
 async def memory_optimization_example() -> None:
     """Example: Memory optimization techniques."""
@@ -150,7 +152,7 @@ async def memory_optimization_example() -> None:
         """Create large list (memory intensive)."""
         return [f"item_{i}" for i in range(size)]
 
-    def create_generator(size: int) -> Generator[str, None, None]:
+    def create_generator(size: int) -> Generator[str]:
         """Create generator (memory efficient)."""
         for i in range(size):
             yield f"item_{i}"

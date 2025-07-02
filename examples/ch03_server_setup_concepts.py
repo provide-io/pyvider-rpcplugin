@@ -9,20 +9,27 @@ from example_utils import (  # type: ignore[import-not-found]
     configure_for_example,
     get_example_port,
 )
+from pyvider.rpcplugin.server import RPCPluginServer # For return type hint
+from typing import Any # Moved to top, tuple is built-in for 3.9+ for this usage.
 
 configure_for_example()
+
+# from typing import Any  # Already at top
 
 from pyvider.rpcplugin import plugin_server  # noqa: E402
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
-from typing import Any, Tuple # Moved to top
 
 
 class BasicProtocol(RPCPluginProtocol):
     """Basic protocol for demonstration."""
-    # from typing import Any # Add Any # Moved to top
 
-    async def get_grpc_descriptors(self) -> tuple[Any | None, str]: # Changed Tuple to tuple
+    # from typing import Any # Add Any # Not needed if using built-in tuple
+    # from typing import Tuple # Not needed, using built-in tuple
+
+    async def get_grpc_descriptors(
+        self,
+    ) -> tuple[Any | None, str]:  # Using built-in tuple
         # For a real service, this would return actual gRPC descriptors
         # (e.g., your_pb2_grpc) and the service name string
         # as defined in your .proto file.
@@ -35,8 +42,8 @@ class BasicProtocol(RPCPluginProtocol):
         # The service_name is derived from get_grpc_descriptors.
         service_name = await self.get_service_name()
         logger.info(
-            f"🔌 Service '{service_name}' (conceptual) would be registered with handler: {type(handler).__name__}"
-        )
+            f"🔌 Service '{service_name}' (conceptual) would be "
+            f"registered with handler: {type(handler).__name__}")
 
 
 class BasicHandler:
@@ -44,7 +51,9 @@ class BasicHandler:
 
     pass
 
-from pyvider.rpcplugin.server import RPCPluginServer # For return type hint
+
+from pyvider.rpcplugin.server import RPCPluginServer  # For return type hint
+
 
 async def tcp_server_example() -> RPCPluginServer:
     """Example: TCP server configuration."""
@@ -71,7 +80,8 @@ async def tcp_server_example() -> RPCPluginServer:
     )
 
     # Log the configured endpoint
-    logger.info(f"✅ TCP server configured: {server.transport.endpoint if server.transport else 'No transport'}")
+    endpoint_info = server.transport.endpoint if server.transport else 'No transport'
+    logger.info(f"✅ TCP server configured: {endpoint_info}")
     return server
 
 
@@ -96,7 +106,8 @@ async def unix_server_example() -> RPCPluginServer:
     )
 
     # Log the configured endpoint
-    logger.info(f"✅ Unix socket server configured: {server.transport.endpoint if server.transport else 'No transport'}")
+    endpoint_info = server.transport.endpoint if server.transport else 'No transport'
+    logger.info(f"✅ Unix socket server configured: {endpoint_info}")
     return server
 
 

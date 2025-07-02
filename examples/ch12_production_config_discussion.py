@@ -64,7 +64,8 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
     This version aligns with the structure shown in the ch12 documentation.
     """
     logger.info(
-        "🔧 Applying conceptual config to pyvider.rpcplugin settings (simplified mapping)..."
+        "🔧 Applying conceptual config to pyvider.rpcplugin settings "
+        "(simplified mapping)..."
     )
 
     # Construct settings for pyvider_configure based on the conceptual_config
@@ -72,10 +73,12 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
     pyvider_settings_to_apply: dict[str, Any] = {
         "auto_mtls": conceptual_config.get("security", {}).get("mtls_enabled", False),
         "server_cert": (
-            f"file://{conceptual_config.get('security', {}).get('server_cert_path', '')}"
+            f"file://{conceptual_config.get('security', {})
+                .get('server_cert_path', '')}"
         ),
         "server_key": (
-            f"file://{conceptual_config.get('security', {}).get('server_key_path', '')}"
+            f"file://{conceptual_config.get('security', {})
+                .get('server_key_path', '')}"
         ),
         # For server-side, this would be client_root_certs for verifying clients
         "client_root_certs": (
@@ -138,11 +141,10 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
         f"{json.dumps(pyvider_settings_to_apply, indent=2)}"
     )
     # In a real app, you'd call:
-    from pyvider.rpcplugin import configure as pyvider_configure # Ensure import
+    from pyvider.rpcplugin import configure as pyvider_configure  # Ensure import
+
     pyvider_configure(**pyvider_settings_to_apply)
-    logger.info(
-        "  Called pyvider.rpcplugin.configure() with mapped settings."
-    )
+    logger.info("  Called pyvider.rpcplugin.configure() with mapped settings.")
 
     logger.info("✅ Illustrative application of conceptual config completed.")
 

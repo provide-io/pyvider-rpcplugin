@@ -9,8 +9,12 @@ from example_utils import configure_for_example  # type: ignore[import-not-found
 
 configure_for_example()
 
-from pyvider.rpcplugin.exception import HandshakeError, RPCPluginError, TransportError # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from pyvider.rpcplugin.exception import (  # noqa: E402
+    HandshakeError,
+    RPCPluginError,
+    TransportError,
+)
+from pyvider.telemetry import logger  # noqa: E402
 
 
 async def basic_client_example() -> None:
@@ -27,8 +31,8 @@ async def basic_client_example() -> None:
     # from pyvider.rpcplugin import plugin_client
     # client = plugin_client(
     #     command=["./path/to/plugin/executable"],
-    #     # The 'config' dict passed to plugin_client can include an 'env' sub-dictionary
-    #     # to pass specific environment variables to the plugin subprocess.
+    #     # The 'config' dict passed to plugin_client can include an 'env'
+    #     # sub-dictionary to pass specific environment variables to the plugin subprocess.
     #     # It can also include other keys that RPCPluginClient might use directly.
     #     config={"env": {"MY_PLUGIN_VAR": "value"}, "timeout": 15.0}
     # )

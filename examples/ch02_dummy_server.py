@@ -7,26 +7,25 @@ Prints its handshake string to stdout upon successful startup.
 """
 
 import asyncio
-from typing import Any
 
-import grpc  # For DummyHandler type hint; can be removed if NoOp is.
 # Import from examples.example_utils
-from examples.example_utils import configure_for_example # noqa: E402
+from examples.example_utils import configure_for_example  # noqa: E402
 
 # This should be called before other pyvider imports if this script is run directly.
 # It sets up paths and default config (e.g., disabling mTLS for basic examples).
 configure_for_example()
 
-# from example_utils import configure_for_example  # noqa: E402 # Corrected import # This line is now redundant
+# from example_utils import configure_for_example  # noqa: E402 # Corrected import
+# This line is now redundant
 
+# Import the shared DummyHandler
+from examples.example_utils import DummyHandler  # noqa: E402
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
 from pyvider.telemetry import logger  # noqa: E402
-# Import the shared DummyHandler
-from examples.example_utils import DummyHandler # noqa: E402
 
 
 async def main() -> None:

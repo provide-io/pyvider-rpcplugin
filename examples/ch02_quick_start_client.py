@@ -3,27 +3,30 @@
 """
 Quick Start Example - Client launching an executable plugin server.
 """
+
 import asyncio
 import sys
 from pathlib import Path
+
 # Changed to relative import for examples package
-from examples.example_utils import configure_for_example # noqa: E402
+from examples.example_utils import configure_for_example  # noqa: E402
 
-configure_for_example(clear_env=True) # Client context
+configure_for_example(clear_env=True)  # Client context
 
-from pyvider.rpcplugin import plugin_client # noqa: E402
-from pyvider.rpcplugin.client.base import ( # noqa: E402
-    RPCPluginClient
+from pyvider.rpcplugin import plugin_client  # noqa: E402
+from pyvider.rpcplugin.client.base import (  # noqa: E402
+    RPCPluginClient,
 )  # Retaining for clarity if user inspects client object
-from pyvider.rpcplugin.exception import RPCPluginError # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402
 
-async def main():
+
+async def main() -> None:
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")
     example_dir = Path(__file__).resolve().parent
     dummy_server_executable = example_dir / "ch02_dummy_server.py"
 
-    if not dummy_server_executable.exists(): # Good practice check
+    if not dummy_server_executable.exists():  # Good practice check
         logger.error(f"Dummy server executable not found at: {dummy_server_executable}")
         return
 
@@ -38,12 +41,14 @@ async def main():
         await client.start()
 
         logger.info("✅ Client connected to dummy_server plugin successfully!")
-        logger.info("   The dummy_server uses a basic protocol with no custom RPC methods.")
+        logger.info(
+            "   The dummy_server uses a basic protocol with no custom RPC methods."
+        )
         # If your plugin had defined services (e.g., via .proto files),
         # you would create a gRPC stub here using client.grpc_channel:
         # stub = YourServiceStub(client.grpc_channel)
         # response = await stub.YourMethod(YourRequest())
-        await asyncio.sleep(2) # Keep connection alive for demonstration
+        await asyncio.sleep(2)  # Keep connection alive for demonstration
 
     except RPCPluginError as e:
         logger.error(f"❌ Client RPCPluginError: {e.message}", exc_info=True)
@@ -56,9 +61,10 @@ async def main():
             logger.info("Shutting down client and plugin...")
             await client.close()
             logger.info("Client and plugin shut down.")
-        elif client: # Handle case where client was instantiated but not started
+        elif client:  # Handle case where client was instantiated but not started
             await client.close()
             logger.info("Client (not started) resources cleaned up.")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

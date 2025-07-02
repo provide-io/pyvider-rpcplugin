@@ -6,15 +6,18 @@ Custom Protocols - Custom protocol definitions and middleware patterns.
 import asyncio
 from typing import Any
 
-from examples.example_utils import configure_for_example # noqa: E402
+from examples.example_utils import configure_for_example  # noqa: E402
 
 configure_for_example()
 
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from collections.abc import (  # For CustomProtocol
+    AsyncGenerator,  # For CustomHandler & StreamData
+    Callable,
+)
+
 # Changed Tuple to tuple for type hint consistency
-from typing import Any, Callable, Awaitable, List, Tuple as TypingTuple # For CustomProtocol
-from collections.abc import AsyncGenerator # For CustomHandler & StreamData
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
+from pyvider.telemetry import logger  # noqa: E402
 
 
 class CustomProtocol(RPCPluginProtocol):
@@ -23,9 +26,11 @@ class CustomProtocol(RPCPluginProtocol):
     def __init__(self, service_name: str = "CustomService") -> None:
         super().__init__()
         self.service_name = service_name
-        self.middleware_factories: List[Callable[[Any], Any]] = []
+        self.middleware_factories: list[Callable[[Any], Any]] = []
 
-    async def get_grpc_descriptors(self) -> TypingTuple[Any | None, str]: # Use aliased Tuple
+    async def get_grpc_descriptors(
+        self,
+    ) -> tuple[Any | None, str]:  # Use aliased Tuple
         """Get gRPC service descriptors."""
         logger.info(f"🔌 Getting descriptors for {self.service_name}")
         return None, self.service_name
@@ -42,7 +47,8 @@ class CustomProtocol(RPCPluginProtocol):
         wrapped_handler = self._apply_middleware(handler)
 
         # Placeholder for actual gRPC registration:
-        # your_service_pb2_grpc.add_YourServiceServicer_to_server(wrapped_handler, server)
+        # your_service_pb2_grpc.add_YourServiceServicer_to_server(
+        #     wrapped_handler, server)
         logger.info(
             f"✅ {self.service_name} (with {len(self.middleware_factories)} middleware "
             f"layers, using handler {type(wrapped_handler).__name__}) would be "
@@ -52,7 +58,12 @@ class CustomProtocol(RPCPluginProtocol):
     def add_middleware(self, middleware_factory: Callable[[Any], Any]) -> None:
         """Add middleware to the protocol."""
         self.middleware_factories.append(middleware_factory)
-        logger.info(f"➕ Added middleware factory: {middleware_factory.__name__ if hasattr(middleware_factory, '__name__') else middleware_factory}")
+        factory_name = (
+            middleware_factory.__name__
+            if hasattr(middleware_factory, "__name__")
+            else str(middleware_factory)
+        )
+        logger.info(f"➕ Added middleware factory: {factory_name}")
 
     def _apply_middleware(self, handler: Any) -> Any:
         """Apply middleware stack to handler."""
@@ -73,8 +84,11 @@ class LoggingMiddleware:
         """Intercept method calls for logging."""
         original_method = getattr(self.next_handler, name)
         if callable(original_method) and asyncio.iscoroutinefunction(original_method):
+
             async def logged_method(*args: Any, **kwargs: Any) -> Any:
-                logger.info(f"📝 [LOG] Calling: {self.next_handler.__class__.__name__}.{name}")
+                logger.info(
+                    f"📝 [LOG] Calling: {self.next_handler.__class__.__name__}.{name}"
+                )
                 try:
                     result = await original_method(*args, **kwargs)
                     logger.info(f"✅ [LOG] Completed: {name}")
@@ -82,8 +96,9 @@ class LoggingMiddleware:
                 except Exception as e:
                     logger.error(f"❌ [LOG] Error in {name}: {e}")
                     raise
+
             return logged_method
-        return original_method # Return original if not callable async method
+        return original_method  # Return original if not callable async method
 
 
 class TimingMiddleware:
@@ -97,10 +112,11 @@ class TimingMiddleware:
         """Intercept method calls for timing."""
         original_method = getattr(self.next_handler, name)
         if callable(original_method) and asyncio.iscoroutinefunction(original_method):
-            async def timed_method(*args: Any, **kwargs: Any) -> Any:
-                import time # Moved import inside method as it's only used here
 
-                start_time = time.perf_counter() # Use perf_counter for more precision
+            async def timed_method(*args: Any, **kwargs: Any) -> Any:
+                import time  # Moved import inside method as it's only used here
+
+                start_time = time.perf_counter()  # Use perf_counter for more precision
                 try:
                     result = await original_method(*args, **kwargs)
                     duration = time.perf_counter() - start_time
@@ -112,8 +128,9 @@ class TimingMiddleware:
                         f"⏱️  [TIMING] {name} failed after {duration:.4f}s: {e}"
                     )
                     raise
+
             return timed_method
-        return original_method # Return original if not callable async method
+        return original_method  # Return original if not callable async method
 
 
 class CustomHandler:
@@ -124,7 +141,7 @@ class CustomHandler:
         await asyncio.sleep(0.1)  # Simulate processing
         return f"Processed: {request}"
 
-    async def StreamData(self, request: Any, context: Any) -> AsyncGenerator[str, None]:
+    async def StreamData(self, request: Any, context: Any) -> AsyncGenerator[str]:
         """Stream data method."""
         for i in range(3):
             await asyncio.sleep(0.05)

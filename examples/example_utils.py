@@ -101,9 +101,13 @@ def configure_for_example(clear_env: bool = False) -> None:
                 # We want to set it to False if it's currently True (from schema default).
                 if current_val is True:
                     config_to_apply_programmatically[key] = example_value
-                elif current_val is None: # If it was somehow None (e.g. schema default was None)
+                elif (
+                    current_val is None
+                ):  # If it was somehow None (e.g. schema default was None)
                     config_to_apply_programmatically[key] = example_value
-            elif current_val == schema_default or key == "PLUGIN_LOG_LEVEL": # Original logic for other keys
+            elif (
+                current_val == schema_default or key == "PLUGIN_LOG_LEVEL"
+            ):  # Original logic for other keys
                 config_to_apply_programmatically[key] = example_value
 
         # Call pyvider_configure with specific keyword arguments that match its
@@ -188,9 +192,12 @@ def get_example_port(base_port: int = 50051) -> int:
         s.bind(("127.0.0.1", base_port))
         return s.getsockname()[1]
 
+
 # Added imports for DummyHandler
-import grpc # For DummyHandler type hint
-from typing import Any # For DummyHandler type hint
+from typing import Any  # For DummyHandler type hint
+
+import grpc  # For DummyHandler type hint
+
 # logger is already imported from pyvider.telemetry at the top of the module if needed,
 # but to avoid potential conflicts if example_utils.logger is used elsewhere,
 # we can import it specifically or use the existing one.
@@ -214,5 +221,6 @@ class DummyHandler:
             "DummyHandler: NoOp called (generally not expected in basic examples)"
         )
         return {}
+
 
 # 🐍🛠️

@@ -110,15 +110,16 @@ async def functional_mtls_example() -> None:
             auto_mtls=True,
             client_cert=client_cert_pem,  # Pass PEM string
             client_key=client_key_pem,  # Pass PEM string
-            server_root_certs=ca_cert_pem,       # Pass CA PEM string
-                                                 # (for client to verify server)
+            server_root_certs=ca_cert_pem,  # Pass CA PEM string
+            # (for client to verify server)
             magic_cookie_key=client_magic_cookie_key,
             magic_cookie=client_magic_cookie_value,
             handshake_timeout=30.0,  # Increased timeouts
             connection_timeout=25.0,
         )
         logger.info(
-            "🔧 Client-side mTLS configured programmatically using PEM strings via configure()."
+            "🔧 Client-side mTLS configured programmatically using PEM strings "
+            "via configure()."
         )
 
         # No need to set os.environ for client-side certs if configure() is
@@ -137,7 +138,7 @@ async def functional_mtls_example() -> None:
             # Server uses this CA to verify client cert
             "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_cert_file_path}",
             client_magic_cookie_key: client_magic_cookie_value,  # Actual cookie env
-                                                              # var for server
+            # var for server
             # Server's config for which key to read
             "PLUGIN_MAGIC_COOKIE_KEY": client_magic_cookie_key,
             # Server's config for expected value

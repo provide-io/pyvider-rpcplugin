@@ -227,6 +227,7 @@ def validate_magic_cookie(
     else:
         expected_value_for_logic = magic_cookie_value
 
+
     # Determine the actual cookie value that was provided by the client/environment.
     # Parameter 'magic_cookie' can be str | None | _SentinelType.
     cookie_provided_by_caller: str | None
@@ -245,17 +246,14 @@ def validate_magic_cookie(
     else:
         # If magic_cookie param was explicitly passed (even if None), use that.
         cookie_provided_by_caller = magic_cookie
-        logger.debug(
-            f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'"
-        )
+        logger.debug(f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'")
+
 
     logger.debug(f"Final cookie_key for validation: {cookie_key}")
     logger.debug(f"Expected cookie value (for logic): {expected_value_for_logic}")
     logger.debug(f"Cookie provided by caller/env: {cookie_provided_by_caller}")
 
-    if (
-        cookie_key is None or cookie_key == ""
-    ):  # This check is for the config of the key itself
+    if cookie_key is None or cookie_key == "": # This check is for the config of the key itself
         logger.error("Configuration error: magic_cookie_key is not set in config.")
         raise HandshakeError(
             message="Magic cookie key is not configured.",
