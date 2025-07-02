@@ -1,23 +1,24 @@
 # tests/protocol/test_service.py
 
-import os
 import asyncio
+import os
 import signal  # Moved import signal to top level of module
-import pytest
+from asyncio.locks import Event
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+from google.protobuf.empty_pb2 import Empty
+
+from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.service import (
-    SubchannelConnection,
     GRPCBrokerService,
-    GRPCStdioService,
     GRPCControllerService,
+    GRPCStdioService,
+    SubchannelConnection,
     register_protocol_service,
 )
-from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
-from google.protobuf.empty_pb2 import Empty
-from asyncio.locks import Event
 
 
 @pytest.fixture
@@ -242,7 +243,7 @@ async def test_stdio_stream_shutdown_terminates_loop(
     try:
         # If StreamStdio terminates correctly, consume_task will finish.
         await asyncio.wait_for(consume_task, timeout=1.0)
-    except asyncio.TimeoutError:  # pragma: no cover
+    except TimeoutError:  # pragma: no cover
         pytest.fail("StreamStdio did not terminate within 1s after shutdown.")
 
     assert len(results) == 0  # No items were put in the queue
@@ -492,11 +493,11 @@ async def test_stdio_service_timeouts(stdio_service, mock_context) -> None:
         nonlocal get_calls
         get_calls += 1
         if get_calls == 1:
-            raise asyncio.TimeoutError()
+            raise TimeoutError()
         elif get_calls == 2:
             return await original_get()
         else:
-            raise asyncio.TimeoutError()
+            raise TimeoutError()
 
     stdio_service._message_queue.get = mock_get_with_timeout
     await stdio_service.put_line(b"test data for timeout test")

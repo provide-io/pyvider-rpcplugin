@@ -73,12 +73,12 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
     pyvider_settings_to_apply: dict[str, Any] = {
         "auto_mtls": conceptual_config.get("security", {}).get("mtls_enabled", False),
         "server_cert": (
-            f"file://{conceptual_config.get('security', {})
-                .get('server_cert_path', '')}"
+            f"file://{
+                conceptual_config.get('security', {}).get('server_cert_path', '')
+            }"
         ),
         "server_key": (
-            f"file://{conceptual_config.get('security', {})
-                .get('server_key_path', '')}"
+            f"file://{conceptual_config.get('security', {}).get('server_key_path', '')}"
         ),
         # For server-side, this would be client_root_certs for verifying clients
         "client_root_certs": (

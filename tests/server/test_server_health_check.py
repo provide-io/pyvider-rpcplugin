@@ -1,19 +1,16 @@
 import asyncio
-import grpc
-import pytest
 from typing import Any
 
+import grpc
+import pytest
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.types import ServerT
-
-from tests.fixtures.proto import echo_pb2
-from tests.fixtures.proto import echo_pb2_grpc
-
 from pyvider.telemetry import logger
+from tests.fixtures.proto import echo_pb2, echo_pb2_grpc
 
 
 class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):

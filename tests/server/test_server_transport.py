@@ -1,16 +1,13 @@
 # tests/server/test_server_transport.py
 
-import os
-import platform
-import pytest
-import asyncio
 from unittest import mock
 
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.exception import TransportError, SecurityError
-from pyvider.rpcplugin.transport import UnixSocketTransport
-from pyvider.rpcplugin.config import rpcplugin_config
+import pytest
 
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import TransportError
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.transport import UnixSocketTransport
 from tests.fixtures.dummy import DummyGRPCServer
 
 

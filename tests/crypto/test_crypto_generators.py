@@ -1,22 +1,19 @@
 # pyvider/rpcplugin/tests/crypto/test_crypto_generators.py
 
-import pytest
-
+import time
 from unittest import mock
 
-import time
-
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
-
-from pyvider.rpcplugin.crypto.certificate import Certificate
+import pytest
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from pyvider.rpcplugin.crypto import (
-    KEY_TYPE_RSA,
     KEY_TYPE_ECDSA,
-    generate_rsa_keypair,
+    KEY_TYPE_RSA,
     generate_ec_keypair,
     generate_keypair,
+    generate_rsa_keypair,
 )
+from pyvider.rpcplugin.crypto.certificate import Certificate
 
 
 @pytest.mark.asyncio

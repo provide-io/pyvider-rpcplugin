@@ -1,12 +1,12 @@
 # tests/fixtures/server.py
 
+import asyncio
+
 import pytest
 import pytest_asyncio
 
-import asyncio
-
-from pyvider.telemetry import logger  # Added for logging in fixture
 from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.telemetry import logger  # Added for logging in fixture
 
 
 @pytest.fixture
@@ -95,8 +95,7 @@ async def rpc_plugin_server_manager(
         from pyvider.rpcplugin.config import (
             rpcplugin_config,
         )  # Import here to use fresh instance
-        from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
-        from tests.fixtures.mocks import MockProtocol, MockHandler  # Default mocks
+        from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
         protocol_to_use = (
             protocol or mock_server_protocol

@@ -1,17 +1,17 @@
 # tests/protocol/test_protocol_base_extended.py
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.types import ServerT, HandlerT
-from typing import Tuple
+from pyvider.rpcplugin.types import HandlerT, ServerT
 
 
 class IncompleteProtocol(RPCPluginProtocol):
     """A protocol implementation that doesn't implement all abstract methods."""
 
-    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:  # Made async
+    async def get_grpc_descriptors(self) -> tuple[MagicMock, str]:  # Made async
         return (MagicMock(), "TestService")
 
     # Missing add_to_server implementation
@@ -20,7 +20,7 @@ class IncompleteProtocol(RPCPluginProtocol):
 class ConcreteProtocol(RPCPluginProtocol):
     """A concrete implementation of the protocol with all methods."""
 
-    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:  # Made async
+    async def get_grpc_descriptors(self) -> tuple[MagicMock, str]:  # Made async
         descriptors = MagicMock()
         service_name = "TestService"
         return descriptors, service_name

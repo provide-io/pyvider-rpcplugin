@@ -1,8 +1,9 @@
 # tests/protocol/test_protocol_base_completeness.py
 
-import pytest
 from typing import Any
 from unittest.mock import MagicMock
+
+import pytest
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import HandlerT, ServerT

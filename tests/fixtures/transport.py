@@ -1,23 +1,21 @@
 # tests/fixtures/transport.py
 
-import pytest
-import pytest_asyncio
-
 import asyncio
-
 import os
 import socket
 import sys  # Added import
 import tempfile  # Added import
 import uuid
+from collections.abc import AsyncGenerator
 from pathlib import Path  # Ensure Path is imported
-from typing import AsyncGenerator
 
-from pyvider.telemetry import logger
+import pytest
+import pytest_asyncio
 
 from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
+from pyvider.telemetry import logger
 
 
 class SocketStateMonitor:
@@ -213,7 +211,7 @@ async def unix_transport(
 async def managed_unix_socket_path(
     request: pytest.FixtureRequest,
     tmp_path: Path,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str]:
     socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"  # Keep the short unique filename
 
     if sys.platform == "darwin":  # macOS

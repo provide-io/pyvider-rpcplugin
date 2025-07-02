@@ -17,14 +17,14 @@ configure_for_example(
 # Import generated code from the examples/proto directory
 # Assumes 'examples' is in PYTHONPATH or you run from project root.
 from examples.proto import echo_pb2, echo_pb2_grpc  # noqa: E402
-
-# Import pyvider components
-from pyvider.rpcplugin.types import ( # noqa: E402
-    RPCPluginProtocol as TypesRPCPluginProtocol,
-) # noqa: E402
 from pyvider.rpcplugin.factories import plugin_server  # noqa: E402
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
+
+# Import pyvider components
+from pyvider.rpcplugin.types import (  # noqa: E402
+    RPCPluginProtocol as TypesRPCPluginProtocol,
+)  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
 
 

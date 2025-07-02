@@ -5,9 +5,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from pyvider.rpcplugin.transport import TCPSocketTransport
 from pyvider.rpcplugin.exception import TransportError
-
+from pyvider.rpcplugin.transport import TCPSocketTransport
 
 # test_tcp_socket_transport_close_connection_active REMOVED - Incompatible with new listen()
 # test_tcp_socket_transport_close_writer_oserror REMOVED - Incompatible with new listen()
@@ -178,7 +177,7 @@ async def test_close_server_wait_closed_timeout(mocker, caplog):
     mock_server = AsyncMock(spec=asyncio.AbstractServer)
     mock_server.is_serving.return_value = True  # Server is serving
     mock_server.wait_closed = AsyncMock(
-        side_effect=asyncio.TimeoutError("Simulated wait_closed timeout")
+        side_effect=TimeoutError("Simulated wait_closed timeout")
     )
 
     transport._server = mock_server

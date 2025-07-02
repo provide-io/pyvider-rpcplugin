@@ -1,16 +1,16 @@
 # tests/protocol/test_protocol_base.py
 
-import pytest
 from unittest.mock import MagicMock
 
+import pytest
+
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from typing import Tuple
 
 
 class TestConcreteProtocol(RPCPluginProtocol):
     """Concrete implementation of RPCPluginProtocol for testing."""
 
-    async def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:  # Made async
+    async def get_grpc_descriptors(self) -> tuple[MagicMock, str]:  # Made async
         return (MagicMock(), "TestService")
 
     async def add_to_server(self, server, handler) -> None:  # Corrected param order

@@ -2,10 +2,11 @@
 
 import asyncio
 import signal
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from pyvider.rpcplugin.protocol.service import GRPCStdioService, GRPCControllerService
+import pytest
+
+from pyvider.rpcplugin.protocol.service import GRPCControllerService, GRPCStdioService
 
 
 class MockRequestIterator:

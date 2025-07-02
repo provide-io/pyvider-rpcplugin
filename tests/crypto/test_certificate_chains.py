@@ -1,18 +1,14 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_chains.py
 
-import pytest
-
+from datetime import UTC, datetime
 from unittest import mock
 
-from datetime import datetime, timezone
-
+import pytest
 from cryptography import x509
-
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError
-
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.crypto import client_cert, server_cert
@@ -56,19 +52,36 @@ async def test_certificate_basic_properties(cert_fixture, request) -> None:
 
 
 @pytest.mark.asyncio
-async def test_certificate_self_signed_validation(client_cert) -> None:
-    """Test self-signed certificate validation."""
-    # Clear trust chain first
-    client_cert.trust_chain = []
+async def test_certificate_self_signed_validation() -> None:
+    """Test self-signed certificate validation behavior."""
+    self_signed_cert = Certificate(
+        generate_keypair=True,
+        common_name="Test Self-Signed Cert",
+    )
+    assert self_signed_cert.subject == self_signed_cert.issuer, (
+        "Generated certificate should be self-signed"
+    )
 
-    # A self-signed certificate should be in its own trust chain to validate
-    if client_cert.subject == client_cert.issuer:
-        client_cert.trust_chain.append(client_cert)
-        assert client_cert.verify_trust(client_cert), (
-            "Self-signed certificate should validate against itself when in trust chain"
-        )
-    else:
-        pytest.skip("Certificate is not self-signed")
+    # Test 1: A self-signed certificate should be considered trusted by itself,
+    # regardless of its own trust_chain content, due to identity.
+    self_signed_cert.trust_chain = []  # Ensure trust_chain is empty
+    assert self_signed_cert.verify_trust(self_signed_cert), (
+        "A self-signed certificate should validate against itself (identity trust)."
+    )
+
+    # Test 2: Explicitly adding it to its own trust chain should still result in validation.
+    # This case is somewhat redundant if identity trust is already true, but confirms consistency.
+    self_signed_cert.trust_chain = [self_signed_cert]
+    assert self_signed_cert.verify_trust(self_signed_cert), (
+        "A self-signed certificate should validate against itself when also in its own trust chain."
+    )
+
+    # Test 3: Verify that this self-signed cert does NOT trust another unrelated cert if chain is empty.
+    unrelated_cert = Certificate(generate_keypair=True, common_name="Unrelated Cert")
+    self_signed_cert.trust_chain = []
+    assert not self_signed_cert.verify_trust(unrelated_cert), (
+        "Self-signed certificate should not validate an unrelated certificate if its trust chain is empty."
+    )
 
 
 def test_certificate_extensions(client_cert) -> None:
@@ -103,7 +116,7 @@ def test_certificate_extensions(client_cert) -> None:
 @pytest.mark.asyncio
 async def test_certificate_validity_period(client_cert) -> None:
     """Test certificate validity period checking."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     assert client_cert._cert.not_valid_before_utc <= now
     assert now <= client_cert._cert.not_valid_after_utc
     assert client_cert.is_valid
