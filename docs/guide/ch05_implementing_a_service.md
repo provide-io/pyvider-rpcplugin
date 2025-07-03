@@ -133,29 +133,14 @@ class EchoProtocol(RPCPluginProtocol):
 async def main() -> None:
     logger.info("Starting Echo Plugin Server (ch05_echo_server.py)...")
 
-    # Basic env setup for standalone run, mimicking what a client might set.
-    # In a real plugin scenario, these are set by the host application.
-    # example_utils.configure_for_example() might handle this if called early.
-    if "PLUGIN_MAGIC_COOKIE_KEY" not in os.environ:
-        # This check is for the key, the value is set by the client.
-        # The server reads the value from the key specified by PLUGIN_MAGIC_COOKIE_KEY.
-        logger.warning(
-            "PLUGIN_MAGIC_COOKIE_KEY env var not set. Using default for standalone run."
-        )
-        os.environ["PLUGIN_MAGIC_COOKIE_KEY"] = "ECHO_PLUGIN_COOKIE_EXAMPLE"
-        # The actual cookie value is usually set by the client that
-        # launches this server.
-        # For standalone testing, if the client isn't setting it,
-        # the server might need a default value for PLUGIN_MAGIC_COOKIE_VALUE
-        # if it's directly checking it, rather than just the handshake output.
-        # However, standard behavior is server prints handshake, client verifies it.
-        # The server itself doesn't need PLUGIN_MAGIC_COOKIE or
-        # PLUGIN_MAGIC_COOKIE_VALUE to *start*, but it needs to output them
-        # correctly during handshake if hardcoded.
-        # The `plugin_server` factory and `RPCPluginServer` handle handshake output
-        # based on env vars like `PLUGIN_HOST_ADDRESS`,
-        # `PLUGIN_MAGIC_COOKIE_VALUE` (if set for it to use).
-        # For this example, we'll rely on the client to set the value.
+    # When ch05_echo_server.py is run directly (as __main__),
+    # configure_for_example() and the subsequent logic in the
+    # `if __name__ == "__main__":` block ensure necessary environment
+    # variables like the magic cookie key and value are set.
+    # This allows the server to pass its own handshake validation if needed
+    # for standalone testing or direct execution.
+    # In a typical plugin scenario, the client launching this server
+    # would be responsible for setting these environment variables.
 
     handler = EchoHandler()
     # Ensure EchoProtocol is cast to the expected base type for plugin_server
@@ -179,13 +164,14 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
-        # For standalone server execution, ensure the magic cookie env var is set
-        # so it can pass its own handshake validation. This is now handled by
-        # ensuring configure_for_example() is called at the top and then,
-        # if this script is main, setting the necessary environment variable.
-        # The `example_utils.configure_for_example` already sets a default
-        # PLUGIN_MAGIC_COOKIE_VALUE. We need to ensure the environment variable
-        # named by PLUGIN_MAGIC_COOKIE_KEY gets this value.
+        # For standalone server execution (i.e., when this script is run directly),
+        # `configure_for_example()` (called at the top level of the script)
+        # sets up default configurations, including a default magic cookie key and value.
+        # The following lines ensure that the environment variable, whose name is
+        # specified by the configured `PLUGIN_MAGIC_COOKIE_KEY`, is actually set
+        # to the configured `PLUGIN_MAGIC_COOKIE_VALUE`. This allows the server
+        # to pass its own handshake validation if it's not launched by a client
+        # that would normally set this environment variable.
         from pyvider.rpcplugin import rpcplugin_config  # Get config after example_utils
 
         cookie_key_to_set = rpcplugin_config.magic_cookie_key()

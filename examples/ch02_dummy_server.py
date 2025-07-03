@@ -48,26 +48,120 @@ async def main() -> None:
     # (e.g., transport type, which defaults to 'unix' then 'tcp').
     server: RPCPluginServer = plugin_server(protocol=protocol, handler=handler)
 
+    # --- Logic for ch08 (direct client connection) START ---
+    # Determine if running as main for the special socket path writing behavior
+    # or if specific env var PYVIDER_WRITE_SOCKET_PATH is set.
+    # This allows ch08_direct_client_connection.py to work with this server.
+    should_write_socket_path = (
+        __name__ == "__main__" or os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true"
+    )
+    server_task = None
+    socket_comm_file = None
+
+    if should_write_socket_path:
+        project_root_for_socket_file = Path(__file__).resolve().parent.parent
+        socket_comm_file = project_root_for_socket_file / "dummy_server_socket.txt"
+    # --- Logic for ch08 (direct client connection) END ---
+
     try:
         logger.info(
             "Dummy server (Quick Start version) attempting to start and serve "
             "(will print handshake)..."
         )
-        await server.serve()  # This performs handshake and starts serving.
+
+        if should_write_socket_path:
+
+            async def serve_and_write_socket_path() -> None:
+                await server.serve()
+
+            server_task = asyncio.create_task(serve_and_write_socket_path())
+            await server.wait_for_server_ready(timeout=10.0)
+
+            if server.transport and server.transport.endpoint and socket_comm_file:
+                if server._transport_name == "unix":
+                    logger.info(
+                        f"Writing socket path for ch08: {server.transport.endpoint} to {socket_comm_file}"
+                    )
+                    try:
+                        with open(socket_comm_file, "w") as f:
+                            f.write(str(server.transport.endpoint))
+                    except OSError as e:
+                        logger.error(f"Failed to write socket path: {e}")
+                else:
+                    logger.info(
+                        f"Transport is {server._transport_name}, not unix. Socket path not written."
+                    )
+            else:
+                logger.warning(
+                    "Server transport/endpoint not available. Cannot write socket path."
+                )
+
+            if (
+                server_task
+            ):  # server_task might not be set if wait_for_server_ready times out
+                await server_task
+        else:
+            await server.serve()  # This performs handshake and starts serving.
+
         logger.info("Dummy server (Quick Start version) finished serving.")
     except KeyboardInterrupt:  # pragma: no cover
         logger.info("Dummy server (Quick Start version) stopped by user.")
+        if server_task and not server_task.done():  # Also cancel task here
+            server_task.cancel()
     except Exception as e:  # pragma: no cover
         logger.error(
             f"Dummy server (Quick Start version) encountered an error: {e}",
             exc_info=True,
         )
+        if server_task and not server_task.done():  # Also cancel task here
+            server_task.cancel()
     finally:
         logger.info("Dummy server (Quick Start version) shutting down.")
+        if should_write_socket_path:  # Ensure task is awaited and file cleaned up
+            if server_task and not server_task.done():
+                from contextlib import suppress
+
+                with suppress(asyncio.CancelledError):
+                    await server_task
+            # Check if the server's main serving future is active and stop if necessary
+            if hasattr(server, '_serving_future') and server._serving_future and not server._serving_future.done():
+                await server.stop()
+            if socket_comm_file and socket_comm_file.exists():
+                try:
+                    logger.info(f"Cleaning up {socket_comm_file}")
+                    socket_comm_file.unlink()
+                except OSError as e:
+                    logger.warning(f"Could not remove {socket_comm_file}: {e}")
 
 
 if __name__ == "__main__":
     # This allows the script to be run directly as a plugin executable
-    # by RPCPluginClient.
-    # The environment (including magic cookie) will be set by the launching client.
+    # by RPCPluginClient, or for ch08 direct connection example.
+    import os  # Required for getenv and Path
+    from pathlib import Path  # Required for Path
+
+    from pyvider.rpcplugin import (
+        configure as pyvider_core_configure,
+    )
+    from pyvider.rpcplugin import (
+        rpcplugin_config,
+    )  # For standalone setup
+
+    if os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true":
+        # If run for ch08, ensure magic cookie is set for self-handshake
+        cookie_key_to_set_in_env = rpcplugin_config.magic_cookie_key()
+        expected_cookie_value = rpcplugin_config.magic_cookie_value()
+        env_var_name_for_cookie = (
+            "PYVIDER_PLUGIN_MAGIC_COOKIE"  # Default from example_utils
+        )
+        if cookie_key_to_set_in_env != env_var_name_for_cookie:
+            env_var_name_for_cookie = cookie_key_to_set_in_env
+        os.environ[env_var_name_for_cookie] = expected_cookie_value
+        pyvider_core_configure(PLUGIN_MAGIC_COOKIE_KEY=env_var_name_for_cookie)
+        logger.info(
+            f"Standalone server mode (for ch08): "
+            f"Set os.environ['{env_var_name_for_cookie}'] = '{expected_cookie_value}'. "
+            f"RPCPlugin configured to use '{env_var_name_for_cookie}' as cookie key."
+        )
+
     asyncio.run(main())

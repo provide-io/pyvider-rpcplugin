@@ -65,9 +65,6 @@ from examples.example_utils import configure_for_example  # noqa: E402
 # It sets up paths and default config (e.g., disabling mTLS for basic examples).
 configure_for_example()
 
-# from example_utils import configure_for_example  # noqa: E402 # Corrected import
-# This line is now redundant
-
 # Import the shared DummyHandler
 from examples.example_utils import DummyHandler  # noqa: E402
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402

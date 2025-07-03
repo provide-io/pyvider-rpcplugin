@@ -23,14 +23,22 @@ This example demonstrates how a Python script can connect directly to an already
 
 **To make this example work:**
 
-1.  **Start a server manually**: Run `examples/ch08_dummy_server.py` in one terminal.
-    *   The `ch08_dummy_server.py` (when run directly via `python examples/ch08_dummy_server.py`) is set up by `example_utils.configure_for_example()` to:
+1.  **Start the dummy server manually with socket path writing enabled**:
+    Open a terminal, navigate to the project root, and run the *modified* `ch02_dummy_server.py`. You need to set the `PYVIDER_WRITE_SOCKET_PATH` environment variable to `true` for it to write its socket path:
+    ```bash
+    PYVIDER_WRITE_SOCKET_PATH=true python examples/ch02_dummy_server.py
+    ```
+    *   The `ch02_dummy_server.py` (when run with this environment variable or directly as `__main__`) is set up by `example_utils.configure_for_example()` and its own `if __name__ == "__main__":` block to:
         *   Use a default magic cookie (e.g., "pyvider-example-cookie" with key "PYVIDER_PLUGIN_MAGIC_COOKIE").
-        *   Disable mTLS (`PLUGIN_AUTO_MTLS=False`).
-        *   Listen on a Unix socket (usually the default).
-    *   Crucially, for this `ch08` example to find the socket, `ch08_dummy_server.py` has a special behavior where it writes its active Unix socket path to a file named `dummy_server_socket.txt` in the project root.
+        *   Disable mTLS (`PLUGIN_AUTO_MTLS=False` via `example_utils`).
+        *   Listen on a Unix socket (the default preferred transport).
+    *   When `PYVIDER_WRITE_SOCKET_PATH=true` (or if run as `__main__` which also triggers the behavior), it writes its active Unix socket path to a file named `dummy_server_socket.txt` in the project root.
 
-2.  **Run `ch08_direct_client_connection.py`**: In another terminal, run this script. It will attempt to read the socket path from `dummy_server_socket.txt` and connect.
+2.  **Run `ch08_direct_client_connection.py`**: In another terminal (from the project root), run this client script:
+    ```bash
+    python examples/ch08_direct_client_connection.py
+    ```
+    It will attempt to read the socket path from `dummy_server_socket.txt` and connect. After the client finishes, you can stop the server in the first terminal (e.g., with Ctrl+C). The server should clean up the `dummy_server_socket.txt` file upon termination.
 
 ```python
 #!/usr/bin/env python3
