@@ -117,9 +117,9 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
         # Example for setting server endpoint if needed,
         # passed as a PLUGIN_ prefixed kwarg
         "SERVER_ENDPOINT": (
-            f"{conceptual_config.get('transport', {}).get('host', '0.0.0.0')}:"
+            f"{conceptual_config.get('transport', {}).get('host', '0.0.0.0')}:"  # nosec B104
             f"{conceptual_config.get('transport', {}).get('port', 0)}"
-        ),  # nosec B104 # nosec B108
+        ),  # nosec B108
     }
 
     # Filter out settings with empty paths for certs/keys if mtls is false

@@ -1,5 +1,8 @@
 # tests/fixtures/crypto.py
 
+from pathlib import Path # Moved to top
+import tempfile # Added for temporary_key_file if needed, though not directly used by current version of it
+
 import pytest
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
@@ -20,7 +23,10 @@ def dev_root_ca() -> Certificate:
 
 @pytest.fixture(scope="module")
 def client_cert(dev_root_ca: Certificate) -> Certificate:
-    """Loads the client certificate from environment or generates a default one signed by dev_root_ca."""
+    """
+    Loads the client certificate from environment or generates a default one
+    signed by dev_root_ca.
+    """
     from pyvider.rpcplugin.config import rpcplugin_config
 
     cert_env_val = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
@@ -36,7 +42,8 @@ def client_cert(dev_root_ca: Certificate) -> Certificate:
 
     if not cert_to_use or not key_to_use:
         logger.info(
-            "PLUGIN_CLIENT_CERT or PLUGIN_CLIENT_KEY not found/PEM-like in env, generating default client cert for tests."
+            "PLUGIN_CLIENT_CERT or PLUGIN_CLIENT_KEY not found/PEM-like in env, "
+            "generating default client cert for tests."
         )
         default_client_cert_obj = Certificate.create_signed_certificate(
             ca_certificate=dev_root_ca,
@@ -60,7 +67,10 @@ def client_cert(dev_root_ca: Certificate) -> Certificate:
 
 @pytest.fixture(scope="module")
 def server_cert(dev_root_ca: Certificate) -> Certificate:
-    """Loads the server certificate from environment or generates one signed by dev_root_ca."""
+    """
+    Loads the server certificate from environment or generates one signed by
+    dev_root_ca.
+    """
     from pyvider.rpcplugin.config import rpcplugin_config
 
     cert_env_val = rpcplugin_config.get("PLUGIN_SERVER_CERT")
@@ -76,7 +86,8 @@ def server_cert(dev_root_ca: Certificate) -> Certificate:
 
     if not cert_to_use or not key_to_use:
         logger.info(
-            "PLUGIN_SERVER_CERT or PLUGIN_SERVER_KEY not found/PEM-like in env, generating default server cert for tests."
+            "PLUGIN_SERVER_CERT or PLUGIN_SERVER_KEY not found/PEM-like in env, "
+            "generating default server cert for tests."
         )
         default_server_cert_obj = Certificate.create_signed_certificate(
             ca_certificate=dev_root_ca,
@@ -112,19 +123,19 @@ def valid_cert_pem(client_cert: Certificate) -> str:
 
 @pytest.fixture
 def invalid_key_pem() -> str:
-    """Returns an invalid PEM string (not a valid key)."""  # Clarified docstring
+    """Returns an invalid PEM string (not a valid key)."""
     return "INVALID KEY DATA"
 
 
 @pytest.fixture
 def invalid_cert_pem() -> str:
-    """Returns an invalid PEM string (not a valid certificate)."""  # Clarified docstring
+    """Returns an invalid PEM string (not a valid certificate)."""
     return "INVALID CERTIFICATE DATA"
 
 
 @pytest.fixture
 def malformed_cert_pem() -> str:
-    """Returns a PEM-like string with incorrect headers."""  # Clarified docstring
+    """Returns a PEM-like string with incorrect headers."""
     return "-----BEGIN CERT-----\nMALFORMED DATA\n-----END CERT-----"
 
 
@@ -135,7 +146,7 @@ def empty_cert() -> str:
 
 
 @pytest.fixture
-def temporary_cert_file(tmp_path, client_cert: Certificate) -> str:  # Added type hint
+def temporary_cert_file(tmp_path: Path, client_cert: Certificate) -> str:
     """Creates a temporary file containing the client certificate."""
     cert_file = tmp_path / "client_cert.pem"
     cert_file.write_text(client_cert.cert)
@@ -143,13 +154,13 @@ def temporary_cert_file(tmp_path, client_cert: Certificate) -> str:  # Added typ
 
 
 @pytest.fixture
-def temporary_key_file(tmp_path, client_cert: Certificate) -> str:  # Added type hint
+def temporary_key_file(tmp_path: Path, client_cert: Certificate) -> str:
     """Creates a temporary file containing the client private key."""
     key_file = tmp_path / "client_key.pem"
     if client_cert.key:  # Ensure key is not None before writing
         key_file.write_text(client_cert.key)
     else:
-        # Handle case where key might be None, perhaps by writing an empty file or raising
+        # Handle case where key might be None
         key_file.write_text("")  # Or raise an error if key is essential
         logger.warning(
             "Client certificate fixture had no key, temporary key file is empty."
@@ -159,7 +170,10 @@ def temporary_key_file(tmp_path, client_cert: Certificate) -> str:  # Added type
 
 @pytest.fixture(scope="module")
 def external_dev_ca_pem() -> str:
-    """Provides a known-good, externally generated self-signed CA certificate PEM string."""
+    """
+    Provides a known-good, externally generated self-signed CA certificate PEM
+    string.
+    """
     # This is a sample ECDSA P-256 CA certificate.
     # Issuer: CN=External Test CA, O=MyOrg
     # Subject: CN=External Test CA, O=MyOrg

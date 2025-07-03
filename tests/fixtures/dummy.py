@@ -1,7 +1,8 @@
 # tests/fixtures/dummy.py
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock  # Ensure AsyncMock is imported
+from typing import Any # Added Any
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -38,7 +39,7 @@ class DummyWriter:
     def is_closing(self) -> bool:
         return self.closed
 
-    def get_extra_info(self, key, default=None) -> str:
+    def get_extra_info(self, key: str, default: Any = None) -> Any: # Fixed annotations
         if key == "peername":
             return "dummy_peer"
         return default
@@ -51,19 +52,18 @@ class DummyGRPCServer:
     """A dummy replacement for grpc.aio.Server."""
 
     def __init__(self) -> None:
-        # from unittest.mock import MagicMock, AsyncMock # Already imported at top
         self.ports: list[str] = []
         self.add_generic_rpc_handlers = MagicMock()
-        self.add_registered_method_handlers = MagicMock()  # Added this
-        self.start = AsyncMock()  # Added this
-        self.stop = AsyncMock()  # Added this
-        self.wait_for_termination = AsyncMock()  # Added this
+        self.add_registered_method_handlers = MagicMock()
+        self.start = AsyncMock()
+        self.stop = AsyncMock()
+        self.wait_for_termination = AsyncMock()
 
-    def add_secure_port(self, address, creds) -> int:
+    def add_secure_port(self, address: str, creds: Any) -> int: # Fixed annotations
         self.ports.append(address)
         return 12345
 
-    def add_insecure_port(self, address) -> int:
+    def add_insecure_port(self, address: str) -> int: # Fixed annotations
         self.ports.append(address)
         return 12345
 

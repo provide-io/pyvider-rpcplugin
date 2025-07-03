@@ -97,7 +97,6 @@ async def graceful_degradation_example() -> None:
 
     async def fallback_service() -> str:
         """Simulate fallback service."""
-        # await asyncio.sleep(0.1) # Original file has no sleep here
         return "Fallback service response"
 
     result = "Not set" # Initialize result

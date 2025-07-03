@@ -57,26 +57,42 @@ It uses the BasicRPCPluginProtocol and a no-op handler.
 Prints its handshake string to stdout upon successful startup.
 """
 import asyncio
-from typing import Any
-import grpc
-from example_utils import configure_for_example
 
-configure_for_example() # Sets up paths and default config (e.g., disabling mTLS)
+# Import from examples.example_utils
+from examples.example_utils import configure_for_example  # noqa: E402
 
-from pyvider.rpcplugin import plugin_protocol, plugin_server
-from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
-from pyvider.telemetry import logger
+# This should be called before other pyvider imports if this script is run directly.
+# It sets up paths and default config (e.g., disabling mTLS for basic examples).
+configure_for_example()
 
-class DummyHandler:
-    async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
-        logger.info("DummyHandler: NoOp called (not expected in basic client launch)")
-        return {}
+# from example_utils import configure_for_example  # noqa: E402 # Corrected import
+# This line is now redundant
+
+# Import the shared DummyHandler
+from examples.example_utils import DummyHandler  # noqa: E402
+from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
+from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
+from pyvider.rpcplugin.types import (  # noqa: E402
+    RPCPluginProtocol as TypesRPCPluginProtocol,
+)
+from pyvider.telemetry import logger  # noqa: E402
+
 
 async def main() -> None:
-    logger.info("🚀 ch02_dummy_server.py: Starting as an executable plugin...")
-    protocol: TypesRPCPluginProtocol = plugin_protocol()
-    handler = DummyHandler()
+    """Sets up and runs the dummy server for Chapter 2 Quick Start."""
+    logger.info(
+        "🚀 ch02_dummy_server.py (Quick Start version): "
+        "Starting as an executable plugin..."
+    )
+
+    # `configure_for_example()` called at the module level sets up default
+    # configurations, including a default magic cookie key/value and disabling
+    # mTLS by default. The launching client (ch02_quick_start_client.py) is
+    # expected to set the environment variable matching PLUGIN_MAGIC_COOKIE_KEY
+    # with the value from PLUGIN_MAGIC_COOKIE_VALUE from its own configuration.
+
+    protocol: TypesRPCPluginProtocol = plugin_protocol()  # Uses BasicRPCPluginProtocol
+    handler = DummyHandler()  # Using the basic handler
     server: RPCPluginServer = plugin_server(protocol=protocol, handler=handler)
 
     try:
@@ -183,8 +199,12 @@ Key points about `ch02_quick_start_client.py`:
 
 **To Run This Example:**
 
-1.  Ensure you have `pyvider.rpcplugin` installed.
-2.  Navigate to the `examples/` directory in your terminal (or ensure the `examples` directory is in your Python path if running from the project root).
-3.  Run the client: `python ch02_quick_start_client.py`
+1.  **Installation**: Ensure you have `pyvider.rpcplugin` installed (see "Installation" section above).
+2.  **Navigate to Project Root**: Open your terminal and navigate to the root directory of the `pyvider-rpcplugin` project (the directory containing the `examples/` and `src/` folders).
+3.  **Run the Client**: Execute the client script using the following command:
+    ```bash
+    python examples/ch02_quick_start_client.py
+    ```
+    The `configure_for_example()` utility called within the scripts will handle `sys.path` adjustments to ensure modules are found correctly when run this way.
 
 You should see log output from both the client and the server, indicating a successful connection and shutdown. This demonstrates the fundamental client-launches-plugin pattern.

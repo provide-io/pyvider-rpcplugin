@@ -80,32 +80,39 @@ async def test_create_x509_cert_extension_error() -> None:
 
 @pytest.mark.asyncio
 async def test_create_invalid_key_type() -> None:
-    """Ensure unsupported key types raise CertificateError when passed to CertificateBase.create."""
+    """
+    Ensure unsupported key types raise CertificateError when passed to
+    CertificateBase.create.
+    """
     now = datetime.now(UTC)
     config: CertificateConfig = {  # Explicitly type hint for clarity
         "common_name": "test",
         "organization": "test",
         "alt_names": ["test.local"],  # Added
-        "key_type": 123,  # type: ignore[typeddict-item] # Invalid type, not a KeyType Enum
+        "key_type": 123,  # type: ignore[typeddict-item] # Invalid type
         "not_valid_before": now - timedelta(days=1),  # Added
         "not_valid_after": now + timedelta(days=1),  # Added
-        # No need for key_size or curve for this specific test's purpose
     }
-    # The error message from CertificateBase.create will be "Failed to generate certificate base: Internal Error: Unsupported key type: 123"
+    # The error message from CertificateBase.create will be
+    # "Failed to generate certificate base: Internal Error: Unsupported key type: 123"
     # The test expects "Unsupported key type"
     with pytest.raises(CertificateError, match="Unsupported key type: 123"):
         CertificateBase.create(config)
 
 
-def test_certificate_base_create_unsupported_key_type_str(mocker):
-    """Test CertificateBase.create with an unsupported string for key_type in config."""
+def test_certificate_base_create_unsupported_key_type_str(
+    mocker: mock.MagicMock,
+) -> None:
+    """
+    Test CertificateBase.create with an unsupported string for key_type in config.
+    """
     now = datetime.now(UTC)
     # Prepare a config with an unsupported key_type string
     config: CertificateConfig = {
         "common_name": "test_unsupported",
         "organization": "Test Org",
         "alt_names": ["test.unsupported.local"],
-        "key_type": "unsupported_key_type",  # This is the invalid part
+        "key_type": "unsupported_key_type",  # type: ignore[typeddict-item]
         "not_valid_before": now - timedelta(days=1),
         "not_valid_after": now + timedelta(days=30),
     }
@@ -114,7 +121,8 @@ def test_certificate_base_create_unsupported_key_type_str(mocker):
     )
 
     with pytest.raises(CertificateError) as excinfo:
-        CertificateBase.create(config)  # type: ignore # Deliberately passing invalid type for key_type
+        # Deliberately passing invalid type for key_type
+        CertificateBase.create(config)
 
     assert "Internal Error: Unsupported key type: unsupported_key_type" in str(
         excinfo.value
@@ -122,13 +130,15 @@ def test_certificate_base_create_unsupported_key_type_str(mocker):
     mock_logger_error.assert_called_once()
     args, kwargs = mock_logger_error.call_args
     assert "CertificateBase.create: Failed" in args[0]
-    assert "Unsupported key type: unsupported_key_type" in kwargs.get("extra", {}).get(
-        "error", ""
-    )
+    assert "Unsupported key type: unsupported_key_type" in kwargs.get(
+        "extra", {}
+    ).get("error", "")
 
 
 @pytest.mark.asyncio  # Keep async if other tests are, though this one is sync
-async def test_certificate_init_invalid_ecdsa_curve(mocker):
+async def test_certificate_init_invalid_ecdsa_curve(
+    mocker: mock.MagicMock,
+) -> None:
     """Test Certificate instantiation with an invalid ecdsa_curve string."""
     mock_logger_error = mocker.patch(
         "pyvider.rpcplugin.crypto.certificate.logger.error", new=MagicMock()

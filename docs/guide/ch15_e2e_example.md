@@ -232,6 +232,23 @@ if __name__ == "__main__":
 
 This example accurately demonstrates the client-launches-server pattern with actual gRPC communication mediated by `pyvider.rpcplugin`.
 To run this example:
-1.  Navigate to the project root.
-2.  Execute the client: `python examples/ch15_e2e_client.py`
+1.  **Compile Protobufs**: First, ensure the gRPC Python stubs are generated from the `.proto` file. From the project root, run:
+    ```bash
+    (cd examples/proto && python -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. e2e_greeting.proto)
+    ```
+2.  **Set PYTHONPATH (if needed)**: The generated gRPC files import each other directly. To ensure Python can find them correctly when the example scripts are run from the project root, you might need to add the `examples/proto` directory to your `PYTHONPATH`. You can do this temporarily for the command:
+    ```bash
+    PYTHONPATH=${PYTHONPATH}:$(pwd)/examples/proto python examples/ch15_e2e_client.py
+    ```
+    Alternatively, you can export `PYTHONPATH` in your shell session before running:
+    ```bash
+    export PYTHONPATH=${PYTHONPATH}:$(pwd)/examples/proto
+    python examples/ch15_e2e_client.py
+    ```
+3.  **Execute the client**: Once the above are handled, navigate to the project root and run the client.
+    ```bash
+    python examples/ch15_e2e_client.py
+    ```
+    (If you didn't export `PYTHONPATH` in step 2, use the combined command from that step.)
+
 The client will launch the server, make the call, and then both will shut down.
