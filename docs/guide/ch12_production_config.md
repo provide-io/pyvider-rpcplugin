@@ -270,7 +270,7 @@ async def main() -> None:
         "monitoring": {
             "metrics_enabled": True,
             "health_check_interval": 30,
-            "log_level": "DEBUG",  # Changed for demo
+            "log_level": "DEBUG",  # "DEBUG" for verbose output in this conceptual discussion
             "structured_logging": True,
         },
         # The "0.0.0.0" host is illustrative for a production config;
