@@ -19,15 +19,20 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
-import grpc # noqa: E402
 
-# Import pyvider components
-from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
+# Call configure_for_example() early to set up sys.path
+# Import example_utils directly, as it's in the same directory.
+import example_utils  # type: ignore[import-not-found]
+
+example_utils.configure_for_example(clear_env=True)  # Client context
+
+import grpc  # noqa: E402
+
+# Import pyvider components first, then specific example modules
+from examples.proto import echo_pb2, echo_pb2_grpc  # noqa: E402
+from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
 from pyvider.telemetry import logger  # noqa: E402
 
-# Import generated protobuf code for Echo service
-# Assumes 'examples' is in PYTHONPATH or you run from project root.
-from examples.proto import echo_pb2, echo_pb2_grpc # noqa: E402
 
 class EchoClient:
     server_script_path: str  # Path to the echo server executable

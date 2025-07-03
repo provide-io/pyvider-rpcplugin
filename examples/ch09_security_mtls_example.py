@@ -81,8 +81,8 @@ async def functional_mtls_example() -> None:
         server_cert_pem = server_cert_obj.cert
         server_key_pem = server_cert_obj.key
 
-        assert client_key_pem is not None, "Client key PEM is None"
-        assert server_key_pem is not None, "Server key PEM is None"
+        assert client_key_pem is not None, "Client key PEM is None"  # nosec B101
+        assert server_key_pem is not None, "Server key PEM is None"  # nosec B101
 
         # Save to temp files primarily for the server subprocess
         server_cert_file_path = temp_dir_path / "server.crt"

@@ -129,9 +129,9 @@ async def test_connect_unix_transport(
     client_instance._transport = mock_unix_socket_transport
     client_instance._transport_name = "unix"
 
-    await client_instance._transport.connect("/tmp/test.sock")
+    await client_instance._transport.connect("/tmp/test.sock")  # nosec B108
 
-    mock_unix_socket_transport.connect.assert_called_once_with("/tmp/test.sock")
+    mock_unix_socket_transport.connect.assert_called_once_with("/tmp/test.sock")  # nosec B108
 
 
 @pytest.mark.asyncio

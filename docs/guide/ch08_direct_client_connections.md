@@ -75,7 +75,15 @@ async def run_direct_client():
     # No magic cookie env vars are needed by *this client script* for a direct connection,
     # as the handshake is bypassed. The server would have already validated it if launched by a host.
     clear_plugin_env_vars() # Clear any inherited PLUGIN_ vars
-    configure_for_example(PLUGIN_LOG_LEVEL="DEBUG", PLUGIN_AUTO_MTLS=False)
+    configure_for_example() # Call for basic path setup from example_utils
+
+    from pyvider.rpcplugin import (
+        configure as pyvider_core_configure,
+    )  # Specific configure
+
+    pyvider_core_configure(
+        log_level="DEBUG", auto_mtls=False
+    )  # Match typical dummy server config using pyvider's own configure
 
     channel = None
     try:

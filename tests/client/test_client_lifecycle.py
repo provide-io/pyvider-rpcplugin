@@ -214,7 +214,7 @@ async def test_close_process_wait_timeout(
 ) -> None:  # Removed capsys, will patch stderr
     """Test client close when process.wait() times out."""
     # Ensure subprocess is imported for TimeoutExpired
-    import subprocess
+    import subprocess  # nosec B404
 
     with (
         patch.object(

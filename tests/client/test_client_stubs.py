@@ -16,7 +16,7 @@ from pyvider.rpcplugin.exception import ProtocolError, TransportError
 try:
     from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData as ImportedStdioData
 
-    StdioData: ImportedStdioData | None = (
+    StdioData: ImportedStdioData | None = (  # type: ignore[assignment]
         ImportedStdioData  # Allow StdioData to be None or the class type
     )
 except ImportError:

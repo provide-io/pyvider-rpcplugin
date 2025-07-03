@@ -23,7 +23,7 @@ class MockProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self) -> tuple[None, str]:
         return None, "MockService"
 
-    async def add_to_server(self, handler: Any, server: Any) -> None:
+    async def add_to_server(self, server: Any, handler: Any) -> None: # Corrected order
         pass
 
 
@@ -40,7 +40,7 @@ def test_create_basic_protocol() -> None:
     ProtocolClass = create_basic_protocol()
     protocol_instance = ProtocolClass(
         service_name_override="TestService"
-    )  # Override for test
+    )  # Pass 'service_name_override'
     assert isinstance(protocol_instance, RPCPluginProtocol)
 
     # Test get_grpc_descriptors
@@ -94,7 +94,7 @@ async def test_plugin_protocol_custom_class() -> None:
         async def get_grpc_descriptors(self) -> tuple[str, str]:
             return "custom_descriptors", self.service_name
 
-        async def add_to_server(self, handler: Any, server: Any) -> None:
+        async def add_to_server(self, server: Any, handler: Any) -> None: # Corrected order
             # Simulate adding to server, e.g., by calling a handler method
             if hasattr(handler, "register"):
                 handler.register(server, self.service_name)
@@ -169,7 +169,7 @@ def test_plugin_server_unix_transport_custom_path(
     """Test plugin_server with unix transport and a custom path."""
     mock_protocol_inst = MockProtocol()
     mock_handler_inst = MockHandler()
-    custom_path = "/tmp/custom.sock"
+    custom_path = "/tmp/custom.sock"  # nosec B108
     custom_config = {"foo": "bar"}
 
     server = plugin_server(

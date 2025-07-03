@@ -71,8 +71,8 @@ async def main() -> None:
         response_pb = await stub.Greet(request_pb, timeout=10.0)
 
         logger.info(f"💬 Server replied: '{response_pb.message}'")
-        assert "Real E2E User" in response_pb.message
-        assert "from the E2E server" in response_pb.message
+        assert "Real E2E User" in response_pb.message  # nosec B101
+        assert "from the E2E server" in response_pb.message  # nosec B101
 
     except RPCPluginError as e:
         logger.error(f"❌ Client RPCPluginError: {e.message}", exc_info=True)

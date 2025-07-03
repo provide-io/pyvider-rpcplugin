@@ -24,76 +24,98 @@ The `ch03_server_setup_concepts.py` example illustrates how to configure an `RPC
 ```python
 #!/usr/bin/env python3
 # examples/ch03_server_setup_concepts.py
+"""
+Server Setup Examples - Various server configuration patterns.
+"""
+
 import asyncio
-from example_utils import configure_for_example, get_example_port
+from typing import Any, cast # Added cast
+
+from example_utils import (  # type: ignore[import-not-found]
+    configure_for_example,
+    get_example_port,
+)
+
+from pyvider.rpcplugin.server import RPCPluginServer  # For return type hint
 
 configure_for_example()
 
-from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.server import RPCPluginServer # For type hints
-from pyvider.telemetry import logger
+from pyvider.rpcplugin import plugin_server  # noqa: E402
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
+from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol # Added for cast
+from pyvider.telemetry import logger  # noqa: E402
+
 
 class BasicProtocol(RPCPluginProtocol):
     """Basic protocol for demonstration."""
-    from typing import Any, Tuple
 
-    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]:
-        return None, "BasicService"
+    async def get_grpc_descriptors(
+        self,
+    ) -> tuple[Any | None, str]:  # Using built-in tuple
+        return None, "BasicService"  # Placeholder for concept demonstration
 
     async def add_to_server(self, server: Any, handler: Any) -> None:
-        service_name = await self.get_service_name()
+        _, service_name = await self.get_grpc_descriptors() # Corrected way to get name
         logger.info(
-            f"🔌 Service '{service_name}' (conceptual) would be registered with handler: {type(handler).__name__}"
+            f"🔌 Service '{service_name}' (conceptual) would be "
+            f"registered with handler: {type(handler).__name__}"
         )
+
 
 class BasicHandler:
     """Basic handler for demonstration."""
-    pass
+    pass # This could use example_utils.DummyHandler too
+
 
 async def tcp_server_example() -> RPCPluginServer:
+    """Example: TCP server configuration."""
     logger.info("🌐 TCP Server Configuration Example")
-    server = plugin_server(
-        protocol=BasicProtocol(),
+
+    proto_instance: RPCPluginProtocol = BasicProtocol()
+    server: RPCPluginServer = plugin_server(
+        protocol=cast(TypesRPCPluginProtocol, proto_instance), # Added cast
         handler=BasicHandler(),
         transport="tcp",
         host="127.0.0.1",
-        port=get_example_port(), # Uses a helper to find an available port
-        config={"APP_MAX_WORKERS": 4}, # Example of app-specific config
+        port=get_example_port(),
+        config={"APP_MAX_WORKERS": 4},
     )
-    logger.info(f"✅ TCP server configured: {server.transport.endpoint if server.transport else 'No transport'}")
-    # Note: server.serve() is not called here, so it doesn't actually start listening.
+    endpoint_info = server.transport.endpoint if server.transport else "No transport"
+    logger.info(f"✅ TCP server configured: {endpoint_info}")
     return server
 
+
 async def unix_server_example() -> RPCPluginServer:
+    """Example: Unix socket server configuration."""
     logger.info("🔌 Unix Socket Server Configuration Example")
     import os
     import tempfile
     socket_path = os.path.join(tempfile.gettempdir(), "pyvider_example.sock") # nosec B108
-    server = plugin_server(
-        protocol=BasicProtocol(),
+
+    proto_instance_unix: RPCPluginProtocol = BasicProtocol()
+    server: RPCPluginServer = plugin_server(
+        protocol=cast(TypesRPCPluginProtocol, proto_instance_unix), # Added cast
         handler=BasicHandler(),
         transport="unix",
         transport_path=socket_path,
         config={"APP_MAX_WORKERS": 2},
     )
-    logger.info(f"✅ Unix socket server configured: {server.transport.endpoint if server.transport else 'No transport'}")
-    # Note: server.serve() is not called.
+    endpoint_info = server.transport.endpoint if server.transport else "No transport"
+    logger.info(f"✅ Unix socket server configured: {endpoint_info}")
     return server
 
+
 async def main() -> None:
+    """Run server setup examples."""
     logger.info("🚀 Server Setup Examples")
-    tcp_server = await tcp_server_example()
-    unix_server = await unix_server_example()
-    # To make these servers actually run, you would:
-    # await tcp_server.serve()
-    # or
-    # await unix_server.serve()
-    # And they would then print their handshake strings.
+    await tcp_server_example()
+    await unix_server_example()
     logger.info("✅ All server setup examples completed (configuration demonstrated).")
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 🐍⚙️
 ```
 
 Key takeaways from `ch03_server_setup_concepts.py`:
