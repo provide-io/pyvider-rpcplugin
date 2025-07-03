@@ -146,8 +146,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
-# typing.Any is not used in the snippet after changes, so removed from here for brevity in doc
-# from typing import Any
+# from typing import Any # Retain commented out or remove fully if not used
 
 # Import pyvider components
 from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
