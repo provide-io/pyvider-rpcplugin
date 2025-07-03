@@ -66,7 +66,7 @@ async def main():
     await unix_transport_demo()
     logger.info("💡 Transport Selection Guidelines:")
     logger.info("  🌐 TCP: Network communication, multiple hosts.")
-    logger.info("  🔌 Unix: Local communication, better performance, default preference.")
+    logger.info("  🔌 Unix: Local communication, better performance.")
     logger.info("✅ Transport comparison completed")
 
 if __name__ == "__main__":

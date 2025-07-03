@@ -40,24 +40,38 @@ This example shows how a custom protocol might be structured and how one could c
 ```python
 #!/usr/bin/env python3
 # examples/ch13_custom_protocols_demo.py
-import asyncio
-from typing import Any, Callable, List, Tuple
-from collections.abc import AsyncGenerator
-from example_utils import configure_for_example
+"""
+Custom Protocols - Custom protocol definitions and middleware patterns.
+"""
 
-configure_for_example() # Basic example setup
+import asyncio
+from collections.abc import (
+    AsyncGenerator,
+    Callable,
+)
+from typing import Any, Tuple # Tuple was missing in original script's List import
+
+# Ensure example_utils is imported before other project modules
+import example_utils  # type: ignore[import-not-found]
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.telemetry import logger
 
+example_utils.configure_for_example()
+
+
 class CustomProtocol(RPCPluginProtocol):
     """Example custom protocol implementation."""
+
     def __init__(self, service_name: str = "CustomService") -> None:
         super().__init__()
         self.service_name = service_name
-        self.middleware_factories: List[Callable[[Any], Any]] = []
+        self.middleware_factories: list[Callable[[Any], Any]] = []
 
-    async def get_grpc_descriptors(self) -> Tuple[Any | None, str]:
+    async def get_grpc_descriptors(
+        self,
+    ) -> Tuple[Any | None, str]: # Ensure Tuple is imported from typing
+        """Get gRPC service descriptors."""
         logger.info(f"🔌 Getting descriptors for {self.service_name}")
         # For a real gRPC service, return compiled_pb2_grpc, "package.ServiceName"
         return None, self.service_name # No actual gRPC service in this demo
@@ -66,7 +80,7 @@ class CustomProtocol(RPCPluginProtocol):
         # Example: map method names to their gRPC types
         method_types = {
             "ProcessData": "unary_unary",
-            "StreamData": "unary_stream", # Added for CustomHandler
+            "StreamData": "unary_stream",
         }
         return method_types.get(method_name, "unary_unary") # Default
 
@@ -81,11 +95,19 @@ class CustomProtocol(RPCPluginProtocol):
             "registered with the gRPC server here."
         )
 
-    def add_middleware(self, middleware_factory: Callable[[Any], Any]):
+    def add_middleware(self, middleware_factory: Callable[[Any], Any]) -> None:
+        """Add middleware to the protocol."""
         self.middleware_factories.append(middleware_factory)
-        logger.info(f"➕ Added middleware factory: {middleware_factory.__name__ if hasattr(middleware_factory, '__name__') else middleware_factory}")
+        factory_name = (
+            middleware_factory.__name__
+            if hasattr(middleware_factory, "__name__")
+            else str(middleware_factory) # Use str() for non-named callables
+        )
+        logger.info(f"➕ Added middleware factory: {factory_name}")
+
 
     def _apply_middleware(self, handler: Any) -> Any:
+        """Apply middleware stack to handler."""
         wrapped_handler = handler
         for factory in reversed(self.middleware_factories):
             wrapped_handler = factory(wrapped_handler)
@@ -93,11 +115,13 @@ class CustomProtocol(RPCPluginProtocol):
 
 # Conceptual Middleware Examples
 class LoggingMiddleware:
+    """Example logging middleware."""
     def __init__(self, next_handler: Any) -> None:
         self.next_handler = next_handler
         logger.info("LoggingMiddleware initialized.")
 
     async def __getattr__(self, name: str) -> Any:
+        """Intercept method calls for logging."""
         original_method = getattr(self.next_handler, name)
         if callable(original_method) and asyncio.iscoroutinefunction(original_method):
             async def logged_method(*args: Any, **kwargs: Any) -> Any:
@@ -113,15 +137,17 @@ class LoggingMiddleware:
         return original_method
 
 class TimingMiddleware:
+    """Example timing middleware."""
     def __init__(self, next_handler: Any) -> None:
         self.next_handler = next_handler
         logger.info("TimingMiddleware initialized.")
 
     async def __getattr__(self, name: str) -> Any:
+        """Intercept method calls for timing."""
         original_method = getattr(self.next_handler, name)
         if callable(original_method) and asyncio.iscoroutinefunction(original_method):
             async def timed_method(*args: Any, **kwargs: Any) -> Any:
-                import time # Moved import
+                import time # Moved import inside method
                 start_time = time.perf_counter()
                 try:
                     result = await original_method(*args, **kwargs)
@@ -138,35 +164,34 @@ class TimingMiddleware:
 class CustomHandler:
     """Example handler for custom protocol."""
     async def ProcessData(self, request: Any, context: Any) -> str:
+        """Process data method."""
         logger.info("  Handler: ProcessData called")
         await asyncio.sleep(0.1) # Simulate work
         return f"Processed: {request}"
 
-    async def StreamData(self, request: Any, context: Any) -> AsyncGenerator[str, None]:
+    async def StreamData(self, request: Any, context: Any) -> AsyncGenerator[str, None]: # Added None for yield type
+        """Stream data method."""
         logger.info("  Handler: StreamData called")
         for i in range(3):
             await asyncio.sleep(0.05)
-            yield f"Stream item {i+1} for {request}"
+            yield f"Stream item {i+1} for {request}" # Corrected yield
 
-async def custom_protocol_example(): # Renamed to match actual file
-    logger.info("🔧 Custom Protocol with Middleware Demo")
+async def custom_protocol_example() -> None:
+    """Example: Custom protocol with middleware."""
+    logger.info("🔧 Custom Protocol Example") # Changed log message to be more specific
 
     protocol = CustomProtocol("DataProcessingService")
     protocol.add_middleware(LoggingMiddleware)
     protocol.add_middleware(TimingMiddleware)
 
-    original_handler = CustomHandler() # Use CustomHandler
+    original_handler = CustomHandler()
 
-    # Simulate what add_to_server would do
-    # This doesn't involve actual gRPC server for this specific example part.
-    # It calls _apply_middleware internally.
+    # Simulate what add_to_server would do with the original handler
     await protocol.add_to_server(None, original_handler)
 
-    # To demonstrate the middleware actually working, we need to get the wrapped handler
-    # that add_to_server would have produced and call a method on it.
-    # _apply_middleware is internal, but for demo we call it.
+    # To demonstrate the middleware actually working, get the wrapped handler
+    # and simulate calls to its methods.
     wrapped_handler_for_simulation = protocol._apply_middleware(original_handler)
-
 
     logger.info("Simulating call to wrapped ProcessData...")
     if hasattr(wrapped_handler_for_simulation, "ProcessData"):
@@ -174,13 +199,52 @@ async def custom_protocol_example(): # Renamed to match actual file
 
     logger.info("Simulating call to wrapped StreamData...")
     if hasattr(wrapped_handler_for_simulation, "StreamData"):
-        async for item in wrapped_handler_for_simulation.StreamData("StreamRequest", None):
+        async for item in wrapped_handler_for_simulation.StreamData("StreamRequest", None): # Added context=None
             logger.info(f"  Client received: {item}")
+    logger.info("✅ Custom protocol example completed")
 
-    logger.info("✅ Custom protocol with middleware demo completed.")
 
-async def main(): # main function kept simple for doc snippet
+# --- Protocol Composition Example ---
+# (This part will be described in a new subsection in the markdown)
+
+class ServiceAHandler:
+    async def OpA(self, request: Any, context: Any) -> str: return "ServiceA OpA"
+class ServiceBHandler:
+    async def OpB(self, request: Any, context: Any) -> str: return "ServiceB OpB"
+class ServiceCHandler:
+    async def OpC(self, request: Any, context: Any) -> str: return "ServiceC OpC"
+
+async def protocol_composition_example() -> None:
+    """Example: Composing protocols by registering multiple services."""
+    logger.info("🔗 Protocol Composition Example")
+
+    # Create separate protocol instances for each service concept
+    protocol_a = CustomProtocol("ServiceA")
+    protocol_a.add_middleware(LoggingMiddleware) # Middleware for ServiceA
+
+    protocol_b = CustomProtocol("ServiceB")
+    # No middleware for ServiceB for variety, or add different ones
+
+    protocol_c = CustomProtocol("ServiceC")
+    protocol_c.add_middleware(TimingMiddleware) # Different middleware for ServiceC
+
+    # Simulate registering each with their handlers to a conceptual server
+    # In a real RPCPluginServer, you might have a main protocol that internally
+    # calls add_to_server for sub-protocols, or the server itself would iterate.
+    # For this demo, we call add_to_server on each.
+    await protocol_a.add_to_server(None, ServiceAHandler())
+    await protocol_b.add_to_server(None, ServiceBHandler())
+    await protocol_c.add_to_server(None, ServiceCHandler())
+
+    logger.info(f"✅ Conceptually composed {3} protocols/services.")
+
+
+async def main() -> None:
+    """Run custom protocol examples."""
+    logger.info("🚀 Custom Protocol Examples")
     await custom_protocol_example()
+    await protocol_composition_example()
+    logger.info("✅ All custom protocol examples completed")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -189,5 +253,18 @@ if __name__ == "__main__":
 **Key points from this conceptual example:**
 
 *   `CustomProtocol` demonstrates the structure of a protocol implementation.
-*   The `LoggingMiddleware` and `TimingMiddleware` are illustrative examples of how one *might* wrap handler methods to add cross-cutting concerns.
+*   The `LoggingMiddleware` and `TimingMiddleware` are illustrative examples of how one *might* wrap handler methods to add cross-cutting concerns. The `custom_protocol_example` function demonstrates their application and simulates calls to a `CustomHandler` to show the middleware in action.
 *   **Important**: For real-world gRPC applications, using official **gRPC Interceptors** is the more standard and robust way to achieve middleware functionality for RPC calls. You can provide these interceptors when `RPCPluginServer` creates the `grpc.aio.Server`. The `_apply_middleware` pattern shown in the example is more for conceptual understanding of wrapping or for non-gRPC specific AOP (Aspect-Oriented Programming) patterns.
+
+### Protocol Composition
+
+The `examples/ch13_custom_protocols_demo.py` script also demonstrates a conceptual way to handle multiple services within a plugin through composition. The `protocol_composition_example` function in the script shows:
+*   Instantiating multiple `CustomProtocol` objects, one for each conceptual service (ServiceA, ServiceB, ServiceC).
+*   Applying different middleware to different services if needed.
+*   Conceptually registering each service and its handler with a server.
+
+In a real `RPCPluginServer`, you might:
+*   Have one main `RPCPluginProtocol` implementation whose `add_to_server` method is responsible for registering multiple gRPC servicers (handlers).
+*   Or, if your architecture allows, the `RPCPluginServer` itself could be adapted to manage a list of `RPCPluginProtocol` instances, calling `add_to_server` for each.
+
+The example illustrates that the `RPCPluginProtocol` and middleware concepts can be flexibly combined to structure complex plugin servers.
