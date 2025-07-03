@@ -1,8 +1,6 @@
-
 import pytest
 
 from pyvider.rpcplugin.server import RPCPluginServer
-
 
 
 @pytest.mark.asyncio

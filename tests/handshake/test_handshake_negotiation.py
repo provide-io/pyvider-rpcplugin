@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/handshake/test_handshake_negotiate.py
 
 
-
 import pytest
 
 from pyvider.rpcplugin.exception import ProtocolError, TransportError

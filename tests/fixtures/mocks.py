@@ -10,7 +10,10 @@ from typing import Any
 import pytest
 import pytest_asyncio
 
-from pyvider.rpcplugin.config import rpcplugin_config, CONFIG_SCHEMA  # Import global instance
+from pyvider.rpcplugin.config import (
+    rpcplugin_config,
+    CONFIG_SCHEMA,
+)  # Import global instance
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import (
