@@ -12,7 +12,7 @@ from typing import Any
 
 # Ensure example_utils is imported before other project modules
 # that might depend on its setup
-import example_utils  # type: ignore[import-not-found]
+from examples import example_utils
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.telemetry import logger
@@ -161,17 +161,21 @@ async def protocol_composition_example() -> None:
     """Example: Composing protocols."""
     logger.info("🔗 Protocol Composition Example")
 
-    protocols = [
-        CustomProtocol("ServiceA"),
-        CustomProtocol("ServiceB"),
-        CustomProtocol("ServiceC"),
-    ]
+    # Demonstrate applying different middleware to different services
+    protocol_a = CustomProtocol("ServiceA")
+    protocol_a.add_middleware(LoggingMiddleware)
+    # In a real scenario, you'd use specific handlers like ServiceAHandler()
+    await protocol_a.add_to_server(None, CustomHandler())
 
-    for protocol in protocols:
-        protocol.add_middleware(LoggingMiddleware)
-        await protocol.add_to_server(None, CustomHandler())
+    protocol_b = CustomProtocol("ServiceB")
+    # No middleware for ServiceB
+    await protocol_b.add_to_server(None, CustomHandler())
 
-    logger.info(f"✅ Composed {len(protocols)} protocols")
+    protocol_c = CustomProtocol("ServiceC")
+    protocol_c.add_middleware(TimingMiddleware)
+    await protocol_c.add_to_server(None, CustomHandler())
+
+    logger.info("✅ Composed 3 protocols with varied middleware")
 
 
 async def main() -> None:
