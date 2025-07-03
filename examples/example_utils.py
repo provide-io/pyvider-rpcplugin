@@ -35,6 +35,11 @@ def setup_example_environment() -> Path:
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
+    # Add examples/proto to sys.path for generated protobuf files
+    examples_proto_path = examples_dir / "proto"
+    if examples_proto_path.is_dir() and str(examples_proto_path) not in sys.path:
+        sys.path.insert(0, str(examples_proto_path))
+
     return project_root
 
 

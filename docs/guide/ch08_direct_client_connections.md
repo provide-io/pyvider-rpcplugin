@@ -23,13 +23,20 @@ This example demonstrates how a Python script can connect directly to an already
 
 **To make this example work:**
 
-1.  **Start the dummy server manually with socket path writing enabled**:
-    Open a terminal, navigate to the project root, and run the *modified* `ch02_dummy_server.py`. You need to set the `PYVIDER_WRITE_SOCKET_PATH` environment variable to `true` for it to write its socket path:
+1.  **Start the dummy server manually with socket path writing and magic cookie enabled**:
+    Open a terminal, navigate to the project root. For `ch02_dummy_server.py` to run standalone correctly for this example, it needs its expected magic cookie and the path writing variable set in its environment. The `example_utils.configure_for_example()` used in `ch02_dummy_server.py` (when the script is run as `__main__`) sets the expected cookie key to `PLUGIN_MAGIC_COOKIE` and the expected value to `pyvider-example-cookie`. Run the server with:
     ```bash
-    PYVIDER_WRITE_SOCKET_PATH=true python examples/ch02_dummy_server.py
+    export PYVIDER_WRITE_SOCKET_PATH="true"
+    export PLUGIN_MAGIC_COOKIE="pyvider-example-cookie" # Or the key configured by example_utils if different
+    python examples/ch02_dummy_server.py
+    # On Windows, use:
+    # set PYVIDER_WRITE_SOCKET_PATH=true
+    # set PLUGIN_MAGIC_COOKIE=pyvider-example-cookie
+    # python examples\ch02_dummy_server.py
     ```
-    *   The `ch02_dummy_server.py` (when run with this environment variable or directly as `__main__`) is set up by `example_utils.configure_for_example()` and its own `if __name__ == "__main__":` block to:
-        *   Use a default magic cookie (e.g., "pyvider-example-cookie" with key "PYVIDER_PLUGIN_MAGIC_COOKIE").
+    This will start the server, make it write its socket path to `dummy_server_socket.txt` (in the project root), and ensure its own handshake logic passes.
+    *   The `ch02_dummy_server.py` (when run as `__main__` with these environment variables) is set up by `example_utils.configure_for_example()` and its own `if __name__ == "__main__":` block to:
+        *   Use the provided magic cookie.
         *   Disable mTLS (`PLUGIN_AUTO_MTLS=False` via `example_utils`).
         *   Listen on a Unix socket (the default preferred transport).
     *   When `PYVIDER_WRITE_SOCKET_PATH=true` (or if run as `__main__` which also triggers the behavior), it writes its active Unix socket path to a file named `dummy_server_socket.txt` in the project root.
