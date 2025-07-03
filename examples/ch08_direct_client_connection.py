@@ -133,7 +133,7 @@ async def run_direct_client() -> None:
     finally:
         if channel:
             logger.info("Closing gRPC channel.")
-            await channel.close()
+            await channel.close(grace=None)
             print("   gRPC channel closed.")
         print("\n✅ Direct Client Connection Example Finished.")
 

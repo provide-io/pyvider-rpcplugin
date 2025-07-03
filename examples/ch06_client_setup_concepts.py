@@ -32,8 +32,9 @@ async def basic_client_example() -> None:
     # client = plugin_client(
     #     command=["./path/to/plugin/executable"],
     #     # The 'config' dict passed to plugin_client can include an 'env'
-    #     # sub-dictionary to pass specific environment variables to the plugin subprocess.
-    #     # It can also include other keys that RPCPluginClient might use directly.
+    #     # sub-dictionary to pass specific environment variables to the plugin
+    #     # subprocess. It can also include other keys that RPCPluginClient
+    #     # might use directly.
     #     config={"env": {"MY_PLUGIN_VAR": "value"}, "timeout": 15.0}
     # )
     # await client.start() # This launches the plugin and connects
