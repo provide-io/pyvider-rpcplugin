@@ -120,8 +120,8 @@ python examples/ch14_performance_tuning_concepts.py
 
 ### **For Intermediate Users**
 1. Study transport options with `ch04_transport_options_demo.py` (Chapter 4).
-2. Review error handling with `ch11_error_handling_demo.py` (Chapter 11).
-3. Explore async patterns with `ch10_async_patterns_demo.py` (Chapter 10).
+2. Explore async patterns with `ch10_async_patterns_demo.py` (Chapter 10).
+3. Review error handling with `ch11_error_handling_demo.py` (Chapter 11).
 4. Run the **E2E Greeter Service** (`ch15_e2e_client.py` launching `ch15_e2e_server.py`) (Chapter 15).
 
 ### **For Advanced Users**
@@ -140,14 +140,12 @@ If you encounter import errors like `ModuleNotFoundError: No module named 'pyvid
 - Ensure you are running the example script from the project's root directory (e.g., `python examples/ch02_quick_start_client.py`).
 - The `example_utils.configure_for_example()` call at the beginning of most scripts is designed to set up `sys.path` correctly.
 
-(Other troubleshooting tips remain largely the same)
-
 ## 📖 Additional Resources
 
-- **API Documentation**: See `docs/guide/ch17_api_reference.md` (Chapter 17)
-- **Architecture Guide**: See `docs/guide/ch16_core_architecture.md` (Chapter 16)
-- **Security Guide**: See `docs/guide/ch09_security_mtls.md` (Chapter 9 also covers mTLS)
-- **Production Deployment**: See `docs/guide/ch12_production_config.md` (Chapter 12 also covers production config)
+- **API Reference**: `docs/guide/ch17_api_reference.md` (Chapter 17)
+- **Core Architecture**: `docs/guide/ch16_core_architecture.md` (Chapter 16)
+- **Security (mTLS)**: `docs/guide/ch09_security_mtls.md` (Chapter 9)
+- **Production Configuration & Deployment**: `docs/guide/ch12_production_config.md` (Chapter 12)
 
 ## 🤝 Contributing Examples
 
