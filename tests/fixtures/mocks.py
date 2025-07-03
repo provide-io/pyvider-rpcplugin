@@ -5,11 +5,9 @@ import os
 from collections.abc import AsyncGenerator
 from contextlib import suppress
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
-from pytest_mock import MockerFixture
 
 from pyvider.rpcplugin.config import (
     CONFIG_SCHEMA,
@@ -34,9 +32,7 @@ class MockProtocol(RPCPluginProtocol):
         logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
         return (None, "MockService")
 
-    async def add_to_server(
-        self, server: Any, handler: Any
-    ) -> None:
+    async def add_to_server(self, server: Any, handler: Any) -> None:
         logger.debug(
             f"🔌🚀✅ MockProtocol.add_to_server called with server: {server}, "
             f"handler: {handler}."
@@ -92,7 +88,7 @@ class MockBytesIO:
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
 async def mock_server_transport(
     request: Any, managed_unix_socket_path: str
-) -> AsyncGenerator[RPCPluginTransport, None]:
+) -> AsyncGenerator[RPCPluginTransport]:
     transport_name = request.param
     transport: RPCPluginTransport | None = None
 
@@ -133,14 +129,12 @@ async def mock_server_transport(
 
 
 @pytest_asyncio.fixture
-async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport, None]:
+async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport]:
     transport = TCPSocketTransport()
     try:
         yield transport
     except Exception:
-        raise ValueError(
-            f"Could not open a TCP Socket Transport: {transport!r}"
-        )
+        raise ValueError(f"Could not open a TCP Socket Transport: {transport!r}")
     finally:
         await transport.close()
         await asyncio.sleep(0.1)
@@ -149,7 +143,7 @@ async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport, None
 @pytest_asyncio.fixture(scope="function")
 async def mock_server_transport_unix(
     managed_unix_socket_path: str,
-) -> AsyncGenerator[RPCPluginTransport, None]:
+) -> AsyncGenerator[RPCPluginTransport]:
     """Fixture providing a properly configured Unix transport with unique path."""
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     try:
@@ -206,7 +200,7 @@ def mock_server_config(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
     for key, value in test_defaults.items():
         if rpcplugin_config.config is not None:
             monkeypatch.setitem(rpcplugin_config.config, key, value)
-        else: # Should not happen after instance() call
+        else:  # Should not happen after instance() call
             logger.error(
                 "CRITICAL: rpcplugin_config.config is None in "
                 "mock_server_config fixture! This should not happen."
@@ -224,7 +218,7 @@ async def server_with_mocks(
     mock_server_handler: MockHandler,
     mock_server_config: dict[str, Any],
     mock_server_transport: RPCPluginTransport,
-) -> AsyncGenerator[RPCPluginServer, None]:
+) -> AsyncGenerator[RPCPluginServer]:
     """Fixture to provide a server instance with mocks."""
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -242,7 +236,7 @@ async def server_with_mocks(
 
 @pytest.fixture(scope="function")
 def mock_server_config_dict_fixture(
-    mock_server_config: dict[str, Any]
+    mock_server_config: dict[str, Any],
 ) -> dict[str, Any]:
     """
     Provides the server configuration as a dictionary.

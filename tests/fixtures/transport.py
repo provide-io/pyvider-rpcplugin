@@ -6,18 +6,15 @@ import socket
 import sys
 import tempfile
 import uuid
-from collections.abc import AsyncGenerator, Callable # Added Callable
+from collections.abc import AsyncGenerator, Callable  # Added Callable
 from pathlib import Path
-from typing import Any # Added Any
 
-import pytest
 import pytest_asyncio
-from pytest import FixtureRequest # Added FixtureRequest
+from pytest import FixtureRequest  # Added FixtureRequest
 
 from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
-from pyvider.rpcplugin.transport.base import RPCPluginTransport as BaseTransportT # Alias for clarity
 from pyvider.telemetry import logger
 
 
@@ -116,7 +113,7 @@ class SocketStateMonitor:
 
 
 @pytest_asyncio.fixture
-async def socket_monitor() -> AsyncGenerator[Callable[[str], SocketStateMonitor], None]:
+async def socket_monitor() -> AsyncGenerator[Callable[[str], SocketStateMonitor]]:
     """Fixture providing socket state monitoring with proper cleanup."""
     monitors: list[SocketStateMonitor] = []
 
@@ -154,7 +151,7 @@ async def unused_tcp_port() -> int:
 @pytest_asyncio.fixture
 async def unix_transport(
     managed_unix_socket_path: str,
-) -> AsyncGenerator[UnixSocketTransport, None]:
+) -> AsyncGenerator[UnixSocketTransport]:
     logger.debug("unix_transport fixture invoked, using managed_unix_socket_path.")
     sock_path = managed_unix_socket_path
     logger.debug(f"Using socket at: {sock_path}")
@@ -198,9 +195,9 @@ async def unix_transport(
 
 @pytest_asyncio.fixture(scope="function")
 async def managed_unix_socket_path(
-    request: FixtureRequest, # Changed from pytest.FixtureRequest
+    request: FixtureRequest,  # Changed from pytest.FixtureRequest
     tmp_path: Path,
-) -> AsyncGenerator[str, None]:
+) -> AsyncGenerator[str]:
     socket_filename = f"p_{uuid.uuid4().hex[:6]}.s"
     log_base_path_info: str
 
@@ -211,7 +208,7 @@ async def managed_unix_socket_path(
                 base_dir.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile(
                 dir=base_dir, prefix="pyvider-test-"
-            ): # Removed 'as tf' as it was unused
+            ):  # Removed 'as tf' as it was unused
                 pass
             socket_path_obj = base_dir / socket_filename
             log_base_path_info = f"/tmp (via tempfile.gettempdir(): {base_dir})"

@@ -2,12 +2,12 @@
 
 import asyncio
 import sys
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import grpc.aio
 import pytest_asyncio
 from pytest_mock import MockerFixture
-import grpc.aio
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
@@ -27,7 +27,7 @@ async def client_command() -> list[str]:
 @pytest_asyncio.fixture
 async def client_instance(
     test_client_command: list[str],
-) -> AsyncGenerator[RPCPluginClient, None]:
+) -> AsyncGenerator[RPCPluginClient]:
     """Base RPCPluginClient instance for testing with required attributes set."""
     with patch("subprocess.Popen"):
         client = RPCPluginClient(command=test_client_command)

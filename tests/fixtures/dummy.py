@@ -1,7 +1,7 @@
 # tests/fixtures/dummy.py
 
 import asyncio
-from typing import Any # Added Any
+from typing import Any  # Added Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -39,7 +39,7 @@ class DummyWriter:
     def is_closing(self) -> bool:
         return self.closed
 
-    def get_extra_info(self, key: str, default: Any = None) -> Any: # Fixed annotations
+    def get_extra_info(self, key: str, default: Any = None) -> Any:  # Fixed annotations
         if key == "peername":
             return "dummy_peer"
         return default
@@ -59,11 +59,11 @@ class DummyGRPCServer:
         self.stop = AsyncMock()
         self.wait_for_termination = AsyncMock()
 
-    def add_secure_port(self, address: str, creds: Any) -> int: # Fixed annotations
+    def add_secure_port(self, address: str, creds: Any) -> int:  # Fixed annotations
         self.ports.append(address)
         return 12345
 
-    def add_insecure_port(self, address: str) -> int: # Fixed annotations
+    def add_insecure_port(self, address: str) -> int:  # Fixed annotations
         self.ports.append(address)
         return 12345
 
