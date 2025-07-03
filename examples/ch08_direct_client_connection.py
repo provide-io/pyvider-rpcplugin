@@ -108,7 +108,11 @@ async def run_direct_client() -> None:
         # stub = YourServiceStub(channel)
         # response = await stub.YourMethod(YourRequest(data="hello from direct client"))
         # logger.info(f"Received response: {response.message}")
-        print("   (No RPC calls made in this basic connection example.)")
+        print(
+            "   (No RPC calls made in this basic direct connection example"
+            " as dummy_server has no custom methods.)"
+        )
+        await asyncio.sleep(1)  # Keep connection for a moment
 
     except TimeoutError:
         logger.error(
