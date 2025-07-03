@@ -13,7 +13,6 @@ from typing import Any
 # Ensure example_utils is imported before other project modules
 # that might depend on its setup
 from examples import example_utils
-
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.telemetry import logger
 

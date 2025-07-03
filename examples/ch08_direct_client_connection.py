@@ -6,30 +6,32 @@ pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
 This contrasts with examples that use `plugin_client` to launch the server.
 To run this example:
-1. Start a compatible server first, specifically
-   `examples/common_dummy_server_for_ch08.py`.
-   Run: `python examples/common_dummy_server_for_ch08.py`
-   This server is configured by default (via example_utils) for Unix socket and
-   will write its socket path to `dummy_server_socket.txt` in the project root.
-   It also defaults to PLUGIN_AUTO_MTLS=False.
+1. Start the `ch02_dummy_server.py` first, ensuring it's configured to
+   write its socket path. From the project root, run:
+   `export PYVIDER_WRITE_SOCKET_PATH="true"`
+   `export PLUGIN_MAGIC_COOKIE="pyvider-example-cookie"`
+   (if server expects it for standalone)
+   `python examples/ch02_dummy_server.py`
+   The `ch02_dummy_server.py` is adapted to write its socket path to
+   `dummy_server_socket.txt` in the project root when `PYVIDER_WRITE_SOCKET_PATH`
+   is true or when run as `__main__`. It also defaults to PLUGIN_AUTO_MTLS=False.
 2. This script (`ch08_direct_client_connection.py`) will automatically read the
-   socket path from `dummy_server_socket.txt`. No manual path update is needed.
+   socket path from `dummy_server_socket.txt`.
 3. Run this script: `python examples/ch08_direct_client_connection.py`
 """
 
 import asyncio
-import sys
 from pathlib import Path
 
 import grpc  # For direct gRPC channel usage
 
-# Add src to path for examples
-example_dir = Path(__file__).resolve().parent
-project_root = example_dir.parent
-src_path = project_root / "src"
-if src_path.exists() and str(src_path) not in sys.path:
-    sys.path.insert(0, str(src_path))
-
+# example_utils.configure_for_example() should handle path adjustments.
+# Manual sys.path manipulation is generally discouraged if a utility handles it.
+# example_dir = Path(__file__).resolve().parent
+# project_root = example_dir.parent
+# src_path = project_root / "src"
+# if src_path.exists() and str(src_path) not in sys.path:
+#     sys.path.insert(0, str(src_path))
 from example_utils import (  # type: ignore[import-not-found] # noqa: E402
     clear_plugin_env_vars,
     configure_for_example,
@@ -37,6 +39,8 @@ from example_utils import (  # type: ignore[import-not-found] # noqa: E402
 
 from pyvider.telemetry import logger  # noqa: E402
 
+# Define project_root for SOCKET_COMM_FILE path construction
+project_root = Path(__file__).resolve().parent.parent
 # Path to the file where ch02_dummy_server.py writes its socket path
 SOCKET_COMM_FILE = project_root / "dummy_server_socket.txt"
 

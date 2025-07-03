@@ -15,9 +15,6 @@ from examples.example_utils import configure_for_example  # noqa: E402
 # It sets up paths and default config (e.g., disabling mTLS for basic examples).
 configure_for_example()
 
-# from example_utils import configure_for_example  # noqa: E402 # Corrected import
-# This line is now redundant
-
 # Import the shared DummyHandler
 from examples.example_utils import DummyHandler  # noqa: E402
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
@@ -80,7 +77,7 @@ async def main() -> None:
             if server.transport and server.transport.endpoint and socket_comm_file:
                 if server._transport_name == "unix":
                     logger.info(
-                        f"Writing socket path for ch08: {server.transport.endpoint} to {socket_comm_file}"
+                        f"ch08 skt: {server.transport.endpoint} to {socket_comm_file}"
                     )
                     try:
                         with open(socket_comm_file, "w") as f:
@@ -89,7 +86,7 @@ async def main() -> None:
                         logger.error(f"Failed to write socket path: {e}")
                 else:
                     logger.info(
-                        f"Transport is {server._transport_name}, not unix. Socket path not written."
+                        f"{server._transport_name} (not unix), no socket path written."
                     )
             else:
                 logger.warning(
@@ -117,21 +114,24 @@ async def main() -> None:
             server_task.cancel()
     finally:
         logger.info("Dummy server (Quick Start version) shutting down.")
-        if should_write_socket_path:  # Ensure task is awaited and file cleaned up
-            if server_task and not server_task.done():
-                from contextlib import suppress
+        if server_task and not server_task.done():
+            server_task.cancel()
+            try:
+                await server_task
+            except asyncio.CancelledError:
+                logger.info("Server task cancelled during shutdown.")
 
-                with suppress(asyncio.CancelledError):
-                    await server_task
-            # Check if the server's main serving future is active and stop if necessary
-            if hasattr(server, '_serving_future') and server._serving_future and not server._serving_future.done():
-                await server.stop()
-            if socket_comm_file and socket_comm_file.exists():
-                try:
-                    logger.info(f"Cleaning up {socket_comm_file}")
-                    socket_comm_file.unlink()
-                except OSError as e:
-                    logger.warning(f"Could not remove {socket_comm_file}: {e}")
+        # Attempt to gracefully stop the server if it was started.
+        # server.stop() is designed to be idempotent.
+        if server:  # Check if server object exists
+            await server.stop()
+
+        if should_write_socket_path and socket_comm_file and socket_comm_file.exists():
+            try:
+                logger.info(f"Cleaning up {socket_comm_file}")
+                socket_comm_file.unlink()
+            except OSError as e:
+                logger.warning(f"Could not remove {socket_comm_file}: {e}")
 
 
 if __name__ == "__main__":
