@@ -130,9 +130,9 @@ def test_certificate_base_create_unsupported_key_type_str(
     mock_logger_error.assert_called_once()
     args, kwargs = mock_logger_error.call_args
     assert "CertificateBase.create: Failed" in args[0]
-    assert "Unsupported key type: unsupported_key_type" in kwargs.get(
-        "extra", {}
-    ).get("error", "")
+    assert "Unsupported key type: unsupported_key_type" in kwargs.get("extra", {}).get(
+        "error", ""
+    )
 
 
 @pytest.mark.asyncio  # Keep async if other tests are, though this one is sync

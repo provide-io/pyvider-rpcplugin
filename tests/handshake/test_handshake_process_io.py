@@ -261,11 +261,11 @@ async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_l
     [
         ("1|6|tcp|127.0.0.1:8000|grpc|", (1, 6, "tcp", "127.0.0.1:8000", "grpc", None)),
         (
-            "1|7|unix|/tmp/socket.sock|grpc|abc123",
-            (1, 7, "unix", "/tmp/socket.sock", "grpc", "abc123=="),
+            "1|7|unix|/tmp/socket.sock|grpc|abc123",  # nosec B108
+            (1, 7, "unix", "/tmp/socket.sock", "grpc", "abc123=="),  # nosec B108
         ),
         (
-            "2|7|unix|/tmp/socket.sock|grpc|abc123",
+            "2|7|unix|/tmp/socket.sock|grpc|abc123",  # nosec B108
             "Unsupported handshake version: 2 (expected: 1)",
         ),
     ],

@@ -23,7 +23,7 @@ class MockProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self) -> tuple[None, str]:
         return None, "MockService"
 
-    async def add_to_server(self, server: Any, handler: Any) -> None: # Corrected order
+    async def add_to_server(self, server: Any, handler: Any) -> None:  # Corrected order
         pass
 
 
@@ -94,7 +94,9 @@ async def test_plugin_protocol_custom_class() -> None:
         async def get_grpc_descriptors(self) -> tuple[str, str]:
             return "custom_descriptors", self.service_name
 
-        async def add_to_server(self, server: Any, handler: Any) -> None: # Corrected order
+        async def add_to_server(
+            self, server: Any, handler: Any
+        ) -> None:  # Corrected order
             # Simulate adding to server, e.g., by calling a handler method
             if hasattr(handler, "register"):
                 handler.register(server, self.service_name)

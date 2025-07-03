@@ -1,7 +1,6 @@
 # tests/fixtures/crypto.py
 
-from pathlib import Path # Moved to top
-import tempfile # Added for temporary_key_file if needed, though not directly used by current version of it
+from pathlib import Path  # Moved to top
 
 import pytest
 

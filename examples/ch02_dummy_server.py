@@ -164,4 +164,11 @@ if __name__ == "__main__":
             f"RPCPlugin configured to use '{env_var_name_for_cookie}' as cookie key."
         )
 
+    import sys
+
+    if "--help" in sys.argv or "-h" in sys.argv:
+        print("Usage: ch02_dummy_server.py")
+        print(__doc__)
+        sys.exit(0)
+
     asyncio.run(main())

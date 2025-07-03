@@ -1,13 +1,14 @@
 # tests/fixtures/server.py
 
 import asyncio
-from typing import Any, AsyncGenerator, Callable # Added Callable, AsyncGenerator
+from collections.abc import AsyncGenerator, Callable  # Added Callable, AsyncGenerator
+from typing import Any
 
 import pytest
 import pytest_asyncio
-from pytest import MonkeyPatch # Added MonkeyPatch
+from pytest import MonkeyPatch  # Added MonkeyPatch
 
-from pyvider.rpcplugin.protocol import RPCPluginProtocol # Added RPCPluginProtocol
+from pyvider.rpcplugin.protocol import RPCPluginProtocol  # Added RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.telemetry import logger
@@ -25,18 +26,18 @@ def valid_server_env(monkeypatch: MonkeyPatch) -> None:
     # ("PLUGIN_MAGIC_COOKIE" here).
     monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_VALUE", "hello")  # Server's expected value.
     monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "1,2,3,4,5,6,7")
-    monkeypatch.setenv(
-        "PLUGIN_SERVER_TRANSPORTS", "tcp"
-    )
+    monkeypatch.setenv("PLUGIN_SERVER_TRANSPORTS", "tcp")
 
 
 @pytest_asyncio.fixture(scope="function")
 async def server_instance(
-    rpc_plugin_server_manager: Callable[..., asyncio.Future[tuple[RPCPluginServer, str | None]]],
+    rpc_plugin_server_manager: Callable[
+        ..., asyncio.Future[tuple[RPCPluginServer, str | None]]
+    ],
     mock_server_protocol: RPCPluginProtocol,
     mock_server_handler: Any,
     mock_server_config_dict_fixture: dict[str, Any],
-) -> AsyncGenerator[RPCPluginServer, None]:
+) -> AsyncGenerator[RPCPluginServer]:
     """
     Provides a function-scoped, started RPCPluginServer instance using
     rpc_plugin_server_manager. This version uses a dictionary for config overrides.
@@ -53,17 +54,16 @@ async def server_instance(
     yield server
 
 
-ServerFactoryType = Callable[
-    ..., asyncio.Future[tuple[RPCPluginServer, str | None]]
-]
+ServerFactoryType = Callable[..., asyncio.Future[tuple[RPCPluginServer, str | None]]]
+
 
 @pytest_asyncio.fixture(scope="function")
 async def rpc_plugin_server_manager(
     managed_unix_socket_path: str,
     unused_tcp_port: int,
-    mock_server_protocol: RPCPluginProtocol, # Default protocol
-    mock_server_handler: Any, # Default handler
-) -> AsyncGenerator[ServerFactoryType, None]:
+    mock_server_protocol: RPCPluginProtocol,  # Default protocol
+    mock_server_handler: Any,  # Default handler
+) -> AsyncGenerator[ServerFactoryType]:
     """
     Manages the lifecycle of RPCPluginServer instances for tests.
     Yields a factory function to create and start servers.

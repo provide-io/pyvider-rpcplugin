@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_chains.py
 
 from datetime import UTC, datetime
-from typing import Any
 from unittest import mock
 
 import pytest
@@ -53,9 +52,7 @@ async def test_certificate_basic_properties(
     assert cert.issuer
     assert isinstance(cert.is_ca, bool)
     assert cert.public_key
-    assert isinstance(
-        cert.public_key, (rsa.RSAPublicKey | ec.EllipticCurvePublicKey)
-    )
+    assert isinstance(cert.public_key, (rsa.RSAPublicKey | ec.EllipticCurvePublicKey))
 
 
 @pytest.mark.asyncio
@@ -118,7 +115,8 @@ def test_certificate_extensions(client_cert: Certificate) -> None:
             x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
         assert all(
-            isinstance(name, (x509.DNSName | x509.IPAddress)) for name in san_ext.value  # type: ignore[attr-defined]
+            isinstance(name, (x509.DNSName | x509.IPAddress))
+            for name in san_ext.value  # type: ignore[attr-defined]
         )
     except x509.ExtensionNotFound:
         pytest.skip("SAN extension not present")
