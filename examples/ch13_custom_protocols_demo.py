@@ -10,7 +10,8 @@ from collections.abc import (  # For CustomProtocol
 )
 from typing import Any
 
-# Ensure example_utils is imported before other project modules that might depend on its setup
+# Ensure example_utils is imported before other project modules
+# that might depend on its setup
 import example_utils  # type: ignore[import-not-found]
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol

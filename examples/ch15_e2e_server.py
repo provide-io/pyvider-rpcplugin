@@ -67,7 +67,7 @@ class E2EGreetingProtocol(RPCPluginProtocol):
         if "Greet" in method_name:
             return "unary_unary"
         logger.warning(
-            f"Unknown method {method_name} in E2EGreetingProtocol, defaulting to unary_unary."
+            f"Unknown method {method_name} in E2EGreetingProtocol, defaulting."
         )
         return "unary_unary"  # Default for safety
 
