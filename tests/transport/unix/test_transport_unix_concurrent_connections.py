@@ -11,19 +11,6 @@ from pyvider.telemetry import logger
 
 
 @pytest.mark.asyncio
-# Ignoring PytestUnraisableExceptionWarning specifically for this test.
-# This warning, leading to a TypeError in _SelectorSocketTransport.__del__ when
-# its _server._waiters is None, has proven very difficult to eliminate reliably
-# across different test run contexts (isolated vs. suite).
-# Extensive efforts including various sleep timings, explicit GC calls, and
-# reference nullification have been attempted. The issue appears to be a complex
-# interaction with asyncio's garbage collection and event loop state during
-# rapid creation/destruction of many client/server transport objects in this
-# specific stress test, rather than a general resource leak in the
-# UnixSocketTransport class that would affect typical operation.
-@pytest.mark.filterwarnings(
-    "ignore::_pytest.warning_types.PytestUnraisableExceptionWarning"
-)
 async def test_unix_socket_concurrent_connections() -> None:
     """Test multiple concurrent connections to Unix socket with proper tracking."""
     # Create temporary socket path
@@ -57,79 +44,39 @@ async def test_unix_socket_concurrent_connections() -> None:
         # Test data transfer with each client
         test_data = b"concurrent test data"
         for i, client in enumerate(client_transports):
-            if client._writer:  # Check if writer exists
-                client._writer.write(test_data)
-                await client._writer.drain()
-                logger.debug(f"Sent data through client {i + 1}")
-            else:
-                logger.warning(f"Client {i + 1} writer is None, cannot send data.")
+            client._writer.write(test_data)
+            await client._writer.drain()
+            logger.debug(f"Sent data through client {i + 1}")
 
-        # Close clients robustly
-        client_close_tasks = []
+        # Close clients
         for i, client in enumerate(client_transports):
-            client_close_tasks.append(asyncio.create_task(client.close()))
-            logger.debug(f"Initiated close for client {i + 1}")
+            await client.close()
+            logger.debug(f"Closed client {i + 1}")
 
-        await asyncio.gather(*client_close_tasks, return_exceptions=True)
-        logger.debug(f"All {len(client_transports)} client close tasks gathered.")
-
-        logger.debug("Nullifying client transport internals and deleting references...")
-        # Keep the original list for the finally block's safety net, but work on copies for nullification
-        temp_clients_to_nullify = list(client_transports)  # Iterate over a copy
-
-        for client_to_nullify in temp_clients_to_nullify:
-            if client_to_nullify:  # Check if client object still exists
-                client_to_nullify._writer = None
-                client_to_nullify._reader = None
-                # client_to_nullify._server is not an attribute of UnixSocketTransport wrapper
-
-        # Attempt to remove references from the original list to allow GC
-        # This part is tricky because the finally block also iterates client_transports
-        # Forcing GC here is the main goal.
-        del temp_clients_to_nullify  # Delete the copy list
-        # client_transports will be cleared in the finally block.
-        # The key is that individual client objects should now have fewer direct refs from the test.
-
-        import gc
-
-        gc.collect()
-        await asyncio.sleep(0.2)  # Give GC and event loop time
-        gc.collect()
+        # Verify connections are closed
+        # Add small delay to ensure connection removal is processed
         await asyncio.sleep(0.2)
-
-        # Verify connections are closed on server
-        # This sleep allows server to process client disconnects if GC/close was slow
-        await asyncio.sleep(0.1)
         assert len(server_transport._connections) == 0, (
-            f"Expected 0 remaining connections after client close and GC, got {len(server_transport._connections)}"
+            f"Expected 0 remaining connections, got {len(server_transport._connections)}"
         )
 
         # Close server
         await server_transport.close()
-        # server_transport = None # Mark as cleanly closed for the finally block logic
+        # server_transport = None # Indicate it's been closed cleanly
 
-        await asyncio.sleep(0.1)  # Allow server close to propagate fully
+        await asyncio.sleep(0)  # Give event loop a chance to process
     finally:
-        # Clean up remaining clients if any (idempotent close)
-        # client_transports should be empty here if try block completed fully
-        cleanup_client_tasks = []
-        for (
-            client_transport_obj
-        ) in client_transports:  # Should be empty if try block succeeded
-            if hasattr(client_transport_obj, "close") and callable(
-                client_transport_obj.close
-            ):
-                cleanup_client_tasks.append(
-                    asyncio.create_task(client_transport_obj.close())
-                )
+        # Clean up remaining clients if any
+        client_close_tasks = []
+        for client_transport_obj in client_transports: # Renamed to avoid conflict
+            if hasattr(client_transport_obj, 'close') and callable(client_transport_obj.close):
+                 client_close_tasks.append(asyncio.create_task(client_transport_obj.close())) # Idempotent
 
-        if cleanup_client_tasks:
-            logger.debug(
-                f"Gathering {len(cleanup_client_tasks)} client close tasks in finally block (should be 0)..."
-            )
-            await asyncio.gather(*cleanup_client_tasks, return_exceptions=True)
-            logger.debug("Finished gathering client close tasks in finally.")
-        client_transports.clear()
+        if client_close_tasks:
+            logger.debug(f"Gathering {len(client_close_tasks)} client close tasks in finally block...")
+            await asyncio.gather(*client_close_tasks, return_exceptions=True)
+            logger.debug(f"Finished gathering client close tasks.")
+        client_transports.clear() # Clear the list after attempting to close all
 
         # Ensure server_transport is closed if it was initialized
         if server_transport:
@@ -140,21 +87,6 @@ async def test_unix_socket_concurrent_connections() -> None:
                 await server_transport.close()  # Idempotent
             except Exception as e:
                 logger.error(f"Error closing server_transport during finally: {e}")
-
-        # Attempt to force garbage collection to catch __del__ issues sooner
-        # Make sure local variables that might hold references are cleared or del'd
-        # For this test, server_transport and client_transports are the main ones.
-        # client_transports is already cleared. server_transport might still hold a reference.
-        del server_transport  # Ensure it's unreferenced if not already None
-        # client_transports list is cleared above, individual clients should be unreferenced
-        # if not captured in closures or elsewhere.
-
-        import gc
-
-        gc.collect()
-        await asyncio.sleep(0.05)  # Short sleep for GC related tasks
-        gc.collect()  # Another pass just in case
-        await asyncio.sleep(0.05)
 
         # Clean up socket file if it exists
         if os.path.exists(socket_path):
@@ -169,7 +101,7 @@ async def test_unix_socket_concurrent_connections() -> None:
         except Exception as e:
             logger.error(f"Error removing temp directory: {e}")
 
-        await asyncio.sleep(0.1)  # Give event loop a bit longer after all cleanup
+        await asyncio.sleep(0)  # Give event loop a chance after all cleanup
 
 
 @pytest.mark.asyncio

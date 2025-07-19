@@ -1,17 +1,14 @@
 # tests/client/test_client_integration.py
 
-import asyncio
-from collections.abc import AsyncGenerator
-from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
-
 import pytest
+import asyncio
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
 
 
 @pytest.mark.asyncio
-async def test_client_integration(test_client_command: list[str]) -> None:
+async def test_client_integration(test_client_command):
     """
     Integration test for RPCPluginClient full lifecycle.
 
@@ -77,7 +74,7 @@ async def test_client_integration(test_client_command: list[str]) -> None:
         mock_controller_stub_class.return_value = mock_controller_stub
 
         # Setup mock stdio stream
-        async def mock_stream_stdio(_: Any) -> AsyncGenerator[MagicMock]:
+        async def mock_stream_stdio(_):
             yield MagicMock(channel=1, data=b"log message")
             await asyncio.sleep(0.1)
 

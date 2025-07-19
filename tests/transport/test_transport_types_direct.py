@@ -2,8 +2,8 @@
 
 from typing import Protocol, runtime_checkable  # Keep existing typing imports
 
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import TransportType
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
 # Tests for the ConnectionT Protocol (lines 22-24)

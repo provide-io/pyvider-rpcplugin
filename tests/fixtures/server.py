@@ -1,172 +1,115 @@
 # tests/fixtures/server.py
 
-import asyncio
-from collections.abc import AsyncGenerator, Callable  # Added Callable, AsyncGenerator
-from typing import Any
-
 import pytest
 import pytest_asyncio
-from pytest import MonkeyPatch  # Added MonkeyPatch
 
-from pyvider.rpcplugin.protocol import RPCPluginProtocol  # Added RPCPluginProtocol
+import asyncio
+
+from pyvider.telemetry import logger  # Added for logging in fixture
 from pyvider.rpcplugin.server import RPCPluginServer
-from pyvider.rpcplugin.transport.base import RPCPluginTransport
-from pyvider.telemetry import logger
 
 
 @pytest.fixture
-def valid_server_env(monkeypatch: MonkeyPatch) -> None:
+def valid_server_env(monkeypatch) -> None:
     monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
     monkeypatch.setenv(
-        "PLUGIN_MAGIC_COOKIE",  # This is the env var name the client sets for the server.
-        "hello",  # This is the value the client passes in that env var.
+        "PLUGIN_MAGIC_COOKIE",
+        "hello",
     )
-    # For a server to validate this, its own PLUGIN_MAGIC_COOKIE_VALUE must be "hello".
-    # The client's PLUGIN_MAGIC_COOKIE_KEY determines the name of the env var
-    # ("PLUGIN_MAGIC_COOKIE" here).
-    monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_VALUE", "hello")  # Server's expected value.
     monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "1,2,3,4,5,6,7")
-    monkeypatch.setenv("PLUGIN_SERVER_TRANSPORTS", "tcp")
+    monkeypatch.setenv("PLUGIN_TRANSPORTS", "tcp")
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="module")
 async def server_instance(
-    rpc_plugin_server_manager: Callable[
-        ..., asyncio.Future[tuple[RPCPluginServer, str | None]]
-    ],
-    mock_server_protocol: RPCPluginProtocol,
-    mock_server_handler: Any,
-    mock_server_config_dict_fixture: dict[str, Any],
-) -> AsyncGenerator[RPCPluginServer]:
-    """
-    Provides a function-scoped, started RPCPluginServer instance using
-    rpc_plugin_server_manager. This version uses a dictionary for config overrides.
-    """
-    config_dict = mock_server_config_dict_fixture
+    mock_server_config,
+    mock_server_protocol,
+    mock_server_handler,
+    mock_server_transport,
+    client_cert,
+):
+    from pyvider.rpcplugin.config import rpcplugin_config
 
-    server, _ = await rpc_plugin_server_manager(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-        transport_type="unix",  # Defaulting to unix for this fixture
-        config_overrides=config_dict,
-        auto_start=True,
-    )
-    yield server
-
-
-ServerFactoryType = Callable[..., asyncio.Future[tuple[RPCPluginServer, str | None]]]
-
-
-@pytest_asyncio.fixture(scope="function")
-async def rpc_plugin_server_manager(
-    managed_unix_socket_path: str,
-    unused_tcp_port: int,
-    mock_server_protocol: RPCPluginProtocol,  # Default protocol
-    mock_server_handler: Any,  # Default handler
-) -> AsyncGenerator[ServerFactoryType]:
-    """
-    Manages the lifecycle of RPCPluginServer instances for tests.
-    Yields a factory function to create and start servers.
-    """
-    servers_to_cleanup: list[RPCPluginServer] = []
-
-    async def _create_server(
-        protocol: RPCPluginProtocol | None = None,
-        handler: Any | None = None,
-        transport_type: str = "unix",
-        config_overrides: dict[str, Any] | None = None,
-        auto_start: bool = True,
-        custom_transport: RPCPluginTransport | None = None,
-        server_cls: type[RPCPluginServer] = RPCPluginServer,
-    ) -> tuple[RPCPluginServer, str | None]:
-        nonlocal servers_to_cleanup
-        from pyvider.rpcplugin.config import rpcplugin_config
-        from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-
-        protocol_to_use = protocol or mock_server_protocol
-        handler_to_use = handler or mock_server_handler
-
-        current_config_dict = rpcplugin_config.config.copy()
-        if config_overrides:
-            for k, v in config_overrides.items():
-                current_config_dict[k] = v
-
-        transport_instance: RPCPluginTransport
-        if custom_transport:
-            transport_instance = custom_transport
-        elif transport_type == "unix":
-            socket_path = managed_unix_socket_path
-            logger.debug(
-                f"RPCPluginServerManager: Using Unix socket path: {socket_path}"
-            )
-            transport_instance = UnixSocketTransport(path=socket_path)
-        elif transport_type == "tcp":
-            port = unused_tcp_port
-            logger.debug(f"RPCPluginServerManager: Using TCP port: {port}")
-            transport_instance = TCPSocketTransport(host="127.0.0.1", port=port)
-        else:
-            raise ValueError(f"Unsupported transport_type: {transport_type}")
-
-        server = server_cls(
-            protocol=protocol_to_use,
-            handler=handler_to_use,
-            config=current_config_dict,
-            transport=transport_instance,
+    try:
+        # Set environment variables
+        rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
+        rpcplugin_config.set(
+            "PLUGIN_MAGIC_COOKIE",
+            "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2",
         )
-        servers_to_cleanup.append(server)
+        rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", "6")
+        rpcplugin_config.set("PLUGIN_TRANSPORTS", "unix")
+        rpcplugin_config.get("PLUGIN_CLIENT_CERT")
 
-        endpoint: str | None = None
-        if auto_start:
-            logger.debug(
-                f"RPCPluginServerManager: Auto-starting server ({transport_type})..."
-            )
-            serve_task = asyncio.create_task(server.serve())
-            await asyncio.sleep(0)
+        # Start the server with mock handler
+        server = RPCPluginServer(
+            protocol=mock_server_protocol,
+            handler=mock_server_handler,
+            config=mock_server_config,
+            transport=mock_server_transport,  # This transport's path is managed by managed_unix_socket_path
+        )
+        serve_task = asyncio.create_task(server.serve())
+
+        # Wait for server readiness
+        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10)
+
+        yield server
+    finally:
+        # Cleanup
+        await server.stop()
+        if serve_task and not serve_task.done():
+            logger.debug("Attempting to await server.serve() task in fixture cleanup.")
             try:
-                await server.wait_for_server_ready(timeout=10.0)
-                if server.transport and server.transport.endpoint:
-                    endpoint = server.transport.endpoint
-                    logger.debug(
-                        f"RPCPluginServerManager: Server ready at {endpoint}. "
-                        f"Serve task: {serve_task}"
-                    )
-                else:
-                    logger.error(
-                        "RPCPluginServerManager: Server reported ready, but "
-                        "transport endpoint is missing."
-                    )
-                    serve_task.cancel()
-                    await asyncio.gather(serve_task, return_exceptions=True)
-                    raise RuntimeError(
-                        "Server transport endpoint not available after start."
-                    )
+                await asyncio.wait_for(serve_task, timeout=5.0)
+                logger.debug(
+                    "server.serve() task completed successfully in fixture cleanup."
+                )
+            except asyncio.TimeoutError:
+                logger.error(
+                    "Timeout waiting for server.serve() task to complete in fixture."
+                )
+                # Optionally, cancel the task if it timed out, though stop() should handle it.
+                # serve_task.cancel()
+                # try:
+                #     await serve_task
+                # except asyncio.CancelledError:
+                #     logger.info("serve_task cancelled after timeout.")
+            except asyncio.CancelledError:
+                logger.info("Server.serve() task was cancelled during fixture cleanup.")
             except Exception as e:
                 logger.error(
-                    f"RPCPluginServerManager: Error starting server or waiting for "
-                    f"readiness: {e}"
+                    f"An unexpected error occurred while awaiting serve_task: {e}"
                 )
-                serve_task.cancel()
-                await asyncio.gather(serve_task, return_exceptions=True)
-                raise
-        return server, endpoint
-
-    yield _create_server
-
-    logger.debug(
-        f"RPCPluginServerManager: Cleaning up {len(servers_to_cleanup)} server(s)."
-    )
-    for server_instance_to_clean in servers_to_cleanup:
-        try:
-            await server_instance_to_clean.stop()
+        else:
             logger.debug(
-                f"RPCPluginServerManager: Stopped server: {server_instance_to_clean}"
+                "serve_task was already done or not created in fixture cleanup."
             )
-        except Exception as e:
-            logger.error(
-                f"RPCPluginServerManager: Error stopping server "
-                f"{server_instance_to_clean}: {e}"
-            )
-    logger.debug("RPCPluginServerManager: Cleanup complete.")
+        # Socket cleanup is now fully handled by the managed_unix_socket_path fixture
+        # which is used by the unix_transport fixture, which mock_server_transport might be.
+        # No need to check transport_name or os.path.exists here.
+
+
+@pytest_asyncio.fixture(scope="function")
+async def mock_async_tcp_server(mock_server_transport_tcp) -> None:
+    transport = mock_server_transport_tcp
+    endpoint = await transport.listen()
+
+    host, port = endpoint.split(":")
+
+    # Simulate a client connection
+    reader, writer = await asyncio.open_connection(host, int(port))
+    writer.write(b"test data")
+    await writer.drain()
+
+    # Keep connection open to simulate active connection
+    await asyncio.sleep(1)
+    if writer is not None:
+        writer.close()
+
+    await writer.wait_closed()
+
+    # Test transport close
+    await transport.close()
 
 
 ### 🐍🏗🧪️

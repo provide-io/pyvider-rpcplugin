@@ -16,9 +16,9 @@ from pyvider.rpcplugin.crypto.constants import (
     SUPPORTED_KEY_TYPES,
     SUPPORTED_RSA_SIZES,
 )
-
-# from pyvider.rpcplugin.crypto.debug import display_cert_details # Removed as function was deleted
+from pyvider.rpcplugin.crypto.debug import display_cert_details
 from pyvider.rpcplugin.crypto.generators import (
+    KEY_GENERATORS,
     generate_ec_keypair,
     generate_keypair,
     generate_rsa_keypair,
@@ -38,8 +38,9 @@ __all__ = [
     "generate_rsa_keypair",
     "generate_ec_keypair",
     "generate_keypair",
+    "KEY_GENERATORS",
     "Certificate",
-    # "display_cert_details", # Removed as function was deleted
+    "display_cert_details",
 ]
 
 # 🐍🏗️🔌

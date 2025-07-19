@@ -4,7 +4,7 @@
 import asyncio
 import os
 import tempfile
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest
 
@@ -17,7 +17,7 @@ async def test_unix_socket_error_handling() -> None:
     """Test comprehensive error handling in Unix socket transport."""
 
     # Test 1: Connect to nonexistent socket
-    nonexistent_path = "/tmp/nonexistent_socket_path_12345.sock"  # nosec B108
+    nonexistent_path = "/tmp/nonexistent_socket_path_12345.sock"
     if os.path.exists(nonexistent_path):
         os.unlink(nonexistent_path)
 
@@ -124,14 +124,14 @@ async def test_unix_socket_connect_timeout() -> None:
             f.write("dummy")
 
         # Set valid socket permissions
-        os.chmod(socket_path, 0o777)  # nosec B103
+        os.chmod(socket_path, 0o777)
 
         transport = UnixSocketTransport()
 
         # Mock open_unix_connection to raise a timeout
         with patch(
             "asyncio.open_unix_connection",
-            side_effect=TimeoutError("Connection timed out"),
+            side_effect=asyncio.TimeoutError("Connection timed out"),
         ):
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)

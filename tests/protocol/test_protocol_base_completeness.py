@@ -1,9 +1,8 @@
 # tests/protocol/test_protocol_base_completeness.py
 
+import pytest
 from typing import Any
 from unittest.mock import MagicMock
-
-import pytest
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import HandlerT, ServerT
@@ -12,7 +11,7 @@ from pyvider.rpcplugin.types import HandlerT, ServerT
 class PartialTestProtocol(RPCPluginProtocol):
     """A partial implementation missing the add_to_server method."""
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Made async
+    def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Implemented method."""
         return MagicMock(), "TestService"
 
@@ -22,7 +21,7 @@ class PartialTestProtocol(RPCPluginProtocol):
 class CompleteTestProtocol(RPCPluginProtocol):
     """A complete implementation with all methods."""
 
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:  # Made async
+    def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Returns mock descriptors and service name."""
         return MagicMock(), "TestService"
 
@@ -34,13 +33,13 @@ class CompleteTestProtocol(RPCPluginProtocol):
 def test_abstract_base_cannot_instantiate() -> None:
     """Test that RPCPluginProtocol cannot be instantiated directly."""
     with pytest.raises(TypeError):
-        RPCPluginProtocol()  # type: ignore[abstract]
+        RPCPluginProtocol()
 
 
 def test_partial_implementation_cannot_instantiate() -> None:
     """Test that a partial implementation cannot be instantiated."""
     with pytest.raises(TypeError):
-        PartialTestProtocol()  # type: ignore[abstract]
+        PartialTestProtocol()
 
 
 def test_complete_implementation_can_instantiate() -> None:
@@ -55,7 +54,7 @@ async def test_complete_implementation_methods() -> None:
     protocol = CompleteTestProtocol()
 
     # Test get_grpc_descriptors
-    descriptors, service_name = await protocol.get_grpc_descriptors()  # Added await
+    descriptors, service_name = protocol.get_grpc_descriptors()
     assert service_name == "TestService"
     assert descriptors is not None
 

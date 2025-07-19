@@ -1,41 +1,42 @@
 # tests/protocol/test_protocol_integration.py
 
 import asyncio
-from collections.abc import AsyncGenerator  # Added import
-from unittest.mock import AsyncMock, patch
-
-import attr  # Added import
-import grpc
 import pytest
 import pytest_asyncio
+import attr  # Added import
+
+from unittest.mock import patch, AsyncMock
+
+import grpc
 from google.protobuf.empty_pb2 import Empty
-
-from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
-from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
-    GRPCBrokerStub,
-    add_GRPCBrokerServicer_to_server,
-)
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
-from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
-    GRPCControllerStub,
-    add_GRPCControllerServicer_to_server,
-)
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-
-# Stubs for client-side
-# Servicer adders for server-side
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
-    GRPCStdioStub,
-    add_GRPCStdioServicer_to_server,
-)
 
 # Service implementations
 from pyvider.rpcplugin.protocol.service import (
+    GRPCStdioService,
     GRPCBrokerService,
     GRPCControllerService,
     # register_protocol_service, # Removed
-    GRPCStdioService,
 )
+
+# Stubs for client-side
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
+
+# Servicer adders for server-side
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
+    add_GRPCStdioServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
+    add_GRPCBrokerServicer_to_server,
+)
+from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
+    add_GRPCControllerServicer_to_server,
+)
+
+from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.telemetry import logger
 
 
@@ -50,7 +51,9 @@ class ServerFixtureOutput:
 
 
 @pytest_asyncio.fixture
-async def grpc_server_output() -> AsyncGenerator[ServerFixtureOutput]:
+async def grpc_server_output() -> (
+    ServerFixtureOutput
+):  # Changed fixture name for clarity
     """Fixture providing a real gRPC server with our services registered."""
     server = grpc.aio.server()
     shutdown_event = asyncio.Event()
@@ -92,7 +95,7 @@ async def grpc_channel(grpc_server_output: ServerFixtureOutput):  # Changed fixt
     """Fixture providing a client channel to the gRPC server."""
     channel = grpc.aio.insecure_channel(grpc_server_output.address)
     yield channel
-    await channel.close(grace=0.1)
+    await channel.close()
 
 
 # Removed old test_stdio_integration; test_stdio_integration_consolidated is preferred.
@@ -130,7 +133,7 @@ async def test_stdio_integration_consolidated(
             log_func("Client: Starting to iterate over stream_call")
             async for data_item in stream_call:
                 log_func(
-                    f"Client: Received item: channel={data_item.channel}, data='{data_item.data.decode()[:30]}...'"  # type: ignore[str-bytes-safe]
+                    f"Client: Received item: channel={data_item.channel}, data='{data_item.data.decode()[:30]}...'"
                 )
                 results.append(data_item)
                 if len(results) >= num_expected_messages:
@@ -164,7 +167,7 @@ async def test_stdio_integration_consolidated(
             client_task, timeout=3.0
         )  # Shorter timeout, should be quick
         log_func("Test: client_task completed.")
-    except TimeoutError:
+    except asyncio.TimeoutError:
         log_func("Test: Client task timed out. Cancelling stream_call if not done.")
         if not stream_call.done():
             stream_call.cancel()
@@ -307,7 +310,7 @@ async def test_stdio_early_client_disconnect_consolidated(
         await asyncio.sleep(0.1)
 
         # Abruptly close the channel
-        await temp_channel.close(grace=0.1)
+        await temp_channel.close()
 
         # Attempting to iterate over the stream after channel closure should raise an error
         # Common errors include RpcError with status CANCELLED or UNAVAILABLE.
@@ -339,7 +342,7 @@ async def test_stdio_early_client_disconnect_consolidated(
         )
     finally:
         # Ensure the temporary channel is closed if not already
-        await temp_channel.close(grace=0.1)
+        await temp_channel.close()
 
 
 @pytest.mark.asyncio
@@ -383,7 +386,7 @@ async def test_broker_multiple_clients_consolidated(
             logger.error(f"Client {service_id} failed: {e}")
             return False  # Indicate failure
         finally:
-            await client_specific_channel.close(grace=0.1)
+            await client_specific_channel.close()
 
     for i in range(num_clients):
         client_tasks.append(asyncio.create_task(single_client_interaction(i + 1)))
@@ -449,7 +452,7 @@ async def test_controller_shutdown_with_timeout_consolidated(
                 await asyncio.sleep(0.05)
                 mock_delayed_shutdown_method.assert_called_once()
 
-            except TimeoutError:
+            except asyncio.TimeoutError:
                 pytest.fail("Controller.Shutdown RPC call timed out")
             except Exception as e:
                 pytest.fail(f"Controller shutdown test failed: {e}")

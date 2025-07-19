@@ -2,54 +2,45 @@
 
 import asyncio
 import gc
-from typing import Any, cast
-from unittest.mock import MagicMock, patch
 
+# import logging # No longer needed for this test
 import pytest
-from pytest import MonkeyPatch
+from unittest.mock import patch  # Added
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from tests.fixtures.dummy import DummyReader, DummyWriter  # Import added
 
 
 @pytest.fixture
-def connection(
-    dummy_reader: DummyReader, dummy_writer: DummyWriter
-) -> ClientConnection:  # Add types to fixture args
-    # Create a ClientConnection with dummy streams using cast.
+def connection(dummy_reader, dummy_writer):
+    # Create a ClientConnection with dummy streams.
     return ClientConnection(
-        reader=cast(asyncio.StreamReader, dummy_reader),
-        writer=cast(asyncio.StreamWriter, dummy_writer),
-        remote_addr="127.0.0.1",
+        reader=dummy_reader, writer=dummy_writer, remote_addr="127.0.0.1"
     )
 
 
 @pytest.mark.asyncio
-async def test_is_closed_initial(
-    connection: ClientConnection, dummy_writer: DummyWriter
-) -> None:
+async def test_is_closed_initial(connection, dummy_writer) -> None:
     # Initially, _closed is False and writer.is_closing() returns False.
     assert connection.is_closed is False
 
 
 @pytest.mark.asyncio
-async def test_is_closed_when_closed_flag(connection: ClientConnection) -> None:
+async def test_is_closed_when_closed_flag(connection) -> None:
     # When _closed flag is True, is_closed should return True.
     connection._closed = True
     assert connection.is_closed is True
 
 
 @pytest.mark.asyncio
-async def test_is_closed_when_writer_closing(
-    connection: ClientConnection, dummy_writer: DummyWriter
-) -> None:
+async def test_is_closed_when_writer_closing(connection, dummy_writer) -> None:
     # When writer.is_closing() returns True, is_closed should return True.
     dummy_writer.closed = True
     assert connection.is_closed is True
 
 
 @pytest.mark.asyncio
-async def test_update_metrics(connection: ClientConnection) -> None:
+async def test_update_metrics(connection) -> None:
     # Start with zero metrics.
     connection.bytes_sent = 0
     connection.bytes_received = 0
@@ -63,9 +54,7 @@ async def test_send_data_normal() -> None:  # Removed fixtures
     local_dummy_reader = DummyReader()  # Default empty reader
     local_dummy_writer = DummyWriter()
     conn = ClientConnection(
-        reader=cast(asyncio.StreamReader, local_dummy_reader),
-        writer=cast(asyncio.StreamWriter, local_dummy_writer),
-        remote_addr="127.0.0.1",
+        reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
 
     data = b"hello"
@@ -76,7 +65,7 @@ async def test_send_data_normal() -> None:  # Removed fixtures
 
 
 @pytest.mark.asyncio
-async def test_send_data_when_closed(connection: ClientConnection) -> None:
+async def test_send_data_when_closed(connection) -> None:
     # Mark connection as closed so that send_data should raise ConnectionError.
     connection._closed = True
     with pytest.raises(
@@ -86,11 +75,9 @@ async def test_send_data_when_closed(connection: ClientConnection) -> None:
 
 
 @pytest.mark.asyncio
-async def test_send_data_oserror(
-    monkeypatch: MonkeyPatch, connection: ClientConnection
-) -> None:
+async def test_send_data_oserror(monkeypatch, connection) -> None:
     # Simulate an OSError in writer.drain.
-    async def fake_drain() -> None:
+    async def fake_drain():
         raise OSError("Fake drain error")
 
     monkeypatch.setattr(connection.writer, "drain", fake_drain)
@@ -104,9 +91,7 @@ async def test_receive_data_normal() -> None:  # Removed fixtures
     local_dummy_reader = DummyReader(data=test_bytes)  # Initialize with data
     local_dummy_writer = DummyWriter()
     conn = ClientConnection(
-        reader=cast(asyncio.StreamReader, local_dummy_reader),
-        writer=cast(asyncio.StreamWriter, local_dummy_writer),
-        remote_addr="127.0.0.1",
+        reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
 
     # No need to set dummy_reader.data as it's set on init
@@ -117,7 +102,7 @@ async def test_receive_data_normal() -> None:  # Removed fixtures
 
 
 @pytest.mark.asyncio
-async def test_receive_data_when_closed(connection: ClientConnection) -> None:
+async def test_receive_data_when_closed(connection) -> None:
     # Mark connection as closed so that receive_data raises ConnectionError.
     connection._closed = True
     with pytest.raises(
@@ -127,11 +112,9 @@ async def test_receive_data_when_closed(connection: ClientConnection) -> None:
 
 
 @pytest.mark.asyncio
-async def test_receive_data_oserror(
-    monkeypatch: MonkeyPatch, connection: ClientConnection
-) -> None:
+async def test_receive_data_oserror(monkeypatch, connection) -> None:
     # Simulate an OSError in reader.read.
-    async def fake_read(size: int) -> None:
+    async def fake_read(size: int):
         raise OSError("Fake read error")
 
     monkeypatch.setattr(connection.reader, "read", fake_read)
@@ -140,9 +123,7 @@ async def test_receive_data_oserror(
 
 
 @pytest.mark.asyncio
-async def test_close_normal(
-    connection: ClientConnection, dummy_writer: DummyWriter
-) -> None:
+async def test_close_normal(connection, dummy_writer) -> None:
     # Ensure close() properly marks connection as closed and calls writer.close().
     connection._closed = False
     await connection.close()
@@ -153,13 +134,10 @@ async def test_close_normal(
 
 @pytest.mark.asyncio
 async def test_close_writer_error(
-    monkeypatch: MonkeyPatch,
-    connection: ClientConnection,
-    dummy_writer: DummyWriter,
-    caplog: Any,
+    monkeypatch, connection, dummy_writer, caplog
 ) -> None:
     # Simulate an error during writer.wait_closed.
-    async def fake_wait_closed() -> None:
+    async def fake_wait_closed():
         raise Exception("Fake wait_closed error")
 
     monkeypatch.setattr(dummy_writer, "wait_closed", fake_wait_closed)
@@ -169,23 +147,26 @@ async def test_close_writer_error(
 
 
 @pytest.mark.asyncio
-async def test_del_warning() -> None:
+async def test_del_warning() -> None:  # Removed caplog, capsys
+    # caplog.set_level(logging.WARNING) # REMOVE
+
     local_dummy_writer = DummyWriter()
     local_dummy_reader = DummyReader()
 
     conn = ClientConnection(
-        reader=cast(asyncio.StreamReader, local_dummy_reader),
-        writer=cast(asyncio.StreamWriter, local_dummy_writer),
-        remote_addr="127.0.0.1",
+        reader=local_dummy_reader, writer=local_dummy_writer, remote_addr="127.0.0.1"
     )
 
     assert not conn.is_closed, (
-        "Connection should not be considered closed before explicit close or __del__ "  # noqa: E501
-        "for this test"
+        "Connection should not be considered closed before explicit close or __del__ for this test"
     )
     remote_addr = conn.remote_addr
 
-    # Patch logger.warning in pyvider.rpcplugin.client.connection
+    # Patch the logger.warning specifically in the module where ClientConnection uses it.
+    # ClientConnection.py does: from pyvider.telemetry import logger
+    # So the target is 'pyvider.rpcplugin.client.connection.logger.warning'.
+    from unittest.mock import MagicMock
+
     with patch(
         "pyvider.rpcplugin.client.connection.logger.warning", new_callable=MagicMock
     ) as mock_log_warning:
@@ -202,7 +183,7 @@ async def test_del_warning() -> None:
         # New assertion:
         found_expected_call = False
         for call_item in mock_log_warning.call_args_list:
-            # call_item is a unittest.mock.call object. Access its positional args via call_item[0] or call_item.args # noqa: E501
+            # call_item is a unittest.mock.call object. Access its positional args via call_item[0] or call_item.args
             logged_message = call_item[0][0]  # First positional argument of the call
             if logged_message == expected_message:
                 found_expected_call = True

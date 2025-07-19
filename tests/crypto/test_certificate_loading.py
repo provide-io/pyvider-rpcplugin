@@ -1,8 +1,8 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_loading.py
 
+import pytest
 from unittest import mock
 
-import pytest
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError

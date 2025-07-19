@@ -12,8 +12,6 @@ from pyvider.rpcplugin.config import (
     rpcplugin_config,
 )
 from pyvider.rpcplugin.exception import (
-    CertificateError,
-    ConfigError,
     HandshakeError,
     ProtocolError,
     RPCPluginError,
@@ -30,27 +28,21 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 
 __all__ = [
-    # Core Classes
-    "RPCPluginClient",
-    "RPCPluginServer",
-    "RPCPluginProtocol",
-    # Factory Functions
-    "plugin_client",
-    "plugin_server",
-    "plugin_protocol",
-    "create_basic_protocol",
-    # Configuration
     "RPCPluginConfig",
     "rpcplugin_config",
     "configure",
-    # Exceptions
+    "RPCPluginProtocol",
+    "RPCPluginClient",
+    "RPCPluginServer",
     "RPCPluginError",
-    "ConfigError",
     "HandshakeError",
     "ProtocolError",
     "TransportError",
     "SecurityError",
-    "CertificateError",
+    "plugin_server",
+    "plugin_client",
+    "plugin_protocol",
+    "create_basic_protocol",
 ]
 
 # 🐍🏗️🔌

@@ -1,3 +1,4 @@
+
 # pyvider-rpcplugin/pyproject.toml
 
 [project]
@@ -45,7 +46,6 @@ dev = [
     "tabulate>=0.9.0",
     "ty>=0.0.1a6",
     "types-grpcio>=1.0.0.20250603",
-    "types-protobuf>=6.30.2.20250516",
     "uv>=0.6.5",
     "viztracer>=1.0.2",
 ]
@@ -59,7 +59,7 @@ dependencies = []
 
 [tool.hatch.envs.test.scripts]
 test = "pytest {args:tests}"
-coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing"
+coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing --cov-config=pyproject.toml"
 lint = "ruff check src tests"
 format = "ruff format src tests"
 typecheck = "pyre check"
@@ -106,22 +106,18 @@ norecursedirs = [
 ]
 
 ################################################################################
-# Ruff (Linter & Formatter)
+# lint
 ################################################################################
 
-[tool.ruff]
-line-length = 88
-exclude = ["**/*pb2*.py"] # Removed "tests/*"
-
-[tool.ruff.lint]
+[tool.lint]
 select = ["E", "F", "I", "UP", "ANN", "B"]
 ignore = [
-    "ANN401", # Implicit `Any` return, consider fixing where possible
-    "B008",   # Function call in default argument
+    "ANN401",
+    "B008",
+    "E501",
 ]
-
-[tool.ruff.format]
-# Standard ruff format options, no overrides needed for now.
+exclude = ["tests/*", "**/*pb2*.py"]
+line-length = 88
 
 ################################################################################
 # coverage
@@ -155,22 +151,5 @@ source_directories = ["src"]
 exclude = ["tests/*", "**/*pb2*.py"]
 strict = true
 
-################################################################################
-# mypy
-################################################################################
-[tool.mypy]
-ignore_missing_imports = false # Default, but explicit
-# disable_error_code = ["import-untyped"] # Globally disable for now to test
-
-# Add specific ignores for problematic protobuf imports
-[[tool.mypy.overrides]]
-module = [
-    "google.protobuf.internal",
-    "google.protobuf.descriptor", # Often imported by generated code
-    "google.protobuf.message",    # Base class for messages
-    "google.protobuf.empty_pb2",  # For google.protobuf.empty_pb2
-    "google.protobuf"             # General fallback for the google.protobuf namespace
-]
-ignore_missing_imports = true
-
 # 🐍🏗️📋
+
