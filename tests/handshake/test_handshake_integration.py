@@ -76,8 +76,8 @@ def setup_environment(monkeypatch):
 async def test_build_handshake_response_unix(monkeypatch):
     """Test building handshake response with Unix transport."""
     transport = UnixSocketTransport()
-    transport.listen = AsyncMock(return_value="/tmp/test.sock")  # nosec B108
-    transport.endpoint = "/tmp/test.sock"  # nosec B108
+    transport.listen = AsyncMock(return_value="/tmp/test.sock")
+    transport.endpoint = "/tmp/test.sock"
 
     response = await build_handshake_response(
         plugin_version=6, transport_name="unix", transport=transport, server_cert=None
@@ -89,7 +89,7 @@ async def test_build_handshake_response_unix(monkeypatch):
     assert parts[0] == "1"  # Core version
     assert parts[1] == "6"  # Plugin version
     assert parts[2] == "unix"  # Transport name
-    assert parts[3] == "/tmp/test.sock"  # nosec B108 # Endpoint
+    assert parts[3] == "/tmp/test.sock"  # Endpoint
     assert parts[4] == "grpc"  # Protocol
     assert parts[5] == ""  # No certificate
 
@@ -173,12 +173,6 @@ async def test_server_handshake_integration(
             return None
         if key == "PLUGIN_SERVER_KEY":
             return None
-        # Values set by setup_environment fixture
-        if key == "PLUGIN_MAGIC_COOKIE_KEY":
-            return "PLUGIN_MAGIC_COOKIE"  # As set by setup_environment
-        if key == "PLUGIN_MAGIC_COOKIE_VALUE":
-            return "test_cookie_value"  # As set by setup_environment
-
         # For other keys, return their actual values from the global config
         # This ensures values set by setup_environment are respected.
         return rpcplugin_config.config.get(key, default)

@@ -1,28 +1,29 @@
 # pyvider/rpcplugin/tests/crypto/test_crypto_generators.py
 
-import time
+import pytest
+
 from unittest import mock
 
-import pytest
-from cryptography.hazmat.primitives.asymmetric import ec, rsa
+import time
+
+from cryptography.hazmat.primitives.asymmetric import rsa, ec
+
+from pyvider.rpcplugin.crypto.certificate import Certificate
 
 from pyvider.rpcplugin.crypto import (
-    KEY_TYPE_ECDSA,
     KEY_TYPE_RSA,
+    KEY_TYPE_ECDSA,
+    generate_rsa_keypair,
     generate_ec_keypair,
     generate_keypair,
-    generate_rsa_keypair,
 )
-from pyvider.rpcplugin.crypto.certificate import Certificate
 
 
 @pytest.mark.asyncio
 async def test_generate_keypair_returns_keypair() -> None:
     """Ensure generate_keypair() returns correct type"""
-    rsa_key_pair = generate_keypair(KEY_TYPE_RSA, key_size=2048)  # Added key_size
-    ec_key_pair = generate_keypair(
-        KEY_TYPE_ECDSA, curve_name="secp256r1"
-    )  # Added curve_name for consistency
+    rsa_key_pair = generate_keypair(KEY_TYPE_RSA)
+    ec_key_pair = generate_keypair(KEY_TYPE_ECDSA)
 
     # Check tuple and key types for RSA
     assert isinstance(rsa_key_pair, tuple)

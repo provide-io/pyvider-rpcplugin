@@ -1,32 +1,30 @@
 # tests/grpc/test_grpctest.py
 
 import asyncio
-from collections.abc import AsyncGenerator  # Added import
-
-import grpc
 import pytest
 import pytest_asyncio
+import grpc
 from google.protobuf import empty_pb2
 
 # Import generated classes from your compiled proto.
 from .proto.grpctest_pb2 import (
-    BidirectionalRequest,
-    BidirectionalResponse,
-    PingRequest,
-    PongResponse,
-    PrintKVRequest,
-    PrintKVResponse,
-    PrintStdioRequest,
     TestRequest,
     TestResponse,
+    PrintKVRequest,
+    PrintKVResponse,
+    BidirectionalRequest,
+    BidirectionalResponse,
+    PrintStdioRequest,
+    PingRequest,
+    PongResponse,
 )
 from .proto.grpctest_pb2_grpc import (
-    PingPongServicer,
-    PingPongStub,
     TestServicer,
-    TestStub,
-    add_PingPongServicer_to_server,
     add_TestServicer_to_server,
+    PingPongServicer,
+    add_PingPongServicer_to_server,
+    TestStub,
+    PingPongStub,
 )
 
 
@@ -61,7 +59,7 @@ class DummyPingPongServicer(PingPongServicer):
 
 # Fixture that starts a grpc.aio server with our dummy servicers.
 @pytest_asyncio.fixture
-async def grpc_server() -> AsyncGenerator[str]:
+async def grpc_server() -> str:
     server = grpc.aio.server()
     add_TestServicer_to_server(DummyTestServicer(), server)
     add_PingPongServicer_to_server(DummyPingPongServicer(), server)
@@ -74,11 +72,11 @@ async def grpc_server() -> AsyncGenerator[str]:
 
 # Fixture that creates a channel connected to the server.
 @pytest_asyncio.fixture
-async def grpc_channel(grpc_server: str) -> AsyncGenerator[grpc.aio.Channel]:
+async def grpc_channel(grpc_server: str) -> grpc.aio.Channel:
     channel = grpc.aio.insecure_channel(grpc_server)
     await channel.channel_ready()
     yield channel
-    await channel.close(grace=0.1)
+    await channel.close()
 
 
 # Fixtures for the client stubs.

@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+
+# Ensure /app/src and /app are in sys.path for module resolution
+# This is a workaround for potential PYTHONPATH/editable install issues in the test environment
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../src"))
+)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
+
+import asyncio
+import os
+
+import grpc
+from cryptography.hazmat.primitives.asymmetric import ec
+
+from examples.kvproto.py_rpc.proto import (
+    KVProtocol,
+    kv_pb2,
+    kv_pb2_grpc,
+)
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.telemetry import logger
+
+"""
+py-kv-server.py
+
+This Python key/value (KV) plugin server uses the RPCPluginServer to set up a gRPC
+server and implements a file‑based key/value store. Each key/value pair is persisted
+in a text file called "kv-data-<key>".
+
+On startup, the server performs a self‑test by executing a Put/Get with a key of
+"status" and a value of "pyvider server listening". This validates that the internal
+storage functions work correctly and assists during gRPC debugging.
+"""
+
+
+# ------------------------------------------------------------------------------
+# Dummy context for self‑testing (to satisfy the context parameter)
+# ------------------------------------------------------------------------------
+class DummyContext:
+    async def abort(self, code, details):
+        raise Exception(f"Abort: {code}, {details}")
+
+    def peer(self) -> str:
+        return "dummy_peer"
+
+    def auth_context(self):
+        return {}
+
+
+# ------------------------------------------------------------------------------
+# Helper: Summarize a text value by showing first and last 32 characters.
+# ------------------------------------------------------------------------------
+def summarize_text(text: str, length: int = 32) -> str:
+    if len(text) <= 2 * length:
+        return text
+    return f"{text[:length]} ... {text[-length:]}"
+
+
+# ------------------------------------------------------------------------------
+# KVHandler: File‑based KV store with detailed logging
+# ------------------------------------------------------------------------------
+class KVHandler(kv_pb2_grpc.KVServicer):
+    """
+    KV service implementation that persists each key/value pair to a file.
+    The file is named "kv-data-<key>" and stores the value as plain text.
+    Detailed logging is added to both Put and Get methods.
+    """
+
+    def __init__(self) -> None:
+        logger.debug("🐍 S> 🛎️📡✅ KVHandler: Initialized with file‑based persistence.")
+        # Add explicit logging of certificate parameters
+        # Ensure 'ec' is imported at the top of the file
+        if hasattr(self, "_server_cert_obj"):
+            cert = self._server_cert_obj._cert
+            public_key = cert.public_key()
+            if isinstance(
+                public_key, ec.EllipticCurvePublicKey
+            ):  # F821 here if ec is not imported
+                logger.info(f"🐍 S> 🔐 Server using curve: {public_key.curve.name}")
+
+    async def Put(
+        self, request: kv_pb2.PutRequest, context: grpc.aio.ServicerContext
+    ) -> kv_pb2.Empty:
+        """
+        🛎️📡🚀 Put:
+          - Receives a key/value pair.
+          - Writes the value (decoded from UTF‑8, with errors replaced) to a text file
+            named "kv-data-<key>".
+          - Logs the key, full file name, and a summary (first 32 and last 32 characters)
+            of the value.
+        """
+        try:
+            key = request.key
+            logger.info(f"🐍 S> 🛎️📡🚀 Put: Received request for key: '{key}'")
+            value_str = request.value.decode("utf-8", errors="replace")
+            summary = summarize_text(value_str)
+            logger.debug(
+                f"🐍 S> 🛎️📡📝 Put: Storing key '{key}' with value (summary): {summary}"
+            )
+            filename = f"/tmp/kv-data-{key}"  # nosec B108 # Example code, /tmp is acceptable here.
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(value_str)
+            logger.debug(
+                f"🐍 S> 🛎️📡✅ Put: Successfully stored key '{key}' in file '{filename}'."
+            )
+            return kv_pb2.Empty()
+        except Exception as e:
+            logger.error(
+                f"🐍 S> 🛎️📡❌ Put: Error storing key '{request.key}': {e}",
+                extra={"error": str(e)},
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+
+    async def Get(
+        self, request: kv_pb2.GetRequest, context: grpc.aio.ServicerContext
+    ) -> kv_pb2.GetResponse:
+        """
+        🛎️📡🚀 Get:
+          - Retrieves the value for the given key by reading the file "kv-data-<key>".
+          - Logs the lookup process and displays a summary (first 32 and last 32 characters)
+            of the retrieved value.
+        """
+        try:
+            key = request.key
+            logger.info(f"🐍 S> 🛎️📡🚀 Get: Received request for key: '{key}'")
+            filename = f"/tmp/kv-data-{key}"  # nosec B108 # Example code, /tmp is acceptable here.
+            logger.debug(
+                f"🐍 S> 🛎️📡📝 Get: Looking for file '{filename}' for key '{key}'."
+            )
+            if not os.path.exists(filename):
+                logger.warning(  # Changed from logger.error to logger.warning
+                    f"🐍 S> 🛎️📡❌ Get: Key '{key}' not found (file '{filename}' does not exist)."
+                )
+                await context.abort(grpc.StatusCode.NOT_FOUND, f"Key not found: {key}")
+            with open(filename, "r", encoding="utf-8") as f:
+                value_str = f.read()
+            summary = summarize_text(value_str)
+            logger.debug(
+                f"🐍 S> 🛎️📡✅ Get: Successfully retrieved key '{key}' with value (summary): {summary}"
+            )
+            return kv_pb2.GetResponse(value=value_str.encode("utf-8"))
+        except Exception as e:
+            logger.error(
+                f"🐍 S> 🛎️📡❌ Get: Error retrieving key '{request.key}': {e}",
+                extra={"error": str(e)},
+            )
+            await context.abort(grpc.StatusCode.INTERNAL, str(e))
+
+    async def _log_request_details(self, context: grpc.aio.ServicerContext) -> None:
+        """Log request details (peer and auth context) for debugging."""
+        try:
+            logger.debug(f"🐍 S> 🛎️🧰🔍 Utils: Request from peer: {context.peer()}")
+            for k, v in context.auth_context().items():
+                logger.debug(f"🐍 S> 🛎️🧰🔍 Utils: Auth Context {k}: {v}")
+        except Exception as e:
+            logger.error(
+                f"🐍 S> 🛎️🧰❌ Utils: Error logging request details: {e}",
+                extra={"error": str(e)},
+            )
+
+
+# ------------------------------------------------------------------------------
+# Server entry point
+# ------------------------------------------------------------------------------
+async def serve() -> None:
+    logger.info("🐍 S> 🛎️🚀 Starting KV plugin server...")
+
+    # Create an instance of KVHandler.
+    kv_handler = KVHandler()
+
+    # Self-Test: Put and then Get with key "status" and value "pyvider server listening"
+    dummy_context = DummyContext()
+    try:
+        test_key = "status"
+        test_value = "pyvider server listening"
+        logger.info(
+            f"🐍 S> 🛎️🧪 Self-Test: Executing Put for key '{test_key}' with value '{test_value}'"
+        )
+
+        await kv_handler.Put(
+            kv_pb2.PutRequest(key=test_key, value=test_value.encode("utf-8")),
+            dummy_context,  # type: ignore[arg-type]
+        )
+
+        logger.info("🐍 S> 🛎️🧪 Self-Test: Put executed successfully.")
+        logger.info(f"🐍 S> 🛎️🧪 Self-Test: Executing Get for key '{test_key}'")
+
+        response = await kv_handler.Get(kv_pb2.GetRequest(key=test_key), dummy_context)  # type: ignore[attr-defined, arg-type]
+
+        retrieved = response.value.decode("utf-8")
+
+        logger.info(f"🐍 S> 🛎️🧪 Self-Test: Get returned: {retrieved}")
+
+    except Exception as e:
+        logger.error(
+            f"🐍 S> 🛎️🧪 Self-Test: Error during self-test: {e}", extra={"error": str(e)}
+        )
+
+    try:
+        # Create and configure the RPCPluginServer with KVProtocol.
+        logger.debug("🐍 S> 🛎️🚀✅ Server: Server started successfully")
+        # The config dict here was causing type issues as RPCPluginServer expects ClientT | None.
+        # This specific config isn't used by the base server class anyway.
+        # For custom server configs, they should typically be handled by a custom server subclass
+        # or through global configuration mechanisms.
+        # Ensure mTLS uses the certs passed via environment variables
+        # by explicitly disabling auto_mtls in the server's direct config.
+        server_config = {
+            "PLUGIN_AUTO_MTLS": False
+        }
+        server: RPCPluginServer = RPCPluginServer(
+            protocol=KVProtocol(),
+            handler=kv_handler,
+            config=server_config,
+        )
+
+        await server.serve()
+        logger.info("🐍 S> 🛎️🚀✅ Server: Server started successfully")
+
+        try:
+            await server._serving_future
+        except asyncio.CancelledError:
+            logger.info("🐍 S> 🛎️🛑 Received shutdown signal")
+        finally:
+            await server.stop()
+            logger.info("🐍 S> 🛎️🛑 Server: Server stopped")
+
+    except Exception as e:
+        logger.error(f"🐍 S> 🛎️❗ Fatal error: {e}", extra={"error": str(e)})
+        raise
+
+
+if __name__ == "__main__":
+    logger.info("🐍 S> -------------------------------------------------")
+    logger.info(f"🐍 S> {os.environ.get('PLUGIN_CLIENT_CERT')}")
+    logger.info("🐍 S> -------------------------------------------------")
+    try:
+        asyncio.run(serve())
+    except KeyboardInterrupt:
+        logger.info("🐍 S> 🛎️🛑 Server: Server stopped by user")
+    except Exception as e:
+        logger.error(f"🐍 S> 🛎️❗ Server: Server failed: {e}", extra={"error": str(e)})
+        raise

@@ -1,17 +1,17 @@
 # tests/protocol/test_protocol_base_extended.py
 
+import pytest
 from unittest.mock import MagicMock
 
-import pytest
-
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.types import HandlerT, ServerT
+from pyvider.rpcplugin.types import ServerT, HandlerT
+from typing import Tuple
 
 
 class IncompleteProtocol(RPCPluginProtocol):
     """A protocol implementation that doesn't implement all abstract methods."""
 
-    async def get_grpc_descriptors(self) -> tuple[MagicMock, str]:  # Made async
+    def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:
         return (MagicMock(), "TestService")
 
     # Missing add_to_server implementation
@@ -20,7 +20,7 @@ class IncompleteProtocol(RPCPluginProtocol):
 class ConcreteProtocol(RPCPluginProtocol):
     """A concrete implementation of the protocol with all methods."""
 
-    async def get_grpc_descriptors(self) -> tuple[MagicMock, str]:  # Made async
+    def get_grpc_descriptors(self) -> Tuple[MagicMock, str]:
         descriptors = MagicMock()
         service_name = "TestService"
         return descriptors, service_name
@@ -33,13 +33,13 @@ class ConcreteProtocol(RPCPluginProtocol):
 def test_abstract_protocol_instantiation() -> None:
     """Test that abstract class cannot be instantiated directly."""
     with pytest.raises(TypeError):
-        RPCPluginProtocol()  # type: ignore[abstract]
+        RPCPluginProtocol()
 
 
 def test_incomplete_protocol_instantiation() -> None:
     """Test that incomplete implementations cannot be instantiated."""
     with pytest.raises(TypeError):
-        IncompleteProtocol()  # type: ignore[abstract]
+        IncompleteProtocol()
 
 
 def test_concrete_protocol_instantiation() -> None:

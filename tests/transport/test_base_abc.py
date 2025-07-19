@@ -1,7 +1,6 @@
 # tests/transport/test_base_abc.py
 
 import pytest
-
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 
@@ -10,7 +9,7 @@ def test_transport_base_abstract_methods() -> None:
 
     # Cannot instantiate the abstract base class
     with pytest.raises(TypeError) as excinfo:
-        RPCPluginTransport()  # type: ignore[abstract]
+        RPCPluginTransport()
 
     error_message = str(excinfo.value)
     assert "Can't instantiate abstract class" in error_message
@@ -31,7 +30,7 @@ def test_transport_base_abstract_methods() -> None:
         # Missing close method
 
     with pytest.raises(TypeError) as excinfo:
-        PartialTransport()  # type: ignore[abstract]
+        PartialTransport()
 
     assert "close" in str(excinfo.value)
 

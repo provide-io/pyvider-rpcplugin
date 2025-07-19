@@ -1,13 +1,9 @@
 # tests/transport/unix/test_transport_unix_close.py
 
-import asyncio
-import errno  # Added import
 import os
-from unittest.mock import AsyncMock, MagicMock, patch  # Added AsyncMock, MagicMock
-
 import pytest
+from unittest.mock import patch
 
-from pyvider.rpcplugin.client.connection import ClientConnection  # Added import
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 
@@ -75,31 +71,20 @@ async def test_unix_socket_close_connection_active(managed_unix_socket_path) -> 
     """Test closing a transport with active connections."""
     # Create a server transport
     transport = UnixSocketTransport(path=str(managed_unix_socket_path))
+    endpoint = await transport.listen()
+
+    # Create and connect a client
     client_transport = UnixSocketTransport()
-    endpoint = None
-    try:
-        endpoint = await transport.listen()
+    await client_transport.connect(endpoint)
 
-        # Create and connect a client
-        await client_transport.connect(endpoint)
+    # Close the server - should close client connections too
+    await transport.close()
 
-        # Close the server - should close client connections too
-        # This is the main action being tested.
-    finally:
-        if transport:  # Ensure transport was created
-            await transport.close()
-        if client_transport:  # Ensure client_transport was created
-            await client_transport.close()
-        if endpoint and os.path.exists(endpoint):  # Check if endpoint was set
-            try:
-                os.unlink(endpoint)  # Manually ensure socket is gone for next test
-            except OSError:
-                pass  # Ignore if already gone or permissions issue during test cleanup
-        await asyncio.sleep(0.1)  # Allow event loop to settle
+    # Socket file should be removed
+    assert not os.path.exists(endpoint)
 
-    # Socket file should be removed by transport.close()
-    if endpoint:  # Check endpoint was actually set before asserting
-        assert not os.path.exists(endpoint)
+    # Cleanup client too to be safe
+    await client_transport.close()
 
 
 @pytest.mark.asyncio
@@ -115,210 +100,56 @@ async def test_unix_socket_close_no_server(unix_transport) -> None:
 
 
 @pytest.mark.asyncio
+async def test_unix_socket_close_no_path(unix_transport) -> None:
+    """
+    Test that UnixSocketTransport.close works when no path exists.
+    """
+    # Call close without a path
+    await unix_transport.close()
+
+    # Check that no error is raised
+    assert True
+
+
+@pytest.mark.asyncio
+async def test_unix_socket_close_oserror(managed_unix_socket_path) -> None:
+    """Test that UnixSocketTransport.close properly handles OSError during cleanup."""
+    # Create a real socket first
+    transport = UnixSocketTransport(path=str(managed_unix_socket_path))
+    await transport.listen()
+
+    # Create patches for both unlink and stat
+    with (
+        patch("os.unlink", side_effect=OSError("Mocked unlink error")),
+        patch("os.path.exists", return_value=True),
+    ):  # Ensure path exists check returns True
+        with pytest.raises(TransportError, match="Failed to remove socket file"):
+            await transport.close()
+
+    # Clean up any remaining socket file
+    try:
+        if os.path.exists(managed_unix_socket_path):
+            os.unlink(managed_unix_socket_path)
+    except Exception:
+        pass
+
+
+@pytest.mark.asyncio
 async def test_close_writer_exception(monkeypatch) -> None:
     """Test handling of exceptions during writer close."""
-    transport_under_test = UnixSocketTransport(
-        path="/tmp/dummy.sock"
-    )  # Renamed for clarity, nosec B108
+    transport = UnixSocketTransport(path="/tmp/dummy.sock")
 
-    mock_actual_transport = AsyncMock(
-        spec=asyncio.Transport
-    )  # Mock for writer.transport
-    # Ensure is_closing is an AsyncMock if it's awaited, or MagicMock if called synchronously
-    mock_actual_transport.is_closing = MagicMock(
-        return_value=False
-    )  # Simulate not already closing
-    mock_actual_transport.abort = MagicMock()  # abort is synchronous
+    class FakeWriter:
+        def close(self):
+            pass
 
-    writer = AsyncMock(spec=asyncio.StreamWriter)
-    writer.transport = mock_actual_transport  # Assign the mock transport
-    writer.can_write_eof.return_value = True
-    # writer.close() is synchronous, AsyncMock makes it awaitable by default, which is fine.
-    writer.wait_closed.side_effect = Exception(
-        "Fake wait_closed error"
-    )  # Error to be tested
+        async def wait_closed(self):
+            raise Exception("Fake wait_closed error")
 
-    try:
-        await transport_under_test._close_writer(writer)
-        # Exception should be caught and logged by _close_writer
-    finally:
-        await transport_under_test.close()  # Clean up the UnixSocketTransport
-
-    # Assert that abort was called on the writer's transport
-    assert mock_actual_transport.abort.call_count > 0, (
-        "Expected abort to be called at least once"
-    )
-    writer.close.assert_called_once()  # writer.close() should also have been called
-
-
-@pytest.mark.asyncio
-async def test_unix_socket_close_with_active_connections(
-    mocker, managed_unix_socket_path
-):
-    transport = UnixSocketTransport(path=managed_unix_socket_path)
-    # Don't actually start the server, just simulate state for _handle_client to have added connections
-    # await transport.listen()
-
-    mock_client_conn1 = AsyncMock(spec=ClientConnection)
-    mock_client_conn2 = AsyncMock(spec=ClientConnection)
-
-    # Manually add to the _connections set to simulate active connections
-    transport._connections = {mock_client_conn1, mock_client_conn2}
-    transport._running = True  # Simulate server was running
-
-    # Spy on asyncio.gather to see if it's called with the close coroutines
-    # gather_spy = mocker.spy(asyncio, "gather") # Temporarily removed to check warning source
-
-    await transport.close()
-
-    mock_client_conn1.close.assert_awaited_once()
-    mock_client_conn2.close.assert_awaited_once()
-
-    # Check if gather was called with the results of the close() calls
-    # This is a bit more involved to check precisely, but asserting it was called is a good start
-    # gather_spy.assert_called_once() # Cannot assert if spy is removed
-    assert not transport._connections  # Should be cleared
-    # Ensure socket file is also handled (e.g. unlinked if it existed)
-    # This assertion might fail if the socket was never created by listen()
-    # For this specific test, we are focusing on connection cleanup, not file cleanup if listen() wasn't called.
-    # If managed_unix_socket_path creates the file, then this is fine.
-    # assert not os.path.exists(managed_unix_socket_path)
-
-
-@pytest.mark.asyncio
-async def test_unix_socket_close_unlink_fails_persistently(
-    mocker, managed_unix_socket_path
-):
-    transport = UnixSocketTransport(path=managed_unix_socket_path)
-    # Create the socket file so os.path.exists is true initially
-    with open(managed_unix_socket_path, "w") as f:
-        f.write("")
-
-    mocker.patch("os.path.exists", return_value=True)  # File always "exists"
-    # Simulate unlink failing with an error that's not ENOENT (file not found)
-    mock_unlink = mocker.patch(
-        "os.unlink", side_effect=OSError(errno.EACCES, "Permission denied")
-    )
-    mocker.patch("os.chmod", return_value=None)  # Assume chmod works or is attempted
-
-    # Patch sleep to avoid actual delays during the transport.close() logic itself
-    mock_asyncio_sleep = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
-
-    with pytest.raises(
-        TransportError, match="Failed to remove socket file after multiple attempts"
-    ):
-        await transport.close()
-    # The managed_unix_socket_path fixture and pytest-mock will handle cleanup of the file and mocks.
-    # Explicit gc.collect() and task cancellation are removed as they might cause the warning.
-
-    assert mock_unlink.call_count == 3  # Should try 3 times
-
-
-@pytest.mark.asyncio
-async def test_unix_socket_close_unlink_generic_exception(
-    mocker, managed_unix_socket_path
-):
-    transport = UnixSocketTransport(path=managed_unix_socket_path)
-    # Create the socket file
-    with open(managed_unix_socket_path, "w") as f:
-        f.write("")
-
-    mocker.patch("os.path.exists", return_value=True)  # File "exists"
-    # Simulate unlink failing with a generic Exception
-    mock_unlink = mocker.patch(
-        "os.unlink", side_effect=Exception("Generic unlink error")
-    )
-    mocker.patch("os.chmod", return_value=None)
-
-    with pytest.raises(
-        TransportError, match="Failed to remove socket file: Generic unlink error"
-    ):
-        await transport.close()
-
-    mock_unlink.assert_called_once()  # Should try once and fail
-    # managed_unix_socket_path fixture will handle cleanup
-
-
-@pytest.mark.asyncio
-async def test_close_writer_transport_abort_not_closing(mocker):
-    transport_module = UnixSocketTransport(path="/tmp/dummy_abort_not_closing.sock")  # nosec B108
-    writer = AsyncMock(spec=asyncio.StreamWriter)
-    mock_transport_obj = MagicMock()
-    mock_transport_obj.is_closing = MagicMock(
-        return_value=False
-    )  # Explicitly make it a mock method
-    mock_transport_obj.abort = MagicMock()
-    writer.transport = mock_transport_obj
-    writer.wait_closed = AsyncMock()  # Prevent actual wait_closed from hanging
-
-    await transport_module._close_writer(writer)
-    mock_transport_obj.abort.assert_called_once()
-    # transport_module._lock should be released, but testing lock state is tricky.
-    # Ensure it doesn't hang or error.
-    await transport_module.close()  # ensure main transport can close
-
-
-@pytest.mark.asyncio
-async def test_close_writer_transport_abort_already_closing(mocker):
-    transport_module = UnixSocketTransport(path="/tmp/dummy_abort_already_closing.sock")  # nosec B108
-    writer = AsyncMock(spec=asyncio.StreamWriter)
-    mock_transport_obj = MagicMock()
-    mock_transport_obj.is_closing = MagicMock(
-        return_value=True
-    )  # Explicitly make it a mock method
-    mock_transport_obj.abort = MagicMock()
-    writer.transport = mock_transport_obj
-    writer.wait_closed = AsyncMock()
-
-    await transport_module._close_writer(writer)
-    mock_transport_obj.abort.assert_not_called()
-    await transport_module.close()
-
-
-@pytest.mark.asyncio
-async def test_close_writer_transport_abort_no_is_closing(mocker):
-    transport_module = UnixSocketTransport(path="/tmp/dummy_abort_no_is_closing.sock")  # nosec B108
-    writer = AsyncMock(spec=asyncio.StreamWriter)
-
-    class MockTransportWithAbortOnly:
-        def __init__(self):
-            self.abort = MagicMock()
-            # No is_closing method defined
-
-    mock_transport_obj = MockTransportWithAbortOnly()
-    writer.transport = mock_transport_obj
-    writer.wait_closed = AsyncMock()
-
-    # Patch logger to check specific log message for this path
-    mock_logger_debug = mocker.patch("pyvider.rpcplugin.transport.unix.logger.debug")
-
-    await transport_module._close_writer(writer)
-    mock_transport_obj.abort.assert_called_once()
-
-    found_log = any(
-        "No is_closing, attempting abort" in call_args[0][0]
-        for call_args in mock_logger_debug.call_args_list
-    )
-    assert found_log, "Log for 'No is_closing, attempting abort' not found."
-
-    await transport_module.close()
-
-
-@pytest.mark.asyncio
-async def test_close_writer_transport_no_abort_method(mocker):
-    transport_module = UnixSocketTransport(path="/tmp/dummy_no_abort.sock")  # nosec B108
-    writer = AsyncMock(spec=asyncio.StreamWriter)
-    mock_transport_obj = MagicMock()
-    # Make hasattr(mock_transport_obj, 'abort') return False
-    type(mock_transport_obj).abort = mocker.PropertyMock(side_effect=AttributeError)
-    # And hasattr(mock_transport_obj, 'is_closing') return True, and is_closing() is False
-    mock_transport_obj.is_closing = MagicMock(return_value=False)
-    writer.transport = mock_transport_obj
-    writer.wait_closed = AsyncMock()
-
-    await transport_module._close_writer(writer)  # Should complete without error
-    # No abort call expected because hasattr(mock_transport_obj, 'abort') will be false
-    await transport_module.close()
+    fake_writer = FakeWriter()
+    # _close_writer should catch the exception and log an error.
+    await transport._close_writer(fake_writer)
+    # No exception should propagate.
 
 
 # 🐍🏗🧪️

@@ -5,7 +5,7 @@ This module contains type aliases, TypeVars, and Protocols used throughout
 the RPC plugin client components, aiding in static analysis and code clarity.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # Moved to the top
 
 from typing import TYPE_CHECKING, Any, Protocol, TypeVar
 
@@ -44,7 +44,7 @@ class SecureRpcClientT(Protocol):
     async def _perform_handshake(self) -> None: ...
     async def _setup_tls(
         self,
-    ) -> None: ...
+    ) -> None: ...  # Placeholder, assuming part of security/TLS setup.
     async def _create_grpc_channel(self) -> None: ...
     async def close(self) -> None: ...
 

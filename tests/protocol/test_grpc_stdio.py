@@ -1,11 +1,10 @@
 # tests/protocol/test_grpc_stdio.py
 
+import pytest
 import importlib
 import os  # Added import
-from unittest.mock import MagicMock, patch
-
 import grpc
-import pytest
+from unittest.mock import patch, MagicMock
 
 from pyvider.rpcplugin.protocol import (
     grpc_stdio_pb2,

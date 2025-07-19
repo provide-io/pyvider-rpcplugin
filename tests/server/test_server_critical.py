@@ -2,11 +2,10 @@
 
 import asyncio
 import signal
+import pytest
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
-from pyvider.rpcplugin.protocol.service import GRPCControllerService, GRPCStdioService
+from pyvider.rpcplugin.protocol.service import GRPCStdioService, GRPCControllerService
 
 
 class MockRequestIterator:
@@ -38,7 +37,7 @@ async def test_stdio_put_line_exception_line123() -> None:
     async def failing_put(*args, **kwargs):
         raise Exception("Test queue error")
 
-    stdio._message_queue.put = failing_put  # type: ignore[method-assign]
+    stdio._message_queue.put = failing_put
 
     try:
         # This should not propagate the exception
@@ -47,7 +46,7 @@ async def test_stdio_put_line_exception_line123() -> None:
         assert True
     finally:
         # Restore original method
-        stdio._message_queue.put = original_put  # type: ignore[method-assign]
+        stdio._message_queue.put = original_put
 
 
 @pytest.mark.asyncio

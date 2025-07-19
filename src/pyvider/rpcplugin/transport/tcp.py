@@ -1,7 +1,3 @@
-#
-# src/pyvider/rpcplugin/transport/tcp.py
-#
-
 """pyvider.rpcplugin.transport.tcp
 --------------------------------
 TCP Socket Transport implementation using asyncio.
@@ -66,22 +62,19 @@ class TCPSocketTransport(RPCPluginTransport):
 
     async def listen(self) -> str:
         """
-        🔌🚀🕹 Start a TCP server on a random available port and return the
-        endpoint (host:port).
+        🔌🚀🕹  Start a TCP server on a random available port and return the endpoint (host:port).
         """
         async with self._lock:
             if self._running:
                 logger.error(
-                    "🔌❌⚠: Server endpoint is already determined and possibly in "
-                    "use by gRPC"
+                    "🔌❌⚠: Server endpoint is already determined and possibly in use by gRPC"
                 )
                 # If gRPC is managing, this might be okay if called multiple times,
                 # but for now, let's assume it means endpoint is set.
                 if self.endpoint:
                     return self.endpoint
                 raise TransportError(
-                    "TCP transport is already configured with an endpoint but "
-                    "it's None."
+                    "TCP transport is already configured with an endpoint but it's None."
                 )
 
             logger.debug("🔌🚀🕹: Determining endpoint for TCP server (gRPC managed)...")
@@ -94,8 +87,7 @@ class TCPSocketTransport(RPCPluginTransport):
                     self.port = temp_sock.getsockname()[1]
                     temp_sock.close()
                     logger.info(
-                        "🔌✅ TCPSocketTransport: Ephemeral port "
-                        f"{self.port} selected for host {self.host}"
+                        f"🔌✅ TCPSocketTransport: Ephemeral port {self.port} selected for host {self.host}"
                     )
                 except OSError as e:
                     logger.error(f"🔌❌⚠: Failed to find an ephemeral port: {e}")
@@ -112,8 +104,7 @@ class TCPSocketTransport(RPCPluginTransport):
             self._server = None
 
             logger.info(
-                f"🔌✅👍: TCP endpoint determined for gRPC: {self.endpoint} "
-                f"(Host: {self.host}, Port: {self.port})"
+                f"🔌✅👍: TCP endpoint determined for gRPC: {self.endpoint} (Host: {self.host}, Port: {self.port})"
             )
             return self.endpoint
 
@@ -169,8 +160,7 @@ class TCPSocketTransport(RPCPluginTransport):
 
         Raises:
             TransportError: If the endpoint format is invalid, DNS resolution fails,
-                            or the connection cannot be established
-                            (e.g., timeout, refused).
+                            or the connection cannot be established (e.g., timeout, refused).
         """
         logger.debug(f"🔌🚀🕵️: Attempting connection to TCP endpoint: {endpoint}")
         if not is_valid_tcp_endpoint(endpoint):
@@ -207,16 +197,16 @@ class TCPSocketTransport(RPCPluginTransport):
                 logger.info(
                     f"🔌✅👍: Successfully connected to TCP endpoint: {self.endpoint}"
                 )
-            except TimeoutError as e_timeout:
-                logger.error(f"🔌❌⚠: Timeout for TCP endpoint {endpoint}: {e_timeout}")
-                raise TransportError(
-                    f"Connection timed out: {e_timeout}"
-                ) from e_timeout
-            except ConnectionRefusedError as e_refused:
+            except asyncio.TimeoutError as e:
                 logger.error(
-                    f"🔌❌⚠: Connection refused to TCP endpoint {endpoint}: {e_refused}"
+                    f"🔌❌⚠: Connection timeout for TCP endpoint {endpoint}: {e}"
                 )
-                raise TransportError(f"Connection refused: {e_refused}") from e_refused
+                raise TransportError(f"Connection timed out: {e}") from e
+            except ConnectionRefusedError as e:
+                logger.error(
+                    f"🔌❌⚠: Connection refused to TCP endpoint {endpoint}: {e}"
+                )
+                raise TransportError(f"Connection refused: {e}") from e
 
         except TransportError:
             # Re-raise TransportError without additional wrapping
@@ -232,10 +222,6 @@ class TCPSocketTransport(RPCPluginTransport):
         if writer is None:
             return
 
-        transport_to_abort = None
-        if hasattr(writer, "transport"):
-            transport_to_abort = writer.transport
-
         try:
             # writer.close() is synchronous and signals the intent to close.
             if not writer.is_closing():  # Check if already closing
@@ -244,35 +230,13 @@ class TCPSocketTransport(RPCPluginTransport):
             # await writer.wait_closed() can hang.
             await asyncio.wait_for(writer.wait_closed(), timeout=5.0)
             logger.debug("🔌🔒✅ Writer closed successfully")
-        except TimeoutError:
+        except asyncio.TimeoutError:
             logger.warning(
-                "🔌🔒⚠️ Timeout closing writer for endpoint "
-                f"{self.endpoint if self.endpoint else 'unknown'}"
+                f"🔌🔒⚠️ Timeout closing writer for endpoint {self.endpoint if self.endpoint else 'unknown'}"
             )
-            # If timeout occurs, also attempt to abort the transport
-            if (
-                transport_to_abort
-                and hasattr(transport_to_abort, "abort")
-                and callable(transport_to_abort.abort)
-            ):
-                logger.warning(
-                    "🔌🔒✍️ Timeout, attempting direct abort of transport: "
-                    f"{transport_to_abort!r}"
-                )
-                transport_to_abort.abort()
         except Exception as e:
-            logger.error(f"🔌🔒⚠️ Error closing writer: {e}", exc_info=True)
-            # If any other exception occurs, also attempt to abort
-            if (
-                transport_to_abort
-                and hasattr(transport_to_abort, "abort")
-                and callable(transport_to_abort.abort)
-            ):
-                logger.warning(
-                    "🔌🔒✍️ Exception, attempting direct abort of transport: "
-                    f"{transport_to_abort!r}"
-                )
-                transport_to_abort.abort()
+            logger.error(f"🔌🔒⚠️ Error closing writer: {e}")
+            # Don't propagate exception to avoid crashing cleanup, as this is part of cleanup.
 
     async def close(self) -> None:
         """
@@ -308,21 +272,19 @@ class TCPSocketTransport(RPCPluginTransport):
                         logger.info("🔌🔒✅: TCP server closed successfully")
                     else:  # If it wasn't serving, log that no action was needed.
                         logger.debug(
-                            "🔌🔒ℹ️: TCP server was not serving, no close/wait action "
-                            "needed."
+                            "🔌🔒ℹ️: TCP server was not serving, no close/wait action needed."
                         )
-                except TimeoutError:
+                except asyncio.TimeoutError:
                     logger.warning(
-                        "🔌🔒⚠️ Timeout closing TCP server for endpoint "
-                        f"{self.endpoint if self.endpoint else 'unknown'}"
+                        f"🔌🔒⚠️ Timeout closing TCP server for endpoint {self.endpoint if self.endpoint else 'unknown'}"
                     )
                 except Exception as e:
                     logger.error(f"🔌🔒❌: Error closing TCP server: {e}")
                 finally:
                     self._server = None
 
-            # This should be set regardless of whether self._server (asyncio server)
-            # was active, as close() means the transport is shutting down.
+            # This should be set regardless of whether self._server (asyncio server) was active,
+            # as close() means the transport is shutting down.
             self._running = False
 
         self.endpoint = None

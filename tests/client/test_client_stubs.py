@@ -1,35 +1,34 @@
 # tests/client/test_client_stubs.py
 
-import asyncio
-from collections.abc import AsyncGenerator
-from typing import Any
-from unittest.mock import ANY, AsyncMock, MagicMock, patch
-
-import grpc
 import pytest
+import asyncio
+import grpc
+from unittest.mock import (
+    patch,
+    MagicMock,
+    AsyncMock,
+    ANY,
+)
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
-from pyvider.rpcplugin.exception import ProtocolError, TransportError
+from pyvider.rpcplugin.exception import (
+    ProtocolError,
+    TransportError,
+)  # Added TransportError
 
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
-
 try:
-    from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData as ImportedStdioData
-
-    StdioData: ImportedStdioData | None = (  # type: ignore[assignment]
-        ImportedStdioData  # Allow StdioData to be None or the class type
-    )
+    from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 except ImportError:
-    StdioData = None
+    StdioData = None  # Will use integer literals if not found
 
 try:
     from google.protobuf import empty_pb2
 except ImportError:
-    empty_pb2 = None  # type: ignore[assignment] # Will omit argument assertion if not found
+    empty_pb2 = None  # Will omit argument assertion if not found
 
 
 @pytest.mark.asyncio
-async def test_init_stubs(client_instance: RPCPluginClient) -> None:
+async def test_init_stubs(client_instance):
     """Test initialization of gRPC stubs."""
     # Setup
     client_instance.grpc_channel = MagicMock()
@@ -65,7 +64,7 @@ async def test_init_stubs(client_instance: RPCPluginClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_init_stubs_no_channel(client_instance: RPCPluginClient) -> None:
+async def test_init_stubs_no_channel(client_instance):
     """Test _init_stubs with no channel available."""
     client_instance.grpc_channel = None
 
@@ -77,7 +76,7 @@ async def test_init_stubs_no_channel(client_instance: RPCPluginClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_read_stdio_logs(client_instance: RPCPluginClient) -> None:
+async def test_read_stdio_logs(client_instance):
     """Test reading logs from stdio stub."""
     # Setup
     mock_stdio_stub_instance = AsyncMock()  # Use AsyncMock for the stub
@@ -97,15 +96,13 @@ async def test_read_stdio_logs(client_instance: RPCPluginClient) -> None:
     mock_stream_data = [mock_chunk_stdout, mock_chunk_stderr]
 
     # Define an async generator function
-    async def mock_async_generator(
-        *args: Any, **kwargs: Any
-    ) -> AsyncGenerator[MagicMock]:
+    async def mock_async_generator(*args, **kwargs):
         for item in mock_stream_data:
             yield item
         # The original method's loop will terminate when this generator is exhausted.
 
     # Set the StreamStdio method of the mock stub to return the generator
-    # Explicitly make StreamStdio a MagicMock, not an AsyncMock, because the gRPC stub method # noqa: E501
+    # Explicitly make StreamStdio a MagicMock, not an AsyncMock, because the gRPC stub method
     # itself is synchronous and returns an async_generator.
     mock_stdio_stub_instance.StreamStdio = MagicMock(
         return_value=mock_async_generator()
@@ -121,7 +118,7 @@ async def test_read_stdio_logs(client_instance: RPCPluginClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_read_stdio_logs_no_stub(client_instance: RPCPluginClient) -> None:
+async def test_read_stdio_logs_no_stub(client_instance):
     """Test _read_stdio_logs with no stub available."""
     client_instance._stdio_stub = None
 
@@ -130,7 +127,7 @@ async def test_read_stdio_logs_no_stub(client_instance: RPCPluginClient) -> None
 
 
 @pytest.mark.asyncio
-async def test_open_broker_subchannel(client_instance: RPCPluginClient) -> None:
+async def test_open_broker_subchannel(client_instance):
     """Test opening a broker subchannel."""
     # Setup
     mock_broker_stub_instance = AsyncMock()
@@ -145,7 +142,7 @@ async def test_open_broker_subchannel(client_instance: RPCPluginClient) -> None:
     mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_call_object)
 
     # Mock the response from the stream (the knock-ack)
-    async def mock_response_gen_func() -> AsyncGenerator[MagicMock]:
+    async def mock_response_gen_func():  # Renamed to avoid confusion
         response_message = MagicMock()
         response_message.service_id = 123
         response_message.knock.ack = True
@@ -154,7 +151,7 @@ async def test_open_broker_subchannel(client_instance: RPCPluginClient) -> None:
         # No more yields, so the generator will be exhausted after one item
         return
 
-    # Configure mock_call_object to use mock_response_gen_func as its side_effect for async iteration # noqa: E501
+    # Configure mock_call_object to use mock_response_gen_func as its side_effect for async iteration
     mock_call_object.side_effect = mock_response_gen_func
 
     # Open subchannel
@@ -166,7 +163,7 @@ async def test_open_broker_subchannel(client_instance: RPCPluginClient) -> None:
     # Await the task to ensure the coroutine completes and check for internal errors
     try:
         await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
-    except TimeoutError:
+    except asyncio.TimeoutError:
         pytest.fail("Broker coroutine timed out")
 
     # Verify calls were made correctly AFTER awaiting the task
@@ -179,7 +176,7 @@ async def test_open_broker_subchannel(client_instance: RPCPluginClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_shutdown_plugin(client_instance: RPCPluginClient) -> None:
+async def test_shutdown_plugin(client_instance):
     """Test shutting down the plugin via controller stub."""
     # Setup
     mock_controller_stub = MagicMock()
@@ -196,9 +193,7 @@ async def test_shutdown_plugin(client_instance: RPCPluginClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_open_broker_subchannel_no_stub(
-    client_instance: RPCPluginClient,
-) -> None:  # Removed capsys
+async def test_open_broker_subchannel_no_stub(client_instance):  # Removed capsys
     """Test open_broker_subchannel when _broker_stub is None."""
     client_instance._broker_stub = None  # Ensure stub is None
 
@@ -213,17 +208,13 @@ async def test_open_broker_subchannel_no_stub(
 
 
 @pytest.mark.asyncio
-async def test_read_stdio_logs_stream_exception(
-    client_instance: RPCPluginClient, mocker: Any
-) -> None:
+async def test_read_stdio_logs_stream_exception(client_instance, mocker):
     """Test _read_stdio_logs when the stdio stream raises an exception."""
     mock_stdio_stub_instance = AsyncMock()
     client_instance._stdio_stub = mock_stdio_stub_instance
 
     # Define an async generator function that raises an error
-    async def mock_stream_generator_with_error(
-        *args: Any, **kwargs: Any
-    ) -> AsyncGenerator[MagicMock]:
+    async def mock_stream_generator_with_error(*args, **kwargs):
         yield MagicMock(channel=1, data=b"some initial log")
         await asyncio.sleep(0.001)  # Ensure it's a generator
         raise grpc.RpcError("Simulated RPC error in stream")
@@ -244,9 +235,7 @@ async def test_read_stdio_logs_stream_exception(
 
 
 @pytest.mark.asyncio
-async def test_open_broker_subchannel_knock_ack_false(
-    client_instance: RPCPluginClient, mocker: Any
-) -> None:
+async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
     """Test open_broker_subchannel when server replies with knock.ack = False."""
     mock_broker_stub_instance = AsyncMock()
     client_instance._broker_stub = mock_broker_stub_instance
@@ -256,7 +245,7 @@ async def test_open_broker_subchannel_knock_ack_false(
 
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
-    async def mock_response_gen_func_error_ack() -> AsyncGenerator[MagicMock]:
+    async def mock_response_gen_func_error_ack():
         response_message = MagicMock()
         response_message.service_id = 456
         response_message.knock.ack = False
@@ -278,7 +267,7 @@ async def test_open_broker_subchannel_knock_ack_false(
     assert client_instance._broker_task is not None
     try:
         await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
-    except TimeoutError:
+    except asyncio.TimeoutError:
         pytest.fail("Broker coroutine timed out in knock_ack_false test")
 
     mock_logger_error.assert_called_once()
@@ -287,9 +276,7 @@ async def test_open_broker_subchannel_knock_ack_false(
 
 
 @pytest.mark.asyncio
-async def test_shutdown_plugin_rpc_error(
-    client_instance: RPCPluginClient, mocker: Any
-) -> None:
+async def test_shutdown_plugin_rpc_error(client_instance, mocker):
     """Test shutdown_plugin when the RPC call to controller.Shutdown fails."""
     mock_controller_stub = AsyncMock()
     client_instance._controller_stub = mock_controller_stub
@@ -302,7 +289,7 @@ async def test_shutdown_plugin_rpc_error(
 
     # Expect TransportError and match its message
     # For a vanilla RpcError("Shutdown RPC failed"), details() is "Shutdown RPC failed"
-    # The TransportError message is f"gRPC error during plugin shutdown: {error_details_str}" # noqa: E501
+    # The TransportError message is f"gRPC error during plugin shutdown: {error_details_str}"
     expected_transport_error_msg = (
         r"\[TransportError\] gRPC error during plugin shutdown: Shutdown RPC failed"
     )
@@ -315,8 +302,11 @@ async def test_shutdown_plugin_rpc_error(
     mock_logger_error.assert_called_once()  # Verify logger.error was called
 
     args, kwargs = mock_logger_error.call_args
-    # Logged message: f"🔌🛑❌ gRPC error calling Shutdown(): {code} - {details}"
+    # The logged message in shutdown_plugin is:
+    # f"🔌🛑❌ gRPC error calling Shutdown(): {actual_code_for_log} - {error_details_str}"
+    # actual_code_for_log becomes "UNKNOWN"
+    # error_details_str becomes "Shutdown RPC failed" (from str(e) on a vanilla RpcError)
     assert "gRPC error calling Shutdown(): UNKNOWN - Shutdown RPC failed" in args[0]
 
-    # Trace in 'extra' should contain original RpcError string.
+    # The trace in the log's 'extra' should contain the original RpcError's string representation
     assert "Shutdown RPC failed" in kwargs.get("extra", {}).get("trace", "")

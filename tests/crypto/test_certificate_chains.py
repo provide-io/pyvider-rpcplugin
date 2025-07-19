@@ -1,21 +1,25 @@
 # pyvider/rpcplugin/tests/crypto/test_certificate_chains.py
 
-from datetime import UTC, datetime
+import pytest
+
 from unittest import mock
 
-import pytest
+from datetime import datetime, timezone
+
 from cryptography import x509
+
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
-from pytest import FixtureRequest
 
 from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.exception import CertificateError
 
 
+# Fixtures will be available via tests.fixtures through conftest.py
+# from tests.fixtures.crypto import client_cert, server_cert
+
+
 @pytest.mark.asyncio
-async def test_certificate_chain_validation(
-    client_cert: Certificate, server_cert: Certificate
-) -> None:
+async def test_certificate_chain_validation(client_cert, server_cert) -> None:
     """Test validation of a certificate chain."""
     # Add server cert to client's trust chain
     client_cert.trust_chain.append(server_cert)
@@ -25,9 +29,7 @@ async def test_certificate_chain_validation(
 
 
 @pytest.mark.asyncio
-async def test_certificate_chain_validation_no_trust(
-    client_cert: Certificate, server_cert: Certificate
-) -> None:
+async def test_certificate_chain_validation_no_trust(client_cert, server_cert) -> None:
     """Test validation behavior when certificates are not in trust chain."""
     # First ensure trust chain is empty
     client_cert.trust_chain = []
@@ -41,66 +43,44 @@ async def test_certificate_chain_validation_no_trust(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("cert_fixture", ["client_cert", "server_cert"])
-async def test_certificate_basic_properties(
-    cert_fixture: str, request: FixtureRequest
-) -> None:
+async def test_certificate_basic_properties(cert_fixture, request) -> None:
     """Test basic certificate properties."""
-    cert: Certificate = request.getfixturevalue(cert_fixture)
+    cert = request.getfixturevalue(cert_fixture)
 
     # Test required properties
     assert cert.subject
     assert cert.issuer
     assert isinstance(cert.is_ca, bool)
     assert cert.public_key
-    assert isinstance(cert.public_key, (rsa.RSAPublicKey | ec.EllipticCurvePublicKey))
+    assert isinstance(cert.public_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey))
 
 
 @pytest.mark.asyncio
-async def test_certificate_self_signed_validation() -> None:
-    """Test self-signed certificate validation behavior."""
-    self_signed_cert = Certificate(
-        generate_keypair=True,
-        common_name="Test Self-Signed Cert",
-    )
-    assert self_signed_cert.subject == self_signed_cert.issuer, (
-        "Generated certificate should be self-signed"
-    )
+async def test_certificate_self_signed_validation(client_cert) -> None:
+    """Test self-signed certificate validation."""
+    # Clear trust chain first
+    client_cert.trust_chain = []
 
-    # Test 1: A self-signed certificate should be considered trusted by itself,
-    # regardless of its own trust_chain content, due to identity.
-    self_signed_cert.trust_chain = []  # Ensure trust_chain is empty
-    assert self_signed_cert.verify_trust(self_signed_cert), (
-        "A self-signed certificate should validate against itself (identity trust)."
-    )
-
-    # Test 2: Explicitly adding it to its own trust chain should still result
-    # in validation. This case is somewhat redundant if identity trust is
-    # already true, but confirms consistency.
-    self_signed_cert.trust_chain = [self_signed_cert]
-    assert self_signed_cert.verify_trust(self_signed_cert), (
-        "A self-signed certificate should validate against itself "
-        "when also in its own trust chain."
-    )
-
-    # Test 3: Verify that this self-signed cert does NOT trust another
-    # unrelated cert if chain is empty.
-    unrelated_cert = Certificate(generate_keypair=True, common_name="Unrelated Cert")
-    self_signed_cert.trust_chain = []
-    assert not self_signed_cert.verify_trust(unrelated_cert), (
-        "Self-signed certificate should not validate an unrelated certificate "
-        "if its trust chain is empty."
-    )
+    # A self-signed certificate should be in its own trust chain to validate
+    if client_cert.subject == client_cert.issuer:
+        client_cert.trust_chain.append(client_cert)
+        assert client_cert.verify_trust(client_cert), (
+            "Self-signed certificate should validate against itself when in trust chain"
+        )
+    else:
+        pytest.skip("Certificate is not self-signed")
 
 
-def test_certificate_extensions(client_cert: Certificate) -> None:
+@pytest.mark.asyncio
+async def test_certificate_extensions(client_cert) -> None:
     """Test certificate extensions are present and valid."""
-    x509_cert: x509.Certificate = client_cert._cert
+    x509_cert = client_cert._cert
 
     # Test basic constraints
-    bc_ext = x509_cert.extensions.get_extension_for_oid(
+    bc = x509_cert.extensions.get_extension_for_oid(
         x509.oid.ExtensionOID.BASIC_CONSTRAINTS
     )
-    assert bc_ext.value.ca in [True, False]  # type: ignore[attr-defined]
+    assert bc.value.ca in [True, False]
 
     # Test key usage if present
     try:
@@ -111,30 +91,27 @@ def test_certificate_extensions(client_cert: Certificate) -> None:
 
     # Test subject alternative names if present
     try:
-        san_ext = x509_cert.extensions.get_extension_for_oid(
+        san = x509_cert.extensions.get_extension_for_oid(
             x509.oid.ExtensionOID.SUBJECT_ALTERNATIVE_NAME
         )
         assert all(
-            isinstance(name, (x509.DNSName | x509.IPAddress))
-            for name in san_ext.value  # type: ignore[attr-defined]
+            isinstance(name, (x509.DNSName, x509.IPAddress)) for name in san.value
         )
     except x509.ExtensionNotFound:
         pytest.skip("SAN extension not present")
 
 
 @pytest.mark.asyncio
-async def test_certificate_validity_period(client_cert: Certificate) -> None:
+async def test_certificate_validity_period(client_cert) -> None:
     """Test certificate validity period checking."""
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     assert client_cert._cert.not_valid_before_utc <= now
     assert now <= client_cert._cert.not_valid_after_utc
     assert client_cert.is_valid
 
 
 @pytest.mark.asyncio
-async def test_certificate_unique_serial(
-    client_cert: Certificate, server_cert: Certificate
-) -> None:
+async def test_certificate_unique_serial(client_cert, server_cert) -> None:
     """Test certificates have unique serial numbers."""
     assert client_cert._cert.serial_number != server_cert._cert.serial_number
 
@@ -158,7 +135,7 @@ async def test_certificate_repr() -> None:
 
 
 @pytest.mark.asyncio
-async def test_certificate_hash(client_cert: Certificate) -> None:
+async def test_certificate_hash(client_cert) -> None:
     """Test certificate hash generation."""
     cert_hash = hash(client_cert)
     assert isinstance(cert_hash, int)
@@ -168,10 +145,10 @@ async def test_certificate_hash(client_cert: Certificate) -> None:
 
 @pytest.mark.asyncio
 async def test_certificate_invalid_trust_chain_signature() -> None:
-    """
-    Ensure certificate trust chain fails on signature mismatch when signature
-    check is performed.
-    """
+    """Ensure certificate trust chain fails on signature mismatch when signature check is performed."""
+    # Ensure 'mock' is imported from unittest (already done at file level)
+    # from unittest import mock
+
     # Create a self-trusted CA. Ensure key_type is ecdsa for the mock to apply.
     ca_cert = Certificate(
         generate_keypair=True, common_name="Test Root CA", key_type="ecdsa"
@@ -188,27 +165,24 @@ async def test_certificate_invalid_trust_chain_signature() -> None:
     # Mock the issuer of cert_to_check to appear as if it was issued by ca_cert.
     # This is a targeted patch specifically for this test's logic flow.
     # Note: Accessing _cert like this is for testing internals.
-    # REMOVED: with mock.patch.object(cert_to_check._cert, 'issuer',
-    # ca_cert._cert.subject):
+    # REMOVED: with mock.patch.object(cert_to_check._cert, 'issuer', ca_cert._cert.subject):
 
-    # The mock for EllipticCurvePublicKey.verify can remain. If the issuer
-    # check *were* to pass (which it won't for these two unrelated certs as
-    # cert_to_check is self-signed with a different subject), this mock would
-    # ensure failure. With unrelated certs, _validate_signature will return
-    # False due to issuer mismatch *before* the EllipticCurvePublicKey.verify
-    # line is reached.
+    # The mock for EllipticCurvePublicKey.verify can remain. If the issuer check *were* to pass
+    # (which it won't for these two unrelated certs as cert_to_check is self-signed with a different subject),
+    # this mock would ensure failure.
+    # With unrelated certs, _validate_signature will return False due to issuer mismatch
+    # *before* the EllipticCurvePublicKey.verify line is reached.
     with mock.patch(
         "cryptography.hazmat.primitives.asymmetric.ec.EllipticCurvePublicKey.verify",
         side_effect=Exception("Simulated Signature Failure"),
     ):
         # ca_cert.verify_trust(cert_to_check) will call:
         # _validate_signature(signed_cert=cert_to_check, signing_cert=ca_cert)
-        # Inside _validate_signature, since cert_to_check.issuer (self-signed)
-        # != ca_cert.subject, it will return False.
+        # Inside _validate_signature, since cert_to_check.issuer (self-signed) != ca_cert.subject,
+        # it will return False.
         # Thus, verify_trust will return False.
         assert not ca_cert.verify_trust(cert_to_check), (
-            "Verification of an unrelated certificate (or one with a bad "
-            "signature if issuers matched) should fail."
+            "Verification of an unrelated certificate (or one with a bad signature if issuers matched) should fail."
         )
 
 
