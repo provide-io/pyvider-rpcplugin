@@ -68,8 +68,7 @@ def mock_ssl_server_credentials(
 
 
 # Tests using conftest fixtures
-@pytest.mark.asyncio
-async def test_mock_channel_credentials_with_client_cert(client_cert) -> None:
+def test_mock_channel_credentials_with_client_cert(client_cert) -> None:
     """Test creating channel credentials using client certificate fixture."""
     creds = mock_ssl_channel_credentials(
         root_certificates=client_cert.cert.encode(),
@@ -84,8 +83,7 @@ async def test_mock_channel_credentials_with_client_cert(client_cert) -> None:
     assert creds.certificate_chain == client_cert.cert.encode()
 
 
-@pytest.mark.asyncio
-async def test_mock_server_credentials_with_server_cert(
+def test_mock_server_credentials_with_server_cert(
     server_cert, client_cert
 ) -> None:
     """Test creating server credentials using server certificate fixture."""
@@ -103,8 +101,7 @@ async def test_mock_server_credentials_with_server_cert(
     assert creds.require_client_auth is True
 
 
-@pytest.mark.asyncio
-async def test_mock_server_credentials_multiple_certs(server_cert, client_cert) -> None:
+def test_mock_server_credentials_multiple_certs(server_cert, client_cert) -> None:
     """Test creating server credentials with multiple certificate pairs."""
     # Using both server and client certs as pairs for testing
     pairs = [
@@ -120,8 +117,7 @@ async def test_mock_server_credentials_multiple_certs(server_cert, client_cert) 
     assert creds.private_key_certificate_chain_pairs == pairs
 
 
-@pytest.mark.asyncio
-async def test_mock_server_credentials_validation_with_certs(
+def test_mock_server_credentials_validation_with_certs(
     server_cert, client_cert
 ) -> None:
     """Test validation rules with real certificates."""
@@ -143,8 +139,8 @@ async def test_mock_server_credentials_validation_with_certs(
         )
 
 
-@pytest.mark.asyncio
-async def test_mock_channel_credentials_none_values(client_cert) -> None:
+
+def test_mock_channel_credentials_none_values(client_cert) -> None:
     """Test channel credentials with optional parameters as None."""
     creds = mock_ssl_channel_credentials(
         root_certificates=client_cert.cert.encode()

@@ -32,20 +32,18 @@ __all__ = [
     "register_protocol_service",
     "GRPCBroker",
     "GRPCBrokerServicer",
-    "add_GRPCBrokerServicer_to_server",  # Corrected typo
+    "add_GRPCBrokerServicer_to_server",
     "GRPCController",
     "GRPCControllerServicer",
-    "add_GRPCControllerServicer_to_server",  # Corrected typo
-    # "StreamStdio", # Removed as it's not an imported symbol
+    "add_GRPCControllerServicer_to_server",
     "add_GRPCStdioServicer_to_server",
-    "add_GRPCBrokerServicer_to_server",  # Ensure this is not a duplicate if already corrected above (it is)
-    "add_GRPCControllerServicer_to_server",  # Ensure this is not a duplicate (it is)
+    "add_GRPCBrokerServicer_to_server",
+    "add_GRPCControllerServicer_to_server",
     "GRPCStdio",
     "GRPCStdioServicer",
     "GRPCBrokerService",
 ]
 
-# Consolidate __all__ to remove duplicates from corrections
 __all__ = list(sorted(set(__all__)))
 
 

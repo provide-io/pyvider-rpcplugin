@@ -120,3 +120,14 @@ async def test_connect_unix_transport(
     await client_instance._transport.connect("/tmp/test.sock")
 
     mock_unix_socket_transport.connect.assert_called_once_with("/tmp/test.sock")
+
+
+@pytest.mark.asyncio
+async def test_launch_process_generic_error(client_instance):
+    """Test _launch_process handling generic errors."""
+    with patch("pyvider.rpcplugin.client.base.subprocess.Popen") as mock_popen:
+        mock_popen.side_effect = Exception("Generic Popen failure")
+
+        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Generic Popen failure"
+        with pytest.raises(TransportError, match=expected_msg_regex):
+            await client_instance._launch_process()

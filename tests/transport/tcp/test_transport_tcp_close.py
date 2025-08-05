@@ -165,6 +165,41 @@ async def test_close_writer_already_closing(mocker):
 
 
 @pytest.mark.asyncio
+async def test_tcp_transport_close_writer_is_none():
+    transport = TCPSocketTransport()
+    # Call _close_writer directly with None, it should not raise an error
+    await transport._close_writer(None)
+    # Assertion is that it completes without error
+
+
+@pytest.mark.asyncio
+async def test_close_server_wait_closed_timeout(mocker, caplog):
+    transport = TCPSocketTransport()
+    mock_server = AsyncMock(spec=asyncio.AbstractServer)
+    mock_server.is_serving.return_value = True # Server is serving
+    mock_server.wait_closed = AsyncMock(side_effect=asyncio.TimeoutError("Simulated wait_closed timeout"))
+
+    transport._server = mock_server
+    transport._running = True # Assume it was running
+
+    # Patch the lock to avoid issues with it being acquired if already acquired in other parts of close
+    mocker.patch.object(transport, '_lock', AsyncMock(spec=asyncio.Lock))
+    mock_logger_warning = mocker.patch("pyvider.rpcplugin.transport.tcp.logger.warning")
+
+    await transport.close()
+
+    assert transport._server is None # Should be reset
+
+    mock_logger_warning.assert_called_once()
+    args, _ = mock_logger_warning.call_args
+    assert "Timeout closing TCP server" in args[0]
+    # The endpoint is None in this test setup if listen() wasn't called, so log includes "unknown"
+    assert "endpoint unknown" in args[0]
+
+    mock_server.close.assert_called_once() # close should still be called
+
+
+@pytest.mark.asyncio
 async def test_close_server_not_serving(mocker):
     """Test close() branch where server.is_serving() is False."""
     transport = TCPSocketTransport()

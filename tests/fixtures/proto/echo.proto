@@ -1,19 +1,19 @@
+// echo.proto
 syntax = "proto3";
 
-package echo; // Changed from pyvider.testing.echo
+package echo;
 
-// The echo service definition.
-service EchoService { // Changed from Echoer
-  // Sends a greeting
-  rpc Echo (EchoRequest) returns (EchoResponse) {}
-}
-
-// The request message containing the user's name.
+// The request message containing the text to echo
 message EchoRequest {
   string message = 1;
 }
 
-// The response message containing the greetings
+// The response message containing the echoed text
 message EchoResponse {
-  string reply = 1; // Changed from message
+  string reply = 1;
+}
+
+// The service definition
+service EchoService {
+  rpc Echo(EchoRequest) returns (EchoResponse);
 }

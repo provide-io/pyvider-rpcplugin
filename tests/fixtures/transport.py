@@ -4,10 +4,7 @@ import pytest
 import pytest_asyncio
 
 import asyncio
-import pytest
-import pytest_asyncio
 
-import asyncio
 import os
 import socket
 import sys # Added import
@@ -283,16 +280,37 @@ async def managed_unix_socket_path(
                 f"ℹ️ Socket path {socket_path} already cleaned up or never created by this instance."
             )
 
-    request.addfinalizer(lambda: asyncio.ensure_future(finalizer()))
+    async def finalizer_coro(): # Renamed to avoid confusion if we bring back old finalizer name
+        logger.debug(
+            f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER (async_finalizer): Finalizing managed socket path: {socket_path}"
+        )
+        await asyncio.sleep(0.05) # Keep the sleep, it might be generally helpful
+        if os.path.exists(socket_path):
+            try:
+                os.chmod(socket_path, 0o777)
+                os.unlink(socket_path)
+                logger.debug(f"✅ Successfully unlinked socket (async_finalizer): {socket_path}")
+            except Exception as e: # Keep catching generic Exception
+                logger.warning(
+                    f"⚠️ Error unlinking socket {socket_path} in async_finalizer (type: {type(e).__name__}): {e}"
+                )
+        else:
+            logger.debug(
+                f"ℹ️ Socket path {socket_path} (async_finalizer) already cleaned or never created."
+            )
+
+    # Revert to using request.addfinalizer with asyncio.ensure_future
+    # This was the structure before the StopIteration error appeared.
+    request.addfinalizer(lambda: asyncio.ensure_future(finalizer_coro()))
 
     yield socket_path
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def transport_cleanup():
-    yield
-    # Force cleanup of transport resources
-    await asyncio.sleep(0.1)  # Allow any pending cleanups
+# @pytest.fixture(scope="function", autouse=True)
+# async def transport_cleanup():
+#     yield
+#     # Force cleanup of transport resources
+#     await asyncio.sleep(0.1)  # Allow any pending cleanups
 
 
 ### 🐍🏗🧪️

@@ -1,28 +1,20 @@
 # tests/conftest.py
-import sys  # Added sys
-import os  # os was already here, ensure it's at the top with sys
-
-# Add the project root to sys.path to allow 'from tests.fixtures import *'
-# This ensures that 'tests' package can be found from the project root.
-# THIS BLOCK MUST BE AT THE VERY TOP OF THE FILE
-_project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
-# END OF SYS.PATH MANIPULATION
-
+import sys
+import os
 import pytest
 from pyvider.rpcplugin.config import RPCPluginConfig, CONFIG_SCHEMA
 from tests.fixtures import *
 
-# import os # Moved to top
-
-
 @pytest.fixture(autouse=True, scope="function")
 def reset_rpcplugin_config_singleton():
-    """Fixture to reset the RPCPluginConfig singleton and relevant env vars before each test."""
-    RPCPluginConfig._instance = None  # Reset singleton
+    """
+    Fixture to reset the RPCPluginConfig singleton and relevant env vars before each test.
+    This ensures complete test isolation with respect to configuration.
+    """
+    # Force the singleton to be cleared
+    RPCPluginConfig._instance = None
 
-    # Clear relevant environment variables to ensure a clean slate for each test
+    # Backup and clear all environment variables defined in the schema
     env_keys_to_clear = list(CONFIG_SCHEMA.keys())
     original_env_values = {key: os.environ.get(key) for key in env_keys_to_clear}
 
@@ -30,19 +22,16 @@ def reset_rpcplugin_config_singleton():
         if key in os.environ:
             del os.environ[key]
 
-    yield  # Test runs
+    # The test runs now in a pristine environment. The first call to
+    # RPCPluginConfig.instance() in the test will create a fresh instance.
+    yield
 
-    # Restore original environment variables
+    # Teardown: Restore original environment variables
     for key, value in original_env_values.items():
         if value is not None:
             os.environ[key] = value
-        elif key in os.environ:  # If it was set during test but originally None
+        elif key in os.environ:
             del os.environ[key]
-
-
-################################################################################
-# _|_|_  _ _|_' _   _ ||   |` _ ||  _
-#  | | |(_| |  _\  (_|||  ~|~(_)||<_\
-#
-
-### 🐍🏗🧪️
+    
+    # Final reset to ensure no state leaks to subsequent test modules
+    RPCPluginConfig._instance = None

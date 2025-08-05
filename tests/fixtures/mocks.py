@@ -19,19 +19,20 @@ from pyvider.rpcplugin.transport import (
     UnixSocketTransport,
 )
 
-from pyvider.rpcplugin.types import TransportT, HandlerT
+from pyvider.rpcplugin.types import TransportT, HandlerT, RPCPluginHandler # RPCPluginHandler is Any
+from pyvider.rpcplugin.transport.base import RPCPluginTransport # Import base for type hint
 from pyvider.rpcplugin.config import rpcplugin_config  # Import global instance
 
-from typing import Tuple
+from typing import Tuple, Any, AsyncGenerator # Added Any, AsyncGenerator
 
 
 class MockProtocol(RPCPluginProtocol):
-    def get_grpc_descriptors(self) -> Tuple[None, None, str]:
+    async def get_grpc_descriptors(self) -> Tuple[Any, str]:
         # Mock descriptors for testing
         logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
-        return None, None, "MockService"
+        return (None, "MockService") # Return a 2-tuple (descriptor, service_name)
 
-    async def add_to_server(self, handler, server) -> None:
+    async def add_to_server(self, server, handler) -> None: # Corrected param order
         # Mock add_to_server for testing
         logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
         pass
@@ -87,9 +88,9 @@ class MockBytesIO:
 @pytest_asyncio.fixture(scope="function", params=["tcp", "unix"])
 async def mock_server_transport(
     request, managed_unix_socket_path: str
-) -> TransportT:  # Added managed_unix_socket_path
+) -> AsyncGenerator[RPCPluginTransport, None]:
     transport_name = request.param
-    transport = None  # Initialize transport
+    transport: RPCPluginTransport | None = None # Initialize transport with broader type
 
     logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
 
@@ -104,14 +105,14 @@ async def mock_server_transport(
         logger.debug(
             f"🧪🔌🐛 Providing UnixSocketTransport with path: {managed_unix_socket_path}"
         )
-        transport = UnixSocketTransport(path=managed_unix_socket_path)
+        transport = UnixSocketTransport(path=managed_unix_socket_path) # This is compatible with RPCPluginTransport
         yield transport
     else:
         # This case should ideally not be reached if params are correct
         raise ValueError(f"Unknown transport parameter: {transport_name}")
 
     # Cleanup is handled after yield returns for the specific yielded transport
-    if transport:
+    if transport: # transport is now RPCPluginTransport | None
         logger.debug(
             f"🧪🔌🐛 Cleaning up transport {transport_name} for path/endpoint: {getattr(transport, 'path', getattr(transport, 'endpoint', 'N/A'))}"
         )
@@ -128,12 +129,15 @@ async def mock_server_transport(
 
 
 @pytest_asyncio.fixture
-async def mock_server_transport_tcp() -> TransportT:
+async def mock_server_transport_tcp() -> AsyncGenerator[RPCPluginTransport, None]:
+    transport = TCPSocketTransport() # Define transport before try for finally block
     try:
-        transport = TCPSocketTransport()
         yield transport
-    except Exception:
-        raise ValueError(f"Could not open a TCP Socket Transport: {transport}")
+    except Exception: # Consider more specific exception if possible
+        # If transport instantiation itself failed, transport might not be fully initialized.
+        # This specific structure might lead to issues if TCPSocketTransport() fails.
+        # However, the original error was about the return type, not this logic.
+        raise ValueError(f"Could not open a TCP Socket Transport: {transport!r}") # Use !r
     finally:
         # Clean up
         await transport.close()
@@ -141,20 +145,20 @@ async def mock_server_transport_tcp() -> TransportT:
 
 
 # @pytest_asyncio.fixture
-# async def mock_server_transport_unix() -> TransportT:
+# async def mock_server_transport_unix() -> RPCPluginTransport: # Using RPCPluginTransport for consistency
 #     with tempfile.NamedTemporaryFile(delete=True) as tmp:
 #         socket_path = tmp.name
 #     try:
 #         transport = UnixSocketTransport(path=socket_path)
 #
 #     except Exception:
-#         raise ValueError(f"Could not open a Unix : {transport}")
+#         raise ValueError(f"Could not open a Unix : {transport!r}") # Use !r
 #
-#     return transport
+#     return transport # This fixture style (return, not yield) is different
 
 
 @pytest_asyncio.fixture(scope="function")
-async def mock_server_transport_unix(managed_unix_socket_path) -> TransportT:
+async def mock_server_transport_unix(managed_unix_socket_path) -> AsyncGenerator[RPCPluginTransport, None]:
     """Fixture providing a properly configured Unix transport with unique path."""
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
@@ -171,7 +175,7 @@ async def mock_server_transport_unix(managed_unix_socket_path) -> TransportT:
 
             # Double-check for stale socket file
             if os.path.exists(managed_unix_socket_path):
-                os.chmod(managed_unix_socket_path, 0o770)
+                os.chmod(managed_unix_socket_path, 0o770) # Removed problematic comment
                 os.unlink(managed_unix_socket_path)
                 logger.debug(
                     f"🧪🧹 Manually removed socket file {managed_unix_socket_path}"
@@ -182,7 +186,7 @@ async def mock_server_transport_unix(managed_unix_socket_path) -> TransportT:
 
 # @pytest_asyncio.fixture(scope="module", autouse=True)
 @pytest.fixture(scope="function")
-def mock_server_handler() -> HandlerT:
+def mock_server_handler() -> MockHandler: # Changed to concrete MockHandler
     """Fixture to provide a mock hadler instance."""
     return MockHandler()
 
