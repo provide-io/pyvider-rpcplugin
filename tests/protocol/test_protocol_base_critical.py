@@ -14,7 +14,7 @@ def test_abstract_methods_must_be_implemented() -> None:
         pass
 
     with pytest.raises(TypeError) as excinfo:
-        EmptyProtocol()
+        EmptyProtocol()  # type: ignore[abstract]
 
     error_message = str(excinfo.value)
     assert "Can't instantiate abstract class" in error_message
@@ -24,10 +24,10 @@ def test_abstract_methods_must_be_implemented() -> None:
     # Implementing just one method is still not enough
     class PartialProtocol(RPCPluginProtocol):
         def get_grpc_descriptors(self):
-            return MagicMock(), "TestService"
+            return MagicMock(), "TestService" # type: ignore[override] # Intentionally non-async for test
 
     with pytest.raises(TypeError) as excinfo:
-        PartialProtocol()
+        PartialProtocol()  # type: ignore[abstract]
 
     error_message = str(excinfo.value)
     assert "Can't instantiate abstract class" in error_message

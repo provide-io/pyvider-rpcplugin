@@ -9,7 +9,7 @@ def test_transport_base_abstract_methods() -> None:
 
     # Cannot instantiate the abstract base class
     with pytest.raises(TypeError) as excinfo:
-        RPCPluginTransport()
+        RPCPluginTransport()  # type: ignore[abstract]
 
     error_message = str(excinfo.value)
     assert "Can't instantiate abstract class" in error_message
@@ -30,7 +30,7 @@ def test_transport_base_abstract_methods() -> None:
         # Missing close method
 
     with pytest.raises(TypeError) as excinfo:
-        PartialTransport()
+        PartialTransport()  # type: ignore[abstract]
 
     assert "close" in str(excinfo.value)
 

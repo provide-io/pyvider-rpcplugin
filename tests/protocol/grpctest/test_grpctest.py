@@ -3,6 +3,7 @@
 import asyncio
 import pytest
 import pytest_asyncio
+from typing import AsyncGenerator # Added import
 import grpc
 from google.protobuf import empty_pb2
 
@@ -59,7 +60,7 @@ class DummyPingPongServicer(PingPongServicer):
 
 # Fixture that starts a grpc.aio server with our dummy servicers.
 @pytest_asyncio.fixture
-async def grpc_server() -> str:
+async def grpc_server() -> AsyncGenerator[str, None]:
     server = grpc.aio.server()
     add_TestServicer_to_server(DummyTestServicer(), server)
     add_PingPongServicer_to_server(DummyPingPongServicer(), server)
@@ -72,7 +73,7 @@ async def grpc_server() -> str:
 
 # Fixture that creates a channel connected to the server.
 @pytest_asyncio.fixture
-async def grpc_channel(grpc_server: str) -> grpc.aio.Channel:
+async def grpc_channel(grpc_server: str) -> AsyncGenerator[grpc.aio.Channel, None]:
     channel = grpc.aio.insecure_channel(grpc_server)
     await channel.channel_ready()
     yield channel

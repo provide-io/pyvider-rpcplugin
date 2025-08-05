@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/transport/base.py
+#
+
 """
 Base Abstract Class for RPC Plugin Transports.
 
@@ -42,7 +46,8 @@ class RPCPluginTransport(abc.ABC):
         begin accepting connections. This is typically used by server components.
 
         Returns:
-            The endpoint address as a string (e.g., "127.0.0.1:50051" or "/tmp/socket.sock")
+            The endpoint address as a string (e.g., "127.0.0.1:50051" or
+            "/tmp/socket.sock")
 
         Raises:
             TransportError: If binding or listening fails
@@ -66,7 +71,7 @@ class RPCPluginTransport(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def close(self) -> None:  # pragma: no cover # Corrected pragma typo
+    async def close(self) -> None:  # pragma: no cover
         """
         Close the transport and release any associated resources.
 

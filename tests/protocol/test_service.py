@@ -215,19 +215,32 @@ async def collect_stream_data(stream):
     return results
 
 
-@pytest.mark.skip
-async def test_stdio_stream_timeout(stdio_service, mock_context) -> None:
-    async def timeout_wait_for(*args, **kwargs):
-        raise asyncio.TimeoutError()
+# @pytest.mark.skip # Still keeping it un-skipped for now
+async def test_stdio_stream_shutdown_terminates_loop(stdio_service, mock_context) -> None: # Renamed test
+    # This test will now primarily verify that StreamStdio terminates on shutdown,
+    # even if the queue is empty and .get() would normally block.
 
-    with patch("asyncio.wait_for", timeout_wait_for):
-        stream_task = asyncio.create_task(
-            collect_stream_data(stdio_service.StreamStdio(Empty(), mock_context))
-        )
-        await asyncio.sleep(0.3)
-        stdio_service.shutdown()
-        results = await stream_task
-        assert len(results) == 0
+    results = []
+    async def consume_stream():
+        async for item in stdio_service.StreamStdio(Empty(), mock_context):
+            results.append(item)
+
+    consume_task = asyncio.create_task(consume_stream())
+
+    await asyncio.sleep(0.01) # Allow the StreamStdio loop to start and block on queue.get()
+
+    stdio_service.shutdown() # Signal shutdown
+
+    # The StreamStdio loop should now break due to self._shutdown being True
+    # or context.done() being true (though shutdown is more direct here).
+
+    try:
+        # If StreamStdio terminates correctly, consume_task will finish.
+        await asyncio.wait_for(consume_task, timeout=1.0)
+    except asyncio.TimeoutError: # pragma: no cover
+        pytest.fail("StreamStdio did not terminate within 1s after shutdown.")
+
+    assert len(results) == 0 # No items were put in the queue
 
 
 @pytest.mark.asyncio

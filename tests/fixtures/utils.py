@@ -7,30 +7,7 @@ import asyncio
 import os
 import tempfile
 from pyvider.telemetry import logger
-from pyvider.rpcplugin.server import RPCPluginServer
-
-
-# rom pyvider.rpcplugin.logger import logger
-# from pyvider.rpcplugin.client import RPCPluginClient
-# from pyvider.rpcplugin.protocol import RPCPluginProtocol
-#
-# # from pyvider.rpcplugin.security import (
-# #     create_self_signed_x509_certificate,
-# #     generate_keypair,
-# #     Certificate,
-# # )
-# from pyvider.rpcplugin.server import RPCPluginServer
-# from pyvider.rpcplugin.transport.types import TransportT
-# from pyvider.rpcplugin.transport import (
-#     RPCPluginTransport,
-#     TCPSocketTransport,
-#     UnixSocketTransport,
-# )
-#
-# from pyvider.rpcplugin.types import ConfigT
-#
-# from tests.fixtures import *
-#
+# from pyvider.rpcplugin.server import RPCPluginServer # RPCPluginServer is not used in this file
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -82,36 +59,36 @@ async def ensure_asyncio_cleanup():
             pass
 
 
-@pytest.fixture(scope="function")
-async def dummy_server(mock_server_protocol, mock_server_handler):
-    """Provides a clean DummyGRPCServer instance per test"""
-    server = RPCPluginServer(
-        protocol=mock_server_protocol,
-        handler=mock_server_handler,
-    )
-    yield server
-    # No async cleanup needed for dummy server
-
-
-@pytest.fixture(scope="function")
-async def clean_socket_dir(tmp_path):
-    """Provides a clean temporary directory for socket files"""
-    socket_dir = tmp_path / "sockets"
-    socket_dir.mkdir()
-    yield socket_dir
-    # Cleanup any leftover socket files
-    for sock_file in socket_dir.glob("*.sock"):
-        try:
-            os.unlink(sock_file)
-        except OSError:
-            pass
-
-
 def summarize_text(text: str, length: int = 32) -> str:
     """Helper to summarize text for logging."""
     if len(text) <= 2 * length:
         return text
     return f"{text[:length]} ... {text[-length:]}"
+
+
+class LoopToucher:
+    def __init__(self):
+        # Ensure it's created in a context where a loop might exist
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            pass # Fine if no loop running at init
+
+    def __del__(self):
+        try:
+            asyncio.get_event_loop()
+            # print("LoopToucher.__del__ accessed loop") # For debugging if needed
+        except RuntimeError:
+            # print("LoopToucher.__del__ loop already closed") # For debugging
+            pass
+
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def touch_loop_on_cleanup(): # Made async as it's an asyncio fixture now
+    toucher = LoopToucher()
+    yield toucher
+    # Deliberately do nothing with toucher, just let it get GC'd
+    # Add a small sleep to ensure __del__ might be called if it's GC related
+    await asyncio.sleep(0.01)
 
 
 ### 🐍🏗🧪️

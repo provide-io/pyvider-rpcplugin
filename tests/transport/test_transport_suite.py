@@ -144,12 +144,12 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
     async def create(
         transport_type: str, tcp_port_for_server: int | None = None
     ) -> tuple[BaseTransportT, BaseTransportT]:
-        server_kwargs = (
+        server_kwargs: dict[str, Any] = ( # Type hint for server_kwargs
             {"port": tcp_port_for_server}
             if transport_type == "tcp" and tcp_port_for_server is not None
             else {}
         )
-        client_kwargs = {}
+        client_kwargs: dict[str, Any] = {} # Type hint for client_kwargs
 
         server_transport = await transport_factory(transport_type, **server_kwargs)
 
@@ -183,104 +183,6 @@ async def connected_pair_factory(transport_factory, unused_tcp_port):
 
 
 ################################################################################
-# Original tests from test_transport_suite.py (being pruned)
-################################################################################
-
-# test_tcp_transport_basic_original REMOVED - listen() behavior changed, no longer starts a connectable server by itself for TCP.
-# The test logic (connecting a raw socket) is invalid for the new TCP listen which only determines endpoint.
-
-
-@pytest.mark.asyncio
-async def test_unix_transport_basic_original(transport_factory) -> None:
-    transport = await transport_factory("unix")
-    endpoint = await transport.listen()  # Unix listen still creates the socket file.
-    assert os.path.exists(endpoint)
-    assert transport.endpoint == endpoint
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.settimeout(1.0)
-    sock.connect(endpoint)
-    sock.close()
-    await transport.close()
-    await asyncio.sleep(0.1)
-    assert not os.path.exists(endpoint)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("transport_type", ["unix"])  # Only run unix part
-async def test_transport_connection_original_unix_only(
-    transport_type, connected_pair_factory, unused_tcp_port
-) -> None:
-    port_arg = unused_tcp_port if transport_type == "tcp" else None
-    server_transport, client_transport = await connected_pair_factory(
-        transport_type, tcp_port_for_server=port_arg
-    )
-    test_data = b"Hello, Transport!"
-
-    writer = getattr(client_transport, "_writer", None)
-    reader = getattr(client_transport, "_reader", None)
-    assert writer is not None, "Client transport has no _writer attribute"
-    assert reader is not None, "Client transport has no _reader attribute"
-
-    writer.write(test_data)
-    await writer.drain()
-    response = await reader.read(len(test_data))
-    assert response == test_data
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize("transport_type", ["unix"])  # Only run unix part
-async def test_server_with_transport_old_unix_only(
-    transport_type,
-    transport_factory,
-    server_factory,
-    temp_sock_dir,
-    unused_tcp_port,
-    mocker,
-) -> None:
-    # Configure for an insecure setup
-    def mock_config_get_insecure(key, default=None):
-        if key == "PLUGIN_AUTO_MTLS":
-            return False
-        if key == "PLUGIN_SERVER_CERT":
-            return None
-        return rpcplugin_config.config.get(key, default)
-
-    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
-
-    transport_kwargs = {}  # No port for unix
-    transport = await transport_factory(transport_type, **transport_kwargs)
-    server = await server_factory(transport=transport)
-    server_task = asyncio.create_task(server.serve())
-    try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=7.0)
-        assert server._serving_event.is_set()
-        client_connect_kwargs = {}
-        assert server._transport is not None
-        client_connect_endpoint = server._transport.endpoint
-        assert client_connect_endpoint is not None
-
-        client = await transport_factory(transport_type, **client_connect_kwargs)
-        await client.connect(client_connect_endpoint)
-        await client.close()
-        server._shutdown_requested()
-        await asyncio.wait_for(server_task, timeout=7.0)
-        assert server._serving_future.done()
-    except asyncio.TimeoutError as e:
-        pytest.fail(f"Test timed out: {e}")
-    except Exception as e:
-        pytest.fail(f"Test failed unexpectedly: {e}")
-    finally:
-        if not server_task.done():
-            server_task.cancel()
-            import contextlib
-
-            with contextlib.suppress(asyncio.CancelledError):
-                await server_task
-        if hasattr(server, "_server") and server._server is not None:
-            await server.stop()
-
-
-################################################################################
 # Consolidated tests
 ################################################################################
 
@@ -288,8 +190,11 @@ async def test_server_with_transport_old_unix_only(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
 async def test_server_lifecycle_and_connectivity(
-    transport_type, transport_factory, server_factory, unused_tcp_port, mocker
+    transport_type, transport_factory, server_factory, unused_tcp_port, mocker, monkeypatch # Added monkeypatch
 ):
+    # Set the expected magic cookie in the environment for the server to validate
+    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
+
     # Configure for an insecure setup for both tcp and unix variants
     def mock_config_get_insecure(key, default=None):
         if key == "PLUGIN_AUTO_MTLS":
@@ -299,6 +204,11 @@ async def test_server_lifecycle_and_connectivity(
         return rpcplugin_config.config.get(key, default)
 
     mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
+
+    # Ensure the magic cookie environment variable is set for direct server instantiation
+    cookie_key = rpcplugin_config.magic_cookie_key()
+    cookie_value = rpcplugin_config.magic_cookie_value()
+    monkeypatch.setenv(cookie_key, cookie_value)
 
     server_transport_kwargs = (
         {"port": unused_tcp_port} if transport_type == "tcp" else {}

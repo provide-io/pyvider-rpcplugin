@@ -16,15 +16,17 @@ from pyvider.rpcplugin.exception import (
 )  # Added TransportError
 
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
+from typing import Any, Optional # Added for StdioData typing
 try:
-    from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+    from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData as ImportedStdioData
+    StdioData: Optional[Any] = ImportedStdioData # Allow StdioData to be None or the class type
 except ImportError:
-    StdioData = None  # Will use integer literals if not found
+    StdioData = None
 
 try:
     from google.protobuf import empty_pb2
 except ImportError:
-    empty_pb2 = None  # Will omit argument assertion if not found
+    empty_pb2 = None  # type: ignore[assignment] # Will omit argument assertion if not found
 
 
 @pytest.mark.asyncio
