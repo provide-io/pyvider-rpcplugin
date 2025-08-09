@@ -8,22 +8,22 @@ import sys
 from pathlib import Path  # Import Path
 
 # Add demo directory to sys.path to find echo_pb2 and echo_pb2_grpc
-# Ensure examples directory and examples/demo are in path
+# Ensure examples directory and examples/proto are in path for imports
 # THIS BLOCK MUST BE AT THE VERY TOP OF THE FILE
 benchmarks_dir = Path(__file__).resolve().parent
 project_root = benchmarks_dir.parent
-examples_path = project_root / "examples"
-demo_path = examples_path / "demo"
-if str(demo_path) not in sys.path:
-    sys.path.insert(0, str(demo_path))
-if str(examples_path) not in sys.path:
-    sys.path.insert(0, str(examples_path))
-if str(project_root) not in sys.path:  # /app
+# examples_path = project_root / "examples" # Not strictly needed if importing via examples.proto
+# proto_path = examples_path / "proto" # Not strictly needed if importing via examples.proto
+# if str(proto_path) not in sys.path: # Not needed
+#     sys.path.insert(0, str(proto_path)) # Not needed
+# if str(examples_path) not in sys.path: # Not needed
+#     sys.path.insert(0, str(examples_path)) # Not needed
+if str(project_root) not in sys.path:  # /app needs to be in path for "from examples.proto..."
     sys.path.insert(0, str(project_root))
 # END OF SYS.PATH MANIPULATION
 
-import echo_pb2
-import echo_pb2_grpc
+from examples.proto import echo_pb2
+from examples.proto import echo_pb2_grpc
 
 from pyvider.rpcplugin import plugin_client, plugin_protocol, plugin_server
 
@@ -222,3 +222,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 🐍🔌📄🪄

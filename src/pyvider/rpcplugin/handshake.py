@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/handshake.py
+# pyvider/rpcplugin/handshake.py
 #
-
 """This module implements handshake logic for the RPC plugin server.
 It includes:
   - HandshakeConfig data classes.
@@ -18,7 +17,6 @@ import asyncio
 import os
 import subprocess  # nosec B404 # For process type hint only
 import time
-import traceback
 from enum import Enum, auto
 from typing import Literal, TypeGuard, cast
 
@@ -217,41 +215,46 @@ def validate_magic_cookie(
         if magic_cookie_key is _SENTINEL_INSTANCE
         else magic_cookie_key
     )
-    cookie_value = (
-        rpcplugin_config.magic_cookie_value()
-        if magic_cookie_value is _SENTINEL_INSTANCE
-        else magic_cookie_value
-    )
 
-    # Determine the actual cookie value that was provided.
-    # 1. If magic_cookie is explicitly passed, use that (for direct tests or
-    #    client-side validation).
-    # 2. Otherwise (typically server-side), read from the environment variable
-    #    whose name is defined by `cookie_key`.
-    if magic_cookie is not _SENTINEL_INSTANCE and magic_cookie is not None:
-        cookie_provided = magic_cookie
-        logger.debug(f"Using explicitly passed magic_cookie: '{cookie_provided}'")
+    # Determine the expected cookie value for the logic, resolving sentinel.
+    # Parameter 'magic_cookie_value' can be str | None | _SentinelType.
+    # 'rpcplugin_config.magic_cookie_value()' returns str.
+    # So, 'expected_value_for_logic' will be str | None.
+    expected_value_for_logic: str | None
+    if magic_cookie_value is _SENTINEL_INSTANCE:
+        expected_value_for_logic = rpcplugin_config.magic_cookie_value()
     else:
-        if (
-            cookie_key is None or cookie_key == ""
-        ):  # Should not happen if default from config is used
+        expected_value_for_logic = magic_cookie_value
+
+    # Determine the actual cookie value that was provided by the client/environment.
+    # Parameter 'magic_cookie' can be str | None | _SentinelType.
+    cookie_provided_by_caller: str | None
+    if magic_cookie is _SENTINEL_INSTANCE:
+        # If magic_cookie param is sentinel, then we MUST read from env.
+        if cookie_key is None or cookie_key == "":
             logger.error("CRITICAL: cookie_key is None or empty before env lookup.")
-            # This case should ideally be prevented by config validation or defaults.
-            # If it still occurs, it's a severe misconfiguration.
-            raise HandshakeError( # ruff: noqa E501
+            raise HandshakeError(
                 message="Internal configuration error: cookie_key is missing for lookup.",
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
-        cookie_provided = os.environ.get(str(cookie_key))
+        cookie_provided_by_caller = os.environ.get(str(cookie_key))
         logger.debug(
-            f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided}'"
+            f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided_by_caller}'"
+        )
+    else:
+        # If magic_cookie param was explicitly passed (even if None), use that.
+        cookie_provided_by_caller = magic_cookie
+        logger.debug(
+            f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'"
         )
 
     logger.debug(f"Final cookie_key for validation: {cookie_key}")
-    logger.debug(f"cookie_value (expected): {cookie_value}")
-    logger.debug(f"cookie_provided (received): {cookie_provided}")
+    logger.debug(f"Expected cookie value (for logic): {expected_value_for_logic}")
+    logger.debug(f"Cookie provided by caller/env: {cookie_provided_by_caller}")
 
-    if cookie_key is None or cookie_key == "":
+    if (
+        cookie_key is None or cookie_key == ""
+    ):  # This check is for the config of the key itself
         logger.error("Configuration error: magic_cookie_key is not set in config.")
         raise HandshakeError(
             message="Magic cookie key is not configured.",
@@ -261,7 +264,7 @@ def validate_magic_cookie(
             ),
         )
 
-    if cookie_value is None or cookie_value == "":
+    if expected_value_for_logic is None or expected_value_for_logic == "":
         logger.error(
             "Configuration error: magic_cookie_value (expected) is not set in config."
         )
@@ -273,7 +276,7 @@ def validate_magic_cookie(
             ),
         )
 
-    if cookie_provided is None or cookie_provided == "":
+    if cookie_provided_by_caller is None or cookie_provided_by_caller == "":
         logger.error(
             "Magic cookie not provided by the client.",
             extra={"cookie_key_expected": cookie_key},
@@ -281,28 +284,28 @@ def validate_magic_cookie(
         raise HandshakeError(
             message=(
                 "Magic cookie not provided by the client. Expected via environment "
-                f"variable '{cookie_key}'."
+                f"variable '{cookie_key}' (if not passed directly to validation)."
             ),
             hint=(
                 "Ensure the client process (e.g., Terraform or other plugin host) "
                 f"is configured to send the '{cookie_key}' environment variable "
-                "with the correct magic cookie value."
+                "with the correct magic cookie value, or that it's passed directly."
             ),
         )
 
-    if cookie_provided != cookie_value:
+    if cookie_provided_by_caller != expected_value_for_logic:
         logger.error(
             "Magic cookie mismatch.",
             extra={
-                "expected": cookie_value,
-                "received": cookie_provided,
+                "expected": expected_value_for_logic,
+                "received": cookie_provided_by_caller,
                 "cookie_key": cookie_key,
             },
         )
         raise HandshakeError(
             message=(
-                f"Magic cookie mismatch. Expected: '{cookie_value}', Received: "
-                f"'{cookie_provided}'."
+                f"Magic cookie mismatch. Expected: '{expected_value_for_logic}', Received: "
+                f"'{cookie_provided_by_caller}'."
             ),
             hint=(
                 f"Verify that the environment variable '{cookie_key}' set by the "
@@ -793,115 +796,8 @@ async def create_stderr_relay(
     return relay_task
 
 
-async def parse_and_validate_handshake(
-    handshake_line: str,
-) -> tuple[int, int, str, str, str, str | None]:
-    """
-    Parses and validates a handshake response, checking correct format and values.
-
-    This function is primarily intended for utility use or direct testing of
-    handshake strings. The core `RPCPluginClient` uses
-    `parse_handshake_response` (via `read_handshake_response`) for its
-    handshake process.
-
-    Expected format: CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
-
-    Args:
-        handshake_line: The complete handshake response string
-
-    Returns:
-        tuple of (core_version, plugin_version, network, address, protocol, server_cert)
-
-    Raises:
-        HandshakeError: If handshake format or values are invalid
-    """
-    logger.debug(f"🤝🔍🚀 Parsing handshake response: {handshake_line[:50]}...")
-
-    try:
-        parts = handshake_line.strip().split("|")
-
-        if len(parts) != 6:
-            logger.error(
-                f"🤝🔍❌ Invalid handshake format: expected 6 parts, got {len(parts)}"
-            )
-            raise HandshakeError(
-                message=(
-                    "Invalid handshake format: expected 6 pipe-separated parts, "
-                    f"got {len(parts)}."
-                ),
-                hint=(
-                    f"Received: '{handshake_line[:100]}...'. Ensure plugin output "
-                    "matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."
-                ),
-            )
-
-        try:
-            core_version = int(parts[0])
-            plugin_version = int(parts[1])
-        except ValueError as e_ver:
-            logger.error(
-                "🤝🔍❌ Invalid version numbers in handshake: "
-                f"'{parts[0]}', '{parts[1]}'"
-            )
-            raise HandshakeError(
-                message=(
-                    f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."
-                ),
-                hint=(
-                    "Core and plugin versions in the handshake string must be integers."
-                ),
-            ) from e_ver
-
-        network = parts[2]
-        if network not in ("tcp", "unix"):
-            logger.error(f"🤝🔍❌ Invalid network type in handshake: '{network}'")
-            raise HandshakeError(
-                message=f"Invalid network type '{network}' received in handshake.",
-                hint="Network type must be 'tcp' or 'unix'.",
-            )
-
-        address = parts[3]
-        if not address:
-            logger.error("🤝🔍❌ Empty address received in handshake")
-            raise HandshakeError(
-                message="Empty address received in handshake string.",
-                hint=(
-                    "The plugin must provide a valid network address "
-                    "(socket path or host:port)."
-                ),
-            )
-
-        protocol = parts[4]
-        if protocol != "grpc":
-            logger.error(f"🤝🔍❌ Unsupported protocol '{protocol}' in handshake")
-            raise HandshakeError(
-                message=f"Unsupported protocol '{protocol}' received in handshake.",
-                hint="Currently, only 'grpc' is supported as the sub-protocol.",
-            )
-
-        server_cert = parts[5] if parts[5] else None
-
-        if server_cert:
-            padding = len(server_cert) % 4
-            if padding:
-                server_cert += "=" * (4 - padding)
-                logger.debug("🤝🔍✅ Added certificate padding")
-
-        logger.debug(
-            "🤝🔍✅ Handshake parsed successfully: "
-            f"core_version={core_version}, plugin_version={plugin_version}, "
-            f"network={network}, address={address}, protocol={protocol}, "
-            f"server_cert={'present' if server_cert else 'none'}"
-        )
-
-        return core_version, plugin_version, network, address, protocol, server_cert
-
-    except Exception as e:
-        logger.error(
-            f"🤝🔍❌ Failed to parse handshake: {e}",
-            extra={"trace": traceback.format_exc()},
-        )
-        raise HandshakeError(f"Failed to parse handshake: {e}") from e
-
-
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

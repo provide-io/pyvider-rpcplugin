@@ -1,3 +1,6 @@
+#
+# pyvider/rpcplugin/client/types.py
+#
 """
 Type Definitions for Pyvider RPC Plugin Client.
 
@@ -50,3 +53,7 @@ class SecureRpcClientT(Protocol):
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

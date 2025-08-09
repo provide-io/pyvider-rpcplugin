@@ -306,11 +306,13 @@ async def managed_unix_socket_path(
     yield socket_path
 
 
-@pytest.fixture(scope="function", autouse=True)
-async def transport_cleanup():
-    yield
-    # Force cleanup of transport resources
-    await asyncio.sleep(0.1)  # Allow any pending cleanups
+# @pytest.fixture(scope="function", autouse=True)
+# async def transport_cleanup():
+#     yield
+#     # Force cleanup of transport resources
+#     await asyncio.sleep(0.1)  # Allow any pending cleanups
 
 
 ### 🐍🏗🧪️
+
+# 🐍🔌📄🪄

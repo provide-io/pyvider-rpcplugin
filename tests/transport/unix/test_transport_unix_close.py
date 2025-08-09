@@ -120,25 +120,25 @@ async def test_close_writer_exception(monkeypatch) -> None:
 
     class FakeWriter:
         def __init__(self):
-            self.transport = AsyncMock() # Mock the transport attribute
-            # Make transport.is_closing() exist and return False by default
-            self.transport.is_closing = MagicMock(return_value=False)
-            self.transport.abort = MagicMock()
-
+            self.transport = None # Set to None to avoid issues with AsyncMock as transport
 
         def close(self):
             pass
 
         async def wait_closed(self):
-            # Simulate that after close() is called, is_closing might become True
-            if hasattr(self.transport, 'is_closing') and callable(self.transport.is_closing):
-                self.transport.is_closing.return_value = True
+            # Original logic for is_closing on self.transport is removed as self.transport is None
             raise Exception("Fake wait_closed error")
 
     fake_writer = FakeWriter()
-    # _close_writer should catch the exception and log an error.
-    await transport._close_writer(fake_writer) # No longer need type: ignore if FakeWriter is closer to StreamWriter
-    # No exception should propagate.
+    try:
+        # _close_writer should catch the exception and log an error.
+        await transport._close_writer(fake_writer) # type: ignore[arg-type]
+        # No exception should propagate.
+    finally:
+        await transport.close() # Explicitly close the transport instance
+        # fake_writer.transport is already None
+        del fake_writer # Explicitly delete the mock
+        # Removed gc.collect() and asyncio.sleep(0.01) to see if it affects the warning
 
 
 @pytest.mark.asyncio
@@ -313,3 +313,6 @@ async def test_close_writer_transport_no_abort_method(mocker):
     await transport_module.close()
 
 # 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

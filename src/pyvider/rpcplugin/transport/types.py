@@ -1,3 +1,6 @@
+#
+# pyvider/rpcplugin/transport/types.py
+#
 """Type definitions for the Pyvider RPC plugin transport system.
 
 This module provides Protocol classes, TypeVars, and type aliases that define
@@ -56,3 +59,7 @@ type EndpointType = str
 type AddressType = tuple[str, int]
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

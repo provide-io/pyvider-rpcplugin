@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/config.py
+# pyvider/rpcplugin/config.py
 #
-
 """Configuration management for Pyvider RPC Plugin.
 
 This module provides a configuration system for the Pyvider RPC Plugin framework,
@@ -75,12 +74,6 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
         "required": True,
         "default": "test_cookie_value",
         "description": "The expected magic cookie value for validation.",
-        "type": "str",
-    },
-    "PLUGIN_MAGIC_COOKIE": {
-        "required": True,
-        "default": "test_cookie_value",
-        "description": "The actual cookie provided by the client.",
         "type": "str",
     },
     "PLUGIN_PROTOCOL_VERSIONS": {
@@ -296,10 +289,32 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 ),
             ) from e
 
+    return _convert_value_to_schema_type(value, meta["type"], key)
+
+
+def _convert_value_to_schema_type(
+    value: Any, type_string: str, key_for_error: str
+) -> Any:
+    """
+    Converts a value to the type specified by type_string.
+    Raises ConfigError if conversion fails.
+    """
+    if value is None and type_string not in (
+        "str",
+        "list_str",
+        "list_int",
+    ):  # Allow None only if not string/list like
+        # For types like bool, int, float, None should not be converted to 0 or False by default
+        # unless the original value was explicitly "0" or "false" string.
+        # If the schema default is None, fetch_env_variable would return None before this.
+        # If a string "None" is passed, it will fail specific conversions below, which is intended.
+        return None
+
     try:
-        type_string = meta["type"]
         if type_string == "str":
-            return value
+            return (
+                str(value) if value is not None else None
+            )  # Keep None as None for strings if that's the input
         elif type_string == "int":
             return int(value)
         elif type_string == "float":
@@ -309,37 +324,48 @@ def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
                 return value
             if isinstance(value, str):
                 return value.lower() in ("true", "yes", "1", "on")
-            return bool(value)
-        elif type_string == "list_str":
+            return bool(value)  # General fallback, e.g., int 0 becomes False
+        if type_string == "list_str":
+            if value is None:
+                return []  # Default to empty list if None
             if isinstance(value, list):
-                return value
+                return [str(v) for v in value]
             if isinstance(value, str):
                 return [v.strip() for v in value.split(",")]
-            return list(value)
-        elif type_string == "list_int":
+            if isinstance(value, tuple | set):
+                return [str(v) for v in value]
+            return [str(value)]  # Single item to list
+        if type_string == "list_int":
+            if value is None:
+                return []  # Default to empty list if None
             if isinstance(value, list) and all(isinstance(x, int) for x in value):
-                return value
+                return value  # Already correctly typed
             if isinstance(value, list):
                 return [int(v) for v in value]
             if isinstance(value, str):
+                # Handle empty string for list_int as empty list
+                if not value.strip():
+                    return []
                 return [int(v.strip()) for v in value.split(",")]
-            return [int(value)]
-        else:
-            logger.warning(
-                f"⚙️⚠️ Unknown type {type_string} for {key}, returning raw value"
-            )
-            return value
-
+            if isinstance(value, tuple | set):
+                return [int(v) for v in value]
+            return [int(value)]  # Single item to list
+        logger.warning(
+            f"⚙️⚠️ Unknown type {type_string} for {key_for_error}, returning raw value"
+        )
+        return value
     except (ValueError, TypeError) as e:
-        logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
+        logger.error(
+            f"⚙️❌ Type conversion failed for {key_for_error}", extra={"error": str(e)}
+        )
         raise ConfigError(
             message=(
-                f"Invalid value format for configuration key '{key}'. Expected "
-                f"type '{meta['type']}', but received value '{value}'."
+                f"Invalid value format for configuration key '{key_for_error}'. Expected "
+                f"type '{type_string}', but received value '{value}'."
             ),
             hint=(
-                f"Please check the value of '{key}' (currently '{value}') and "
-                f"ensure it conforms to the expected type ({meta['type']})."
+                f"Please check the value of '{key_for_error}' (currently '{value}') and "
+                f"ensure it conforms to the expected type ({type_string})."
             ),
         ) from e
 
@@ -477,52 +503,23 @@ class RPCPluginConfig:
         processed_value = value
         if meta:
             try:
-                type_string = meta["type"]
-                if value is None:
-                    processed_value = None
-                elif type_string == "str":
-                    processed_value = str(value)
-                elif type_string == "int":
-                    processed_value = int(value)
-                elif type_string == "float":
-                    processed_value = float(value)
-                elif type_string == "bool":
-                    if isinstance(value, bool):
-                        processed_value = value
-                    elif isinstance(value, str):
-                        processed_value = value.lower() in ("true", "yes", "1", "on")
-                    else:
-                        processed_value = bool(value)
-                elif type_string == "list_str":
-                    if isinstance(value, list):
-                        processed_value = [str(v) for v in value]
-                    elif isinstance(value, str):
-                        processed_value = [v.strip() for v in value.split(",")]
-                    else:
-                        processed_value = [str(value)]
-                elif type_string == "list_int":
-                    if isinstance(value, list):
-                        processed_value = [int(v) for v in value]
-                    elif isinstance(value, str):
-                        processed_value = [int(v.strip()) for v in value.split(",")]
-                    else:
-                        processed_value = [int(value)]
-            except (ValueError, TypeError) as e:
-                logger.error(
-                    f"⚙️❌ Type conversion failed for {key} during set: {e}",
-                    extra={"value_being_set": value},
+                processed_value = _convert_value_to_schema_type(
+                    value, meta["type"], key
                 )
-                raise ConfigError(
-                    message=(
-                        f"Invalid value format for configuration key '{key}' during "
-                        f"set. Expected type '{meta['type']}', but received value "
-                        f"'{value}'."
-                    ),
-                    hint=(
-                        f"Please check the value of '{key}' (currently '{value}') and "
-                        f"ensure it conforms to the expected type ({meta['type']})."
-                    ),
-                ) from e
+            except ConfigError as e:
+                # Re-raise with "during set" context if the original error was from conversion
+                if "Invalid value format" in e.message:
+                    raise ConfigError(
+                        message=(
+                            f"Invalid value format for configuration key '{key}' during "
+                            f"set. Expected type '{meta['type']}', but received value "
+                            f"'{value}'."
+                        ),
+                        hint=e.hint,  # Preserve original hint
+                        code=e.code,  # Preserve original code
+                    ) from e
+                raise  # Re-raise other ConfigErrors as is
+        # If not in schema (e.g. dynamic PLUGIN_ prefixed key), keep value as is.
 
         self.config[key] = processed_value
         logger.debug(
@@ -597,8 +594,7 @@ def configure(
 
     if magic_cookie is not None:
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
-        rpcplugin_config.set("PLUGIN_MAGIC_COOKIE", magic_cookie)
-        logger.debug(f"⚙️📝 Set magic cookie: {magic_cookie}")
+        logger.debug(f"⚙️📝 Set magic cookie value: {magic_cookie}")
 
     if protocol_version is not None:
         if protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:
@@ -665,3 +661,7 @@ def configure(
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌⚙️🪄

@@ -1,11 +1,14 @@
+#
 # pyvider-rpcplugin/pyproject.toml
+#
 
 [project]
 name = "pyvider-rpcplugin"
 description = "Pyvider RPC Plugin"
-version = "0.0.11"
-requires-python = ">=3.13"
+version = "0.0.111"
+requires-python = ">=3.12"
 readme = "README.md"
+license = { text = "Apache-2.0" }
 authors = [
     {name = "Tim Perkins", email = "code@tim.life"}
 ]
@@ -14,16 +17,16 @@ dependencies = [
     "attrs>=25.1.0",
     "cryptography>=44.0.1",
     "google>=3.0.0",
-    "grpcio>=1.70.0",
-    "grpcio-health-checking>=1.70.0",
+    "grpcio>=1.73.0",
+    "grpcio-health-checking>=1.73.0",
     "protobuf>=5.29.3",
-    "pyvider-telemetry>=0.0.4",
+    "pyvider-telemetry>=0.0.13",
     "structlog>=25.1.0",
 ]
 
 [dependency-groups]
 dev = [
-    "bandit>=1.8.3",
+"bandit>=1.8.3",
     "grpc-stubs>=1.53.0.6",
     "grpcio-tools>=1.70.0",
     "hatch>=1.14.0",
@@ -35,6 +38,7 @@ dev = [
     "pyrefly>=0.18.1",
     "pyright>=1.1.394",
     "pytest>=8.3.4",
+    "pre-commit>=3.5.0",
     "pytest-asyncio>=0.25.3",
     "pytest-cov>=6.0.0",
     "pytest-mock>=3.14.0", # Added pytest-mock

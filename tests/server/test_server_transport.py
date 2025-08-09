@@ -44,16 +44,16 @@ async def test_setup_server_unix_success_secure(
 
 
     mocker.patch.object(server, '_generate_server_credentials', return_value="mock_secure_creds")
-    
+
     mock_grpc_server_instance = mocker.MagicMock()
     mock_grpc_server_instance.start = mocker.AsyncMock()
     mock_grpc_server_instance.stop = mocker.AsyncMock()
-    
+
     mocker.patch('pyvider.rpcplugin.server.GRPCServer', return_value=mock_grpc_server_instance)
 
     try:
         await server._setup_server(client_cert.cert)
-        
+
         assert server._server is not None
         mock_grpc_server_instance.add_secure_port.assert_called_once_with(f"unix:{sock_path}", "mock_secure_creds")
         mock_grpc_server_instance.start.assert_called_once()
@@ -89,7 +89,7 @@ async def test_setup_server_add_port_failure(
         transport=transport,
     )
 
-    # FIX: Ensure the condition to take the secure path is met by mocking auto_mtls_enabled.
+
     mocker.patch.object(rpcplugin_config, 'auto_mtls_enabled', return_value=True)
 
     # Call _negotiate_handshake to correctly set internal state like _transport.
@@ -99,9 +99,12 @@ async def test_setup_server_add_port_failure(
 
     dummy_server = DummyGRPCServer()
     mocker.patch('pyvider.rpcplugin.server.GRPCServer', return_value=dummy_server)
-    
+
     mocker.patch.object(server, '_generate_server_credentials', return_value="mock_creds")
 
     with mock.patch.object(dummy_server, "add_secure_port", side_effect=raised_exception):
         with pytest.raises(TransportError, match=expected_match):
             await server._setup_server("client_cert")
+
+
+# 🐍🔌🧪🪄

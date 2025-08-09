@@ -26,7 +26,7 @@ if _version_not_supported:
 
 
 class EchoServiceStub(object):
-    """The echo service definition.
+    """The service definition
     """
 
     def __init__(self, channel):
@@ -43,12 +43,11 @@ class EchoServiceStub(object):
 
 
 class EchoServiceServicer(object):
-    """The echo service definition.
+    """The service definition
     """
 
     def Echo(self, request, context):
-        """Sends a greeting
-        """
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -70,7 +69,7 @@ def add_EchoServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class EchoService(object):
-    """The echo service definition.
+    """The service definition
     """
 
     @staticmethod
@@ -99,3 +98,5 @@ class EchoService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+# 🐍🔌📄🪄

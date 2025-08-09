@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 🛠️ **Comprehensive configuration system** supporting environment variables, files (.env, .json, .yaml), and programmatic setup
 - 🎯 **Complete type annotations** with modern Python 3.13+ typing features and `attrs` integration
 - 🧪 **Robust error handling** with custom exception hierarchy and detailed context
-- 📖 **Extensive documentation** with 10 progressive examples from quick-start to production patterns
+- 📖 **Extensive documentation** with comprehensive examples from quick-start to production patterns
 - 🤖 **GitHub Actions integration** for automated testing and documentation validation
 - 🔧 **Development tooling** with comprehensive test suite, type checking, and code quality enforcement
 
@@ -53,14 +53,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 - **Complete README** with quick start, examples, and API overview
-- **10 progressive examples** from basic setup to production optimization
+- **Comprehensive examples** from basic setup to production optimization
 - **API reference** documentation for all public interfaces
 - **Security guide** for mTLS setup and certificate management
 - **Architecture documentation** with design patterns and best practices
 - **Troubleshooting guide** for common issues and debugging
 
 ### Testing & Quality
-- **Comprehensive test suite** with 85% code coverage
+- **Comprehensive test suite** with 88% code coverage
 - **Integration tests** for all transport and protocol combinations
 - **Security testing** for certificate validation and mTLS scenarios
 - **Performance benchmarks** and regression testing

@@ -4,168 +4,132 @@ This directory contains a comprehensive collection of executable examples demons
 
 ## 🚀 Quick Start
 
-To run any example:
+To run the quick start example:
 
-1. **Navigate to the examples directory**:
-   ```bash
-   cd examples/
-   ```
+1.  **Navigate to the project root directory** (if not already there).
+2.  **Run the client script**:
+    ```bash
+    python examples/ch02_quick_start_client.py
+    ```
+    This script will launch the `ch02_dummy_server.py` plugin and demonstrate a basic connection.
 
-2. **Run the desired example**:
-   ```bash
-   python 01_quick_start.py
-   ```
-
-Each script automatically configures the Python path to find the `pyvider` modules from the project's `src` directory.
+Each example script automatically configures the Python path to find the `pyvider` modules from the project's `src` directory via `example_utils.py`.
 
 ## 📋 Example Files
 
-### **Core Examples** (Numbered Series)
+The examples are now named with a `chXX_` prefix corresponding to the main documentation chapter they illustrate or relate to.
 
-| File | Description | Complexity | Prerequisites |
-|------|-------------|------------|---------------|
-| **`01_quick_start.py`** | 🚀 Basic server/client setup - **Featured in README** | Beginner | None |
-| **`02_server_setup.py`** | ⚙️ Server configuration patterns | Beginner | Basic Python async |
-| **`03_client_connection.py`** | 🔗 Client implementation examples | Beginner | Understanding of 02 |
-| **`04_transport_options.py`** | 🚚 Unix socket vs TCP configuration | Intermediate | Basic networking |
-| **`05_security_mtls.py`** | 🔒 mTLS certificate setup & security patterns | Advanced | PKI knowledge |
-| **`06_async_patterns.py`** | ⚡ Advanced async best practices | Advanced | Asyncio proficiency |
-| **`07_error_handling.py`** | ⚠️ Robust error management patterns | Intermediate | Exception handling |
-| **`08_production_config.py`** | 🏭 Production deployment patterns | Advanced | Operations experience |
-| **`09_custom_protocols.py`** | 🔧 Custom protocol definitions & middleware | Advanced | Framework understanding |
-| **`10_performance_tuning.py`** | 📈 Performance benchmarking & optimization | Advanced | System knowledge |
+| File                                      | Description                                                                 | Relevant Chapter(s) |
+| :---------------------------------------- | :-------------------------------------------------------------------------- | :------------------ |
+| **`ch02_dummy_server.py`**                | Minimal plugin server used by other examples.                               | Ch02, Ch08, Ch09    |
+| **`ch02_quick_start_client.py`**          | 🚀 Basic client launching `ch02_dummy_server.py`.                           | Ch02                |
+| **`ch03_server_setup_concepts.py`**       | ⚙️ Server configuration patterns and concepts.                                | Ch03                |
+| **`ch04_transport_options_demo.py`**      | 🚚 Demonstrates Unix socket vs TCP transport classes.                       | Ch04                |
+| **`ch05_echo_server.py`**                 | 📢 Echo service: Server implementation.                                     | Ch05                |
+| **`ch06_client_setup_concepts.py`**       | 🔗 Client implementation concepts and patterns.                             | Ch06                |
+| **`ch07_echo_client.py`**                 | 💻 Echo service: Client launching `ch05_echo_server.py`.                    | Ch07                |
+| **`ch08_direct_client_connection.py`**    | 🔌 Client connecting directly to an already running server.                 | Ch08                |
+| **`ch09_security_mtls_example.py`**       | 🔒 mTLS certificate setup & security patterns.                              | Ch09                |
+| **`ch10_async_patterns_demo.py`**         | ⚡ Advanced asyncio patterns relevant to RPC development.                    | Ch10                |
+| **`ch11_error_handling_demo.py`**         | ⚠️ Robust error management patterns and exception handling.                  | Ch11                |
+| **`ch12_production_config_discussion.py`**| 🏭 Discussion of production deployment patterns and configurations.         | Ch12                |
+| **`ch13_custom_protocols_demo.py`**       | 🔧 Conceptual custom protocol definitions & middleware ideas.               | Ch13                |
+| **`ch14_performance_tuning_concepts.py`** | 📈 Performance benchmarking & optimization concepts.                        | Ch14                |
+| **`ch15_e2e_server.py`**                  | 🌐 End-to-end Greeter service: Server implementation.                       | Ch15                |
+| **`ch15_e2e_client.py`**                  | 🌐 End-to-end Greeter service: Client launching `ch15_e2e_server.py`.       | Ch15                |
 
-### **Complete Demos** (`demo/` directory)
+### **Service Examples Details**
 
-#### **Echo Service** (`examples/demo/`)
-A complete, production-ready echo service implementation.
+#### **Echo Service** (using `ch05_echo_server.py` and `ch07_echo_client.py`)
+A fundamental client-server example demonstrating basic RPC communication using a custom `Echo` service defined in `examples/proto/echo.proto`.
 
-```bash
-# Start the server
-python examples/demo/echo_server.py --transport tcp --port 50051
+**Running the Echo Service:**
+1.  **Run the client (which launches the server):**
+    ```bash
+    # From the project root directory:
+    python examples/ch07_echo_client.py
+    ```
+    The client will launch `ch05_echo_server.py`, connect to it, send a message, and print the reply.
 
-# In another terminal, run the client
-python examples/demo/echo_client.py localhost:50051
-```
+#### **End-to-End Greeter Service** (using `ch15_e2e_server.py` and `ch15_e2e_client.py`)
+A client-server example demonstrating a true RPC call with a custom protobuf service defined in `examples/proto/e2e_greeting.proto`.
 
-**Files:**
-- `examples/demo/echo.proto` - Protocol buffer service definition
-- `examples/demo/echo_server.py` - Server implementation
-- `examples/demo/echo_client.py` - Client implementation
-
-#### **Key-Value Service** (`examples/kvproto/py_rpc/`)
-Advanced key-value store with persistence and atomic operations.
-
-```bash
-# Start the KV server
-python examples/kvproto/py_rpc/py_kv_server.py --transport tcp
-
-# Run the client
-python examples/kvproto/py_rpc/py_kv_client.py put mykey myvalue
-python examples/kvproto/py_rpc/py_kv_client.py get mykey
-```
-
-**Features:**
-- Persistent storage
-- Atomic operations
-- Batch operations
-- Error handling
+**Running the E2E Greeter Service:**
+1.  **Run the client (which launches the server):**
+    ```bash
+    # From the project root directory:
+    python examples/ch15_e2e_client.py
+    ```
+    The client will launch `ch15_e2e_server.py`, connect, make an RPC call, print the reply, and then both will shut down.
 
 ## 🏃‍♂️ Running Examples
 
 ### **Prerequisites**
 - Python 3.13+
-- `pyvider-rpcplugin` installed or source available
-- For `demo/` examples: `protoc` compiler (for generating .proto files)
+- `pyvider-rpcplugin` installed or source available (i.e., run from the project root).
+- `grpcio-tools` for compiling `.proto` files (though pre-generated files are provided for the examples).
 
 ### **Environment Setup**
 
 The examples are designed to be run from the root of the `pyvider-rpcplugin` repository.
-Each example script (e.g., `01_quick_start.py`) typically includes:
+Each example script (e.g., `ch02_quick_start_client.py`) typically includes:
 ```python
-from example_utils import configure_for_example
-configure_for_example()
+# For scripts inside examples/ directory
+import example_utils
+example_utils.configure_for_example()
 ```
 This utility function automatically adjusts `sys.path` to ensure that the `pyvider.rpcplugin` library from the `src/` directory and `example_utils` itself are correctly imported.
-Therefore, manually setting `PYTHONPATH` is usually not required if running examples from the project root (e.g., `python examples/01_quick_start.py`) or from within the `examples/` directory (e.g., `cd examples; python 01_quick_start.py`).
-
-If you have `pyvider-rpcplugin` installed as a package (e.g., via `pip install pyvider-rpcplugin` or `uv add pyvider-rpcplugin`), the examples should also work by finding the installed package, provided the import paths are correctly resolved by your Python environment.
+Therefore, manually setting `PYTHONPATH` is usually not required if running examples from the project root (e.g., `python examples/ch02_quick_start_client.py`).
 
 ### **Running Individual Examples**
+(Run from the project root directory)
 ```bash
-# Basic quick start demo (great starting point)
-python 01_quick_start.py
+# Quick Start (Client launches ch02_dummy_server.py)
+python examples/ch02_quick_start_client.py
 
-# Server configuration examples
-python 02_server_setup.py
+# Echo Service (Client launches ch05_echo_server.py)
+python examples/ch07_echo_client.py
 
-# Client patterns
-python 03_client_connection.py
+# E2E Greeter Service (Client launches ch15_e2e_server.py)
+python examples/ch15_e2e_client.py
 
-# Transport comparison
-python 04_transport_options.py
+# Other conceptual/demonstration scripts:
+python examples/ch03_server_setup_concepts.py
+python examples/ch04_transport_options_demo.py
+python examples/ch06_client_setup_concepts.py
+python examples/ch09_security_mtls_example.py # Launches ch02_dummy_server.py
+python examples/ch10_async_patterns_demo.py
+python examples/ch11_error_handling_demo.py
+python examples/ch12_production_config_discussion.py
+python examples/ch13_custom_protocols_demo.py
+python examples/ch14_performance_tuning_concepts.py
 
-# Security and mTLS
-python 05_security_mtls.py
-
-# Advanced async patterns
-python 06_async_patterns.py
-
-# Error handling
-python 07_error_handling.py
-
-# Production configuration
-python 08_production_config.py
-
-# Custom protocols
-python 09_custom_protocols.py
-
-# Performance tuning
-python 10_performance_tuning.py
-```
-
-### **Running Complete Demos**
-
-#### Echo Service Demo
-```bash
-# Terminal 1: Start server
-cd examples/demo/
-python echo_server.py
-
-# Terminal 2: Run client
-python echo_client.py
-```
-
-#### Key-Value Demo
-```bash
-# Terminal 1: Start KV server  
-cd examples/kvproto/py_rpc/
-python py_kv_server.py --transport tcp
-
-# Terminal 2: Run KV client
-python py_kv_client.py put mykey myvalue
-python py_kv_client.py get mykey
+# For ch08_direct_client_connection.py:
+# 1. Start ch02_dummy_server.py in one terminal: python examples/ch02_dummy_server.py
+#    (It will write its socket path to dummy_server_socket.txt)
+# 2. In another terminal, run: python examples/ch08_direct_client_connection.py
 ```
 
 ## 📚 Learning Path
 
 ### **For Beginners**
-1. Start with `01_quick_start.py` - Understand basic concepts
-2. Explore `02_server_setup.py` - Learn server configuration
-3. Try `03_client_connection.py` - Understand client patterns
-4. Run the complete `examples/demo/` (echo demo) - See everything together
+1. Start with **Chapter 2: Getting Started** and run `ch02_quick_start_client.py`.
+2. Explore server setup concepts with `ch03_server_setup_concepts.py` (Chapter 3).
+3. Understand client setup with `ch06_client_setup_concepts.py` (Chapter 6).
+4. Run the **Echo Service** (`ch07_echo_client.py` launching `ch05_echo_server.py`) to see a full client/server RPC interaction (Chapters 5 & 7).
 
 ### **For Intermediate Users**
-1. Study `04_transport_options.py` - Compare Unix vs TCP
-2. Review `07_error_handling.py` for robust applications
-3. Study `06_async_patterns.py` for async best practices
-4. Experiment with `examples/kvproto/py_rpc/` (KV demo) - Complex service implementation
+1. Study transport options with `ch04_transport_options_demo.py` (Chapter 4).
+2. Explore async patterns with `ch10_async_patterns_demo.py` (Chapter 10).
+3. Review error handling with `ch11_error_handling_demo.py` (Chapter 11).
+4. Run the **E2E Greeter Service** (`ch15_e2e_client.py` launching `ch15_e2e_server.py`) (Chapter 15).
 
 ### **For Advanced Users**
-1. Master `05_security_mtls.py` - Production security
-2. Deploy using `08_production_config.py` - Production setup
-3. Analyze `09_custom_protocols.py` for protocol extensions
-4. Optimize with `10_performance_tuning.py` - Performance patterns
+1. Master mTLS with `ch09_security_mtls_example.py` (Chapter 9).
+2. Understand production configurations with `ch12_production_config_discussion.py` (Chapter 12).
+3. Analyze custom protocol concepts with `ch13_custom_protocols_demo.py` (Chapter 13).
+4. Review performance concepts with `ch14_performance_tuning_concepts.py` (Chapter 14).
+5. Understand direct client connections (for testing/debugging) with `ch08_direct_client_connection.py` (Chapter 8).
 
 ## 🔧 Troubleshooting
 
@@ -173,41 +137,26 @@ python py_kv_client.py get mykey
 
 #### Import Errors
 If you encounter import errors like `ModuleNotFoundError: No module named 'pyvider'` or `No module named 'example_utils'`:
-- Ensure you are running the example script from the project's root directory (e.g., `python examples/01_quick_start.py`) or from within the `examples/` directory itself (e.g., `cd examples; python 01_quick_start.py`).
-- The `example_utils.configure_for_example()` call at the beginning of each script is designed to set up `sys.path` correctly. Make sure this line is present and executed.
-- If you've installed `pyvider-rpcplugin` as a package, ensure your Python environment can locate it.
-
-#### Port Already in Use
-```bash
-# Examples automatically find available ports
-# If issues persist, check for other services:
-netstat -tulpn | grep :50051
-```
-
-#### Permission Errors (Unix Sockets)
-```bash
-# Ensure socket directory is writable
-mkdir -p /tmp/pyvider_sockets
-chmod 755 /tmp/pyvider_sockets
-```
+- Ensure you are running the example script from the project's root directory (e.g., `python examples/ch02_quick_start_client.py`).
+- The `example_utils.configure_for_example()` call at the beginning of most scripts is designed to set up `sys.path` correctly.
 
 ## 📖 Additional Resources
 
-- **API Documentation**: See `docs/api-reference.md`
-- **Architecture Guide**: See `docs/architecture.md`
-- **Security Guide**: See `docs/security.md`
-- **Production Deployment**: See `docs/production.md`
+- **API Reference**: `docs/guide/ch17_api_reference.md` (Chapter 17)
+- **Core Architecture**: `docs/guide/ch16_core_architecture.md` (Chapter 16)
+- **Security (mTLS)**: `docs/guide/ch09_security_mtls.md` (Chapter 9)
+- **Production Configuration & Deployment**: `docs/guide/ch12_production_config.md` (Chapter 12)
 
 ## 🤝 Contributing Examples
 
 When adding new examples:
 
-1. Use the numbered format for core examples (`11_new_feature.py`)
-2. Include comprehensive docstrings and comments
-3. Add appropriate emoji logging with `from pyvider.telemetry import logger`
-4. Update this README with the new example
-5. Ensure examples are self-contained and runnable
-6. Follow the established patterns for path resolution
+1. Use the `chXX_descriptive_name.py` format, where `XX` is the primary chapter number it relates to.
+2. Include comprehensive docstrings and comments.
+3. Add appropriate emoji logging with `from pyvider.telemetry import logger`.
+4. Update this README with the new example.
+5. Ensure examples are self-contained and runnable where possible, or provide clear instructions if they depend on other components.
+6. Follow the established patterns for path resolution and `example_utils`.
 
 ---
 

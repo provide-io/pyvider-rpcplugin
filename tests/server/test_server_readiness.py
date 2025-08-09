@@ -81,3 +81,6 @@ async def test_wait_for_server_ready_tcp_connect_fails(mocker):
 
     with pytest.raises(TransportError, match="Server readiness check failed: Connection failed"):
         await server.wait_for_server_ready(timeout=0.1)
+
+
+# 🐍🔌🧪🪄

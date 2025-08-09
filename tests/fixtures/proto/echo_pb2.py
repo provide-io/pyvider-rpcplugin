@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\necho.proto\x12\x04\x65\x63ho\"\x1e\n\x0b\x45\x63hoRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x1d\n\x0c\x45\x63hoResponse\x12\r\n\x05reply\x18\x01 \x01(\t2>\n\x0b\x45\x63hoService\x12/\n\x04\x45\x63ho\x12\x11.echo.EchoRequest\x1a\x12.echo.EchoResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\necho.proto\x12\x04\x65\x63ho\"\x1e\n\x0b\x45\x63hoRequest\x12\x0f\n\x07message\x18\x01 \x01(\t\"\x1d\n\x0c\x45\x63hoResponse\x12\r\n\x05reply\x18\x01 \x01(\t2<\n\x0b\x45\x63hoService\x12-\n\x04\x45\x63ho\x12\x11.echo.EchoRequest\x1a\x12.echo.EchoResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -36,5 +36,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_ECHORESPONSE']._serialized_start=52
   _globals['_ECHORESPONSE']._serialized_end=81
   _globals['_ECHOSERVICE']._serialized_start=83
-  _globals['_ECHOSERVICE']._serialized_end=145
+  _globals['_ECHOSERVICE']._serialized_end=143
 # @@protoc_insertion_point(module_scope)
+
+# 🐍🔌📄🪄

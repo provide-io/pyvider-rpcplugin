@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/rate_limiter.py
+# pyvider/rpcplugin/rate_limiter.py
 #
-
 """
 Rate Limiting Utilities for Pyvider RPC Plugin.
 
@@ -106,29 +105,8 @@ class TokenBucketRateLimiter:
             return self._tokens
 
 
-async def main() -> None:
-    limiter = TokenBucketRateLimiter(capacity=5, refill_rate=1)  # 5 tokens, 1 token/sec
-
-    for i in range(10):
-        if await limiter.is_allowed():
-            logger.info(f"Request {i + 1} allowed.")
-        else:
-            logger.info(f"Request {i + 1} denied.")
-
-        if i == 5:  # After 6 requests (0-5)
-            logger.info("Waiting for 2 seconds to allow tokens to refill...")
-            await asyncio.sleep(2)
-
-    logger.info(f"Final tokens: {await limiter.get_current_tokens()}")
-
-
-if __name__ == "__main__":
-    # This example won't run directly as-is without an event loop manager
-    # if used outside of an existing asyncio context.
-    # To run:
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(main())
-    pass
-
-
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

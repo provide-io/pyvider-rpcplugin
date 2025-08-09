@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/transport/unix.py
+#
+
 """
 Unix Domain Socket Transport Implementation.
 
@@ -17,8 +21,9 @@ from attrs import define, field
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
-from pyvider.telemetry import logger
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
+from pyvider.telemetry import logger
+
 
 def normalize_unix_path(path: str) -> str:
     """
@@ -48,6 +53,7 @@ def normalize_unix_path(path: str) -> str:
 
     logger.debug(f"📞🔍✅ * Normalized path: {path}")
     return path
+
 
 @define(frozen=False, slots=True)
 class UnixSocketTransport(RPCPluginTransport):
@@ -84,7 +90,7 @@ class UnixSocketTransport(RPCPluginTransport):
     _closing: bool = field(init=False, default=False)
     _lock: asyncio.Lock = field(init=False, factory=asyncio.Lock)
 
-    _transport_name: str = "unix" # Identifier for this transport type
+    _transport_name: str = "unix"  # Identifier for this transport type
 
     def __attrs_post_init__(self) -> None:
         """
@@ -97,6 +103,7 @@ class UnixSocketTransport(RPCPluginTransport):
             # Generate ephemeral path if none provided
             import tempfile
             import uuid
+
             self.path = os.path.join(
                 tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock"
             )
@@ -112,18 +119,26 @@ class UnixSocketTransport(RPCPluginTransport):
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
         if not self.path or not os.path.exists(self.path):
-            logger.debug(f"📞🔍✅ Socket path {self.path} does not exist or is None, considering available.")
+            logger.debug(
+                f"📞🔍✅ Socket path {self.path} does not exist or is None, "
+                "considering available."
+            )
             return False
 
         # Path exists, check if it's actually a socket and connectable
         try:
             mode = os.stat(self.path).st_mode
             if not stat.S_ISSOCK(mode):
-                logger.debug(f"📞🔍✅ Path {self.path} exists but is not a socket (mode: {oct(mode)}). Considering available.")
+                logger.debug(
+                    f"📞🔍✅ Path {self.path} exists but is not a socket "
+                    f"(mode: {oct(mode)}). Considering available."
+                )
                 return False
         except OSError as e:
             # Failed to stat path (e.g., permissions, or it disappeared)
-            logger.warning(f"📞🔍⚠️ Could not stat {self.path} ({e}). Assuming available.")
+            logger.warning(
+                f"📞🔍⚠️ Could not stat {self.path} ({e}). Assuming available."
+            )
             return False
 
         # Path exists and is a socket, now try to connect
@@ -131,26 +146,41 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.settimeout(0.5)
-            logger.debug(f"📞🔍🚀 Checking if socket {self.path} is in use by attempting connect.")
+            logger.debug(
+                f"📞🔍🚀 Checking if socket {self.path} is in use by "
+                "attempting connect."
+            )
             sock.connect(self.path)
             # If connect succeeds, the socket is in use by another process
-            logger.debug(f"📞🔍❌ Socket {self.path} is in use (connection successful).")
+            logger.debug(
+                f"📞🔍❌ Socket {self.path} is in use (connection successful)."
+            )
             return True
         except (ConnectionRefusedError, FileNotFoundError):
             # Connection refused or socket file disappeared: it's available
-            logger.debug(f"📞🔍✅ Socket {self.path} is available (ConnectionRefusedError or FileNotFoundError).")
+            logger.debug(
+                f"📞🔍✅ Socket {self.path} is available (ConnectionRefusedError or "
+                "FileNotFoundError)."
+            )
             return False
         except OSError as e:
             # Other OSErrors (e.g., timeout, permission issues during connect)
-            # If we can't connect for any other OSError, assume it's not actively listening in a way that would conflict.
-            logger.warning(f"📞🔍⚠️ OSError while connecting to {self.path} ({e}). Assuming available.")
+            # If we can't connect for any other OSError, assume it's not actively
+            # listening in a way that would conflict.
+            logger.warning(
+                f"📞🔍⚠️ OSError while connecting to {self.path} ({e}). "
+                "Assuming available."
+            )
             return False
         finally:
             if sock:
                 try:
                     sock.close()
-                except Exception as e:
-                    logger.warning(f"📞🔍⚠️ Error closing temporary socket in _check_socket_in_use: {e}")
+                except Exception as e_sock_close:
+                    logger.warning(
+                        "📞🔍⚠️ Error closing temporary socket in "
+                        f"_check_socket_in_use: {e_sock_close}"
+                    )
 
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""
@@ -166,7 +196,10 @@ class UnixSocketTransport(RPCPluginTransport):
                 raise TransportError(f"Socket {self.path} is already running")
 
             if self.path is None:
-                raise RuntimeError("self.path was not initialized. This should not happen if __attrs_post_init__ ran correctly.")
+                raise RuntimeError(
+                    "self.path was not initialized. This should not happen if "
+                    "__attrs_post_init__ ran correctly."
+                )
 
             # Create directory if needed
             dir_path = os.path.dirname(self.path)
@@ -176,9 +209,10 @@ class UnixSocketTransport(RPCPluginTransport):
                     logger.debug(f"📞🕹✅ Created directory: {dir_path}")
                 except (PermissionError, OSError) as e:
                     logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
-                    raise TransportError(f"Failed to create Unix socket directory: {e}")
+                    raise TransportError(
+                        f"Failed to create Unix socket directory: {e}"
+                    ) from e
 
-            # Remove stale socket file if it exists
             if os.path.exists(self.path):
                 try:
                     os.unlink(self.path)
@@ -188,7 +222,9 @@ class UnixSocketTransport(RPCPluginTransport):
                 except OSError as e:
                     if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
                         logger.error(f"📞🕹❌ Failed to remove stale socket: {e}")
-                        raise TransportError(f"Failed to remove stale socket: {e}")
+                        raise TransportError(
+                            f"Failed to remove stale socket: {e}"
+                        ) from e
 
             try:
                 logger.debug(f"📞🕹🚀 Creating Unix socket at {self.path}")
@@ -198,32 +234,50 @@ class UnixSocketTransport(RPCPluginTransport):
 
                 # Set permissions for user and group (owner rwx, group rwx)
                 # This is safer than 0o777 and suitable if client/server share a group.
-                # For broader interop where group sharing isn't guaranteed, this might be too restrictive.
+                # For broader interop where group sharing isn't guaranteed,
+                # this might be too restrictive.
                 # However, 0o777 is generally too permissive for production.
-                # Acknowledging the "test/interop environments" comment, 0o770 is a step down.
-                # Ideal solution might involve configurable permissions or group ownership.
+                # Acknowledging the "test/interop environments" comment,
+                # 0o770 is a step down.
+                # Ideal solution might involve configurable permissions or
+                # group ownership.
                 try:
-                    current_mask = os.umask(0) # Get current umask, set to 0 temporarily
-                    os.umask(current_mask) # Restore original umask
-                    desired_permissions = 0o770 & ~current_mask # Apply umask
-                    os.chmod(self.path, desired_permissions)
-                    logger.debug(f"📞🕹✅ Set permissions to {oct(desired_permissions)} on {self.path} (considering umask {oct(current_mask)})")
-                except Exception as e:
-                    logger.warning(f"📞🕹⚠️ Failed to set permissions on {self.path}: {e}. Proceeding with default permissions.")
-
+                    current_mask = os.umask(
+                        0
+                    )  # Get current umask, set to 0 temporarily
+                    os.umask(current_mask)  # Restore original umask
+                    desired_permissions = (
+                        0o660 & ~current_mask
+                    )  # Apply umask, changed from 0o770
+                    os.chmod(self.path, desired_permissions)  # nosec B103
+                    logger.debug(
+                        f"📞🕹✅ Set permissions to {oct(desired_permissions)} on "
+                        f"{self.path} (considering umask {oct(current_mask)})"
+                    )
+                except Exception as e_chmod:
+                    logger.warning(
+                        f"📞🕹⚠️ Failed to set permissions on {self.path}: {e_chmod}. "
+                        "Proceeding with default permissions."
+                    )
 
                 self._running = True
                 self.endpoint = self.path
-                logger.info(f"📞🕹✅ UnixSocketTransport: Endpoint set to {self.endpoint}")
+                logger.info(
+                    f"📞🕹✅ UnixSocketTransport: Endpoint set to {self.endpoint}"
+                )
                 logger.debug(f"📞🕹✅ Server listening on {self.path}")
                 self._server_ready.set()
-                if self.path is None: # Should be caught by the earlier check, but as a safeguard for return type
-                    raise RuntimeError("self.path became None before returning from listen().")
+                if (
+                    self.path is None
+                ):  # Should be caught by earlier check, but safeguard
+                    raise RuntimeError(
+                        "self.path became None before returning from listen()."
+                    )
                 return self.path
 
             except OSError as e:
                 logger.error(f"📞🕹❌ Failed to create Unix socket: {e}")
-                raise TransportError(f"Failed to create Unix socket: {e}")
+                raise TransportError(f"Failed to create Unix socket: {e}") from e
 
     async def connect(self, endpoint: str) -> None:
         """
@@ -235,7 +289,8 @@ class UnixSocketTransport(RPCPluginTransport):
         3. Establishes the connection with timeout handling
 
         Args:
-            endpoint: The Unix socket path to connect to, which can be in various formats:
+            endpoint: The Unix socket path to connect to, which can be in
+                      various formats:
                      - Absolute path: "/tmp/socket.sock"
                      - With prefix: "unix:/tmp/socket.sock"
 
@@ -249,7 +304,9 @@ class UnixSocketTransport(RPCPluginTransport):
         # Normalize endpoint path
         endpoint = normalize_unix_path(endpoint)
 
-        logger.debug(f"📞🤝🚀 Connecting to Unix socket at '{endpoint}' (from '{orig_endpoint}')")
+        logger.debug(
+            f"📞🤝🚀 Connecting to Unix socket at '{endpoint}' (from '{orig_endpoint}')"
+        )
 
         # Verify socket file exists with retries
         retries = 3
@@ -257,13 +314,15 @@ class UnixSocketTransport(RPCPluginTransport):
             if os.path.exists(endpoint):
                 break
             if attempt < retries - 1:
-                logger.debug(f"📞🤝⚠️ Socket file not found, retrying ({attempt+1}/{retries})")
+                logger.debug(
+                    f"📞🤝⚠️ Socket file not found, retrying ({attempt + 1}/{retries})"
+                )
                 await asyncio.sleep(0.5)  # Short delay between retries
 
         if not os.path.exists(endpoint):
             logger.error(f"📞🤝❌ Socket file does not exist: {endpoint}")
             raise TransportError(f"Socket {endpoint} does not exist")
-            
+
         # Add validation that it's actually a socket
         try:
             if not stat.S_ISSOCK(os.stat(endpoint).st_mode):
@@ -271,22 +330,23 @@ class UnixSocketTransport(RPCPluginTransport):
                 raise TransportError(f"Path exists but is not a socket: {endpoint}")
         except OSError as e:
             logger.error(f"📞🤝❌ Error checking if path is a socket: {e}")
-            raise TransportError(f"Error checking socket status: {e}")
+            raise TransportError(f"Error checking socket status: {e}") from e
 
         try:
             reader_writer = await asyncio.wait_for(
-                asyncio.open_unix_connection(endpoint),
-                timeout=5.0
+                asyncio.open_unix_connection(endpoint), timeout=5.0
             )
             self._reader, self._writer = reader_writer  # Unpack after awaiting
             self.endpoint = endpoint
             logger.debug(f"📞🤝✅ Connected to Unix socket at {endpoint}")
-        except asyncio.TimeoutError as e:
-            logger.error(f"📞🤝❌ Connection to Unix socket timed out: {e}")
-            raise TransportError(f"Connection to Unix socket timed out: {e}") from e
+        except TimeoutError as e_timeout:
+            logger.error(f"📞🤝❌ Connection to Unix socket timed out: {e_timeout}")
+            raise TransportError(
+                f"Connection to Unix socket timed out: {e_timeout}"
+            ) from e_timeout
         except Exception as e:
             logger.error(f"📞🤝❌ Failed to connect to Unix socket: {e}")
-            raise TransportError(f"Failed to connect to Unix socket: {e}")
+            raise TransportError(f"Failed to connect to Unix socket: {e}") from e
 
     async def _handle_client(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -312,15 +372,22 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             async with self._lock:
                 self._connections.add(conn)
-                logger.debug(f"📞📥✅ Added connection to pool: {conn.remote_addr}, total: {len(self._connections)}")
+                logger.debug(
+                    f"📞📥✅ Added connection to pool: {conn.remote_addr}, "
+                    f"total: {len(self._connections)}"
+                )
 
             while self._running and not conn.is_closed:
                 data = await conn.receive_data()
                 if not data:
-                    logger.debug(f"📞📥⚠️ No data received from {peer_info}, closing connection")
+                    logger.debug(
+                        f"📞📥⚠️ No data received from {peer_info}, closing connection"
+                    )
                     break
 
-                logger.debug(f"📞📥✅ Received data from {peer_info}: {len(data)} bytes")
+                logger.debug(
+                    f"📞📥✅ Received data from {peer_info}: {len(data)} bytes"
+                )
                 await conn.send_data(data)  # echo
                 logger.debug(f"📞📤✅ Echoed data back to {peer_info}")
 
@@ -332,7 +399,10 @@ class UnixSocketTransport(RPCPluginTransport):
             async with self._lock:
                 if conn in self._connections:
                     self._connections.remove(conn)
-                    logger.debug(f"📞🔒✅ Removed connection from pool, remaining: {len(self._connections)}")
+                    logger.debug(
+                        "📞🔒✅ Removed connection from pool, remaining: "
+                        f"{len(self._connections)}"
+                    )
             await conn.close()
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
 
@@ -342,6 +412,10 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.debug("📞🔒✍️ _close_writer: writer is None, returning.")
             return
 
+        transport_to_abort = None
+        if hasattr(writer, "transport"):
+            transport_to_abort = writer.transport
+
         try:
             logger.debug(f"📞🔒✍️ _close_writer: writer.close() called for {writer!r}")
             writer.close()
@@ -349,17 +423,80 @@ class UnixSocketTransport(RPCPluginTransport):
             # Add detailed diagnostic logging here
             logger.debug(f"📞🔒✍️ DIAGNOSTIC: type(writer): {type(writer)}")
             logger.debug(f"📞🔒✍️ DIAGNOSTIC: repr(writer): {writer!r}")
-            logger.debug(f"📞🔒✍️ DIAGNOSTIC: hasattr(writer, 'wait_closed'): {hasattr(writer, 'wait_closed')}")
-            if hasattr(writer, 'wait_closed'):
-                logger.debug(f"📞🔒✍️ DIAGNOSTIC: type(writer.wait_closed): {type(writer.wait_closed)}")
-                logger.debug(f"📞🔒✍️ DIAGNOSTIC: repr(writer.wait_closed): {writer.wait_closed!r}")
-            logger.debug(f"📞🔒✍️ DIAGNOSTIC: writer.is_closing(): {writer.is_closing()}")
-            
+            logger.debug(
+                "📞🔒✍️ DIAGNOSTIC: hasattr(writer, 'wait_closed'): "
+                f"{hasattr(writer, 'wait_closed')}"
+            )
+            if hasattr(writer, "wait_closed"):
+                logger.debug(
+                    "📞🔒✍️ DIAGNOSTIC: type(writer.wait_closed): "
+                    f"{type(writer.wait_closed)}"
+                )
+                logger.debug(
+                    "📞🔒✍️ DIAGNOSTIC: repr(writer.wait_closed): "
+                    f"{writer.wait_closed!r}"
+                )
+            if hasattr(writer, "is_closing") and callable(writer.is_closing):
+                logger.debug(
+                    f"📞🔒✍️ DIAGNOSTIC: writer.is_closing(): {writer.is_closing()}"
+                )
+            else:
+                logger.debug("📞🔒✍️ DIAGNOSTIC: writer has no is_closing() method.")
+
             await writer.wait_closed()
             logger.debug("📞🔒✅ Writer closed successfully")
         except Exception as e:
             logger.error(f"📞🔒⚠️ Error closing writer: {e}", exc_info=True)
-            # Don't propagate exception to avoid crashing cleanup, as this is part of cleanup.
+            # If wait_closed() failed, attempt to abort the transport directly
+            # as the normal cleanup might be compromised.
+            if (
+                transport_to_abort
+                and hasattr(transport_to_abort, "abort")
+                and callable(transport_to_abort.abort)
+            ):
+                logger.warning(
+                    "📞🔒✍️ Exception during wait_closed, attempting direct "
+                    f"abort of transport: {transport_to_abort!r}"
+                )
+                transport_to_abort.abort()
+        finally:
+            # This existing finally block can act as a final check, though the
+            # direct abort in the except block should handle the primary case.
+            if (
+                transport_to_abort
+            ):  # transport_to_abort was defined at the start of the method
+                if (
+                    hasattr(transport_to_abort, "is_closing")
+                    and callable(transport_to_abort.is_closing)
+                    and hasattr(transport_to_abort, "abort")
+                    and callable(transport_to_abort.abort)
+                ):
+                    if not transport_to_abort.is_closing():
+                        logger.debug(
+                            "📞🔒✍️ FINALLY: Aggro abort in _close_writer for "
+                            f"transport: {transport_to_abort!r}"
+                        )
+                        transport_to_abort.abort()
+                    else:
+                        logger.debug(
+                            "📞🔒✍️ FINALLY: Transport already closing in "
+                            f"_close_writer: {transport_to_abort!r}"
+                        )
+                elif hasattr(transport_to_abort, "abort") and callable(
+                    transport_to_abort.abort
+                ):
+                    logger.debug(
+                        "📞🔒✍️ FINALLY: No is_closing, attempting abort: "
+                        f"{transport_to_abort!r}"
+                    )
+                    transport_to_abort.abort()
+                else:
+                    logger.debug(
+                        f"📞🔒✍️ FINALLY: Transport {transport_to_abort!r} "
+                        "has no abort method."
+                    )
+            else:
+                logger.debug("📞🔒✍️ writer has no transport attribute in finally.")
 
     async def close(self) -> None:
         """
@@ -404,28 +541,41 @@ class UnixSocketTransport(RPCPluginTransport):
             finally:
                 self._server = None
 
-        # Ensure socket file is removed - critical step
         socket_path = self.path
         if socket_path and os.path.exists(socket_path):
             try:
                 # Make multiple attempts with proper error handling
                 for _ in range(3):
                     try:
-                        os.chmod(socket_path, 0o770)  # Set permissive permissions first
+                        # Permissions are intentionally 0o660 for
+                        # owner/group r/w during cleanup.
+                        os.chmod(socket_path, 0o660)  # nosec B103
+                        # Changed from 0o770, to ensure write access if needed
+                        # for unlinking
                         os.unlink(socket_path)
                         logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
                         break
-                    except OSError as e:
-                        if e.errno != errno.ENOENT:  # Ignore file not found
-                            logger.warning(f"📞🔒⚠️ Retry removing socket file: {e}")
+                    except OSError as e_unlink:
+                        if e_unlink.errno != errno.ENOENT:  # Ignore file not found
+                            logger.warning(
+                                f"📞🔒⚠️ Retry removing socket file: {e_unlink}"
+                            )
                             await asyncio.sleep(0.1)  # Brief pause before retry
                         else:
-                            break
+                            break  # File already gone
                 else:  # If all retries failed
-                    raise TransportError("Failed to remove socket file after multiple attempts")
+                    # Only raise if file still exists after retries
+                    if os.path.exists(socket_path):
+                        raise TransportError(
+                            "Failed to remove socket file after multiple attempts"
+                        )
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
-                raise TransportError(f"Failed to remove socket file: {e}")
+                # Before raising, ensure loop has a chance to process other tasks
+                await asyncio.sleep(
+                    0
+                )  # Yield just before raising the error from this path
+                raise TransportError(f"Failed to remove socket file: {e}") from e
 
         self.endpoint = None
         self._closing = False

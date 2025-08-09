@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/exception.py
+# pyvider/rpcplugin/exception.py
 #
-
 """
 Custom Exception Types for Pyvider RPC Plugin.
 
@@ -92,3 +91,7 @@ class CertificateError(SecurityError):
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌⚠️🪄

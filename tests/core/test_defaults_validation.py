@@ -165,3 +165,6 @@ def test_missing_required_value_direct_call():
     logger.info(
         f"Successfully caught ConfigError for missing required value via direct call. Error: {str(excinfo.value)}"
     )
+
+
+# 🐍🔌🧪🪄

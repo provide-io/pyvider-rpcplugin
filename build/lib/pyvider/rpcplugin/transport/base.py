@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/transport/base.py
+#
+
 """
 Base Abstract Class for RPC Plugin Transports.
 
@@ -8,7 +12,9 @@ must inherit from this class and implement its abstract methods.
 """
 
 import abc
+
 from attrs import define, field
+
 
 @define(frozen=False, slots=False)
 class RPCPluginTransport(abc.ABC):
@@ -32,7 +38,7 @@ class RPCPluginTransport(abc.ABC):
     endpoint: str | None = field(init=False, default=None)
 
     @abc.abstractmethod
-    async def listen(self) -> str:                            # pragma: no cover
+    async def listen(self) -> str:  # pragma: no cover
         """
         Start listening for connections.
 
@@ -40,7 +46,8 @@ class RPCPluginTransport(abc.ABC):
         begin accepting connections. This is typically used by server components.
 
         Returns:
-            The endpoint address as a string (e.g., "127.0.0.1:50051" or "/tmp/socket.sock")
+            The endpoint address as a string (e.g., "127.0.0.1:50051" or
+            "/tmp/socket.sock")
 
         Raises:
             TransportError: If binding or listening fails
@@ -48,7 +55,7 @@ class RPCPluginTransport(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def connect(self, endpoint: str) -> None:       # pragma: no cover
+    async def connect(self, endpoint: str) -> None:  # pragma: no cover
         """
         Connect to a remote endpoint.
 
@@ -64,7 +71,7 @@ class RPCPluginTransport(abc.ABC):
         ...
 
     @abc.abstractmethod
-    async def close(self) -> None:                       # pragma: no cover # Corrected pragma typo
+    async def close(self) -> None:  # pragma: no cover
         """
         Close the transport and release any associated resources.
 
@@ -75,5 +82,6 @@ class RPCPluginTransport(abc.ABC):
             TransportError: If an error occurs during closing.
         """
         ...
+
 
 # 🐍🏗️🔌

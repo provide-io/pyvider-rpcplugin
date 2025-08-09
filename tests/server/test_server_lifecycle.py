@@ -3,8 +3,8 @@ import gc
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-# FIX: Import ConfigError from config.py to match the exception's source module
-from pyvider.rpcplugin.config import ConfigError
+
+from pyvider.rpcplugin.config import ConfigError, rpcplugin_config, rpcplugin_config
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import UnixSocketTransport
@@ -22,24 +22,19 @@ def test_attrs_post_init_handshake_config_error(mocker):
     local_mock_protocol = MagicMock()
     local_mock_handler = MagicMock()
 
-    mocker.patch(
-        "pyvider.rpcplugin.server.rpcplugin_config.magic_cookie_key",
-        side_effect=ValueError("Test rpcplugin_config error"),
+    mocker.patch.object(
+        RPCPluginServer,
+        "_get_config_value",
+        side_effect=ConfigError("Failed to initialize handshake configuration"),
     )
 
-    try:
+    with pytest.raises(ConfigError, match=r"Failed to initialize handshake configuration.*"):
         RPCPluginServer(
             protocol=local_mock_protocol,
             handler=local_mock_handler,
             config=None,
             transport=None,
         )
-        pytest.fail("ConfigError was not raised when expected")
-    except ConfigError as e:
-        # Assert that the caught exception is the one we expect.
-        assert "Failed to initialize handshake configuration: Test rpcplugin_config error" in str(e)
-    except Exception as e:
-        pytest.fail(f"An unexpected exception was raised: {type(e).__name__}: {e}")
 
 
 @pytest.mark.asyncio
@@ -60,7 +55,7 @@ async def test_serve_setup_server_raises_exception(
     mocker.patch.object(server, "_register_signal_handlers")
     mocker.patch.object(server, "_negotiate_handshake", new_callable=AsyncMock)
     mocker.patch.object(server, "_read_client_cert", return_value=None)
-    
+
     mocker.patch.object(
         server,
         "_setup_server",
@@ -73,3 +68,6 @@ async def test_serve_setup_server_raises_exception(
         await server.serve()
 
     server.stop.assert_called_once()
+
+
+# 🐍🔌🧪🪄

@@ -1,3 +1,7 @@
+#
+# src/pyvider/rpcplugin/client/connection.py
+#
+
 """
 Client Connection Management.
 
@@ -8,7 +12,13 @@ dependency injection for I/O functions to facilitate testing.
 """
 
 import asyncio
-from collections.abc import Awaitable, Callable as AbcCallable # Alias to avoid conflict
+from collections.abc import (
+    Awaitable,
+)
+from collections.abc import (
+    Callable as AbcCallable,
+)
+from typing import Any  # Added for __eq__ type hint
 
 from attrs import define, field
 
@@ -139,7 +149,11 @@ class ClientConnection:
         if self.is_closed:
             raise ConnectionError("Attempted to send data on closed connection")
         if self.send_func is None:
-            raise RuntimeError("send_func was not initialized. This should not happen if __attrs_post_init__ ran correctly.")
+            # This should ideally not be reached if __attrs_post_init__ ran.
+            raise RuntimeError(
+                "send_func was not initialized. This should not happen if "
+                "__attrs_post_init__ ran correctly."
+            )
         await self.send_func(data)
 
     async def receive_data(self, size: int = 16384) -> bytes:
@@ -158,7 +172,11 @@ class ClientConnection:
         if self.is_closed:
             raise ConnectionError("Attempted to receive data on closed connection")
         if self.receive_func is None:
-            raise RuntimeError("receive_func was not initialized. This should not happen if __attrs_post_init__ ran correctly.")
+            # This should ideally not be reached if __attrs_post_init__ ran.
+            raise RuntimeError(
+                "receive_func was not initialized. This should not happen if "
+                "__attrs_post_init__ ran correctly."
+            )
         return await self.receive_func(size)
 
     async def close(self) -> None:
@@ -188,7 +206,8 @@ class ClientConnection:
         """
         Ensure resources are cleaned up.
 
-        Note: Raising exceptions in __del__ is generally discouraged; a warning is logged instead.
+        Note: Raising exceptions in __del__ is generally discouraged; a warning
+              is logged instead.
         """
         if not self._closed and hasattr(self, "writer"):
             logger.warning(f"Connection to {self.remote_addr} was not properly closed")
@@ -196,9 +215,10 @@ class ClientConnection:
     def __hash__(self) -> int:
         return hash((id(self), self.remote_addr))
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         if not isinstance(other, ClientConnection):
             return NotImplemented
         return id(self) == id(other)
+
 
 # 🐍🏗️🔌

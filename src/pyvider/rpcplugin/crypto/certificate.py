@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/crypto/certificate.py
+# pyvider/rpcplugin/crypto/certificate.py
 #
-
 """
 Certificate Generation and Management.
 
@@ -930,3 +929,7 @@ class Certificate:
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

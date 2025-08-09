@@ -1,7 +1,11 @@
+#
+# src/pyvider/rpcplugin/config.py
+#
+
 """Configuration management for Pyvider RPC Plugin.
 
 This module provides a configuration system for the Pyvider RPC Plugin framework,
-allowing for both environment-based and programmatic configuration. It includes:
+allowing for environment-based and programmatic configuration. It includes:
 
 1. A configuration schema with default values and validation
 2. Environment variable reading with appropriate type conversion
@@ -27,11 +31,11 @@ Usage:
 """
 
 import os
-from pathlib import Path
-from typing import Any, Literal, cast, get_args # Removed Dict, List, Optional
-
+from typing import Any, Literal, cast, get_args
 
 from pyvider.telemetry import logger
+
+from .exception import ConfigError
 
 # Define supported protocol versions
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
@@ -39,8 +43,8 @@ SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 # Define supported transport types
 TRANSPORT_TYPES = Literal["unix", "tcp"]
 
-# Configuration Schema: Defines environment variables, requirements, defaults, and descriptions
-# This provides a single source of truth for all configuration options
+# Configuration Schema: Defines environment variables, requirements, defaults,
+# and descriptions
 CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "SUPPORTED_PROTOCOL_VERSIONS": {
         "required": True,
@@ -69,14 +73,8 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     },
     "PLUGIN_MAGIC_COOKIE_VALUE": {
         "required": True,
-        "default": "rpcplugin-default-cookie",
+        "default": "test_cookie_value",
         "description": "The expected magic cookie value for validation.",
-        "type": "str",
-    },
-    "PLUGIN_MAGIC_COOKIE": {
-        "required": True,
-        "default": "rpcplugin-default-cookie",
-        "description": "The actual cookie provided by the client.",
         "type": "str",
     },
     "PLUGIN_PROTOCOL_VERSIONS": {
@@ -95,7 +93,9 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_SERVER_ENDPOINT": {
         "required": False,
         "default": None,
-        "description": "Server endpoint for connection (host:port for TCP, path for Unix).",
+        "description": (
+            "Server endpoint for connection (host:port for TCP, path for Unix)."
+        ),
         "type": "str",
     },
     "PLUGIN_AUTO_MTLS": {
@@ -107,13 +107,17 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_SERVER_CERT": {
         "required": False,
         "default": None,
-        "description": "Server certificate in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Server certificate in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_SERVER_KEY": {
         "required": False,
         "default": None,
-        "description": "Server private key in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Server private key in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_SERVER_ROOT_CERTS": {
@@ -138,13 +142,17 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
     "PLUGIN_CLIENT_CERT": {
         "required": False,
         "default": None,
-        "description": "Client certificate in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Client certificate in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_CLIENT_KEY": {
         "required": False,
         "default": None,
-        "description": "Client private key in PEM format or 'file://<path>' to read from a file.",
+        "description": (
+            "Client private key in PEM format or 'file://<path>' to read from a file."
+        ),
         "type": "str",
     },
     "PLUGIN_CLIENT_ROOT_CERTS": {
@@ -171,149 +179,241 @@ CONFIG_SCHEMA: dict[str, dict[str, Any]] = {
         "description": "Show emoji matrix in logs for better visual tracking.",
         "type": "bool",
     },
+    "PLUGIN_CLIENT_RETRY_ENABLED": {
+        "required": False,
+        "default": "true",
+        "description": (
+            "Enable automatic retries for client connection and handshake failures."
+        ),
+        "type": "bool",
+    },
+    "PLUGIN_CLIENT_MAX_RETRIES": {
+        "required": False,
+        "default": 3,
+        "description": "Maximum number of retry attempts for client operations.",
+        "type": "int",
+    },
+    "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": {
+        "required": False,
+        "default": 500,
+        "description": "Initial backoff delay in milliseconds before the first retry.",
+        "type": "int",
+    },
+    "PLUGIN_CLIENT_MAX_BACKOFF_MS": {
+        "required": False,
+        "default": 5000,
+        "description": "Maximum backoff delay in milliseconds between retries.",
+        "type": "int",
+    },
+    "PLUGIN_CLIENT_RETRY_JITTER_MS": {
+        "required": False,
+        "default": 100,
+        "description": (
+            "Maximum jitter in milliseconds to apply to backoff delays to prevent "
+            "thundering herd."
+        ),
+        "type": "int",
+    },
+    "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": {
+        "required": False,
+        "default": 60,
+        "description": (
+            "Total timeout in seconds for the entire retry sequence for a client "
+            "operation."
+        ),
+        "type": "int",
+    },
+    "PLUGIN_SHUTDOWN_FILE_PATH": {
+        "required": False,
+        "default": None,
+        "description": (
+            "Path to a file that, if created, will trigger a graceful server shutdown."
+        ),
+        "type": "str",
+    },
+    "PLUGIN_RATE_LIMIT_ENABLED": {
+        "required": False,
+        "default": "false",
+        "description": "Enable or disable server-side rate limiting.",
+        "type": "bool",
+    },
+    "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": {
+        "required": False,
+        "default": 100.0,
+        "description": "Maximum allowed requests per second on average for the server.",
+        "type": "float",
+    },
+    "PLUGIN_RATE_LIMIT_BURST_CAPACITY": {
+        "required": False,
+        "default": 200.0,
+        "description": "Maximum number of requests allowed in a burst for the server.",
+        "type": "float",
+    },
+    "PLUGIN_HEALTH_SERVICE_ENABLED": {
+        "required": False,
+        "default": "true",
+        "description": "Enable or disable the standard gRPC health checking service.",
+        "type": "bool",
+    },
 }
 
 
 def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
     """
     Fetches and processes an environment variable based on schema metadata.
-
-    This function:
-    1. Reads the variable from environment or uses default
-    2. Handles file-based values (file://) by reading from the file
-    3. Converts to the correct type based on schema information
-
-    Args:
-        key: The configuration key to fetch
-        meta: Metadata about the configuration value
-
-    Returns:
-        The processed configuration value
-
-    Raises:
-        ValueError: If file reading fails or type conversion fails
     """
-    # Get raw value from environment or default
     value = os.getenv(key, meta["default"])
-    # logger.debug(f"⚙️🔍✅ Reading config {key}: raw value = {value}") # lots of logs
 
-    # Return None for None values
     if value is None:
         return None
 
-    # Handle file-based values
     if isinstance(value, str) and value.startswith("file://"):
         file_path = value[7:]
         try:
             logger.debug(f"⚙️📂🚀 Reading file for {key}: {file_path}")
-            with open(file_path, "r", encoding="utf-8") as f:
+            with open(file_path, encoding="utf-8") as f:
                 value = f.read().strip()
                 logger.debug(f"⚙️📂✅ Successfully read file for {key}")
         except Exception as e:
-            logger.error(f"⚙️📂❌ Failed to read file for {key}: {file_path}", extra={"error": str(e)})
-            raise ValueError(f"Failed to read file for {key}: {file_path}") from e
+            logger.error(
+                f"⚙️📂❌ Failed to read file for {key}: {file_path}",
+                extra={"error": str(e)},
+            )
+            raise ConfigError(
+                message=(
+                    f"Failed to read configuration file specified for '{key}'. "
+                    f"Path: {file_path}"
+                ),
+                hint=(
+                    "Ensure the file exists, is accessible, and has correct read "
+                    "permissions."
+                ),
+            ) from e
 
-    # Type conversion based on schema type
+    return _convert_value_to_schema_type(value, meta["type"], key)
+
+
+def _convert_value_to_schema_type(
+    value: Any, type_string: str, key_for_error: str
+) -> Any:
+    """
+    Converts a value to the type specified by type_string.
+    Raises ConfigError if conversion fails.
+    """
+    if value is None and type_string not in (
+        "str",
+        "list_str",
+        "list_int",
+    ):  # Allow None only if not string/list like
+        # For types like bool, int, float, None should not be converted to 0 or False by default
+        # unless the original value was explicitly "0" or "false" string.
+        # If the schema default is None, fetch_env_variable would return None before this.
+        # If a string "None" is passed, it will fail specific conversions below, which is intended.
+        return None
+
     try:
-        match meta["type"]:
-            case "str":
-                # String values need no conversion
+        if type_string == "str":
+            return (
+                str(value) if value is not None else None
+            )  # Keep None as None for strings if that's the input
+        elif type_string == "int":
+            return int(value)
+        elif type_string == "float":
+            return float(value)
+        elif type_string == "bool":
+            if isinstance(value, bool):
                 return value
-
-            case "int":
-                if isinstance(value, int):
-                    return value
-                return int(value)
-
-            case "float":
-                if isinstance(value, float):
-                    return value
-                return float(value)
-
-            case "bool":
-                if isinstance(value, bool):
-                    return value
-                if isinstance(value, str):
-                    return value.lower() in ("true", "yes", "1", "on")
-                return bool(value)
-
-            case "list_str":
-                # Handle lists stored as comma-separated strings
-                if isinstance(value, list):
-                    return value
-                if isinstance(value, str):
-                    return [v.strip() for v in value.split(",")]
-                return list(value)
-
-            case "list_int":
-                # Handle lists of integers
-                if isinstance(value, list) and all(isinstance(x, int) for x in value):
-                    return value
-                if isinstance(value, list):
-                    return [int(v) for v in value]
-                if isinstance(value, str):
-                    return [int(v.strip()) for v in value.split(",")]
-                return [int(value)]
-
-            case _:
-                # Default case - return as is
-                logger.warning(f"⚙️⚠️ Unknown type {meta['type']} for {key}, returning raw value")
-                return value
-
+            if isinstance(value, str):
+                return value.lower() in ("true", "yes", "1", "on")
+            return bool(value)  # General fallback, e.g., int 0 becomes False
+        if type_string == "list_str":
+            if value is None:
+                return []  # Default to empty list if None
+            if isinstance(value, list):
+                return [str(v) for v in value]
+            if isinstance(value, str):
+                return [v.strip() for v in value.split(",")]
+            if isinstance(value, tuple | set):
+                return [str(v) for v in value]
+            return [str(value)]  # Single item to list
+        if type_string == "list_int":
+            if value is None:
+                return []  # Default to empty list if None
+            if isinstance(value, list) and all(isinstance(x, int) for x in value):
+                return value  # Already correctly typed
+            if isinstance(value, list):
+                return [int(v) for v in value]
+            if isinstance(value, str):
+                # Handle empty string for list_int as empty list
+                if not value.strip():
+                    return []
+                return [int(v.strip()) for v in value.split(",")]
+            if isinstance(value, tuple | set):
+                return [int(v) for v in value]
+            return [int(value)]  # Single item to list
+        logger.warning(
+            f"⚙️⚠️ Unknown type {type_string} for {key_for_error}, returning raw value"
+        )
+        return value
     except (ValueError, TypeError) as e:
-        logger.error(f"⚙️❌ Type conversion failed for {key}", extra={"error": str(e)})
-        raise ValueError(f"Invalid format for {key}. Expected {meta['type']}, got: {value}") from e
+        logger.error(
+            f"⚙️❌ Type conversion failed for {key_for_error}", extra={"error": str(e)}
+        )
+        raise ConfigError(
+            message=(
+                f"Invalid value format for configuration key '{key_for_error}'. Expected "
+                f"type '{type_string}', but received value '{value}'."
+            ),
+            hint=(
+                f"Please check the value of '{key_for_error}' (currently '{value}') and "
+                f"ensure it conforms to the expected type ({type_string})."
+            ),
+        ) from e
 
 
 def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
     """
     Validates a configuration value against schema requirements.
-
-    Args:
-        key: The configuration key
-        value: The value to validate
-        meta: Schema metadata for the key
-
-    Returns:
-        True if valid, False otherwise
-
-    Raises:
-        ValueError: For validation failures
     """
     logger.debug(f"⚙️🔍🚀 Validating config {key} = {value}")
 
-    # Required check
     if meta.get("required", False) and value is None:
         logger.error(f"⚙️❌ Missing required configuration: {key}")
-        raise ValueError(f"Missing required configuration: {key}. {meta['description']}")
+        raise ConfigError(
+            message=(
+                f"Missing required configuration key: '{key}'. "
+                f"Description: {meta['description']}"
+            ),
+            hint=(
+                f"Please provide a value for the required configuration key '{key}'. "
+                "This setting is essential for the plugin's operation."
+            ),
+        )
 
-    # If value is None, no further validation needed
     if value is None:
         return True
 
-    # Check valid_values if defined
     if "valid_values" in meta and value not in meta["valid_values"]:
         logger.error(
             f"⚙️❌ Invalid value for {key}: {value}",
             extra={"valid_values": meta["valid_values"]},
         )
-        raise ValueError(
-            f"Invalid value for {key}: {value}. Valid values: {meta['valid_values']}"
+        raise ConfigError(
+            message=f"Invalid value '{value}' provided for configuration key '{key}'.",
+            hint=(
+                f"The value '{value}' is not a valid option for '{key}'. "
+                f"Allowed values are: {meta['valid_values']}. Please choose one of "
+                "these."
+            ),
         )
 
-    # logger.debug(f"⚙️🔍✅ Config {key} validation passed") # lots of logs
     return True
 
 
 def get_config() -> dict[str, Any]:
     """
-    Retrieves all configuration values from environment, applying defaults and validation.
-
-    Returns:
-        Dictionary of configuration key-value pairs
-
-    Raises:
-        ValueError: For invalid configuration
+    Retrieves all configuration values from environment, applying defaults and
+    validation.
     """
     config = {}
     logger.debug("⚙️🔄 Building configuration from environment and defaults")
@@ -323,9 +423,15 @@ def get_config() -> dict[str, Any]:
             value = fetch_env_variable(key, meta)
             validate_config_value(key, value, meta)
             config[key] = value
-        except ValueError as e:
-            logger.error(f"⚙️❌ Configuration error for {key}", extra={"error": str(e)})
+        except ConfigError:
             raise
+        except ValueError as e:
+            logger.error(
+                f"⚙️❌ Unexpected ValueError for {key}", extra={"error": str(e)}
+            )
+            raise ConfigError(
+                message=f"Unexpected validation or fetch error for {key}: {e}"
+            ) from e
 
     logger.debug(f"⚙️✅ Configuration complete with {len(config)} values")
     return config
@@ -334,34 +440,26 @@ def get_config() -> dict[str, Any]:
 class RPCPluginConfig:
     """
     Configuration manager for Pyvider RPC Plugin.
-
-    This class provides a singleton pattern for accessing configuration values,
-    with methods for getting and setting values. It loads configuration from
-    environment variables and defaults on initialization.
-
-    Attributes:
-        config: Dictionary of configuration values
     """
 
     _instance = None
 
-    def __init__(self):
+    def __init__(self) -> None:  # Added return type hint
         """Initialize the configuration from environment and defaults."""
         self.config = {}
         try:
             self.config = get_config()
             logger.debug("⚙️✅ RPCPluginConfig initialized with environment variables")
         except Exception as e:
-            logger.error("⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)})
+            logger.error(
+                "⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)}
+            )
             raise
 
     @classmethod
     def instance(cls) -> "RPCPluginConfig":
         """
         Get or create the singleton instance.
-
-        Returns:
-            The singleton RPCPluginConfig instance
         """
         if cls._instance is None:
             cls._instance = cls()
@@ -371,13 +469,6 @@ class RPCPluginConfig:
     def get(self, key: str, default: Any = None) -> Any:
         """
         Retrieve a configuration value.
-
-        Args:
-            key: The configuration key
-            default: Default value if key doesn't exist
-
-        Returns:
-            The configuration value or default
         """
         value = self.config.get(key, default)
         logger.debug(f"⚙️📖 Getting config {key} = {value}")
@@ -386,12 +477,6 @@ class RPCPluginConfig:
     def get_list(self, key: str) -> list[Any]:
         """
         Retrieve a configuration value as a list.
-
-        Args:
-            key: The configuration key
-
-        Returns:
-            The configuration value as a list
         """
         value = self.get(key, [])
         if not isinstance(value, list):
@@ -402,104 +487,93 @@ class RPCPluginConfig:
     def set(self, key: str, value: Any) -> None:
         """
         Set a configuration value dynamically.
-
-        Args:
-            key: The configuration key
-            value: The value to set
-
-        Raises:
-            KeyError: If key is not in CONFIG_SCHEMA
         """
         if key not in CONFIG_SCHEMA and not key.startswith("PLUGIN_"):
             logger.warning(f"⚙️⚠️ Setting unknown config key: {key}")
-            raise KeyError(f"Unknown configuration key: {key}")
+            raise ConfigError(
+                message=f"Attempted to set an unknown configuration key: '{key}'.",
+                hint=(
+                    "Ensure the configuration key is spelled correctly. It should be "
+                    "a predefined schema key or a dynamic key starting with 'PLUGIN_'."
+                ),
+            )
 
         logger.debug(f"⚙️📝 Updating config {key} -> {value}")
-        self.config[key] = value
+
+        meta = CONFIG_SCHEMA.get(key)
+        processed_value = value
+        if meta:
+            try:
+                processed_value = _convert_value_to_schema_type(
+                    value, meta["type"], key
+                )
+            except ConfigError as e:
+                # Re-raise with "during set" context if the original error was from conversion
+                if "Invalid value format" in e.message:
+                    raise ConfigError(
+                        message=(
+                            f"Invalid value format for configuration key '{key}' during "
+                            f"set. Expected type '{meta['type']}', but received value "
+                            f"'{value}'."
+                        ),
+                        hint=e.hint,  # Preserve original hint
+                        code=e.code,  # Preserve original code
+                    ) from e
+                raise  # Re-raise other ConfigErrors as is
+        # If not in schema (e.g. dynamic PLUGIN_ prefixed key), keep value as is.
+
+        self.config[key] = processed_value
+        logger.debug(
+            f"⚙️📝 Stored processed config {key} -> {processed_value} "
+            f"(type: {type(processed_value)})"
+        )
 
     def magic_cookie_key(self) -> str:
-        """
-        Get the configured magic cookie key.
-
-        Returns:
-            The magic cookie key
-        """
         return cast(str, self.get("PLUGIN_MAGIC_COOKIE_KEY"))
 
     def magic_cookie_value(self) -> str:
-        """
-        Get the expected magic cookie value.
-
-        Returns:
-            The magic cookie value
-        """
         return cast(str, self.get("PLUGIN_MAGIC_COOKIE_VALUE"))
 
     def server_transports(self) -> list[str]:
-        """
-        Get the list of transports supported by the server.
-
-        Returns:
-            List of transport names
-        """
         return cast(list[str], self.get_list("PLUGIN_SERVER_TRANSPORTS"))
 
     def server_endpoint(self) -> str | None:
-        """
-        Get the server endpoint configuration.
-
-        Returns:
-            The server endpoint or None
-        """
         return cast(str | None, self.get("PLUGIN_SERVER_ENDPOINT"))
 
     def client_transports(self) -> list[str]:
-        """
-        Get the list of transports supported by the client.
-
-        Returns:
-            List of transport names
-        """
         return cast(list[str], self.get_list("PLUGIN_CLIENT_TRANSPORTS"))
 
     def client_endpoint(self) -> str | None:
-        """
-        Get the client endpoint configuration.
-
-        Returns:
-            The client endpoint or None
-        """
         return cast(str | None, self.get("PLUGIN_CLIENT_ENDPOINT"))
 
     def auto_mtls_enabled(self) -> bool:
-        """
-        Check if auto mTLS is enabled.
-
-        Returns:
-            True if enabled, False otherwise
-        """
         return cast(bool, self.get("PLUGIN_AUTO_MTLS"))
 
     def handshake_timeout(self) -> float:
-        """
-        Get the handshake timeout in seconds.
-
-        Returns:
-            Timeout in seconds
-        """
         return cast(float, self.get("PLUGIN_HANDSHAKE_TIMEOUT"))
 
     def connection_timeout(self) -> float:
-        """
-        Get the connection timeout in seconds.
-
-        Returns:
-            Timeout in seconds
-        """
         return cast(float, self.get("PLUGIN_CONNECTION_TIMEOUT"))
+
+    def shutdown_file_path(self) -> str | None:
+        return cast(str | None, self.get("PLUGIN_SHUTDOWN_FILE_PATH"))
+
+    def rate_limit_enabled(self) -> bool:
+        return cast(bool, self.get("PLUGIN_RATE_LIMIT_ENABLED"))
+
+    def rate_limit_requests_per_second(self) -> float:
+        return cast(float, self.get("PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND"))
+
+    def rate_limit_burst_capacity(self) -> float:
+        return cast(float, self.get("PLUGIN_RATE_LIMIT_BURST_CAPACITY"))
+
+    def health_service_enabled(self) -> bool:
+        return cast(bool, self.get("PLUGIN_HEALTH_SERVICE_ENABLED"))
+
 
 # Global singleton instance
 rpcplugin_config = RPCPluginConfig.instance()
+
 
 def configure(
     magic_cookie: str | None = None,
@@ -516,36 +590,13 @@ def configure(
 ) -> None:
     """
     Configure Pyvider RPC plugin with simplified options.
-
-    This function provides a more user-friendly way to configure the plugin system
-    compared to setting individual environment variables. It handles type conversion
-    and validation automatically.
-
-    Args:
-        magic_cookie: The plugin magic cookie for handshake validation
-        protocol_version: The protocol version to use
-        transports: List of supported transports (e.g. ["unix", "tcp"])
-        auto_mtls: Enable/disable automatic mTLS
-        handshake_timeout: Timeout in seconds for handshake operations
-        connection_timeout: Timeout in seconds for connection operations
-        server_cert: Server certificate in PEM format or file:// path
-        server_key: Server private key in PEM format or file:// path
-        client_cert: Client certificate in PEM format or file:// path
-        client_key: Client private key in PEM format or file:// path
-        **kwargs: Any additional configuration options
-
-    Raises:
-        ValueError: For invalid configuration values
     """
     logger.debug("⚙️🔄 Running simplified configuration")
 
-    # Magic cookie configuration
     if magic_cookie is not None:
         rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
-        rpcplugin_config.set("PLUGIN_MAGIC_COOKIE", magic_cookie)
-        logger.debug(f"⚙️📝 Set magic cookie: {magic_cookie}")
+        logger.debug(f"⚙️📝 Set magic cookie value: {magic_cookie}")
 
-    # Protocol version configuration
     if protocol_version is not None:
         if protocol_version not in SUPPORTED_PROTOCOL_VERSIONS:
             logger.warning(
@@ -555,29 +606,29 @@ def configure(
         rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", [protocol_version])
         logger.debug(f"⚙️📝 Set protocol version: {protocol_version}")
 
-    # Transport configuration
     if transports is not None:
-        # Validate transport types
         for transport in transports:
             if transport not in get_args(TRANSPORT_TYPES):
                 logger.error(
                     f"⚙️❌ Unknown transport type: {transport}",
                     extra={"valid": get_args(TRANSPORT_TYPES)},
                 )
-                raise ValueError(
-                    f"Unknown transport type: {transport}. Valid types: {get_args(TRANSPORT_TYPES)}"
+                raise ConfigError(
+                    message=f"Unknown transport type specified: '{transport}'.",
+                    hint=(
+                        "Valid transport types are: "
+                        f"{list(get_args(TRANSPORT_TYPES))}. Please use one of these."
+                    ),
                 )
 
         rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", transports)
         rpcplugin_config.set("PLUGIN_CLIENT_TRANSPORTS", transports)
         logger.debug(f"⚙️📝 Set transports: {transports}")
 
-    # Auto mTLS configuration
     if auto_mtls is not None:
         rpcplugin_config.set("PLUGIN_AUTO_MTLS", "true" if auto_mtls else "false")
         logger.debug(f"⚙️📝 Set auto mTLS: {auto_mtls}")
 
-    # Timeout configurations
     if handshake_timeout is not None:
         rpcplugin_config.set("PLUGIN_HANDSHAKE_TIMEOUT", handshake_timeout)
         logger.debug(f"⚙️📝 Set handshake timeout: {handshake_timeout}s")
@@ -586,7 +637,6 @@ def configure(
         rpcplugin_config.set("PLUGIN_CONNECTION_TIMEOUT", connection_timeout)
         logger.debug(f"⚙️📝 Set connection timeout: {connection_timeout}s")
 
-    # Certificate configurations
     if server_cert is not None:
         rpcplugin_config.set("PLUGIN_SERVER_CERT", server_cert)
         logger.debug("⚙️📝 Set server certificate")
@@ -603,7 +653,6 @@ def configure(
         rpcplugin_config.set("PLUGIN_CLIENT_KEY", client_key)
         logger.debug("⚙️📝 Set client key")
 
-    # Set any additional options
     for key, value in kwargs.items():
         config_key = f"PLUGIN_{key.upper()}"
         rpcplugin_config.set(config_key, value)
@@ -612,172 +661,4 @@ def configure(
     logger.debug("⚙️✅ Configuration completed successfully")
 
 
-def load_config_from_file(config_file: str | Path) -> None:
-    """
-    Load configuration from a file.
-
-    The file can be:
-    - A .env file with KEY=VALUE pairs
-    - A JSON file with configuration in JSON format
-    - A YAML file with configuration in YAML format
-
-    Args:
-        config_file: Path to the configuration file
-
-    Raises:
-        ValueError: If the file format is not supported or loading fails
-    """
-    path = Path(config_file) if isinstance(config_file, str) else config_file
-
-    if not path.exists():
-        logger.error(f"⚙️❌ Configuration file not found: {path}")
-        raise ValueError(f"Configuration file not found: {path}")
-
-    logger.debug(f"⚙️📂🚀 Loading configuration from {path}")
-
-    try:
-        match path.suffix.lower():
-            case ".env":
-                _load_dotenv_file(path)
-            case ".json":
-                _load_json_file(path)
-            case ".yaml" | ".yml":
-                _load_yaml_file(path)
-            case _:
-                logger.error(f"⚙️❌ Unsupported file format: {path.suffix}")
-                raise ValueError(
-                    f"Unsupported file format: {path.suffix}. Supported formats: .env, .json, .yaml, .yml"
-                )
-
-        # Reload configuration from environment
-        rpcplugin_config.config = get_config()
-        logger.debug(f"⚙️📂✅ Successfully loaded configuration from {path}")
-
-    except Exception as e:
-        logger.error(f"⚙️📂❌ Error loading configuration from {path}", extra={"error": str(e)})
-        raise ValueError(f"Error loading configuration from {path}: {e}") from e
-
-
-def _load_dotenv_file(path: Path) -> None:
-    """
-    Load configuration from a .env file.
-
-    Args:
-        path: Path to the .env file
-
-    Raises:
-        ValueError: If loading fails
-    """
-    logger.debug(f"⚙️📂🚀 Loading .env file: {path}")
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-        for line in content.splitlines(): # Process lines from full content
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip()
-
-            # Remove quotes if present
-            if value.startswith('"') and value.endswith('"'):
-                value = value[1:-1]
-            if value.startswith("'") and value.endswith("'"):
-                value = value[1:-1]
-
-            # Set environment variable
-            os.environ[key] = value
-            logger.debug(f"⚙️📂✅ Set environment variable: {key}={value}")
-
-    except Exception as e:
-        logger.error(f"⚙️📂❌ Error loading .env file: {path}", extra={"error": str(e)})
-        raise ValueError(f"Error loading .env file: {path}") from e
-
-
-def _load_json_file(path: Path) -> None:
-    """
-    Load configuration from a JSON file.
-
-    Args:
-        path: Path to the JSON file
-
-    Raises:
-        ValueError: If loading fails
-    """
-    logger.debug(f"⚙️📂🚀 Loading JSON file: {path}")
-
-    try:
-        import json
-
-        with open(path, "r", encoding="utf-8") as f:
-            config_data = json.load(f)
-
-        for key, value in config_data.items():
-            # Convert to string for environment variables
-            if isinstance(value, (list, dict)):
-                os.environ[key] = json.dumps(value)
-            else:
-                os.environ[key] = str(value)
-
-            logger.debug(f"⚙️📂✅ Set environment variable from JSON: {key}")
-
-    except Exception as e:
-        logger.error(f"⚙️📂❌ Error loading JSON file: {path}", extra={"error": str(e)})
-        raise ValueError(f"Error loading JSON file: {path}") from e
-
-
-def _load_yaml_file(path: Path) -> None:
-    """
-    Load configuration from a YAML file.
-
-    Args:
-        path: Path to the YAML file
-
-    Raises:
-        ValueError: If loading fails or PyYAML is not installed
-    """
-    logger.debug(f"⚙️📂🚀 Loading YAML file: {path}")
-
-    try:
-        try:
-            import yaml
-        except ImportError:
-            logger.error("⚙️📂❌ PyYAML is required for YAML configuration")
-            raise ValueError("PyYAML is required for YAML configuration. Install with 'pip install PyYAML'")
-
-        with open(path, "r", encoding="utf-8") as f:
-            config_data = yaml.safe_load(f)
-
-        for key, value in config_data.items():
-            if isinstance(value, list):
-                os.environ[key] = ",".join(map(str, value)) # Convert list to CSV
-                logger.debug(f"⚙️📂✅ Set env var from YAML (list as CSV): {key}='{os.environ[key]}'")
-            elif isinstance(value, dict):
-                # For dicts, keep current behavior but warn if it's a schema-defined key
-                # that isn't usually string-represented this way.
-                # However, CONFIG_SCHEMA has no 'dict' types, so this is for arbitrary keys.
-                env_val = yaml.dump(value).strip()
-                os.environ[key] = env_val
-                logger.warning(
-                    f"⚙️📂⚠️ Set env var from YAML (dict as YAML string): {key}='{env_val}'. "
-                    f"Ensure consumers of this env var expect a YAML string if it's meant for complex parsing."
-                )
-            else:
-                os.environ[key] = str(value)
-                logger.debug(f"⚙️📂✅ Set env var from YAML (scalar): {key}='{str(value)}'")
-
-    except Exception as e:
-        logger.error(f"⚙️📂❌ Error loading YAML file: {path}", extra={"error": str(e)})
-        raise ValueError(f"Error loading YAML file: {path}") from e
-
-
-# Initialize all the things
-if __name__ == "__main__":
-    # This branch is not normally executed but can be used for testing
-    config = rpcplugin_config
-    logger.info(f"⚙️ Configuration loaded with {len(config.config)} values")
-    for key, value in sorted(config.config.items()):
-        logger.info(f"⚙️ {key} = {value}")
+# 🐍🏗️🔌
