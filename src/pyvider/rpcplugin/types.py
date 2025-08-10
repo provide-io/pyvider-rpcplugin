@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/types.py
+# pyvider/rpcplugin/types.py
 #
-
 from __future__ import annotations
 
 import asyncio
@@ -305,9 +304,7 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     return True
 
     # Type aliases for gRPC Clients
-    GrpcChannelType = (  # pragma: no cover
-        grpc.aio.Channel | grpc.Channel
-    )  # Represents gRPC sync or async channel
+    
 
 
 GrpcServerType = grpc.aio.Server  # pragma: no cover
@@ -443,3 +440,7 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

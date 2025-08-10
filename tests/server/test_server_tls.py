@@ -39,3 +39,6 @@ async def test_generate_server_credentials_failure(
 
     with pytest.raises(SecurityError, match=r"Failed to load server certificate/key: Diagnosing CertificateError message"):
         server._generate_server_credentials()
+
+
+# 🐍🔌🧪🪄

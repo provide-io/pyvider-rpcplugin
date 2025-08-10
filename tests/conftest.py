@@ -35,3 +35,6 @@ def reset_rpcplugin_config_singleton():
     
     # Final reset to ensure no state leaks to subsequent test modules
     RPCPluginConfig._instance = None
+
+
+# 🐍🔌🧪🪄

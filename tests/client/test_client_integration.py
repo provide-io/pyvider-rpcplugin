@@ -126,3 +126,6 @@ async def test_client_integration(test_client_command):
         assert client.grpc_channel is None
         assert client._process is None
         assert client._transport is None
+
+
+# 🐍🔌🧪🪄

@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/config.py
+# pyvider/rpcplugin/config.py
 #
-
 """Configuration management for Pyvider RPC Plugin.
 
 This module provides a configuration system for the Pyvider RPC Plugin framework,
@@ -326,17 +325,17 @@ def _convert_value_to_schema_type(
             if isinstance(value, str):
                 return value.lower() in ("true", "yes", "1", "on")
             return bool(value)  # General fallback, e.g., int 0 becomes False
-        elif type_string == "list_str":
+        if type_string == "list_str":
             if value is None:
                 return []  # Default to empty list if None
             if isinstance(value, list):
                 return [str(v) for v in value]
             if isinstance(value, str):
                 return [v.strip() for v in value.split(",")]
-            if isinstance(value, (tuple, set)):
+            if isinstance(value, tuple | set):
                 return [str(v) for v in value]
             return [str(value)]  # Single item to list
-        elif type_string == "list_int":
+        if type_string == "list_int":
             if value is None:
                 return []  # Default to empty list if None
             if isinstance(value, list) and all(isinstance(x, int) for x in value):
@@ -348,14 +347,13 @@ def _convert_value_to_schema_type(
                 if not value.strip():
                     return []
                 return [int(v.strip()) for v in value.split(",")]
-            if isinstance(value, (tuple, set)):
+            if isinstance(value, tuple | set):
                 return [int(v) for v in value]
             return [int(value)]  # Single item to list
-        else:
-            logger.warning(
-                f"⚙️⚠️ Unknown type {type_string} for {key_for_error}, returning raw value"
-            )
-            return value
+        logger.warning(
+            f"⚙️⚠️ Unknown type {type_string} for {key_for_error}, returning raw value"
+        )
+        return value
     except (ValueError, TypeError) as e:
         logger.error(
             f"⚙️❌ Type conversion failed for {key_for_error}", extra={"error": str(e)}
@@ -663,3 +661,7 @@ def configure(
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌⚙️🪄

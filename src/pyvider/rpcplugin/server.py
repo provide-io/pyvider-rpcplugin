@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/server.py
+# pyvider/rpcplugin/server.py
 #
-
 """
 RPC Plugin Server Implementation.
 
@@ -16,6 +15,7 @@ import contextlib
 import os
 import signal
 import socket
+import sys
 import sys
 from collections.abc import Awaitable, Callable
 from typing import Any, TypeVar, cast
@@ -107,7 +107,7 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
         Gets a config value, preferring instance config then global.
         If the value from instance config is a string, it's converted using schema type.
         """
-        if self.config is not None and key in self.config:
+        if isinstance(self.config, dict) and key in self.config:
             val = self.config[key]
             schema_info = CONFIG_SCHEMA.get(key, {})
             schema_type = schema_info.get("type")
@@ -147,12 +147,14 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
             # is entirely missing.
             pv_default = (
                 rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")
-                if not self.config or "PLUGIN_PROTOCOL_VERSIONS" not in self.config
+                if not isinstance(self.config, dict)
+                or "PLUGIN_PROTOCOL_VERSIONS" not in self.config
                 else []
             )
             st_default = (
                 rpcplugin_config.get_list("PLUGIN_SERVER_TRANSPORTS")
-                if not self.config or "PLUGIN_SERVER_TRANSPORTS" not in self.config
+                if not isinstance(self.config, dict)
+                or "PLUGIN_SERVER_TRANSPORTS" not in self.config
                 else []
             )
 
@@ -170,6 +172,8 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
                     "PLUGIN_SERVER_TRANSPORTS", st_default
                 ),
             )
+        except ConfigError:
+            raise
         except Exception as e:
             raise ConfigError(
                 message=f"Failed to initialize handshake configuration: {e}",
@@ -575,6 +579,8 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
         self._shutdown_event.set()
 
     async def serve(self) -> None:
+        # Ensure logger output goes to stderr to avoid interfering with handshake
+        # logger.set_output_stream(sys.stderr)  # This method doesn't exist in current PyviderLogger
         try:
             self._register_signal_handlers()
             await self._negotiate_handshake()
@@ -630,3 +636,7 @@ class RPCPluginServer[ServerT, HandlerT, TransportT]:
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

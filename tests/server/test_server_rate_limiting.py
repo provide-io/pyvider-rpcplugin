@@ -127,3 +127,6 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
     finally:
         await server.stop()
         await asyncio.wait_for(serve_task, timeout=2.0)
+
+
+# 🐍🔌🧪🪄

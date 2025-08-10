@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/handshake.py
+# pyvider/rpcplugin/handshake.py
 #
-
 """This module implements handshake logic for the RPC plugin server.
 It includes:
   - HandshakeConfig data classes.
@@ -798,3 +797,7 @@ async def create_stderr_relay(
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

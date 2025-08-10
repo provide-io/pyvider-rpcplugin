@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import echo_pb2 as echo__pb2
+from . import grpc_controller_pb2 as grpc__controller__pb2
 
 GRPC_GENERATED_VERSION = '1.73.0'
 GRPC_VERSION = grpc.__version__
@@ -18,15 +18,15 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in echo_pb2_grpc.py depends on'
+        + f' but the generated code in grpc_controller_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
     )
 
 
-class EchoServiceStub(object):
-    """The service definition
+class GRPCControllerStub(object):
+    """The GRPCController is responsible for telling the plugin server to shutdown.
     """
 
     def __init__(self, channel):
@@ -35,45 +35,45 @@ class EchoServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Echo = channel.unary_unary(
-                '/echo.EchoService/Echo',
-                request_serializer=echo__pb2.EchoRequest.SerializeToString,
-                response_deserializer=echo__pb2.EchoResponse.FromString,
+        self.Shutdown = channel.unary_unary(
+                '/plugin.GRPCController/Shutdown',
+                request_serializer=grpc__controller__pb2.Empty.SerializeToString,
+                response_deserializer=grpc__controller__pb2.Empty.FromString,
                 _registered_method=True)
 
 
-class EchoServiceServicer(object):
-    """The service definition
+class GRPCControllerServicer(object):
+    """The GRPCController is responsible for telling the plugin server to shutdown.
     """
 
-    def Echo(self, request, context):
+    def Shutdown(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
 
-def add_EchoServiceServicer_to_server(servicer, server):
+def add_GRPCControllerServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Echo': grpc.unary_unary_rpc_method_handler(
-                    servicer.Echo,
-                    request_deserializer=echo__pb2.EchoRequest.FromString,
-                    response_serializer=echo__pb2.EchoResponse.SerializeToString,
+            'Shutdown': grpc.unary_unary_rpc_method_handler(
+                    servicer.Shutdown,
+                    request_deserializer=grpc__controller__pb2.Empty.FromString,
+                    response_serializer=grpc__controller__pb2.Empty.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
-            'echo.EchoService', rpc_method_handlers)
+            'plugin.GRPCController', rpc_method_handlers)
     server.add_generic_rpc_handlers((generic_handler,))
-    server.add_registered_method_handlers('echo.EchoService', rpc_method_handlers)
+    server.add_registered_method_handlers('plugin.GRPCController', rpc_method_handlers)
 
 
  # This class is part of an EXPERIMENTAL API.
-class EchoService(object):
-    """The service definition
+class GRPCController(object):
+    """The GRPCController is responsible for telling the plugin server to shutdown.
     """
 
     @staticmethod
-    def Echo(request,
+    def Shutdown(request,
             target,
             options=(),
             channel_credentials=None,
@@ -86,9 +86,9 @@ class EchoService(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            '/echo.EchoService/Echo',
-            echo__pb2.EchoRequest.SerializeToString,
-            echo__pb2.EchoResponse.FromString,
+            '/plugin.GRPCController/Shutdown',
+            grpc__controller__pb2.Empty.SerializeToString,
+            grpc__controller__pb2.Empty.FromString,
             options,
             channel_credentials,
             insecure,

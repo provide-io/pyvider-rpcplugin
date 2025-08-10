@@ -250,3 +250,5 @@ async def server_with_mocks(
     finally:
         with suppress(Exception):
             await server.stop()
+
+# 🐍🔌📄🪄
