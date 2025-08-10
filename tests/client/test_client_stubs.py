@@ -312,3 +312,6 @@ async def test_shutdown_plugin_rpc_error(client_instance, mocker):
 
     # The trace in the log's 'extra' should contain the original RpcError's string representation
     assert "Shutdown RPC failed" in kwargs.get("extra", {}).get("trace", "")
+
+
+# 🐍🔌🧪🪄

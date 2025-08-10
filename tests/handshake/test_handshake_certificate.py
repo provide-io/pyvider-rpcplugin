@@ -115,3 +115,6 @@ async def test_handshake_with_invalid_certificate():
             transport=transport,
             server_cert=InvalidCert(),
         )
+
+
+# 🐍🔌🧪🪄

@@ -441,3 +441,6 @@ async def test_connect_handshake_max_retries_reached(client_instance_local, mock
         f"Maximum retry attempts ({max_retries_config + 1}) reached for connection/handshake. Last error: {simulated_error}"
     )
     assert client_instance._handshake_failed_event.is_set()
+
+
+# 🐍🔌🧪🪄

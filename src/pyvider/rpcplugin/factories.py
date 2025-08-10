@@ -1,7 +1,6 @@
 #
-# src/pyvider/rpcplugin/factories.py
+# pyvider/rpcplugin/factories.py
 #
-
 """
 Factory functions for creating Pyvider RPC plugin components.
 
@@ -176,3 +175,7 @@ def plugin_client(
 
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄

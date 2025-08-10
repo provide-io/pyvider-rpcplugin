@@ -118,3 +118,5 @@ if __name__ == "__main__":
         f"'{cookie_value_to_set}' for self-handshake."
     )
     asyncio.run(main())
+
+# 🐍🔌📄🪄

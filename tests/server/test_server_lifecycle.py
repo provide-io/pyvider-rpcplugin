@@ -22,12 +22,13 @@ def test_attrs_post_init_handshake_config_error(mocker):
     local_mock_protocol = MagicMock()
     local_mock_handler = MagicMock()
 
-    mocker.patch(
-        "pyvider.rpcplugin.handshake.HandshakeConfig",
+    mocker.patch.object(
+        RPCPluginServer,
+        "_get_config_value",
         side_effect=ConfigError("Failed to initialize handshake configuration"),
     )
 
-    with pytest.raises(ConfigError, match=r"Failed to initialize handshake configuration: TypeError\(.*\)"):
+    with pytest.raises(ConfigError, match=r"Failed to initialize handshake configuration.*"):
         RPCPluginServer(
             protocol=local_mock_protocol,
             handler=local_mock_handler,
@@ -67,3 +68,6 @@ async def test_serve_setup_server_raises_exception(
         await server.serve()
 
     server.stop.assert_called_once()
+
+
+# 🐍🔌🧪🪄

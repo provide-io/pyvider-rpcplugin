@@ -60,3 +60,6 @@ async def test_negotiate_handshake_via_negotiation(
         assert isinstance(server._transport, TCPSocketTransport)
     else:
         assert isinstance(server._transport, UnixSocketTransport)
+
+
+# 🐍🔌🧪🪄

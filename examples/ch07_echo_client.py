@@ -180,3 +180,5 @@ if __name__ == "__main__":
     # Ensure PYTHONIOENCODING is set for subprocesses, good practice
     os.environ["PYTHONIOENCODING"] = "UTF-8"
     asyncio.run(run_client())
+
+# 🐍🔌🖥️🪄

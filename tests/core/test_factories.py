@@ -302,3 +302,6 @@ def test_plugin_client_with_options_and_auto_connect_warning(
 # For now, removing them as the factory's responsibility changed.
 
 # 🐍🧪🏭
+
+
+# 🐍🔌🧪🪄

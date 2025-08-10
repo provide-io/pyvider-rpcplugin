@@ -136,3 +136,6 @@ async def test_negotiate_transport_prefers_unix() -> None:
     transport: RPCPluginTransport = transport_instance # Type annotation
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
+
+
+# 🐍🔌🧪🪄

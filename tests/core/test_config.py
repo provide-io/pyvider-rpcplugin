@@ -32,7 +32,7 @@ def test_fetch_env_variable_from_os_environ(monkeypatch):
 def test_fetch_env_variable_default_value(monkeypatch):
     """Test fetching a variable using its default value."""
     key = "PLUGIN_LOG_LEVEL"  # This key has a default in CONFIG_SCHEMA
-    monkeypatch.delenv(key, raising=False) # Ensure it's not set
+    monkeypatch.delenv(key, raising=False)  # Ensure it's not set
 
     meta = CONFIG_SCHEMA[key]
     assert fetch_env_variable(key, meta) == meta["default"]
@@ -130,9 +130,9 @@ def test_validate_config_value_valid():
         is True
     )
 
-    key_required = "PLUGIN_MAGIC_COOKIE"  # Is required
+    key_required = "PLUGIN_MAGIC_COOKIE_KEY"  # Is required
     meta_required = CONFIG_SCHEMA[key_required]
-    assert validate_config_value(key_required, "a-cookie", meta_required) is True
+    assert validate_config_value(key_required, "a-cookie-key", meta_required) is True
 
 
 def test_validate_config_value_missing_required():
@@ -190,8 +190,10 @@ def test_get_config_fetch_raises_error(mock_fetch, mock_validate):
         else "ok"
     )
 
-
-    with pytest.raises(ConfigError, match="Unexpected validation or fetch error for PLUGIN_MAGIC_COOKIE_VALUE: Fetch failed"):
+    with pytest.raises(
+        ConfigError,
+        match="Unexpected validation or fetch error for PLUGIN_MAGIC_COOKIE_VALUE: Fetch failed",
+    ):
         get_config()
 
     for call_args in mock_validate.call_args_list:
@@ -210,8 +212,10 @@ def test_get_config_validate_raises_error(mock_fetch, mock_validate):
         else True
     )
 
-
-    with pytest.raises(ConfigError, match="Unexpected validation or fetch error for PLUGIN_LOG_LEVEL: Validate failed"):
+    with pytest.raises(
+        ConfigError,
+        match="Unexpected validation or fetch error for PLUGIN_LOG_LEVEL: Validate failed",
+    ):
         get_config()
 
     mock_fetch.assert_any_call(error_key, CONFIG_SCHEMA[error_key])
@@ -313,7 +317,7 @@ def test_rpcpluginconfig_set_unknown_key_plugin_prefix():
 
 
 def test_rpcpluginconfig_set_unknown_key_no_prefix_raises_error():
-    """Test set() method for an unknown key without PLUGIN_ prefix raises KeyError."""
+    """Test set() method for an unknown key without PLUGIN_ prefix raises ConfigError."""
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
     key = "MY_OTHER_CUSTOM_SETTING"
@@ -373,7 +377,6 @@ def test_configure_all_options(mock_rpc_set):
 
     expected_calls = [
         call("PLUGIN_MAGIC_COOKIE_VALUE", "test-cookie"),
-        call("PLUGIN_MAGIC_COOKIE", "test-cookie"),
         call("PLUGIN_PROTOCOL_VERSIONS", [5]),
         call("PLUGIN_SERVER_TRANSPORTS", ["unix", "tcp"]),
         call("PLUGIN_CLIENT_TRANSPORTS", ["unix", "tcp"]),
@@ -398,7 +401,6 @@ def test_configure_minimal_options(mock_rpc_set):
 
     expected_calls = [
         call("PLUGIN_MAGIC_COOKIE_VALUE", "minimal-cookie"),
-        call("PLUGIN_MAGIC_COOKIE", "minimal-cookie"),
         call("PLUGIN_AUTO_MTLS", "false"),
     ]
     mock_rpc_set.assert_has_calls(expected_calls, any_order=True)
@@ -428,12 +430,13 @@ def test_configure_invalid_transport_type():
         configure(transports=["unix", "bogus_transport"])
 
 
-import tempfile # Add this import
+import tempfile  # Add this import
 
 # ... (other tests)
 
+
 def test_fetch_env_variable_file_uri_success(monkeypatch, tmp_path):
-    key = "PLUGIN_SERVER_CERT" # A key that accepts string, can be file URI
+    key = "PLUGIN_SERVER_CERT"  # A key that accepts string, can be file URI
     meta = CONFIG_SCHEMA[key]
 
     content = "-----BEGIN CERT-----\nTESTCERT\n-----END CERT-----"
@@ -444,37 +447,48 @@ def test_fetch_env_variable_file_uri_success(monkeypatch, tmp_path):
 
     assert fetch_env_variable(key, meta) == content
 
+
 def test_fetch_env_variable_file_uri_read_error(monkeypatch, tmp_path):
     key = "PLUGIN_SERVER_KEY"
     meta = CONFIG_SCHEMA[key]
 
     non_existent_file = tmp_path / "non_existent.key"
     # Ensure file does not exist
-    if non_existent_file.exists(): non_existent_file.unlink()
+    if non_existent_file.exists():
+        non_existent_file.unlink()
 
     monkeypatch.setenv(key, f"file://{non_existent_file}")
 
-    with pytest.raises(ConfigError, match=f"Failed to read configuration file specified for '{key}'.*Path: {non_existent_file}"):
+    with pytest.raises(
+        ConfigError,
+        match=f"Failed to read configuration file specified for '{key}'.*Path: {non_existent_file}",
+    ):
         fetch_env_variable(key, meta)
+
 
 # Test for line 312 (list_str fallback)
 def test_fetch_env_variable_list_str_fallback_iterable(monkeypatch):
     key = "PLUGIN_SERVER_TRANSPORTS"
     meta = CONFIG_SCHEMA[key]
     # Simulate os.getenv returning a tuple instead of string or default list
-    monkeypatch.setattr(os, 'getenv', lambda k, d: ("unix", "tcp") if k == key else d)
+    monkeypatch.setattr(os, "getenv", lambda k, d: ("unix", "tcp") if k == key else d)
     RPCPluginConfig._instance = None
-    assert fetch_env_variable(key, meta) == ["unix", "tcp"] # Should be list(value)
+    assert fetch_env_variable(key, meta) == ["unix", "tcp"]  # Should be list(value)
+
 
 # Test for line 318 (list_int fallback)
 def test_fetch_env_variable_list_int_fallback_single_convertible(monkeypatch, caplog):
     key = "PLUGIN_PROTOCOL_VERSIONS"
     meta = CONFIG_SCHEMA[key]
-    monkeypatch.setattr(os, 'getenv', lambda k, d: 5 if k == key else d) # Return an int
+    monkeypatch.setattr(
+        os, "getenv", lambda k, d: 5 if k == key else d
+    )  # Return an int
     RPCPluginConfig._instance = None
     assert fetch_env_variable(key, meta) == [5]
 
-    monkeypatch.setattr(os, 'getenv', lambda k, d: "7" if k == key else d) # Return a string int
+    monkeypatch.setattr(
+        os, "getenv", lambda k, d: "7" if k == key else d
+    )  # Return a string int
     RPCPluginConfig._instance = None
     assert fetch_env_variable(key, meta) == [7]
 
@@ -483,7 +497,9 @@ def test_fetch_env_variable_list_int_fallback_single_convertible(monkeypatch, ca
 def test_fetch_env_variable_unknown_type(monkeypatch, caplog):
     key = "PLUGIN_UNKNOWN_TYPE_TEST"
     meta_unknown = {
-        "required": False, "default": "some_default", "type": "unknown_type_blah"
+        "required": False,
+        "default": "some_default",
+        "type": "unknown_type_blah",
     }
     original_config_schema_entry = CONFIG_SCHEMA.get(key)
     CONFIG_SCHEMA[key] = meta_unknown
@@ -491,16 +507,50 @@ def test_fetch_env_variable_unknown_type(monkeypatch, caplog):
     monkeypatch.setenv(key, "some_value_for_unknown")
     RPCPluginConfig._instance = None
 
-    with caplog.at_level(logging.WARNING, logger='pyvider.telemetry.logger'):
+    import structlog
+    import structlog.stdlib
+
+    # Store original structlog configuration
+    original_structlog_config = structlog.get_config()
+
+    try:
+        # Configure structlog to use standard logging for this test
+        structlog.configure(
+            processors=[
+                structlog.stdlib.add_logger_name,
+                structlog.stdlib.add_log_level,
+                structlog.processors.StackInfoRenderer(),
+                structlog.processors.format_exc_info,
+                structlog.processors.UnicodeDecoder(),
+                structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+            ],
+            logger_factory=structlog.stdlib.LoggerFactory(),
+            wrapper_class=structlog.stdlib.BoundLogger,
+            cache_logger_on_first_use=False,
+        )
+
+        # Get the logger that structlog will use
+        test_logger = logging.getLogger("pyvider.telemetry")
+        test_logger.addHandler(caplog.handler)
+        test_logger.setLevel(logging.WARNING)
+        test_logger.propagate = False # Prevent messages from going to root logger twice
+
         assert fetch_env_variable(key, meta_unknown) == "some_value_for_unknown"
-        assert f"Unknown type unknown_type_blah for {key}, returning raw value" in caplog.text
+        assert any(
+            f"Unknown type unknown_type_blah for {key}, returning raw value" in r.message
+            for r in caplog.records
+        )
+    finally:
+        # Revert structlog configuration
+        structlog.configure(**original_structlog_config)
+        # Remove the handler added for this test
+        test_logger.removeHandler(caplog.handler)
 
     if original_config_schema_entry is None:
         del CONFIG_SCHEMA[key]
     else:
-        CONFIG_SCHEMA[key] = original_config_schema_entry # type: ignore[assignment]
+        CONFIG_SCHEMA[key] = original_config_schema_entry  # type: ignore[assignment]
     RPCPluginConfig._instance = None
-
 
 
 # Test for RPCPluginConfig.set fallbacks (lines 486, 495)
@@ -520,12 +570,17 @@ def test_rpcpluginconfig_set_list_fallbacks():
     config_manager.set("PLUGIN_PROTOCOL_VERSIONS", "5")
     assert config_manager.get("PLUGIN_PROTOCOL_VERSIONS") == [5]
 
+
 # Test for RPCPluginConfig.set exception (lines 498, 502-515)
 def test_rpcpluginconfig_set_type_conversion_error():
     RPCPluginConfig._instance = None
     config_manager = RPCPluginConfig.instance()
-    with pytest.raises(ConfigError, match="Invalid value format for configuration key 'PLUGIN_CORE_VERSION' during set"):
+    with pytest.raises(
+        ConfigError,
+        match="Invalid value format for configuration key 'PLUGIN_CORE_VERSION' during set",
+    ):
         config_manager.set("PLUGIN_CORE_VERSION", "not-an-integer")
+
 
 # Test for logger.warning on setting unknown key (line 456)
 def test_rpcpluginconfig_set_unknown_key_no_prefix_logs_warning(caplog):
@@ -533,6 +588,9 @@ def test_rpcpluginconfig_set_unknown_key_no_prefix_logs_warning(caplog):
     config_manager = RPCPluginConfig.instance()
     key = "MY_OTHER_CUSTOM_SETTING"
     with pytest.raises(ConfigError):
-        with caplog.at_level(logging.WARNING, logger='pyvider.telemetry.logger'):
+        with caplog.at_level(logging.WARNING, logger="pyvider.rpcplugin.config"):
             config_manager.set(key, "value")
             assert f"Setting unknown config key: {key}" in caplog.text
+
+
+# 🐍🔌🧪🪄

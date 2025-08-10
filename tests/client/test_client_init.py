@@ -162,3 +162,6 @@ async def test_setup_client_certificates_mtls_missing_key(client_instance, mocke
     assert client_instance.client_cert == "generated-cert"
     assert client_instance.client_key_pem == "generated-key"
     mock_logger_info.assert_any_call("🔐 Generating ephemeral self-signed client certificate.")
+
+
+# 🐍🔌🧪🪄

@@ -151,3 +151,6 @@ async def test_certificate_init_invalid_ecdsa_curve(mocker):
 
 
 ### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

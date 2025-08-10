@@ -472,7 +472,7 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(
 # LONG_RUNNING_TEST - This test takes approximately 3 minutes to run due to byte-by-byte processing and timeouts.
 # long-running
 @pytest.mark.asyncio
-# long-running test
+@pytest.mark.slow
 async def test_read_raw_handshake_line_byte_by_byte_read_timeout(
     client_instance_for_retry_tests, mocker
 ):
@@ -615,3 +615,6 @@ async def test_connect_handshake_retry_success_first_attempt(
         "Starting connection/handshake sequence with retries enabled" in call.args[0]
         for call in logger_mock.info.call_args_list
     )
+
+
+# 🐍🔌🧪🪄

@@ -105,3 +105,6 @@ async def test_setup_server_add_port_failure(
     with mock.patch.object(dummy_server, "add_secure_port", side_effect=raised_exception):
         with pytest.raises(TransportError, match=expected_match):
             await server._setup_server("client_cert")
+
+
+# 🐍🔌🧪🪄

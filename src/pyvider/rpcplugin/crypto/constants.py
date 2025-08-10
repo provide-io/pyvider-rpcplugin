@@ -1,3 +1,6 @@
+#
+# pyvider/rpcplugin/crypto/constants.py
+#
 """
 Cryptographic Constants.
 
@@ -23,3 +26,7 @@ SUPPORTED_EC_CURVES: list[str] = [
 ]  # Supported ECDSA curves
 
 # 🐍🏗️🔌
+
+
+
+# 🐍🔌📄🪄
