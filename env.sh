@@ -146,11 +146,26 @@ uv sync --all-groups > /tmp/pyvider-rpcplugin_setup/sync.log 2>&1 &
 SYNC_PID=$!
 spinner $SYNC_PID
 wait $SYNC_PID
-if [ $? -eq 0 ]; then
+SYNC_EXIT_CODE=$?
+
+if [ $SYNC_EXIT_CODE -eq 0 ]; then
     print_success "Dependencies synced"
 else
-    print_error "Dependency sync failed. Check /tmp/pyvider-rpcplugin_setup/sync.log"
-    return 1 2>/dev/null || exit 1
+    print_warning "Dependency sync failed - will install project and siblings manually"
+    echo "Check /tmp/pyvider-rpcplugin_setup/sync.log for details"
+    
+    # Try to install just the project without dependencies first
+    echo -n "Installing pyvider-rpcplugin without dependencies..."
+    uv pip install --no-deps -e . > /tmp/pyvider-rpcplugin_setup/install_nodeps.log 2>&1 &
+    INSTALL_PID=$!
+    spinner $INSTALL_PID
+    wait $INSTALL_PID
+    if [ $? -eq 0 ]; then
+        print_success "pyvider-rpcplugin installed (no deps)"
+    else
+        print_error "Failed to install pyvider-rpcplugin"
+        return 1 2>/dev/null || exit 1
+    fi
 fi
 
 echo -n "Installing pyvider-rpcplugin in editable mode..."
