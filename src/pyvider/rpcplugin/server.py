@@ -18,7 +18,7 @@ import socket
 import sys
 import sys
 from collections.abc import Awaitable, Callable
-from typing import Any, TypeVar, cast
+from typing import Any, Generic, TypeVar, cast
 
 import grpc
 from attrs import define, field
@@ -77,8 +77,13 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
         return await continuation(handler_call_details)
 
 
+ServerT = TypeVar('ServerT')
+HandlerT = TypeVar('HandlerT')
+TransportT = TypeVar('TransportT')
+
+
 @define(slots=False)
-class RPCPluginServer[ServerT, HandlerT, TransportT]:
+class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
     protocol: BaseRpcAbcProtocol[ServerT, HandlerT] = field()
     handler: HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
