@@ -79,9 +79,10 @@ def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
     return BasicRPCPluginProtocol
 
 
-def plugin_protocol[
-    PT_co
-](  # Use new TypeVar, assume it's covariant if protocol_class is.
+PT_co = TypeVar("PT_co")
+
+
+def plugin_protocol(
     protocol_class: type[PT_co]
     | None = None,  # PT_co bound to RPCPluginProtocol implicitly by usage
     handler_class: type[RPCPluginHandler]  # Use imported RPCPluginHandler
@@ -175,7 +176,6 @@ def plugin_client(
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄

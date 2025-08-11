@@ -16,7 +16,6 @@ import os
 import signal
 import socket
 import sys
-import sys
 from collections.abc import Awaitable, Callable
 from typing import Any, Generic, TypeVar, cast
 
@@ -77,9 +76,9 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
         return await continuation(handler_call_details)
 
 
-ServerT = TypeVar('ServerT')
-HandlerT = TypeVar('HandlerT')
-TransportT = TypeVar('TransportT')
+ServerT = TypeVar("ServerT")
+HandlerT = TypeVar("HandlerT")
+TransportT = TypeVar("TransportT")
 
 
 @define(slots=False)
@@ -585,7 +584,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
 
     async def serve(self) -> None:
         # Ensure logger output goes to stderr to avoid interfering with handshake
-        # logger.set_output_stream(sys.stderr)  # This method doesn't exist in current PyviderLogger
+        # logger.set_output_stream(sys.stderr)  # Not in current PyviderLogger
         try:
             self._register_signal_handlers()
             await self._negotiate_handshake()
@@ -641,7 +640,6 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄
