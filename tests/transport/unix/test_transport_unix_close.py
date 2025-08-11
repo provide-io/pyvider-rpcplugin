@@ -142,78 +142,47 @@ async def test_close_writer_exception(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_socket_close_with_active_connections(managed_unix_socket_path):
+async def test_unix_socket_close_with_active_connections(mocker, managed_unix_socket_path):
     """Test that closing a transport closes all active connections."""
-    # Use real connections instead of mocks to avoid asyncio cleanup issues
-    server_transport = UnixSocketTransport(path=managed_unix_socket_path)
-    client_transport1 = UnixSocketTransport()
-    client_transport2 = UnixSocketTransport()
+    transport = UnixSocketTransport(path=managed_unix_socket_path)
     
-    connections_closed = []
+    # Create mock connections that properly implement the close method
+    mock_conn1 = mocker.MagicMock()
+    mock_conn1.close = mocker.AsyncMock(return_value=None)
     
-    # Override the close method to track when connections are closed
-    original_close = ClientConnection.close
+    mock_conn2 = mocker.MagicMock()
+    mock_conn2.close = mocker.AsyncMock(return_value=None)
     
-    async def tracked_close(self):
-        connections_closed.append(self)
-        await original_close(self)
+    # Manually add to the _connections set to simulate active connections
+    transport._connections = {mock_conn1, mock_conn2}
+    transport._running = True  # Simulate server was running
     
-    try:
-        # Start the server
-        endpoint = await server_transport.listen()
-        
-        # Connect two clients
-        await client_transport1.connect(endpoint)
-        await client_transport2.connect(endpoint)
-        
-        # Give server time to accept connections
-        await asyncio.sleep(0.1)
-        
-        # Verify we have connections
-        assert len(server_transport._connections) == 2
-        
-        # Patch the close method to track calls
-        ClientConnection.close = tracked_close
-        
-        # Close the server (should close all connections)
-        await server_transport.close()
-        
-        # Verify connections were closed
-        assert len(connections_closed) == 2
-        assert len(server_transport._connections) == 0
-        
-    finally:
-        # Restore original close method
-        ClientConnection.close = original_close
-        
-        # Clean up clients - ensure they're fully closed
-        if client_transport1._writer:
-            try:
-                await client_transport1.close()
-            except Exception:
-                pass
-        if client_transport2._writer:
-            try:
-                await client_transport2.close()
-            except Exception:
-                pass
-        
-        # Force garbage collection to clean up any remaining references
-        import gc
-        gc.collect()
-        
-        # Give event loop more time to clean up all transports
-        await asyncio.sleep(0.2)
-        
-        # Run any pending tasks
-        try:
-            pending = asyncio.all_tasks()
-            current = asyncio.current_task()
-            pending = {task for task in pending if task != current and not task.done()}
-            if pending:
-                await asyncio.gather(*pending, return_exceptions=True)
-        except RuntimeError:
-            pass
+    # Mock asyncio.gather to verify it's called with the close coroutines
+    original_gather = asyncio.gather
+    gather_calls = []
+    
+    async def mock_gather(*args, **kwargs):
+        gather_calls.append((args, kwargs))
+        # Actually call the close methods
+        return await original_gather(*args, **kwargs)
+    
+    mocker.patch('asyncio.gather', side_effect=mock_gather)
+    
+    # Close the transport
+    await transport.close()
+    
+    # Verify connections were closed
+    mock_conn1.close.assert_called_once()
+    mock_conn2.close.assert_called_once()
+    
+    # Verify gather was called with the close coroutines
+    assert len(gather_calls) == 1
+    assert 'return_exceptions' in gather_calls[0][1]
+    assert gather_calls[0][1]['return_exceptions'] is True
+    
+    # Verify internal state is cleaned up
+    assert len(transport._connections) == 0
+    assert not transport._running  # Server should no longer be running
 
 
 @pytest.mark.asyncio
