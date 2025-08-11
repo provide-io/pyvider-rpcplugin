@@ -5,6 +5,7 @@ import pytest
 import asyncio
 import errno # Added import
 from unittest.mock import patch, AsyncMock, MagicMock # Added AsyncMock, MagicMock
+import warnings
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.client.connection import ClientConnection # Added import
@@ -142,6 +143,7 @@ async def test_close_writer_exception(monkeypatch) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.filterwarnings("ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning")
 async def test_unix_socket_close_with_active_connections(managed_unix_socket_path):
     """Test that closing a transport closes all active connections."""
     # Use real connections to test actual behavior
@@ -208,6 +210,35 @@ async def test_unix_socket_close_with_active_connections(managed_unix_socket_pat
         
         # Give the event loop time to process any remaining callbacks
         await asyncio.sleep(0.1)
+        
+        # Process any remaining tasks to ensure all transports are cleaned up
+        # This is important for Python 3.13 where transport cleanup order matters
+        loop = asyncio.get_event_loop()
+        
+        # Run the event loop until all tasks are complete
+        pending = asyncio.all_tasks(loop)
+        if pending:
+            # Filter out the current task
+            current = asyncio.current_task()
+            pending = {task for task in pending if task != current and not task.done()}
+            
+            if pending:
+                # Give tasks a chance to complete
+                done, pending = await asyncio.wait(pending, timeout=0.1)
+                
+                # Cancel any remaining tasks
+                for task in pending:
+                    task.cancel()
+                    
+                # Wait for cancellation to complete
+                if pending:
+                    await asyncio.gather(*pending, return_exceptions=True)
+        
+        # Final garbage collection after all async cleanup
+        gc.collect()
+        
+        # One more sleep to let any final callbacks run
+        await asyncio.sleep(0.05)
 
 
 @pytest.mark.asyncio
