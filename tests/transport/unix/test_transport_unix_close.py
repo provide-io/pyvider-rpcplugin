@@ -147,8 +147,12 @@ async def test_unix_socket_close_with_active_connections(mocker, managed_unix_so
     # Don't actually start the server, just simulate state for _handle_client to have added connections
     # await transport.listen()
 
-    mock_client_conn1 = AsyncMock(spec=ClientConnection)
-    mock_client_conn2 = AsyncMock(spec=ClientConnection)
+    # Create mock connections that properly handle cleanup
+    mock_client_conn1 = mocker.create_autospec(ClientConnection, spec_set=True)
+    mock_client_conn1.close = AsyncMock(return_value=None)
+    
+    mock_client_conn2 = mocker.create_autospec(ClientConnection, spec_set=True)  
+    mock_client_conn2.close = AsyncMock(return_value=None)
 
     # Manually add to the _connections set to simulate active connections
     transport._connections = {mock_client_conn1, mock_client_conn2}
@@ -166,11 +170,9 @@ async def test_unix_socket_close_with_active_connections(mocker, managed_unix_so
     # This is a bit more involved to check precisely, but asserting it was called is a good start
     gather_spy.assert_called_once()
     assert not transport._connections # Should be cleared
-    # Ensure socket file is also handled (e.g. unlinked if it existed)
-    # This assertion might fail if the socket was never created by listen()
-    # For this specific test, we are focusing on connection cleanup, not file cleanup if listen() wasn't called.
-    # If managed_unix_socket_path creates the file, then this is fine.
-    # assert not os.path.exists(managed_unix_socket_path)
+    
+    # Clean up to avoid warnings
+    await asyncio.sleep(0.01)  # Give event loop time to clean up
 
 
 @pytest.mark.asyncio
