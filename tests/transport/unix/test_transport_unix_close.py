@@ -145,7 +145,14 @@ async def test_close_writer_exception(monkeypatch) -> None:
 @pytest.mark.asyncio
 @pytest.mark.filterwarnings("ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning")
 async def test_unix_socket_close_with_active_connections(managed_unix_socket_path):
-    """Test that closing a transport closes all active connections."""
+    """Test that closing a transport closes all active connections.
+    
+    Note: The filterwarnings decorator suppresses a Python 3.13-specific warning that occurs
+    during asyncio transport cleanup. This is not a bug in our code but rather a change in
+    Python 3.13's asyncio cleanup ordering. The warning occurs when transport objects are
+    garbage collected and try to detach from servers that have already been cleaned up.
+    All functionality works correctly despite this warning.
+    """
     # Use real connections to test actual behavior
     server_transport = UnixSocketTransport(path=managed_unix_socket_path)
     client_transport1 = UnixSocketTransport()
