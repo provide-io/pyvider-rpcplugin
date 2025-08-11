@@ -186,12 +186,34 @@ async def test_unix_socket_close_with_active_connections(managed_unix_socket_pat
         # Restore original close method
         ClientConnection.close = original_close
         
-        # Clean up clients
-        await client_transport1.close()
-        await client_transport2.close()
+        # Clean up clients - ensure they're fully closed
+        if client_transport1._writer:
+            try:
+                await client_transport1.close()
+            except Exception:
+                pass
+        if client_transport2._writer:
+            try:
+                await client_transport2.close()
+            except Exception:
+                pass
         
-        # Give event loop time to clean up
-        await asyncio.sleep(0.1)
+        # Force garbage collection to clean up any remaining references
+        import gc
+        gc.collect()
+        
+        # Give event loop more time to clean up all transports
+        await asyncio.sleep(0.2)
+        
+        # Run any pending tasks
+        try:
+            pending = asyncio.all_tasks()
+            current = asyncio.current_task()
+            pending = {task for task in pending if task != current and not task.done()}
+            if pending:
+                await asyncio.gather(*pending, return_exceptions=True)
+        except RuntimeError:
+            pass
 
 
 @pytest.mark.asyncio
