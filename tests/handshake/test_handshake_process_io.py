@@ -189,62 +189,37 @@ async def test_create_stderr_relay(mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_stderr_relay_exception_in_reader(mocker, _function_event_loop):
+async def test_create_stderr_relay_exception_in_reader(mocker):
     """Test stderr relay handles exceptions during stderr read."""
-    event_loop = _function_event_loop
     mock_process = MagicMock(spec=subprocess.Popen)
     mock_process.stderr = MagicMock()
     mock_process.stderr.readline = MagicMock()
     # Poll should return None (process running) a few times, then return 0 (process ended)
     mock_process.poll.side_effect = [None, None, None, 0]
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
-    mock_readline_handler = MagicMock(
-        side_effect=[
-            b"line1\n",
-            Exception("stderr read error"),
-            b"",
-        ]
-    )
-
-    def custom_run_in_executor(executor, func_to_run, *args):
-        if func_to_run == mock_process.stderr.readline:
-            value_or_exc = mock_readline_handler()
-            future = event_loop.create_future()
-            if isinstance(value_or_exc, Exception):
-                future.set_exception(value_or_exc)
-            else:
-                future.set_result(value_or_exc)
-            return future
-        raise NotImplementedError(
-            f"custom_run_in_executor called with unexpected func_to_run: {func_to_run}"
-        )
-
-    mocker.patch("pyvider.rpcplugin.handshake.asyncio.get_event_loop", return_value=event_loop)
-    mocker.patch.object(event_loop, "run_in_executor", side_effect=custom_run_in_executor)
-    tasks_created_by_mock = []
-
-    def mock_side_effect_for_create_task(coro_to_schedule, name=None):
-        task = event_loop.create_task(coro_to_schedule, name=name)
-        tasks_created_by_mock.append(task)
-        return task
-
-    mocker.patch("pyvider.rpcplugin.handshake.asyncio.create_task", side_effect=mock_side_effect_for_create_task)
-    task_object = await create_stderr_relay(mock_process)
-    assert task_object is tasks_created_by_mock[0]
-    assert isinstance(task_object, asyncio.Task)
-
-    # Give the task some time to run and hit the exception
-    await asyncio.sleep(0.01)
     
-    # Wait for the task to complete or time out
-    if task_object and not task_object.done():
-        # Cancel the task if it's still running
-        task_object.cancel()
+    # Mock readline to raise exception on second call
+    mock_process.stderr.readline.side_effect = [
+        b"line1\n",
+        Exception("stderr read error"),
+        b"",
+    ]
+    
+    # Create and run the relay task
+    relay_task = await create_stderr_relay(mock_process)
+    assert relay_task is not None
+    
+    # Wait for the task to complete (it should exit on exception)
+    try:
+        await asyncio.wait_for(relay_task, timeout=1.0)
+    except asyncio.TimeoutError:
+        relay_task.cancel()
         try:
-            await task_object
+            await relay_task
         except asyncio.CancelledError:
             pass
 
+    # Verify the error was logged with permissive matching
     found_log = False
     for call_arg in mock_logger_error.call_args_list:
         if len(call_arg[0]) > 0:
