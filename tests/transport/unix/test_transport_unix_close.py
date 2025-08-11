@@ -143,36 +143,36 @@ async def test_close_writer_exception(monkeypatch) -> None:
 
 @pytest.mark.asyncio
 async def test_unix_socket_close_with_active_connections(mocker, managed_unix_socket_path):
+    """Test that closing a transport closes all active connections."""
     transport = UnixSocketTransport(path=managed_unix_socket_path)
-    # Don't actually start the server, just simulate state for _handle_client to have added connections
-    # await transport.listen()
-
-    # Create mock connections that properly handle cleanup
-    mock_client_conn1 = mocker.create_autospec(ClientConnection, spec_set=True)
-    mock_client_conn1.close = AsyncMock(return_value=None)
     
-    mock_client_conn2 = mocker.create_autospec(ClientConnection, spec_set=True)  
-    mock_client_conn2.close = AsyncMock(return_value=None)
-
+    # Create a simple mock for connections that doesn't involve asyncio internals
+    class MockConnection:
+        def __init__(self):
+            self.close_called = False
+            
+        async def close(self):
+            self.close_called = True
+            
+    conn1 = MockConnection()
+    conn2 = MockConnection()
+    
     # Manually add to the _connections set to simulate active connections
-    transport._connections = {mock_client_conn1, mock_client_conn2}
+    transport._connections = {conn1, conn2}
     transport._running = True # Simulate server was running
 
-    # Spy on asyncio.gather to see if it's called with the close coroutines
+    # Spy on asyncio.gather to see if it's called
     gather_spy = mocker.spy(asyncio, "gather")
 
     await transport.close()
 
-    mock_client_conn1.close.assert_awaited_once()
-    mock_client_conn2.close.assert_awaited_once()
+    # Verify connections were closed
+    assert conn1.close_called
+    assert conn2.close_called
 
-    # Check if gather was called with the results of the close() calls
-    # This is a bit more involved to check precisely, but asserting it was called is a good start
+    # Check if gather was called
     gather_spy.assert_called_once()
     assert not transport._connections # Should be cleared
-    
-    # Clean up to avoid warnings
-    await asyncio.sleep(0.01)  # Give event loop time to clean up
 
 
 @pytest.mark.asyncio
