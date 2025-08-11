@@ -1,9 +1,31 @@
 # tests/conftest.py
 import sys
 import os
+import asyncio
 import pytest
 from pyvider.rpcplugin.config import RPCPluginConfig, CONFIG_SCHEMA
 from tests.fixtures import *
+
+
+@pytest.fixture
+def _function_event_loop():
+    """Provide the event loop for async tests."""
+    loop = asyncio.new_event_loop()
+    yield loop
+    # Cleanup pending tasks
+    try:
+        pending = asyncio.all_tasks(loop)
+    except AttributeError:
+        # Python 3.9+ uses asyncio.all_tasks without loop parameter
+        pending = asyncio.all_tasks()
+        pending = {task for task in pending if task.get_loop() == loop}
+    
+    for task in pending:
+        task.cancel()
+    
+    if pending:
+        loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+    loop.close()
 
 @pytest.fixture(autouse=True, scope="function")
 def reset_rpcplugin_config_singleton():
