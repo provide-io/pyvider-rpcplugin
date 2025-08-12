@@ -10,10 +10,13 @@ the Pyvider RPC Plugin system.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Generic, TypeVar
+
+ServerT = TypeVar("ServerT")
+HandlerT = TypeVar("HandlerT")
 
 
-class RPCPluginProtocol[ServerT, HandlerT](ABC):  # pragma: no cover
+class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
     """
     Abstract base class for defining RPC protocols.
     ServerT: Type of gRPC server
@@ -38,7 +41,6 @@ class RPCPluginProtocol[ServerT, HandlerT](ABC):  # pragma: no cover
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌🏛️🪄
