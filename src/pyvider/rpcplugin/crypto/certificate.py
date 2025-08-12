@@ -16,7 +16,7 @@ from datetime import UTC, datetime, timedelta
 from enum import StrEnum, auto
 from functools import cached_property
 from pathlib import Path
-from typing import NotRequired, Self, TypedDict, cast
+from typing import NotRequired, Self, TypeAlias, TypedDict, cast
 
 from attrs import Factory, define, field
 from cryptography import x509
@@ -63,8 +63,8 @@ class CertificateConfig(TypedDict):
     curve: NotRequired[CurveType]
 
 
-type KeyPair = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
-type PublicKey = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
+KeyPair: TypeAlias = rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
+PublicKey: TypeAlias = rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 
 # =============================================================================
 # CertificateBase: Immutable certificate base data (already uses attrs)

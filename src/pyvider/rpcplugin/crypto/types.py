@@ -8,27 +8,27 @@ This module defines common type aliases and protocols used across the
 cryptography-related components of the Pyvider RPC Plugin system.
 """
 
-from typing import Protocol
+from typing import Protocol, TypeAlias
 
 from cryptography.hazmat.primitives.asymmetric import ec, rsa
 from cryptography.x509 import Certificate as X509Certificate
 
 # Key Types
-type PrivateKeyType = (
+PrivateKeyType: TypeAlias = (
     rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey
 )  # Union of possible private key types
-type PublicKeyType = (
+PublicKeyType: TypeAlias = (
     rsa.RSAPublicKey | ec.EllipticCurvePublicKey
 )  # Union of possible public key types
-type KeyPairType = tuple[
+KeyPairType: TypeAlias = tuple[
     PublicKeyType, PrivateKeyType
 ]  # A tuple representing a public/private key pair
 
 # Certificate Types
-type CertificateType = (
+CertificateType: TypeAlias = (
     X509Certificate  # Alias for the cryptography library's Certificate type
 )
-type PEMType = str  # Represents a PEM-encoded string
+PEMType: TypeAlias = str  # Represents a PEM-encoded string
 
 
 class CertificateProtocolT(Protocol):
