@@ -20,7 +20,7 @@ Usage:
 """
 
 import asyncio
-from typing import Protocol, TypeVar
+from typing import Protocol, TypeAlias, TypeVar
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.tcp import TCPSocketTransport
@@ -37,7 +37,7 @@ UnixSocketT = TypeVar(
 )  # Generic type for UnixSocketTransport
 
 # Simplified TransportType alias, as TCPSocketT and UnixSocketT are already specific.
-type TransportType = (
+TransportType: TypeAlias = (
     TCPSocketTransport | UnixSocketTransport
 )  # Represents either a TCP or Unix socket transport
 
@@ -55,8 +55,8 @@ ReaderT = TypeVar("ReaderT", bound=asyncio.StreamReader)
 WriterT = TypeVar("WriterT", bound=asyncio.StreamWriter)
 
 # Transport Aliases
-type EndpointType = str
-type AddressType = tuple[str, int]
+EndpointType: TypeAlias = str
+AddressType: TypeAlias = tuple[str, int]
 
 # 🐍🏗️🔌
 
