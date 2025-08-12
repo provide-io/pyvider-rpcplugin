@@ -404,3 +404,4 @@ result.json*.bf.txt
 bin/
 code.sh
 workenv/
+build
