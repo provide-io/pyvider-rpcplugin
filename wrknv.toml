@@ -1,0 +1,18 @@
+# wrknv configuration for pyvider-rpcplugin
+
+[project]
+name = "pyvider-rpcplugin"
+description = "RPC plugin framework for Terraform provider protocol"
+
+[tools]
+uv = "latest"
+
+[siblings]
+patterns = [
+    "pyvider-cty",        # CTY type system
+    "pyvider-telemetry",  # Telemetry
+    "wrknv",              # Environment manager
+]
+
+[settings]
+python_version = ">=3.11"
