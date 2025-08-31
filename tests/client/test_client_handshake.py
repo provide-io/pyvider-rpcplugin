@@ -12,7 +12,7 @@ from pyvider.rpcplugin.client.base import RPCPluginClient
 
 
 @pytest.fixture
-async def client_instance_for_retry_tests(mocker):
+def client_instance_for_retry_tests(mocker):
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
     client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
     mock_process_obj = MagicMock(spec=subprocess.Popen)
