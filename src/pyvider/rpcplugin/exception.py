@@ -17,11 +17,11 @@ while still enabling fine-grained handling of specific error conditions.
 from typing import Any
 
 from provide.foundation.errors import (
+    AuthenticationError,
     ConfigurationError,
     FoundationError,
     NetworkError,
-    ProtocolError as FoundationProtocolError,
-    SecurityError as FoundationSecurityError,
+    ValidationError,
 )
 
 
@@ -45,14 +45,14 @@ class ConfigError(ConfigurationError):
         return "RPC_CONFIG_ERROR"
 
 
-class HandshakeError(FoundationProtocolError):
+class HandshakeError(NetworkError):
     """Errors occurring during the plugin handshake process."""
     
     def _default_code(self) -> str:
         return "RPC_HANDSHAKE_ERROR"
 
 
-class ProtocolError(FoundationProtocolError):
+class ProtocolError(ValidationError):
     """Errors related to violations of the plugin protocol."""
     
     def _default_code(self) -> str:
@@ -66,7 +66,7 @@ class TransportError(NetworkError):
         return "RPC_TRANSPORT_ERROR"
 
 
-class SecurityError(FoundationSecurityError):
+class SecurityError(AuthenticationError):
     """Base class for security-related errors within the plugin system."""
     
     def _default_code(self) -> str:
