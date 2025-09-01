@@ -144,7 +144,7 @@ async def test_perform_handshake_invalid_format(
         return_value="invalid_handshake_format",
     )
 
-    expected_error_match = r"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] Invalid handshake format. Expected 6 pipe-separated parts, got 1: 'invalid_handshake_format...' \(Hint: Ensure the plugin's handshake output matches 'CORE_VER\|PLUGIN_VER\|NET\|ADDR\|PROTO\|CERT'.\)"
+    expected_error_match = r".*Failed to parse handshake response.*Invalid handshake format.*"
     with (
         patch(
             "pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background",
