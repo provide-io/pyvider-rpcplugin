@@ -6,7 +6,7 @@ from pyvider.rpcplugin.client.base import RPCPluginClient
 
 
 @pytest.fixture
-async def client_instance_local(mocker):
+def client_instance_local(mocker):
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
     client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
     # Spec against subprocess.Popen for mock_process_obj
