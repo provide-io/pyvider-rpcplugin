@@ -16,8 +16,15 @@ while still enabling fine-grained handling of specific error conditions.
 
 from typing import Any
 
+from provide.foundation.errors import (
+    ConfigurationError,
+    FoundationError,
+    NetworkError,
+    SecurityError as FoundationSecurityError,
+)
 
-class RPCPluginError(Exception):
+
+class RPCPluginError(FoundationError):
     """
     Base exception for all Pyvider RPC plugin errors.
 
@@ -36,31 +43,40 @@ class RPCPluginError(Exception):
         hint: str | None = None,
         code: int | str | None = None,
         *args: Any,
+        **kwargs: Any,
     ) -> None:
-        super().__init__(message, *args)
+        # Store original attributes for backward compatibility
         self.message = message
         self.hint = hint
         self.code = code
-
-    def __str__(self) -> str:
+        
+        # Add hint and code to foundation context if provided
+        if hint:
+            kwargs.setdefault('context', {})['hint'] = hint
+        if code is not None:
+            kwargs.setdefault('context', {})['error_code'] = code
+            
+        # Format message for backward compatibility
         prefix = f"[{self.__class__.__name__}]"
-
-        # Ensure message is prefixed only if it's not already.
-        # This simplified check assumes if it starts with '[', it's likely prefixed.
         effective_message = self.message
         if not self.message.startswith("["):
             effective_message = f"{prefix} {self.message}"
         elif not self.message.lower().startswith(prefix.lower()):
-            # It starts with a bracket, but not *our* prefix, so add ours.
             effective_message = f"{prefix} {self.message}"
-
+            
         parts = [effective_message]
         if self.code is not None:
             parts.append(f"[Code: {self.code}]")
         if self.hint:
             parts.append(f"(Hint: {self.hint})")
-
-        return " ".join(parts)
+            
+        formatted_message = " ".join(parts)
+        
+        super().__init__(formatted_message, *args, **kwargs)
+    
+    def _default_code(self) -> str:
+        """Provide default error code for foundation integration."""
+        return "RPC_PLUGIN_ERROR"
 
 
 class ConfigError(RPCPluginError):
