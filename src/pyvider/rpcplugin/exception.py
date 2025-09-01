@@ -64,8 +64,8 @@ class RPCPluginError(FoundationError):
         """Format error message with prefix, code, and hint for backward compatibility."""
         prefix = f"[{self.__class__.__name__}]"
         
-        # Get the base message from parent
-        base_message = super().__str__()
+        # Get the base message from parent (which is just the message we passed)
+        base_message = self.message
         
         # Ensure message is prefixed only if it's not already
         effective_message = base_message
@@ -75,6 +75,7 @@ class RPCPluginError(FoundationError):
             effective_message = f"{prefix} {base_message}"
             
         parts = [effective_message]
+        # Only add code if it was explicitly provided by the user
         if self.code is not None:
             parts.append(f"[Code: {self.code}]")
         if self.hint:
