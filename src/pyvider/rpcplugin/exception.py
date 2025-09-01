@@ -20,6 +20,7 @@ from provide.foundation.errors import (
     ConfigurationError,
     FoundationError,
     NetworkError,
+    ProtocolError as FoundationProtocolError,
     SecurityError as FoundationSecurityError,
 )
 
@@ -30,73 +31,46 @@ class RPCPluginError(FoundationError):
 
     This class serves as the root of the exception hierarchy for the plugin system.
     It can be subclassed to create more specific error types.
-
-    Attributes:
-        message: A human-readable error message.
-        hint: An optional hint for resolving the error.
-        code: An optional error code associated with the error.
     """
 
-    def __init__(
-        self,
-        message: str,
-        hint: str | None = None,
-        code: int | str | None = None,
-        *args: Any,
-        **kwargs: Any,
-    ) -> None:
-        # Store original attributes for backward compatibility
-        self.message = message
-        self.hint = hint
-        self.code = code
-        
-        # Add hint and code to foundation context if provided
-        if hint:
-            kwargs.setdefault('context', {})['hint'] = hint
-        if code is not None:
-            kwargs.setdefault('context', {})['error_code'] = code
-            
-        # Format message for backward compatibility
-        prefix = f"[{self.__class__.__name__}]"
-        effective_message = self.message
-        if not self.message.startswith("["):
-            effective_message = f"{prefix} {self.message}"
-        elif not self.message.lower().startswith(prefix.lower()):
-            effective_message = f"{prefix} {self.message}"
-            
-        parts = [effective_message]
-        if self.code is not None:
-            parts.append(f"[Code: {self.code}]")
-        if self.hint:
-            parts.append(f"(Hint: {self.hint})")
-            
-        formatted_message = " ".join(parts)
-        
-        super().__init__(formatted_message, *args, **kwargs)
-    
     def _default_code(self) -> str:
         """Provide default error code for foundation integration."""
         return "RPC_PLUGIN_ERROR"
 
 
-class ConfigError(RPCPluginError):
+class ConfigError(ConfigurationError):
     """Errors related to plugin configuration issues."""
+    
+    def _default_code(self) -> str:
+        return "RPC_CONFIG_ERROR"
 
 
-class HandshakeError(RPCPluginError):
+class HandshakeError(FoundationProtocolError):
     """Errors occurring during the plugin handshake process."""
+    
+    def _default_code(self) -> str:
+        return "RPC_HANDSHAKE_ERROR"
 
 
-class ProtocolError(RPCPluginError):
+class ProtocolError(FoundationProtocolError):
     """Errors related to violations of the plugin protocol."""
+    
+    def _default_code(self) -> str:
+        return "RPC_PROTOCOL_ERROR"
 
 
-class TransportError(RPCPluginError):
+class TransportError(NetworkError):
     """Errors related to network transport or communication issues."""
+    
+    def _default_code(self) -> str:
+        return "RPC_TRANSPORT_ERROR"
 
 
-class SecurityError(RPCPluginError):
+class SecurityError(FoundationSecurityError):
     """Base class for security-related errors within the plugin system."""
+    
+    def _default_code(self) -> str:
+        return "RPC_SECURITY_ERROR"
 
 
 class CertificateError(SecurityError):
@@ -104,6 +78,9 @@ class CertificateError(SecurityError):
     Errors related to security certificates, private keys, or other credential
     validation and management issues.
     """
+    
+    def _default_code(self) -> str:
+        return "RPC_CERTIFICATE_ERROR"
 
 
 # 🐍🏗️🔌
