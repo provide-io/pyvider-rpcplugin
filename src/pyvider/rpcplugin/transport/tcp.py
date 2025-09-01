@@ -17,7 +17,7 @@ from attrs import define, field
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 
 def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:

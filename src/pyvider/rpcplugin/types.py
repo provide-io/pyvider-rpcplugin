@@ -20,7 +20,7 @@ from typing import (
 
 import grpc
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 """Type definitions for the Pyvider RPC plugin system.
 

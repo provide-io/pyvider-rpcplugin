@@ -14,7 +14,7 @@ from collections.abc import AsyncIterator, Callable
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 
 class HealthServicer(health_pb2_grpc.HealthServicer):

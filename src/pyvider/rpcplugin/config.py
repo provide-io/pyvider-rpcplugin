@@ -32,7 +32,7 @@ Usage:
 import os
 from typing import Any, Literal, cast, get_args
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 from .exception import ConfigError
 
