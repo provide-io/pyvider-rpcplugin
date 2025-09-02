@@ -39,7 +39,7 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
     GRPCStdioServicer,
     add_GRPCStdioServicer_to_server,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 
 class BrokerError(Exception):

@@ -51,7 +51,7 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
 _HandlerT = TypeVar("_HandlerT")
