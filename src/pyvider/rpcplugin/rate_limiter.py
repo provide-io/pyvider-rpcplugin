@@ -12,7 +12,7 @@ import asyncio
 import time
 from typing import final
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 
 @final

@@ -26,7 +26,7 @@ from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
 from pyvider.rpcplugin.transport.types import TransportT
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 
 class _SentinelEnum(Enum):  # type: ignore[type-arg]

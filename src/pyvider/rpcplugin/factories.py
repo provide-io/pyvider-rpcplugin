@@ -35,7 +35,7 @@ from pyvider.rpcplugin.types import (
     ProtocolT as BaseProtocolTDefinition,
 )
 from pyvider.rpcplugin.types import RPCPluginTransport as RPCPluginTransportType
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # TypeVar for plugin_protocol factory
 T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol)
