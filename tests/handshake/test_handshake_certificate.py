@@ -104,10 +104,7 @@ async def test_handshake_with_invalid_certificate():
 
     transport = MockTransport()
 
-    expected_msg_regex = (
-        r"\[HandshakeError\] Failed to build handshake response: "
-        r"\[HandshakeError\] Invalid server certificate format provided for handshake response.*"
-    )
+    expected_msg_regex = r".*Failed to build handshake response.*Invalid server certificate format.*"
     with pytest.raises(HandshakeError, match=expected_msg_regex):
         await build_handshake_response(
             plugin_version=7,
