@@ -1,0 +1,28 @@
+# CODEOWNERS for pyvider-rpcplugin
+# These owners will be the default owners for everything in the repo.
+
+# Global owners
+* @provide-io/engineering
+
+# Python source code
+/src/ @provide-io/python-maintainers
+
+# RPC/gRPC specific
+/src/pyvider_rpcplugin/protocol/ @provide-io/rpc-team
+/src/pyvider_rpcplugin/transport/ @provide-io/rpc-team
+
+# Tests
+/tests/ @provide-io/qa-team @provide-io/python-maintainers
+
+# Documentation
+/docs/ @provide-io/documentation
+*.md @provide-io/documentation
+
+# CI/CD and DevOps
+/.github/ @provide-io/devops
+*.yml @provide-io/devops
+*.yaml @provide-io/devops
+
+# Dependencies
+pyproject.toml @provide-io/python-maintainers
+uv.lock @provide-io/python-maintainers
