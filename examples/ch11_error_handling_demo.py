@@ -22,7 +22,7 @@ from pyvider.rpcplugin.exception import (
     SecurityError,
     TransportError,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 configure_for_example()
 

@@ -10,7 +10,7 @@ import pytest
 import pytest_asyncio
 
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 

@@ -14,7 +14,7 @@ import uuid
 import pytest
 import pytest_asyncio
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 from pyvider.rpcplugin.exception import TransportError
 
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport

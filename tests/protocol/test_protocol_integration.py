@@ -37,7 +37,7 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
 
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from pyvider.telemetry import logger
+from provide.foundation import logger
 from typing import AsyncGenerator # Added import
 
 

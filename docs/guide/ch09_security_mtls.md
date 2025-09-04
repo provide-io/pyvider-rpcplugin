@@ -45,7 +45,7 @@ from pathlib import Path
 from example_utils import configure_for_example # Base config for paths
 from pyvider.rpcplugin import RPCPluginClient, RPCPluginError, configure, plugin_client
 from pyvider.rpcplugin.crypto import Certificate
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Apply base configuration for examples (paths, logging)
 # Client context, clear its own env before specific mTLS config.

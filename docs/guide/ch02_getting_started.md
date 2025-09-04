@@ -72,7 +72,7 @@ from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 async def main() -> None:
@@ -134,7 +134,7 @@ configure_for_example(clear_env=True) # Client context
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.client.base import RPCPluginClient # Retaining for clarity if user inspects client object
 from pyvider.rpcplugin.exception import RPCPluginError
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 async def main():
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")

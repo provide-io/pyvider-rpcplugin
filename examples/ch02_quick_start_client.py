@@ -18,7 +18,7 @@ from pyvider.rpcplugin.client.base import (  # noqa: E402
     RPCPluginClient,
 )  # Retaining for clarity if user inspects client object
 from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 async def main() -> None:

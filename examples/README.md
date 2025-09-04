@@ -153,7 +153,7 @@ When adding new examples:
 
 1. Use the `chXX_descriptive_name.py` format, where `XX` is the primary chapter number it relates to.
 2. Include comprehensive docstrings and comments.
-3. Add appropriate emoji logging with `from pyvider.telemetry import logger`.
+3. Add appropriate emoji logging with `from provide.foundation import logger`.
 4. Update this README with the new example.
 5. Ensure examples are self-contained and runnable where possible, or provide clear instructions if they depend on other components.
 6. Follow the established patterns for path resolution and `example_utils`.

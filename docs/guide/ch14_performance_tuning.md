@@ -53,7 +53,7 @@ from example_utils import configure_for_example  # type: ignore[import-not-found
 
 configure_for_example()
 
-from pyvider.telemetry import logger # noqa: E402
+from provide.foundation import logger # noqa: E402
 
 
 class PerformanceMonitor:

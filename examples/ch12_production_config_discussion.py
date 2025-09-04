@@ -11,7 +11,7 @@ from typing import Any  # For type hinting dict
 from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 # Import pyvider.rpcplugin.configure for the new demonstration function
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Apply base configuration for examples
 configure_for_example()

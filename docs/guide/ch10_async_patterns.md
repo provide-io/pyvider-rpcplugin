@@ -22,7 +22,7 @@ import asyncio
 from collections.abc import AsyncGenerator # For type hinting async generators
 from example_utils import configure_for_example
 configure_for_example() # Basic example setup
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 async def concurrent_requests_example():
     """Illustrates handling multiple operations concurrently using asyncio.gather."""
