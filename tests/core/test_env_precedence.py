@@ -30,9 +30,9 @@ def restore_env_vars(keys_to_restore):
 
 
 def reinit_config():
-    """Just re-initializes RPCPluginConfig, assuming os.environ is already set as desired."""
-    RPCPluginConfig._instance = None
-    return RPCPluginConfig.instance()
+    """Creates a fresh RPCPluginConfig from current environment."""
+    # Foundation config doesn't use singleton pattern
+    return RPCPluginConfig.from_env()
 
 
 def clear_all_known_plugin_env_vars():
@@ -71,7 +71,7 @@ logger.debug(f"Set {env_var_key}={os.environ[env_var_key]} in environment for te
 
 # 2. Initialize config and verify it reflects the environment variable
 config = reinit_config()
-loaded_env_val = config.handshake_timeout()
+loaded_env_val = config.plugin_handshake_timeout
 assert loaded_env_val == float(env_var_val_str), (
     f"Config should reflect env var. Expected {float(env_var_val_str)}, got {loaded_env_val}"
 )
@@ -84,7 +84,7 @@ logger.debug(f"Calling configure({short_name_for_configure}={configure_val})")
 configure(handshake_timeout=configure_val)
 
 # rpcplugin_config is the global singleton instance, which configure() updates
-updated_config_val = rpcplugin_config.handshake_timeout()
+updated_config_val = rpcplugin_config.plugin_handshake_timeout
 assert updated_config_val == configure_val, (
     f"configure() should override env var. Expected {configure_val}, got {updated_config_val}"
 )
@@ -122,7 +122,7 @@ clear_all_known_plugin_env_vars()  # Ensure no other vars interfere
 os.environ[key_auto_mtls] = "false"
 logger.debug(f"Set {key_auto_mtls}={os.environ[key_auto_mtls]} in environment.")
 config = reinit_config()
-actual_auto_mtls = config.auto_mtls_enabled()
+actual_auto_mtls = config.plugin_auto_mtls
 assert actual_auto_mtls is False, (
     f"{key_auto_mtls} type conversion failed. Expected False, got {actual_auto_mtls}"
 )
@@ -144,7 +144,7 @@ logger.debug(
 )
 config = reinit_config()
 expected_list_int = [2, 3, 4]
-actual_list_int = config.get(key_protocol_versions)
+actual_list_int = config.plugin_protocol_versions
 assert actual_list_int == expected_list_int, (
     f"{key_protocol_versions} type conversion failed. Expected {expected_list_int}, got {actual_list_int}"
 )
