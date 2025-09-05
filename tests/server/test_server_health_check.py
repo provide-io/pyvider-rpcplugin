@@ -36,26 +36,38 @@ class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
 
 @pytest.fixture
 def health_test_config_override(request):
+    # Map environment variable keys to Foundation attribute names
+    key_to_attr = {
+        "PLUGIN_HEALTH_SERVICE_ENABLED": "plugin_health_service_enabled",
+        "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
+        "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
+        "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
+    }
+    
     original_values = {}
     default_params = {
-        "PLUGIN_HEALTH_SERVICE_ENABLED": "true",
-        "PLUGIN_AUTO_MTLS": "false",
+        "PLUGIN_HEALTH_SERVICE_ENABLED": True,
+        "PLUGIN_AUTO_MTLS": False,
         "PLUGIN_SHUTDOWN_FILE_PATH": None,
-        "PLUGIN_RATE_LIMIT_ENABLED": "false",
+        "PLUGIN_RATE_LIMIT_ENABLED": False,
     }
 
     params_to_apply = default_params.copy()
     if hasattr(request, "param") and request.param is not None:
         params_to_apply.update(request.param)
 
+    # Apply params using direct attribute access
     for key, value in params_to_apply.items():
-        original_values[key] = rpcplugin_config.get(key)
-        rpcplugin_config.set(key, value)
+        attr_name = key_to_attr.get(key)
+        if attr_name and hasattr(rpcplugin_config, attr_name):
+            original_values[attr_name] = getattr(rpcplugin_config, attr_name)
+            setattr(rpcplugin_config, attr_name, value)
 
     yield
 
-    for key, value in original_values.items():
-        rpcplugin_config.set(key, value)
+    # Restore original values
+    for attr_name, value in original_values.items():
+        setattr(rpcplugin_config, attr_name, value)
 
 
 @pytest.mark.asyncio

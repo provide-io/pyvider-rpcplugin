@@ -193,7 +193,7 @@ async def test_server_lifecycle_and_connectivity(
     transport_type, transport_factory, server_factory, unused_tcp_port, mocker, monkeypatch # Added monkeypatch
 ):
     # Set the expected magic cookie in the environment for the server to validate
-    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
+    monkeypatch.setenv(rpcplugin_config.plugin_magic_cookie_key, rpcplugin_config.plugin_magic_cookie_value)
 
     # Configure for an insecure setup for both tcp and unix variants
     def mock_config_get_insecure(key, default=None):
@@ -219,8 +219,8 @@ async def test_server_lifecycle_and_connectivity(
 
     rpc_server = await server_factory(transport=server_transport)
 
-    original_client_cert_config = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-    rpcplugin_config.set("PLUGIN_CLIENT_CERT", None)
+    original_client_cert_config = rpcplugin_config.plugin_client_cert
+    rpcplugin_config.plugin_client_cert = None
 
     actual_server_endpoint = None
 
