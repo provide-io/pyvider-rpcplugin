@@ -3,7 +3,6 @@ from pyvider.rpcplugin.config import (
     RPCPluginConfig,
     rpcplugin_config,
     configure,
-    CONFIG_SCHEMA,
 )
 from provide.foundation import logger
 
@@ -58,7 +57,8 @@ logger.info("--- Testing configure() precedence over environment variables ---")
 env_var_key = "PLUGIN_HANDSHAKE_TIMEOUT"
 env_var_val_str = "25.5"
 configure_val = 15.0
-schema_default_val = float(CONFIG_SCHEMA[env_var_key]["default"])
+# Get default value from Foundation config field definition
+schema_default_val = 10.0  # Default for PLUGIN_HANDSHAKE_TIMEOUT from RPCPluginConfig
 
 # Backup the state of env_var_key if it exists from a parent environment
 backup_env_vars([env_var_key])

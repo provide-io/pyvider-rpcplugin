@@ -3,9 +3,8 @@ import pytest
 import os
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
-    CONFIG_SCHEMA,
-    validate_config_value,
     ConfigError,
+    rpcplugin_config,
 )
 from provide.foundation import logger
 
