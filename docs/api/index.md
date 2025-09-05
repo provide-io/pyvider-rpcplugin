@@ -108,8 +108,8 @@ import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_client
 from my_services import MyProtocol, MyHandler
 
-# Create and start server with automatic configuration
-server = await plugin_server(
+# Create server with automatic configuration
+server = plugin_server(
     protocol=MyProtocol(),
     handler=MyHandler()
 )
@@ -215,7 +215,7 @@ logger.info(f"Transports: {config.server_transports()}")
 logger.info(f"mTLS enabled: {config.auto_mtls_enabled()}")
 
 # Factory functions use configuration automatically
-server = await plugin_server(protocol=MyProtocol(), handler=MyHandler())
+server = plugin_server(protocol=MyProtocol(), handler=MyHandler())
 ```
 
 ## Type Safety and Development Experience
@@ -235,7 +235,7 @@ if TYPE_CHECKING:
     from pyvider.rpcplugin.config import RPCPluginConfig
 
 # Type-safe factory functions
-server: RPCPluginServer = await plugin_server(
+server: RPCPluginServer = plugin_server(
     protocol=my_protocol,
     handler=my_handler
 )
@@ -333,7 +333,7 @@ from provide.foundation import logger
 from pyvider.rpcplugin import plugin_server
 
 # Rich logging with context and emoji enhancement
-server = await plugin_server(protocol=my_protocol, handler=my_handler)
+server = plugin_server(protocol=my_protocol, handler=my_handler)
 logger.info("🚀 Plugin server started", extra={
     "server_id": server.id,
     "transport_type": server.transport.type,
@@ -391,7 +391,7 @@ mtls_enabled: bool = rpcplugin_config.auto_mtls_enabled()
 # Graceful shutdown with resource cleanup
 
 # All handled automatically by the framework
-server = await plugin_server(protocol=my_protocol, handler=my_handler)
+server = plugin_server(protocol=my_protocol, handler=my_handler)
 # Server includes all foundation features automatically
 ```
 

@@ -420,7 +420,7 @@ import signal
 from pyvider.rpcplugin import plugin_server
 
 async def main():
-    server = await plugin_server(protocol=my_protocol, handler=my_handler)
+    server = plugin_server(protocol=my_protocol, handler=my_handler)
     
     # Handle shutdown signals
     shutdown_event = asyncio.Event()

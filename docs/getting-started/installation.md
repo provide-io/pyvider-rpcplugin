@@ -132,7 +132,7 @@ async def test_installation():
     logger.info("🧪 Testing Pyvider RPC Plugin installation...")
     
     # Test server creation
-    server = await plugin_server(
+    server = plugin_server(
         protocol=TestProtocol(),
         handler=TestHandler()
     )

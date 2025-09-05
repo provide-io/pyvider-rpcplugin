@@ -214,7 +214,7 @@ load_dotenv(f'.env.{env}')
 
 # Configuration loads automatically from environment
 from pyvider.rpcplugin import plugin_server
-server = await plugin_server(protocol=my_protocol, handler=my_handler)
+server = plugin_server(protocol=my_protocol, handler=my_handler)
 ```
 
 ### Configuration Inheritance
