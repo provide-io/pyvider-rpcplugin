@@ -8,13 +8,10 @@ from unittest.mock import patch, mock_open, call
 import logging
 
 from pyvider.rpcplugin.config import (
-    fetch_env_variable,
-    validate_config_value,
-    get_config,
     RPCPluginConfig,
     configure,
     ConfigError,
-    CONFIG_SCHEMA,
+    rpcplugin_config,
 )
 
 
