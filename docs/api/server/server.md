@@ -1,224 +1,330 @@
-# RPCPluginServer
+# RPCPluginServer API
 
-The `RPCPluginServer` class is the core server implementation that handles the complete lifecycle of plugin processes, from initialization and handshake through serving RPC requests and graceful shutdown.
+The `RPCPluginServer` class is the core component for hosting gRPC services in the Pyvider RPC Plugin system. It provides a secure, configurable server implementation with built-in health checking, rate limiting, and connection management.
 
 ## Overview
 
-The server manages several critical responsibilities:
+The server follows a lifecycle pattern: configuration → handshake negotiation → transport setup → service registration → startup → operation → shutdown. It supports multiple transport protocols (Unix sockets, TCP) with optional mutual TLS authentication and comprehensive error handling.
 
-- **Transport Setup** - Configures Unix socket or TCP transports
-- **Handshake Protocol** - Outputs connection details for client discovery  
-- **Security Management** - Handles mTLS certificate exchange and validation
-- **Service Registration** - Registers gRPC services with the underlying server
-- **Lifecycle Management** - Manages startup, serving, and shutdown phases
-- **Health Monitoring** - Provides health check services and status reporting
-
-## Class Reference
-
-::: pyvider.rpcplugin.server.RPCPluginServer
-    options:
-      members:
-        - __init__
-        - serve  
-        - stop
-        - health_check
-      show_source: true
-      heading_level: 3
-
-## Server Lifecycle
-
-### 1. Initialization Phase
+## Quick Start
 
 ```python
-from pyvider.rpcplugin import plugin_server
+from pyvider.rpcplugin.factories import plugin_server
 
-# Create server with protocol and handler
+# Create a basic server using factory
+protocol = my_protocol_instance  # Your protocol implementation
+handler = my_service_handler     # Your service handler
+
 server = plugin_server(
-    protocol=MyProtocol(),
-    handler=MyHandler(),
-    transport=custom_transport  # Optional
+    protocol=protocol,
+    handler=handler,
+    transport="unix",
+    transport_path="/tmp/my-plugin.sock"
 )
+
+# Start the server
+await server.serve()
 ```
 
-During initialization, the server:
+## Factory Function Usage
 
-- Validates configuration parameters
-- Sets up the specified transport (or auto-selects)  
-- Prepares security credentials (if mTLS enabled)
-- Initializes the gRPC server instance
-- Registers protocol services and handlers
-
-### 2. Handshake Phase
-
-When `serve()` is called, the server first outputs a handshake string to stdout:
-
-```
-PYVIDER_RPC|1|unix|/tmp/plugin.sock|
-```
-
-**Handshake Format:**
-- `PYVIDER_RPC` - Protocol identifier
-- `1` - Protocol version number
-- `unix`/`tcp` - Transport type  
-- `/tmp/plugin.sock` - Connection address
-- Optional additional data
-
-This handshake allows clients to discover how to connect to the plugin.
-
-### 3. Serving Phase
-
-After handshake output, the server:
-
-- **Starts Listening** - Accepts connections on the configured transport
-- **Handles mTLS** - Performs certificate exchange (if enabled)
-- **Serves Requests** - Processes incoming RPC calls through registered handlers
-- **Manages Health** - Responds to health check requests
-- **Monitors Signals** - Listens for shutdown signals (SIGTERM, SIGINT)
-
-### 4. Shutdown Phase
-
-The server supports graceful shutdown:
+The recommended way to create servers is using the `plugin_server` factory:
 
 ```python
-# Graceful shutdown with timeout
-await server.stop(timeout=30.0)
+from pyvider.rpcplugin.factories import plugin_server
 
-# Or let serve() handle signals automatically
-try:
-    await server.serve()  # Blocks until signal received
-except KeyboardInterrupt:
-    logger.info("Server stopped by user")
+# Unix socket server
+unix_server = plugin_server(
+    protocol=my_protocol,
+    handler=my_handler,
+    transport="unix",
+    transport_path="/tmp/my-plugin.sock"
+)
+
+# TCP server  
+tcp_server = plugin_server(
+    protocol=my_protocol,
+    handler=my_handler,
+    transport="tcp",
+    host="127.0.0.1",
+    port=50051
+)
+
+# TCP server with config overrides
+server_with_config = plugin_server(
+    protocol=my_protocol,
+    handler=my_handler,
+    transport="tcp",
+    host="0.0.0.0",
+    port=8080,
+    config={
+        "PLUGIN_RATE_LIMIT_ENABLED": True,
+        "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": 1000.0,
+        "PLUGIN_AUTO_MTLS": True,
+    }
+)
 ```
 
 ## Configuration Options
 
+Server behavior is controlled through environment variables or instance config overrides:
+
 ### Transport Configuration
 
-```python
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
+**Unix Socket Transport**:
+```bash
+export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'  # Supported transports
+export PLUGIN_SERVER_ENDPOINT="/tmp/my-plugin.sock"  # Socket path (optional)
+```
 
-# Unix socket (recommended for local plugins)
-unix_transport = UnixSocketTransport(path="/tmp/my-plugin.sock")
-server = plugin_server(protocol=protocol, handler=handler, transport=unix_transport)
-
-# TCP socket (required for Windows, optional elsewhere)
-tcp_transport = TCPSocketTransport(host="127.0.0.1", port=8080)  
-server = plugin_server(protocol=protocol, handler=handler, transport=tcp_transport)
-
-# Auto-selection (Unix preferred, TCP fallback)
-server = plugin_server(protocol=protocol, handler=handler)  # No transport specified
+**TCP Transport**:
+```bash
+export PLUGIN_SERVER_TRANSPORTS='["tcp"]'
+export PLUGIN_SERVER_ENDPOINT="127.0.0.1:50051"  # Host:port (optional)
 ```
 
 ### Security Configuration
 
-```python
-import os
-
-# Enable mTLS with environment variables
-os.environ.update({
-    "PLUGIN_AUTO_MTLS": "true",
-    "PLUGIN_SERVER_CERT": "file:///path/to/server.crt",
-    "PLUGIN_SERVER_KEY": "file:///path/to/server.key", 
-    "PLUGIN_CLIENT_ROOT_CERTS": "file:///path/to/ca.crt"
-})
-
-server = plugin_server(protocol=protocol, handler=handler)
+**Magic Cookie Authentication**:
+```bash
+export PLUGIN_MAGIC_COOKIE_KEY="MY_PLUGIN_COOKIE"
+export PLUGIN_MAGIC_COOKIE_VALUE="super-secret-value"
 ```
 
-### Performance Configuration
+**Automatic Mutual TLS**:
+```bash
+export PLUGIN_AUTO_MTLS=true  # Auto-generate self-signed certificates
+export PLUGIN_CLIENT_ROOT_CERTS="file:///path/to/client-ca.crt"  # Client CA for verification
+```
+
+**Manual TLS Configuration**:
+```bash
+export PLUGIN_AUTO_MTLS=false
+export PLUGIN_SERVER_CERT="file:///path/to/server.crt"
+export PLUGIN_SERVER_KEY="file:///path/to/server.key"
+export PLUGIN_SERVER_ROOT_CERTS="file:///path/to/client-ca.crt"
+```
+
+### Performance and Rate Limiting
+
+```bash
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=200.0
+```
+
+### Health Service
+
+```bash
+export PLUGIN_HEALTH_SERVICE_ENABLED=true  # Enable gRPC health checks
+```
+
+### Shutdown Control
+
+```bash
+export PLUGIN_SHUTDOWN_FILE_PATH="/tmp/shutdown-signal"  # File-based shutdown trigger
+```
+
+## Server Lifecycle
+
+### 1. Construction and Initialization
 
 ```python
-from pyvider.rpcplugin import configure
+from pyvider.rpcplugin.server import RPCPluginServer
 
-configure(
-    max_concurrent_rpcs=100,           # Concurrent request limit
-    grpc_options=[                     # gRPC server options
-        ('grpc.keepalive_time_ms', 30000),
-        ('grpc.keepalive_timeout_ms', 5000),
-        ('grpc.max_message_length', 64 * 1024 * 1024),  # 64MB
-    ],
-    health_service_enabled=True,       # Enable gRPC health service
-    rate_limiting_enabled=True,        # Enable request rate limiting
-    rate_limit_requests_per_second=100 # Rate limit threshold
+# Direct construction (advanced usage)
+server = RPCPluginServer(
+    protocol=my_protocol,
+    handler=my_handler,
+    transport=my_transport,  # Optional pre-configured transport
+    config={  # Optional config overrides
+        "PLUGIN_RATE_LIMIT_ENABLED": True,
+        "PLUGIN_AUTO_MTLS": False,
+    }
 )
 ```
 
-## Protocol Integration
+During initialization, the server:
+- Configures handshake parameters (magic cookies, protocol versions, supported transports)
+- Sets up rate limiting if enabled
+- Initializes health service if enabled
+- Prepares transport and security configurations
 
-The server integrates with your custom protocol implementation:
+### 2. Service Operation
+
+The `serve()` method handles the complete server lifecycle:
 
 ```python
-from typing import Any
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-
-class MyProtocol(RPCPluginProtocol):
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:
-        """Return gRPC module and service name."""
-        return my_service_pb2_grpc, "mypackage.MyService"
-    
-    async def add_to_server(self, server: Any, handler: Any) -> None:
-        """Register handler with gRPC server."""
-        my_service_pb2_grpc.add_MyServiceServicer_to_server(handler, server)
-        
-    def get_method_type(self, method_name: str) -> str:
-        """Return RPC method type for routing."""
-        return "unary_unary"  # or stream_unary, etc.
+await server.serve()
 ```
 
-The server calls these protocol methods during initialization to:
-- Discover available services and methods
-- Register your handler with the gRPC server
-- Configure routing and method types
+This method:
+1. **Registers signal handlers** for graceful shutdown (SIGINT, SIGTERM)
+2. **Negotiates handshake** with the plugin host:
+   - Validates magic cookie for authentication
+   - Negotiates protocol version 
+   - Negotiates transport (Unix socket or TCP)
+3. **Sets up the gRPC server**:
+   - Configures TLS/mTLS if enabled
+   - Sets up rate limiting interceptors
+   - Registers protocol services and health service
+   - Binds to transport endpoint
+4. **Starts file-based shutdown monitoring** if configured
+5. **Outputs handshake response** to stdout for the plugin host
+6. **Runs until shutdown** is requested
 
-## Handler Implementation
+### 3. Graceful Shutdown
 
-Your handler implements the actual business logic:
+Shutdown can be triggered by:
+- **Signal handling** (SIGINT/SIGTERM)
+- **Shutdown file** creation (if configured)
+- **Manual call** to `stop()` method
 
 ```python
-import grpc
-from my_service_pb2_grpc import MyServiceServicer
-
-class MyHandler(MyServiceServicer):
-    async def MyMethod(self, request, context: grpc.aio.ServicerContext):
-        """Implement your RPC method."""
-        try:
-            # Your business logic here
-            result = await process_request(request)
-            return MyResponse(result=result)
-            
-        except ValidationError as e:
-            # Set gRPC error status
-            await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
-            
-        except Exception as e:
-            # Log and return internal error
-            logger.error("Unexpected error in MyMethod", exc_info=True)
-            await context.abort(grpc.StatusCode.INTERNAL, "Internal server error")
+# Manual shutdown with grace period
+await server.stop()
 ```
 
-## Health Monitoring
+## Advanced Usage
 
-The server provides built-in health monitoring:
+### Custom Transport Configuration
 
 ```python
-# Check server health status
-health_status = await server.health_check()
-print(f"Server health: {health_status}")
+from pyvider.rpcplugin.transport import TCPSocketTransport
 
-# Enable gRPC health service (accessible to clients)
-configure(health_service_enabled=True)
+# Pre-configure transport
+custom_transport = TCPSocketTransport(
+    host="0.0.0.0",
+    port=9090
+)
 
-# Custom health logic in your handler
-class MyHandler(MyServiceServicer):
-    async def health_check(self) -> dict:
-        """Custom health check implementation."""
-        return {
-            "status": "healthy",
-            "database_connection": await check_database(),
-            "external_api": await check_external_service(),
-            "memory_usage": get_memory_usage()
+server = RPCPluginServer(
+    protocol=my_protocol,
+    handler=my_handler,
+    transport=custom_transport
+)
+```
+
+### Server Readiness Checking
+
+```python
+# Wait for server to be ready for connections
+await server.wait_for_server_ready(timeout=10.0)
+print(f"Server ready on endpoint: {server._transport.endpoint}")
+```
+
+### Production Deployment Example
+
+```python
+import asyncio
+import signal
+from pyvider.rpcplugin.factories import plugin_server
+
+async def run_production_server():
+    server = plugin_server(
+        protocol=my_protocol,
+        handler=my_handler,
+        transport="tcp", 
+        host="0.0.0.0",
+        port=8080,
+        config={
+            # Security
+            "PLUGIN_AUTO_MTLS": True,
+            "PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/certs/client-ca.crt",
+            # Performance  
+            "PLUGIN_RATE_LIMIT_ENABLED": True,
+            "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": 1000.0,
+            "PLUGIN_RATE_LIMIT_BURST_CAPACITY": 2000.0,
+            # Monitoring
+            "PLUGIN_HEALTH_SERVICE_ENABLED": True,
+            # Shutdown
+            "PLUGIN_SHUTDOWN_FILE_PATH": "/tmp/shutdown-signal",
         }
+    )
+    
+    try:
+        await server.serve()
+    except Exception as e:
+        print(f"Server error: {e}")
+    finally:
+        await server.stop()
+
+# Run the server
+asyncio.run(run_production_server())
 ```
+
+## Error Handling
+
+### Common Exception Types
+
+```python
+from pyvider.rpcplugin.exception import (
+    TransportError,
+    SecurityError, 
+    ProtocolError,
+    ConfigError
+)
+
+try:
+    await server.serve()
+except ConfigError as e:
+    # Configuration validation errors
+    print(f"Configuration error: {e}")
+except SecurityError as e:
+    # TLS/certificate errors
+    print(f"Security error: {e}")
+except TransportError as e:
+    # Network/transport errors 
+    print(f"Transport error: {e}")
+except ProtocolError as e:
+    # Protocol negotiation errors
+    print(f"Protocol error: {e}")
+```
+
+### Troubleshooting Common Issues
+
+**Permission denied on Unix socket**:
+- Check directory permissions where socket is created
+- Ensure process has write access to socket directory
+
+**Port already in use**:
+- Check if another service is using the TCP port
+- Use port 0 for automatic port assignment
+
+**TLS certificate errors**:
+- Verify certificate file paths are correct and accessible
+- Check certificate validity and format (PEM)
+- Ensure private key matches certificate
+
+**Rate limiting errors**:
+- Clients will receive `RESOURCE_EXHAUSTED` status when rate limited
+- Adjust rate limiting parameters based on expected load
+
+## Security Considerations
+
+### Mutual TLS (mTLS) Setup
+
+For production deployments, use proper TLS certificates:
+
+```python
+server = plugin_server(
+    protocol=my_protocol,
+    handler=my_handler,
+    transport="tcp",
+    config={
+        "PLUGIN_AUTO_MTLS": False,  # Use manual certificates
+        "PLUGIN_SERVER_CERT": "file:///etc/ssl/certs/server.crt",
+        "PLUGIN_SERVER_KEY": "file:///etc/ssl/private/server.key", 
+        "PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/certs/client-ca.crt",
+    }
+)
+```
+
+### Magic Cookie Security
+
+- Use long, random values for magic cookies
+- Rotate magic cookies regularly
+- Store magic cookie values securely (environment variables, not code)
 
 ## Error Handling
 
