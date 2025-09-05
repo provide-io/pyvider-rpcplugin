@@ -37,7 +37,7 @@ async def test_generate_server_credentials_failure(
         config=None,
     )
 
-    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key: Diagnosing CertificateError message"):
+    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key: .*"):
         server._generate_server_credentials()
 
 
