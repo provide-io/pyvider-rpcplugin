@@ -333,129 +333,6 @@ class RPCPluginConfig(EnvConfig):
         env_var="PLUGIN_HEALTH_SERVICE_ENABLED",
     )
     
-    # Compatibility API methods
-    def get(self, key: str, default: Any = None) -> Any:
-        """
-        Get a configuration value by key name.
-        
-        Supports both old SCHEMA keys and new field names.
-        """
-        # Handle old schema key names for backward compatibility during transition
-        key_mapping = {
-            "SUPPORTED_PROTOCOL_VERSIONS": "supported_protocol_versions",
-            "PLUGIN_CORE_VERSION": "plugin_core_version",
-            "PLUGIN_LOG_LEVEL": "plugin_log_level",
-            "PLUGIN_MAGIC_COOKIE_KEY": "plugin_magic_cookie_key",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "plugin_magic_cookie_value",
-            "PLUGIN_PROTOCOL_VERSIONS": "plugin_protocol_versions",
-            "PLUGIN_SERVER_TRANSPORTS": "plugin_server_transports",
-            "PLUGIN_SERVER_ENDPOINT": "plugin_server_endpoint",
-            "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
-            "PLUGIN_SERVER_CERT": "plugin_server_cert",
-            "PLUGIN_SERVER_KEY": "plugin_server_key",
-            "PLUGIN_SERVER_ROOT_CERTS": "plugin_server_root_certs",
-            "PLUGIN_CLIENT_TRANSPORTS": "plugin_client_transports",
-            "PLUGIN_CLIENT_ENDPOINT": "plugin_client_endpoint",
-            "PLUGIN_CLIENT_CERT": "plugin_client_cert",
-            "PLUGIN_CLIENT_KEY": "plugin_client_key",
-            "PLUGIN_CLIENT_ROOT_CERTS": "plugin_client_root_certs",
-            "PLUGIN_HANDSHAKE_TIMEOUT": "plugin_handshake_timeout",
-            "PLUGIN_CONNECTION_TIMEOUT": "plugin_connection_timeout",
-            "PLUGIN_SHOW_EMOJI_MATRIX": "plugin_show_emoji_matrix",
-            "PLUGIN_CLIENT_RETRY_ENABLED": "plugin_client_retry_enabled",
-            "PLUGIN_CLIENT_MAX_RETRIES": "plugin_client_max_retries",
-            "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": "plugin_client_initial_backoff_ms",
-            "PLUGIN_CLIENT_MAX_BACKOFF_MS": "plugin_client_max_backoff_ms",
-            "PLUGIN_CLIENT_RETRY_JITTER_MS": "plugin_client_retry_jitter_ms",
-            "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": "plugin_client_retry_total_timeout_s",
-            "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
-            "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
-            "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": "plugin_rate_limit_requests_per_second",
-            "PLUGIN_RATE_LIMIT_BURST_CAPACITY": "plugin_rate_limit_burst_capacity",
-            "PLUGIN_HEALTH_SERVICE_ENABLED": "plugin_health_service_enabled",
-        }
-        
-        field_name = key_mapping.get(key, key.lower())
-        
-        try:
-            value = getattr(self, field_name, default)
-            logger.debug(f"⚙️📖 Getting config {key} -> {field_name} = {value}")
-            return value
-        except AttributeError:
-            logger.debug(f"⚙️📖 Getting config {key} = {default} (not found)")
-            return default
-
-    def get_list(self, key: str) -> list[Any]:
-        """Get a configuration value as a list."""
-        value = self.get(key, [])
-        if not isinstance(value, list):
-            value = [value]
-        logger.debug(f"⚙️📖 Getting list config {key} = {value}")
-        return value
-
-    def set(self, key: str, value: Any) -> None:
-        """
-        Set a configuration value dynamically.
-        
-        Note: This updates the runtime instance. For persistent changes,
-        update environment variables or configuration files.
-        """
-        # Map old keys to new field names
-        key_mapping = {
-            "SUPPORTED_PROTOCOL_VERSIONS": "supported_protocol_versions",
-            "PLUGIN_CORE_VERSION": "plugin_core_version",
-            "PLUGIN_LOG_LEVEL": "plugin_log_level",
-            "PLUGIN_MAGIC_COOKIE_KEY": "plugin_magic_cookie_key",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "plugin_magic_cookie_value",
-            "PLUGIN_PROTOCOL_VERSIONS": "plugin_protocol_versions",
-            "PLUGIN_SERVER_TRANSPORTS": "plugin_server_transports",
-            "PLUGIN_SERVER_ENDPOINT": "plugin_server_endpoint",
-            "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
-            "PLUGIN_SERVER_CERT": "plugin_server_cert",
-            "PLUGIN_SERVER_KEY": "plugin_server_key",
-            "PLUGIN_SERVER_ROOT_CERTS": "plugin_server_root_certs",
-            "PLUGIN_CLIENT_TRANSPORTS": "plugin_client_transports",
-            "PLUGIN_CLIENT_ENDPOINT": "plugin_client_endpoint",
-            "PLUGIN_CLIENT_CERT": "plugin_client_cert",
-            "PLUGIN_CLIENT_KEY": "plugin_client_key",
-            "PLUGIN_CLIENT_ROOT_CERTS": "plugin_client_root_certs",
-            "PLUGIN_HANDSHAKE_TIMEOUT": "plugin_handshake_timeout",
-            "PLUGIN_CONNECTION_TIMEOUT": "plugin_connection_timeout",
-            "PLUGIN_SHOW_EMOJI_MATRIX": "plugin_show_emoji_matrix",
-            "PLUGIN_CLIENT_RETRY_ENABLED": "plugin_client_retry_enabled",
-            "PLUGIN_CLIENT_MAX_RETRIES": "plugin_client_max_retries",
-            "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": "plugin_client_initial_backoff_ms",
-            "PLUGIN_CLIENT_MAX_BACKOFF_MS": "plugin_client_max_backoff_ms",
-            "PLUGIN_CLIENT_RETRY_JITTER_MS": "plugin_client_retry_jitter_ms",
-            "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": "plugin_client_retry_total_timeout_s",
-            "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
-            "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
-            "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": "plugin_rate_limit_requests_per_second",
-            "PLUGIN_RATE_LIMIT_BURST_CAPACITY": "plugin_rate_limit_burst_capacity",
-            "PLUGIN_HEALTH_SERVICE_ENABLED": "plugin_health_service_enabled",
-        }
-        
-        field_name = key_mapping.get(key, key.lower())
-        
-        if not hasattr(self, field_name) and not key.startswith("PLUGIN_"):
-            logger.warning(f"⚙️⚠️ Setting unknown config key: {key}")
-            raise ConfigError(
-                message=f"Attempted to set an unknown configuration key: '{key}'.",
-                hint=(
-                    "Ensure the configuration key is spelled correctly. It should be "
-                    "a predefined field or a dynamic key starting with 'PLUGIN_'."
-                ),
-            )
-        
-        try:
-            setattr(self, field_name, value)
-            logger.debug(f"⚙️📝 Setting config {key} -> {field_name} = {value}")
-        except Exception as e:
-            logger.error(f"⚙️❌ Failed to set config {key}: {e}")
-            raise ConfigError(
-                message=f"Failed to set configuration key '{key}' to value '{value}': {e}",
-                hint="Check that the value is valid for this configuration field."
-            ) from e
     
     # Helper methods for common configuration access patterns
     def magic_cookie_key(self) -> str:
@@ -500,33 +377,8 @@ class RPCPluginConfig(EnvConfig):
             )
 
 
-# Singleton instance
-_rpcplugin_config: RPCPluginConfig | None = None
-
-
-def get_rpcplugin_config() -> RPCPluginConfig:
-    """Get or create the singleton RPCPluginConfig instance."""
-    global _rpcplugin_config
-    
-    if _rpcplugin_config is None:
-        try:
-            _rpcplugin_config = RPCPluginConfig.from_env()
-            logger.debug("⚙️✅ RPCPluginConfig initialized from environment variables")
-            logger.debug("⚙️🔄 Created new RPCPluginConfig singleton instance")
-        except Exception as e:
-            logger.error(
-                "⚙️❌ Error initializing RPCPluginConfig", extra={"error": str(e)}
-            )
-            raise ConfigError(
-                message=f"Failed to initialize RPC plugin configuration: {e}",
-                hint="Check environment variables and configuration values."
-            ) from e
-    
-    return _rpcplugin_config
-
-
-# Global singleton instance (for backward compatibility)
-rpcplugin_config = get_rpcplugin_config()
+# Global configuration instance
+rpcplugin_config = RPCPluginConfig.from_env()
 
 
 def configure(
@@ -550,24 +402,26 @@ def configure(
     
     try:
         if magic_cookie is not None:
-            rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie)
+            rpcplugin_config.plugin_magic_cookie_value = magic_cookie
         
         if protocol_version is not None:
-            rpcplugin_config.set("PLUGIN_CORE_VERSION", protocol_version)
-            rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", [protocol_version])
+            rpcplugin_config.plugin_core_version = protocol_version
+            rpcplugin_config.plugin_protocol_versions = [protocol_version]
         
         if transports is not None:
-            rpcplugin_config.set("PLUGIN_SERVER_TRANSPORTS", transports)
-            rpcplugin_config.set("PLUGIN_CLIENT_TRANSPORTS", transports)
+            rpcplugin_config.plugin_server_transports = transports
+            rpcplugin_config.plugin_client_transports = transports
         
         if auto_mtls is not None:
-            rpcplugin_config.set("PLUGIN_AUTO_MTLS", auto_mtls)
+            rpcplugin_config.plugin_auto_mtls = auto_mtls
         
-        # Handle additional kwargs
+        # Handle additional kwargs by mapping to field names
         for key, value in kwargs.items():
-            # Convert snake_case to PLUGIN_* format
-            env_key = f"PLUGIN_{key.upper()}"
-            rpcplugin_config.set(env_key, value)
+            field_name = f"plugin_{key.lower()}"
+            if hasattr(rpcplugin_config, field_name):
+                setattr(rpcplugin_config, field_name, value)
+            else:
+                logger.warning(f"⚙️⚠️ Unknown configuration parameter: {key}")
             
         logger.debug("⚙️✅ Configuration applied successfully")
         
@@ -581,4 +435,3 @@ def configure(
 
 # Constants
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
-CONFIG_SCHEMA = {}  # Legacy export - tests should use Foundation attrs instead
