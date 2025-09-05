@@ -1,161 +1,46 @@
 # Server Development
 
-The Pyvider RPC Plugin server system provides a robust foundation for building plugin servers that handle RPC requests from host applications. This section covers everything you need to know about developing, configuring, and deploying plugin servers.
+Learn how to build robust plugin servers with Pyvider RPC Plugin. This section covers everything from basic server setup to advanced patterns for production deployments.
 
 ## Overview
 
-A plugin server consists of three main components:
+Plugin servers provide gRPC services to host applications through secure, high-performance communication channels. The Pyvider RPC Plugin framework handles the complexity of transport management, security, and service registration, allowing you to focus on business logic.
 
-1. **`RPCPluginServer`** - Main server class managing lifecycle and connections
-2. **`RPCPluginProtocol`** - Protocol implementation defining your gRPC services  
-3. **`Handler/Servicer`** - Business logic implementation for your RPC methods
+## Quick Server Example
 
-```python
-from pyvider.rpcplugin import plugin_server
-
-# Create server with automatic configuration
-server = plugin_server(
-    protocol=MyProtocol(),
-    handler=MyHandler()
-)
-
-# Start serving (blocks until shutdown)
-await server.serve()
-```
-
-## Server Architecture
-
-### Core Components
-
-```
-┌─────────────────┐
-│ Host Application│
-│                 │
-└─────────┬───────┘
-          │ launches
-          ▼
-┌─────────────────┐     ┌──────────────────┐
-│ RPCPluginServer │────▶│ Transport Layer  │
-│                 │     │ (Unix/TCP)       │
-│ ┌─────────────┐ │     └──────────────────┘
-│ │ gRPC Server │ │              │
-│ └─────────────┘ │              │
-│        │        │              │
-│        ▼        │              │
-│ ┌─────────────┐ │              │
-│ │ Protocol    │ │              │
-│ │ Handler     │ │              │
-│ └─────────────┘ │              │
-└─────────────────┘              │
-                                 │
-                        ┌────────▼────────┐
-                        │ Client Connection│
-                        │                 │
-                        └─────────────────┘
-```
-
-### Server Lifecycle
-
-1. **Configuration Loading** - Read environment variables and configuration
-2. **Transport Setup** - Initialize Unix socket or TCP transport
-3. **Service Registration** - Register gRPC services with server
-4. **Handshake Output** - Print connection details to stdout for client
-5. **Connection Listening** - Accept and handle client connections
-6. **Graceful Shutdown** - Clean resource shutdown on termination
-
-## Development Sections
-
-### 🚀 [Basic Server Setup](basic-setup.md)
-Learn to create and configure basic plugin servers:
-- Server components and architecture
-- Factory function usage
-- Configuration options
-- Simple examples
-
-### 🎯 [Service Implementation](services.md) 
-Implement your business logic and RPC methods:
-- gRPC service definition
-- Handler implementation patterns
-- Request/response processing
-- Error handling in services
-
-### 🔌 [Transport Configuration](transports.md)
-Configure network transports for your server:
-- Unix socket configuration
-- TCP transport setup
-- Transport selection logic
-- Security considerations
-
-### ⚡ [Async Patterns](async-patterns.md)
-Master async/await patterns for high-performance servers:
-- Concurrent request handling
-- Async service methods
-- Resource management
-- Performance optimization
-
-### ❤️ [Health Checks](health-checks.md)
-Implement health monitoring for production servers:
-- Built-in health service
-- Custom health checks
-- Integration with orchestrators
-- Monitoring and alerting
-
-## Quick Start
-
-### Minimal Server
+Here's a minimal plugin server to get you started:
 
 ```python
-#!/usr/bin/env python3
 import asyncio
-from pyvider.rpcplugin import plugin_server, plugin_protocol
+from pyvider.rpcplugin import plugin_server
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from example_pb2_grpc import add_CalculatorServicer_to_server
+from example_pb2 import CalculationResponse
 
-class SimpleHandler:
-    """Basic handler for demonstration."""
-    pass
+class CalculatorProtocol(RPCPluginProtocol):
+    service_name = "calculator.Calculator"
+    
+    async def get_grpc_descriptors(self):
+        import example_pb2_grpc
+        return example_pb2_grpc, "calculator.Calculator"
+    
+    async def add_to_server(self, server, handler):
+        add_CalculatorServicer_to_server(handler, server)
+
+class CalculatorHandler:
+    async def Add(self, request, context):
+        result = request.a + request.b
+        return CalculationResponse(result=result)
+    
+    async def Subtract(self, request, context):
+        result = request.a - request.b
+        return CalculationResponse(result=result)
 
 async def main():
     server = plugin_server(
-        protocol=plugin_protocol(),  # Basic protocol
-        handler=SimpleHandler()
+        protocol=CalculatorProtocol(),
+        handler=CalculatorHandler()
     )
-    
-    try:
-        await server.serve()
-    except KeyboardInterrupt:
-        logger.info("Server stopped by user")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Production Server
-
-```python
-#!/usr/bin/env python3
-import asyncio
-import os
-from pyvider.rpcplugin import plugin_server
-from my_services import MyProtocol, MyHandler
-
-async def main():
-    # Configure for production
-    os.environ.update({
-        "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-        "PYVIDER_PLUGIN_RATE_LIMIT_ENABLED": "true", 
-        "PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED": "true",
-        "PYVIDER_PLUGIN_LOG_LEVEL": "INFO"
-    })
-    
-    server = plugin_server(
-        protocol=MyProtocol(),
-        handler=MyHandler()
-    )
-    
-    # Server includes:
-    # - Automatic mTLS with certificate management
-    # - Rate limiting with configurable policies
-    # - Health checking for load balancer integration
-    # - Graceful shutdown handling
     
     await server.serve()
 
@@ -163,125 +48,50 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Common Patterns
+## Server Development Sections
 
-### Environment-Based Configuration
+### 📝 [Basic Server Setup](basic-setup.md)
+Learn the fundamentals of creating and configuring plugin servers:
+- Server initialization and configuration
+- Environment setup and validation
+- Basic error handling patterns
+- Development vs production setup
 
-```python
-import os
-from pyvider.rpcplugin import plugin_server
+### ⚙️ [Service Implementation](services.md)
+Implement robust gRPC service handlers:
+- Service method patterns (unary, streaming)
+- Error handling and status codes
+- Input validation and sanitization
+- Business logic organization
 
-# Development configuration
-if os.getenv('ENV') == 'development':
-    os.environ.update({
-        "PYVIDER_PLUGIN_LOG_LEVEL": "DEBUG",
-        "PYVIDER_PLUGIN_AUTO_MTLS": "false",
-        "PYVIDER_PLUGIN_SERVER_TRANSPORTS": "unix"
-    })
+### 🌐 [Transport Configuration](transports.md)
+Configure transport layers for optimal performance:
+- Unix socket vs TCP selection
+- mTLS configuration and certificates
+- Performance optimization
+- Security considerations
 
-# Production configuration  
-elif os.getenv('ENV') == 'production':
-    os.environ.update({
-        "PYVIDER_PLUGIN_LOG_LEVEL": "INFO",
-        "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-        "PYVIDER_PLUGIN_RATE_LIMIT_ENABLED": "true",
-        "PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED": "true"
-    })
+### 🔄 [Async Patterns](async-patterns.md)
+Master asynchronous programming patterns:
+- Concurrent request handling
+- Background task management
+- Resource pooling
+- Async context management
 
-server = plugin_server(protocol=my_protocol, handler=my_handler)
-```
-
-### Custom Transport Configuration
-
-```python
-from pyvider.rpcplugin import RPCPluginServer
-from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
-
-# Unix socket for high-performance local communication
-unix_transport = UnixSocketTransport(path="/var/run/my-plugin.sock")
-
-# TCP for network communication with TLS
-tcp_transport = TCPSocketTransport(
-    host="0.0.0.0",
-    port=8080,
-    enable_tls=True
-)
-
-server = RPCPluginServer(
-    protocol=my_protocol,
-    handler=my_handler,
-    transport=unix_transport  # or tcp_transport
-)
-```
-
-### Graceful Shutdown
-
-```python
-import asyncio
-import signal
-from pyvider.rpcplugin import plugin_server
-
-async def main():
-    server = plugin_server(protocol=my_protocol, handler=my_handler)
-    
-    # Setup signal handling
-    shutdown_event = asyncio.Event()
-    
-    def signal_handler(signum, frame):
-        logger.info(f"Received signal {signum}, shutting down...")
-        shutdown_event.set()
-    
-    signal.signal(signal.SIGTERM, signal_handler)
-    signal.signal(signal.SIGINT, signal_handler)
-    
-    # Start server task
-    server_task = asyncio.create_task(server.serve())
-    
-    # Wait for shutdown signal
-    await shutdown_event.wait()
-    
-    # Graceful shutdown
-    logger.info("Stopping server...")
-    await server.stop()
-    await server_task
-    logger.info("Server stopped successfully")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-## Configuration Reference
-
-### Key Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `PYVIDER_PLUGIN_SERVER_TRANSPORTS` | `["unix","tcp"]` | Available transport types |
-| `PYVIDER_PLUGIN_SERVER_ENDPOINT` | `None` | Force specific endpoint |
-| `PYVIDER_PLUGIN_AUTO_MTLS` | `true` | Enable mutual TLS |
-| `PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED` | `true` | Enable health service |
-| `PYVIDER_PLUGIN_RATE_LIMIT_ENABLED` | `false` | Enable rate limiting |
-| `PYVIDER_PLUGIN_LOG_LEVEL` | `INFO` | Logging verbosity |
-
-**[📖 Complete Configuration Reference](../config/)**
-
-## Examples and Resources
-
-### Working Examples
-- **[ch03_server_setup_concepts.py](../../examples/ch03_server_setup_concepts.py)** - Server configuration patterns
-- **[ch05_echo_server.py](../../examples/ch05_echo_server.py)** - Complete echo service implementation  
-- **[ch15_e2e_server.py](../../examples/ch15_e2e_server.py)** - Production-ready server example
-
-### Related Documentation
-- **[API Reference](../../api/server/)** - Complete server API documentation
-- **[Configuration Guide](../config/)** - Environment and configuration setup
-- **[Security Guide](../security/)** - mTLS and security best practices
-- **[Examples Overview](../../getting-started/examples.md)** - All available examples
+### 🏥 [Health Checks](health-checks.md)
+Implement comprehensive health monitoring:
+- gRPC health check protocol
+- Custom health indicators
+- Resource monitoring
+- Graceful degradation
 
 ## Next Steps
 
-1. **[Start with Basic Setup](basic-setup.md)** - Learn server fundamentals
-2. **[Implement Services](services.md)** - Add your business logic  
-3. **[Configure Transport](transports.md)** - Set up network communication
-4. **[Add Health Checks](health-checks.md)** - Prepare for production monitoring
-5. **[Optimize Performance](async-patterns.md)** - Scale for high throughput
+Ready to dive deeper into server development? Choose your path:
+
+1. **New to Plugin Servers?** Start with [Basic Server Setup](basic-setup.md)
+2. **Need Service Implementation Help?** Check out [Service Implementation](services.md)
+3. **Working on Performance?** Explore [Async Patterns](async-patterns.md)
+4. **Production Deployment?** Review [Transport Configuration](transports.md)
+
+Each section builds upon the concepts introduced here, providing practical examples and advanced patterns for building production-ready plugin servers.
