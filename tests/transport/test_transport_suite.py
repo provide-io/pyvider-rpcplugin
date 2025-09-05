@@ -258,7 +258,7 @@ async def test_server_lifecycle_and_connectivity(
             f"Server readiness or connectivity check failed for {transport_type}: {e}"
         )
     finally:
-        rpcplugin_config.set("PLUGIN_CLIENT_CERT", original_client_cert_config)
+        rpcplugin_config.plugin_client_cert = original_client_cert_config
 
     await rpc_server.stop()
     try:
