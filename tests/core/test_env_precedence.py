@@ -36,16 +36,16 @@ def reinit_config():
 
 
 def clear_all_known_plugin_env_vars():
-    """Clears all environment variables that correspond to CONFIG_SCHEMA keys."""
+    """Clears all environment variables that start with PLUGIN_."""
     cleared_keys = []
-    # Make sure CONFIG_SCHEMA is available (it's imported)
-    for key in CONFIG_SCHEMA.keys():
-        if key in os.environ:
-            # Backup before deleting if not already backed up for this session
-            if key not in ORIGINAL_ENV_BACKUP:
-                ORIGINAL_ENV_BACKUP[key] = os.environ[key]
-            del os.environ[key]
-            cleared_keys.append(key)
+    # Clear all PLUGIN_ environment variables
+    plugin_keys = [key for key in os.environ.keys() if key.startswith("PLUGIN_")]
+    for key in plugin_keys:
+        # Backup before deleting if not already backed up for this session
+        if key not in ORIGINAL_ENV_BACKUP:
+            ORIGINAL_ENV_BACKUP[key] = os.environ[key]
+        del os.environ[key]
+        cleared_keys.append(key)
     if cleared_keys:
         logger.debug(
             f"Cleared known PLUGIN_ environment variables: {', '.join(cleared_keys)}"
