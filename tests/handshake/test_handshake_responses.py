@@ -267,14 +267,8 @@ def test_parse_handshake_core_version_config_issues(
 
     response_str = f"{handshake_line_core_version}|7|tcp|127.0.0.1:1234|grpc|"
 
-    mock_get = mocker.patch.object(rpcplugin_config, "get")
-
-    def side_effect_func(key, default=None):
-        if key == "PLUGIN_CORE_VERSION":
-            return config_core_version
-        return default
-
-    mock_get.side_effect = side_effect_func
+    # Mock the plugin_core_version attribute directly
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", config_core_version)
 
     if isinstance(expected_parsed_core_version_or_error, type) and issubclass(
         expected_parsed_core_version_or_error, Exception
