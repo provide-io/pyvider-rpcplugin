@@ -13,12 +13,12 @@ async def test_server_handshake_invalid_cookie(
     mock_server_handler,
     mock_server_transport,
 ) -> None:
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "valid_cookie")
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_key", "PLUGIN_MAGIC_COOKIE")
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", "valid_cookie")
     # Simulate client setting the environment variable with the invalid cookie
     monkeypatch.setenv("PLUGIN_MAGIC_COOKIE", "invalid_cookie")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_TRANSPORTS", ["tcp", "unix"])
+    monkeypatch.setattr(rpcplugin_config, "plugin_protocol_versions", [1])
+    monkeypatch.setattr(rpcplugin_config, "plugin_server_transports", ["tcp", "unix"])
 
     server: RPCPluginServer = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -39,12 +39,12 @@ async def test_negotiate_handshake_via_negotiation(
     transport_type, monkeypatch, mock_server_protocol, mock_server_handler
 ) -> None:
     """Tests that negotiation correctly selects a transport from config."""
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_TRANSPORTS", [transport_type])
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", "key")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "value")
+    monkeypatch.setattr(rpcplugin_config, "plugin_server_transports", [transport_type])
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_key", "key")
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", "value")
     # Simulate client setting the environment variable with the correct cookie
     monkeypatch.setenv("key", "value")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_PROTOCOL_VERSIONS", [1])
+    monkeypatch.setattr(rpcplugin_config, "plugin_protocol_versions", [1])
 
     server: RPCPluginServer = RPCPluginServer(
         protocol=mock_server_protocol,

@@ -49,7 +49,7 @@ def temp_unix_socket_path():
 @pytest.mark.asyncio
 async def test_server_shuts_down_on_file_creation(temp_shutdown_file, temp_unix_socket_path, mocker):
     shutdown_file_path_str = str(temp_shutdown_file)
-    mocker.patch.object(rpcplugin_config, 'shutdown_file_path', return_value=shutdown_file_path_str)
+    mocker.patch.object(rpcplugin_config, 'plugin_shutdown_file_path', shutdown_file_path_str)
 
     protocol = DummyProtocol()
     handler = DummyHandler()
