@@ -161,13 +161,9 @@ def test_parse_handshake_response_excessive_fields():
 
 def test_parse_handshake_response_invalid_protocol_version() -> None:
     """Test parsing a handshake response with an invalid protocol version."""
-    with patch.object(rpcplugin_config, "get") as mock_get_config:
+    with patch.object(rpcplugin_config, "plugin_core_version", 1):
         # Scenario 1: Core protocol version mismatch (e.g., plugin sends 2, client expects 1)
         response_diff_core = "2|7|tcp|127.0.0.1:12345|grpc|"
-        # Configure the mock to return '1' when 'PLUGIN_CORE_VERSION' is fetched.
-        mock_get_config.side_effect = (
-            lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default
-        )
         # The parse_handshake_response function wraps the specific error.
         # The specific error is "Unsupported handshake version: 2 (expected: 1)".
         # The current regex in the code for this part is correct for matching the specific part.

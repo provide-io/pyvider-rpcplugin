@@ -130,14 +130,9 @@ async def test_setup_client_certificates_mtls_missing_key(client_instance, mocke
     """Test mTLS enabled, cert provided, but key is missing -> should generate."""
     mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.auto_mtls_enabled", return_value=True)
 
-    mock_get_config = mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.get")
-    def config_side_effect(key, default=None):
-        if key == "PLUGIN_CLIENT_CERT":
-            return "dummy-cert-pem"
-        if key == "PLUGIN_CLIENT_KEY":
-            return None # Key is missing
-        return default
-    mock_get_config.side_effect = config_side_effect
+    # Mock the Foundation attributes directly
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.plugin_client_cert", "dummy-cert-pem")
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.plugin_client_key", None)
 
     # We need to mock the Certificate class from the correct module
     mock_cert_generated_instance = MagicMock(spec=Certificate)
