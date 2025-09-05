@@ -9,8 +9,8 @@ from google.protobuf import empty_pb2
 
 # Import generated classes from your compiled proto.
 from .proto.grpctest_pb2 import (
-    GrpcTestRequest as GrpcGrpcTestRequest,
-    GrpcTestResponse as GrpcGrpcTestResponse,
+    TestRequest,
+    TestResponse,
     PrintKVRequest,
     PrintKVResponse,
     BidirectionalRequest,
@@ -24,7 +24,7 @@ from .proto.grpctest_pb2_grpc import (
     add_TestServicer_to_server,
     PingPongServicer,
     add_PingPongServicer_to_server,
-    GrpcTestStub as GrpcGrpcTestStub,
+    TestStub,
     PingPongStub,
 )
 
@@ -33,7 +33,7 @@ from .proto.grpctest_pb2_grpc import (
 class DummyTestServicer(TestServicer):
     async def Double(self, request, context):
         # Simply double the input.
-        return GrpcTestResponse(Output=request.Input * 2)
+        return TestResponse(Output=request.Input * 2)
 
     async def PrintKV(self, request, context):
         # No return payload.
@@ -46,7 +46,7 @@ class DummyTestServicer(TestServicer):
     async def Stream(self, request_iterator, context):
         # For each incoming request, yield a response with double the input.
         async for req in request_iterator:
-            yield GrpcTestResponse(Output=req.Input * 2)
+            yield TestResponse(Output=req.Input * 2)
 
     async def PrintStdio(self, request, context):
         return empty_pb2.Empty()
@@ -82,8 +82,8 @@ async def grpc_channel(grpc_server: str) -> AsyncGenerator[grpc.aio.Channel, Non
 
 # Fixtures for the client stubs.
 @pytest_asyncio.fixture
-async def test_stub(grpc_channel: grpc.aio.Channel) -> GrpcTestStub:
-    return GrpcTestStub(grpc_channel)
+async def test_stub(grpc_channel: grpc.aio.Channel) -> TestStub:
+    return TestStub(grpc_channel)
 
 
 @pytest_asyncio.fixture
@@ -92,31 +92,31 @@ async def pingpong_stub(grpc_channel: grpc.aio.Channel) -> PingPongStub:
 
 
 @pytest.mark.asyncio
-async def test_double_rpc(test_stub: GrpcTestStub) -> None:
-    req = GrpcTestRequest(Input=10)
+async def test_double_rpc(test_stub: TestStub) -> None:
+    req = TestRequest(Input=10)
     resp = await test_stub.Double(req)
     assert resp.Output == 20
 
 
 @pytest.mark.asyncio
-async def test_printkv_rpc(test_stub: GrpcTestStub) -> None:
+async def test_printkv_rpc(test_stub: TestStub) -> None:
     req = PrintKVRequest(Key="test", ValueString="hello")
     resp = await test_stub.PrintKV(req)
     assert isinstance(resp, PrintKVResponse)
 
 
 @pytest.mark.asyncio
-async def test_bidirectional_rpc(test_stub: GrpcTestStub) -> None:
+async def test_bidirectional_rpc(test_stub: TestStub) -> None:
     req = BidirectionalRequest(id=123)
     resp = await test_stub.Bidirectional(req)
     assert resp.id == 123
 
 
 @pytest.mark.asyncio
-async def test_stream_rpc(test_stub: GrpcTestStub):
+async def test_stream_rpc(test_stub: TestStub):
     async def request_gen():
         for i in range(5):
-            yield GrpcTestRequest(Input=i)
+            yield TestRequest(Input=i)
             await asyncio.sleep(0.01)
 
     responses = [resp async for resp in test_stub.Stream(request_gen())]
@@ -125,7 +125,7 @@ async def test_stream_rpc(test_stub: GrpcTestStub):
 
 
 @pytest.mark.asyncio
-async def test_printstdio_rpc(test_stub: GrpcTestStub) -> None:
+async def test_printstdio_rpc(test_stub: TestStub) -> None:
     req = PrintStdioRequest(stdout=b"abc", stderr=b"def")
     resp = await test_stub.PrintStdio(req)
     assert isinstance(resp, empty_pb2.Empty)
