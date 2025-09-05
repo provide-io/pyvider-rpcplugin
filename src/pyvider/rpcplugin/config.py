@@ -581,3 +581,4 @@ def configure(
 
 # Constants
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
+CONFIG_SCHEMA = {}  # Legacy export - tests should use Foundation attrs instead

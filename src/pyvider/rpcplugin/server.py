@@ -107,39 +107,14 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
     def _get_config_value(self, key: str, default_value: Any = None) -> Any:
         """
         Gets a config value, preferring instance config then global.
-        If the value from instance config is a string, it's converted using schema type.
         """
+        # Check instance config first
         if isinstance(self.config, dict) and key in self.config:
             val = self.config[key]
-            schema_info = CONFIG_SCHEMA.get(key, {})
-            schema_type = schema_info.get("type")
-
-            if schema_type and isinstance(
-                val, str
-            ):  # Only convert if it's a string and schema type is known
-                try:
-                    return _convert_value_to_schema_type(val, schema_type, key)
-                except ConfigError as e:  # Catch conversion error to provide context
-                    logger.warning(
-                        f"Failed to convert instance config value for {key} ('{val}') "
-                        f"to {schema_type}: {e}. Using global or default."
-                    )
-                    # Fall through to global config if instance conversion fails
-            elif (
-                schema_type and val is None and schema_type in ("list_str", "list_int")
-            ):
-                # If instance config explicitly sets a list type to None,
-                # return empty list
-                return []
-            elif (
-                val is not None
-            ):  # If not a string needing conversion, or no schema_type, return as is
+            if val is not None:
                 return val
-            # If val is None and not a list type, fall through to global/default
-
-        # Fallback to global config if key not in self.config,
-        # self.config is None, or if instance value was None and not a list
-        # type (to allow global default to apply).
+        
+        # Fallback to global Foundation-based config
         return rpcplugin_config.get(key, default_value)
 
     def __attrs_post_init__(self) -> None:
