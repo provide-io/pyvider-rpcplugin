@@ -171,13 +171,13 @@ async def test_connect_handshake_total_timeout_immediately(client_instance_local
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled", True)
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_retries", 3)
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_initial_backoff_ms", 10)
-    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 0.0)  # Immediate timeout
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 0.001)  # Very short timeout for immediate behavior
 
     # Control time.monotonic sequence
     monotonic_values_sequence = [
         0.0,  # Initial overall_start_time for _connect_and_handshake_with_retry
         0.01, # First check in loop (for while condition), time() - overall_start_time = 0.01
-              # total_timeout_s is 0.0. So 0.01 > 0.0 is true.
+              # total_timeout_s is 0.001. So 0.01 > 0.001 is true.
     ]
     monotonic_iterator = iter(monotonic_values_sequence)
     final_monotonic_value_after_timeout = 0.05
@@ -205,7 +205,7 @@ async def test_connect_handshake_total_timeout_immediately(client_instance_local
         await client_instance._connect_and_handshake_with_retry()
 
     client_instance.logger.error.assert_any_call(
-        "Client connection/handshake retry sequence timed out after 0.0s. Last error: N/A"
+        "Client connection/handshake retry sequence timed out after 0.001s. Last error: N/A"
     )
     assert client_instance._handshake_failed_event.is_set()
 
