@@ -15,7 +15,7 @@ theme:
     # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep orange
+      primary: black
       accent: deep purple
       toggle:
         icon: material/brightness-7
@@ -24,7 +24,7 @@ theme:
     # Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: orange
+      primary: indigo
       accent: deep purple
       toggle:
         icon: material/brightness-4
