@@ -3,8 +3,23 @@ import sys
 import os
 import asyncio
 import pytest
-from pyvider.rpcplugin.config import RPCPluginConfig, CONFIG_SCHEMA
+from attrs import fields
+from pyvider.rpcplugin.config import RPCPluginConfig
 from tests.fixtures import *
+
+
+def get_all_env_vars() -> list[str]:
+    """
+    Extract all environment variable keys from RPCPluginConfig metadata.
+    
+    This provides dynamic env var discovery without hardcoded constants,
+    ensuring test isolation covers all config fields automatically.
+    """
+    return [
+        field.metadata.get('env_var')
+        for field in fields(RPCPluginConfig)
+        if field.metadata.get('env_var')
+    ]
 
 
 @pytest.fixture
@@ -32,20 +47,22 @@ def reset_rpcplugin_config_singleton():
     """
     Fixture to reset the RPCPluginConfig singleton and relevant env vars before each test.
     This ensures complete test isolation with respect to configuration.
+    
+    Uses metadata-driven env var discovery to eliminate hardcoded constants.
     """
     # Force the singleton to be cleared
     RPCPluginConfig._instance = None
 
-    # Backup and clear all environment variables defined in the schema
-    env_keys_to_clear = list(CONFIG_SCHEMA.keys())
-    original_env_values = {key: os.environ.get(key) for key in env_keys_to_clear}
+    # Backup and clear all environment variables from config metadata
+    env_keys_to_clear = get_all_env_vars()
+    original_env_values = {key: os.environ.get(key) for key in env_keys_to_clear if key}
 
     for key in env_keys_to_clear:
-        if key in os.environ:
+        if key and key in os.environ:
             del os.environ[key]
 
     # The test runs now in a pristine environment. The first call to
-    # RPCPluginConfig.instance() in the test will create a fresh instance.
+    # RPCPluginConfig.from_env() in the test will create a fresh instance.
     yield
 
     # Teardown: Restore original environment variables
