@@ -75,9 +75,12 @@ def setup_environment(monkeypatch):
 @pytest.mark.asyncio
 async def test_build_handshake_response_unix(monkeypatch):
     """Test building handshake response with Unix transport."""
-    transport = UnixSocketTransport()
-    transport.listen = AsyncMock(return_value="/tmp/test.sock")
-    transport.endpoint = "/tmp/test.sock"
+    # Mock the core version to ensure consistent test expectations
+    from unittest.mock import patch
+    with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
+        transport = UnixSocketTransport()
+        transport.listen = AsyncMock(return_value="/tmp/test.sock")
+        transport.endpoint = "/tmp/test.sock"
 
     response = await build_handshake_response(
         plugin_version=6, transport_name="unix", transport=transport, server_cert=None
@@ -100,7 +103,10 @@ async def test_build_handshake_response_unix(monkeypatch):
 @pytest.mark.asyncio
 async def test_build_handshake_response_with_certificate():
     """Test building handshake response with a certificate."""
-    transport = TCPSocketTransport()
+    # Mock the core version to ensure consistent test expectations
+    from unittest.mock import patch
+    with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
+        transport = TCPSocketTransport()
 
     # Create a simple certificate
     cert = Certificate(generate_keypair=True)
@@ -130,7 +136,10 @@ async def test_build_handshake_response_with_certificate():
 @pytest.mark.asyncio
 async def test_full_handshake_cycle():
     """Test a complete handshake cycle with building and parsing."""
-    transport = TCPSocketTransport()
+    # Mock the core version to ensure consistent test expectations
+    from unittest.mock import patch
+    with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
+        transport = TCPSocketTransport()
 
     # Build the response
     response = await build_handshake_response(
