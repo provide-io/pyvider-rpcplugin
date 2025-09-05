@@ -50,8 +50,8 @@ def reset_rpcplugin_config_singleton():
     
     Uses metadata-driven env var discovery to eliminate hardcoded constants.
     """
-    # Force the singleton to be cleared
-    RPCPluginConfig._instance = None
+    # Foundation config doesn't use singleton pattern like old implementation
+    # Environment cleanup is sufficient for test isolation
 
     # Backup and clear all environment variables from config metadata
     env_keys_to_clear = get_all_env_vars()
@@ -72,8 +72,8 @@ def reset_rpcplugin_config_singleton():
         elif key in os.environ:
             del os.environ[key]
     
-    # Final reset to ensure no state leaks to subsequent test modules
-    RPCPluginConfig._instance = None
+    # Foundation config loads fresh from environment each time
+    # No singleton cleanup needed
 
 
 # 🐍🔌🧪🪄
