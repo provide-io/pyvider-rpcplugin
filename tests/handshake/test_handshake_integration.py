@@ -180,6 +180,8 @@ async def test_server_handshake_integration(
     mocker.patch.object(rpcplugin_config, "plugin_server_key", None)
     mocker.patch.object(rpcplugin_config, "plugin_magic_cookie_key", "PLUGIN_MAGIC_COOKIE")
     mocker.patch.object(rpcplugin_config, "plugin_magic_cookie_value", "test_cookie_value")
+    # Mock the core version to ensure consistent test expectations
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1)
 
     # Patch sys.stdout to capture handshake output
     with (
