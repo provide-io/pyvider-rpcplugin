@@ -67,6 +67,9 @@ def server_config_override_rl(request):
         attr_name = key_to_attr.get(key)
         if attr_name and hasattr(rpcplugin_config, attr_name):
             original_config_values[attr_name] = getattr(rpcplugin_config, attr_name)
+            # Convert string boolean values to actual booleans for Foundation compatibility
+            if isinstance(value, str) and value.lower() in ("true", "false"):
+                value = value.lower() == "true"
             setattr(rpcplugin_config, attr_name, value)
 
     # Set environment variables
