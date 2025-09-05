@@ -61,7 +61,7 @@ from pyvider.rpcplugin.exception import (
     SecurityError,
     TransportError,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 from typing import Any, Callable, Awaitable # For circuit breaker
 from collections.abc import Never # For attempt_primary_service
 

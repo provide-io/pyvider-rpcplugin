@@ -25,7 +25,7 @@ from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )  # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 # --- Implement the Handler (Servicer) ---

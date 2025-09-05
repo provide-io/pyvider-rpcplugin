@@ -14,7 +14,7 @@ import grpc  # For DummyHandler type hint
 
 from pyvider.rpcplugin import configure as pyvider_configure
 from pyvider.rpcplugin.config import CONFIG_SCHEMA, rpcplugin_config
-from pyvider.telemetry import logger as dummy_handler_logger
+from provide.foundation import logger as dummy_handler_logger
 
 
 def setup_example_environment() -> Path:

@@ -29,7 +29,7 @@ from example_utils import configure_for_example, get_example_port
 configure_for_example()
 
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 async def tcp_transport_demo():
     logger.info("🌐 TCP Transport Demo")

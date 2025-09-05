@@ -31,7 +31,7 @@ import grpc  # noqa: E402
 # Import pyvider components first, then specific example modules
 from examples.proto import echo_pb2, echo_pb2_grpc  # noqa: E402
 from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 class EchoClient:

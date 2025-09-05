@@ -5,7 +5,7 @@ from pyvider.rpcplugin.config import (
     configure,
     CONFIG_SCHEMA,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Backup original environment variables that might be modified by tests
 ORIGINAL_ENV_BACKUP = {}

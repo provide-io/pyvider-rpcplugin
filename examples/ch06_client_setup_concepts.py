@@ -14,7 +14,7 @@ from pyvider.rpcplugin.exception import (  # noqa: E402
     RPCPluginError,
     TransportError,
 )
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 async def basic_client_example() -> None:

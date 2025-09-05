@@ -13,7 +13,7 @@ from pyvider.rpcplugin.types import ServerT
 from tests.fixtures.proto import echo_pb2
 from tests.fixtures.proto import echo_pb2_grpc
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     service_name = "echo.EchoService"

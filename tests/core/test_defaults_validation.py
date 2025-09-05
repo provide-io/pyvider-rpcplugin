@@ -7,7 +7,7 @@ from pyvider.rpcplugin.config import (
     validate_config_value,
     ConfigError,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 ORIGINAL_ENV_BACKUP = {}
 

@@ -9,7 +9,7 @@ from pyvider.rpcplugin.server import RPCPluginServer, RateLimitingInterceptor
 from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import ServerT
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 from tests.fixtures.proto import echo_pb2
 from tests.fixtures.proto import echo_pb2_grpc

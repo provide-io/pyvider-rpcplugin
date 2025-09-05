@@ -23,7 +23,7 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.types import (
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 configure_for_example(
     clear_env=False

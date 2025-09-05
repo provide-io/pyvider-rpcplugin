@@ -7,7 +7,7 @@ import tempfile
 import pytest
 
 from pyvider.rpcplugin.transport import UnixSocketTransport
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 
 @pytest.mark.asyncio

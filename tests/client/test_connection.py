@@ -162,7 +162,7 @@ async def test_del_warning() -> None:
     remote_addr = conn.remote_addr
 
     # Patch the logger.warning specifically in the module where ClientConnection uses it.
-    # ClientConnection.py does: from pyvider.telemetry import logger
+    # ClientConnection.py does: from provide.foundation import logger
     # So the target is 'pyvider.rpcplugin.client.connection.logger.warning'.
     from unittest.mock import MagicMock
 

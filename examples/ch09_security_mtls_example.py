@@ -21,7 +21,7 @@ from pyvider.rpcplugin import (
     plugin_client,
 )
 from pyvider.rpcplugin.crypto import Certificate
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Apply base configuration for examples (paths, logging)
 # Client context, clear its own env before specific mTLS config.

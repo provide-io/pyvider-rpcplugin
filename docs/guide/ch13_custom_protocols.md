@@ -55,7 +55,7 @@ from typing import Any, Tuple
 import example_utils  # type: ignore[import-not-found]
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 example_utils.configure_for_example()
 
