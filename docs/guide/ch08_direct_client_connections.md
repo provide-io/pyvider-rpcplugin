@@ -62,7 +62,7 @@ import sys
 from pathlib import Path
 import grpc # For direct gRPC channel usage
 from example_utils import clear_plugin_env_vars, configure_for_example
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Path to the file where ch08_dummy_server.py (when run standalone)
 # is expected to write its socket path.

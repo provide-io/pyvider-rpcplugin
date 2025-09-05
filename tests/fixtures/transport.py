@@ -13,7 +13,7 @@ import uuid
 from pathlib import Path  # Ensure Path is imported
 from typing import AsyncGenerator
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 from pyvider.rpcplugin.transport import (
     UnixSocketTransport,

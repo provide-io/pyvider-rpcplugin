@@ -6,7 +6,7 @@ import pytest_asyncio
 import asyncio
 import os
 import tempfile
-from pyvider.telemetry import logger
+from provide.foundation import logger
 # from pyvider.rpcplugin.server import RPCPluginServer # RPCPluginServer is not used in this file
 
 

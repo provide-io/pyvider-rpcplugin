@@ -37,7 +37,7 @@ from example_utils import (  # type: ignore[import-not-found] # noqa: E402
     configure_for_example,
 )
 
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 # Define project_root for SOCKET_COMM_FILE path construction
 project_root = Path(__file__).resolve().parent.parent

@@ -57,7 +57,7 @@ from pyvider.rpcplugin.factories import plugin_server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Import generated protobuf code for E2E Greeting service
 from examples.proto import e2e_greeting_pb2
@@ -151,7 +151,7 @@ from pathlib import Path
 # Import pyvider components
 from pyvider.rpcplugin.client import RPCPluginClient # noqa: E402
 from pyvider.rpcplugin.exception import RPCPluginError # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from provide.foundation import logger # noqa: E402
 
 # Import generated protobuf code for E2E Greeting service
 from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc # noqa: E402

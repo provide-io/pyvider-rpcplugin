@@ -5,7 +5,7 @@ import pytest_asyncio
 
 import asyncio
 
-from pyvider.telemetry import logger  # Added for logging in fixture
+from provide.foundation import logger  # Added for logging in fixture
 from pyvider.rpcplugin.server import RPCPluginServer
 
 

@@ -28,7 +28,7 @@ from example_utils import configure_for_example
 configure_for_example()
 
 from pyvider.rpcplugin.exception import HandshakeError, RPCPluginError, TransportError # noqa: E402
-from pyvider.telemetry import logger # noqa: E402
+from provide.foundation import logger # noqa: E402
 
 
 async def basic_client_example() -> None:

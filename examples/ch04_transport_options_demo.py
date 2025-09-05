@@ -18,7 +18,7 @@ from pyvider.rpcplugin.transport import (  # noqa: E402
     TCPSocketTransport,
     UnixSocketTransport,
 )
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 async def tcp_transport_demo() -> None:

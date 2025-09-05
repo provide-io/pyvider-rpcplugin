@@ -9,7 +9,7 @@ import socket # Ensured socket is imported
 import pytest
 from unittest.mock import MagicMock, AsyncMock # Ensured AsyncMock is imported for other tests if needed
 
-from pyvider.telemetry import logger
+from provide.foundation import logger
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py

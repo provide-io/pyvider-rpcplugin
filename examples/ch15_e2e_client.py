@@ -19,7 +19,7 @@ example_utils.configure_for_example(clear_env=True)  # For client context
 from examples.proto import e2e_greeting_pb2, e2e_greeting_pb2_grpc  # noqa: E402
 from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
 from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 async def main() -> None:

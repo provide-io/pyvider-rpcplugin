@@ -3,7 +3,7 @@ import asyncio
 from unittest.mock import patch # Required for mocker if not already globally available through pytest
 
 from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
-from pyvider.telemetry import logger # For logger access if needed by caplog or direct patching
+from provide.foundation import logger # For logger access if needed by caplog or direct patching
 
 # Disable all logging for this test module to avoid polluting test output,
 # unless specific log tests are being done with caplog.

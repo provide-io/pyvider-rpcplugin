@@ -22,7 +22,7 @@ from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
-from pyvider.telemetry import logger  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 async def main() -> None:

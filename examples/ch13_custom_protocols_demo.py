@@ -14,7 +14,7 @@ from typing import Any
 # that might depend on its setup
 from examples import example_utils
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 example_utils.configure_for_example()
 
