@@ -25,9 +25,7 @@ from grpc.aio import server as GRPCServer
 from grpc_health.v1 import health_pb2_grpc
 
 from pyvider.rpcplugin.config import (
-    CONFIG_SCHEMA,
     ConfigError,
-    _convert_value_to_schema_type,
     rpcplugin_config,
 )
 from provide.foundation.crypto import Certificate
