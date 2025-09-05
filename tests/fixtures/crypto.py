@@ -4,7 +4,7 @@ import pytest
 
 
 from provide.foundation import logger
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 
 
 @pytest.fixture(scope="module")
