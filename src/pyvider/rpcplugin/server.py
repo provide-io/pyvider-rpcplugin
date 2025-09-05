@@ -104,42 +104,14 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
         default="pyvider.default.plugin.Service", init=False
     )
 
-    def _get_config_value(self, key: str, default_value: Any = None) -> Any:
+    def _get_instance_config_value(self, key: str) -> Any:
         """
-        Gets a config value, preferring instance config then global Foundation config.
+        Get value from instance config dict if present and not None.
+        Returns None if not found or instance config is not a dict.
         """
-        # Check instance config first
         if isinstance(self.config, dict) and key in self.config:
-            val = self.config[key]
-            if val is not None:
-                return val
-        
-        # Fallback to global Foundation-based config using direct attribute access
-        # Map legacy keys to Foundation attributes
-        key_to_attr = {
-            "PLUGIN_MAGIC_COOKIE_KEY": "plugin_magic_cookie_key",
-            "PLUGIN_MAGIC_COOKIE_VALUE": "plugin_magic_cookie_value",
-            "PLUGIN_PROTOCOL_VERSIONS": "plugin_protocol_versions", 
-            "PLUGIN_SERVER_TRANSPORTS": "plugin_server_transports",
-            "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
-            "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
-            "PLUGIN_RATE_LIMIT_BURST_CAPACITY": "plugin_rate_limit_burst_capacity",
-            "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": "plugin_rate_limit_requests_per_second",
-            "PLUGIN_HEALTH_SERVICE_ENABLED": "plugin_health_service_enabled",
-            "PLUGIN_CLIENT_CERT": "plugin_client_cert",
-            "PLUGIN_SERVER_CERT": "plugin_server_cert",
-            "PLUGIN_SERVER_KEY": "plugin_server_key",
-            "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
-            "PLUGIN_CLIENT_ROOT_CERTS": "plugin_client_root_certs",
-            "PLUGIN_SERVER_ENDPOINT": "plugin_server_endpoint"
-        }
-        
-        if key in key_to_attr:
-            attr_name = key_to_attr[key]
-            return getattr(rpcplugin_config, attr_name, default_value)
-        
-        # If key not found in mapping, return default
-        return default_value
+            return self.config[key]
+        return None
 
     def __attrs_post_init__(self) -> None:
         try:
