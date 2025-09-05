@@ -167,14 +167,11 @@ async def test_connect_handshake_retry_process_exits(client_instance_local, mock
 @pytest.mark.asyncio
 async def test_connect_handshake_total_timeout_immediately(client_instance_local, mocker):
     client_instance = client_instance_local
-    mock_config_get = mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get")
-    config_values = {
-        "PLUGIN_CLIENT_RETRY_ENABLED": "true",
-        "PLUGIN_CLIENT_MAX_RETRIES": 3,
-        "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": 10,
-        "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": 0.0, # Immediate timeout
-    }
-    mock_config_get.side_effect = lambda key, default=None: config_values.get(key, default)
+    # Mock Foundation attributes directly
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled", True)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_retries", 3)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_initial_backoff_ms", 10)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 0.0)  # Immediate timeout
 
     # Control time.monotonic sequence
     monotonic_values_sequence = [
@@ -285,16 +282,13 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
     client_instance = client_instance_local
 
     total_timeout_s_config = 0.05 # Very short timeout for testing (50ms)
-    mock_config_get = mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get")
-    config_values = {
-        "PLUGIN_CLIENT_RETRY_ENABLED": "true",
-        "PLUGIN_CLIENT_MAX_RETRIES": 10, # High enough to ensure timeout hits first
-        "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": 20, # 20ms
-        "PLUGIN_CLIENT_MAX_BACKOFF_MS": 100,  # 100ms
-        "PLUGIN_CLIENT_RETRY_JITTER_MS": 1,
-        "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": total_timeout_s_config,
-    }
-    mock_config_get.side_effect = lambda key, default=None: config_values.get(key, default)
+    # Mock Foundation attributes directly
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled", True)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_retries", 10)  # High enough to ensure timeout hits first
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_initial_backoff_ms", 20)  # 20ms
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_backoff_ms", 100)  # 100ms
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_jitter_ms", 1)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", total_timeout_s_config)
 
     # Mock asyncio.sleep to actually sleep, to allow time.monotonic() to advance
     # Patch time.monotonic to control its return value precisely around sleep
@@ -379,16 +373,13 @@ async def test_connect_handshake_max_retries_reached(client_instance_local, mock
 
     # Configure retry settings
     max_retries_config = 2 # Test with 2 max retries (so 3 attempts total)
-    mock_config_get = mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.get")
-    config_values = {
-        "PLUGIN_CLIENT_RETRY_ENABLED": "true",
-        "PLUGIN_CLIENT_MAX_RETRIES": max_retries_config,
-        "PLUGIN_CLIENT_INITIAL_BACKOFF_MS": 1,
-        "PLUGIN_CLIENT_MAX_BACKOFF_MS": 5,
-        "PLUGIN_CLIENT_RETRY_JITTER_MS": 1,
-        "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S": 60, # Large enough to not interfere
-    }
-    mock_config_get.side_effect = lambda key, default=None: config_values.get(key, default)
+    # Mock Foundation attributes directly
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled", True)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_retries", max_retries_config)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_initial_backoff_ms", 1)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_backoff_ms", 5)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_jitter_ms", 1)
+    mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 60)  # Large enough to not interfere
 
     mock_sleep = mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock)
 
