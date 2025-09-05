@@ -23,7 +23,7 @@ from typing import Literal, TypeGuard, cast
 from attrs import define
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.crypto import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
 from pyvider.rpcplugin.transport.types import TransportT
 from provide.foundation import logger

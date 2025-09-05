@@ -30,7 +30,7 @@ from pyvider.rpcplugin.config import (
     _convert_value_to_schema_type,
     rpcplugin_config,
 )
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import (
     ProtocolError,
     SecurityError,
