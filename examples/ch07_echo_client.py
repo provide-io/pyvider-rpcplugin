@@ -41,7 +41,7 @@ class EchoClient:
             "env": {
                 "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
                 "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
-                "PLUGIN_LOG_LEVEL": rpcplugin_config.get("PLUGIN_LOG_LEVEL", "INFO"),
+                "PLUGIN_LOG_LEVEL": rpcplugin_config.plugin_log_level,
                 # Set AUTO_MTLS for server based on client's config for consistency
                 # in example
                 "PLUGIN_AUTO_MTLS": str(rpcplugin_config.auto_mtls_enabled()).lower(),
