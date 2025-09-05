@@ -52,20 +52,14 @@ def force_reinit_config_for_test():
 
 @pytest.fixture(autouse=True)  # Autouse to apply to all tests in the module
 def auto_clean_rpc_config_env():
-    # Original env vars for schema keys are backed up by clear_plugin_env_vars_for_test
+    # Clean environment before test
     clear_plugin_env_vars_for_test()
-    # Force re-init after clearing env. This instance can be used by tests if needed,
-    # but tests might also call force_reinit_config_for_test() themselves after further env changes.
-    RPCPluginConfig._instance = None
-    _ = RPCPluginConfig.instance()  # Initial instance creation with cleared env
-
+    # Foundation config doesn't need singleton management
+    
     yield  # Test runs here
 
-    restore_env_vars()  # Restore original env vars
-    RPCPluginConfig._instance = None  # Final cleanup of singleton for other modules
-    _ = (
-        RPCPluginConfig.instance()
-    )  # Re-init with restored env for subsequent modules/tests
+    # Restore environment after test
+    restore_env_vars()
 
 
 def test_default_value_fallbacks():
