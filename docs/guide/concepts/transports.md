@@ -1,6 +1,6 @@
-# Transport Layer
+# Transports
 
-Understanding transport mechanisms is crucial for optimal plugin communication. Pyvider RPC Plugin supports two primary transport types, each optimized for different use cases.
+Pyvider RPC Plugin supports multiple transport layers for communication between host applications and plugin processes. Each transport provides different trade-offs between performance, security, and platform compatibility.
 
 ## Transport Types
 
