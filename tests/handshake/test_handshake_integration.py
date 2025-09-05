@@ -166,24 +166,11 @@ async def test_server_handshake_integration(
 
     # Ensure the server runs in insecure mode for this test's original intent
     # (checking handshake output, not TLS setup).
-    def mock_config_get(key, default=None):
-        if key == "PLUGIN_AUTO_MTLS":
-            return False
-        if key == "PLUGIN_SERVER_CERT":
-            return None
-        if key == "PLUGIN_SERVER_KEY":
-            return None
-        # Values set by setup_environment fixture
-        if key == "PLUGIN_MAGIC_COOKIE_KEY":
-            return "PLUGIN_MAGIC_COOKIE" # As set by setup_environment
-        if key == "PLUGIN_MAGIC_COOKIE_VALUE":
-            return "test_cookie_value" # As set by setup_environment
-
-        # For other keys, return their actual values from the global config
-        # This ensures values set by setup_environment are respected.
-        return rpcplugin_config.config.get(key, default)
-
-    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get)
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
+    mocker.patch.object(rpcplugin_config, "plugin_server_cert", None)
+    mocker.patch.object(rpcplugin_config, "plugin_server_key", None)
+    mocker.patch.object(rpcplugin_config, "plugin_magic_cookie_key", "PLUGIN_MAGIC_COOKIE")
+    mocker.patch.object(rpcplugin_config, "plugin_magic_cookie_value", "test_cookie_value")
 
     # Patch sys.stdout to capture handshake output
     with (
