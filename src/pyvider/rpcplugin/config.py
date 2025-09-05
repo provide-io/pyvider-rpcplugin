@@ -30,6 +30,7 @@ from provide.foundation.config import (
     BaseConfig,
     EnvConfig,
     field,
+    parse_list,
     validate_choice,
     validate_non_negative,
     validate_positive,
@@ -45,6 +46,33 @@ SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 # Define supported transport types
 TRANSPORT_TYPES = Literal["unix", "tcp"]
 
+
+
+# RPC-specific converters
+def convert_int_list(value: Any) -> list[int]:
+    """Convert comma-separated string to list of integers."""
+    if isinstance(value, list):
+        # Already a list, convert each item to int
+        return [int(item) for item in value]
+    
+    if isinstance(value, str):
+        # Parse comma-separated string and convert to integers
+        str_list = parse_list(value)
+        return [int(item) for item in str_list if item]
+    
+    # Single value, wrap in list
+    return [int(value)]
+
+
+def convert_str_list(value: Any) -> list[str]:
+    """Convert comma-separated string to list of strings."""
+    if isinstance(value, list):
+        return value
+    
+    if isinstance(value, str):
+        return parse_list(value)
+    
+    return [str(value)]
 
 
 # RPC-specific validators
@@ -153,6 +181,7 @@ class RPCPluginConfig(EnvConfig):
     # Protocol configuration
     plugin_protocol_versions: list[int] = field(
         factory=lambda: [1],
+        converter=convert_int_list,
         validator=validate_protocol_version_list,
         description="List of protocol versions supported by this plugin",
         env_var="PLUGIN_PROTOCOL_VERSIONS",
@@ -161,6 +190,7 @@ class RPCPluginConfig(EnvConfig):
     # Server configuration
     plugin_server_transports: list[str] = field(
         factory=lambda: ["unix", "tcp"],
+        converter=convert_str_list,
         validator=validate_transport_list,
         description="List of transports supported by the server",
         env_var="PLUGIN_SERVER_TRANSPORTS",
@@ -203,6 +233,7 @@ class RPCPluginConfig(EnvConfig):
     # Client configuration
     plugin_client_transports: list[str] = field(
         factory=lambda: ["unix", "tcp"],
+        converter=convert_str_list,
         validator=validate_transport_list,
         description="List of transports supported by the client",
         env_var="PLUGIN_CLIENT_TRANSPORTS",
