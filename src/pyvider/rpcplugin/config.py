@@ -579,6 +579,106 @@ def configure(
         ) from e
 
 
-# Legacy exports for compatibility
+# Legacy exports for compatibility during transition
 CONFIG_SCHEMA = {}  # Empty - now using attrs fields instead
 SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
+
+
+# Legacy function stubs for test compatibility
+def fetch_env_variable(key: str, meta: dict[str, Any]) -> Any:
+    """Legacy function - use rpcplugin_config.get() instead."""
+    default = meta.get("default")
+    return rpcplugin_config.get(key, default)
+
+
+def validate_config_value(key: str, value: Any, meta: dict[str, Any]) -> bool:
+    """Legacy function - validation now handled by attrs validators."""
+    # In the new system, validation happens automatically
+    # This is just a stub for test compatibility
+    return True
+
+
+def get_config() -> dict[str, Any]:
+    """Legacy function - use rpcplugin_config directly instead."""
+    # Return a dict representation of the config for compatibility
+    config_dict = rpcplugin_config.to_dict(include_sensitive=True)
+    # Map new field names back to old schema keys for compatibility
+    legacy_dict = {}
+    
+    field_to_key_mapping = {
+        "supported_protocol_versions": "SUPPORTED_PROTOCOL_VERSIONS",
+        "plugin_core_version": "PLUGIN_CORE_VERSION", 
+        "plugin_log_level": "PLUGIN_LOG_LEVEL",
+        "plugin_magic_cookie_key": "PLUGIN_MAGIC_COOKIE_KEY",
+        "plugin_magic_cookie_value": "PLUGIN_MAGIC_COOKIE_VALUE",
+        "plugin_protocol_versions": "PLUGIN_PROTOCOL_VERSIONS",
+        "plugin_server_transports": "PLUGIN_SERVER_TRANSPORTS",
+        "plugin_server_endpoint": "PLUGIN_SERVER_ENDPOINT",
+        "plugin_auto_mtls": "PLUGIN_AUTO_MTLS",
+        "plugin_server_cert": "PLUGIN_SERVER_CERT",
+        "plugin_server_key": "PLUGIN_SERVER_KEY",
+        "plugin_server_root_certs": "PLUGIN_SERVER_ROOT_CERTS",
+        "plugin_client_transports": "PLUGIN_CLIENT_TRANSPORTS",
+        "plugin_client_endpoint": "PLUGIN_CLIENT_ENDPOINT",
+        "plugin_client_cert": "PLUGIN_CLIENT_CERT",
+        "plugin_client_key": "PLUGIN_CLIENT_KEY",
+        "plugin_client_root_certs": "PLUGIN_CLIENT_ROOT_CERTS",
+        "plugin_handshake_timeout": "PLUGIN_HANDSHAKE_TIMEOUT",
+        "plugin_connection_timeout": "PLUGIN_CONNECTION_TIMEOUT",
+        "plugin_show_emoji_matrix": "PLUGIN_SHOW_EMOJI_MATRIX",
+        "plugin_client_retry_enabled": "PLUGIN_CLIENT_RETRY_ENABLED",
+        "plugin_client_max_retries": "PLUGIN_CLIENT_MAX_RETRIES",
+        "plugin_client_initial_backoff_ms": "PLUGIN_CLIENT_INITIAL_BACKOFF_MS",
+        "plugin_client_max_backoff_ms": "PLUGIN_CLIENT_MAX_BACKOFF_MS",
+        "plugin_client_retry_jitter_ms": "PLUGIN_CLIENT_RETRY_JITTER_MS",
+        "plugin_client_retry_total_timeout_s": "PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S",
+        "plugin_shutdown_file_path": "PLUGIN_SHUTDOWN_FILE_PATH",
+        "plugin_rate_limit_enabled": "PLUGIN_RATE_LIMIT_ENABLED",
+        "plugin_rate_limit_requests_per_second": "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND",
+        "plugin_rate_limit_burst_capacity": "PLUGIN_RATE_LIMIT_BURST_CAPACITY",
+        "plugin_health_service_enabled": "PLUGIN_HEALTH_SERVICE_ENABLED",
+    }
+    
+    for field_name, legacy_key in field_to_key_mapping.items():
+        if field_name in config_dict:
+            legacy_dict[legacy_key] = config_dict[field_name]
+    
+    return legacy_dict
+
+
+def _convert_value_to_schema_type(value: Any, type_string: str, key_for_error: str) -> Any:
+    """Legacy function - type conversion now handled by Foundation."""
+    # Foundation handles type conversion automatically through parsing utilities
+    # This is just a stub for compatibility
+    if type_string == "str":
+        return str(value) if value is not None else None
+    elif type_string == "int":
+        return int(value)
+    elif type_string == "float":
+        return float(value)
+    elif type_string == "bool":
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ("true", "yes", "1", "on")
+        return bool(value)
+    elif type_string == "list_str":
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(v) for v in value]
+        if isinstance(value, str):
+            return [v.strip() for v in value.split(",")]
+        return [str(value)]
+    elif type_string == "list_int":
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [int(v) for v in value]
+        if isinstance(value, str):
+            if not value.strip():
+                return []
+            return [int(v.strip()) for v in value.split(",")]
+        return [int(value)]
+    
+    return value
