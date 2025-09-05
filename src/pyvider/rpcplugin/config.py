@@ -363,6 +363,26 @@ class RPCPluginConfig(EnvConfig):
         """Get connection timeout."""
         return self.plugin_connection_timeout
     
+    def auto_mtls_enabled(self) -> bool:
+        """Get auto mTLS enabled flag."""
+        return self.plugin_auto_mtls
+    
+    def rate_limit_enabled(self) -> bool:
+        """Get rate limit enabled flag."""
+        return self.plugin_rate_limit_enabled
+    
+    def rate_limit_requests_per_second(self) -> float:
+        """Get rate limit requests per second."""
+        return self.plugin_rate_limit_requests_per_second
+    
+    def rate_limit_burst_capacity(self) -> float:
+        """Get rate limit burst capacity."""
+        return self.plugin_rate_limit_burst_capacity
+    
+    def health_service_enabled(self) -> bool:
+        """Get health service enabled flag."""
+        return self.plugin_health_service_enabled
+    
     async def validate(self) -> None:
         """
         Custom validation logic.
