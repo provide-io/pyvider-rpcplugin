@@ -72,7 +72,7 @@ async def test_read_handshake_response_complete_line(mocker):
 
 
 @pytest.mark.asyncio
-@pytest.mark.long_running
+@pytest.mark.slow
 async def test_read_handshake_response_multiple_attempts(mocker):
     """Test reading handshake that requires multiple read attempts (chunked)."""
     process = MockProcess()
