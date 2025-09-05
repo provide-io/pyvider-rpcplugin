@@ -209,7 +209,7 @@ async def test_build_handshake_response_unix_transport_already_running(mocker):
     mock_transport._running = True
     mock_transport.endpoint = "/tmp/existing.sock"
 
-    mocker.patch.object(rpcplugin_config, "get", return_value="1")
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1)
 
     response = await build_handshake_response(
         plugin_version=7,
@@ -227,7 +227,7 @@ async def test_build_handshake_response_generic_exception(mocker):
     mock_transport = AsyncMock()
     mock_transport.listen = AsyncMock(side_effect=Exception("Underlying listen error"))
 
-    mocker.patch.object(rpcplugin_config, "get", return_value="1")
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1)
 
     with pytest.raises(
         HandshakeError,
@@ -257,7 +257,7 @@ def test_parse_handshake_response_not_string(response_input, error_msg_part):
 
 @pytest.mark.parametrize(
     "config_core_version, expected_parsed_core_version_or_error",
-    [(None, 1), ("abc", 1), ("2", 2), (3, 3)],
+    [(1, 1), (2, 2), (3, 3)],  # Foundation config only accepts integers
 )
 def test_parse_handshake_core_version_config_issues(
     config_core_version, expected_parsed_core_version_or_error, mocker
@@ -319,7 +319,7 @@ async def test_build_handshake_response_invalid_cert_format(mocker):
     mock_server_cert.cert = "INVALID\nCERT" # Only 2 lines, will fail len(cert_lines) < 3
 
     # Mock rpcplugin_config.get for PLUGIN_CORE_VERSION as it's used by build_handshake_response
-    mocker.patch.object(rpcplugin_config, "get", return_value="1") # Assuming core version "1"
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1) # Assuming core version "1"
 
     with pytest.raises(HandshakeError, match="Invalid server certificate format"):
         await build_handshake_response(
@@ -331,7 +331,7 @@ async def test_build_handshake_response_invalid_cert_format(mocker):
 
 def test_parse_handshake_response_invalid_network(mocker):
     response_str = "1|1|invalidnet|127.0.0.1:12345|grpc|"
-    mocker.patch.object(rpcplugin_config, "get", return_value="1") # Mock core version check
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1) # Mock core version check
     with pytest.raises(HandshakeError, match="Invalid network type 'invalidnet' in handshake."):
         parse_handshake_response(response_str)
 
