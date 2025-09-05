@@ -195,15 +195,9 @@ async def test_server_lifecycle_and_connectivity(
     # Set the expected magic cookie in the environment for the server to validate
     monkeypatch.setenv(rpcplugin_config.plugin_magic_cookie_key, rpcplugin_config.plugin_magic_cookie_value)
 
-    # Configure for an insecure setup for both tcp and unix variants
-    def mock_config_get_insecure(key, default=None):
-        if key == "PLUGIN_AUTO_MTLS":
-            return False
-        if key == "PLUGIN_SERVER_CERT":
-            return None
-        return rpcplugin_config.config.get(key, default)
-
-    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
+    # Configure for an insecure setup for both tcp and unix variants using Foundation patterns
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
+    mocker.patch.object(rpcplugin_config, "plugin_server_cert", None)
 
     # Ensure the magic cookie environment variable is set for direct server instantiation
     cookie_key = rpcplugin_config.magic_cookie_key()
