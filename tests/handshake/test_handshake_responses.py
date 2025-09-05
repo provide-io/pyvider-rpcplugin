@@ -84,8 +84,7 @@ def test_parse_handshake_response_with_tls():
     cert_data = "FAKECERTDATA"
     response_str = f"1|7|tcp|127.0.0.1:12345|grpc|{cert_data}"
 
-    with patch.object(rpcplugin_config, "get") as mock_get_config:
-        mock_get_config.return_value = 1
+    with patch.object(rpcplugin_config, "plugin_core_version", 1):
 
         core_version, plugin_version, network, address, protocol, server_cert = (
             parse_handshake_response(response_str)
@@ -101,8 +100,7 @@ def test_parse_handshake_response_with_tls():
 def test_parse_handshake_response_without_tls():
     """Test parsing a handshake response without a TLS certificate."""
     response_str = "1|7|unix|/tmp/test.sock|grpc|"
-    with patch.object(rpcplugin_config, "get") as mock_get_config:
-        mock_get_config.return_value = 1
+    with patch.object(rpcplugin_config, "plugin_core_version", 1):
 
         core_version, plugin_version, network, address, protocol, server_cert = (
             parse_handshake_response(response_str)
@@ -128,16 +126,14 @@ def test_parse_handshake_response_invalid_format():
 def test_parse_handshake_response_missing_fields():
     """Test parsing a handshake response with missing fields (empty strings)."""
     response_str = "1|7|||grpc|"  # Empty network and address
-    with patch.object(rpcplugin_config, "get") as mock_get_config:
-        mock_get_config.return_value = 1
+    with patch.object(rpcplugin_config, "plugin_core_version", 1):
         with pytest.raises(
             HandshakeError, match="Invalid network type '' in handshake."
         ):
             parse_handshake_response(response_str)
 
     response_str_empty_addr = "1|7|tcp||grpc|"
-    with patch.object(rpcplugin_config, "get") as mock_get_config:
-        mock_get_config.return_value = 1
+    with patch.object(rpcplugin_config, "plugin_core_version", 1):
         with pytest.raises(
             HandshakeError, match="Empty address received in handshake string."
         ):
