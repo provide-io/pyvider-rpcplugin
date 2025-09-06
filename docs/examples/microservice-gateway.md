@@ -296,17 +296,13 @@ class GatewayServicer(GatewayServiceServicer):
     def __init__(self):
         self.services: dict[str, ServiceRegistry] = defaultdict(ServiceRegistry)
         self.circuit_breaker = CircuitBreaker()
-        self.rate_limiter = RateLimiter(requests_per_second=1000)
+        self.rate_limiter = RateLimiter()
         self.metrics = {
             "total_requests": 0,
             "total_errors": 0,
             "response_times": deque(maxlen=10000)
         }
-        
-        # Start background tasks
         asyncio.create_task(self._health_check_loop())
-        asyncio.create_task(self._metrics_cleanup_loop())
-        
         logger.info("Gateway service initialized")
     
     async def RouteRequest(
@@ -320,62 +316,35 @@ class GatewayServicer(GatewayServiceServicer):
         
         # Rate limiting
         if not self.rate_limiter.is_allowed(request.client_id):
-            await context.abort(
-                grpc.StatusCode.RESOURCE_EXHAUSTED,
-                "Rate limit exceeded"
-            )
-            return
+            await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded")
         
-        # Authentication (if required)
+        # Authentication
         auth_token = request.headers.get("authorization")
         if auth_token and not await self._validate_auth_token(auth_token):
-            await context.abort(
-                grpc.StatusCode.UNAUTHENTICATED,
-                "Invalid authentication token"
-            )
-            return
+            await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid token")
         
         # Select backend instance
         service_registry = self.services.get(request.service_name)
         if not service_registry:
-            await context.abort(
-                grpc.StatusCode.NOT_FOUND,
-                f"Service not found: {request.service_name}"
-            )
-            return
+            await context.abort(grpc.StatusCode.NOT_FOUND, f"Service not found: {request.service_name}")
         
-        instance = service_registry.select_instance("weighted")
-        if not instance:
-            await context.abort(
-                grpc.StatusCode.UNAVAILABLE,
-                f"No healthy instances for service: {request.service_name}"
-            )
-            return
+        instance = service_registry.select_instance()
+        if not instance or not self.circuit_breaker.should_allow_request(instance):
+            await context.abort(grpc.StatusCode.UNAVAILABLE, "No healthy instances available")
         
-        # Circuit breaker check
-        if not self.circuit_breaker.should_allow_request(instance):
-            await context.abort(
-                grpc.StatusCode.UNAVAILABLE,
-                "Circuit breaker is OPEN"
-            )
-            return
-        
-        # Forward request to backend
+        # Forward request
         try:
             response = await self._forward_request(request, instance)
+            response_time = (time.perf_counter() - start_time) * 1000
             
             # Record metrics
-            response_time = (time.perf_counter() - start_time) * 1000
             instance.response_times.append(response_time)
             self.metrics["response_times"].append(response_time)
             instance.request_count += 1
-            
-            # Circuit breaker success
             self.circuit_breaker.record_success(instance)
             
-            # Add gateway headers
+            # Add headers
             response.headers["X-Gateway-Instance"] = instance.instance_id
-            response.headers["X-Response-Time"] = str(response_time)
             response.response_time_ms = int(response_time)
             response.backend_instance = f"{instance.host}:{instance.port}"
             
@@ -383,8 +352,6 @@ class GatewayServicer(GatewayServiceServicer):
         
         except Exception as e:
             logger.error(f"Request forwarding failed: {e}")
-            
-            # Record failure
             instance.error_count += 1
             self.metrics["total_errors"] += 1
             self.circuit_breaker.record_failure(instance)
@@ -404,14 +371,10 @@ class GatewayServicer(GatewayServiceServicer):
         """Route streaming requests."""
         async for request in request_iterator:
             try:
-                response = await self.RouteRequest(request, context)
-                yield response
+                yield await self.RouteRequest(request, context)
             except Exception as e:
                 logger.error(f"Stream routing failed: {e}")
-                yield GatewayResponse(
-                    status_code=500,
-                    error_message=f"Stream routing failed: {e}"
-                )
+                yield GatewayResponse(status_code=500, error_message=f"Stream routing failed: {e}")
     
     async def RegisterService(
         self, 
@@ -428,7 +391,6 @@ class GatewayServicer(GatewayServiceServicer):
             weight=request.weight or 1
         )
         
-        # Health check on registration
         if not await self._health_check_instance(instance):
             return RegistrationResponse(
                 success=False,
@@ -436,7 +398,6 @@ class GatewayServicer(GatewayServiceServicer):
             )
         
         self.services[request.service_name].add_instance(instance)
-        
         logger.info(f"Service registered: {request.service_name} -> {request.instance_id}")
         
         return RegistrationResponse(
@@ -455,8 +416,6 @@ class GatewayServicer(GatewayServiceServicer):
         service_registry = self.services.get(request.service_name)
         if service_registry:
             service_registry.remove_instance(request.instance_id)
-            
-            # Remove service if no instances left
             if not service_registry.instances:
                 del self.services[request.service_name]
         
