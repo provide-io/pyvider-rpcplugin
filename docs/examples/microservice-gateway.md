@@ -436,27 +436,21 @@ class GatewayServicer(GatewayServiceServicer):
             if request.service_name and request.service_name != service_name:
                 continue
             
-            instances = []
-            total_requests = 0
-            total_response_time = 0
+            instances = [
+                ServiceInstance(
+                    instance_id=inst.instance_id,
+                    host=inst.host,
+                    port=inst.port,
+                    healthy=inst.healthy,
+                    weight=inst.weight,
+                    last_health_check=int(inst.last_health_check)
+                )
+                for inst in registry.instances.values()
+            ]
             
-            for instance in registry.instances.values():
-                instances.append(ServiceInstance(
-                    instance_id=instance.instance_id,
-                    host=instance.host,
-                    port=instance.port,
-                    healthy=instance.healthy,
-                    weight=instance.weight,
-                    last_health_check=int(instance.last_health_check)
-                ))
-                
-                total_requests += instance.request_count
-                if instance.response_times:
-                    total_response_time += sum(instance.response_times)
-            
-            avg_response_time = (
-                total_response_time / max(sum(len(inst.response_times) for inst in registry.instances.values()), 1)
-            )
+            total_requests = sum(inst.request_count for inst in registry.instances.values())
+            all_times = [t for inst in registry.instances.values() for t in inst.response_times]
+            avg_response_time = sum(all_times) / max(len(all_times), 1)
             
             services.append(ServiceInfo(
                 service_name=service_name,
@@ -477,23 +471,24 @@ class GatewayServicer(GatewayServiceServicer):
         backend_services = {}
         
         for service_name, registry in self.services.items():
-            instances = []
-            for instance in registry.instances.values():
-                instances.append(ServiceInstance(
-                    instance_id=instance.instance_id,
-                    host=instance.host,
-                    port=instance.port,
-                    healthy=instance.healthy,
-                    weight=instance.weight,
-                    last_health_check=int(instance.last_health_check)
-                ))
+            instances = [
+                ServiceInstance(
+                    instance_id=inst.instance_id,
+                    host=inst.host,
+                    port=inst.port,
+                    healthy=inst.healthy,
+                    weight=inst.weight,
+                    last_health_check=int(inst.last_health_check)
+                )
+                for inst in registry.instances.values()
+            ]
             
             backend_services[service_name] = ServiceInfo(
                 service_name=service_name,
                 instances=instances,
                 healthy=any(inst.healthy for inst in registry.instances.values()),
                 total_requests=sum(inst.request_count for inst in registry.instances.values()),
-                avg_response_time=0  # Simplified
+                avg_response_time=0
             )
         
         return HealthResponse(
@@ -517,12 +512,9 @@ class GatewayServicer(GatewayServiceServicer):
             
             total_requests = sum(inst.request_count for inst in registry.instances.values())
             total_errors = sum(inst.error_count for inst in registry.instances.values())
+            all_times = [t for inst in registry.instances.values() for t in inst.response_times]
             
-            all_response_times = []
-            for inst in registry.instances.values():
-                all_response_times.extend(inst.response_times)
-            
-            avg_response_time = sum(all_response_times) / max(len(all_response_times), 1)
+            avg_response_time = sum(all_times) / max(len(all_times), 1)
             error_rate = total_errors / max(total_requests, 1)
             
             service_metrics[service_name] = ServiceMetrics(
@@ -533,18 +525,16 @@ class GatewayServicer(GatewayServiceServicer):
             )
         
         # Overall metrics
-        total_requests = self.metrics["total_requests"]
-        total_errors = self.metrics["total_errors"]
-        avg_response_time = sum(self.metrics["response_times"]) / max(len(self.metrics["response_times"]), 1)
+        response_times = list(self.metrics["response_times"])
+        avg_response_time = sum(response_times) / max(len(response_times), 1)
         
-        # Calculate P95
-        sorted_times = sorted(self.metrics["response_times"])
+        sorted_times = sorted(response_times)
         p95_index = int(0.95 * len(sorted_times))
         p95_response_time = sorted_times[p95_index] if sorted_times else 0
         
         return MetricsResponse(
-            total_requests=total_requests,
-            total_errors=total_errors,
+            total_requests=self.metrics["total_requests"],
+            total_errors=self.metrics["total_errors"],
             avg_response_time=avg_response_time,
             p95_response_time=p95_response_time,
             service_metrics=service_metrics
@@ -556,18 +546,12 @@ class GatewayServicer(GatewayServiceServicer):
         instance: BackendInstance
     ) -> GatewayResponse:
         """Forward request to backend instance."""
-        # Create gRPC channel to backend
         target = f"{instance.host}:{instance.port}"
-        timeout = request.timeout_ms / 1000 if request.timeout_ms > 0 else 30
         
         try:
             channel = grpc.aio.insecure_channel(target)
-            
-            # Create generic stub (this would be service-specific in practice)
-            # For demo purposes, we'll simulate a response
             await asyncio.sleep(0.01)  # Simulate network delay
             
-            # Simulate backend response
             response_payload = json.dumps({
                 "message": f"Response from {instance.instance_id}",
                 "method": request.method,
@@ -588,29 +572,17 @@ class GatewayServicer(GatewayServiceServicer):
     
     async def _validate_auth_token(self, token: str) -> bool:
         """Validate authentication token."""
-        # Simplified JWT validation (implement proper JWT validation)
-        if not token.startswith("Bearer "):
-            return False
-        
-        # For demo purposes, accept any non-empty token
-        jwt_token = token[7:]  # Remove "Bearer " prefix
-        return len(jwt_token) > 0
+        # Simplified JWT validation - implement proper JWT validation in production
+        return token.startswith("Bearer ") and len(token) > 7
     
     async def _health_check_instance(self, instance: BackendInstance) -> bool:
         """Perform health check on service instance."""
         try:
             target = f"{instance.host}:{instance.port}"
             channel = grpc.aio.insecure_channel(target)
-            
-            # Try to create connection (simplified health check)
-            await asyncio.wait_for(
-                asyncio.sleep(0.1),  # Simulate connection attempt
-                timeout=5.0
-            )
-            
+            await asyncio.wait_for(asyncio.sleep(0.1), timeout=5.0)  # Simulate connection
             await channel.close()
             return True
-        
         except Exception as e:
             logger.warning(f"Health check failed for {instance.instance_id}: {e}")
             return False
@@ -619,31 +591,15 @@ class GatewayServicer(GatewayServiceServicer):
         """Background health check loop."""
         while True:
             try:
-                for service_name, registry in self.services.items():
+                for registry in self.services.values():
                     for instance in registry.instances.values():
                         instance.healthy = await self._health_check_instance(instance)
                         instance.last_health_check = time.time()
-                
-                await asyncio.sleep(30)  # Health check every 30 seconds
-            
+                await asyncio.sleep(30)
             except Exception as e:
                 logger.error(f"Health check loop error: {e}")
                 await asyncio.sleep(10)
     
-    async def _metrics_cleanup_loop(self):
-        """Clean up old metrics data."""
-        while True:
-            try:
-                # Clean up response times older than 1 hour
-                current_time = time.time()
-                cutoff_time = current_time - 3600  # 1 hour ago
-                
-                # This is simplified - in practice you'd implement proper time-based cleanup
-                await asyncio.sleep(300)  # Run every 5 minutes
-            
-            except Exception as e:
-                logger.error(f"Metrics cleanup error: {e}")
-                await asyncio.sleep(60)
 
 
 async def create_gateway_server():
