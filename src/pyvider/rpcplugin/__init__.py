@@ -8,6 +8,8 @@ This package exports the main classes and exceptions for the Pyvider RPC Plugin 
 making them available for direct import from `pyvider.rpcplugin`.
 """
 
+from pyvider.rpcplugin._version import __version__
+
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
@@ -33,6 +35,7 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 
 __all__ = [
+    "__version__",
     # Core Classes
     "RPCPluginClient",
     "RPCPluginServer",
