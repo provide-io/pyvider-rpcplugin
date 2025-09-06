@@ -116,7 +116,7 @@ class BaseProtocol(ABC, Generic[T, U]):
     
     def __init__(self, transport: BaseTransport):
         self.transport = transport
-        self._pending_requests: dict[int, asyncio.Future] = {}
+        self._pending_requests: dict = {}
     
     @abstractmethod
     async def serialize_request(self, method: str, args: T) -> bytes:
@@ -326,32 +326,19 @@ class EchoService(service_pb2_grpc.EchoServiceServicer, BaseService):
             await asyncio.sleep(1)
 ```
 
-### Database Service with Connection Pooling
+### Database Integration Service
 
 ```python
 # database_service.py
-import asyncpg
-from contextlib import asynccontextmanager
-
 class DatabaseService(service_pb2_grpc.DatabaseServiceServicer, BaseService):
     """Database service with connection pooling."""
     
-    def __init__(self, db_pool: asyncpg.Pool):
+    def __init__(self, db_pool):
         self.db_pool = db_pool
     
-    @asynccontextmanager
-    async def get_connection(self):
-        """Get database connection from pool."""
+    async def GetUser(self, request, context) -> service_pb2.GetUserResponse:
+        """Get user from database with error handling."""
         async with self.db_pool.acquire() as conn:
-            yield conn
-    
-    async def GetUser(
-        self,
-        request: service_pb2.GetUserRequest,
-        context: grpc.aio.ServicerContext
-    ) -> service_pb2.GetUserResponse:
-        """Get user from database."""
-        async with self.get_connection() as conn:
             row = await conn.fetchrow(
                 "SELECT id, name, email FROM users WHERE id = $1",
                 request.user_id
@@ -359,15 +346,8 @@ class DatabaseService(service_pb2_grpc.DatabaseServiceServicer, BaseService):
             
             if not row:
                 context.abort(grpc.StatusCode.NOT_FOUND, "User not found")
-                return
             
-            return service_pb2.GetUserResponse(
-                user=service_pb2.User(
-                    id=row['id'],
-                    name=row['name'],
-                    email=row['email']
-                )
-            )
+            return service_pb2.GetUserResponse(user=service_pb2.User(**row))
 ```
 
 ## Error Handling Architecture
@@ -379,7 +359,7 @@ class DatabaseService(service_pb2_grpc.DatabaseServiceServicer, BaseService):
 class RPCPluginError(Exception):
     """Base exception for all RPC Plugin errors."""
     
-    def __init__(self, message: str, details: dict[str, Any] | None = None):
+    def __init__(self, message: str, details: dict | None = None):
         super().__init__(message)
         self.message = message
         self.details = details or {}
@@ -451,7 +431,7 @@ class ConnectionPool:
         self.max_size = max_size
         self.max_idle_time = max_idle_time
         self._pool: deque[tuple[Any, float]] = deque()
-        self._in_use: set[Any] = set()
+        self._in_use: set = set()
         self._lock = asyncio.Lock()
     
     async def acquire(self) -> Any:
@@ -537,7 +517,7 @@ class SecurityManager:
         self._ca_cert = self._load_ca_certificate()
         self._jwt_secret = config.jwt_secret
     
-    def validate_certificate(self, cert_der: bytes) -> dict[str, Any]:
+    def validate_certificate(self, cert_der: bytes) -> dict:
         """Validate client certificate against CA."""
         try:
             cert = x509.load_der_x509_certificate(cert_der)
@@ -561,7 +541,7 @@ class SecurityManager:
         except Exception as e:
             raise AuthenticationError(f"Certificate validation failed: {e}")
     
-    def validate_jwt_token(self, token: str) -> dict[str, Any]:
+    def validate_jwt_token(self, token: str) -> dict:
         """Validate JWT token."""
         try:
             payload = jwt.decode(
