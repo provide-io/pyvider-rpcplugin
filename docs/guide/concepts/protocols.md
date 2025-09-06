@@ -140,11 +140,11 @@ class DataProcessorHandler(example_pb2_grpc.DataProcessorServicer):
     
     def __init__(self):
         self.start_time = time.time()
-        logger.info("🎯 DataProcessor handler initialized")
+        logger.info("DataProcessor handler initialized")
     
     async def ProcessData(self, request, context):
         """Handle ProcessData RPC method."""
-        logger.info(f"📊 Processing data: {request.data}")
+        logger.info(f"Processing data: {request.data}")
         
         try:
             # Validate request
@@ -174,14 +174,14 @@ class DataProcessorHandler(example_pb2_grpc.DataProcessorServicer):
             return example_pb2.ProcessResponse(status_code=1)
             
         except Exception as e:
-            logger.error(f"❌ Processing error: {e}", exc_info=True)
+            logger.error(f"Processing error: {e}", exc_info=True)
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details("Internal processing error")
             return example_pb2.ProcessResponse(status_code=2)
     
     async def StreamResults(self, request, context):
         """Handle StreamResults streaming RPC method."""
-        logger.info(f"📡 Streaming results for query: {request.query}")
+        logger.info(f"Streaming results for query: {request.query}")
         
         try:
             results = await self._query_data(request.query, request.limit)
@@ -195,11 +195,11 @@ class DataProcessorHandler(example_pb2_grpc.DataProcessorServicer):
                 
                 # Allow for graceful cancellation
                 if context.cancelled():
-                    logger.info("🛑 Stream cancelled by client")
+                    logger.info("Stream cancelled by client")
                     break
                     
         except Exception as e:
-            logger.error(f"❌ Streaming error: {e}")
+            logger.error(f"Streaming error: {e}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(str(e))
     
@@ -257,7 +257,7 @@ async def main():
         handler=DataProcessorHandler()
     )
     
-    logger.info("🚀 DataProcessor server starting...")
+    logger.info("DataProcessor server starting...")
     await server.serve()
 
 if __name__ == "__main__":
@@ -286,8 +286,8 @@ async def main():
         # Make RPC call
         response = await client.data_processor.ProcessData(request)
         
-        logger.info(f"✅ Result: {response.result}")
-        logger.info(f"⏱️ Processing time: {response.processing_time:.3f}s")
+        logger.info(f"Result: {response.result}")
+        logger.info(f"Processing time: {response.processing_time:.3f}s")
         
         # Stream results
         stream_request = example_pb2.StreamRequest(
@@ -295,9 +295,9 @@ async def main():
             limit=5
         )
         
-        logger.info("📡 Streaming results...")
+        logger.info("Streaming results...")
         async for item in client.data_processor.StreamResults(stream_request):
-            logger.info(f"📦 Received: {item.id} - {item.data}")
+            logger.info(f"Received: {item.id} - {item.data}")
 
 if __name__ == "__main__":
     asyncio.run(main())
