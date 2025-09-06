@@ -34,13 +34,13 @@ This guide provides a book-style walkthrough of the framework.
 
 ## Overview
 
-`pyvider.rpcplugin` is a Python framework designed to simplify the creation of robust, secure, and high-performance RPC-based plugin systems. It leverages gRPC for efficient communication and provides built-in support for:
+`pyvider.rpcplugin` is a Python framework designed to simplify the creation of robust, secure, and high-performance RPC-based plugin systems. It leverages gRPC for efficient communication and integrates with Foundation for:
 
 -   **Async Operations**: Native `asyncio` integration.
--   **Secure Communication**: mTLS with certificate management utilities.
+-   **Secure Communication**: mTLS with Foundation's certificate management utilities.
 -   **Flexible Transports**: Unix Domain Sockets (for local IPC) and TCP sockets (for network IPC).
 -   **Standardized Handshake**: Secure plugin authentication using magic cookies and protocol/transport negotiation.
--   **Developer-Friendly Features**: Type safety, factory functions for common patterns, and comprehensive logging.
+-   **Developer-Friendly Features**: Type safety, factory functions for common patterns, and Foundation's structured logging.
 
 ## Quick Installation
 

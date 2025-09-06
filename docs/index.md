@@ -57,7 +57,7 @@ Create a simple echo plugin server:
 import asyncio
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation logging
 
 # Define your service
 class EchoService:

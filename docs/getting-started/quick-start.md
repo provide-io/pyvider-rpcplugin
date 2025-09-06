@@ -29,7 +29,7 @@ A minimal RPC plugin server example.
 """
 import asyncio
 from pyvider.rpcplugin import plugin_protocol, plugin_server
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation logging
 
 # Simple handler for demonstration
 class DummyHandler:
@@ -71,7 +71,7 @@ import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation logging
 
 async def main():
     logger.info("🚀 Starting host application...")

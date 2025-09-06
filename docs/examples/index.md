@@ -26,7 +26,7 @@ The simplest possible plugin demonstrating core concepts.
 """Basic plugin server example."""
 import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_protocol
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation logging
 
 class BasicHandler:
     """Simple handler with no custom RPC methods."""

@@ -67,7 +67,7 @@ print("✅ Installation successful!")
 Pyvider RPC Plugin automatically installs these key dependencies:
 
 ### Core Dependencies
-- **Foundation** - Structured logging, configuration, cryptography, and utilities
+- **provide.foundation** - Structured logging, configuration, cryptography, and utilities
 - **grpcio** - gRPC runtime for Python
 - **grpcio-tools** - Protocol Buffer compiler and tools
 - **attrs** - Modern Python data classes
