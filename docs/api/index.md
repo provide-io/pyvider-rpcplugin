@@ -123,7 +123,7 @@ The API is organized into focused modules:
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_client
-from provide.foundation import logger  # Foundation's structured logging
+from provide.foundation import logger
 from my_services import MyProtocol, MyHandler
 
 # Create server with automatic configuration
@@ -348,10 +348,9 @@ Built on Foundation for enterprise-grade features. The integration is seamless -
 ### Structured Logging and Observability
 
 ```python
-from provide.foundation import logger  # Foundation's structured logging
+from provide.foundation import logger
 from pyvider.rpcplugin import plugin_server
 
-# Foundation provides rich logging with context and emoji enhancement
 server = plugin_server(protocol=my_protocol, handler=my_handler)
 logger.info("🚀 Plugin server started", extra={
     "server_id": server.id,
@@ -390,7 +389,6 @@ transport.configure_tls(cert=cert, key=key)
 from provide.foundation.config import RuntimeConfig
 from pyvider.rpcplugin.config import rpcplugin_config  # Extends RuntimeConfig
 
-# Foundation provides the configuration infrastructure:
 # - Environment variables loaded automatically
 # - Validation and type coercion built-in  
 # - Multi-source configuration loading
@@ -411,7 +409,6 @@ class RPCPluginConfig(RuntimeConfig):  # Extends Foundation
 ### Performance and Resource Management
 
 ```python
-# Foundation provides automatic resource management
 # Connection pooling and lifecycle management
 # Memory usage monitoring and optimization
 # Graceful shutdown with resource cleanup
