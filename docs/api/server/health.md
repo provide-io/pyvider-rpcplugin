@@ -1,22 +1,21 @@
 # Health Servicer API
 
-The Health Servicer provides standardized health check functionality for RPC services, implementing the gRPC Health Checking Protocol.
+The Health Servicer provides basic health check functionality for RPC services, implementing the gRPC Health Checking Protocol.
 
 ## Overview
 
-The `HealthServicer` class implements health monitoring capabilities including:
+The `HealthServicer` class implements basic health monitoring by:
 
-- **Service Status Tracking** - Monitor individual service health
-- **Dependency Checking** - Validate external dependencies
-- **Health Aggregation** - Combine multiple health indicators
-- **Standard Protocol** - Compatible with gRPC health checking
+- **Application Health Checking** - Monitors main application health status
+- **Service Status Reporting** - Reports health for specific service names
+- **Standard Protocol** - Compatible with gRPC health checking protocol
 
 ## Class Reference
 
 ### `HealthServicer`
 
 ```python
-from pyvider.health import HealthServicer
+from pyvider.rpcplugin.health_servicer import HealthServicer
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
@@ -28,45 +27,28 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
 ```python
 def __init__(
     self,
-    services: list[Any] | None = None,
-    dependencies: dict[str, Callable[[], Awaitable[bool]]] | None = None,
-    check_interval: int = 30
+    app_is_healthy_callable: Callable[[], bool],
+    service_name: str = ""
 )
 ```
 
 **Parameters:**
-- `services` (list[Any] | None): List of service instances to monitor
-- `dependencies` (dict[str, Callable] | None): External dependency health checkers
-- `check_interval` (int): Health check interval in seconds (default: 30)
+- `app_is_healthy_callable` (Callable[[], bool]): Function that returns True if the application is healthy
+- `service_name` (str): Name of the primary service this health checker monitors (empty string means overall server)
 
 **Example:**
 ```python
-async def check_database() -> bool:
-    """Check database connectivity."""
+def is_app_healthy() -> bool:
+    """Check if the application is healthy."""
     try:
-        async with get_db_connection() as conn:
-            await conn.fetchval('SELECT 1')
-        return True
-    except Exception:
-        return False
-
-async def check_redis() -> bool:
-    """Check Redis connectivity."""
-    try:
-        redis = get_redis_client()
-        await redis.ping()
-        return True
+        # Your application health logic here
+        return True  # or False if unhealthy
     except Exception:
         return False
 
 health_servicer = HealthServicer(
-    services=[user_service, order_service],
-    dependencies={
-        'database': check_database,
-        'redis': check_redis,
-        'external_api': lambda: check_external_api()
-    },
-    check_interval=15
+    app_is_healthy_callable=is_app_healthy,
+    service_name="MyPluginService"
 )
 ```
 
@@ -82,31 +64,29 @@ async def Check(
 ) -> health_pb2.HealthCheckResponse
 ```
 
-Perform health check for a specific service or overall system health.
+Perform health check for the monitored service or overall system health.
 
 **Parameters:**
 - `request`: Health check request with optional service name
 - `context`: gRPC service context
 
 **Returns:**
-- `HealthCheckResponse`: Health status and details
+- `HealthCheckResponse`: Health status based on the `app_is_healthy_callable` result
 
 **Response Status Values:**
-- `SERVING`: Service is healthy and ready to serve requests
-- `NOT_SERVING`: Service is unhealthy or not ready
-- `UNKNOWN`: Service status cannot be determined
+- `SERVING`: Application is healthy (app_is_healthy_callable returns True)
+- `NOT_SERVING`: Application is unhealthy (app_is_healthy_callable returns False)
+- Returns `NOT_FOUND` error if requested service doesn't match the configured service name
 
 **Example:**
 ```python
-# Check overall health
+# Check overall health (empty service name)
 request = health_pb2.HealthCheckRequest()
 response = await health_servicer.Check(request, context)
-print(f"Overall health: {response.status}")
 
 # Check specific service
-request = health_pb2.HealthCheckRequest(service="user-service")
+request = health_pb2.HealthCheckRequest(service="MyPluginService")
 response = await health_servicer.Check(request, context)
-print(f"User service health: {response.status}")
 ```
 
 #### `Watch`
@@ -119,56 +99,15 @@ async def Watch(
 ) -> AsyncIterator[health_pb2.HealthCheckResponse]
 ```
 
-Stream health status updates for continuous monitoring.
+**⚠️ NOT IMPLEMENTED**: This method always returns `UNIMPLEMENTED` error.
 
-**Parameters:**
-- `request`: Health check request with optional service name
-- `context`: gRPC service context
+The Watch method for streaming health status updates is not implemented in the current version.
 
-**Returns:**
-- `AsyncIterator[HealthCheckResponse]`: Stream of health status updates
+**Current Behavior:**
+- Always raises `grpc.StatusCode.UNIMPLEMENTED`
+- Does not provide streaming health updates
 
-**Example:**
-```python
-request = health_pb2.HealthCheckRequest(service="order-service")
-
-async for response in health_servicer.Watch(request, context):
-    print(f"Order service status: {response.status}")
-    
-    if response.status == health_pb2.HealthCheckResponse.NOT_SERVING:
-        logger.warning("Order service is unhealthy!")
-```
-
-#### `add_service_status`
-
-```python
-def add_service_status(self, service_name: str, status: HealthStatus) -> None
-```
-
-Manually set the health status for a specific service.
-
-**Parameters:**
-- `service_name` (str): Name of the service
-- `status` (HealthStatus): Health status to set
-
-**Example:**
-```python
-from pyvider.health import HealthStatus
-
-# Mark service as healthy
-health_servicer.add_service_status("user-service", HealthStatus.SERVING)
-
-# Mark service as unhealthy
-health_servicer.add_service_status("payment-service", HealthStatus.NOT_SERVING)
-```
-
-#### `remove_service_status`
-
-```python
-def remove_service_status(self, service_name: str) -> None
-```
-
-Remove health status tracking for a service.
+For continuous health monitoring, use repeated `Check` calls instead.
 
 **Parameters:**
 - `service_name` (str): Name of the service to remove
