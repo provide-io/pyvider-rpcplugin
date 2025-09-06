@@ -1,10 +1,10 @@
 # Architecture
 
-This document provides a comprehensive overview of the Pyvider RPC Plugin architecture, including design principles, component relationships, and implementation details.
+This document provides a comprehensive overview of the Pyvider RPC Plugin architecture, focusing on design principles, component relationships, and integration patterns.
 
 ## System Overview
 
-The Pyvider RPC Plugin framework is built with a **layered architecture** that separates concerns and provides flexibility for different use cases:
+The Pyvider RPC Plugin framework uses a **layered architecture** with clear separation of concerns:
 
 ```mermaid
 graph TD
@@ -38,7 +38,7 @@ graph TD
 1. **Separation of Concerns** - Each layer has a single, well-defined responsibility
 2. **Transport Agnostic** - Support multiple transport mechanisms (Unix sockets, TCP, etc.)
 3. **Protocol Flexibility** - Pluggable protocol implementations
-4. **Type Safety** - Comprehensive type annotations throughout
+4. **Type Safety** - Modern typing throughout (dict, list, set)
 5. **Async First** - Built on asyncio for high performance
 6. **Security by Default** - mTLS and authentication built-in
 7. **Production Ready** - Comprehensive error handling, logging, and monitoring
@@ -52,7 +52,6 @@ The transport layer handles low-level communication between client and server:
 ```python
 # src/pyvider/transport/base.py
 from abc import ABC, abstractmethod
-from typing import Any, AsyncGenerator
 import asyncio
 
 class BaseTransport(ABC):
@@ -60,128 +59,43 @@ class BaseTransport(ABC):
     
     def __init__(self, config: TransportConfig):
         self.config = config
-        self._connection: Any | None = None
+        self._connection = None
         self._lock = asyncio.Lock()
     
     @abstractmethod
     async def connect(self, address: str) -> None:
         """Establish connection to the specified address."""
-        pass
-    
-    @abstractmethod
-    async def disconnect(self) -> None:
-        """Close the connection."""
-        pass
     
     @abstractmethod
     async def send(self, data: bytes) -> None:
         """Send data over the transport."""
-        pass
     
     @abstractmethod
     async def receive(self) -> bytes:
         """Receive data from the transport."""
-        pass
-    
-    @abstractmethod
-    async def is_connected(self) -> bool:
-        """Check if transport is connected."""
-        pass
 ```
 
 #### Transport Implementations
 
-**Unix Domain Socket Transport**
-```python
-# src/pyvider/transport/unix.py
-import os
-import asyncio
-from pathlib import Path
+The framework supports multiple transport mechanisms:
 
+**Unix Socket Transport** - For local communication with high performance:
+```python
 class UnixSocketTransport(BaseTransport):
-    """Unix domain socket transport for local communication."""
-    
     async def connect(self, socket_path: str) -> None:
-        """Connect to Unix domain socket."""
-        if not Path(socket_path).exists():
-            raise TransportError(f"Socket path does not exist: {socket_path}")
-        
-        try:
-            reader, writer = await asyncio.open_unix_connection(socket_path)
-            self._connection = (reader, writer)
-        except OSError as e:
-            raise TransportError(f"Failed to connect to {socket_path}: {e}")
-    
-    async def send(self, data: bytes) -> None:
-        """Send data over Unix socket."""
-        if not self._connection:
-            raise TransportError("Not connected")
-        
-        _, writer = self._connection
-        
-        # Send length prefix + data
-        length = len(data)
-        writer.write(length.to_bytes(4, 'big'))
-        writer.write(data)
-        await writer.drain()
-    
-    async def receive(self) -> bytes:
-        """Receive data from Unix socket."""
-        if not self._connection:
-            raise TransportError("Not connected")
-        
-        reader, _ = self._connection
-        
-        # Read length prefix
-        length_bytes = await reader.readexactly(4)
-        length = int.from_bytes(length_bytes, 'big')
-        
-        # Read data
-        data = await reader.readexactly(length)
-        return data
+        reader, writer = await asyncio.open_unix_connection(socket_path)
+        self._connection = (reader, writer)
 ```
 
-**TCP Socket Transport**
+**TCP Transport** - For network communication with optional TLS:
 ```python
-# src/pyvider/transport/tcp.py
-import ssl
-import asyncio
-from typing import Any
-
 class TCPTransport(BaseTransport):
-    """TCP transport with optional TLS support."""
-    
-    def __init__(self, config: TransportConfig):
-        super().__init__(config)
-        self._ssl_context: ssl.SSLContext | None = None
-        
-        if config.tls_enabled:
-            self._ssl_context = self._create_ssl_context()
-    
-    def _create_ssl_context(self) -> ssl.SSLContext:
-        """Create SSL context for secure connections."""
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        
-        if self.config.ca_cert_file:
-            context.load_verify_locations(self.config.ca_cert_file)
-        
-        if self.config.cert_file and self.config.key_file:
-            context.load_cert_chain(self.config.cert_file, self.config.key_file)
-        
-        return context
-    
     async def connect(self, address: str) -> None:
-        """Connect to TCP server."""
         host, port = address.split(':', 1)
-        port = int(port)
-        
-        try:
-            reader, writer = await asyncio.open_connection(
-                host, port, ssl=self._ssl_context
-            )
-            self._connection = (reader, writer)
-        except OSError as e:
-            raise TransportError(f"Failed to connect to {host}:{port}: {e}")
+        reader, writer = await asyncio.open_connection(
+            host, int(port), ssl=self._ssl_context
+        )
+        self._connection = (reader, writer)
 ```
 
 ### 2. Protocol Layer
