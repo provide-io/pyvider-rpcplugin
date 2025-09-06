@@ -164,7 +164,7 @@ async def test_tcp_auto_port_assignment(transport_factory):
 
 ## Server Testing
 
-### Mock Protocol and Handler
+### Mock Components and Server Lifecycle
 
 ```python
 # tests/fixtures/mocks.py
@@ -173,7 +173,6 @@ from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 
 class MockProtocol(RPCPluginProtocol):
     """Mock protocol for testing."""
-    
     def __init__(self, service_name="TestService"):
         super().__init__()
         self.service_name = service_name
@@ -190,7 +189,6 @@ class MockProtocol(RPCPluginProtocol):
 
 class MockHandler:
     """Mock handler for testing."""
-    
     def __init__(self):
         self.method_calls = []
     
@@ -198,7 +196,6 @@ class MockHandler:
         self.method_calls.append(("test_method", request))
         return {"result": "test_response"}
 
-# Test fixtures
 @pytest.fixture
 def mock_protocol():
     return MockProtocol(service_name="TestService")
@@ -206,18 +203,14 @@ def mock_protocol():
 @pytest.fixture
 def mock_handler():
     return MockHandler()
-```
 
-### Server Testing Patterns
-
-```python
-import pytest
+# Server Tests
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.factories import plugin_server
 
 @pytest.mark.asyncio
-async def test_server_creation(mock_protocol, mock_handler, transport_factory):
-    """Test server creation and initialization."""
+async def test_server_creation_and_config(mock_protocol, mock_handler, transport_factory):
+    """Test server creation and configuration."""
     transport = await transport_factory("unix")
     
     server = RPCPluginServer(
@@ -230,132 +223,70 @@ async def test_server_creation(mock_protocol, mock_handler, transport_factory):
     assert server.handler == mock_handler
     assert server.transport == transport
 
-@pytest.mark.asyncio
-async def test_server_factory_creation(mock_protocol, mock_handler):
-    """Test server creation via factory."""
-    server = plugin_server(
-        protocol=mock_protocol,
-        handler=mock_handler,
-        transport="unix",
-        config={
-            "PLUGIN_LOG_LEVEL": "WARNING",
-            "PLUGIN_HANDSHAKE_TIMEOUT": "5.0"
-        }
-    )
-    
-    assert server.protocol == mock_protocol
-    assert server.handler == mock_handler
-
-@pytest.mark.asyncio
-async def test_server_configuration_override(mock_protocol, mock_handler):
-    """Test server with configuration overrides."""
+@pytest.mark.asyncio  
+async def test_server_factory_with_config(mock_protocol, mock_handler):
+    """Test server creation via factory with config overrides."""
     server = plugin_server(
         protocol=mock_protocol,
         handler=mock_handler,
         transport="tcp",
         port=0,  # Auto-assign port
         config={
+            "PLUGIN_LOG_LEVEL": "WARNING",
+            "PLUGIN_HANDSHAKE_TIMEOUT": "5.0",
             "PLUGIN_RATE_LIMIT_ENABLED": True,
-            "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": 10.0,
-            "PLUGIN_HEALTH_SERVICE_ENABLED": True,
         }
     )
     
-    # Verify configuration was applied
-    # This tests that the config parameter is properly passed
+    assert server.protocol == mock_protocol
     assert server.config["PLUGIN_RATE_LIMIT_ENABLED"] == True
-```
-
-### Server Lifecycle Testing
-
-```python
-import asyncio
 
 @pytest.mark.asyncio
-async def test_server_startup_shutdown(mock_protocol, mock_handler, transport_factory):
-    """Test server startup and shutdown lifecycle."""
-    transport = await transport_factory("unix")
-    server = RPCPluginServer(
-        protocol=mock_protocol,
-        handler=mock_handler,
-        transport=transport,
-        config={"PLUGIN_HANDSHAKE_TIMEOUT": "2.0"}
-    )
+async def test_server_lifecycle(mock_protocol, mock_handler, transport_factory):
+    """Test server startup, readiness, and shutdown."""
+    import asyncio
     
-    # Start server in background
+    transport = await transport_factory("unix")
+    server = RPCPluginServer(mock_protocol, mock_handler, transport)
+    
+    # Start server
     server_task = asyncio.create_task(server.serve())
     
     try:
-        # Wait for server to be ready
         await server.wait_for_server_ready(timeout=5.0)
         assert server._running
-        
-        # Verify transport is listening
         assert transport.endpoint is not None
         
         # Test graceful shutdown
         await server.stop()
-        
-        # Wait for serve task to complete
         await asyncio.wait_for(server_task, timeout=5.0)
         
     except Exception:
-        # Ensure cleanup even if test fails
         server_task.cancel()
         try:
             await asyncio.wait_for(server_task, timeout=1.0)
         except asyncio.TimeoutError:
             pass
         raise
-
-@pytest.mark.asyncio
-async def test_server_ready_check(mock_protocol, mock_handler, transport_factory):
-    """Test server readiness checking."""
-    transport = await transport_factory("unix")
-    server = RPCPluginServer(
-        protocol=mock_protocol,
-        handler=mock_handler,
-        transport=transport
-    )
-    
-    # Server should not be ready before starting
-    with pytest.raises(Exception):  # TransportError or similar
-        await server.wait_for_server_ready(timeout=0.1)
-    
-    # Start server
-    serve_task = asyncio.create_task(server.serve())
-    
-    try:
-        # Server should become ready
-        await server.wait_for_server_ready(timeout=5.0)
-        
-        # Verify readiness
-        assert server._running
-        assert transport.endpoint is not None
-        
-    finally:
-        await server.stop()
-        await asyncio.wait_for(serve_task, timeout=5.0)
 ```
 
 ## Client Testing
 
-### Mock Client Testing
+### Mock Client and Integration Testing
 
 ```python
-from unittest.mock import AsyncMock, patch
-from pyvider.rpcplugin.client import RPCPluginClient
+from unittest.mock import AsyncMock
 from pyvider.rpcplugin.factories import plugin_client
 
 @pytest.fixture
 def mock_client():
-    """Create a mock client for testing."""
+    """Create mock client for testing."""
     client = plugin_client(
         command=["echo", "test"],
         config={"PLUGIN_LOG_LEVEL": "WARNING"}
     )
     
-    # Mock the async methods to avoid real process creation
+    # Mock async methods to avoid real process creation
     client.start = AsyncMock()
     client.shutdown_plugin = AsyncMock()
     client.close = AsyncMock()
@@ -366,21 +297,17 @@ def mock_client():
 @pytest.mark.asyncio
 async def test_mock_client_lifecycle(mock_client):
     """Test client lifecycle with mocks."""
-    # Test start
     await mock_client.start()
     assert mock_client.start.called
-    
-    # Test usage (would normally use gRPC channel)
     assert mock_client.grpc_channel is not None
     
-    # Test shutdown
     await mock_client.shutdown_plugin()
     await mock_client.close()
     
     assert mock_client.shutdown_plugin.called
     assert mock_client.close.called
 
-@pytest.mark.asyncio 
+@pytest.mark.asyncio
 async def test_client_configuration(test_config):
     """Test client with configuration overrides."""
     client = plugin_client(
@@ -393,76 +320,29 @@ async def test_client_configuration(test_config):
         }
     )
     
-    # Verify configuration was set
     assert client.config["env"]["PLUGIN_LOG_LEVEL"] == "DEBUG"
     assert client.config["env"]["TEST_VAR"] == "test_value"
-```
-
-### Integration Testing with Real Processes
-
-```python
-import subprocess
-import tempfile
-
-@pytest.fixture
-async def echo_server_process():
-    """Create a simple echo server process for testing."""
-    # Create a simple Python script that implements basic handshake
-    echo_server_script = '''
-import sys
-import time
-
-# Output handshake (simplified)
-sys.stdout.write("1|1|unix|/tmp/echo.sock|\\n")
-sys.stdout.flush()
-
-# Keep running
-time.sleep(10)
-'''
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-        f.write(echo_server_script)
-        script_path = f.name
-    
-    process = None
-    try:
-        # Note: This is a simplified example
-        # Real integration tests would need proper handshake implementation
-        yield script_path
-    finally:
-        if process:
-            process.terminate()
-            process.wait()
-        os.unlink(script_path)
 
 @pytest.mark.asyncio
-async def test_client_server_integration(mock_protocol, mock_handler, echo_server_process):
-    """Test client-server integration (simplified)."""
-    # This is a complex test that would require:
-    # 1. Real server implementation
-    # 2. Proper handshake protocol
-    # 3. gRPC service setup
-    # For now, we test the components separately
+async def test_client_server_integration_pattern(mock_protocol, mock_handler):
+    """Integration test pattern (components tested separately)."""
+    # For full integration tests:
+    # 1. Start real server with proper handshake
+    # 2. Start client subprocess
+    # 3. Perform gRPC calls
+    # 4. Verify responses and clean shutdown
     
-    # Create server
     server = plugin_server(
         protocol=mock_protocol,
         handler=mock_handler,
         transport="unix"
     )
     
-    # Create client (with mock for now)
-    client = plugin_client(command=["python", echo_server_process])
-    
-    # Test would involve:
-    # 1. Starting server
-    # 2. Starting client
-    # 3. Making RPC calls
-    # 4. Verifying responses
-    # 5. Clean shutdown
+    client = plugin_client(command=["echo", "mock_plugin"])
     
     assert server is not None
     assert client is not None
+    # Complex integration tests require proper handshake implementation
 ```
 
 ## Exception Testing
