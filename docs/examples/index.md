@@ -330,18 +330,32 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Secure Plugin
+## Future Improvements
 
-Demonstrates mTLS authentication and encrypted communication.
+### Secure Plugin with mTLS
 
-### Secure Server (`secure_server.py`)
+A secure plugin implementation with mutual TLS authentication would include:
 
-```python
-#!/usr/bin/env python3
-"""Secure plugin server with mTLS."""
-import asyncio
-import os
-import tempfile
+- Certificate generation and management utilities
+- Automatic certificate rotation and validation  
+- Client and server certificate authentication
+- Encrypted gRPC communication channels
+- Certificate-based authorization policies
+
+This would require implementing:
+- `pyvider.rpcplugin.crypto.Certificate` - Certificate management utilities
+- mTLS configuration options in RPCPluginConfig
+- Certificate validation and rotation logic
+- Integration with PKI infrastructure
+
+### Other Future Examples
+
+Additional examples that would be valuable:
+
+- **Database Plugin**: Persistent state management and connection pooling
+- **Streaming Plugin**: Bi-directional streaming with flow control  
+- **Batch Processing Plugin**: High-throughput data processing patterns
+- **Multi-Service Plugin**: Single plugin exposing multiple gRPC services
 from pathlib import Path
 from pyvider.rpcplugin import plugin_server, plugin_protocol, configure
 from pyvider.rpcplugin.crypto import Certificate
