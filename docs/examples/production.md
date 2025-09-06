@@ -7,7 +7,6 @@ This example demonstrates how to deploy Pyvider RPC Plugin services to productio
 Production deployment includes:
 
 - **Container Orchestration** - Docker and Kubernetes deployment
-- **Service Mesh** - Istio integration for traffic management
 - **Load Balancing** - High availability and traffic distribution
 - **Monitoring & Observability** - Prometheus, Grafana, and distributed tracing
 - **Security** - mTLS, RBAC, and network policies
@@ -21,172 +20,103 @@ Production deployment includes:
 graph TB
     subgraph "External"
         LB[Load Balancer]
-        CDN[CDN]
     end
     
     subgraph "Kubernetes Cluster"
-        subgraph "Ingress"
-            NGINX[NGINX Ingress]
-        end
-        
         subgraph "Application Pods"
-            API1[API Service Pod 1]
-            API2[API Service Pod 2]
-            API3[API Service Pod 3]
-            
-            USER1[User Service Pod 1]
-            USER2[User Service Pod 2]
-            
-            ORDER1[Order Service Pod 1]
-            ORDER2[Order Service Pod 2]
+            API[API Service Pods x3]
+            USER[User Service Pods x2]
+            ORDER[Order Service Pods x2]
         end
         
         subgraph "Data Layer"
-            POSTGRES[(PostgreSQL)]
+            POSTGRES[(PostgreSQL Cluster)]
             REDIS[(Redis)]
         end
         
         subgraph "Monitoring"
             PROM[Prometheus]
             GRAF[Grafana]
-            JAEGER[Jaeger]
         end
     end
     
-    CDN --> LB
-    LB --> NGINX
-    NGINX --> API1
-    NGINX --> API2
-    NGINX --> API3
-    
-    API1 --> USER1
-    API1 --> ORDER1
-    API2 --> USER2
-    API2 --> ORDER2
-    API3 --> USER1
-    API3 --> ORDER1
-    
-    USER1 --> POSTGRES
-    USER2 --> POSTGRES
-    ORDER1 --> POSTGRES
-    ORDER2 --> POSTGRES
-    
-    USER1 --> REDIS
-    USER2 --> REDIS
-    ORDER1 --> REDIS
-    ORDER2 --> REDIS
+    LB --> API
+    API --> USER
+    API --> ORDER
+    USER --> POSTGRES
+    ORDER --> POSTGRES
+    USER --> REDIS
+    ORDER --> REDIS
 ```
 
 ## Docker Configuration
 
-### Multi-stage Dockerfile
+### Production Dockerfile
 
 **Dockerfile**
 ```dockerfile
 # Build stage
 FROM python:3.11-slim AS builder
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create virtual environment
+RUN apt-get update && apt-get install -y build-essential libpq-dev && rm -rf /var/lib/apt/lists/*
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
-
-# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Production stage
 FROM python:3.11-slim AS production
-
-# Create non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN apt-get update && apt-get install -y libpq5 && rm -rf /var/lib/apt/lists/*
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Create application directory
 WORKDIR /app
 RUN chown -R appuser:appuser /app
-
-# Copy application code
 COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser config/ ./config/
 COPY --chown=appuser:appuser scripts/ ./scripts/
 
-# Switch to non-root user
 USER appuser
-
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python scripts/healthcheck.py
 
-# Default command
 CMD ["python", "-m", "src.main"]
-
-# Metadata
-LABEL maintainer="provide.io"
-LABEL version="1.0.0"
-LABEL description="Pyvider RPC Plugin Service"
+LABEL maintainer="provide.io" version="1.0.0" description="Pyvider RPC Plugin Service"
 ```
 
-### Production Requirements
+### Core Dependencies
 
 **requirements.txt**
 ```txt
-# Core dependencies
+# Core
 pyvider-rpcplugin>=1.0.0
 grpcio>=1.50.0
-grpcio-tools>=1.50.0
 protobuf>=4.21.0
 
-# Database
+# Database & Caching
 asyncpg>=0.28.0
-alembic>=1.12.0
 sqlalchemy[asyncio]>=2.0.0
-
-# Caching
 aioredis>=2.0.0
 
-# Monitoring
+# Monitoring & Logging
 prometheus-client>=0.18.0
 opentelemetry-api>=1.20.0
-opentelemetry-sdk>=1.20.0
 opentelemetry-instrumentation-grpc>=0.41b0
-opentelemetry-exporter-jaeger>=1.20.0
-
-# Logging
 structlog>=23.1.0
-python-json-logger>=2.0.0
 
-# Configuration
-pydantic>=2.4.0
+# Configuration & Security
 pydantic-settings>=2.0.0
-
-# Security
 cryptography>=41.0.0
 PyJWT>=2.8.0
 
-# HTTP client
-aiohttp>=3.8.0
-
-# Production server
-uvloop>=0.17.0  # For better async performance
+# Performance
+uvloop>=0.17.0
 ```
 
 ## Kubernetes Deployment
 
-### Namespace Configuration
+### Namespace and Configuration
 
 **k8s/namespace.yaml**
 ```yaml
@@ -196,21 +126,13 @@ metadata:
   name: pyvider-services
   labels:
     name: pyvider-services
-    istio-injection: enabled
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: pyvider-service-account
   namespace: pyvider-services
-  labels:
-    app: pyvider-services
-```
-
-### ConfigMap for Configuration
-
-**k8s/configmap.yaml**
-```yaml
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -223,38 +145,22 @@ data:
       port: 50051
       max_workers: 20
       tls_enabled: true
-      cert_file: "/etc/certs/tls.crt"
-      key_file: "/etc/certs/tls.key"
-    
     database:
       host: "postgres-service"
       port: 5432
       database: "pyvider"
       pool_size: 20
-      max_overflow: 10
-    
     redis:
       host: "redis-service"
       port: 6379
-      db: 0
       pool_size: 10
-    
     monitoring:
       prometheus_port: 9090
-      jaeger_endpoint: "http://jaeger-collector:14268/api/traces"
       metrics_enabled: true
-      tracing_enabled: true
-    
     logging:
       level: "INFO"
       format: "json"
-      enable_structured_logging: true
-```
-
-### Secret Management
-
-**k8s/secrets.yaml**
-```yaml
+---
 apiVersion: v1
 kind: Secret
 metadata:
@@ -262,11 +168,10 @@ metadata:
   namespace: pyvider-services
 type: Opaque
 data:
-  # Base64 encoded values
-  database-username: cHl2aWRlcl91c2Vy  # pyvider_user
-  database-password: c2VjdXJlX3Bhc3N3b3Jk  # secure_password
-  jwt-secret: bXlfc3VwZXJfc2VjcmV0X2p3dF9rZXk=  # my_super_secret_jwt_key
-  redis-password: cmVkaXNfcGFzc3dvcmQ=  # redis_password
+  database-username: cHl2aWRlcl91c2Vy
+  database-password: c2VjdXJlX3Bhc3N3b3Jk
+  jwt-secret: bXlfc3VwZXJfc2VjcmV0X2p3dF9rZXk=
+  redis-password: cmVkaXNfcGFzc3dvcmQ=
 ---
 apiVersion: v1
 kind: Secret
@@ -275,13 +180,11 @@ metadata:
   namespace: pyvider-services
 type: kubernetes.io/tls
 data:
-  tls.crt: |
-    # Base64 encoded TLS certificate
-  tls.key: |
-    # Base64 encoded TLS private key
+  tls.crt: LS0tLS1CRUdJTi... # Your TLS certificate
+  tls.key: LS0tLS1CRUdJTi... # Your TLS private key
 ```
 
-### Service Deployment
+### Application Deployment
 
 **k8s/deployment.yaml**
 ```yaml
@@ -290,9 +193,6 @@ kind: Deployment
 metadata:
   name: pyvider-api-service
   namespace: pyvider-services
-  labels:
-    app: pyvider-api-service
-    version: v1
 spec:
   replicas: 3
   strategy:
@@ -303,33 +203,25 @@ spec:
   selector:
     matchLabels:
       app: pyvider-api-service
-      version: v1
   template:
     metadata:
       labels:
         app: pyvider-api-service
-        version: v1
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
-        prometheus.io/path: "/metrics"
     spec:
       serviceAccountName: pyvider-service-account
-      securityContext:
-        fsGroup: 1000
       containers:
       - name: api-service
         image: your-registry/pyvider-api-service:1.0.0
-        imagePullPolicy: IfNotPresent
         ports:
-        - name: grpc
-          containerPort: 50051
-          protocol: TCP
-        - name: metrics
-          containerPort: 9090
-          protocol: TCP
+        - containerPort: 50051
+          name: grpc
+        - containerPort: 9090
+          name: metrics
         env:
-        - name: DATABASE_URL
+        - name: PLUGIN_DATABASE_URL
           value: "postgresql://$(DATABASE_USERNAME):$(DATABASE_PASSWORD)@postgres-service:5432/pyvider"
         - name: DATABASE_USERNAME
           valueFrom:
@@ -341,20 +233,18 @@ spec:
             secretKeyRef:
               name: pyvider-secrets
               key: database-password
-        - name: REDIS_URL
+        - name: PLUGIN_REDIS_URL
           value: "redis://:$(REDIS_PASSWORD)@redis-service:6379/0"
         - name: REDIS_PASSWORD
           valueFrom:
             secretKeyRef:
               name: pyvider-secrets
               key: redis-password
-        - name: JWT_SECRET
+        - name: PLUGIN_JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: pyvider-secrets
               key: jwt-secret
-        - name: CONFIG_FILE
-          value: "/etc/config/config.yaml"
         volumeMounts:
         - name: config-volume
           mountPath: /etc/config
@@ -370,32 +260,21 @@ spec:
             cpu: "500m"
         livenessProbe:
           exec:
-            command:
-            - python
-            - scripts/healthcheck.py
+            command: [python, scripts/healthcheck.py]
           initialDelaySeconds: 30
           periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
         readinessProbe:
           exec:
-            command:
-            - python
-            - scripts/healthcheck.py
-            - --readiness
+            command: [python, scripts/healthcheck.py, --readiness]
           initialDelaySeconds: 5
           periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 2
         securityContext:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
           runAsUser: 1000
-          runAsGroup: 1000
           readOnlyRootFilesystem: true
           capabilities:
-            drop:
-            - ALL
+            drop: [ALL]
       volumes:
       - name: config-volume
         configMap:
@@ -403,27 +282,18 @@ spec:
       - name: tls-certs
         secret:
           secretName: pyvider-tls
-      restartPolicy: Always
-      terminationGracePeriodSeconds: 30
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: pyvider-api-service
   namespace: pyvider-services
-  labels:
-    app: pyvider-api-service
 spec:
-  type: ClusterIP
   ports:
   - name: grpc
     port: 50051
-    targetPort: 50051
-    protocol: TCP
   - name: metrics
     port: 9090
-    targetPort: 9090
-    protocol: TCP
   selector:
     app: pyvider-api-service
 ---
@@ -439,7 +309,7 @@ spec:
       app: pyvider-api-service
 ```
 
-### Horizontal Pod Autoscaler
+### Auto-scaling
 
 **k8s/hpa.yaml**
 ```yaml
@@ -471,21 +341,13 @@ spec:
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 300
-      policies:
-      - type: Percent
-        value: 100
-        periodSeconds: 15
     scaleDown:
       stabilizationWindowSeconds: 300
-      policies:
-      - type: Percent
-        value: 10
-        periodSeconds: 60
 ```
 
-## Database Setup
+## Database and Caching
 
-### PostgreSQL with High Availability
+### PostgreSQL High Availability
 
 **k8s/postgres.yaml**
 ```yaml
@@ -496,53 +358,27 @@ metadata:
   namespace: pyvider-services
 spec:
   instances: 3
-  
   postgresql:
     parameters:
       max_connections: "200"
       shared_buffers: "256MB"
       effective_cache_size: "1GB"
-      maintenance_work_mem: "64MB"
-      checkpoint_completion_target: "0.7"
-      wal_buffers: "16MB"
-      default_statistics_target: "100"
-      random_page_cost: "1.1"
-      effective_io_concurrency: "200"
       work_mem: "4MB"
-      min_wal_size: "1GB"
-      max_wal_size: "4GB"
-  
   storage:
     size: "100Gi"
     storageClass: "fast-ssd"
-  
   monitoring:
     enabled: true
-    prometheusRule:
-      enabled: true
-  
   bootstrap:
     initdb:
       database: "pyvider"
       owner: "pyvider_user"
       secret:
         name: "postgres-credentials"
-  
   backup:
     retentionPolicy: "30d"
     barmanObjectStore:
       destinationPath: "s3://your-backup-bucket/postgres"
-      s3Credentials:
-        accessKeyId:
-          name: "backup-credentials"
-          key: "ACCESS_KEY_ID"
-        secretAccessKey:
-          name: "backup-credentials" 
-          key: "SECRET_ACCESS_KEY"
-      wal:
-        retention: "7d"
-      data:
-        retention: "30d"
 ---
 apiVersion: v1
 kind: Service
@@ -550,16 +386,14 @@ metadata:
   name: postgres-service
   namespace: pyvider-services
 spec:
-  type: ClusterIP
   ports:
   - port: 5432
-    targetPort: 5432
   selector:
     cnpg.io/cluster: postgres-cluster
     role: primary
 ```
 
-### Redis Configuration
+### Redis Cache
 
 **k8s/redis.yaml**
 ```yaml
@@ -569,7 +403,6 @@ metadata:
   name: redis
   namespace: pyvider-services
 spec:
-  replicas: 1
   selector:
     matchLabels:
       app: redis
@@ -583,8 +416,6 @@ spec:
         image: redis:7-alpine
         ports:
         - containerPort: 6379
-        command: ["redis-server"]
-        args: ["/etc/redis/redis.conf"]
         volumeMounts:
         - name: redis-config
           mountPath: /etc/redis
@@ -611,10 +442,8 @@ metadata:
   name: redis-service
   namespace: pyvider-services
 spec:
-  type: ClusterIP
   ports:
   - port: 6379
-    targetPort: 6379
   selector:
     app: redis
 ---
@@ -628,10 +457,6 @@ data:
     maxmemory 256mb
     maxmemory-policy allkeys-lru
     save 900 1
-    save 300 10
-    save 60 10000
-    rdbcompression yes
-    rdbchecksum yes
     requirepass ${REDIS_PASSWORD}
 ---
 apiVersion: v1
@@ -640,8 +465,7 @@ metadata:
   name: redis-pvc
   namespace: pyvider-services
 spec:
-  accessModes:
-  - ReadWriteOnce
+  accessModes: [ReadWriteOnce]
   resources:
     requests:
       storage: 10Gi
