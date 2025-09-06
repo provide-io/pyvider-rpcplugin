@@ -22,9 +22,9 @@ python ch07_echo_client.py
 - Error handling and graceful shutdown
 
 **Files:**
-- [`ch05_echo_server.py`](../examples/ch05_echo_server.py) - Server implementation
-- [`ch07_echo_client.py`](../examples/ch07_echo_client.py) - Client implementation
-- [`proto/echo.proto`](../examples/proto/echo.proto) - Protocol definition
+- `ch05_echo_server.py` - Server implementation
+- `ch07_echo_client.py` - Client implementation  
+- `proto/echo.proto` - Protocol definition
 
 ### End-to-End Greeter
 A complete greeter service showing production patterns:
@@ -61,8 +61,8 @@ async def main():
 ```
 
 **Files:**
-- [`ch02_dummy_server.py`](../examples/ch02_dummy_server.py)
-- [`ch02_quick_start_client.py`](../examples/ch02_quick_start_client.py)
+- `ch02_dummy_server.py`
+- `ch02_quick_start_client.py`
 
 ### Transport Configuration
 Examples showing different transport options:
@@ -88,7 +88,7 @@ server = plugin_server(
 ```
 
 **File:**
-- [`ch04_transport_options_demo.py`](../examples/ch04_transport_options_demo.py)
+- `ch04_transport_options_demo.py`
 
 ## Advanced Examples
 
@@ -117,7 +117,7 @@ server = plugin_server(protocol=protocol, handler=handler)
 - Certificate rotation patterns
 
 **File:**
-- [`ch09_security_mtls_example.py`](../examples/ch09_security_mtls_example.py)
+- `ch09_security_mtls_example.py`
 
 ### Custom Protocols
 Building custom protocol implementations:
@@ -139,7 +139,7 @@ class CustomProtocol(RPCPluginProtocol):
 - Method type configuration
 
 **File:**
-- [`ch13_custom_protocols_demo.py`](../examples/ch13_custom_protocols_demo.py)
+- `ch13_custom_protocols_demo.py`
 
 ## Configuration Examples
 
@@ -166,7 +166,7 @@ def production_config():
 - Monitoring and observability setup
 
 **File:**
-- [`ch12_production_config_discussion.py`](../examples/ch12_production_config_discussion.py)
+- `ch12_production_config_discussion.py`
 
 ### Performance Tuning
 Performance optimization examples:
@@ -190,7 +190,7 @@ configure(
 - Benchmarking patterns
 
 **File:**
-- [`ch14_performance_tuning_concepts.py`](../examples/ch14_performance_tuning_concepts.py)
+- `ch14_performance_tuning_concepts.py`
 
 ## Error Handling Examples
 
@@ -218,7 +218,7 @@ except RPCPluginError as e:
 ```
 
 **File:**
-- [`ch11_error_handling_demo.py`](../examples/ch11_error_handling_demo.py)
+- `ch11_error_handling_demo.py`
 
 ## Async Pattern Examples
 
@@ -240,7 +240,7 @@ async def concurrent_requests():
 ```
 
 **File:**
-- [`ch10_async_patterns_demo.py`](../examples/ch10_async_patterns_demo.py)
+- `ch10_async_patterns_demo.py`
 
 ## Running All Examples
 
