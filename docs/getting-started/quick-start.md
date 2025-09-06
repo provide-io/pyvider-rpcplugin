@@ -15,6 +15,7 @@ Before diving in, let's understand the key components:
 - **🔌 Plugin Process (Server)**: External executable providing specific services
 - **📡 RPC Communication**: gRPC-based calls between host and plugin
 - **🤝 Handshake**: Secure connection establishment with magic cookie authentication
+- **🏗️ Foundation**: Provides logging, configuration, cryptography, and utilities
 
 ## Your First Plugin
 
@@ -29,7 +30,7 @@ A minimal RPC plugin server example.
 """
 import asyncio
 from pyvider.rpcplugin import plugin_protocol, plugin_server
-from provide.foundation import logger  # Foundation logging
+from provide.foundation import logger
 
 # Simple handler for demonstration
 class DummyHandler:
@@ -57,6 +58,9 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+!!! note "About Imports"
+    Notice the `from provide.foundation import logger` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
+
 ### 2. Create the Host Application
 
 Create a file called `host_app.py`:
@@ -71,7 +75,7 @@ import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger  # Foundation logging
+from provide.foundation import logger
 
 async def main():
     logger.info("🚀 Starting host application...")

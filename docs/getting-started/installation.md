@@ -57,7 +57,7 @@ print(f"Pyvider RPC Plugin version: {pyvider.rpcplugin.__version__}")
 # Test basic imports
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation import logger  # Foundation logging
+from provide.foundation import logger
 
 print("✅ Installation successful!")
 ```
@@ -116,7 +116,7 @@ Create a simple test to verify everything works:
 import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger  # Foundation logging
+from provide.foundation import logger
 
 class TestProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self):
