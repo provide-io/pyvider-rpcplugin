@@ -12,7 +12,10 @@
       "Bash(python -m pytest tests/utils/test_rate_limiting.py -v)",
       "Bash(python -m pytest tests/utils/test_rate_limiting.py::TestTokenBucketRateLimiter::test_init_validates_parameters -v)",
       "Bash(python:*)",
-      "Bash(python -m pytest tests/utils/test_rate_limiting.py::TestTokenBucketRateLimiter::test_get_current_tokens -v)"
+      "Bash(python -m pytest tests/utils/test_rate_limiting.py::TestTokenBucketRateLimiter::test_get_current_tokens -v)",
+      "Read(//Users/tim/code/gh/provide-io/provide-foundation/src/provide/**)",
+      "Read(//Users/tim/code/gh/provide-io/provide-foundation/src/provide/**)",
+      "Read(//Users/tim/code/gh/provide-io/provide-foundation/**)"
     ],
     "deny": [],
     "ask": [],
