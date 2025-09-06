@@ -1,5 +1,7 @@
 # Installation
 
+**Path:** [Home](../index.md) → [Getting Started](index.md) → Installation
+
 Get started with Pyvider RPC Plugin by installing it in your Python environment.
 
 ## Requirements

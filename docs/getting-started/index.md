@@ -1,5 +1,7 @@
 # Getting Started
 
+**Path:** [Home](../index.md) → Getting Started
+
 **Build production-ready plugin systems in minutes with Foundation integration**
 
 This guide takes you from installation to your first working plugin with clear learning paths for different experience levels and use cases.
@@ -76,10 +78,11 @@ By the end of this guide, you'll be able to:
 
 **Foundation Integration Approach:** Each step builds on Foundation patterns
 
-**Beginner Path** (Total: ~40 minutes)
+**Beginner Path** (Total: ~45 minutes)
 1. **[Installation](installation.md)** (5 min) → Environment setup with Foundation toolchain
 2. **[Quick Start](quick-start.md)** (10 min) → Basic plugin with `PLUGIN_*` configuration 
-3. **[Complete Tutorial](first-plugin.md)** (25 min) → Production patterns with structured logging
+3. **[Simple Custom RPC](simple-custom-rpc.md)** (10 min) → Custom methods without Protocol Buffers
+4. **[Complete Tutorial](first-plugin.md)** (20 min) → Production patterns with Protocol Buffers
 
 **Experienced Developer Path** (Total: ~15 minutes)
 1. **[Installation](installation.md)** (2 min) → Quick dependency installation
