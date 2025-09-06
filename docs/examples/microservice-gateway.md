@@ -887,37 +887,31 @@ async def demo_gateway():
     gateway = GatewayClient()
     
     try:
-        # Register some demo services
+        # Register demo services
         print("1. Registering services...")
         await gateway.register_service("user-service", "user-1", "localhost", 50051)
         await gateway.register_service("user-service", "user-2", "localhost", 50052, weight=2)
-        await gateway.register_service("order-service", "order-1", "localhost", 50053)
         
         # List services
         print("\n2. Listing services...")
         services = await gateway.list_services()
         for service in services:
             print(f"  {service['service_name']}: {len(service['instances'])} instances")
-            for instance in service['instances']:
-                print(f"    - {instance['instance_id']}@{instance['host']}:{instance['port']} (weight: {instance['weight']})")
         
         # Health check
         print("\n3. Health check...")
         health = await gateway.health_check()
-        print(f"Gateway healthy: {health['healthy']}")
-        print(f"Status: {health['status']}")
-        print(f"Backend services: {len(health['backend_services'])}")
+        print(f"Gateway healthy: {health['healthy']} - {health['status']}")
         
-        # Route some requests
+        # Route requests
         print("\n4. Routing requests...")
-        for i in range(5):
+        for i in range(3):
             try:
                 result = await gateway.route_request(
                     service_name="user-service",
                     method="GetUser",
                     payload={"user_id": i + 1},
-                    headers={"authorization": "Bearer demo-token"},
-                    client_id=f"client-{i % 2}"
+                    headers={"authorization": "Bearer demo-token"}
                 )
                 print(f"  Request {i+1}: {result['status_code']} from {result.get('backend_instance', 'unknown')}")
             except Exception as e:
@@ -927,20 +921,12 @@ async def demo_gateway():
         print("\n5. Gateway metrics...")
         metrics = await gateway.get_metrics()
         print(f"Total requests: {metrics.get('total_requests', 0)}")
-        print(f"Total errors: {metrics.get('total_errors', 0)}")
         print(f"Avg response time: {metrics.get('avg_response_time', 0):.2f}ms")
         
-        # Service-specific metrics
-        for service_name, service_metrics in metrics.get('service_metrics', {}).items():
-            print(f"  {service_name}:")
-            print(f"    Requests: {service_metrics['request_count']}")
-            print(f"    Error rate: {service_metrics['error_rate']:.2%}")
-        
         # Cleanup
-        print("\n6. Unregistering services...")
+        print("\n6. Cleanup...")
         await gateway.unregister_service("user-service", "user-1")
         await gateway.unregister_service("user-service", "user-2")
-        await gateway.unregister_service("order-service", "order-1")
     
     finally:
         await gateway.close()
@@ -948,17 +934,12 @@ async def demo_gateway():
 
 async def main():
     """Run gateway client demo."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    
+    logging.basicConfig(level=logging.INFO)
     try:
         await demo_gateway()
     except Exception as e:
         logger.error(f"Demo failed: {e}")
         raise
-
 
 if __name__ == "__main__":
     asyncio.run(main())
