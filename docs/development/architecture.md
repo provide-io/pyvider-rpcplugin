@@ -100,12 +100,12 @@ class TCPTransport(BaseTransport):
 
 ### 2. Protocol Layer
 
-The protocol layer handles message serialization, service discovery, and RPC semantics:
+The protocol layer handles message serialization and RPC semantics:
 
 ```python
 # src/pyvider/protocol/base.py
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar, Generic
+from typing import TypeVar, Generic
 import asyncio
 
 T = TypeVar('T')
@@ -116,179 +116,76 @@ class BaseProtocol(ABC, Generic[T, U]):
     
     def __init__(self, transport: BaseTransport):
         self.transport = transport
-        self._message_id = 0
         self._pending_requests: dict[int, asyncio.Future] = {}
     
     @abstractmethod
     async def serialize_request(self, method: str, args: T) -> bytes:
         """Serialize request for transmission."""
-        pass
     
     @abstractmethod
-    async def deserialize_request(self, data: bytes) -> tuple[str, T]:
-        """Deserialize incoming request."""
-        pass
-    
-    @abstractmethod
-    async def serialize_response(self, response: U) -> bytes:
-        """Serialize response for transmission."""
-        pass
-    
-    @abstractmethod
-    async def deserialize_response(self, data: bytes) -> U:
-        """Deserialize incoming response."""
-        pass
-    
-    def _generate_message_id(self) -> int:
-        """Generate unique message ID for request tracking."""
-        self._message_id += 1
-        return self._message_id
+    async def call_method(self, method_name: str, request: T) -> U:
+        """Call remote method."""
 ```
 
-#### gRPC Protocol Implementation
+#### Protocol Implementations
 
+**gRPC Protocol** - Production-ready with comprehensive feature set:
 ```python
-# src/pyvider/protocol/grpc.py
-import grpc
-from google.protobuf.message import Message
-from grpc.aio import insecure_channel, secure_channel
-
 class GRPCProtocol(BaseProtocol):
-    """gRPC protocol implementation."""
-    
-    def __init__(self, transport: BaseTransport, service_pb2: Any):
-        super().__init__(transport)
-        self.service_pb2 = service_pb2
-        self._channel: grpc.aio.Channel | None = None
-        self._stub: Any | None = None
-    
-    async def initialize_client(self, target: str, credentials: grpc.ChannelCredentials | None = None):
-        """Initialize gRPC client."""
-        if credentials:
-            self._channel = secure_channel(target, credentials)
-        else:
-            self._channel = insecure_channel(target)
-        
-        self._stub = self.service_pb2.ServiceStub(self._channel)
-    
     async def call_method(self, method_name: str, request: Message) -> Message:
-        """Call remote method via gRPC."""
-        if not self._stub:
-            raise ProtocolError("Client not initialized")
-        
         method = getattr(self._stub, method_name)
-        
         try:
-            response = await method(request)
-            return response
+            return await method(request)
         except grpc.RpcError as e:
             raise ProtocolError(f"RPC call failed: {e.code()}: {e.details()}")
-    
-    async def close(self):
-        """Close gRPC channel."""
-        if self._channel:
-            await self._channel.close()
 ```
 
 ### 3. Server Architecture
 
-The server architecture provides a high-level interface for implementing RPC services:
+The server provides a high-level interface for implementing RPC services:
 
 ```python
 # src/pyvider/server/server.py
 import asyncio
 import logging
-from typing import Any, Callable
 from grpc.aio import Server, add_insecure_port, add_secure_port
-
-logger = logging.getLogger(__name__)
 
 class RPCPluginServer:
     """High-level RPC server implementation."""
     
     def __init__(self, config: ServerConfig):
         self.config = config
-        self._server: Server | None = None
-        self._services: list[Any] = []
-        self._interceptors: list[Any] = []
-        self._health_servicer = None
+        self._server = None
+        self._services: list = []
+        self._interceptors: list = []
         self._shutdown_event = asyncio.Event()
     
-    def add_service(self, service: Any) -> None:
+    def add_service(self, service) -> None:
         """Add RPC service to the server."""
         self._services.append(service)
-        logger.info(f"Added service: {service.__class__.__name__}")
-    
-    def add_interceptor(self, interceptor: Any) -> None:
-        """Add gRPC interceptor to the server."""
-        self._interceptors.append(interceptor)
-        logger.info(f"Added interceptor: {interceptor.__class__.__name__}")
     
     async def start(self) -> None:
         """Start the RPC server."""
-        logger.info("Starting RPC server...")
-        
-        # Create gRPC server with interceptors
         self._server = Server(interceptors=self._interceptors)
         
-        # Add services
+        # Register services
         for service in self._services:
-            service_name = service.__class__.__name__
-            add_servicer = getattr(service, 'add_to_server', None)
-            
-            if add_servicer:
-                add_servicer(service, self._server)
-                logger.info(f"Registered service: {service_name}")
-            else:
-                logger.error(f"Service {service_name} has no add_to_server method")
+            add_servicer = getattr(service, 'add_to_server')
+            add_servicer(service, self._server)
         
-        # Configure server port
+        # Configure port and start
         if self.config.tls_enabled:
             credentials = self._create_server_credentials()
-            port = add_secure_port(
-                self._server, 
-                f"{self.config.host}:{self.config.port}",
-                credentials
-            )
+            add_secure_port(self._server, f"{self.config.host}:{self.config.port}", credentials)
         else:
-            port = add_insecure_port(
-                self._server,
-                f"{self.config.host}:{self.config.port}"
-            )
+            add_insecure_port(self._server, f"{self.config.host}:{self.config.port}")
         
-        # Start server
         await self._server.start()
-        logger.info(f"Server started on {self.config.host}:{port}")
-        
-        # Setup graceful shutdown
-        self._setup_signal_handlers()
     
     async def stop(self, grace_period: int = 30) -> None:
         """Stop the RPC server gracefully."""
-        if not self._server:
-            return
-        
-        logger.info("Stopping RPC server...")
-        
-        # Signal shutdown
-        self._shutdown_event.set()
-        
-        # Stop accepting new requests
-        await self._server.stop(grace_period)
-        
-        logger.info("RPC server stopped")
-    
-    def _create_server_credentials(self):
-        """Create server TLS credentials."""
-        import grpc
-        
-        with open(self.config.key_file, 'rb') as f:
-            private_key = f.read()
-        
-        with open(self.config.cert_file, 'rb') as f:
-            certificate_chain = f.read()
-        
-        return grpc.ssl_server_credentials([(private_key, certificate_chain)])
+        if self._server:
+            await self._server.stop(grace_period)
 ```
 
 ### 4. Client Architecture
@@ -298,14 +195,11 @@ The client provides a simplified interface for making RPC calls:
 ```python
 # src/pyvider/client/client.py
 import asyncio
-import logging
-from typing import Any, Generic, TypeVar
+from typing import Generic, TypeVar, AsyncIterator
 from grpc.aio import insecure_channel, secure_channel
 
 T = TypeVar('T')
 U = TypeVar('U')
-
-logger = logging.getLogger(__name__)
 
 class RPCPluginClient(Generic[T, U]):
     """High-level RPC client implementation."""
@@ -314,7 +208,6 @@ class RPCPluginClient(Generic[T, U]):
         self.config = config
         self._channel = None
         self._stub = None
-        self._connection_pool = ConnectionPool(config.pool_size)
         self._retry_policy = RetryPolicy(config.retry_config)
     
     async def connect(self) -> None:
@@ -327,60 +220,30 @@ class RPCPluginClient(Generic[T, U]):
         else:
             self._channel = insecure_channel(target)
         
-        # Create service stub
         self._stub = self.config.service_stub_class(self._channel)
-        
-        # Test connection
-        await self._test_connection()
-        
-        logger.info(f"Connected to {target}")
     
-    async def call(
-        self, 
-        method_name: str, 
-        request: T, 
-        timeout: float | None = None
-    ) -> U:
+    async def call(self, method_name: str, request: T, timeout: float | None = None) -> U:
         """Make RPC call with retry logic."""
-        if not self._stub:
-            raise ClientError("Client not connected")
-        
         async def _make_call() -> U:
             method = getattr(self._stub, method_name)
             return await method(request, timeout=timeout)
         
-        # Apply retry policy
         return await self._retry_policy.execute(_make_call)
     
-    async def stream_call(
-        self, 
-        method_name: str, 
-        request_iterator: AsyncIterator[T]
-    ) -> AsyncIterator[U]:
+    async def stream_call(self, method_name: str, request_iterator: AsyncIterator[T]) -> AsyncIterator[U]:
         """Make streaming RPC call."""
-        if not self._stub:
-            raise ClientError("Client not connected")
-        
         method = getattr(self._stub, method_name)
-        
         async for response in method(request_iterator):
             yield response
-    
-    async def close(self) -> None:
-        """Close client connection."""
-        if self._channel:
-            await self._channel.close()
-            logger.info("Client connection closed")
 ```
 
 ### 5. Configuration System
 
-Centralized configuration management with validation:
+Centralized configuration management with environment variable support:
 
 ```python
 # src/pyvider/config/schema.py
 from dataclasses import dataclass, field
-from typing import Any
 from pathlib import Path
 
 @dataclass
@@ -394,53 +257,31 @@ class TransportConfig:
     cert_file: str | None = None
     key_file: str | None = None
     ca_cert_file: str | None = None
-    
-    def __post_init__(self):
-        """Validate configuration after initialization."""
-        if self.type == "unix" and not self.socket_path:
-            raise ValueError("socket_path required for Unix transport")
-        
-        if self.tls_enabled:
-            if not self.cert_file or not self.key_file:
-                raise ValueError("cert_file and key_file required for TLS")
 
 @dataclass
 class ServerConfig:
-    """Server configuration."""
+    """Server configuration with environment variable support."""
     transport: TransportConfig = field(default_factory=TransportConfig)
     max_workers: int = 10
     max_connections: int = 1000
     request_timeout: float = 30.0
-    keepalive_timeout: int = 300
     log_level: str = "INFO"
-    enable_health_check: bool = True
-    enable_reflection: bool = False
-    
-    @classmethod
-    def from_file(cls, path: Path) -> 'ServerConfig':
-        """Load configuration from file."""
-        import json
-        
-        with open(path) as f:
-            data = json.load(f)
-        
-        return cls(**data)
     
     @classmethod 
     def from_env(cls) -> 'ServerConfig':
-        """Load configuration from environment variables."""
+        """Load configuration from PLUGIN_* environment variables."""
         import os
         
         return cls(
             transport=TransportConfig(
-                host=os.getenv('RPC_HOST', 'localhost'),
-                port=int(os.getenv('RPC_PORT', '50051')),
-                tls_enabled=os.getenv('RPC_TLS_ENABLED', 'false').lower() == 'true',
-                cert_file=os.getenv('RPC_CERT_FILE'),
-                key_file=os.getenv('RPC_KEY_FILE'),
+                host=os.getenv('PLUGIN_RPC_HOST', 'localhost'),
+                port=int(os.getenv('PLUGIN_RPC_PORT', '50051')),
+                tls_enabled=os.getenv('PLUGIN_RPC_TLS_ENABLED', 'false').lower() == 'true',
+                cert_file=os.getenv('PLUGIN_RPC_CERT_FILE'),
+                key_file=os.getenv('PLUGIN_RPC_KEY_FILE'),
             ),
-            max_workers=int(os.getenv('RPC_MAX_WORKERS', '10')),
-            log_level=os.getenv('RPC_LOG_LEVEL', 'INFO'),
+            max_workers=int(os.getenv('PLUGIN_RPC_MAX_WORKERS', '10')),
+            log_level=os.getenv('PLUGIN_RPC_LOG_LEVEL', 'INFO'),
         )
 ```
 
