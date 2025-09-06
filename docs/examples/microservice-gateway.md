@@ -394,71 +394,48 @@ class GatewayServicer(GatewayServiceServicer):
     
     async def ListServices(self, request: ListServicesRequest, context: ServicerContext) -> ListServicesResponse:
         services = []
-        
         for service_name, registry in self.services.items():
             if request.service_name and request.service_name != service_name:
                 continue
             
-            instances = [
-                ServiceInstance(
-                    instance_id=inst.instance_id,
-                    host=inst.host,
-                    port=inst.port,
-                    healthy=inst.healthy,
-                    weight=inst.weight,
-                    last_health_check=int(inst.last_health_check)
-                )
-                for inst in registry.instances.values()
-            ]
+            instances = [ServiceInstance(
+                instance_id=inst.instance_id, host=inst.host, port=inst.port,
+                healthy=inst.healthy, weight=inst.weight, last_health_check=int(inst.last_health_check)
+            ) for inst in registry.instances.values()]
             
             total_requests = sum(inst.request_count for inst in registry.instances.values())
             all_times = [t for inst in registry.instances.values() for t in inst.response_times]
             avg_response_time = sum(all_times) / max(len(all_times), 1)
             
             services.append(ServiceInfo(
-                service_name=service_name,
-                instances=instances,
+                service_name=service_name, instances=instances,
                 healthy=any(inst.healthy for inst in registry.instances.values()),
-                total_requests=total_requests,
-                avg_response_time=avg_response_time
+                total_requests=total_requests, avg_response_time=avg_response_time
             ))
-        
         return ListServicesResponse(services=services)
     
     async def HealthCheck(self, request: HealthRequest, context: ServicerContext) -> HealthResponse:
         backend_services = {}
-        
         for service_name, registry in self.services.items():
-            instances = [
-                ServiceInstance(
-                    instance_id=inst.instance_id,
-                    host=inst.host,
-                    port=inst.port,
-                    healthy=inst.healthy,
-                    weight=inst.weight,
-                    last_health_check=int(inst.last_health_check)
-                )
-                for inst in registry.instances.values()
-            ]
+            instances = [ServiceInstance(
+                instance_id=inst.instance_id, host=inst.host, port=inst.port,
+                healthy=inst.healthy, weight=inst.weight, last_health_check=int(inst.last_health_check)
+            ) for inst in registry.instances.values()]
             
             backend_services[service_name] = ServiceInfo(
-                service_name=service_name,
-                instances=instances,
+                service_name=service_name, instances=instances,
                 healthy=any(inst.healthy for inst in registry.instances.values()),
                 total_requests=sum(inst.request_count for inst in registry.instances.values()),
                 avg_response_time=0
             )
         
         return HealthResponse(
-            healthy=True,
-            status="Gateway is healthy",
-            active_connections=len(self.services),
-            backend_services=backend_services
+            healthy=True, status="Gateway is healthy",
+            active_connections=len(self.services), backend_services=backend_services
         )
     
     async def GetMetrics(self, request: MetricsRequest, context: ServicerContext) -> MetricsResponse:
         service_metrics = {}
-        
         for service_name, registry in self.services.items():
             if request.service_name and request.service_name != service_name:
                 continue
@@ -471,25 +448,20 @@ class GatewayServicer(GatewayServiceServicer):
             error_rate = total_errors / max(total_requests, 1)
             
             service_metrics[service_name] = ServiceMetrics(
-                request_count=total_requests,
-                error_count=total_errors,
-                avg_response_time=avg_response_time,
-                error_rate=error_rate
+                request_count=total_requests, error_count=total_errors,
+                avg_response_time=avg_response_time, error_rate=error_rate
             )
         
         # Overall metrics
         response_times = list(self.metrics["response_times"])
         avg_response_time = sum(response_times) / max(len(response_times), 1)
-        
         sorted_times = sorted(response_times)
         p95_index = int(0.95 * len(sorted_times))
         p95_response_time = sorted_times[p95_index] if sorted_times else 0
         
         return MetricsResponse(
-            total_requests=self.metrics["total_requests"],
-            total_errors=self.metrics["total_errors"],
-            avg_response_time=avg_response_time,
-            p95_response_time=p95_response_time,
+            total_requests=self.metrics["total_requests"], total_errors=self.metrics["total_errors"],
+            avg_response_time=avg_response_time, p95_response_time=p95_response_time,
             service_metrics=service_metrics
         )
     
