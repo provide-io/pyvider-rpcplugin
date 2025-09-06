@@ -4,321 +4,175 @@ Pyvider RPC Plugin supports multiple transport layers for communication between 
 
 ## Transport Types
 
-### 🔌 Unix Domain Sockets (UDS)
-
-<div class="transport-badge unix">Recommended for local communication</div>
+### Unix Domain Sockets (UDS)
+*Recommended for local communication*
 
 Unix Domain Sockets provide the highest performance for Inter-Process Communication (IPC) on the same machine.
 
-**Advantages:**
-- **Maximum Performance** - Bypasses network stack overhead
-- **Lower Latency** - Direct kernel-to-kernel communication
-- **File System Permissions** - Leverage OS security models
-- **Resource Efficient** - Minimal CPU and memory overhead
+**Advantages:** Maximum performance, lower latency, file system permissions, resource efficient
+**Limitations:** Same host only, path length limits, not available on Windows
+**Best For:** High-performance local plugins, security-sensitive applications, production systems
 
-**Limitations:**
-- **Same Host Only** - Cannot communicate across network
-- **Path Length Limits** - Some systems restrict socket path length
-- **Platform Support** - Not available on Windows (yet)
-
-**Best For:**
-- High-performance local plugins
-- Security-sensitive applications
-- Resource-constrained environments
-- Production systems with co-located processes
-
-### 🌐 TCP Sockets
-
-<div class="transport-badge tcp">Universal compatibility</div>
+### TCP Sockets
+*Universal compatibility*
 
 TCP sockets enable network communication, allowing plugins to run on different machines.
 
-**Advantages:**
-- **Network Communication** - Plugins can run on remote hosts
-- **Universal Support** - Works on all platforms (Linux, macOS, Windows)
-- **Standard Protocol** - Well-understood networking model
-- **Firewall Friendly** - Standard port-based communication
-
-**Limitations:**
-- **Higher Overhead** - Network stack processing even for localhost
-- **Port Management** - Requires available ports and conflict resolution
-- **Security Considerations** - Network exposure requires additional security
-
-**Best For:**
-- Distributed plugin architectures
-- Windows environments
-- Cross-machine communication
-- Development and testing scenarios
+**Advantages:** Network communication, universal platform support, standard protocol
+**Limitations:** Higher overhead, port management complexity, additional security considerations
+**Best For:** Distributed architectures, Windows environments, cross-machine communication
 
 ## Transport Selection
 
 ### Automatic Negotiation
 
-Pyvider RPC Plugin automatically selects the best available transport:
-
-```mermaid
-flowchart TD
-    A[Plugin Server Starts] --> B[Announce Supported Transports]
-    B --> C{Unix Sockets Available?}
-    C -->|Yes| D[Prefer Unix Sockets]
-    C -->|No| E[Use TCP Sockets]
-    D --> F[Client Connects via Unix Socket]
-    E --> G[Client Connects via TCP]
-```
+Pyvider RPC Plugin automatically selects the best available transport, preferring Unix sockets when available, falling back to TCP when needed.
 
 ### Configuration
 
-Control transport selection through configuration:
-
 ```python
-from pyvider.rpcplugin.config import rpcplugin_config
-
-# View available transports
-transports = rpcplugin_config.server_transports()
-print(f"Available transports: {transports}")  # ['unix', 'tcp']
-
-# Force specific transport
 from pyvider.rpcplugin import configure
 
+# View available transports
+from pyvider.rpcplugin.config import rpcplugin_config
+transports = rpcplugin_config.server_transports()
+
+# Configure transport preferences
 configure(transports=["tcp"])  # TCP only
-configure(transports=["unix"])  # Unix only
+configure(transports=["unix"])  # Unix only  
 configure(transports=["unix", "tcp"])  # Both, prefer unix
 ```
 
 ### Environment Variables
 
 ```bash
-# Prefer TCP for development
-export PYVIDER_RPC_SERVER_TRANSPORTS="tcp,unix"
-
-# Unix only for production
-export PYVIDER_RPC_SERVER_TRANSPORTS="unix"
-
-# Custom TCP port
-export PYVIDER_RPC_TCP_PORT="8080"
-
-# Custom Unix socket path
-export PYVIDER_RPC_UNIX_SOCKET_PATH="/tmp/my-plugin.sock"
+# Transport selection
+export PLUGIN_RPC_SERVER_TRANSPORTS="unix,tcp"
+export PLUGIN_RPC_TCP_PORT="8080" 
+export PLUGIN_RPC_UNIX_SOCKET_PATH="/tmp/my-plugin.sock"
 ```
 
 ## Implementation Details
 
-### Unix Socket Transport
+### Basic Transport Usage
 
 ```python
-from pyvider.rpcplugin.transport import UnixSocketTransport
-import tempfile
+from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
+from pyvider.rpcplugin import plugin_server
 
-# Create unix socket transport
-with tempfile.NamedTemporaryFile(suffix=".sock", delete=False) as tmp:
-    socket_path = tmp.name
+# Unix socket transport (automatic path generation)
+unix_transport = UnixSocketTransport()
 
-transport = UnixSocketTransport(path=socket_path)
-
-# Use with plugin server
-server = plugin_server(protocol=my_protocol, handler=my_handler, transport=transport)
-```
-
-**Socket Path Management:**
-- Automatic cleanup on server shutdown
-- Collision detection and resolution
-- Filesystem permission handling
-
-### TCP Socket Transport
-
-```python
-from pyvider.rpcplugin.transport import TCPSocketTransport
-
-# Create TCP transport
-transport = TCPSocketTransport(host="127.0.0.1", port=0)  # port=0 for auto-assignment
+# TCP transport (automatic port assignment)  
+tcp_transport = TCPSocketTransport(host="127.0.0.1", port=0)
 
 # Use with plugin server
-server = plugin_server(protocol=my_protocol, handler=my_handler, transport=transport)
+server = plugin_server(protocol=my_protocol, handler=my_handler, transport=unix_transport)
 ```
 
-**Port Management:**
-- Automatic port assignment (port=0)
-- Port collision detection
-- Configurable host binding
+**Key Features:**
+- Automatic cleanup and collision detection
+- Configurable permissions and binding
+- Graceful error handling and fallbacks
 
 ## Platform Considerations
 
-### Linux
-
-All transport types fully supported:
-
+**Linux & macOS:** Full support for both Unix and TCP transports
 ```python
-# Preferred configuration for Linux
 configure(transports=["unix", "tcp"])  # Unix preferred, TCP fallback
 ```
 
-### macOS
-
-All transport types fully supported:
-
+**Windows:** TCP transport only (Unix socket support planned)
 ```python
-# Preferred configuration for macOS  
-configure(transports=["unix", "tcp"])  # Unix preferred, TCP fallback
-```
-
-### Windows
-
-Unix sockets not yet supported:
-
-```python
-# Windows configuration
 configure(transports=["tcp"])  # TCP only
 ```
 
-!!! note "Windows Unix Socket Support"
-    Windows 10+ supports Unix sockets, but Pyvider RPC Plugin doesn't yet leverage this. Support is planned for future releases using named pipes.
-
 ## Performance Characteristics
 
-### Benchmark Results
+| Transport | Throughput | Latency | CPU Usage |
+|-----------|------------|---------|-----------|
+| Unix Socket | **~45,000 msg/sec** | **~0.02ms** | Low |
+| TCP (localhost) | ~35,000 msg/sec | ~0.03ms | Medium |
+| TCP (network) | Varies by network | Varies by network | Medium |
 
-| Transport | Throughput | Latency | CPU Usage | Memory |
-|-----------|------------|---------|-----------|--------|
-| Unix Socket | **~45,000 msg/sec** | **~0.02ms** | Low | Low |
-| TCP (localhost) | ~35,000 msg/sec | ~0.03ms | Medium | Medium |
-| TCP (network) | Varies by network | Varies by network | Medium | Medium |
+### Optimization
 
-### Optimization Tips
-
-**For Unix Sockets:**
 ```python
-# Use larger buffer sizes for high throughput
-configure(unix_socket_buffer_size=65536)
+# Unix socket optimization
+configure(unix_socket_buffer_size=65536, unix_socket_permissions=0o600)
 
-# Optimize socket permissions
-configure(unix_socket_permissions=0o600)
-```
-
-**For TCP Sockets:**
-```python
-# Use TCP_NODELAY for low latency
-configure(tcp_nodelay=True)
-
-# Optimize buffer sizes
-configure(tcp_buffer_size=65536)
-
-# Bind to specific interfaces in production
-configure(tcp_host="192.168.1.100")
+# TCP optimization
+configure(tcp_nodelay=True, tcp_buffer_size=65536, tcp_host="127.0.0.1")
 ```
 
 ## Security Considerations
 
 ### Unix Socket Security
+- File permissions and secure paths
+- Automatic cleanup on shutdown
+- Process credential validation
 
-- **File Permissions** - Leverage filesystem ACLs
-- **Path Location** - Use secure temporary directories
-- **Cleanup** - Ensure socket files are removed on shutdown
-
-```python
-# Secure unix socket configuration
-configure(
-    unix_socket_path="/var/run/myapp/plugin.sock",
-    unix_socket_permissions=0o600,  # Owner read/write only
-    unix_socket_cleanup=True
-)
-```
-
-### TCP Socket Security
-
-- **Bind Address** - Use 127.0.0.1 for localhost only
-- **Port Range** - Use non-privileged ports (>1024)
-- **mTLS** - Enable mutual TLS for authentication
+### TCP Socket Security  
+- Localhost binding (127.0.0.1)
+- Non-privileged ports (>1024)
+- mTLS for authentication
 
 ```python
-# Secure TCP configuration
+# Secure configurations
 configure(
-    tcp_host="127.0.0.1",  # Localhost only
-    tcp_port_range=(8000, 9000),  # Specific port range
-    auto_mtls=True  # Enable mTLS
-)
-```
-
-## Common Patterns
-
-### Development vs Production
-
-**Development Configuration:**
-```python
-# Easy debugging and cross-platform compatibility
-configure(
-    transports=["tcp"],
-    tcp_host="127.0.0.1",
-    log_transport_details=True
-)
-```
-
-**Production Configuration:**
-```python
-# Maximum performance and security
-configure(
-    transports=["unix"],
     unix_socket_path="/var/run/myapp/plugin.sock",
     unix_socket_permissions=0o600,
+    tcp_host="127.0.0.1",
     auto_mtls=True
 )
 ```
 
-### Transport Fallback
+## Usage Patterns
+
+### Development vs Production
 
 ```python
-# Graceful degradation
-configure(transports=["unix", "tcp"])  # Try unix first, fallback to TCP
+# Development: Cross-platform compatibility
+configure(transports=["tcp"], tcp_host="127.0.0.1", log_transport_details=True)
 
-# Handle transport failures
+# Production: Maximum performance and security  
+configure(transports=["unix"], unix_socket_path="/var/run/myapp/plugin.sock", 
+         unix_socket_permissions=0o600)
+
+# Graceful fallback
+configure(transports=["unix", "tcp"])  # Try unix first, fallback to TCP
+```
+
+### Error Handling
+
+```python
+from pyvider.rpcplugin.exceptions import TransportError
+
 try:
     server = plugin_server(protocol=protocol, handler=handler)
     await server.serve()
 except TransportError as e:
     logger.error(f"Transport failed: {e}")
-    # Implement fallback strategy
+    # Implement fallback or recovery
 ```
 
 ## Troubleshooting
 
-### Common Unix Socket Issues
+### Unix Socket Issues
+**Permission Denied:** Check file permissions with `ls -la`, fix with `chmod 600`
+**Address in Use:** Find processes with `lsof /path/to/socket.sock`, remove stale files
 
-**Permission Denied**
-```bash
-# Check socket file permissions
-ls -la /path/to/socket.sock
+### TCP Issues  
+**Port in Use:** Check with `netstat -tulpn | grep :port` or `lsof -i :port`, use `tcp_port=0` for auto-assignment
+**Connection Refused:** Verify server is listening, check firewall settings
 
-# Fix permissions
-chmod 600 /path/to/socket.sock
-```
+### Common Solutions
+```python
+# Enable detailed logging
+configure(log_transport_details=True, log_level="DEBUG")
 
-**Address Already in Use**
-```bash
-# Find processes using the socket
-lsof /path/to/socket.sock
-
-# Remove stale socket files
-rm /path/to/socket.sock
-```
-
-### Common TCP Issues
-
-**Port Already in Use**
-```bash
-# Find what's using the port
-netstat -tulpn | grep :8080
-lsof -i :8080
-
-# Use automatic port assignment
-configure(tcp_port=0)  # Let OS choose available port
-```
-
-**Connection Refused**
-```bash
-# Check if server is listening
-netstat -tulpn | grep :8080
-
-# Verify firewall settings
-sudo ufw status
+# Use automatic port/path assignment
+configure(tcp_port=0, unix_socket_path=None)  # Auto-generate paths
 ```
 
 ## Transport Architecture
@@ -329,7 +183,6 @@ All transports implement the `RPCPluginTransport` interface:
 
 ```python
 from abc import ABC, abstractmethod
-import asyncio
 
 class RPCPluginTransport(ABC):
     """Base interface for all plugin transports."""
@@ -348,77 +201,16 @@ class RPCPluginTransport(ABC):
     async def close(self):
         """Clean up transport resources."""
         pass
-    
-    @abstractmethod
-    def supports_feature(self, feature: str) -> bool:
-        """Check if transport supports a specific feature."""
-        pass
 ```
 
-### Dynamic Transport Selection
+### Dynamic Selection
 
-```python
-class TransportManager:
-    """Manages multiple transports and selects optimal one."""
-    
-    def __init__(self):
-        self.available_transports = {}
-        self.preferred_order = ["unix", "tcp_mtls", "tcp"]
-    
-    def register_transport(self, name: str, transport: RPCPluginTransport):
-        """Register a transport implementation."""
-        self.available_transports[name] = transport
-    
-    async def select_transport(self, requirements: dict) -> RPCPluginTransport:
-        """Select best transport based on requirements."""
-        
-        # Check security requirements
-        security_level = requirements.get("security", "medium")
-        network_required = requirements.get("network", False)
-        performance_priority = requirements.get("performance", "balanced")
-        
-        # Score transports based on requirements
-        transport_scores = {}
-        
-        for name, transport in self.available_transports.items():
-            score = 0
-            
-            # Security scoring
-            if security_level == "high":
-                if name == "unix":
-                    score += 10  # Unix sockets are most secure
-                elif name == "tcp_mtls":
-                    score += 8   # mTLS is very secure
-                elif name == "tcp":
-                    score += 3   # Plain TCP is less secure
-            
-            # Network requirement
-            if network_required:
-                if name.startswith("tcp"):
-                    score += 10  # TCP supports network
-                else:
-                    score = 0    # Unix sockets don't support network
-            
-            # Performance scoring
-            if performance_priority == "high":
-                if name == "unix":
-                    score += 10  # Unix sockets are fastest
-                elif name == "tcp":
-                    score += 6   # Plain TCP is faster than mTLS
-                elif name == "tcp_mtls":
-                    score += 4   # mTLS has encryption overhead
-            
-            transport_scores[name] = score
-        
-        # Select highest scoring transport
-        if not transport_scores:
-            raise TransportError("No suitable transport available")
-        
-        best_transport = max(transport_scores.items(), key=lambda x: x[1])
-        logger.info(f"Selected transport: {best_transport[0]} (score: {best_transport[1]})")
-        
-        return self.available_transports[best_transport[0]]
-```
+The transport manager automatically scores and selects optimal transports based on:
+- **Security requirements** (Unix > mTLS > TCP)
+- **Network needs** (TCP required for remote communication)  
+- **Performance priority** (Unix fastest, mTLS has overhead)
+
+Available transports are scored and the highest-scoring option is selected automatically.
 
 ## Advanced Unix Socket Features
 
