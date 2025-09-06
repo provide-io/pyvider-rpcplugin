@@ -462,14 +462,13 @@ await high_throughput_example()
 ```python
 import os
 from dataclasses import dataclass
-from typing import Optional, List
 
 @dataclass
 class ClientConfig:
     """Client configuration from environment."""
     
     # Connection settings
-    command: List[str] = None
+    command: list[str] = None
     timeout: float = float(os.environ.get("PLUGIN_CLIENT_TIMEOUT", "30.0"))
     max_retries: int = int(os.environ.get("PLUGIN_CLIENT_MAX_RETRIES", "3"))
     
@@ -480,14 +479,14 @@ class ClientConfig:
     
     # Security settings
     enable_mtls: bool = os.environ.get("PLUGIN_CLIENT_ENABLE_MTLS", "false").lower() == "true"
-    client_cert: Optional[str] = os.environ.get("PLUGIN_CLIENT_CERT")
-    client_key: Optional[str] = os.environ.get("PLUGIN_CLIENT_KEY")
+    client_cert: str | None = os.environ.get("PLUGIN_CLIENT_CERT")
+    client_key: str | None = os.environ.get("PLUGIN_CLIENT_KEY")
     
     # Performance settings
     compression: str = os.environ.get("PLUGIN_CLIENT_COMPRESSION", "gzip")
     max_message_size: int = int(os.environ.get("PLUGIN_CLIENT_MAX_MESSAGE_SIZE", str(4*1024*1024)))
     
-    def create_client(self, command: List[str] = None):
+    def create_client(self, command: list[str] = None):
         """Create configured plugin client."""
         cmd = command or self.command
         if not cmd:

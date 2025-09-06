@@ -100,9 +100,9 @@ class BatchProcessor:
         self.semaphore = asyncio.Semaphore(max_concurrency)
     
     async def process_batch(self, 
-                           items: List[T], 
+                           items: list[T], 
                            processor: Callable[[T], Awaitable[R]],
-                           batch_size: int = None) -> List[R]:
+                           batch_size: int = None) -> list[R]:
         """Process items in batches with concurrency control."""
         if batch_size is None:
             batch_size = self.max_concurrency
@@ -190,8 +190,8 @@ class BackgroundTaskManager:
     """Manage long-running background tasks."""
     
     def __init__(self):
-        self.tasks: Dict[str, asyncio.Task] = {}
-        self.periodic_tasks: Dict[str, Dict] = {}
+        self.tasks: dict[str, asyncio.Task] = {}
+        self.periodic_tasks: dict[str, dict] = {}
         self.shutdown_event = asyncio.Event()
         self.logger = logging.getLogger(__name__)
     
@@ -487,7 +487,7 @@ class DatabasePool:
         
         logging.info(f"Closed {connections_closed} database connections")
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get pool statistics."""
         return {
             'pool_size': self.pool_size,
@@ -559,7 +559,7 @@ class HTTPClientPool:
             ttl_dns_cache=300
         )
         
-        self.session: Optional[aiohttp.ClientSession] = None
+        self.session: aiohttp.ClientSession | None = None
         self.request_stats = {
             'total_requests': 0,
             'successful_requests': 0,
@@ -575,15 +575,15 @@ class HTTPClientPool:
                 timeout=self.timeout
             )
     
-    async def get(self, url: str, **kwargs) -> Dict[str, Any]:
+    async def get(self, url: str, **kwargs) -> dict[str, Any]:
         """Make GET request."""
         return await self._make_request('GET', url, **kwargs)
     
-    async def post(self, url: str, **kwargs) -> Dict[str, Any]:
+    async def post(self, url: str, **kwargs) -> dict[str, Any]:
         """Make POST request."""
         return await self._make_request('POST', url, **kwargs)
     
-    async def _make_request(self, method: str, url: str, **kwargs) -> Dict[str, Any]:
+    async def _make_request(self, method: str, url: str, **kwargs) -> dict[str, Any]:
         """Make HTTP request with connection pooling."""
         if not self.session:
             await self.initialize()
@@ -616,7 +616,7 @@ class HTTPClientPool:
             await self.session.close()
             self.session = None
     
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """Get client statistics."""
         return {
             'connection_info': {
@@ -680,12 +680,12 @@ class RequestContextManager:
     """Manage request context across async operations."""
     
     def __init__(self):
-        self.active_contexts: Dict[str, Dict[str, Any]] = {}
+        self.active_contexts: dict[str, dict[str, Any]] = {}
     
     @asynccontextmanager
     async def request_context(self, 
                             req_id: str, 
-                            user_info: Dict[str, Any] = None,
+                            user_info: dict[str, Any] = None,
                             correlation: str = None):
         """Create request context."""
         
@@ -713,21 +713,21 @@ class RequestContextManager:
             # Cleanup context
             self.active_contexts.pop(req_id, None)
     
-    def get_current_request_id(self) -> Optional[str]:
+    def get_current_request_id(self) -> str | None:
         """Get current request ID."""
         try:
             return request_id.get()
         except LookupError:
             return None
     
-    def get_current_user(self) -> Optional[Dict[str, Any]]:
+    def get_current_user(self) -> dict[str, Any] | None:
         """Get current user context."""
         try:
             return user_context.get()
         except LookupError:
             return None
     
-    def get_correlation_id(self) -> Optional[str]:
+    def get_correlation_id(self) -> str | None:
         """Get current correlation ID."""
         try:
             return correlation_id.get()
@@ -805,8 +805,8 @@ class AsyncErrorHandler:
     """Handle errors in async operations with retry and circuit breaker."""
     
     def __init__(self):
-        self.circuit_breakers: Dict[str, Dict] = {}
-        self.retry_stats: Dict[str, Dict] = {}
+        self.circuit_breakers: dict[str, dict] = {}
+        self.retry_stats: dict[str, dict] = {}
     
     async def with_retry(self,
                         operation: Callable[[], Awaitable[T]],

@@ -739,7 +739,6 @@ custom_limiter = RateLimiterFactory.create_custom(capacity=75.0, refill_rate=25.
 
 ```python
 import os
-from typing import Optional
 
 class RateLimitSettings:
     """Rate limiting settings from environment variables."""
