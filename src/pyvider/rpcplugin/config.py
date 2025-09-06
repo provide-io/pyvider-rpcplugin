@@ -28,7 +28,7 @@ from attrs import define
 from provide.foundation import logger
 from provide.foundation.config import (
     BaseConfig,
-    EnvConfig,
+    RuntimeConfig,
     field,
     validate_choice,
     validate_non_negative,
@@ -107,7 +107,7 @@ def validate_protocol_version_list(instance, attribute, value):
 
 
 @define(slots=True, repr=False)
-class RPCPluginConfig(EnvConfig):
+class RPCPluginConfig(RuntimeConfig):
     """
     Foundation-based configuration for Pyvider RPC Plugin.
     
