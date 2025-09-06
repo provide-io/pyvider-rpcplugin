@@ -9,7 +9,10 @@
       "Bash(find:*)",
       "Bash(grep:*)",
       "Bash(source env.sh)",
-      "Bash(python -m pytest tests/utils/test_rate_limiting.py -v)"
+      "Bash(python -m pytest tests/utils/test_rate_limiting.py -v)",
+      "Bash(python -m pytest tests/utils/test_rate_limiting.py::TestTokenBucketRateLimiter::test_init_validates_parameters -v)",
+      "Bash(python:*)",
+      "Bash(python -m pytest tests/utils/test_rate_limiting.py::TestTokenBucketRateLimiter::test_get_current_tokens -v)"
     ],
     "deny": [],
     "ask": [],
