@@ -125,23 +125,22 @@ class HealthyPluginServer:
 
 ## Custom Health Indicators
 
-### Comprehensive Health Monitoring
+### Advanced Health Monitoring
 
 ```python
 import time
 import psutil
 from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 
 @dataclass
 class HealthMetric:
     """Individual health metric."""
     name: str
-    value: Any
-    threshold: Optional[Any] = None
+    value: any
     status: str = "healthy"  # healthy, warning, critical
     message: str = ""
+    threshold: any = None
     last_updated: datetime = field(default_factory=datetime.now)
 
 @dataclass
@@ -149,7 +148,7 @@ class HealthReport:
     """Complete health report."""
     overall_status: str = "healthy"
     timestamp: datetime = field(default_factory=datetime.now)
-    metrics: Dict[str, HealthMetric] = field(default_factory=dict)
+    metrics: dict[str, HealthMetric] = field(default_factory=dict)
     uptime_seconds: float = 0
     version: str = "1.0.0"
     
@@ -157,7 +156,6 @@ class HealthReport:
         """Add a health metric to the report."""
         self.metrics[metric.name] = metric
         
-        # Update overall status based on worst metric
         if metric.status == "critical":
             self.overall_status = "critical"
         elif metric.status == "warning" and self.overall_status != "critical":
@@ -168,16 +166,8 @@ class AdvancedHealthChecker:
     
     def __init__(self):
         self.start_time = time.time()
-        self.request_stats = {
-            "total_requests": 0,
-            "failed_requests": 0,
-            "avg_response_time": 0.0
-        }
-        self.resource_thresholds = {
-            "cpu_percent": 80.0,
-            "memory_percent": 85.0,
-            "disk_usage_percent": 90.0
-        }
+        self.request_stats = {"total_requests": 0, "failed_requests": 0, "avg_response_time": 0.0}
+        self.resource_thresholds = {"cpu_percent": 80.0, "memory_percent": 85.0, "disk_usage_percent": 90.0}
         self.external_dependencies = {}
     
     def register_dependency(self, name: str, health_checker: callable):
@@ -189,17 +179,9 @@ class AdvancedHealthChecker:
         report = HealthReport()
         report.uptime_seconds = time.time() - self.start_time
         
-        # System resource metrics
         await self._check_system_resources(report)
-        
-        # Application metrics
         await self._check_application_metrics(report)
-        
-        # External dependencies
         await self._check_external_dependencies(report)
-        
-        # Custom business logic checks
-        await self._check_business_logic(report)
         
         return report
     
@@ -208,107 +190,59 @@ class AdvancedHealthChecker:
         try:
             # CPU usage
             cpu_percent = psutil.cpu_percent(interval=1)
-            cpu_status = "healthy"
-            if cpu_percent > self.resource_thresholds["cpu_percent"]:
-                cpu_status = "critical"
-            elif cpu_percent > self.resource_thresholds["cpu_percent"] * 0.8:
-                cpu_status = "warning"
+            cpu_status = ("critical" if cpu_percent > self.resource_thresholds["cpu_percent"] 
+                         else "warning" if cpu_percent > self.resource_thresholds["cpu_percent"] * 0.8 
+                         else "healthy")
             
             report.add_metric(HealthMetric(
-                name="cpu_usage",
-                value=cpu_percent,
-                threshold=self.resource_thresholds["cpu_percent"],
-                status=cpu_status,
-                message=f"CPU usage at {cpu_percent:.1f}%"
+                name="cpu_usage", value=cpu_percent, status=cpu_status,
+                message=f"CPU usage at {cpu_percent:.1f}%", threshold=self.resource_thresholds["cpu_percent"]
             ))
             
             # Memory usage
             memory = psutil.virtual_memory()
-            memory_status = "healthy"
-            if memory.percent > self.resource_thresholds["memory_percent"]:
-                memory_status = "critical"
-            elif memory.percent > self.resource_thresholds["memory_percent"] * 0.8:
-                memory_status = "warning"
+            memory_status = ("critical" if memory.percent > self.resource_thresholds["memory_percent"]
+                           else "warning" if memory.percent > self.resource_thresholds["memory_percent"] * 0.8
+                           else "healthy")
             
             report.add_metric(HealthMetric(
-                name="memory_usage",
-                value=memory.percent,
-                threshold=self.resource_thresholds["memory_percent"],
-                status=memory_status,
-                message=f"Memory usage at {memory.percent:.1f}% ({memory.used // 1024 // 1024} MB used)"
-            ))
-            
-            # Disk usage
-            disk = psutil.disk_usage('/')
-            disk_percent = (disk.used / disk.total) * 100
-            disk_status = "healthy"
-            if disk_percent > self.resource_thresholds["disk_usage_percent"]:
-                disk_status = "critical"
-            elif disk_percent > self.resource_thresholds["disk_usage_percent"] * 0.8:
-                disk_status = "warning"
-            
-            report.add_metric(HealthMetric(
-                name="disk_usage",
-                value=disk_percent,
-                threshold=self.resource_thresholds["disk_usage_percent"],
-                status=disk_status,
-                message=f"Disk usage at {disk_percent:.1f}%"
+                name="memory_usage", value=memory.percent, status=memory_status,
+                message=f"Memory usage at {memory.percent:.1f}%", threshold=self.resource_thresholds["memory_percent"]
             ))
             
         except Exception as e:
             report.add_metric(HealthMetric(
-                name="system_resources",
-                value="error",
-                status="critical",
+                name="system_resources", value="error", status="critical",
                 message=f"Failed to check system resources: {e}"
             ))
     
     async def _check_application_metrics(self, report: HealthReport):
         """Check application-specific metrics."""
         try:
-            # Request success rate
             total_requests = self.request_stats["total_requests"]
             failed_requests = self.request_stats["failed_requests"]
             
             if total_requests > 0:
                 success_rate = ((total_requests - failed_requests) / total_requests) * 100
-                success_status = "healthy"
-                
-                if success_rate < 95:
-                    success_status = "critical"
-                elif success_rate < 98:
-                    success_status = "warning"
+                success_status = ("critical" if success_rate < 95 else "warning" if success_rate < 98 else "healthy")
                 
                 report.add_metric(HealthMetric(
-                    name="request_success_rate",
-                    value=success_rate,
-                    threshold=95.0,
-                    status=success_status,
-                    message=f"Success rate: {success_rate:.1f}% ({total_requests} total requests)"
+                    name="request_success_rate", value=success_rate, status=success_status,
+                    message=f"Success rate: {success_rate:.1f}%", threshold=95.0
                 ))
             
-            # Average response time
             avg_response_time = self.request_stats["avg_response_time"]
-            response_time_status = "healthy"
-            
-            if avg_response_time > 5000:  # 5 seconds
-                response_time_status = "critical"
-            elif avg_response_time > 2000:  # 2 seconds
-                response_time_status = "warning"
+            response_time_status = ("critical" if avg_response_time > 5000 
+                                  else "warning" if avg_response_time > 2000 else "healthy")
             
             report.add_metric(HealthMetric(
-                name="avg_response_time",
-                value=avg_response_time,
-                threshold=2000,
-                status=response_time_status,
-                message=f"Average response time: {avg_response_time:.0f}ms"
+                name="avg_response_time", value=avg_response_time, status=response_time_status,
+                message=f"Average response time: {avg_response_time:.0f}ms", threshold=2000
             ))
             
         except Exception as e:
             report.add_metric(HealthMetric(
-                name="application_metrics",
-                value="error",
-                status="critical",
+                name="application_metrics", value="error", status="critical",
                 message=f"Failed to check application metrics: {e}"
             ))
     
@@ -316,85 +250,25 @@ class AdvancedHealthChecker:
         """Check external dependency health."""
         for name, checker in self.external_dependencies.items():
             try:
-                is_healthy = await asyncio.wait_for(
-                    self._run_dependency_checker(checker),
-                    timeout=5.0
-                )
-                
+                is_healthy = await asyncio.wait_for(checker(), timeout=5.0)
                 status = "healthy" if is_healthy else "critical"
-                message = f"Dependency {name} is {'available' if is_healthy else 'unavailable'}"
+                value = "available" if is_healthy else "unavailable"
                 
                 report.add_metric(HealthMetric(
-                    name=f"dependency_{name}",
-                    value="available" if is_healthy else "unavailable",
-                    status=status,
-                    message=message
+                    name=f"dependency_{name}", value=value, status=status,
+                    message=f"Dependency {name} is {value}"
                 ))
                 
             except asyncio.TimeoutError:
                 report.add_metric(HealthMetric(
-                    name=f"dependency_{name}",
-                    value="timeout",
-                    status="warning",
+                    name=f"dependency_{name}", value="timeout", status="warning",
                     message=f"Dependency {name} check timed out"
                 ))
             except Exception as e:
                 report.add_metric(HealthMetric(
-                    name=f"dependency_{name}",
-                    value="error",
-                    status="critical",
+                    name=f"dependency_{name}", value="error", status="critical",
                     message=f"Dependency {name} check failed: {e}"
                 ))
-    
-    async def _run_dependency_checker(self, checker: callable) -> bool:
-        """Run dependency health checker."""
-        if asyncio.iscoroutinefunction(checker):
-            return await checker()
-        else:
-            return checker()
-    
-    async def _check_business_logic(self, report: HealthReport):
-        """Check business logic specific health indicators."""
-        try:
-            # Example: Check if critical business process is working
-            business_process_healthy = await self._check_critical_business_process()
-            
-            report.add_metric(HealthMetric(
-                name="business_process",
-                value="operational" if business_process_healthy else "degraded",
-                status="healthy" if business_process_healthy else "warning",
-                message="Critical business process status"
-            ))
-            
-            # Example: Check data consistency
-            data_consistent = await self._check_data_consistency()
-            
-            report.add_metric(HealthMetric(
-                name="data_consistency",
-                value="consistent" if data_consistent else "inconsistent",
-                status="healthy" if data_consistent else "critical",
-                message="Data consistency check"
-            ))
-            
-        except Exception as e:
-            report.add_metric(HealthMetric(
-                name="business_logic",
-                value="error",
-                status="critical",
-                message=f"Business logic health check failed: {e}"
-            ))
-    
-    async def _check_critical_business_process(self) -> bool:
-        """Check if critical business process is operational."""
-        # Implement your business logic health check
-        await asyncio.sleep(0.01)  # Simulate check
-        return True
-    
-    async def _check_data_consistency(self) -> bool:
-        """Check data consistency."""
-        # Implement your data consistency check
-        await asyncio.sleep(0.01)  # Simulate check
-        return True
     
     def update_request_stats(self, response_time_ms: float, failed: bool = False):
         """Update request statistics."""
@@ -402,7 +276,6 @@ class AdvancedHealthChecker:
         if failed:
             self.request_stats["failed_requests"] += 1
         
-        # Update rolling average response time
         current_avg = self.request_stats["avg_response_time"]
         total = self.request_stats["total_requests"]
         self.request_stats["avg_response_time"] = ((current_avg * (total - 1)) + response_time_ms) / total
@@ -411,66 +284,34 @@ class AdvancedHealthChecker:
 class HealthAwareHandler:
     def __init__(self):
         self.health_checker = AdvancedHealthChecker()
-        
-        # Register external dependencies
-        self.health_checker.register_dependency("database", self.check_database)
-        self.health_checker.register_dependency("redis", self.check_redis)
-        self.health_checker.register_dependency("external_api", self.check_external_api)
+        self.health_checker.register_dependency("database", self._check_database)
+        self.health_checker.register_dependency("external_api", self._check_external_api)
     
-    async def check_database(self) -> bool:
+    async def _check_database(self) -> bool:
         """Check database connectivity."""
         # Implement actual database check
-        await asyncio.sleep(0.01)
         return True
     
-    async def check_redis(self) -> bool:
-        """Check Redis connectivity."""
-        # Implement actual Redis check
-        await asyncio.sleep(0.01)
-        return True
-    
-    async def check_external_api(self) -> bool:
+    async def _check_external_api(self) -> bool:
         """Check external API availability."""
         # Implement actual API check
-        await asyncio.sleep(0.01)
         return True
-    
-    async def SomeBusinessMethod(self, request, context):
-        """Example business method with health tracking."""
-        start_time = time.time()
-        failed = False
-        
-        try:
-            # Business logic here
-            result = await self.process_request(request)
-            return BusinessResponse(result=result)
-            
-        except Exception as e:
-            failed = True
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(str(e))
-            return BusinessResponse()
-        
-        finally:
-            # Update health statistics
-            response_time_ms = (time.time() - start_time) * 1000
-            self.health_checker.update_request_stats(response_time_ms, failed)
     
     async def GetHealthReport(self, request, context):
         """Get detailed health report."""
         try:
             report = await self.health_checker.get_comprehensive_health_report()
             
-            # Convert to response format
-            metrics = {}
-            for name, metric in report.metrics.items():
-                metrics[name] = {
+            metrics = {
+                name: {
                     "value": str(metric.value),
                     "status": metric.status,
                     "message": metric.message,
                     "threshold": str(metric.threshold) if metric.threshold else "",
                     "last_updated": metric.last_updated.isoformat()
                 }
+                for name, metric in report.metrics.items()
+            }
             
             return HealthReportResponse(
                 overall_status=report.overall_status,
