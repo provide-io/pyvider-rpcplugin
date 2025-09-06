@@ -593,41 +593,22 @@ class GatewayClient:
         timeout_ms: int = 30000
     ) -> dict[str, Any]:
         """Route request through gateway."""
-        request_payload = json.dumps(payload or {}).encode()
-        
         request = GatewayRequest(
-            service_name=service_name,
-            method=method,
-            payload=request_payload,
-            headers=headers or {},
-            client_id=client_id,
-            timeout_ms=timeout_ms
+            service_name=service_name, method=method,
+            payload=json.dumps(payload or {}).encode(),
+            headers=headers or {}, client_id=client_id, timeout_ms=timeout_ms
         )
         
-        try:
-            response = await self.stub.RouteRequest(request)
-            
-            result = {
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "response_time_ms": response.response_time_ms,
-                "backend_instance": response.backend_instance
-            }
-            
-            if response.payload:
-                try:
-                    result["data"] = json.loads(response.payload.decode())
-                except json.JSONDecodeError:
-                    result["data"] = response.payload.decode()
-            
-            if response.error_message:
-                result["error"] = response.error_message
-            
-            return result
+        response = await self.stub.RouteRequest(request)
+        result = {"status_code": response.status_code, "backend_instance": response.backend_instance}
         
-        except grpc.RpcError as e:
-            logger.error(f"Gateway request failed: {e.details()}")
-            raise
+        if response.payload:
+            try:
+                result["data"] = json.loads(response.payload.decode())
+            except json.JSONDecodeError:
+                result["data"] = response.payload.decode()
+        
+        return result
     
     async def register_service(self, service_name: str, instance_id: str, host: str, port: int, weight: int = 1) -> bool:
         request = ServiceRegistration(service_name=service_name, instance_id=instance_id, host=host, port=port, weight=weight)
