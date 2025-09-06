@@ -15,7 +15,29 @@ Before diving in, let's understand the key components:
 - **🔌 Plugin Process (Server)**: External executable providing specific services
 - **📡 RPC Communication**: gRPC-based calls between host and plugin
 - **🤝 Handshake**: Secure connection establishment with magic cookie authentication
-- **🏗️ Foundation**: Provides logging, configuration, cryptography, and utilities
+- **🏗️ Foundation**: Companion library providing logging, configuration, cryptography, and utilities
+
+### Foundation Integration
+
+Pyvider RPC Plugin is built on Foundation's infrastructure. Foundation provides:
+
+- **Configuration System**: Type-safe configuration with `RuntimeConfig`
+- **Structured Logging**: Consistent logging across all components
+- **Cryptography**: X.509 certificate management for mTLS
+- **Rate Limiting**: Token bucket rate limiting for servers
+- **Error Handling**: Standardized exception handling
+
+```python
+# Foundation imports you'll commonly use
+from provide.foundation import logger                    # Structured logging
+from provide.foundation.config import RuntimeConfig     # Configuration base
+from provide.foundation.crypto import Certificate       # TLS certificates 
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+
+# Pyvider RPC Plugin builds on Foundation
+from pyvider.rpcplugin import plugin_server, plugin_client
+from pyvider.rpcplugin.config import rpcplugin_config  # Extends RuntimeConfig
+```
 
 ## Your First Plugin
 
@@ -27,15 +49,21 @@ Create a file called `my_plugin.py`:
 #!/usr/bin/env python3
 """
 A minimal RPC plugin server example.
+
+Demonstrates Foundation integration:
+- Foundation provides structured logging via logger
+- Configuration is managed through Foundation's RuntimeConfig
+- Plugin extends Foundation's capabilities for RPC communication
 """
 import asyncio
 from pyvider.rpcplugin import plugin_protocol, plugin_server
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation's structured logging
 
 # Simple handler for demonstration
 class DummyHandler:
     def __init__(self):
         logger.info("🔌 Plugin handler initialized")
+        logger.debug("Foundation logging system active")
 
 async def main():
     logger.info("🚀 Starting plugin server...")
@@ -69,13 +97,18 @@ Create a file called `host_app.py`:
 #!/usr/bin/env python3
 """
 Host application that launches and connects to a plugin.
+
+Demonstrates Foundation integration:
+- Uses Foundation's logger for consistent output
+- Configuration is automatically loaded from environment
+- Error handling follows Foundation patterns
 """
 import asyncio
 import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation's structured logging
 
 async def main():
     logger.info("🚀 Starting host application...")
@@ -140,11 +173,19 @@ You should see output like:
 
 ## What Just Happened?
 
-1. **Plugin Launch**: The host application spawned `my_plugin.py` as a subprocess
-2. **Handshake**: Plugin server printed connection details to stdout
-3. **Connection**: Host application parsed handshake and established gRPC channel
-4. **Communication**: Both processes are now connected via RPC (ready for method calls)
-5. **Cleanup**: Host gracefully shut down the connection and plugin process
+1. **Foundation Bootstrap**: Foundation's logging and configuration systems initialized
+2. **Plugin Launch**: The host application spawned `my_plugin.py` as a subprocess
+3. **Handshake**: Plugin server printed connection details to stdout using Foundation logging
+4. **Connection**: Host application parsed handshake and established gRPC channel
+5. **Communication**: Both processes are now connected via RPC (ready for method calls)
+6. **Cleanup**: Host gracefully shut down the connection and plugin process
+
+### Foundation's Role
+
+- **Logging**: All log messages use Foundation's structured logging format
+- **Configuration**: Environment variables automatically loaded via Foundation's config system
+- **Transport**: Connection management follows Foundation's patterns
+- **Error Handling**: Exceptions use Foundation's standardized error types
 
 ## Key Concepts
 
