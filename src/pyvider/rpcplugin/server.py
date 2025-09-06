@@ -25,12 +25,10 @@ from grpc.aio import server as GRPCServer
 from grpc_health.v1 import health_pb2_grpc
 
 from pyvider.rpcplugin.config import (
-    CONFIG_SCHEMA,
     ConfigError,
-    _convert_value_to_schema_type,
     rpcplugin_config,
 )
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import (
     ProtocolError,
     SecurityError,
@@ -106,74 +104,31 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
         default="pyvider.default.plugin.Service", init=False
     )
 
-    def _get_config_value(self, key: str, default_value: Any = None) -> Any:
+    def _get_instance_override(self, key: str, default_value: Any) -> Any:
         """
-        Gets a config value, preferring instance config then global.
-        If the value from instance config is a string, it's converted using schema type.
+        Get instance config override if present, otherwise return default.
         """
         if isinstance(self.config, dict) and key in self.config:
             val = self.config[key]
-            schema_info = CONFIG_SCHEMA.get(key, {})
-            schema_type = schema_info.get("type")
-
-            if schema_type and isinstance(
-                val, str
-            ):  # Only convert if it's a string and schema type is known
-                try:
-                    return _convert_value_to_schema_type(val, schema_type, key)
-                except ConfigError as e:  # Catch conversion error to provide context
-                    logger.warning(
-                        f"Failed to convert instance config value for {key} ('{val}') "
-                        f"to {schema_type}: {e}. Using global or default."
-                    )
-                    # Fall through to global config if instance conversion fails
-            elif (
-                schema_type and val is None and schema_type in ("list_str", "list_int")
-            ):
-                # If instance config explicitly sets a list type to None,
-                # return empty list
-                return []
-            elif (
-                val is not None
-            ):  # If not a string needing conversion, or no schema_type, return as is
+            if val is not None:
                 return val
-            # If val is None and not a list type, fall through to global/default
-
-        # Fallback to global config if key not in self.config,
-        # self.config is None, or if instance value was None and not a list
-        # type (to allow global default to apply).
-        return rpcplugin_config.get(key, default_value)
+        return default_value
 
     def __attrs_post_init__(self) -> None:
         try:
-            # Ensure that default_value for list types is an empty list
-            # so that _get_config_value can correctly process it if the key
-            # is entirely missing.
-            pv_default = (
-                rpcplugin_config.get_list("PLUGIN_PROTOCOL_VERSIONS")
-                if not isinstance(self.config, dict)
-                or "PLUGIN_PROTOCOL_VERSIONS" not in self.config
-                else []
-            )
-            st_default = (
-                rpcplugin_config.get_list("PLUGIN_SERVER_TRANSPORTS")
-                if not isinstance(self.config, dict)
-                or "PLUGIN_SERVER_TRANSPORTS" not in self.config
-                else []
-            )
-
+            # Use direct attribute access with instance config overrides
             self._handshake_config = HandshakeConfig(
-                magic_cookie_key=self._get_config_value(
-                    "PLUGIN_MAGIC_COOKIE_KEY", rpcplugin_config.magic_cookie_key()
+                magic_cookie_key=self._get_instance_override(
+                    "PLUGIN_MAGIC_COOKIE_KEY", rpcplugin_config.plugin_magic_cookie_key
                 ),
-                magic_cookie_value=self._get_config_value(
-                    "PLUGIN_MAGIC_COOKIE_VALUE", rpcplugin_config.magic_cookie_value()
+                magic_cookie_value=self._get_instance_override(
+                    "PLUGIN_MAGIC_COOKIE_VALUE", rpcplugin_config.plugin_magic_cookie_value
                 ),
-                protocol_versions=self._get_config_value(
-                    "PLUGIN_PROTOCOL_VERSIONS", pv_default
+                protocol_versions=self._get_instance_override(
+                    "PLUGIN_PROTOCOL_VERSIONS", rpcplugin_config.plugin_protocol_versions
                 ),
-                supported_transports=self._get_config_value(
-                    "PLUGIN_SERVER_TRANSPORTS", st_default
+                supported_transports=self._get_instance_override(
+                    "PLUGIN_SERVER_TRANSPORTS", rpcplugin_config.plugin_server_transports
                 ),
             )
         except ConfigError:
@@ -188,18 +143,20 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
             self._transport = self.transport
 
         self._serving_future = asyncio.Future()
-        self._shutdown_file_path = self._get_config_value("PLUGIN_SHUTDOWN_FILE_PATH")
+        self._shutdown_file_path = self._get_instance_override(
+            "PLUGIN_SHUTDOWN_FILE_PATH", rpcplugin_config.plugin_shutdown_file_path
+        )
 
-        if self._get_config_value(
-            "PLUGIN_RATE_LIMIT_ENABLED", rpcplugin_config.rate_limit_enabled()
+        if self._get_instance_override(
+            "PLUGIN_RATE_LIMIT_ENABLED", rpcplugin_config.plugin_rate_limit_enabled
         ):
-            capacity = self._get_config_value(
+            capacity = self._get_instance_override(
                 "PLUGIN_RATE_LIMIT_BURST_CAPACITY",
-                rpcplugin_config.rate_limit_burst_capacity(),
+                rpcplugin_config.plugin_rate_limit_burst_capacity,
             )
-            refill_rate = self._get_config_value(
+            refill_rate = self._get_instance_override(
                 "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND",
-                rpcplugin_config.rate_limit_requests_per_second(),
+                rpcplugin_config.plugin_rate_limit_requests_per_second,
             )
             if capacity > 0 and refill_rate > 0:
                 self._rate_limiter = TokenBucketRateLimiter(
@@ -213,8 +170,8 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
             if protocol_class_service_name:
                 self._main_service_name = protocol_class_service_name
 
-        if self._get_config_value(
-            "PLUGIN_HEALTH_SERVICE_ENABLED", rpcplugin_config.health_service_enabled()
+        if self._get_instance_override(
+            "PLUGIN_HEALTH_SERVICE_ENABLED", rpcplugin_config.plugin_health_service_enabled
         ):
             self._health_servicer = HealthServicer(
                 app_is_healthy_callable=self._is_main_app_healthy,
@@ -303,17 +260,24 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
 
     def _read_client_cert(
         self,
-    ) -> str | None:  # Not strictly needed if _get_config_value is used directly
-        return self._get_config_value("PLUGIN_CLIENT_CERT")
+    ) -> str | None:
+        return self._get_instance_override(
+            "PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert
+        )
 
     def _generate_server_credentials(self) -> grpc.ServerCredentials | None:
-        server_cert_conf = self._get_config_value("PLUGIN_SERVER_CERT")
-        server_key_conf = self._get_config_value("PLUGIN_SERVER_KEY")
-        # For boolean, use the specific global helper as default for clarity
-        auto_mtls = self._get_config_value(
-            "PLUGIN_AUTO_MTLS", rpcplugin_config.auto_mtls_enabled()
+        server_cert_conf = self._get_instance_override(
+            "PLUGIN_SERVER_CERT", rpcplugin_config.plugin_server_cert
         )
-        client_root_certs_conf = self._get_config_value("PLUGIN_CLIENT_ROOT_CERTS")
+        server_key_conf = self._get_instance_override(
+            "PLUGIN_SERVER_KEY", rpcplugin_config.plugin_server_key
+        )
+        auto_mtls = self._get_instance_override(
+            "PLUGIN_AUTO_MTLS", rpcplugin_config.plugin_auto_mtls
+        )
+        client_root_certs_conf = self._get_instance_override(
+            "PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs
+        )
 
         if not auto_mtls and not (server_cert_conf and server_key_conf):
             logger.info(
@@ -494,7 +458,9 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT]):
                 else:
                     # No specific port on direct transport, or no direct
                     # transport, check config
-                    endpoint_conf = self._get_config_value("PLUGIN_SERVER_ENDPOINT")
+                    endpoint_conf = self._get_instance_override(
+                        "PLUGIN_SERVER_ENDPOINT", rpcplugin_config.plugin_server_endpoint
+                    )
                     if (
                         endpoint_conf
                         and isinstance(endpoint_conf, str)

@@ -28,7 +28,7 @@ from cryptography.x509 import Certificate as X509Certificate
 from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from pyvider.rpcplugin.exception import CertificateError
-from provide.foundation import logger
+from pyvider.telemetry import logger
 
 # =============================================================================
 # Supported Key Types and Curve Types
