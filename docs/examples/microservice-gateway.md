@@ -237,14 +237,11 @@ class ServiceRegistry:
         return instance
 
 class CircuitBreaker:
-    """Circuit breaker for fault tolerance."""
-    
     def __init__(self, failure_threshold: int = 5, timeout: int = 60):
         self.failure_threshold = failure_threshold
         self.timeout = timeout
     
     def should_allow_request(self, instance: BackendInstance) -> bool:
-        """Check if request should be allowed."""
         current_time = time.time()
         if instance.circuit_breaker_state == "OPEN":
             if current_time - instance.circuit_breaker_last_failure > self.timeout:
@@ -254,13 +251,11 @@ class CircuitBreaker:
         return True
     
     def record_success(self, instance: BackendInstance):
-        """Record successful request."""
         if instance.circuit_breaker_state == "HALF_OPEN":
             instance.circuit_breaker_state = "CLOSED"
             instance.circuit_breaker_failures = 0
     
     def record_failure(self, instance: BackendInstance):
-        """Record failed request."""
         instance.circuit_breaker_failures += 1
         instance.circuit_breaker_last_failure = time.time()
         if instance.circuit_breaker_failures >= self.failure_threshold:
@@ -268,8 +263,6 @@ class CircuitBreaker:
             logger.warning(f"Circuit breaker OPEN for {instance.instance_id}")
 
 class RateLimiter:
-    """Token bucket rate limiter."""
-    
     def __init__(self, requests_per_second: int = 1000):
         self.requests_per_second = requests_per_second
         self.buckets: dict[str, dict[str, float]] = defaultdict(
@@ -277,7 +270,6 @@ class RateLimiter:
         )
     
     def is_allowed(self, client_id: str) -> bool:
-        """Check if request is allowed for client."""
         current_time = time.time()
         bucket = self.buckets[client_id]
         
@@ -292,8 +284,6 @@ class RateLimiter:
         return False
 
 class GatewayServicer(GatewayServiceServicer):
-    """Microservice gateway implementation."""
-    
     def __init__(self):
         self.services: dict[str, ServiceRegistry] = defaultdict(ServiceRegistry)
         self.circuit_breaker = CircuitBreaker()
@@ -306,20 +296,14 @@ class GatewayServicer(GatewayServiceServicer):
         asyncio.create_task(self._health_check_loop())
         logger.info("Gateway service initialized")
     
-    async def RouteRequest(
-        self, 
-        request: GatewayRequest, 
-        context: ServicerContext
-    ) -> GatewayResponse:
-        """Route request to backend service."""
+    async def RouteRequest(self, request: GatewayRequest, context: ServicerContext) -> GatewayResponse:
         start_time = time.perf_counter()
         self.metrics["total_requests"] += 1
         
-        # Rate limiting
+        # Rate limiting and authentication
         if not self.rate_limiter.is_allowed(request.client_id):
             await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded")
         
-        # Authentication (if token provided)
         auth_token = request.headers.get("authorization")
         if auth_token and not await self._validate_auth_token(auth_token):
             await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid token")
@@ -333,25 +317,23 @@ class GatewayServicer(GatewayServiceServicer):
         if not instance or not self.circuit_breaker.should_allow_request(instance):
             await context.abort(grpc.StatusCode.UNAVAILABLE, "No healthy instances available")
         
-        # Forward request and handle response
+        # Forward request
         try:
             response = await self._forward_request(request, instance)
             response_time = (time.perf_counter() - start_time) * 1000
             
-            # Record metrics and success
+            # Record success
             instance.response_times.append(response_time)
             self.metrics["response_times"].append(response_time)
             instance.request_count += 1
             self.circuit_breaker.record_success(instance)
             
-            # Add gateway headers
             response.headers["X-Gateway-Instance"] = instance.instance_id
             response.response_time_ms = int(response_time)
             response.backend_instance = f"{instance.host}:{instance.port}"
             return response
         
         except Exception as e:
-            # Record failure and return error response
             logger.error(f"Request forwarding failed: {e}")
             instance.error_count += 1
             self.metrics["total_errors"] += 1
@@ -364,12 +346,7 @@ class GatewayServicer(GatewayServiceServicer):
                 backend_instance=f"{instance.host}:{instance.port}"
             )
     
-    async def RouteStream(
-        self, 
-        request_iterator: AsyncIterator[GatewayRequest], 
-        context: ServicerContext
-    ) -> AsyncIterator[GatewayResponse]:
-        """Route streaming requests."""
+    async def RouteStream(self, request_iterator: AsyncIterator[GatewayRequest], context: ServicerContext) -> AsyncIterator[GatewayResponse]:
         async for request in request_iterator:
             try:
                 yield await self.RouteRequest(request, context)
