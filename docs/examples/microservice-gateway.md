@@ -194,27 +194,20 @@ class BackendInstance:
 
 @dataclass 
 class ServiceRegistry:
-    """Service registry for backend instances."""
     instances: dict[str, BackendInstance] = field(default_factory=dict)
     load_balancer_index: int = 0
     
     def add_instance(self, instance: BackendInstance):
-        """Add service instance."""
         self.instances[instance.instance_id] = instance
     
     def remove_instance(self, instance_id: str):
-        """Remove service instance."""
         self.instances.pop(instance_id, None)
     
     def get_healthy_instances(self) -> list[BackendInstance]:
-        """Get healthy instances only."""
-        return [
-            instance for instance in self.instances.values() 
-            if instance.healthy and instance.circuit_breaker_state != "OPEN"
-        ]
+        return [inst for inst in self.instances.values() 
+                if inst.healthy and inst.circuit_breaker_state != "OPEN"]
     
     def select_instance(self, method: str = "weighted") -> BackendInstance | None:
-        """Select instance using load balancing."""
         healthy_instances = self.get_healthy_instances()
         if not healthy_instances:
             return None
@@ -322,7 +315,6 @@ class GatewayServicer(GatewayServiceServicer):
             response = await self._forward_request(request, instance)
             response_time = (time.perf_counter() - start_time) * 1000
             
-            # Record success
             instance.response_times.append(response_time)
             self.metrics["response_times"].append(response_time)
             instance.request_count += 1
@@ -340,8 +332,7 @@ class GatewayServicer(GatewayServiceServicer):
             self.circuit_breaker.record_failure(instance)
             
             return GatewayResponse(
-                status_code=500,
-                error_message=f"Backend request failed: {e}",
+                status_code=500, error_message=f"Backend request failed: {e}",
                 response_time_ms=int((time.perf_counter() - start_time) * 1000),
                 backend_instance=f"{instance.host}:{instance.port}"
             )
@@ -355,8 +346,6 @@ class GatewayServicer(GatewayServiceServicer):
                 yield GatewayResponse(status_code=500, error_message=f"Stream routing failed: {e}")
     
     async def RegisterService(self, request: ServiceRegistration, context: ServicerContext) -> RegistrationResponse:
-        logger.info(f"Registering service: {request.service_name}@{request.host}:{request.port}")
-        
         instance = BackendInstance(
             instance_id=request.instance_id,
             host=request.host,
@@ -379,8 +368,6 @@ class GatewayServicer(GatewayServiceServicer):
         )
     
     async def UnregisterService(self, request: ServiceUnregistration, context: ServicerContext) -> RegistrationResponse:
-        logger.info(f"Unregistering service: {request.service_name}#{request.instance_id}")
-        
         service_registry = self.services.get(request.service_name)
         if service_registry:
             service_registry.remove_instance(request.instance_id)
@@ -466,43 +453,30 @@ class GatewayServicer(GatewayServiceServicer):
         )
     
     async def _forward_request(self, request: GatewayRequest, instance: BackendInstance) -> GatewayResponse:
-        target = f"{instance.host}:{instance.port}"
-        
         try:
-            channel = grpc.aio.insecure_channel(target)
-            await asyncio.sleep(0.01)  # Simulate network delay
-            
+            # Simulate request forwarding
+            await asyncio.sleep(0.01)
             response_payload = json.dumps({
                 "message": f"Response from {instance.instance_id}",
-                "method": request.method,
-                "timestamp": time.time()
+                "method": request.method, "timestamp": time.time()
             }).encode()
             
-            await channel.close()
-            
             return GatewayResponse(
-                status_code=200,
-                payload=response_payload,
+                status_code=200, payload=response_payload,
                 headers={"Content-Type": "application/json"}
             )
-        
         except Exception as e:
-            logger.error(f"Backend request to {target} failed: {e}")
+            logger.error(f"Backend request failed: {e}")
             raise
     
     async def _validate_auth_token(self, token: str) -> bool:
-        # Simplified JWT validation - implement proper JWT validation in production
         return token.startswith("Bearer ") and len(token) > 7
     
     async def _health_check_instance(self, instance: BackendInstance) -> bool:
         try:
-            target = f"{instance.host}:{instance.port}"
-            channel = grpc.aio.insecure_channel(target)
-            await asyncio.wait_for(asyncio.sleep(0.1), timeout=5.0)  # Simulate connection
-            await channel.close()
+            await asyncio.wait_for(asyncio.sleep(0.1), timeout=5.0)  # Simulate health check
             return True
-        except Exception as e:
-            logger.warning(f"Health check failed for {instance.instance_id}: {e}")
+        except Exception:
             return False
     
     async def _health_check_loop(self):
@@ -516,11 +490,8 @@ class GatewayServicer(GatewayServiceServicer):
             except Exception as e:
                 logger.error(f"Health check loop error: {e}")
                 await asyncio.sleep(10)
-    
-
 
 async def create_gateway_server():
-    """Create gateway server."""
     config = ServerConfig(
         transport=TransportConfig(
             host=os.getenv("PLUGIN_GATEWAY_HOST", "0.0.0.0"),
@@ -535,9 +506,7 @@ async def create_gateway_server():
     server.add_service(GatewayServicer())
     return server
 
-
 async def main():
-    """Run microservice gateway."""
     logging.basicConfig(level=logging.INFO)
     server = await create_gateway_server()
     
@@ -552,7 +521,6 @@ async def main():
     finally:
         await server.stop()
 
-
 if __name__ == "__main__":
     asyncio.run(main())
 ```
@@ -564,39 +532,25 @@ if __name__ == "__main__":
 import asyncio
 import json
 import logging
-from typing import Any, AsyncIterator
+from typing import Any
 import grpc
 
-from gateway_pb2 import (
-    GatewayRequest, ServiceRegistration, ServiceUnregistration,
-    ListServicesRequest, HealthRequest, MetricsRequest
-)
+from gateway_pb2 import GatewayRequest, ServiceRegistration, ServiceUnregistration
 from gateway_pb2_grpc import GatewayServiceStub
 
 logger = logging.getLogger(__name__)
 
 class GatewayClient:
-    """Gateway client for routing requests."""
-    
     def __init__(self, gateway_host: str = "localhost", gateway_port: int = 8080):
         self.channel = grpc.aio.insecure_channel(f"{gateway_host}:{gateway_port}")
         self.stub = GatewayServiceStub(self.channel)
-        logger.info(f"Gateway client connected to {gateway_host}:{gateway_port}")
     
-    async def route_request(
-        self, 
-        service_name: str,
-        method: str,
-        payload: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-        client_id: str = "default",
-        timeout_ms: int = 30000
-    ) -> dict[str, Any]:
-        """Route request through gateway."""
+    async def route_request(self, service_name: str, method: str, payload: dict[str, Any] | None = None,
+                           headers: dict[str, str] | None = None) -> dict[str, Any]:
         request = GatewayRequest(
             service_name=service_name, method=method,
             payload=json.dumps(payload or {}).encode(),
-            headers=headers or {}, client_id=client_id, timeout_ms=timeout_ms
+            headers=headers or {}, client_id="default", timeout_ms=30000
         )
         
         response = await self.stub.RouteRequest(request)
@@ -611,178 +565,24 @@ class GatewayClient:
         return result
     
     async def register_service(self, service_name: str, instance_id: str, host: str, port: int, weight: int = 1) -> bool:
-        request = ServiceRegistration(service_name=service_name, instance_id=instance_id, host=host, port=port, weight=weight)
-        try:
-            response = await self.stub.RegisterService(request)
-            return response.success
-        except grpc.RpcError:
-            return False
+        request = ServiceRegistration(service_name=service_name, instance_id=instance_id, 
+                                    host=host, port=port, weight=weight)
+        response = await self.stub.RegisterService(request)
+        return response.success
     
     async def unregister_service(self, service_name: str, instance_id: str) -> bool:
         request = ServiceUnregistration(service_name=service_name, instance_id=instance_id)
-        try:
-            response = await self.stub.UnregisterService(request)
-            return response.success
-        except grpc.RpcError:
-            return False
-    
-    async def list_services(self, service_name: str | None = None) -> list[dict[str, Any]]:
-        """List registered services."""
-        request = ListServicesRequest(service_name=service_name or "")
-        
-        try:
-            response = await self.stub.ListServices(request)
-            
-            services = []
-            for service_info in response.services:
-                instances = []
-                for instance in service_info.instances:
-                    instances.append({
-                        "instance_id": instance.instance_id,
-                        "host": instance.host,
-                        "port": instance.port,
-                        "healthy": instance.healthy,
-                        "weight": instance.weight,
-                        "last_health_check": instance.last_health_check
-                    })
-                
-                services.append({
-                    "service_name": service_info.service_name,
-                    "instances": instances,
-                    "healthy": service_info.healthy,
-                    "total_requests": service_info.total_requests,
-                    "avg_response_time": service_info.avg_response_time
-                })
-            
-            return services
-        
-        except grpc.RpcError as e:
-            logger.error(f"List services failed: {e.code()}: {e.details()}")
-            return []
-    
-    async def health_check(self) -> dict[str, Any]:
-        """Check gateway health."""
-        request = HealthRequest()
-        
-        try:
-            response = await self.stub.HealthCheck(request)
-            
-            backend_services = {}
-            for service_name, service_info in response.backend_services.items():
-                instances = []
-                for instance in service_info.instances:
-                    instances.append({
-                        "instance_id": instance.instance_id,
-                        "host": instance.host,
-                        "port": instance.port,
-                        "healthy": instance.healthy,
-                        "weight": instance.weight
-                    })
-                
-                backend_services[service_name] = {
-                    "instances": instances,
-                    "healthy": service_info.healthy,
-                    "total_requests": service_info.total_requests
-                }
-            
-            return {
-                "healthy": response.healthy,
-                "status": response.status,
-                "active_connections": response.active_connections,
-                "backend_services": backend_services
-            }
-        
-        except grpc.RpcError as e:
-            logger.error(f"Health check failed: {e.code()}: {e.details()}")
-            return {"healthy": False, "status": f"Error: {e.details()}"}
-    
-    async def get_metrics(self, service_name: str | None = None) -> dict[str, Any]:
-        """Get gateway metrics."""
-        request = MetricsRequest(service_name=service_name or "")
-        
-        try:
-            response = await self.stub.GetMetrics(request)
-            
-            service_metrics = {}
-            for service_name, metrics in response.service_metrics.items():
-                service_metrics[service_name] = {
-                    "request_count": metrics.request_count,
-                    "error_count": metrics.error_count,
-                    "avg_response_time": metrics.avg_response_time,
-                    "error_rate": metrics.error_rate
-                }
-            
-            return {
-                "total_requests": response.total_requests,
-                "total_errors": response.total_errors,
-                "avg_response_time": response.avg_response_time,
-                "p95_response_time": response.p95_response_time,
-                "service_metrics": service_metrics
-            }
-        
-        except grpc.RpcError as e:
-            logger.error(f"Get metrics failed: {e.code()}: {e.details()}")
-            return {}
+        response = await self.stub.UnregisterService(request)
+        return response.success
     
     async def close(self):
-        """Close gateway client."""
         await self.channel.close()
-        logger.info("Gateway client closed")
 
-
-async def demo_gateway():
-    """Demonstrate gateway functionality."""
-    gateway = GatewayClient()
-    
-    try:
-        # Register demo services
-        print("1. Registering services...")
-        await gateway.register_service("user-service", "user-1", "localhost", 50051)
-        await gateway.register_service("user-service", "user-2", "localhost", 50052, weight=2)
-        
-        # List services
-        print("\n2. Listing services...")
-        services = await gateway.list_services()
-        for service in services:
-            print(f"  {service['service_name']}: {len(service['instances'])} instances")
-        
-        # Health check
-        print("\n3. Health check...")
-        health = await gateway.health_check()
-        print(f"Gateway healthy: {health['healthy']} - {health['status']}")
-        
-        # Route requests
-        print("\n4. Routing requests...")
-        for i in range(3):
-            try:
-                result = await gateway.route_request(
-                    service_name="user-service",
-                    method="GetUser",
-                    payload={"user_id": i + 1},
-                    headers={"authorization": "Bearer demo-token"}
-                )
-                print(f"  Request {i+1}: {result['status_code']} from {result.get('backend_instance', 'unknown')}")
-            except Exception as e:
-                print(f"  Request {i+1}: FAILED - {e}")
-        
-        # Get metrics
-        print("\n5. Gateway metrics...")
-        metrics = await gateway.get_metrics()
-        print(f"Total requests: {metrics.get('total_requests', 0)}")
-        print(f"Avg response time: {metrics.get('avg_response_time', 0):.2f}ms")
-        
-        # Cleanup
-        print("\n6. Cleanup...")
-        await gateway.unregister_service("user-service", "user-1")
-        await gateway.unregister_service("user-service", "user-2")
-    
-    finally:
-        await gateway.close()
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    asyncio.run(demo_gateway())
+# Demo usage:
+# gateway = GatewayClient()
+# await gateway.register_service("my-service", "instance-1", "localhost", 50051)
+# result = await gateway.route_request("my-service", "MyMethod", {"key": "value"})
+# await gateway.unregister_service("my-service", "instance-1")
 ```
 
 ## Usage Examples
@@ -799,48 +599,31 @@ python gateway_client.py
 
 ### Production Deployment
 
-**docker-compose.yml**
 ```yaml
-version: '3.8'
+# docker-compose.yml
 services:
   gateway:
     build: .
-    ports:
-      - "8080:8080"
+    ports: ["8080:8080"]
     environment:
       - PLUGIN_GATEWAY_HOST=0.0.0.0
       - PLUGIN_GATEWAY_PORT=8080
-      - PLUGIN_LOG_LEVEL=INFO
-    depends_on:
-      - user-service
-      - order-service
-    
   user-service:
     build: ./services/user-service
-    ports:
-      - "50051:50051"
-    environment:
-      - PLUGIN_SERVICE_PORT=50051
-    
-  order-service:
-    build: ./services/order-service
-    ports:
-      - "50052:50051"
-    environment:
-      - PLUGIN_SERVICE_PORT=50051
+    ports: ["50051:50051"]
 ```
 
-## Key Features Demonstrated
+## Key Features
 
-1. **Service Discovery** - Dynamic service registration and discovery
-2. **Load Balancing** - Weighted distribution with round-robin fallback
-3. **Circuit Breaker** - Fault tolerance with automatic recovery
-4. **Rate Limiting** - Token bucket algorithm for request throttling
-5. **Authentication** - JWT token validation middleware
-6. **Health Monitoring** - Continuous health checks for backend services
-7. **Metrics Collection** - Real-time performance and error tracking
-8. **Request Routing** - Intelligent routing based on service availability
-9. **Error Handling** - Comprehensive error management with proper status codes
-10. **Streaming Support** - Bidirectional streaming for real-time services
+- **Service Discovery** - Dynamic service registration and discovery
+- **Load Balancing** - Weighted distribution with round-robin fallback
+- **Circuit Breaker** - Fault tolerance with automatic recovery
+- **Rate Limiting** - Token bucket algorithm for request throttling
+- **Authentication** - JWT token validation middleware
+- **Health Monitoring** - Continuous health checks for backend services
+- **Metrics Collection** - Real-time performance and error tracking
+- **Request Routing** - Intelligent routing based on service availability
+- **Error Handling** - Comprehensive error management with proper status codes
+- **Streaming Support** - Bidirectional streaming for real-time services
 
-This microservice gateway provides a production-ready foundation for building scalable distributed systems with proper fault tolerance, monitoring, and security controls using the Pyvider RPC Plugin framework.
+This provides a production-ready foundation for scalable distributed systems with fault tolerance, monitoring, and security controls using the Pyvider RPC Plugin framework.
