@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.handshake import (
     build_handshake_response,
     parse_handshake_response,

@@ -7,7 +7,7 @@ from pyvider.rpcplugin.handshake import (
     build_handshake_response,
     parse_handshake_response,
 )
-from pyvider.rpcplugin.crypto import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.config import rpcplugin_config
 

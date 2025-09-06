@@ -4,7 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from pyvider.rpcplugin.client.base import RPCPluginClient
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 
 
 def test_client_initialization(test_client_command):

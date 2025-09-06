@@ -5,7 +5,7 @@ import pytest
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 
-class TestTransport(RPCPluginTransport):
+class MockTransport(RPCPluginTransport):
     """Concrete implementation of RPCPluginTransport for testing."""
 
     def __init__(self, endpoint=None) -> None:
@@ -28,17 +28,17 @@ class TestTransport(RPCPluginTransport):
 
 def test_transport_init() -> None:
     """Test transport initialization."""
-    transport = TestTransport()
+    transport = MockTransport()
     assert transport.endpoint is None
 
-    transport = TestTransport(endpoint="test://preset")
+    transport = MockTransport(endpoint="test://preset")
     assert transport.endpoint == "test://preset"
 
 
 @pytest.mark.asyncio
 async def test_transport_listen() -> None:
     """Test transport listen method."""
-    transport = TestTransport()
+    transport = MockTransport()
     endpoint = await transport.listen()
 
     assert transport._listen_called
@@ -48,7 +48,7 @@ async def test_transport_listen() -> None:
 @pytest.mark.asyncio
 async def test_transport_connect() -> None:
     """Test transport connect method."""
-    transport = TestTransport()
+    transport = MockTransport()
     await transport.connect("test://target")
 
     assert transport._connect_called
@@ -58,7 +58,7 @@ async def test_transport_connect() -> None:
 @pytest.mark.asyncio
 async def test_transport_close() -> None:
     """Test transport close method."""
-    transport = TestTransport()
+    transport = MockTransport()
     await transport.close()
 
     assert transport._close_called

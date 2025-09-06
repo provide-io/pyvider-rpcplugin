@@ -20,7 +20,7 @@ from pyvider.rpcplugin import (
     configure,
     plugin_client,
 )
-from pyvider.rpcplugin.crypto import Certificate
+from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
 # Apply base configuration for examples (paths, logging)
