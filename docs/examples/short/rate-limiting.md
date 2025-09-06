@@ -52,4 +52,4 @@ if __name__ == "__main__":
 ## Related Examples
 
 - [Basic Server](basic-server.md) - Simple server without rate limiting
-- [Full Rate Limiting Guide](../guide/server/rate-limiting.md)
+- [Full Rate Limiting Guide](../../guide/config/rate-limiting.md)

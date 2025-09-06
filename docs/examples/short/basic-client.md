@@ -37,5 +37,5 @@ if __name__ == "__main__":
 
 ## Related Examples
 
-- [Full Client Guide](../guide/client/basic-setup.md)
-- [Error Handling](../guide/client/error-handling.md)
+- [Full Client Guide](../../guide/client/basic-setup.md)
+- [Error Handling](../../guide/client/error-handling.md)

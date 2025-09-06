@@ -62,4 +62,4 @@ if __name__ == "__main__":
 ## Related Examples
 
 - [Basic Server](basic-server.md) - Using default protocol
-- [Custom Protocol Guide](../guide/advanced/custom-protocols.md)
+- [Custom Protocol Guide](../../guide/advanced/custom-protocols.md)
