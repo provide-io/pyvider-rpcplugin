@@ -492,7 +492,7 @@ health = await security_health_check()
 - **[Basic Server Example](../../examples/short/basic-server.md)** - Simple server setup with security considerations
 
 ### Working Examples
-- **[ch09_security_mtls_example.py](../../examples/ch09_security_mtls_example.py)** - Complete mTLS implementation
+- **`ch09_security_mtls_example.py`** - Complete mTLS implementation
 - **Production configuration examples** in each security section
 - **Certificate generation and management scripts**
 

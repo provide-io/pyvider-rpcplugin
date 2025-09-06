@@ -574,4 +574,4 @@ These features would provide comprehensive certificate management, automated sec
 ## Related Concepts
 
 - **[Transport Security](transports.md)** - How transports integrate with the security model
-- **[Server Security Patterns](../server/security.md)** - Server-specific security implementation patterns
+- **[Server Security Patterns](../security/index.md)** - Server-specific security implementation patterns

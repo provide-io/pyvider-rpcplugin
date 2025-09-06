@@ -435,6 +435,6 @@ logger.info(f"Issuer: {cert.issuer}")
 
 - **[Certificate Management](certificates.md)** - Detailed certificate operations
 - **[Process Isolation](process-isolation.md)** - Additional security layers
-- **[Production Security](../examples/production.md)** - Complete security setup
+- **[Production Security](../../examples/production.md)** - Complete security setup
 
 For enterprise certificate management and PKI integration, consult Foundation's security documentation and consider professional PKI services.

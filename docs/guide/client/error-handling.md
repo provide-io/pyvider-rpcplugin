@@ -544,7 +544,7 @@ def get_user_friendly_message(error: Exception) -> str:
 
 Now that you understand error handling:
 
-- **[Testing](testing.md)** - Learn how to test error conditions
-- **[Monitoring](../production/monitoring.md)** - Set up error monitoring and alerting  
-- **[Performance](performance.md)** - Optimize error handling performance
-- **[Production Deployment](../production/)** - Error handling in production
+- **[Testing](../../development/testing.md)** - Learn how to test error conditions
+- **[Monitoring](../config/production.md)** - Set up error monitoring and alerting  
+- **[Performance](../advanced/performance.md)** - Optimize error handling performance
+- **[Production Deployment](../config/production.md)** - Error handling in production
