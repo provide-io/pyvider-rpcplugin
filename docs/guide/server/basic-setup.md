@@ -40,6 +40,7 @@ if __name__ == "__main__":
 ```python
 import os
 from dataclasses import dataclass
+
 from pyvider.rpcplugin import configure
 
 @dataclass
@@ -57,7 +58,6 @@ class ServerConfig:
             auto_mtls=self.enable_mtls
         )
 
-# Usage
 config = ServerConfig()
 config.apply()
 server = plugin_server(protocol=EchoProtocol(), handler=EchoHandler())
@@ -98,7 +98,6 @@ class GracefulServer:
         signal.signal(signal.SIGTERM, handler)
         signal.signal(signal.SIGINT, handler)
 
-# Usage
 async def main():
     server = GracefulServer(EchoProtocol(), EchoHandler())
     await server.start()
@@ -175,7 +174,6 @@ class ValidatedServer:
             logging.error(f"Server failed: {e}")
             raise
 
-# Usage
 server = ValidatedServer(EchoProtocol(), EchoHandler())
 await server.start()
 ```
