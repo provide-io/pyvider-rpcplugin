@@ -1,956 +1,607 @@
 # Async Patterns
 
-Master asynchronous programming patterns for building high-performance plugin servers with proper concurrency, resource management, and background task handling.
+Master asynchronous programming patterns for high-performance plugin servers using asyncio, concurrent processing, and resilient error handling.
 
-## Concurrent Request Handling
+## Core Async Patterns
 
-### Basic Async Service Handler
+### Basic Async Server
 
 ```python
 import asyncio
-import time
+from pyvider.rpcplugin import plugin_server
 from provide.foundation import logger
 
 class AsyncHandler:
-    def __init__(self):
-        self.active_requests = {}
-        self.request_counter = 0
+    """Async-first plugin handler."""
     
-    async def ProcessData(self, request, context):
-        """Handle request asynchronously with tracking."""
-        request_id = self.request_counter
-        self.request_counter += 1
+    async def process_request(self, request):
+        logger.info("Processing async request")
         
-        # Track active request with structured logging
-        start_time = time.time()
-        self.active_requests[request_id] = {
-            'started': start_time,
-            'client': context.peer(),
-            'method': 'ProcessData'
-        }
+        # Concurrent operations
+        results = await asyncio.gather(
+            self.fetch_data(request.id),
+            self.validate_permissions(request.user),
+            self.check_quota(request.user)
+        )
         
-        logger.debug("Starting async request processing", extra={
-            "request_id": request_id,
-            "client": context.peer(),
-            "method": "ProcessData"
-        })
-        
-        try:
-            # Simulate async processing
-            await asyncio.sleep(0.1)
-            
-            # Actual business logic with Foundation logging
-            with logger.contextualize(request_id=request_id):
-                result = await self.process_business_logic(request.data)
-                
-                processing_time = time.time() - start_time
-                logger.info("Request processed successfully", extra={
-                    "processing_time_ms": processing_time * 1000,
-                    "result_length": len(str(result))
-                })
-            
-            return ProcessResponse(
-                result=result,
-                request_id=request_id,
-                processing_time=time.time() - self.active_requests[request_id]['started']
-            )
-        
-        finally:
-            # Clean up tracking
-            request_info = self.active_requests.pop(request_id, None)
-            if request_info:
-                total_time = time.time() - request_info['started']
-                logger.debug("Request cleanup completed", extra={
-                    "request_id": request_id,
-                    "total_time_ms": total_time * 1000
-                })
+        return {"data": results[0], "authorized": results[1], "quota_ok": results[2]}
     
-    async def process_business_logic(self, data: str) -> str:
-        """Simulate async business logic processing."""
-        # Simulate database query
+    async def fetch_data(self, id: str):
+        await asyncio.sleep(0.1)  # Simulate I/O
+        return {"id": id, "data": "..."}
+    
+    async def validate_permissions(self, user: str):
         await asyncio.sleep(0.05)
-        
-        # Simulate API call
-        await asyncio.sleep(0.02)
-        
-        return f"Processed: {data}"
+        return True
     
-    def get_active_requests(self) -> dict[str, Any]:
-        """Get information about active requests."""
-        return {
-            'count': len(self.active_requests),
-            'requests': list(self.active_requests.values())
-        }
+    async def check_quota(self, user: str):
+        await asyncio.sleep(0.02)
+        return True
+
+async def main():
+    server = plugin_server(
+        protocol=plugin_protocol(),
+        handler=AsyncHandler()
+    )
+    await server.serve()
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
-### Concurrent Batch Processing
+## Concurrent Processing
+
+### Batch Processing with Semaphore
 
 ```python
-import asyncio
-from typing import Callable, TypeVar, Awaitable
+from typing import TypeVar, Callable, Awaitable
 
 T = TypeVar('T')
 R = TypeVar('R')
 
 class BatchProcessor:
-    """Process multiple items concurrently with controlled concurrency."""
+    """Process items concurrently with controlled concurrency."""
     
     def __init__(self, max_concurrency: int = 10):
         self.max_concurrency = max_concurrency
         self.semaphore = asyncio.Semaphore(max_concurrency)
     
     async def process_batch(self, 
-                           items: list[T], 
-                           processor: Callable[[T], Awaitable[R]],
-                           batch_size: int = None) -> list[R]:
-        """Process items in batches with concurrency control."""
+                          items: list[T], 
+                          processor: Callable[[T], Awaitable[R]],
+                          batch_size: int = None) -> list[R]:
+        """Process items in controlled batches."""
         if batch_size is None:
             batch_size = self.max_concurrency
         
-        results = []
+        async def process_with_semaphore(item: T) -> R:
+            async with self.semaphore:
+                return await processor(item)
         
-        # Process in batches
-        for i in range(0, len(items), batch_size):
-            batch = items[i:i + batch_size]
-            
-            # Process batch concurrently
-            batch_tasks = [
-                self._process_with_semaphore(item, processor)
-                for item in batch
-            ]
-            
-            batch_results = await asyncio.gather(*batch_tasks, return_exceptions=True)
-            results.extend(batch_results)
-        
-        return results
-    
-    async def _process_with_semaphore(self, item: T, processor: Callable[[T], Awaitable[R]]) -> R:
-        """Process single item with semaphore control."""
-        async with self.semaphore:
-            return await processor(item)
+        tasks = [process_with_semaphore(item) for item in items]
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
-# Usage in service handler
-class BatchHandler:
-    def __init__(self):
-        self.batch_processor = BatchProcessor(max_concurrency=20)
-    
-    async def ProcessMultipleItems(self, request, context):
-        """Process multiple items concurrently."""
-        items = request.items
-        
-        # Define processing function
-        async def process_single_item(item):
-            # Simulate async processing
-            await asyncio.sleep(0.1)
-            return f"Processed: {item.data}"
-        
-        try:
-            # Process all items concurrently
-            results = await self.batch_processor.process_batch(
-                items=items,
-                processor=process_single_item,
-                batch_size=10
-            )
-            
-            # Filter out exceptions and create response
-            successful_results = [
-                result for result in results
-                if not isinstance(result, Exception)
-            ]
-            
-            errors = [
-                str(result) for result in results
-                if isinstance(result, Exception)
-            ]
-            
-            return BatchResponse(
-                results=successful_results,
-                success_count=len(successful_results),
-                error_count=len(errors),
-                errors=errors
-            )
-        
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Batch processing failed: {e}")
-            return BatchResponse()
+# Usage
+processor = BatchProcessor(max_concurrency=5)
+results = await processor.process_batch(
+    items=["item1", "item2", "item3"],
+    processor=lambda x: process_item(x)
+)
 ```
 
-## Background Task Management
-
-### Background Task Manager
+### Task Management
 
 ```python
-import asyncio
-import logging
-from typing import Callable, Awaitable
-from datetime import datetime, timedelta
-
-class BackgroundTaskManager:
-    """Manage long-running background tasks."""
+class TaskManager:
+    """Manage background tasks lifecycle."""
     
     def __init__(self):
         self.tasks: dict[str, asyncio.Task] = {}
-        self.periodic_tasks: dict[str, dict] = {}
         self.shutdown_event = asyncio.Event()
-        self.logger = logging.getLogger(__name__)
     
-    async def start_periodic_task(self, 
-                                 name: str, 
-                                 coro_func: Callable[[], Awaitable], 
-                                 interval: float,
-                                 immediate: bool = False):
-        """Start a periodic background task."""
+    async def start_task(self, name: str, coro):
+        """Start a managed background task."""
         if name in self.tasks:
-            self.logger.warning(f"Task {name} already running")
-            return
+            await self.stop_task(name)
         
-        async def periodic_runner():
-            try:
-                if immediate:
-                    await coro_func()
-                
-                while not self.shutdown_event.is_set():
-                    try:
-                        await asyncio.wait_for(
-                            self.shutdown_event.wait(),
-                            timeout=interval
-                        )
-                        # If we reach here, shutdown was requested
-                        break
-                    except asyncio.TimeoutError:
-                        # Timeout occurred, run the task
-                        try:
-                            await coro_func()
-                        except Exception as e:
-                            self.logger.error(f"Error in periodic task {name}: {e}")
-            
-            except asyncio.CancelledError:
-                self.logger.info(f"Periodic task {name} cancelled")
-            except Exception as e:
-                self.logger.error(f"Periodic task {name} failed: {e}")
-        
-        # Start the task
-        task = asyncio.create_task(periodic_runner())
-        self.tasks[name] = task
-        self.periodic_tasks[name] = {
-            'interval': interval,
-            'started': datetime.now(),
-            'immediate': immediate
-        }
-        
-        self.logger.info(f"Started periodic task: {name} (interval: {interval}s)")
-    
-    async def start_background_task(self, name: str, coro: Awaitable):
-        """Start a one-time background task."""
-        if name in self.tasks:
-            self.logger.warning(f"Task {name} already running")
-            return
-        
-        async def task_wrapper():
-            try:
-                await coro
-                self.logger.info(f"Background task completed: {name}")
-            except asyncio.CancelledError:
-                self.logger.info(f"Background task cancelled: {name}")
-            except Exception as e:
-                self.logger.error(f"Background task failed: {name} - {e}")
-            finally:
-                # Remove from active tasks
-                self.tasks.pop(name, None)
-        
-        task = asyncio.create_task(task_wrapper())
-        self.tasks[name] = task
-        self.logger.info(f"Started background task: {name}")
+        self.tasks[name] = asyncio.create_task(coro)
+        logger.info(f"Started task: {name}")
+        return self.tasks[name]
     
     async def stop_task(self, name: str):
         """Stop a specific task."""
-        if name in self.tasks:
-            task = self.tasks[name]
+        if task := self.tasks.get(name):
             task.cancel()
-            
             try:
                 await task
             except asyncio.CancelledError:
                 pass
-            
-            self.tasks.pop(name, None)
-            self.periodic_tasks.pop(name, None)
-            self.logger.info(f"Stopped task: {name}")
+            del self.tasks[name]
+            logger.info(f"Stopped task: {name}")
     
-    async def shutdown_all(self):
-        """Shutdown all background tasks."""
+    async def stop_all(self):
+        """Stop all tasks gracefully."""
+        for name in list(self.tasks.keys()):
+            await self.stop_task(name)
         self.shutdown_event.set()
-        
-        if not self.tasks:
-            return
-        
-        self.logger.info(f"Shutting down {len(self.tasks)} background tasks...")
-        
-        # Cancel all tasks
-        for name, task in self.tasks.items():
-            task.cancel()
-        
-        # Wait for all tasks to complete
-        if self.tasks:
-            await asyncio.gather(*self.tasks.values(), return_exceptions=True)
-        
-        self.tasks.clear()
-        self.periodic_tasks.clear()
-        self.logger.info("All background tasks stopped")
-    
-    def get_task_status(self) -> Dict:
-        """Get status of all background tasks."""
-        return {
-            'active_tasks': len(self.tasks),
-            'periodic_tasks': len(self.periodic_tasks),
-            'tasks': {
-                name: {
-                    'done': task.done(),
-                    'cancelled': task.cancelled(),
-                    'exception': str(task.exception()) if task.done() and task.exception() else None
-                }
-                for name, task in self.tasks.items()
-            },
-            'periodic_task_info': self.periodic_tasks
-        }
 
-# Usage in plugin server
-class AsyncPluginHandler:
+# Usage in server
+class ServerWithTasks:
     def __init__(self):
-        self.task_manager = BackgroundTaskManager()
+        self.task_manager = TaskManager()
     
-    async def initialize(self):
-        """Initialize background tasks."""
-        # Start periodic cleanup task
-        await self.task_manager.start_periodic_task(
-            name="cleanup",
-            coro_func=self.cleanup_resources,
-            interval=300,  # Every 5 minutes
-            immediate=False
+    async def start(self):
+        # Start background tasks
+        await self.task_manager.start_task(
+            "health_check",
+            self.periodic_health_check()
         )
-        
-        # Start periodic health check
-        await self.task_manager.start_periodic_task(
-            name="health_check",
-            coro_func=self.perform_health_check,
-            interval=60,   # Every minute
-            immediate=True
+        await self.task_manager.start_task(
+            "metrics",
+            self.collect_metrics()
         )
     
-    async def cleanup_resources(self):
-        """Periodic cleanup task."""
-        logging.info("Performing resource cleanup...")
-        # Implement cleanup logic
-        await asyncio.sleep(1)  # Simulate cleanup work
+    async def periodic_health_check(self):
+        while True:
+            await asyncio.sleep(30)
+            logger.info("Health check passed")
     
-    async def perform_health_check(self):
-        """Periodic health check."""
-        logging.info("Performing health check...")
-        # Implement health check logic
-        await asyncio.sleep(0.5)  # Simulate health check
-    
-    async def StartLongRunningJob(self, request, context):
-        """Start a long-running background job."""
-        job_id = f"job_{request.job_name}_{int(time.time())}"
-        
-        async def long_running_job():
-            for i in range(request.iterations):
-                await asyncio.sleep(1)  # Simulate work
-                logging.info(f"Job {job_id} progress: {i+1}/{request.iterations}")
-        
-        # Start the job in background
-        await self.task_manager.start_background_task(job_id, long_running_job())
-        
-        return JobResponse(job_id=job_id, status="started")
-    
-    async def GetTaskStatus(self, request, context):
-        """Get status of background tasks."""
-        status = self.task_manager.get_task_status()
-        return TaskStatusResponse(**status)
-    
-    async def shutdown(self):
-        """Shutdown handler and all background tasks."""
-        await self.task_manager.shutdown_all()
+    async def collect_metrics(self):
+        while True:
+            await asyncio.sleep(60)
+            logger.info("Metrics collected")
 ```
 
-## Resource Pooling
+## Stream Processing
 
-### Database Connection Pool
+### Async Generators
 
 ```python
-import asyncio
-import aiosqlite
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator
 
-class DatabasePool:
-    """Async database connection pool."""
+class StreamProcessor:
+    """Process data streams efficiently."""
     
-    def __init__(self, 
-                 database_path: str, 
-                 pool_size: int = 10,
-                 max_overflow: int = 5,
-                 timeout: float = 30.0):
-        self.database_path = database_path
-        self.pool_size = pool_size
-        self.max_overflow = max_overflow
-        self.timeout = timeout
+    async def process_stream(self, stream: AsyncIterator[dict]) -> AsyncIterator[dict]:
+        """Process streaming data with transformation."""
+        async for item in stream:
+            # Transform item
+            processed = await self.transform_item(item)
+            
+            # Filter if needed
+            if self.should_include(processed):
+                yield processed
+    
+    async def transform_item(self, item: dict) -> dict:
+        # Async transformation
+        await asyncio.sleep(0.01)
+        return {**item, "processed": True}
+    
+    def should_include(self, item: dict) -> bool:
+        return item.get("valid", True)
+
+# Usage
+async def generate_stream():
+    """Generate sample stream."""
+    for i in range(100):
+        await asyncio.sleep(0.1)
+        yield {"id": i, "data": f"item_{i}"}
+
+processor = StreamProcessor()
+async for result in processor.process_stream(generate_stream()):
+    print(result)
+```
+
+### Bidirectional Streaming
+
+```python
+class BidirectionalStreamHandler:
+    """Handle bidirectional gRPC streams."""
+    
+    async def StreamChat(self, request_iterator, context):
+        """Bidirectional streaming RPC."""
+        client_id = str(uuid.uuid4())
+        logger.info(f"Client {client_id} connected")
         
-        self.pool = asyncio.Queue(maxsize=pool_size)
-        self.current_connections = 0
-        self.overflow_connections = 0
-        self.connection_stats = {
-            'total_created': 0,
-            'total_closed': 0,
-            'pool_hits': 0,
-            'pool_misses': 0
-        }
+        try:
+            async for request in request_iterator:
+                # Process incoming message
+                response = await self.process_message(request, client_id)
+                
+                # Send response
+                yield response
+                
+                # Check for special commands
+                if request.message == "/quit":
+                    break
         
-        self._initialized = False
+        finally:
+            logger.info(f"Client {client_id} disconnected")
+    
+    async def process_message(self, request, client_id: str):
+        logger.debug(f"Message from {client_id}: {request.message}")
+        
+        # Echo with timestamp
+        return ChatResponse(
+            message=f"Echo: {request.message}",
+            timestamp=time.time(),
+            client_id=client_id
+        )
+```
+
+## Connection Management
+
+### Connection Pooling
+
+```python
+class ConnectionPool:
+    """Async connection pool with health checks."""
+    
+    def __init__(self, min_size: int = 2, max_size: int = 10):
+        self.min_size = min_size
+        self.max_size = max_size
+        self.pool: asyncio.Queue = asyncio.Queue(maxsize=max_size)
+        self.connections: set = set()
+        self._lock = asyncio.Lock()
     
     async def initialize(self):
-        """Initialize the connection pool."""
-        if self._initialized:
-            return
-        
-        # Create initial connections
-        for _ in range(self.pool_size):
+        """Create initial connections."""
+        for _ in range(self.min_size):
             conn = await self._create_connection()
             await self.pool.put(conn)
-        
-        self._initialized = True
-        logging.info(f"Database pool initialized with {self.pool_size} connections")
     
-    async def _create_connection(self) -> aiosqlite.Connection:
-        """Create a new database connection."""
-        conn = await aiosqlite.connect(self.database_path)
-        conn.row_factory = aiosqlite.Row  # Enable dict-like access
-        self.current_connections += 1
-        self.connection_stats['total_created'] += 1
-        return conn
-    
-    @asynccontextmanager
     async def acquire(self):
-        """Acquire a connection from the pool."""
-        if not self._initialized:
-            await self.initialize()
-        
-        conn = None
+        """Get connection from pool."""
         try:
-            # Try to get from pool
-            try:
-                conn = await asyncio.wait_for(
-                    self.pool.get(), 
-                    timeout=self.timeout
-                )
-                self.connection_stats['pool_hits'] += 1
-                
-            except asyncio.TimeoutError:
-                # Pool is empty, check if we can create overflow connection
-                if self.overflow_connections < self.max_overflow:
-                    conn = await self._create_connection()
-                    self.overflow_connections += 1
-                    self.connection_stats['pool_misses'] += 1
-                else:
-                    raise Exception("Connection pool exhausted")
-            
-            yield conn
-            
-        finally:
-            if conn:
-                # Return connection to pool or close overflow connection
-                if self.overflow_connections > 0:
-                    await conn.close()
-                    self.overflow_connections -= 1
-                    self.current_connections -= 1
-                    self.connection_stats['total_closed'] += 1
-                else:
-                    # Return to pool
-                    await self.pool.put(conn)
+            return await asyncio.wait_for(self.pool.get(), timeout=0.1)
+        except asyncio.TimeoutError:
+            if len(self.connections) < self.max_size:
+                return await self._create_connection()
+            return await self.pool.get()
     
-    async def close_all(self):
-        """Close all connections in pool."""
-        connections_closed = 0
-        
-        # Close all pooled connections
-        while not self.pool.empty():
-            try:
-                conn = self.pool.get_nowait()
-                await conn.close()
-                connections_closed += 1
-            except asyncio.QueueEmpty:
-                break
-        
-        self.current_connections = 0
-        self.overflow_connections = 0
-        self.connection_stats['total_closed'] += connections_closed
-        
-        logging.info(f"Closed {connections_closed} database connections")
+    async def release(self, conn):
+        """Return connection to pool."""
+        if await self._is_healthy(conn):
+            await self.pool.put(conn)
+        else:
+            self.connections.discard(conn)
+            await conn.close()
     
-    def get_stats(self) -> dict[str, Any]:
-        """Get pool statistics."""
-        return {
-            'pool_size': self.pool_size,
-            'current_connections': self.current_connections,
-            'overflow_connections': self.overflow_connections,
-            'available_in_pool': self.pool.qsize(),
-            'stats': self.connection_stats
-        }
-
-# Usage in service handler
-class DatabaseHandler:
-    def __init__(self, db_path: str):
-        self.db_pool = DatabasePool(db_path, pool_size=15, max_overflow=5)
+    async def _create_connection(self):
+        """Create new connection."""
+        async with self._lock:
+            conn = await create_connection()  # Your connection logic
+            self.connections.add(conn)
+            return conn
     
-    async def initialize(self):
-        """Initialize database resources."""
-        await self.db_pool.initialize()
-    
-    async def QueryData(self, request, context):
-        """Query data using connection pool."""
+    async def _is_healthy(self, conn) -> bool:
+        """Check connection health."""
         try:
-            async with self.db_pool.acquire() as conn:
-                cursor = await conn.execute(
-                    "SELECT * FROM items WHERE category = ?", 
-                    (request.category,)
-                )
-                
-                rows = await cursor.fetchall()
-                
-                results = [
-                    {"id": row["id"], "name": row["name"], "value": row["value"]}
-                    for row in rows
-                ]
-                
-                return QueryResponse(results=results, count=len(results))
-        
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"Database query failed: {e}")
-            return QueryResponse()
-    
-    async def shutdown(self):
-        """Cleanup database resources."""
-        await self.db_pool.close_all()
+            await conn.ping()
+            return True
+        except:
+            return False
 ```
 
-### HTTP Client Pool
+### HTTP Client with Connection Pooling
 
 ```python
-import aiohttp
-import asyncio
-
-class HTTPClientPool:
-    """Async HTTP client connection pool."""
+class AsyncHTTPClient:
+    """HTTP client with connection pooling."""
     
-    def __init__(self, 
-                 max_connections: int = 100,
-                 timeout: float = 30.0,
-                 connector_limit: int = 50):
-        self.max_connections = max_connections
-        self.timeout = aiohttp.ClientTimeout(total=timeout)
-        
-        # Configure connector for connection pooling
+    def __init__(self, max_connections: int = 100):
         self.connector = aiohttp.TCPConnector(
             limit=max_connections,
-            limit_per_host=connector_limit,
-            enable_cleanup_closed=True,
-            keepalive_timeout=60,
+            limit_per_host=30,
             ttl_dns_cache=300
         )
-        
         self.session: aiohttp.ClientSession | None = None
-        self.request_stats = {
-            'total_requests': 0,
-            'successful_requests': 0,
-            'failed_requests': 0,
-            'timeout_errors': 0
-        }
     
-    async def initialize(self):
-        """Initialize HTTP client session."""
-        if self.session is None:
-            self.session = aiohttp.ClientSession(
-                connector=self.connector,
-                timeout=self.timeout
-            )
+    async def start(self):
+        """Initialize HTTP session."""
+        self.session = aiohttp.ClientSession(
+            connector=self.connector,
+            timeout=aiohttp.ClientTimeout(total=30)
+        )
     
-    async def get(self, url: str, **kwargs) -> dict[str, Any]:
-        """Make GET request."""
-        return await self._make_request('GET', url, **kwargs)
-    
-    async def post(self, url: str, **kwargs) -> dict[str, Any]:
-        """Make POST request."""
-        return await self._make_request('POST', url, **kwargs)
-    
-    async def _make_request(self, method: str, url: str, **kwargs) -> dict[str, Any]:
-        """Make HTTP request with connection pooling."""
-        if not self.session:
-            await self.initialize()
-        
-        self.request_stats['total_requests'] += 1
-        
-        try:
-            async with self.session.request(method, url, **kwargs) as response:
-                data = await response.text()
-                
-                self.request_stats['successful_requests'] += 1
-                
-                return {
-                    'status': response.status,
-                    'data': data,
-                    'headers': dict(response.headers)
-                }
-        
-        except asyncio.TimeoutError:
-            self.request_stats['timeout_errors'] += 1
-            self.request_stats['failed_requests'] += 1
-            raise
-        except Exception:
-            self.request_stats['failed_requests'] += 1
-            raise
-    
-    async def close(self):
-        """Close HTTP client session."""
+    async def stop(self):
+        """Cleanup HTTP session."""
         if self.session:
             await self.session.close()
-            self.session = None
     
-    def get_stats(self) -> dict[str, Any]:
-        """Get client statistics."""
-        return {
-            'connection_info': {
-                'max_connections': self.max_connections,
-                'timeout': self.timeout.total
-            },
-            'request_stats': self.request_stats
-        }
-
-# Usage in service handler  
-class APIHandler:
-    def __init__(self):
-        self.http_client = HTTPClientPool(max_connections=50)
+    async def get(self, url: str, **kwargs) -> dict:
+        """Make GET request."""
+        async with self.session.get(url, **kwargs) as response:
+            return await response.json()
     
-    async def initialize(self):
-        await self.http_client.initialize()
-    
-    async def CallExternalAPI(self, request, context):
-        """Call external API using connection pool."""
-        try:
-            response = await self.http_client.get(
-                url=request.api_url,
-                headers={'User-Agent': 'PluginServer/1.0'}
-            )
-            
-            return APIResponse(
-                status_code=response['status'],
-                data=response['data'],
-                success=True
-            )
-        
-        except asyncio.TimeoutError:
-            context.set_code(grpc.StatusCode.DEADLINE_EXCEEDED)
-            context.set_details("External API timeout")
-            return APIResponse(success=False)
-        
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"API call failed: {e}")
-            return APIResponse(success=False)
-    
-    async def shutdown(self):
-        await self.http_client.close()
+    async def post(self, url: str, **kwargs) -> dict:
+        """Make POST request."""
+        async with self.session.post(url, **kwargs) as response:
+            return await response.json()
 ```
 
-## Async Context Management
+## Context Management
 
-### Request Context Manager
+### Request Context
 
 ```python
-import asyncio
-import contextvars
-from datetime import datetime
+from contextvars import ContextVar
 
-# Context variables
-request_id = contextvars.ContextVar('request_id')
-user_context = contextvars.ContextVar('user_context') 
-correlation_id = contextvars.ContextVar('correlation_id')
+request_id_var: ContextVar[str] = ContextVar('request_id', default=None)
+client_id_var: ContextVar[str] = ContextVar('client_id', default=None)
 
-class RequestContextManager:
-    """Manage request context across async operations."""
+class ContextManager:
+    """Manage request context for async operations."""
     
     def __init__(self):
         self.active_contexts: dict[str, dict[str, Any]] = {}
     
-    @asynccontextmanager
-    async def request_context(self, 
-                            req_id: str, 
-                            user_info: dict[str, Any] = None,
-                            correlation: str = None):
-        """Create request context."""
+    async def with_context(self,
+                          req_id: str, 
+                          client_id: str,
+                          user_info: dict[str, Any] = None):
+        """Set context for async operation."""
+        request_id_var.set(req_id)
+        client_id_var.set(client_id)
         
-        # Set context variables
-        request_id.set(req_id)
-        if user_info:
-            user_context.set(user_info)
-        if correlation:
-            correlation_id.set(correlation)
-        
-        # Track active context
-        context_info = {
-            'request_id': req_id,
-            'user_info': user_info or {},
-            'correlation_id': correlation,
-            'started_at': datetime.now(),
-            'task_id': id(asyncio.current_task())
+        self.active_contexts[req_id] = {
+            'client_id': client_id,
+            'user_info': user_info,
+            'start_time': time.time()
         }
         
-        self.active_contexts[req_id] = context_info
-        
         try:
-            yield context_info
+            yield
         finally:
-            # Cleanup context
             self.active_contexts.pop(req_id, None)
     
-    def get_current_request_id(self) -> str | None:
-        """Get current request ID."""
-        try:
-            return request_id.get()
-        except LookupError:
-            return None
-    
-    def get_current_user(self) -> dict[str, Any] | None:
-        """Get current user context."""
-        try:
-            return user_context.get()
-        except LookupError:
-            return None
-    
-    def get_correlation_id(self) -> str | None:
-        """Get current correlation ID."""
-        try:
-            return correlation_id.get()
-        except LookupError:
-            return None
+    def get_current_context(self) -> dict[str, Any] | None:
+        """Get current request context."""
+        req_id = request_id_var.get()
+        return self.active_contexts.get(req_id) if req_id else None
 
-# Global context manager
-context_manager = RequestContextManager()
+# Usage
+context_mgr = ContextManager()
 
-class ContextAwareHandler:
-    """Handler with request context awareness."""
+async def handle_request(request, context):
+    req_id = str(uuid.uuid4())
+    client_id = context.peer()
     
-    async def ProcessWithContext(self, request, context):
-        """Process request with full context management."""
-        req_id = f"req_{int(time.time() * 1000)}"
+    async with context_mgr.with_context(req_id, client_id):
+        logger.info("Processing request", extra={
+            "request_id": req_id,
+            "client_id": client_id
+        })
         
-        # Extract user info from gRPC metadata
-        metadata = dict(context.invocation_metadata())
-        user_info = {
-            'user_id': metadata.get('user-id'),
-            'session_id': metadata.get('session-id')
-        }
-        correlation = metadata.get('correlation-id')
-        
-        async with context_manager.request_context(req_id, user_info, correlation):
-            # All async operations within this context have access to
-            # request_id, user_context, and correlation_id
-            
-            result = await self.perform_business_logic(request.data)
-            
-            # Log with context
-            self.log_with_context("Request processed successfully")
-            
-            return ProcessResponse(
-                result=result,
-                request_id=req_id,
-                correlation_id=correlation
-            )
-    
-    async def perform_business_logic(self, data: str) -> str:
-        """Business logic with context access."""
-        # Access context variables
-        req_id = context_manager.get_current_request_id()
-        user = context_manager.get_current_user()
-        
-        self.log_with_context(f"Processing data for user: {user.get('user_id')}")
-        
-        # Simulate async work
-        await asyncio.sleep(0.1)
-        
-        return f"Processed: {data}"
-    
-    def log_with_context(self, message: str):
-        """Log message with request context."""
-        req_id = context_manager.get_current_request_id()
-        user = context_manager.get_current_user()
-        correlation = context_manager.get_correlation_id()
-        
-        logging.info(
-            f"[{req_id}] [{correlation}] [{user.get('user_id', 'anonymous')}] {message}"
-        )
+        return await process_with_context(request)
 ```
 
-## Error Handling in Async Operations
+## Error Handling & Resilience
 
-### Async Error Recovery
+### Retry with Exponential Backoff
 
 ```python
-import asyncio
-from typing import TypeVar, Callable, Awaitable
-
-T = TypeVar('T')
-
-class AsyncErrorHandler:
-    """Handle errors in async operations with retry and circuit breaker."""
-    
-    def __init__(self):
-        self.circuit_breakers: dict[str, dict] = {}
-        self.retry_stats: dict[str, dict] = {}
+class RetryHandler:
+    """Advanced retry logic with backoff."""
     
     async def with_retry(self,
                         operation: Callable[[], Awaitable[T]],
-                        operation_name: str,
                         max_retries: int = 3,
                         base_delay: float = 1.0,
-                        backoff_factor: float = 2.0,
-                        jitter: bool = True) -> T:
-        """Execute operation with retry logic."""
+                        max_delay: float = 60.0,
+                        exponential_base: float = 2.0) -> T:
+        """Execute with exponential backoff retry."""
         
-        for attempt in range(max_retries + 1):
+        for attempt in range(max_retries):
             try:
-                result = await operation()
-                
-                # Reset failure count on success
-                if operation_name in self.retry_stats:
-                    self.retry_stats[operation_name]['consecutive_failures'] = 0
-                
-                return result
-                
+                return await operation()
             except Exception as e:
-                # Track retry stats
-                if operation_name not in self.retry_stats:
-                    self.retry_stats[operation_name] = {
-                        'total_attempts': 0,
-                        'total_failures': 0,
-                        'consecutive_failures': 0
-                    }
-                
-                stats = self.retry_stats[operation_name]
-                stats['total_attempts'] += 1
-                stats['total_failures'] += 1
-                stats['consecutive_failures'] += 1
-                
-                # Check if we should retry
-                if attempt == max_retries:
-                    logging.error(f"Operation {operation_name} failed after {max_retries} retries: {e}")
+                if attempt == max_retries - 1:
                     raise
                 
-                # Calculate delay with exponential backoff
-                delay = base_delay * (backoff_factor ** attempt)
-                
-                # Add jitter to prevent thundering herd
-                if jitter:
-                    import random
-                    delay *= (0.5 + random.random() * 0.5)
-                
-                logging.warning(f"Operation {operation_name} failed (attempt {attempt + 1}): {e}. Retrying in {delay:.2f}s")
+                delay = min(base_delay * (exponential_base ** attempt), max_delay)
+                logger.warning(f"Attempt {attempt + 1} failed, retrying in {delay}s: {e}")
                 await asyncio.sleep(delay)
+```
+
+### Circuit Breaker
+
+```python
+class CircuitBreaker:
+    """Circuit breaker for fault tolerance."""
     
-    async def with_circuit_breaker(self,
-                                 operation: Callable[[], Awaitable[T]],
-                                 operation_name: str,
-                                 failure_threshold: int = 5,
-                                 recovery_timeout: float = 60.0) -> T:
-        """Execute operation with circuit breaker pattern."""
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: float = 60.0):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = 0
+        self.state = "closed"  # closed, open, half_open
+    
+    async def call(self, operation: Callable[[], Awaitable[T]]) -> T:
+        """Execute operation with circuit breaker."""
         
-        # Initialize circuit breaker if not exists
-        if operation_name not in self.circuit_breakers:
-            self.circuit_breakers[operation_name] = {
-                'state': 'closed',  # closed, open, half_open
-                'failure_count': 0,
-                'last_failure_time': 0,
-                'success_count': 0
-            }
-        
-        breaker = self.circuit_breakers[operation_name]
         current_time = time.time()
         
-        # Check circuit breaker state
-        if breaker['state'] == 'open':
-            if current_time - breaker['last_failure_time'] >= recovery_timeout:
-                # Try to recover
-                breaker['state'] = 'half_open'
-                breaker['success_count'] = 0
-                logging.info(f"Circuit breaker for {operation_name} entering half-open state")
+        # Check if should attempt reset
+        if self.state == "open":
+            if current_time - self.last_failure_time >= self.recovery_timeout:
+                self.state = "half_open"
             else:
-                raise Exception(f"Circuit breaker for {operation_name} is OPEN")
+                raise Exception("Circuit breaker is OPEN")
         
         try:
             result = await operation()
             
-            # Success handling
-            if breaker['state'] == 'half_open':
-                breaker['success_count'] += 1
-                if breaker['success_count'] >= 2:  # Require 2 successes to close
-                    breaker['state'] = 'closed'
-                    breaker['failure_count'] = 0
-                    logging.info(f"Circuit breaker for {operation_name} CLOSED")
-            elif breaker['state'] == 'closed':
-                breaker['failure_count'] = 0  # Reset failure count
+            # Success - reset or close circuit
+            if self.state == "half_open":
+                self.state = "closed"
+                logger.info("Circuit breaker CLOSED")
+            self.failure_count = 0
             
             return result
             
         except Exception as e:
-            # Failure handling
-            breaker['failure_count'] += 1
-            breaker['last_failure_time'] = current_time
+            self.failure_count += 1
+            self.last_failure_time = current_time
             
-            if breaker['failure_count'] >= failure_threshold:
-                breaker['state'] = 'open'
-                logging.error(f"Circuit breaker for {operation_name} OPENED after {failure_threshold} failures")
+            if self.failure_count >= self.failure_threshold:
+                self.state = "open"
+                logger.error(f"Circuit breaker OPENED after {self.failure_threshold} failures")
             
             raise
-
-# Usage in async handler
-class ResilientHandler:
-    def __init__(self):
-        self.error_handler = AsyncErrorHandler()
-    
-    async def CallExternalService(self, request, context):
-        """Call external service with resilience patterns."""
-        
-        async def make_api_call():
-            # Simulate external API call
-            async with aiohttp.ClientSession() as session:
-                async with session.get(request.api_url) as response:
-                    return await response.json()
-        
-        try:
-            # Combine retry and circuit breaker
-            result = await self.error_handler.with_circuit_breaker(
-                operation=lambda: self.error_handler.with_retry(
-                    operation=make_api_call,
-                    operation_name="external_api_call",
-                    max_retries=3
-                ),
-                operation_name="external_api_circuit",
-                failure_threshold=3
-            )
-            
-            return ExternalServiceResponse(
-                data=result,
-                success=True
-            )
-        
-        except Exception as e:
-            context.set_code(grpc.StatusCode.INTERNAL)
-            context.set_details(f"External service call failed: {e}")
-            return ExternalServiceResponse(success=False)
 ```
 
-## Next Steps
+## Performance Optimization
 
-- **[Health Checks](health-checks.md)** - Implement comprehensive health monitoring
-- **[Client Development](../client/)** - Learn client-side async patterns
-- **[Configuration](../config/)** - Optimize async configurations
+### Async Caching
+
+```python
+class AsyncCache:
+    """Thread-safe async cache with TTL."""
+    
+    def __init__(self, ttl: float = 300.0):
+        self.ttl = ttl
+        self.cache: dict[str, tuple[Any, float]] = {}
+        self._lock = asyncio.Lock()
+    
+    async def get_or_compute(self, 
+                            key: str,
+                            compute_fn: Callable[[], Awaitable[T]]) -> T:
+        """Get from cache or compute if missing."""
+        
+        async with self._lock:
+            if key in self.cache:
+                value, timestamp = self.cache[key]
+                if time.time() - timestamp < self.ttl:
+                    return value
+        
+        # Compute outside lock
+        value = await compute_fn()
+        
+        async with self._lock:
+            self.cache[key] = (value, time.time())
+        
+        return value
+    
+    async def invalidate(self, key: str = None):
+        """Invalidate cache entries."""
+        async with self._lock:
+            if key:
+                self.cache.pop(key, None)
+            else:
+                self.cache.clear()
+```
+
+## Best Practices
+
+### 1. Structured Concurrency
+
+```python
+async def structured_concurrent_operations():
+    """Use async context managers for cleanup."""
+    
+    async with asyncio.TaskGroup() as tg:
+        task1 = tg.create_task(operation1())
+        task2 = tg.create_task(operation2())
+        task3 = tg.create_task(operation3())
+    
+    # All tasks complete or all are cancelled
+    return task1.result(), task2.result(), task3.result()
+```
+
+### 2. Graceful Shutdown
+
+```python
+class GracefulShutdownServer:
+    """Server with proper shutdown handling."""
+    
+    def __init__(self):
+        self.shutdown_event = asyncio.Event()
+        self.tasks = []
+    
+    async def serve(self):
+        """Serve with signal handling."""
+        loop = asyncio.get_running_loop()
+        
+        # Register signal handlers
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            loop.add_signal_handler(
+                sig, lambda: asyncio.create_task(self.shutdown())
+            )
+        
+        try:
+            await self.shutdown_event.wait()
+        finally:
+            # Cleanup
+            await self._cleanup()
+    
+    async def shutdown(self):
+        """Trigger graceful shutdown."""
+        logger.info("Shutting down gracefully...")
+        self.shutdown_event.set()
+    
+    async def _cleanup(self):
+        """Clean up resources."""
+        for task in self.tasks:
+            task.cancel()
+        
+        await asyncio.gather(*self.tasks, return_exceptions=True)
+        logger.info("Shutdown complete")
+```
+
+### 3. Resource Management
+
+```python
+class ResourceManager:
+    """Manage async resources properly."""
+    
+    async def __aenter__(self):
+        self.resource = await acquire_resource()
+        return self.resource
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await release_resource(self.resource)
+
+# Usage
+async with ResourceManager() as resource:
+    await use_resource(resource)
+```
+
+## Testing Async Code
+
+```python
+import pytest
+
+@pytest.mark.asyncio
+async def test_async_handler():
+    """Test async handler."""
+    handler = AsyncHandler()
+    
+    request = {"id": "123", "user": "testuser"}
+    result = await handler.process_request(request)
+    
+    assert result["data"]["id"] == "123"
+    assert result["authorized"] == True
+    assert result["quota_ok"] == True
+
+@pytest.mark.asyncio
+async def test_concurrent_processing():
+    """Test concurrent batch processing."""
+    processor = BatchProcessor(max_concurrency=3)
+    
+    async def slow_operation(x):
+        await asyncio.sleep(0.1)
+        return x * 2
+    
+    items = list(range(10))
+    results = await processor.process_batch(items, slow_operation)
+    
+    assert results == [x * 2 for x in items]
+```
+
+## See Also
+
+- [Server Configuration](../server/)
+- [Performance Tuning](../advanced/performance.md)
+- [Error Handling](../advanced/error-handling.md)
+- [Foundation Integration](../advanced/foundation-integration.md)
