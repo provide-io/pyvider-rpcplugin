@@ -106,4 +106,4 @@ except TimeoutError as e:
 
 - **[RPCPluginClient Details](client.md)** - Complete client class documentation
 - **[Configuration Guide](../../guide/config/)** - Client configuration options  
-- **[Error Handling](../../guide/error-handling.md)** - Comprehensive error handling patterns
+- **[Error Handling](../../guide/client/error-handling.md)** - Comprehensive error handling patterns

@@ -324,6 +324,5 @@ if __name__ == "__main__":
 ### Related APIs
 
 - **[Transport API](../transport/)** - Network transport implementations
-- **[Protocol API](../protocol/)** - RPC protocol definitions  
 - **[Configuration API](../config/)** - Server configuration management
 - **[Exceptions API](../exceptions/)** - Server error handling

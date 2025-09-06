@@ -428,8 +428,8 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 1. **[Quick Start Guide](../getting-started/)** - Get up and running in minutes
 2. **[Examples](../examples/)** - Working code samples for common scenarios
 3. **[User Guide](../guide/)** - Conceptual explanations and best practices
-4. **[Testing Guide](../guide/testing.md)** - Testing patterns and fixtures
-5. **[Configuration Guide](../guide/configuration/)** - Environment setup and options
+4. **[Testing Guide](../development/testing.md)** - Testing patterns and fixtures
+5. **[Configuration Guide](../guide/config/)** - Environment setup and options
 
 ### API Documentation
 

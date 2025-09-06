@@ -437,4 +437,4 @@ def test_with_custom_config():
 - [Environment Variables Guide](environment.md) - Environment variable setup patterns
 - [Server Configuration](../server/server.md) - Using configuration in servers
 - [Client Configuration](../client/client.md) - Using configuration in clients
-- [Security Configuration](../../guide/security.md) - Security-focused configuration patterns
+- [Security Configuration](../../guide/security/index.md) - Security-focused configuration patterns
