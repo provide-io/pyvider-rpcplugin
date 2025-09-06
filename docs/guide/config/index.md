@@ -266,11 +266,23 @@ elif os.getenv('ENVIRONMENT') == 'production':
     )
 ```
 
+## Related Documentation
+
+### API Integration
+- **[Configuration API Reference](../../api/config/index.md)** - Complete API documentation for programmatic configuration access, field definitions, and validation methods
+- **[Configuration Schema Reference](../../api/config/schema.md)** - Detailed schema definitions and field validation rules
+
+### Security Configuration
+- **[Security Implementation Guide](../security/index.md)** - Security-focused configuration patterns including mTLS, certificates, and magic cookies
+- **[Security Concepts](../concepts/security.md)** - Understanding the security model and how configuration enables different security layers
+
+### Transport Configuration
+- **[Transport Concepts](../concepts/transports.md)** - Understanding transport types and selection criteria
+- **[Server Transport Configuration](../server/transports.md)** - Advanced transport configuration for production servers
+
 ## Next Steps
 
 - **[Environment Variables](environment.md)** - Complete reference of all configuration options
 - **[Production Setup](production.md)** - Production deployment patterns and security
 - **[Rate Limiting](rate-limiting.md)** - Request rate limiting and throttling configuration  
 - **[Logging Configuration](logging.md)** - Logging setup and structured output patterns
-
-For API-level configuration details, see the [Configuration API Reference](../../api/config/).

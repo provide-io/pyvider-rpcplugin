@@ -685,3 +685,22 @@ pytest test_echo_service.py -v
 7. **Logging** - Comprehensive logging for debugging
 
 This echo service provides a solid foundation for understanding RPC patterns and can be extended with additional features like authentication, rate limiting, and persistence.
+
+## Learning Path and Implementation Guides
+
+### Next Steps for Implementation
+- **[Server Development Guide](../guide/server/)** - Learn advanced server patterns, including async programming, health checks, and production deployment
+- **[Transport Configuration](../guide/server/transports.md)** - Advanced transport configuration for performance and security optimization
+- **[Security Implementation](../guide/security/)** - Add mTLS, certificate management, and authentication to your services
+
+### Configuration and Production Readiness
+- **[Configuration Guide](../guide/config/)** - Environment-driven configuration for development and production environments
+- **[Production Configuration](../guide/config/production.md)** - Production-grade configuration patterns with security and performance optimization
+
+### Understanding Core Concepts
+- **[Transport Concepts](../guide/concepts/transports.md)** - Understand transport selection and performance characteristics
+- **[Security Model](../guide/concepts/security.md)** - Learn about the layered security architecture used by the plugin system
+
+### API References
+- **[Configuration API](../api/config/)** - Programmatic configuration access and validation
+- **[Server API](../api/server/)** - Complete server implementation API documentation

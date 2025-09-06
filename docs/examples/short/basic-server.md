@@ -42,7 +42,22 @@ if __name__ == "__main__":
 - Server prints handshake info to stdout for client connection
 - Handler contains your business logic
 
+## Learning Path
+
+### Next Steps for Development
+- **[Server Development Guide](../../guide/server/)** - Complete guide to building production-ready plugin servers
+- **[Configuration Guide](../../guide/config/)** - Environment-driven configuration setup and best practices
+- **[Security Implementation](../../guide/security/)** - Add mTLS, authentication, and secure communication
+
+### Understanding the Framework
+- **[Transport Concepts](../../guide/concepts/transports.md)** - Learn about Unix sockets, TCP, and transport selection
+- **[Security Model](../../guide/concepts/security.md)** - Understand the plugin security architecture
+
+### Complete Examples
+- **[Echo Service Example](../echo-service.md)** - Full-featured service with all RPC patterns
+- **[Configuration Examples](../../guide/config/index.md#configuration-examples)** - Environment-specific configuration patterns
+
 ## Related Examples
 
-- [Full Server Guide](../guide/server/basic-setup.md)
-- [Custom Protocols](../guide/advanced/custom-protocols.md)
+- [Full Server Guide](../../guide/server/basic-setup.md)
+- [Custom Protocols](../../guide/advanced/custom-protocols.md)

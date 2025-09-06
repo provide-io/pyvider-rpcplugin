@@ -232,11 +232,26 @@ configure(
 ### Monitoring
 Built-in metrics track connection counts, latency, throughput, and error rates for transport performance analysis.
 
-## What's Next?
+## Implementation Resources
 
-Understanding transport layers is crucial for plugin communication:
+### Server Transport Configuration
+- **[Server Transport Configuration](../server/transports.md)** - Advanced transport configuration for production servers, including performance optimization, mTLS setup, and monitoring
+- **[Server Basic Setup](../server/basic-setup.md)** - How to configure transports in server implementations
 
-- **[Security Model](security.md)** - Complete security architecture and patterns
-- **[Handshake Process](handshake.md)** - Connection establishment details
-- **[Server Development](../server/)** - Building servers with different transports
-- **[Client Development](../client/)** - Implementing clients across transports
+### Configuration Integration
+- **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration with examples for different deployment scenarios
+- **[Production Configuration](../config/production.md)** - Production transport configuration patterns
+
+### API Documentation
+- **[Configuration API Reference](../../api/config/index.md)** - Programmatic transport configuration access and validation
+- **[Server API Reference](../../api/server/)** - Server-side transport implementation details
+
+## Related Concepts
+
+- **[Security Model](security.md)** - How transports integrate with security layers including mTLS and authentication
+- **[Handshake Process](handshake.md)** - Connection establishment details across different transports
+
+## Examples and Learning Path
+
+- **[Echo Service Example](../../examples/echo-service.md)** - Transport usage in a complete working service
+- **[Basic Server Example](../../examples/short/basic-server.md)** - Simple transport configuration examples

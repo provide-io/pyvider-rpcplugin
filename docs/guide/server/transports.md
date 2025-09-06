@@ -593,6 +593,20 @@ def setup_production_transport():
     )
 ```
 
+## Related Documentation
+
+### Conceptual Foundation
+- **[Transport Concepts](../concepts/transports.md)** - Understanding transport types, selection criteria, and performance characteristics
+- **[Security Model](../concepts/security.md)** - How transport security integrates with the overall security architecture
+
+### Configuration Resources
+- **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration patterns and best practices
+- **[Configuration API Reference](../../api/config/index.md)** - Programmatic transport configuration access and validation methods
+
+### Security Integration
+- **[Security Implementation Guide](../security/index.md)** - Complete security setup including transport-level security
+- **[mTLS Configuration](../security/mtls.md)** - Detailed mutual TLS setup for secure transport
+
 ## Next Steps
 
 - **[Async Patterns](async-patterns.md)** - Master concurrency and async programming

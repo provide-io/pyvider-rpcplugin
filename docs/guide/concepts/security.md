@@ -557,10 +557,21 @@ class CertificateLifecycleManager:
 
 These features would provide comprehensive certificate management, automated security monitoring, and simplified deployment workflows for production environments.
 
-## What's Next?
+## Implementation Resources
 
-Now that you understand the security model:
+### Complete Security Implementation
+- **[Security Implementation Guide](../security/index.md)** - Step-by-step security setup with practical examples, certificate management, and production patterns
+- **[mTLS Configuration Guide](../security/mtls.md)** - Detailed mutual TLS setup and certificate management
+- **[Certificate Management Guide](../security/certificates.md)** - Complete certificate lifecycle management
 
-- **[Configuration](configuration.md)** - Explore all security configuration options
-- **[Production Deployment](../production/)** - Security considerations for production
-- **[Monitoring](../monitoring/)** - Security monitoring and alerting
+### Configuration Integration
+- **[Configuration Guide](../config/index.md)** - Environment-driven security configuration with validation patterns
+- **[Production Configuration](../config/production.md)** - Production-ready security configuration examples
+
+### API Documentation
+- **[Configuration API Reference](../../api/config/index.md)** - Programmatic access to security configuration options
+
+## Related Concepts
+
+- **[Transport Security](transports.md)** - How transports integrate with the security model
+- **[Server Security Patterns](../server/security.md)** - Server-specific security implementation patterns
