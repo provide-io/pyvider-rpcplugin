@@ -1,95 +1,41 @@
 # Rate Limiting API
 
-The Rate Limiting API provides traffic control and abuse prevention for RPC services using various algorithms including token bucket, sliding window, and fixed window rate limiting.
+The Rate Limiting API provides basic token bucket rate limiting for traffic control.
 
 ## Overview
 
-The rate limiting system includes:
+The rate limiting system provides:
 
-- **Multiple Algorithms** - Token bucket, sliding window, fixed window
-- **Per-Client Limiting** - Individual rate limits by client identifier
-- **Per-Method Limiting** - Different limits for different RPC methods
-- **Burst Handling** - Allow temporary traffic spikes within limits
-- **Distributed Support** - Redis-backed rate limiting for multi-instance deployments
+- **Token Bucket Algorithm** - Allows burst traffic up to capacity with steady refill rate
+- **Async/Await Support** - Thread-safe implementation using asyncio.Lock
+- **Simple Interface** - Easy to integrate into RPC service handlers
 
 ## Class Reference
 
-### `RateLimiter`
-
-Base class for all rate limiting implementations.
-
-```python
-from abc import ABC, abstractmethod
-from typing import Any
-
-class RateLimiter(ABC):
-    """Abstract base class for rate limiters."""
-    
-    @abstractmethod
-    async def is_allowed(self, key: str, tokens: int = 1) -> bool:
-        """Check if request is allowed."""
-        pass
-    
-    @abstractmethod
-    async def get_limit_info(self, key: str) -> dict[str, Any]:
-        """Get current rate limit status."""
-        pass
-    
-    @abstractmethod
-    async def reset(self, key: str) -> None:
-        """Reset rate limit for key."""
-        pass
-```
-
 ### `TokenBucketRateLimiter`
 
-Token bucket algorithm implementation for smooth rate limiting with burst capability.
+Token bucket algorithm implementation for rate limiting with burst capability.
 
 ```python
-from pyvider.ratelimit import TokenBucketRateLimiter
-import asyncio
-import time
-
-class TokenBucketRateLimiter(RateLimiter):
-    """Token bucket rate limiter implementation."""
+from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
 ```
 
 #### Constructor
 
 ```python
-def __init__(
-    self,
-    capacity: int,
-    refill_rate: float,
-    refill_period: float = 1.0,
-    redis_client: Any | None = None
-):
+def __init__(self, capacity: float, refill_rate: float) -> None:
 ```
 
 **Parameters:**
-- `capacity` (int): Maximum number of tokens in the bucket
-- `refill_rate` (float): Number of tokens added per refill period
-- `refill_period` (float): Time period for token refill in seconds (default: 1.0)
-- `redis_client` (Any | None): Redis client for distributed rate limiting
+- `capacity` (float): Maximum number of tokens the bucket can hold (burst capacity)
+- `refill_rate` (float): Rate at which tokens are refilled per second
 
 **Example:**
 ```python
-# Local rate limiter: 100 requests per second, burst of 200
+# Rate limiter: 10 requests per second, burst of 20
 rate_limiter = TokenBucketRateLimiter(
-    capacity=200,
-    refill_rate=100,
-    refill_period=1.0
-)
-
-# Distributed rate limiter using Redis
-import aioredis
-redis_client = aioredis.from_url("redis://localhost:6379")
-
-distributed_limiter = TokenBucketRateLimiter(
-    capacity=1000,
-    refill_rate=100,
-    refill_period=1.0,
-    redis_client=redis_client
+    capacity=20.0,
+    refill_rate=10.0
 )
 ```
 
@@ -98,54 +44,41 @@ distributed_limiter = TokenBucketRateLimiter(
 ##### `is_allowed`
 
 ```python
-async def is_allowed(self, key: str, tokens: int = 1) -> bool:
+async def is_allowed(self) -> bool:
 ```
 
-Check if the request is allowed and consume tokens if available.
-
-**Parameters:**
-- `key` (str): Unique identifier for the rate limit (e.g., client ID, IP address)
-- `tokens` (int): Number of tokens to consume (default: 1)
+Check if a request is allowed based on available tokens.
 
 **Returns:**
 - `bool`: True if request is allowed, False if rate limited
 
 **Example:**
 ```python
-# Check if client can make a request
-client_id = "user_123"
-if await rate_limiter.is_allowed(client_id):
+# Check if request is allowed
+if await rate_limiter.is_allowed():
     # Process request
     await handle_request()
 else:
     # Rate limited
     raise RateLimitExceeded("Too many requests")
-
-# Consume multiple tokens for expensive operations
-if await rate_limiter.is_allowed(client_id, tokens=5):
-    await expensive_operation()
 ```
 
-##### `get_limit_info`
+##### `get_current_tokens`
 
 ```python
-async def get_limit_info(self, key: str) -> dict[str, Any]:
+async def get_current_tokens(self) -> float:
 ```
 
-Get current rate limit status and remaining capacity.
+Get the current number of tokens in the bucket.
 
 **Returns:**
-- `dict[str, Any]`: Rate limit information including:
-  - `remaining`: Number of tokens remaining
-  - `capacity`: Maximum bucket capacity
-  - `refill_rate`: Token refill rate
-  - `next_refill`: Timestamp of next refill
-  - `reset_time`: Time until bucket is full
+- `float`: Current number of tokens available
 
 **Example:**
 ```python
-info = await rate_limiter.get_limit_info("user_123")
-print(f"Remaining requests: {info['remaining']}")
+tokens = await rate_limiter.get_current_tokens()
+print(f"Available tokens: {tokens}")
+```
 print(f"Reset in: {info['reset_time']} seconds")
 ```
 
