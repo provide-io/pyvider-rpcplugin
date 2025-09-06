@@ -241,7 +241,7 @@ class ConsulServiceDiscovery:
         return clients
 ```
 
-## Load Balancing and Connection Pools
+## Load Balancing and Connection Management
 
 ### Load Balancing Client
 
@@ -397,26 +397,17 @@ class HealthMonitoredClient:
         
         try:
             if self.client and hasattr(self.client, 'health'):
-                # Use gRPC health service if available
                 health_response = await self.client.health.Check(service="")
                 self.is_healthy = health_response.status == "SERVING"
             else:
-                # Fallback: simple connection check
                 self.is_healthy = self.client and self.client.is_connected()
             
             self.last_health_check = time.time()
-            
-            if self.is_healthy:
-                print(f"Health check passed for {self.host}:{self.port}")
-            else:
-                print(f"Health check failed for {self.host}:{self.port}")
         
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 self.is_healthy = False
                 print(f"Server unavailable: {self.host}:{self.port}")
-            else:
-                print(f"Health check RPC error: {e.code()}")
         except Exception as e:
             self.is_healthy = False
             print(f"Health check failed: {e}")
@@ -761,7 +752,7 @@ class ProductionDirectClient:
                 raise Exception("All endpoints failed")
         
         finally:
-            # Update metrics
+            # Update metrics and cleanup
             if self.enable_metrics:
                 self.metrics["total_requests"] += 1
                 duration = time.time() - start_time
@@ -771,7 +762,6 @@ class ProductionDirectClient:
                 else:
                     self.metrics["failed_requests"] += 1
                 
-                # Update average response time
                 self.metrics["average_response_time"] = (
                     (self.metrics["average_response_time"] * (self.metrics["total_requests"] - 1) + duration) 
                     / self.metrics["total_requests"]
@@ -780,7 +770,6 @@ class ProductionDirectClient:
                 if client:
                     self.metrics["active_connections"] -= 1
             
-            # Cleanup
             if client:
                 await client.close()
     
@@ -848,7 +837,6 @@ async def production_usage_example():
 ### Connection Diagnostics
 
 ```python
-import asyncio
 import grpc
 from pyvider.rpcplugin import plugin_client
 
@@ -858,8 +846,6 @@ async def diagnose_connection(host: str, port: int):
     print(f"Diagnosing connection to {host}:{port}")
     
     try:
-        # Test basic connectivity
-        print("Testing basic connectivity...")
         client = plugin_client(host=host, port=port, timeout=5.0)
         await client.start()
         
@@ -881,22 +867,17 @@ async def diagnose_connection(host: str, port: int):
                 print(f"Health check failed: {e}")
         
         await client.close()
-        print("Connection diagnostic completed successfully")
         
     except grpc.aio.AioRpcError as e:
         print(f"gRPC error: {e.code()} - {e.details()}")
     except Exception as e:
         print(f"Connection failed: {e}")
-
-# Usage
-await diagnose_connection("127.0.0.1", 8080)
 ```
 
 ### Performance Monitoring
 
 ```python
 import time
-import asyncio
 
 class PerformanceMonitor:
     """Monitor connection performance."""
@@ -918,8 +899,6 @@ class PerformanceMonitor:
             method = getattr(service, method_name)
             
             result = await method(**kwargs)
-            
-            # Record timing
             duration = time.time() - start_time
             self.request_times.append(duration)
             
@@ -945,22 +924,6 @@ class PerformanceMonitor:
             "min_response_time": min(self.request_times),
             "max_response_time": max(self.request_times)
         }
-
-# Usage
-async def performance_test():
-    monitor = PerformanceMonitor()
-    
-    async with plugin_client(host="127.0.0.1", port=8080) as client:
-        # Run performance test
-        for i in range(100):
-            try:
-                await monitor.timed_call(client, "calculator.Add", a=i, b=1)
-            except Exception as e:
-                print(f"Request {i} failed: {e}")
-        
-        # Print stats
-        stats = monitor.get_stats()
-        print(f"Performance stats: {stats}")
 ```
 
 ## Next Steps
