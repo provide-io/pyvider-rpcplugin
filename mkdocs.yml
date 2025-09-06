@@ -43,6 +43,7 @@ theme:
     - navigation.tabs
     - navigation.tabs.sticky
     - navigation.sections
+    - navigation.expand
     - navigation.prune
     - navigation.path
     - navigation.indexes
@@ -125,6 +126,13 @@ plugins:
             merge_init_into_class: true
   
   - section-index
+  
+  - tags:
+      tags_file: tags.md
+  
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
 
 markdown_extensions:
   # Python Markdown
@@ -309,11 +317,20 @@ nav:
   
   - Examples:
     - examples/index.md
-    - Echo Service: examples/echo-service.md
-    - File Transfer: examples/file-transfer.md
-    - Database Plugin: examples/database-plugin.md
-    - Microservice Gateway: examples/microservice-gateway.md
-    - Production Deployment: examples/production.md
+    - Working Examples:
+      - Echo Service: examples/echo-service.md
+      - File Transfer: examples/file-transfer.md
+      - Database Plugin: examples/database-plugin.md
+      - Microservice Gateway: examples/microservice-gateway.md
+      - Production Deployment: examples/production.md
+    - Quick Examples:
+      - examples/short/index.md
+      - Basic Client: examples/short/basic-client.md
+      - Basic Server: examples/short/basic-server.md
+      - Health Check: examples/short/health-check.md
+      - Rate Limiting: examples/short/rate-limiting.md
+      - TCP Transport: examples/short/tcp-transport.md
+      - Custom Protocol: examples/short/custom-protocol.md
   
   - Development:
     - development/index.md
