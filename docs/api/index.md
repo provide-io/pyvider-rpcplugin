@@ -21,6 +21,30 @@ While Pyvider RPC Plugin adds:
 - **Plugin Lifecycle**: Handshake, serving, and shutdown coordination
 - **Client Management**: Plugin discovery and connection handling
 
+## Foundation vs Pyvider RPC Plugin Feature Matrix
+
+| Feature Category | Foundation (`provide.foundation`) | Pyvider RPC Plugin (`pyvider.rpcplugin`) |
+|-----------------|-----------------------------------|------------------------------------------|
+| **Configuration** | `RuntimeConfig` - Environment loading, type safety, validation | `RPCPluginConfig` - Extends RuntimeConfig with RPC-specific fields |
+| **Logging** | Structured logging with JSON output, log levels, context | Uses Foundation logging, adds RPC request/response logging |
+| **Cryptography** | X.509 certificate management, TLS context creation, key handling | Uses Foundation crypto for mTLS, adds certificate discovery |
+| **Rate Limiting** | `TokenBucketRateLimiter` implementation | Uses Foundation rate limiter in server middleware |
+| **Error Handling** | Base exception classes, error context, validation | Extends with RPC-specific exceptions (HandshakeError, etc.) |
+| **Transport** | N/A | Unix socket and TCP transport implementations |
+| **Protocol** | N/A | gRPC protocol handling, service registration |
+| **Plugin Lifecycle** | N/A | Handshake protocol, graceful shutdown, health checks |
+| **Client/Server** | N/A | Complete RPC client/server implementations |
+| **Service Discovery** | N/A | Plugin endpoint discovery and connection management |
+| **Testing** | Testing utilities, fixtures | RPC-specific testing helpers and mock servers |
+
+### Integration Points
+
+- **Configuration**: `rpcplugin_config` extends `RuntimeConfig` for seamless environment loading
+- **Logging**: All RPC operations use Foundation's structured logging automatically  
+- **Security**: Foundation's crypto module handles all certificate management for mTLS
+- **Performance**: Foundation's rate limiter protects RPC servers from overload
+- **Development**: Both use modern Python 3.11+ typing and async patterns
+
 The API is organized into focused modules:
 
 - **[Server](server/)** - Plugin server with health checks, rate limiting, and graceful shutdown
