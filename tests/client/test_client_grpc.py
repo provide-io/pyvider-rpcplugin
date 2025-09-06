@@ -80,20 +80,11 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
     client_instance.client_key_pem = dummy_client_key_pem
     client_instance._server_cert = dummy_server_root_pem # Used if PLUGIN_SERVER_ROOT_CERTS is not primary
 
-    # Mock rpcplugin_config.get
-    def mock_config_get_side_effect(key, default=None):
-        if key == "PLUGIN_AUTO_MTLS":
-            return True # Enable mTLS path
-        elif key == "PLUGIN_CLIENT_CERT":
-            return dummy_client_cert_pem # Explicit client cert configured
-        elif key == "PLUGIN_CLIENT_KEY":
-            return dummy_client_key_pem   # Explicit client key configured
-        elif key == "PLUGIN_SERVER_ROOT_CERTS":
-            return dummy_server_root_pem # Explicit server root CAs
-        # Default for other config values if any are checked by the method implicitly
-        return default
-
-    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.get", side_effect=mock_config_get_side_effect)
+    # Mock rpcplugin_config using Foundation patterns
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.plugin_auto_mtls", True)
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.plugin_client_cert", dummy_client_cert_pem)
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.plugin_client_key", dummy_client_key_pem)
+    mocker.patch("pyvider.rpcplugin.client.base.rpcplugin_config.plugin_server_root_certs", dummy_server_root_pem)
 
     client_instance._transport = MagicMock()
     client_instance._transport_name = "tcp"

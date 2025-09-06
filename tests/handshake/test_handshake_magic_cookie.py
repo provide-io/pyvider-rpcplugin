@@ -50,11 +50,11 @@ def test_validate_magic_cookie_config_scenarios(
     expected_error_regex,
 ):
     """Tests validate_magic_cookie by mocking rpcplugin_config values."""
-    monkeypatch.setitem(
-        rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", magic_cookie_key_config
+    monkeypatch.setattr(
+        rpcplugin_config, "plugin_magic_cookie_key", magic_cookie_key_config
     )
-    monkeypatch.setitem(
-        rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie_value_config
+    monkeypatch.setattr(
+        rpcplugin_config, "plugin_magic_cookie_value", magic_cookie_value_config
     )
     if magic_cookie_key_config and magic_cookie_env_var is not None:
         monkeypatch.setenv(magic_cookie_key_config, magic_cookie_env_var)
@@ -96,10 +96,10 @@ def test_validate_magic_cookie_config_scenarios(
 def test_validate_magic_cookie_failures(
     monkeypatch, magic_cookie_key, magic_cookie_value, expected_error
 ) -> None:
-    monkeypatch.setitem(
-        rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", magic_cookie_key
+    monkeypatch.setattr(
+        rpcplugin_config, "plugin_magic_cookie_key", magic_cookie_key
     )
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "hello")
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", "hello")
 
     if magic_cookie_key and magic_cookie_value is not None:
         monkeypatch.setenv(magic_cookie_key, magic_cookie_value)
@@ -116,9 +116,8 @@ def test_validate_magic_cookie_failures(
 
 def test_validate_magic_cookie_missing_still_raises(monkeypatch) -> None:
     """Test that if cookie key/value are not passed as args AND not in config, it still raises."""
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", None)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", None)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", None)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_key", None)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", None)
     with pytest.raises(HandshakeError, match=r"Internal configuration error: cookie_key is missing for lookup") :
         validate_magic_cookie(
             magic_cookie_key=_SENTINEL_INSTANCE,
@@ -159,8 +158,8 @@ def test_validate_magic_cookie(
     """
     Parametrized test that covers valid/invalid cookie scenarios by directly setting config.
     """
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", set_key)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", set_value)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_key", set_key)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", set_value)
 
     if set_key and set_cookie is not None:
         monkeypatch.setenv(set_key, set_cookie)
@@ -178,20 +177,15 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     """
     Test validate_magic_cookie providing explicit function arguments.
     """
-    monkeypatch.setitem(
-        rpcplugin_config.config,
-        "PLUGIN_MAGIC_COOKIE_KEY",
+    monkeypatch.setattr(
+        rpcplugin_config,
+        "plugin_magic_cookie_key",
         "CONFIG_KEY_SHOULD_BE_IGNORED",
     )
-    monkeypatch.setitem(
-        rpcplugin_config.config,
-        "PLUGIN_MAGIC_COOKIE_VALUE",
+    monkeypatch.setattr(
+        rpcplugin_config,
+        "plugin_magic_cookie_value",
         "CONFIG_VALUE_SHOULD_BE_IGNORED",
-    )
-    monkeypatch.setitem(
-        rpcplugin_config.config,
-        "PLUGIN_MAGIC_COOKIE",
-        "CONFIG_ACTUAL_COOKIE_SHOULD_BE_IGNORED",
     )
 
     validate_magic_cookie(

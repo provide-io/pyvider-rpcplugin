@@ -22,10 +22,11 @@ def test_attrs_post_init_handshake_config_error(mocker):
     local_mock_protocol = MagicMock()
     local_mock_handler = MagicMock()
 
+    # Mock a configuration attribute access to raise ConfigError during Foundation pattern usage
     mocker.patch.object(
-        RPCPluginServer,
-        "_get_config_value",
-        side_effect=ConfigError("Failed to initialize handshake configuration"),
+        type(rpcplugin_config), 
+        "plugin_magic_cookie_key",
+        new_callable=lambda: property(lambda self: (_ for _ in ()).throw(ConfigError("Failed to initialize handshake configuration")))
     )
 
     with pytest.raises(ConfigError, match=r"Failed to initialize handshake configuration.*"):

@@ -13,7 +13,7 @@ from typing import Any, cast  # For DummyHandler type hint
 import grpc  # For DummyHandler type hint
 
 from pyvider.rpcplugin import configure as pyvider_configure
-from pyvider.rpcplugin.config import CONFIG_SCHEMA, rpcplugin_config
+from pyvider.rpcplugin.config import rpcplugin_config
 from provide.foundation import logger as dummy_handler_logger
 
 
@@ -87,17 +87,33 @@ def configure_for_example(clear_env: bool = False) -> None:
         }
 
         config_to_apply_programmatically = {}
+        # Map environment variable keys to direct attributes
+        key_to_attr = {
+            "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
+            "PLUGIN_LOG_LEVEL": "plugin_log_level",
+            "PLUGIN_HANDSHAKE_TIMEOUT": "plugin_handshake_timeout",
+            "PLUGIN_CONNECTION_TIMEOUT": "plugin_connection_timeout",
+        }
+        
         for key, example_value in example_defaults.items():
-            current_val = rpcplugin_config.get(key)
-            schema_default = CONFIG_SCHEMA.get(key, {}).get("default")
+            attr_name = key_to_attr.get(key)
+            if not attr_name:
+                continue
+            current_val = getattr(rpcplugin_config, attr_name)
 
+            # Apply example defaults based on current values
             if key == "PLUGIN_AUTO_MTLS":
-                if current_val is True:
+                if current_val is True or current_val is None:
                     config_to_apply_programmatically[key] = example_value
-                elif current_val is None:
-                    config_to_apply_programmatically[key] = example_value
-            elif current_val == schema_default or key == "PLUGIN_LOG_LEVEL":
+            elif key == "PLUGIN_LOG_LEVEL":
+                # Always apply for log level examples
                 config_to_apply_programmatically[key] = example_value
+            elif attr_name and hasattr(rpcplugin_config, attr_name):
+                # For other attributes, compare with Foundation defaults
+                fresh_config = rpcplugin_config.__class__.from_env()
+                default_val = getattr(fresh_config, attr_name)
+                if current_val == default_val:
+                    config_to_apply_programmatically[key] = example_value
 
         if config_to_apply_programmatically:
             mapped_args = {}

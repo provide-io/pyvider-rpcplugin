@@ -177,7 +177,7 @@ class RPCPluginClient:
         grpc_channel, target_endpoint upon channel creation. It also manages
         _handshake_complete_event and _handshake_failed_event.
         """
-        retry_enabled_str = rpcplugin_config.get("PLUGIN_CLIENT_RETRY_ENABLED", "true")
+        retry_enabled_str = str(rpcplugin_config.plugin_client_retry_enabled)
         retry_enabled = str(retry_enabled_str).lower() == "true"
         self.logger.debug(
             f"Client retry_enabled evaluated to: {retry_enabled} "
@@ -225,17 +225,11 @@ class RPCPluginClient:
                 raise
             return
 
-        max_retries = int(rpcplugin_config.get("PLUGIN_CLIENT_MAX_RETRIES", 3))
-        initial_backoff_ms = float(
-            rpcplugin_config.get("PLUGIN_CLIENT_INITIAL_BACKOFF_MS", 500)
-        )
-        max_backoff_ms = float(
-            rpcplugin_config.get("PLUGIN_CLIENT_MAX_BACKOFF_MS", 5000)
-        )
-        jitter_ms = float(rpcplugin_config.get("PLUGIN_CLIENT_RETRY_JITTER_MS", 100))
-        total_timeout_s = float(
-            rpcplugin_config.get("PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S", 60)
-        )
+        max_retries = rpcplugin_config.plugin_client_max_retries
+        initial_backoff_ms = float(rpcplugin_config.plugin_client_initial_backoff_ms)
+        max_backoff_ms = float(rpcplugin_config.plugin_client_max_backoff_ms)
+        jitter_ms = float(rpcplugin_config.plugin_client_retry_jitter_ms)
+        total_timeout_s = float(rpcplugin_config.plugin_client_retry_total_timeout_s)
 
         attempts = 0
         current_backoff_ms = initial_backoff_ms
@@ -458,8 +452,8 @@ class RPCPluginClient:
         auto_mtls: bool = rpcplugin_config.auto_mtls_enabled()
 
         if auto_mtls:
-            cert_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-            key_pem: str = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+            cert_pem: str | None = rpcplugin_config.plugin_client_cert
+            key_pem: str | None = rpcplugin_config.plugin_client_key
 
             if cert_pem and key_pem:
                 logger.info("🔐 Using existing client cert/key from config.")
@@ -876,7 +870,7 @@ class RPCPluginClient:
             full_pem = self._rebuild_x509_pem(self._server_cert)
 
             explicit_client_cert_configured = bool(
-                rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+                rpcplugin_config.plugin_client_cert
             )
 
             if (
@@ -927,7 +921,7 @@ class RPCPluginClient:
                 )
             await asyncio.wait_for(
                 self.grpc_channel.channel_ready(),
-                timeout=rpcplugin_config.get("PLUGIN_CONNECTION_TIMEOUT", 5.0),
+                timeout=rpcplugin_config.plugin_connection_timeout,
             )
             logger.debug("🚢✅ gRPC channel ready and connected.")
         except TimeoutError as e_timeout:

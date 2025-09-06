@@ -93,13 +93,10 @@ async def test_client_integration(test_client_command):
         # Create and configure client
         client = RPCPluginClient(command=test_client_command)
 
-        # Mock config for mTLS
+        # Mock config for mTLS using Foundation patterns
         with patch(
-            "pyvider.rpcplugin.client.base.rpcplugin_config.get"
-        ) as mock_config_get:
-            mock_config_get.side_effect = (
-                lambda key, default=None: "true" if key == "PLUGIN_AUTO_MTLS" else None
-            )
+            "pyvider.rpcplugin.client.base.rpcplugin_config.plugin_auto_mtls", True
+        ):
 
             # Start client
             await client.start()

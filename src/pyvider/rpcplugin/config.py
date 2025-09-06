@@ -6,7 +6,7 @@ Uses provide.foundation for modern async configuration loading, multi-source sup
 Usage:
     # Get a configuration value
     from pyvider.rpcplugin import rpcplugin_config
-    cookie_value = rpcplugin_config.get("plugin_magic_cookie_value")
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
 
     # Use helper methods
     transports = rpcplugin_config.server_transports()

@@ -154,7 +154,7 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     logger.debug(
         f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}"
     )
-    supported_versions_config = rpcplugin_config.get("SUPPORTED_PROTOCOL_VERSIONS")
+    supported_versions_config = rpcplugin_config.supported_protocol_versions
     for version in sorted(server_versions, reverse=True):
         if version in supported_versions_config:
             logger.info(f"🤝✅ Selected protocol version: {version}")
@@ -397,7 +397,7 @@ async def build_handshake_response(
             )
 
         response_parts = [
-            str(rpcplugin_config.get("PLUGIN_CORE_VERSION")),
+            str(rpcplugin_config.plugin_core_version),
             str(plugin_version),
             transport_name,
             endpoint,
@@ -535,7 +535,7 @@ def parse_handshake_response(
         else:
             server_cert = None
 
-        expected_core_version_from_config = rpcplugin_config.get("PLUGIN_CORE_VERSION")
+        expected_core_version_from_config = rpcplugin_config.plugin_core_version
         logger.debug(
             "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: "
             f"{expected_core_version_from_config} "

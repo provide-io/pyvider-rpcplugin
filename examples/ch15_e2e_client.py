@@ -39,9 +39,7 @@ async def main() -> None:
         "env": {
             "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
             "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
-            "PLUGIN_LOG_LEVEL": rpcplugin_config.get(
-                "PLUGIN_LOG_LEVEL", "DEBUG"
-            ),  # Use client's log level
+            "PLUGIN_LOG_LEVEL": rpcplugin_config.plugin_log_level,  # Use client's log level
             # Explicitly disable mTLS for this example server
             "PLUGIN_AUTO_MTLS": "False",
         }
