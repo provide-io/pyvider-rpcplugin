@@ -347,106 +347,68 @@ async def test_client_server_integration_pattern(mock_protocol, mock_handler):
 
 ## Exception Testing
 
-### Exception Hierarchy Testing
+### Exception Hierarchy and Error Simulation
 
 ```python
 import pytest
 from pyvider.rpcplugin.exception import *
 
-def test_exception_hierarchy():
-    """Test exception inheritance hierarchy."""
-    # All specific exceptions should inherit from RPCPluginError
+def test_exception_hierarchy_and_attributes():
+    """Test exception inheritance and attribute handling."""
+    # Test hierarchy - all inherit from RPCPluginError
     config_error = ConfigError("test")
-    transport_error = TransportError("test")
+    transport_error = TransportError("Connection failed", 
+                                   hint="Check network", 
+                                   code="TRANSPORT_001")
     handshake_error = HandshakeError("test")
     protocol_error = ProtocolError("test")
     security_error = SecurityError("test")
     
-    assert isinstance(config_error, RPCPluginError)
-    assert isinstance(transport_error, RPCPluginError)
-    assert isinstance(handshake_error, RPCPluginError)
-    assert isinstance(protocol_error, RPCPluginError)
-    assert isinstance(security_error, RPCPluginError)
-
-def test_exception_attributes():
-    """Test exception attribute handling."""
-    error = TransportError(
-        message="Connection failed",
-        hint="Check network connectivity",
-        code="TRANSPORT_001"
-    )
+    for error in [config_error, transport_error, handshake_error, 
+                  protocol_error, security_error]:
+        assert isinstance(error, RPCPluginError)
     
-    assert error.message == "Connection failed"
-    assert error.hint == "Check network connectivity" 
-    assert error.code == "TRANSPORT_001"
+    # Test attributes
+    assert transport_error.message == "Connection failed"
+    assert transport_error.hint == "Check network"
+    assert transport_error.code == "TRANSPORT_001"
     
-    # Test string representation
-    error_str = str(error)
+    # Test string representation contains key information
+    error_str = str(transport_error)
     assert "TransportError" in error_str
     assert "Connection failed" in error_str
-    assert "Check network connectivity" in error_str
-    assert "TRANSPORT_001" in error_str
 
 def test_exception_chaining():
     """Test exception chaining with 'from' clause."""
     original_error = OSError("Network unreachable")
     
     try:
-        raise TransportError(
-            message="Failed to connect",
-            hint="Check network settings"
-        ) from original_error
+        raise TransportError("Failed to connect") from original_error
     except TransportError as e:
         assert e.__cause__ is original_error
-        assert str(original_error) in str(e.__cause__)
-```
 
-### Error Simulation Testing
-
-```python
 @pytest.mark.asyncio
-async def test_transport_error_simulation(transport_factory):
-    """Test transport error conditions."""
-    
-    # Test connection to non-existent Unix socket
+async def test_transport_error_conditions(transport_factory):
+    """Test transport error simulation."""
+    # Test connection to non-existent socket
     transport = await transport_factory("unix")
     
     with pytest.raises(TransportError) as exc_info:
         await transport.connect("/tmp/nonexistent.sock")
     
-    error = exc_info.value
-    assert "does not exist" in error.message.lower()
+    assert "does not exist" in exc_info.value.message.lower()
 
 @pytest.mark.asyncio
-async def test_port_conflict_simulation(transport_factory):
+async def test_port_conflict_error(transport_factory):
     """Test TCP port conflict handling."""
-    # Create first transport on specific port
     transport1 = await transport_factory("tcp", port=0)
     endpoint = await transport1.listen()
-    
-    # Extract port from endpoint
     port = int(endpoint.split(":")[1])
     
-    # Try to create second transport on same port
     transport2 = await transport_factory("tcp", port=port)
     
-    with pytest.raises(TransportError) as exc_info:
+    with pytest.raises(TransportError):
         await transport2.listen()
-    
-    error = exc_info.value
-    # Error message should indicate port conflict
-    assert "already" in error.message.lower() or "use" in error.message.lower()
-
-def test_config_error_simulation():
-    """Test configuration error simulation."""
-    
-    # Test invalid protocol version
-    with pytest.raises(Exception):  # Would be ValidationError or ConfigError
-        os.environ["PLUGIN_PROTOCOL_VERSIONS"] = "[0, 8]"  # Invalid range
-        # Force config reload if needed
-    
-    # Clean up
-    os.environ.pop("PLUGIN_PROTOCOL_VERSIONS", None)
 ```
 
 ## Performance Testing
