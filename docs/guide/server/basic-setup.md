@@ -8,6 +8,7 @@ Learn the fundamentals of creating and configuring plugin servers with comprehen
 import asyncio
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin import RPCPluginProtocol
+from provide.foundation import logger
 
 class EchoProtocol(RPCPluginProtocol):
     service_name = "echo.Echo"
@@ -22,14 +23,31 @@ class EchoProtocol(RPCPluginProtocol):
 class EchoHandler:
     async def Echo(self, request, context):
         from echo_pb2 import EchoResponse
-        return EchoResponse(message=f"Echo: {request.message}")
+        
+        logger.info("Processing Echo request", extra={
+            "message": request.message,
+            "peer": context.peer()
+        })
+        
+        response_message = f"Echo: {request.message}"
+        logger.debug("Echo response prepared", extra={"response": response_message})
+        
+        return EchoResponse(message=response_message)
 
 async def main():
+    logger.info("Starting Echo plugin server")
+    
     server = plugin_server(
         protocol=EchoProtocol(),
         handler=EchoHandler()
     )
-    await server.serve()
+    
+    try:
+        logger.info("Echo server ready to serve requests")
+        await server.serve()
+    except Exception as e:
+        logger.error("Server error", extra={"error": str(e)}, exc_info=True)
+        raise
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -42,24 +60,39 @@ import os
 from dataclasses import dataclass
 
 from pyvider.rpcplugin import configure
+from provide.foundation import logger
+from provide.foundation.config import RuntimeConfig
 
 @dataclass
-class ServerConfig:
+class ServerConfig(RuntimeConfig):
+    """Server configuration using Foundation's RuntimeConfig base class."""
     max_workers: int = int(os.environ.get("PLUGIN_MAX_WORKERS", "10"))
     timeout: float = float(os.environ.get("PLUGIN_TIMEOUT", "30.0"))
     transport: str = os.environ.get("PLUGIN_TRANSPORT", "auto")
     enable_mtls: bool = os.environ.get("PLUGIN_ENABLE_MTLS", "false").lower() == "true"
     
     def apply(self):
+        logger.info("Applying server configuration", extra={
+            "max_workers": self.max_workers,
+            "timeout": self.timeout,
+            "transport": self.transport,
+            "mtls_enabled": self.enable_mtls
+        })
+        
         configure(
             max_workers=self.max_workers,
             timeout=self.timeout,
             transports=[self.transport] if self.transport != "auto" else ["unix", "tcp"],
             auto_mtls=self.enable_mtls
         )
+        
+        logger.debug("Configuration applied successfully")
 
+# Initialize and apply Foundation-based configuration
 config = ServerConfig()
 config.apply()
+
+logger.info("Creating plugin server with applied configuration")
 server = plugin_server(protocol=EchoProtocol(), handler=EchoHandler())
 ```
 
@@ -68,6 +101,7 @@ server = plugin_server(protocol=EchoProtocol(), handler=EchoHandler())
 ```python
 import signal
 import asyncio
+from provide.foundation import logger
 
 class GracefulServer:
     def __init__(self, protocol, handler):
@@ -75,8 +109,13 @@ class GracefulServer:
         self.handler = handler
         self.server = None
         self.shutdown_event = asyncio.Event()
+        logger.info("Graceful server initialized", extra={
+            "protocol": type(protocol).__name__,
+            "handler": type(handler).__name__
+        })
     
     async def start(self):
+        logger.info("Starting graceful server with signal handlers")
         self.setup_signal_handlers()
         
         self.server = plugin_server(
@@ -84,23 +123,46 @@ class GracefulServer:
             handler=self.handler
         )
         
-        await self.server.serve()
+        try:
+            logger.info("Server ready, beginning to serve requests")
+            await self.server.serve()
+        except Exception as e:
+            logger.error("Server error during operation", extra={"error": str(e)}, exc_info=True)
+            raise
     
     async def stop(self):
+        logger.info("Initiating graceful server shutdown")
         if self.server:
+            logger.debug("Stopping server instance")
             await self.server.stop()
+            logger.info("Server stopped successfully")
+        
         self.shutdown_event.set()
+        logger.info("Shutdown event set")
     
     def setup_signal_handlers(self):
-        def handler(signum, frame):
+        def signal_handler(signum, frame):
+            signal_name = signal.Signals(signum).name
+            logger.info("Received shutdown signal", extra={"signal": signal_name})
             asyncio.create_task(self.stop())
         
-        signal.signal(signal.SIGTERM, handler)
-        signal.signal(signal.SIGINT, handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+        signal.signal(signal.SIGINT, signal_handler)
+        
+        logger.debug("Signal handlers configured for SIGTERM and SIGINT")
 
 async def main():
+    logger.info("Initializing graceful server example")
     server = GracefulServer(EchoProtocol(), EchoHandler())
-    await server.start()
+    
+    try:
+        await server.start()
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt")
+    except Exception as e:
+        logger.error("Unhandled exception in main", extra={"error": str(e)}, exc_info=True)
+    finally:
+        logger.info("Main function cleanup complete")
 ```
 
 ## Development vs Production
@@ -135,7 +197,7 @@ def setup_production():
 ## Error Handling
 
 ```python
-import logging
+from provide.foundation import logger
 
 class ValidatedServer:
     def __init__(self, protocol, handler):

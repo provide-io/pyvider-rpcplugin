@@ -98,13 +98,23 @@ Comprehensive security setup with mutual TLS:
 ```python
 # From ch09_security_mtls_example.py
 import os
-from provide.foundation.crypto import Certificate
+from provide.foundation.crypto import Certificate, PrivateKey
+from provide.foundation import logger
 
-# Configure mTLS
+# Load certificates using Foundation crypto
+server_cert = Certificate.load_from_file("/etc/ssl/server.crt")
+server_key = PrivateKey.load_from_file("/etc/ssl/server.key")
+
+# Configure mTLS with Foundation patterns
 os.environ.update({
     "PLUGIN_AUTO_MTLS": "true",
-    "PLUGIN_SERVER_CERT": server_cert.cert,
-    "PLUGIN_SERVER_KEY": server_cert.key,
+    "PLUGIN_SERVER_CERT": str(server_cert.file_path),
+    "PLUGIN_SERVER_KEY": str(server_key.file_path),
+})
+
+logger.info("mTLS configuration loaded", extra={
+    "cert_path": str(server_cert.file_path),
+    "auto_mtls": True
 })
 
 server = plugin_server(protocol=protocol, handler=handler)
@@ -202,18 +212,31 @@ Production-grade error handling patterns:
 from pyvider.rpcplugin.exception import (
     RPCPluginError, TransportError, HandshakeError
 )
+from provide.foundation import logger
 
 try:
     async with client:
         result = await client.process_request(data)
 except HandshakeError as e:
-    logger.error(f"Handshake failed: {e}")
+    logger.error("Handshake failed", extra={
+        "error": str(e),
+        "error_type": "handshake",
+        "recovery_action": "check_magic_cookie"
+    })
     # Handle authentication or protocol issues
 except TransportError as e:
-    logger.error(f"Transport error: {e}")
+    logger.error("Transport error", extra={
+        "error": str(e),
+        "error_type": "transport",
+        "recovery_action": "retry_connection"
+    })
     # Handle network connectivity issues  
 except RPCPluginError as e:
-    logger.error(f"Plugin error: {e}")
+    logger.error("Plugin error", extra={
+        "error": str(e),
+        "error_type": "plugin",
+        "hint": getattr(e, 'hint', None)
+    })
     # Handle any plugin-related error
 ```
 
@@ -227,16 +250,34 @@ Modern async/await patterns for plugin development:
 
 ```python
 # From ch10_async_patterns_demo.py
+from provide.foundation import logger
+import asyncio
+
 async def concurrent_requests():
     client = plugin_client(command=["python", "-m", "my_plugin"])
     
     async with client:
-        # Concurrent RPC calls
+        logger.info("Starting concurrent request processing", extra={
+            "item_count": len(items),
+            "concurrency_level": "high"
+        })
+        
+        # Concurrent RPC calls with Foundation logging
         tasks = [
             client.process_item(item) for item in items
         ]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        return results
+        
+        with logger.contextualize(operation="concurrent_processing"):
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            successful_count = sum(1 for r in results if not isinstance(r, Exception))
+            logger.info("Concurrent processing completed", extra={
+                "total_items": len(results),
+                "successful": successful_count,
+                "failed": len(results) - successful_count
+            })
+            
+            return results
 ```
 
 **File:**
