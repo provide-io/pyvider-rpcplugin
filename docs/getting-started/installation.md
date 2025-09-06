@@ -54,12 +54,17 @@ import pyvider.rpcplugin
 # Check version
 print(f"Pyvider RPC Plugin version: {pyvider.rpcplugin.__version__}")
 
-# Test basic imports
+# Test basic imports - Foundation integration
+from provide.foundation import logger
+from provide.foundation.config import RuntimeConfig
+
+# Test RPC plugin imports
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation import logger
 
-print("✅ Installation successful!")
+logger.info("✅ Installation successful!")
+logger.info(f"📋 Config system: {type(rpcplugin_config).__name__}")
+print("✅ Foundation integration verified!")
 ```
 
 ## Dependencies
@@ -67,11 +72,40 @@ print("✅ Installation successful!")
 Pyvider RPC Plugin automatically installs these key dependencies:
 
 ### Core Dependencies
-- **provide.foundation** - Structured logging, configuration, cryptography, and utilities
+- **provide.foundation** - Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting
 - **grpcio** - gRPC runtime for Python
 - **grpcio-tools** - Protocol Buffer compiler and tools
 - **attrs** - Modern Python data classes
 - **cryptography** - Additional cryptographic utilities
+
+### Foundation Integration
+
+Pyvider RPC Plugin is built on Foundation's infrastructure:
+
+```python
+# Foundation provides the foundation for plugin configuration
+from provide.foundation.config import RuntimeConfig
+from provide.foundation import logger
+from provide.foundation.crypto import Certificate
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+
+# Pyvider extends Foundation for RPC-specific needs
+from pyvider.rpcplugin.config import RPCPluginConfig  # Extends RuntimeConfig
+from pyvider.rpcplugin import plugin_server, plugin_client
+```
+
+Foundation handles:
+- **Configuration Management**: Type-safe, validated configuration with multi-source loading
+- **Structured Logging**: Consistent, structured logging across all components  
+- **Cryptography**: X.509 certificate management and TLS operations
+- **Rate Limiting**: Token bucket rate limiting for server protection
+- **Utilities**: Common patterns and helper functions
+
+While Pyvider RPC Plugin focuses on:
+- **RPC Protocol**: gRPC-based plugin communication
+- **Transport Management**: Unix sockets and TCP transport handling
+- **Plugin Lifecycle**: Handshake, serving, and shutdown logic
+- **Client Integration**: Plugin discovery and connection management
 
 ### Optional Dependencies
 
