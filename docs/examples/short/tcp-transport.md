@@ -21,10 +21,7 @@ class NetworkHandler:
 async def main():
     # Configure for TCP transport
     config = RPCPluginConfig(
-        server_transports=["tcp"],
-        server_host="127.0.0.1",
-        server_port_min=50051,
-        server_port_max=50100
+        plugin_server_transports=["tcp"]
     )
     
     # Create server with TCP transport
@@ -48,8 +45,8 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `server_transports=["tcp"]` forces TCP transport
-- `server_host` and port range configure TCP binding
+- `plugin_server_transports=["tcp"]` forces TCP transport  
+- Server automatically binds to available TCP port
 - Useful for Windows or network-distributed plugins
 - Client automatically detects transport from handshake
 
