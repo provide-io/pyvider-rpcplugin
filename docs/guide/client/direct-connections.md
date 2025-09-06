@@ -636,14 +636,13 @@ class DirectConnectionConfig:
         # Timeouts
         if timeout := os.environ.get(f"{prefix}CONNECT_TIMEOUT"):
             config.connect_timeout = float(timeout)
-        if timeout := os.environ.get(f"{prefix}REQUEST_TIMEOUT"):
-            config.request_timeout = float(timeout)
         
         # Security
         config.enable_mtls = os.environ.get(f"{prefix}ENABLE_MTLS", "false").lower() == "true"
-        config.client_cert = os.environ.get(f"{prefix}CLIENT_CERT")
-        config.client_key = os.environ.get(f"{prefix}CLIENT_KEY")
-        config.ca_cert = os.environ.get(f"{prefix}CA_CERT")
+        if config.enable_mtls:
+            config.client_cert = os.environ.get(f"{prefix}CLIENT_CERT")
+            config.client_key = os.environ.get(f"{prefix}CLIENT_KEY")
+            config.ca_cert = os.environ.get(f"{prefix}CA_CERT")
         
         return config
     
