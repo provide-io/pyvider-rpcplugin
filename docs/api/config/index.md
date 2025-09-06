@@ -1,6 +1,6 @@
 # Configuration System
 
-The Pyvider RPC Plugin system uses a comprehensive configuration framework based on provide.foundation that supports environment variables, configuration files, validation, and runtime configuration management.
+The Pyvider RPC Plugin system uses a comprehensive configuration framework based on Foundation that supports environment variables, configuration files, validation, and runtime configuration management.
 
 ## Overview
 
@@ -12,7 +12,7 @@ The configuration system provides:
 - **Multi-Source Loading**: Support for multiple configuration sources
 - **Sensitive Data Protection**: Special handling for secrets and credentials
 
-All configuration is managed through the `RPCPluginConfig` class and accessed via the global `rpcplugin_config` instance.
+All configuration is managed through the `RPCPluginConfig` class, which extends Foundation's `RuntimeConfig`, and accessed via the global `rpcplugin_config` instance.
 
 ## Quick Start
 

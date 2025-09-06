@@ -1,51 +1,51 @@
 # Environment Variables
 
-Complete reference for all environment variables supported by Pyvider RPC Plugin. All variables use the `PYVIDER_PLUGIN_` prefix and support automatic type conversion from string values.
+Complete reference for all environment variables supported by Pyvider RPC Plugin. All variables use the `PLUGIN_` prefix and support automatic type conversion from string values.
 
 ## Core Protocol Settings
 
-### PYVIDER_PLUGIN_PROTOCOL_VERSION
+### PLUGIN_CORE_VERSION
 - **Type**: `int`
 - **Default**: `1`
 - **Description**: Plugin protocol version for client-server negotiation
-- **Valid Values**: `1` (currently supported version)
-- **Example**: `export PYVIDER_PLUGIN_PROTOCOL_VERSION="1"`
+- **Valid Values**: `1-7`
+- **Example**: `export PLUGIN_CORE_VERSION=1`
 
-### PYVIDER_PLUGIN_CORE_VERSION  
-- **Type**: `int`
-- **Default**: `1`
-- **Description**: Core RPC handshake version (rarely changed)
-- **Valid Values**: `1`
-- **Example**: `export PYVIDER_PLUGIN_CORE_VERSION="1"`
+### PLUGIN_PROTOCOL_VERSIONS
+- **Type**: `list[int]`
+- **Default**: `[1]`
+- **Description**: List of protocol versions supported by this plugin
+- **Valid Values**: JSON array of integers 1-7
+- **Example**: `export PLUGIN_PROTOCOL_VERSIONS='[1, 2, 3]'`
 
 ## Transport Configuration
 
-### PYVIDER_PLUGIN_SERVER_TRANSPORTS
+### PLUGIN_SERVER_TRANSPORTS
 - **Type**: `list[str]`
 - **Default**: `["unix", "tcp"]`
 - **Description**: Transport types the server supports and announces
-- **Valid Values**: `"unix"`, `"tcp"` (comma-separated)
-- **Example**: `export PYVIDER_PLUGIN_SERVER_TRANSPORTS="unix,tcp"`
+- **Valid Values**: JSON array of "unix" and/or "tcp"
+- **Example**: `export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'`
 
-### PYVIDER_PLUGIN_CLIENT_TRANSPORTS
+### PLUGIN_CLIENT_TRANSPORTS
 - **Type**: `list[str]`  
 - **Default**: `["unix", "tcp"]`
 - **Description**: Transport types the client prefers (in priority order)
-- **Valid Values**: `"unix"`, `"tcp"` (comma-separated)
-- **Example**: `export PYVIDER_PLUGIN_CLIENT_TRANSPORTS="unix,tcp"`
+- **Valid Values**: JSON array of "unix" and/or "tcp"
+- **Example**: `export PLUGIN_CLIENT_TRANSPORTS='["unix", "tcp"]'`
 
-### PYVIDER_PLUGIN_SERVER_ENDPOINT
+### PLUGIN_SERVER_ENDPOINT
 - **Type**: `str`
 - **Default**: `None` (auto-select)
 - **Description**: Force server to bind to specific endpoint
 - **Format**: `"host:port"` for TCP, `"/path/to/socket"` for Unix
 - **Example**: 
   ```bash
-  export PYVIDER_PLUGIN_SERVER_ENDPOINT="localhost:8080"  # TCP
-  export PYVIDER_PLUGIN_SERVER_ENDPOINT="/tmp/plugin.sock"  # Unix
+  export PLUGIN_SERVER_ENDPOINT=localhost:8080  # TCP
+  export PLUGIN_SERVER_ENDPOINT=/tmp/plugin.sock  # Unix
   ```
 
-### PYVIDER_PLUGIN_CLIENT_ENDPOINT
+### PLUGIN_CLIENT_ENDPOINT
 - **Type**: `str`
 - **Default**: `None` (use server's advertised endpoint)
 - **Description**: Force client to connect to specific endpoint
