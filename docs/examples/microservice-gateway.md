@@ -319,7 +319,7 @@ class GatewayServicer(GatewayServiceServicer):
         if not self.rate_limiter.is_allowed(request.client_id):
             await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded")
         
-        # Authentication
+        # Authentication (if token provided)
         auth_token = request.headers.get("authorization")
         if auth_token and not await self._validate_auth_token(auth_token):
             await context.abort(grpc.StatusCode.UNAUTHENTICATED, "Invalid token")
@@ -333,25 +333,25 @@ class GatewayServicer(GatewayServiceServicer):
         if not instance or not self.circuit_breaker.should_allow_request(instance):
             await context.abort(grpc.StatusCode.UNAVAILABLE, "No healthy instances available")
         
-        # Forward request
+        # Forward request and handle response
         try:
             response = await self._forward_request(request, instance)
             response_time = (time.perf_counter() - start_time) * 1000
             
-            # Record metrics
+            # Record metrics and success
             instance.response_times.append(response_time)
             self.metrics["response_times"].append(response_time)
             instance.request_count += 1
             self.circuit_breaker.record_success(instance)
             
-            # Add headers
+            # Add gateway headers
             response.headers["X-Gateway-Instance"] = instance.instance_id
             response.response_time_ms = int(response_time)
             response.backend_instance = f"{instance.host}:{instance.port}"
-            
             return response
         
         except Exception as e:
+            # Record failure and return error response
             logger.error(f"Request forwarding failed: {e}")
             instance.error_count += 1
             self.metrics["total_errors"] += 1
@@ -923,17 +923,9 @@ async def demo_gateway():
         await gateway.close()
 
 
-async def main():
-    """Run gateway client demo."""
-    logging.basicConfig(level=logging.INFO)
-    try:
-        await demo_gateway()
-    except Exception as e:
-        logger.error(f"Demo failed: {e}")
-        raise
-
 if __name__ == "__main__":
-    asyncio.run(main())
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(demo_gateway())
 ```
 
 ## Usage Examples
