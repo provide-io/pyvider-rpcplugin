@@ -67,19 +67,17 @@ def test_config():
 
 ## Transport Testing
 
-### Transport Factory Fixture
+### Transport Factory and Core Tests
 
 ```python
 import pytest
-import pytest_asyncio
-from pathlib import Path
-import tempfile
 import uuid
+from pathlib import Path
 from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport
 
-@pytest_asyncio.fixture(scope="function")
+@pytest.fixture
 async def transport_factory(tmp_path: Path):
-    """Factory fixture for creating isolated transport instances."""
+    """Factory for creating isolated transport instances with cleanup."""
     created_transports = []
 
     async def create(transport_type: str, **kwargs):
@@ -89,126 +87,79 @@ async def transport_factory(tmp_path: Path):
                 socket_name = f"test_{uuid.uuid4().hex[:8]}.sock"
                 socket_path = str(tmp_path / socket_name)
             transport = UnixSocketTransport(path=socket_path)
-        
         elif transport_type == "tcp":
             port = kwargs.get('port', 0)  # 0 = auto-assign
             host = kwargs.get('host', '127.0.0.1')
             transport = TCPSocketTransport(host=host, port=port)
-        
         else:
             raise ValueError(f"Unknown transport type: {transport_type}")
-
+        
         created_transports.append(transport)
         return transport
 
     yield create
 
-    # Cleanup all created transports
+    # Cleanup
     for transport in created_transports:
         try:
             await transport.close()
-        except Exception as e:
-            print(f"Error closing transport: {e}")
+        except Exception:
+            pass
 
-# Usage
-@pytest.mark.asyncio
-async def test_transport_creation(transport_factory):
-    # Create Unix socket transport
-    unix_transport = await transport_factory("unix")
-    endpoint = await unix_transport.listen()
-    assert endpoint.endswith(".sock")
-    
-    # Create TCP transport
-    tcp_transport = await transport_factory("tcp")
-    endpoint = await tcp_transport.listen()
-    assert ":" in endpoint  # host:port format
-```
-
-### Unix Socket Testing
-
-```python
-@pytest.mark.asyncio
-async def test_unix_socket_lifecycle(transport_factory):
-    """Test complete Unix socket lifecycle."""
-    transport = await transport_factory("unix", path="/tmp/test.sock")
-    
-    # Test listening
-    endpoint = await transport.listen()
-    assert endpoint == "/tmp/test.sock"
-    assert os.path.exists("/tmp/test.sock")
-    
-    # Test socket properties
-    stat_result = os.stat("/tmp/test.sock")
-    assert stat.S_ISSOCK(stat_result.st_mode)
-    
-    # Test connection
-    client_transport = await transport_factory("unix")
-    await client_transport.connect("/tmp/test.sock")
-    assert client_transport.endpoint == "/tmp/test.sock"
-    
-    # Test cleanup
-    await transport.close()
-    # Socket file should be cleaned up
-
-@pytest.mark.asyncio
-async def test_unix_socket_permissions(transport_factory):
-    """Test Unix socket file permissions."""
-    transport = await transport_factory("unix")
-    
-    await transport.listen()
-    socket_path = transport.endpoint
-    
-    # Check permissions
-    stat_result = os.stat(socket_path)
-    mode = stat_result.st_mode
-    
-    # Should be readable/writable by owner and group
-    assert mode & stat.S_IRUSR  # Owner read
-    assert mode & stat.S_IWUSR  # Owner write
-    assert mode & stat.S_IRGRP  # Group read
-    assert mode & stat.S_IWGRP  # Group write
-```
-
-### TCP Transport Testing
-
-```python
 @pytest.fixture
 def unused_tcp_port():
-    """Find an unused TCP port."""
+    """Find unused TCP port."""
     import socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
 
+# Unix Socket Tests
+@pytest.mark.asyncio
+async def test_unix_socket_lifecycle(transport_factory):
+    """Test Unix socket creation, connection, and cleanup."""
+    transport = await transport_factory("unix")
+    endpoint = await transport.listen()
+    assert endpoint.endswith(".sock")
+    
+    # Test connection
+    client = await transport_factory("unix")
+    await client.connect(endpoint)
+    assert client.endpoint == endpoint
+
+@pytest.mark.asyncio
+async def test_unix_socket_permissions(transport_factory):
+    """Test Unix socket file permissions."""
+    transport = await transport_factory("unix")
+    await transport.listen()
+    
+    import os, stat
+    stat_result = os.stat(transport.endpoint)
+    mode = stat_result.st_mode
+    assert stat.S_ISSOCK(mode)
+    assert mode & stat.S_IRUSR and mode & stat.S_IWUSR  # Owner RW
+
+# TCP Transport Tests
 @pytest.mark.asyncio
 async def test_tcp_transport_lifecycle(transport_factory, unused_tcp_port):
-    """Test complete TCP transport lifecycle."""
+    """Test TCP transport creation and connection."""
     transport = await transport_factory("tcp", port=unused_tcp_port)
-    
-    # Test listening
     endpoint = await transport.listen()
     assert endpoint == f"127.0.0.1:{unused_tcp_port}"
     
-    # Test connection
-    client_transport = await transport_factory("tcp")
-    await client_transport.connect(endpoint)
-    assert client_transport.endpoint == endpoint
-    
-    # Test cleanup
-    await transport.close()
+    client = await transport_factory("tcp")
+    await client.connect(endpoint)
+    assert client.endpoint == endpoint
 
 @pytest.mark.asyncio
 async def test_tcp_auto_port_assignment(transport_factory):
     """Test automatic port assignment."""
     transport = await transport_factory("tcp", port=0)
-    
     endpoint = await transport.listen()
-    host, port_str = endpoint.split(":")
-    port = int(port_str)
     
+    host, port_str = endpoint.split(":")
     assert host == "127.0.0.1"
-    assert port > 0  # Should be assigned a port
-    assert transport.port == port
+    assert int(port_str) > 0
 ```
 
 ## Server Testing
