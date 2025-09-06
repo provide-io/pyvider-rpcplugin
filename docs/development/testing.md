@@ -1,90 +1,54 @@
 # Testing Guide
 
-This guide provides comprehensive information on testing applications built with the Pyvider RPC Plugin system. It covers unit testing, integration testing, mocking strategies, and testing best practices for servers, clients, transports, and configurations.
+Comprehensive testing guidance for Pyvider RPC Plugin applications, covering unit testing, integration testing, mocking strategies, and best practices for servers, clients, transports, and configurations.
 
 ## Overview
 
-The Pyvider RPC Plugin system is designed to be testable with:
-- **pytest Framework**: Modern Python testing with async support
-- **pytest-asyncio**: Async testing support for plugin components
+The Pyvider RPC Plugin system provides:
+- **pytest Framework**: Modern async Python testing
 - **Configuration Isolation**: Automatic config reset between tests
-- **Transport Testing**: Specialized fixtures for network testing
-- **Mock Support**: Comprehensive mocking for plugin components
-- **Coverage Integration**: Built-in coverage reporting
+- **Transport Testing**: Specialized fixtures for Unix/TCP testing
+- **Mock Support**: Comprehensive mocking for components
+- **Security Testing**: mTLS and authentication testing
 
-Testing philosophy: Each component should be testable in isolation while also supporting integration testing scenarios.
+Testing philosophy: Test components in isolation with integration testing support.
 
 ## Test Structure
 
-### Project Layout
-
 ```
 tests/
-├── conftest.py              # Global test configuration and fixtures
+├── conftest.py              # Global fixtures and configuration
 ├── fixtures/                # Reusable test fixtures
-│   ├── __init__.py
 │   ├── mocks.py            # Mock implementations
 │   └── crypto.py           # Certificate fixtures
 ├── unit/                   # Unit tests
-│   ├── test_config.py
-│   ├── test_exceptions.py
-│   └── test_factories.py
 ├── integration/            # Integration tests
-│   ├── test_server_client.py
-│   └── test_transport_integration.py
-├── transport/              # Transport-specific tests
-│   ├── test_transport_suite.py
-│   ├── unix/
-│   └── tcp/
-└── fixtures/               # Component-specific fixtures
+└── transport/              # Transport-specific tests
 ```
 
-### Core Testing Dependencies
+**Dependencies**: pytest, pytest-asyncio, pytest-cov, pytest-mock
 
-The project uses these testing frameworks and tools:
+## Configuration Management
 
-```python
-# Key testing dependencies (from pyproject.toml)
-pytest              # Test framework
-pytest-asyncio      # Async test support
-pytest-cov          # Coverage reporting
-pytest-mock         # Mocking utilities
-```
-
-## Configuration Management in Tests
-
-### Automatic Configuration Reset
-
-The test suite automatically resets configuration between tests:
+### Automatic Reset and Test Configuration
 
 ```python
-# conftest.py provides automatic config isolation
+# conftest.py - Automatic config isolation
 @pytest.fixture(autouse=True, scope="function")
 def reset_rpcplugin_config_singleton():
     """Reset RPCPluginConfig singleton before each test."""
-    # Implementation handles environment variable cleanup
-    # and configuration state reset
-```
-
-### Test Configuration Override
-
-```python
-import os
-import pytest
-from pyvider.rpcplugin.config import rpcplugin_config
+    # Handles environment cleanup and state reset
 
 @pytest.fixture
 def test_config():
-    """Provide test-specific configuration."""
+    """Test-specific configuration with cleanup."""
     original_env = {}
-    
-    # Set test configuration
     test_vars = {
-        'PLUGIN_LOG_LEVEL': 'WARNING',  # Reduce noise
+        'PLUGIN_LOG_LEVEL': 'WARNING',
         'PLUGIN_AUTO_MTLS': 'true',
         'PLUGIN_HANDSHAKE_TIMEOUT': '5.0',
-        'PLUGIN_CLIENT_RETRY_ENABLED': 'false',  # Predictable behavior
-        'PLUGIN_RATE_LIMIT_ENABLED': 'false',    # No limits in tests
+        'PLUGIN_CLIENT_RETRY_ENABLED': 'false',
+        'PLUGIN_RATE_LIMIT_ENABLED': 'false',
     }
     
     for key, value in test_vars.items():
@@ -93,17 +57,12 @@ def test_config():
     
     yield
     
-    # Restore original environment
+    # Restore environment
     for key, original_value in original_env.items():
         if original_value is None:
             os.environ.pop(key, None)
         else:
             os.environ[key] = original_value
-
-# Usage
-def test_with_custom_config(test_config):
-    # Test runs with isolated configuration
-    assert rpcplugin_config.plugin_log_level == "WARNING"
 ```
 
 ## Transport Testing
