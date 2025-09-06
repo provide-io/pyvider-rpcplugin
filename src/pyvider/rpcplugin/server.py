@@ -44,7 +44,7 @@ from pyvider.rpcplugin.handshake import (
 from pyvider.rpcplugin.health_servicer import HealthServicer
 from pyvider.rpcplugin.protocol import register_protocol_service
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
