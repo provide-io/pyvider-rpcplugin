@@ -155,6 +155,7 @@ message ServiceMetrics {
 import asyncio
 import json
 import logging
+import os
 import random
 import time
 from collections import defaultdict, deque
@@ -606,42 +607,32 @@ async def create_gateway_server():
     """Create gateway server."""
     config = ServerConfig(
         transport=TransportConfig(
-            host="0.0.0.0",  # Listen on all interfaces
-            port=8080,
+            host=os.getenv("PLUGIN_GATEWAY_HOST", "0.0.0.0"),
+            port=int(os.getenv("PLUGIN_GATEWAY_PORT", "8080")),
             tls_enabled=False
         ),
         max_workers=50,
-        log_level="INFO"
+        log_level=os.getenv("PLUGIN_LOG_LEVEL", "INFO")
     )
     
     server = RPCPluginServer(config)
-    
-    # Add gateway service
-    gateway_servicer = GatewayServicer()
-    server.add_service(gateway_servicer)
-    
+    server.add_service(GatewayServicer())
     return server
 
 
 async def main():
     """Run microservice gateway."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
-    
+    logging.basicConfig(level=logging.INFO)
     server = await create_gateway_server()
     
     try:
         await server.start()
-        logger.info("Microservice Gateway started on port 8080. Press Ctrl+C to stop.")
-        
+        port = os.getenv("PLUGIN_GATEWAY_PORT", "8080")
+        logger.info(f"Microservice Gateway started on port {port}. Press Ctrl+C to stop.")
         while True:
             await asyncio.sleep(1)
-    
     except KeyboardInterrupt:
         logger.info("Shutting down gateway...")
-    
     finally:
         await server.stop()
 
@@ -949,7 +940,7 @@ if __name__ == "__main__":
 
 ### Start the Gateway
 ```bash
-python gateway_service.py
+PLUGIN_GATEWAY_HOST=0.0.0.0 PLUGIN_GATEWAY_PORT=8080 python gateway_service.py
 ```
 
 ### Register Services and Route Requests
@@ -957,67 +948,43 @@ python gateway_service.py
 python gateway_client.py
 ```
 
-### Production Deployment with Docker Compose
+### Production Deployment
 
 **docker-compose.yml**
 ```yaml
 version: '3.8'
-
 services:
   gateway:
     build: .
     ports:
       - "8080:8080"
     environment:
-      - GATEWAY_HOST=0.0.0.0
-      - GATEWAY_PORT=8080
-      - LOG_LEVEL=INFO
+      - PLUGIN_GATEWAY_HOST=0.0.0.0
+      - PLUGIN_GATEWAY_PORT=8080
+      - PLUGIN_LOG_LEVEL=INFO
     depends_on:
-      - user-service-1
-      - user-service-2
+      - user-service
       - order-service
     
-  user-service-1:
+  user-service:
     build: ./services/user-service
     ports:
       - "50051:50051"
     environment:
-      - SERVICE_PORT=50051
-      - DATABASE_URL=postgresql://user:pass@postgres:5432/users
-    
-  user-service-2:
-    build: ./services/user-service
-    ports:
-      - "50052:50051" 
-    environment:
-      - SERVICE_PORT=50051
-      - DATABASE_URL=postgresql://user:pass@postgres:5432/users
+      - PLUGIN_SERVICE_PORT=50051
     
   order-service:
     build: ./services/order-service
     ports:
-      - "50053:50051"
+      - "50052:50051"
     environment:
-      - SERVICE_PORT=50051
-      - DATABASE_URL=postgresql://user:pass@postgres:5432/orders
-    
-  postgres:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=microservices
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+      - PLUGIN_SERVICE_PORT=50051
 ```
 
 ## Key Features Demonstrated
 
 1. **Service Discovery** - Dynamic service registration and discovery
-2. **Load Balancing** - Round-robin, weighted, and least-connections algorithms
+2. **Load Balancing** - Weighted distribution with round-robin fallback
 3. **Circuit Breaker** - Fault tolerance with automatic recovery
 4. **Rate Limiting** - Token bucket algorithm for request throttling
 5. **Authentication** - JWT token validation middleware
@@ -1025,6 +992,6 @@ volumes:
 7. **Metrics Collection** - Real-time performance and error tracking
 8. **Request Routing** - Intelligent routing based on service availability
 9. **Error Handling** - Comprehensive error management with proper status codes
-10. **Horizontal Scaling** - Support for multiple instances per service
+10. **Streaming Support** - Bidirectional streaming for real-time services
 
-This microservice gateway provides a production-ready foundation for building scalable distributed systems with proper fault tolerance, monitoring, and security controls.
+This microservice gateway provides a production-ready foundation for building scalable distributed systems with proper fault tolerance, monitoring, and security controls using the Pyvider RPC Plugin framework.
