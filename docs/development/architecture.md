@@ -622,7 +622,7 @@ class DatabaseService(service_pb2_grpc.DatabaseServiceServicer, BaseService):
 ```python
 # src/pyvider/exceptions.py
 class RPCPluginError(Exception):
-    """Base exception for all RPC plugin errors."""
+    """Base exception for all RPC Plugin errors."""
     
     def __init__(self, message: str, details: dict[str, Any] | None = None):
         super().__init__(message)

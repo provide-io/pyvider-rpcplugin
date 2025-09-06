@@ -21,10 +21,10 @@ The Pyvider RPC Plugin lifecycle consists of several distinct phases:
 ```python
 import os
 from pathlib import Path
-from pyvider.config import ServerConfig, load_config_from_env
+from pyvider.rpcplugin.config import rpcplugin_config
 
 class PluginLifecycleManager:
-    """Manages the complete lifecycle of an RPC plugin."""
+    """Manages the complete lifecycle of an RPC Plugin."""
     
     def __init__(self, config_path: Path | None = None):
         self.config_path = config_path
@@ -75,9 +75,9 @@ class PluginLifecycleManager:
 ### 2. Initialization Phase
 
 ```python
-from pyvider.server import RPCPluginServer
-from pyvider.transport import create_transport
-from pyvider.protocol import ServiceProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.transport import create_transport
+from pyvider.rpcplugin.protocol import ServiceProtocol
 
     async def initialize(self) -> None:
         """Initialize server and resources."""
@@ -183,7 +183,7 @@ from pyvider.protocol import ServiceProtocol
             print(f"✅ Registered service: {service.__class__.__name__}")
         
         # Register health check service
-        from pyvider.health import HealthServicer
+        from pyvider.rpcplugin.health import HealthServicer
         health_service = HealthServicer(self.services)
         self.server.add_service(health_service)
         
@@ -500,7 +500,7 @@ from pyvider.protocol import ServiceProtocol
 ## Complete Usage Example
 
 ```python
-from pyvider.services import EchoService, FileService
+from pyvider.rpcplugin.services import EchoService, FileService
 from pathlib import Path
 
 async def main():
