@@ -5,7 +5,7 @@ A minimal plugin server using factory functions.
 ```python
 #!/usr/bin/env python3
 import asyncio
-from pyvider.rpcplugin.factories import plugin_protocol, plugin_server
+from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 class SimpleHandler:
     """Basic handler for plugin server."""

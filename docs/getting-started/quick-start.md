@@ -80,7 +80,7 @@ class EnhancedPluginHandler:
             "capabilities": ["processing", "storage"]
         })
     
-    async def process_request(self, request_id: str, data: any):
+    async def process_request(self, request_id: str, data: dict[str, str] | str):
         with logger.contextualize(request_id=request_id, plugin_id=self.plugin_id):
             logger.info("Processing request", extra={"data_size": len(str(data))})
             

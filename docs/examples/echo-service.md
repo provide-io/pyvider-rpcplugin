@@ -68,7 +68,7 @@ from grpc.aio import ServicerContext
 from echo_pb2 import EchoRequest, EchoResponse
 from echo_pb2_grpc import EchoServiceServicer
 from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin import RPCPluginProtocol
 from provide.foundation import logger
 
 class EchoServiceHandler(EchoServiceServicer):
@@ -277,7 +277,7 @@ class EchoClient:
         self.client_id = str(uuid.uuid4())[:8]
         self.plugin_command = plugin_command
         self.client = None
-        self.stub = None
+        self.stub: EchoServiceStub | None = None
         logger.info("Echo client created", extra={"client_id": self.client_id})
     
     async def connect(self):

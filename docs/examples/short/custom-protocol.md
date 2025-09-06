@@ -6,8 +6,8 @@ A server implementing a custom protocol with gRPC service registration.
 #!/usr/bin/env python3
 import asyncio
 from typing import Any
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.factories import plugin_server
+from pyvider.rpcplugin import RPCPluginProtocol
+from pyvider.rpcplugin import plugin_server
 
 # Mock gRPC module for demonstration
 class MockGrpcModule:

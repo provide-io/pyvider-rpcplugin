@@ -7,7 +7,7 @@ Learn the fundamentals of creating and configuring plugin servers with comprehen
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin import RPCPluginProtocol
 
 class EchoProtocol(RPCPluginProtocol):
     service_name = "echo.Echo"

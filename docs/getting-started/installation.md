@@ -85,7 +85,7 @@ from provide.foundation import logger
 from provide.foundation.crypto import Certificate
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
-from pyvider.rpcplugin.config import RPCPluginConfig
+from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin import plugin_server, plugin_client
 ```
 

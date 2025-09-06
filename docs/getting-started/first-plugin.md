@@ -102,7 +102,7 @@ Create `echo_protocol.py` to bridge your service with Pyvider RPC Plugin:
 ```python
 # echo_protocol.py
 from typing import Any
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin import RPCPluginProtocol
 import echo_pb2_grpc
 from provide.foundation import logger
 
