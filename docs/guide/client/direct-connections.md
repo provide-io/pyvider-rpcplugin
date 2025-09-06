@@ -43,7 +43,7 @@ async def tcp_direct_connection():
         
         # Verify connection
         if client.is_connected():
-            print(" Connected to TCP server")
+            print("Connected to TCP server")
         
         # Use service
         result = await client.service.Method(param="value")
@@ -61,7 +61,7 @@ async def secure_tcp_connection():
         ca_cert="ca.pem"
     ) as client:
         
-        print("= Secure connection established")
+        print("Secure connection established")
         result = await client.secure_service.ProcessData(data="sensitive")
         return result
 
@@ -81,7 +81,7 @@ async def unix_socket_direct_connection():
         timeout=15.0
     ) as client:
         
-        print("= Connected via Unix socket")
+        print("Connected via Unix socket")
         
         # Check available services
         services = client.get_available_services()
@@ -103,7 +103,6 @@ result = await unix_socket_direct_connection()
 ### Registry-Based Discovery
 
 ```python
-from typing import Dict, List, Optional
 import asyncio
 import json
 from pathlib import Path
@@ -115,7 +114,7 @@ class ServiceRegistry:
         self.registry_path = Path(registry_path)
     
     def register_service(self, name: str, host: str, port: int, 
-                        services: List[str], metadata: Optional[Dict] = None):
+                        services: list[str], metadata: dict | None = None):
         """Register a plugin service."""
         registry = self._load_registry()
         
@@ -129,24 +128,19 @@ class ServiceRegistry:
         
         self._save_registry(registry)
     
-    def discover_service(self, name: str) -> Optional[Dict]:
+    def discover_service(self, name: str) -> dict | None:
         """Discover service by name."""
         registry = self._load_registry()
         return registry.get(name)
     
-    def list_services(self) -> List[str]:
-        """List all registered services."""
-        registry = self._load_registry()
-        return list(registry.keys())
-    
-    def _load_registry(self) -> Dict:
+    def _load_registry(self) -> dict:
         if not self.registry_path.exists():
             return {}
         
         with open(self.registry_path) as f:
             return json.load(f)
     
-    def _save_registry(self, registry: Dict):
+    def _save_registry(self, registry: dict):
         with open(self.registry_path, "w") as f:
             json.dump(registry, f, indent=2)
 
@@ -172,25 +166,9 @@ class DiscoveryClient:
         )
         
         await client.start()
-        print(f"=á Connected to '{service_name}' at {service_info['host']}:{service_info['port']}")
+        print(f"Connected to '{service_name}' at {service_info['host']}:{service_info['port']}")
         
         return client
-    
-    async def list_and_connect(self) -> Dict[str, plugin_client]:
-        """Connect to all available services."""
-        
-        service_names = self.registry.list_services()
-        clients = {}
-        
-        for name in service_names:
-            try:
-                client = await self.connect_to_service(name)
-                clients[name] = client
-                print(f" Connected to {name}")
-            except Exception as e:
-                print(f"L Failed to connect to {name}: {e}")
-        
-        return clients
 
 # Usage example
 async def service_discovery_example():
@@ -199,19 +177,12 @@ async def service_discovery_example():
     # Setup registry
     registry = ServiceRegistry()
     
-    # Register some services (normally done by servers)
+    # Register services (normally done by servers)
     registry.register_service(
         "calculator", 
         "127.0.0.1", 8080, 
         ["calculator.Calculator"],
-        {"version": "1.0", "description": "Basic calculator service"}
-    )
-    
-    registry.register_service(
-        "file-processor", 
-        "192.168.1.100", 8081,
-        ["file.FileProcessor", "batch.BatchProcessor"],
-        {"version": "2.1", "max_file_size": "100MB"}
+        {"version": "1.0"}
     )
     
     # Use discovery client
@@ -223,32 +194,17 @@ async def service_discovery_example():
         result = await calc_client.calculator.Add(a=15, b=25)
         print(f"Calculator result: {result.result}")
         
-        # Connect to all services
-        all_clients = await discovery.list_and_connect()
-        
-        # Use multiple services
-        if "file-processor" in all_clients:
-            file_client = all_clients["file-processor"]
-            file_result = await file_client.file_processor.GetFileInfo(
-                path="/data/sample.txt"
-            )
-            print(f"File info: {file_result.size} bytes")
-        
     finally:
-        # Clean up connections
         await calc_client.close()
-        for client in all_clients.values():
-            await client.close()
 
 # Usage
 await service_discovery_example()
 ```
 
-### Consul Integration
+### External Service Discovery
 
 ```python
 import consul
-from typing import List, Tuple, Optional
 
 class ConsulServiceDiscovery:
     """Service discovery using HashiCorp Consul."""
@@ -256,12 +212,10 @@ class ConsulServiceDiscovery:
     def __init__(self, consul_host: str = "localhost", consul_port: int = 8500):
         self.consul = consul.Consul(host=consul_host, port=consul_port)
     
-    def discover_plugin_services(self, service_prefix: str = "plugin-") -> List[Tuple[str, str, int]]:
+    def discover_plugin_services(self, service_prefix: str = "plugin-") -> list[tuple[str, str, int]]:
         """Discover plugin services from Consul."""
         
         services = []
-        
-        # Get all services
         _, all_services = self.consul.catalog.services()
         
         # Filter plugin services
@@ -279,7 +233,7 @@ class ConsulServiceDiscovery:
         
         return services
     
-    async def create_clients_from_discovery(self, service_prefix: str = "plugin-") -> Dict[str, plugin_client]:
+    async def create_clients_from_discovery(self, service_prefix: str = "plugin-") -> dict[str, plugin_client]:
         """Create clients for all discovered services."""
         
         services = self.discover_plugin_services(service_prefix)
@@ -290,60 +244,29 @@ class ConsulServiceDiscovery:
                 client = plugin_client(host=host, port=port)
                 await client.start()
                 clients[service_name] = client
-                print(f" Connected to {service_name} at {host}:{port}")
+                print(f"Connected to {service_name} at {host}:{port}")
             except Exception as e:
-                print(f"L Failed to connect to {service_name}: {e}")
+                print(f"Failed to connect to {service_name}: {e}")
         
         return clients
-
-# Usage with Consul
-async def consul_discovery_example():
-    """Example using Consul for service discovery."""
-    
-    discovery = ConsulServiceDiscovery()
-    
-    try:
-        # Discover and connect to all plugin services
-        clients = await discovery.create_clients_from_discovery("rpc-plugin-")
-        
-        # Use discovered services
-        for service_name, client in clients.items():
-            services = client.get_available_services()
-            print(f"{service_name} offers: {services}")
-        
-        # Example usage
-        if "rpc-plugin-calculator" in clients:
-            calc_client = clients["rpc-plugin-calculator"]
-            result = await calc_client.calculator.Add(a=100, b=200)
-            print(f"Distributed calculation: {result.result}")
-    
-    finally:
-        # Clean up all connections
-        for client in clients.values():
-            await client.close()
-
-# Usage
-await consul_discovery_example()
 ```
 
-## Load Balancing
+## Load Balancing and Connection Pools
 
-### Round-Robin Load Balancer
+### Load Balancing Client
 
 ```python
 import asyncio
-from typing import List, Dict, Any
 from itertools import cycle
 import random
 
 class LoadBalancedClient:
     """Client with built-in load balancing across multiple servers."""
     
-    def __init__(self, endpoints: List[Dict[str, Any]], strategy: str = "round_robin"):
+    def __init__(self, endpoints: list[dict], strategy: str = "round_robin"):
         self.endpoints = endpoints
         self.strategy = strategy
         self.clients = []
-        self.current_index = 0
         self.round_robin_cycle = cycle(range(len(endpoints)))
     
     async def initialize(self):
@@ -354,9 +277,9 @@ class LoadBalancedClient:
                 client = plugin_client(**endpoint)
                 await client.start()
                 self.clients.append(client)
-                print(f" Connected to {endpoint.get('host', endpoint.get('unix_socket'))}")
+                print(f"Connected to {endpoint.get('host', endpoint.get('unix_socket'))}")
             except Exception as e:
-                print(f"L Failed to connect to {endpoint}: {e}")
+                print(f"Failed to connect to {endpoint}: {e}")
                 self.clients.append(None)  # Placeholder for failed connection
     
     def _select_client(self) -> plugin_client:
@@ -379,15 +302,10 @@ class LoadBalancedClient:
             _, client = random.choice(available_clients)
             return client
         
-        elif self.strategy == "first_available":
-            # Use first available client
-            _, client = available_clients[0]
-            return client
-        
         else:
             raise ValueError(f"Unknown strategy: {self.strategy}")
     
-    async def call_with_load_balancing(self, service_method: str, **kwargs) -> Any:
+    async def call_with_load_balancing(self, service_method: str, **kwargs):
         """Make RPC call with automatic load balancing."""
         
         max_attempts = len([c for c in self.clients if c is not None])
@@ -435,7 +353,7 @@ async def load_balancing_example():
         await lb_client.initialize()
         
         # Make multiple calls - should distribute across servers
-        for i in range(10):
+        for i in range(5):
             result = await lb_client.call_with_load_balancing(
                 "calculator.Add",
                 a=i, b=i*2
@@ -449,121 +367,13 @@ async def load_balancing_example():
 await load_balancing_example()
 ```
 
-### Weighted Load Balancing
+## Health Monitoring and Failover
 
-```python
-import random
-from typing import List, Tuple, Dict, Any
-
-class WeightedLoadBalancer:
-    """Load balancer with weighted server selection."""
-    
-    def __init__(self, endpoints_with_weights: List[Tuple[Dict[str, Any], int]]):
-        self.endpoints_with_weights = endpoints_with_weights
-        self.clients_with_weights = []
-        self.total_weight = sum(weight for _, weight in endpoints_with_weights)
-    
-    async def initialize(self):
-        """Initialize weighted client connections."""
-        
-        for endpoint, weight in self.endpoints_with_weights:
-            try:
-                client = plugin_client(**endpoint)
-                await client.start()
-                self.clients_with_weights.append((client, weight))
-                print(f" Connected with weight {weight}: {endpoint}")
-            except Exception as e:
-                print(f"L Failed to connect to {endpoint}: {e}")
-    
-    def _weighted_random_selection(self) -> plugin_client:
-        """Select client using weighted random selection."""
-        
-        available_clients = [(c, w) for c, w in self.clients_with_weights if c is not None]
-        
-        if not available_clients:
-            raise Exception("No available clients")
-        
-        # Calculate total available weight
-        total_available_weight = sum(weight for _, weight in available_clients)
-        
-        # Random selection based on weights
-        random_value = random.uniform(0, total_available_weight)
-        current_weight = 0
-        
-        for client, weight in available_clients:
-            current_weight += weight
-            if random_value <= current_weight:
-                return client
-        
-        # Fallback to last client
-        return available_clients[-1][0]
-    
-    async def weighted_call(self, service_method: str, **kwargs) -> Any:
-        """Make RPC call with weighted load balancing."""
-        
-        client = self._weighted_random_selection()
-        
-        # Parse and call
-        service_name, method_name = service_method.split('.')
-        service = getattr(client, service_name.lower())
-        method = getattr(service, method_name)
-        
-        return await method(**kwargs)
-    
-    async def close_all(self):
-        """Close all connections."""
-        for client, _ in self.clients_with_weights:
-            if client is not None:
-                await client.close()
-
-# Usage example
-async def weighted_load_balancing_example():
-    """Demonstrate weighted load balancing."""
-    
-    # Define endpoints with weights (higher weight = more traffic)
-    endpoints_with_weights = [
-        ({"host": "127.0.0.1", "port": 8080}, 5),  # High-performance server
-        ({"host": "127.0.0.1", "port": 8081}, 3),  # Medium-performance server  
-        ({"host": "127.0.0.1", "port": 8082}, 1),  # Backup server
-    ]
-    
-    balancer = WeightedLoadBalancer(endpoints_with_weights)
-    
-    try:
-        await balancer.initialize()
-        
-        # Make many calls to see weight distribution
-        server_usage = {}
-        for i in range(100):
-            try:
-                result = await balancer.weighted_call("calculator.Add", a=i, b=1)
-                
-                # Track which server handled the request (simplified)
-                server_id = f"server_{i % 3}"  # This would be determined by response
-                server_usage[server_id] = server_usage.get(server_id, 0) + 1
-                
-            except Exception as e:
-                print(f"Request {i} failed: {e}")
-        
-        print("Server usage distribution:")
-        for server, count in server_usage.items():
-            print(f"  {server}: {count} requests ({count}%)")
-    
-    finally:
-        await balancer.close_all()
-
-# Usage
-await weighted_load_balancing_example()
-```
-
-## Health Monitoring for Direct Connections
-
-### Connection Health Checking
+### Health-Monitored Connection
 
 ```python
 import asyncio
 import time
-from typing import List, Optional
 import grpc
 
 class HealthMonitoredClient:
@@ -587,7 +397,7 @@ class HealthMonitoredClient:
         # Start health monitoring
         self._health_monitor_task = asyncio.create_task(self._health_monitor_loop())
         
-        print(f"= Connected to {self.host}:{self.port} with health monitoring")
+        print(f"Connected to {self.host}:{self.port} with health monitoring")
     
     async def _health_monitor_loop(self):
         """Background health monitoring loop."""
@@ -617,14 +427,14 @@ class HealthMonitoredClient:
             self.last_health_check = time.time()
             
             if self.is_healthy:
-                print(f" Health check passed for {self.host}:{self.port}")
+                print(f"Health check passed for {self.host}:{self.port}")
             else:
-                print(f"L Health check failed for {self.host}:{self.port}")
+                print(f"Health check failed for {self.host}:{self.port}")
         
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.UNAVAILABLE:
                 self.is_healthy = False
-                print(f"= Server unavailable: {self.host}:{self.port}")
+                print(f"Server unavailable: {self.host}:{self.port}")
             else:
                 print(f"Health check RPC error: {e.code()}")
         except Exception as e:
@@ -664,51 +474,20 @@ class HealthMonitoredClient:
         if self.client:
             await self.client.close()
         
-        print(f"= Disconnected from {self.host}:{self.port}")
-
-# Usage example
-async def health_monitored_connection_example():
-    """Demonstrate health-monitored direct connections."""
-    
-    monitored_client = HealthMonitoredClient("127.0.0.1", 8080, health_check_interval=10.0)
-    
-    try:
-        await monitored_client.connect()
-        
-        # Make calls with health monitoring
-        for i in range(5):
-            try:
-                result = await monitored_client.safe_call("calculator.Add", a=i, b=i*3)
-                print(f"Safe call {i}: result = {result.result}")
-            except Exception as e:
-                print(f"Safe call {i} failed: {e}")
-            
-            await asyncio.sleep(2)
-        
-        # Let health monitoring run for a bit
-        await asyncio.sleep(15)
-    
-    finally:
-        await monitored_client.close()
-
-# Usage
-await health_monitored_connection_example()
+        print(f"Disconnected from {self.host}:{self.port}")
 ```
-
-## Connection Failover
 
 ### Automatic Failover Client
 
 ```python
-from typing import List, Dict, Any, Optional
 import asyncio
 import time
 
 class FailoverClient:
     """Client with automatic failover to backup servers."""
     
-    def __init__(self, primary_endpoint: Dict[str, Any], 
-                 backup_endpoints: List[Dict[str, Any]],
+    def __init__(self, primary_endpoint: dict, 
+                 backup_endpoints: list[dict],
                  failover_timeout: float = 5.0):
         self.primary_endpoint = primary_endpoint
         self.backup_endpoints = backup_endpoints
@@ -727,10 +506,10 @@ class FailoverClient:
             self.current_client = plugin_client(**self.primary_endpoint)
             await self.current_client.start()
             self.current_endpoint_index = -1
-            print(f" Connected to primary: {self.primary_endpoint}")
+            print(f"Connected to primary: {self.primary_endpoint}")
             return True
         except Exception as e:
-            print(f"L Primary connection failed: {e}")
+            print(f"Primary connection failed: {e}")
             return await self._try_connect_backup()
     
     async def _try_connect_backup(self) -> bool:
@@ -744,14 +523,14 @@ class FailoverClient:
                 self.current_client = plugin_client(**backup_endpoint)
                 await self.current_client.start()
                 self.current_endpoint_index = i
-                print(f" Failed over to backup {i}: {backup_endpoint}")
+                print(f"Failed over to backup {i}: {backup_endpoint}")
                 return True
                 
             except Exception as e:
-                print(f"L Backup {i} connection failed: {e}")
+                print(f"Backup {i} connection failed: {e}")
                 continue
         
-        print("=¥ All servers unavailable")
+        print("All servers unavailable")
         return False
     
     async def _handle_connection_failure(self):
@@ -761,7 +540,7 @@ class FailoverClient:
         
         # Prevent rapid failover attempts
         if current_time - self.last_failover < self.failover_timeout:
-            print("ó Failover timeout active, waiting...")
+            print("Failover timeout active, waiting...")
             raise Exception("Failover timeout active")
         
         self.last_failover = current_time
@@ -772,26 +551,6 @@ class FailoverClient:
         else:
             # If on backup, try primary first, then other backups
             success = await self._try_connect_primary()
-            if not success:
-                # Try other backups
-                remaining_backups = [
-                    (i, endpoint) for i, endpoint in enumerate(self.backup_endpoints)
-                    if i != self.current_endpoint_index
-                ]
-                
-                for i, backup_endpoint in remaining_backups:
-                    try:
-                        if self.current_client:
-                            await self.current_client.close()
-                        
-                        self.current_client = plugin_client(**backup_endpoint)
-                        await self.current_client.start()
-                        self.current_endpoint_index = i
-                        print(f" Failed over to backup {i}")
-                        success = True
-                        break
-                    except Exception:
-                        continue
         
         if not success:
             raise Exception("All failover attempts exhausted")
@@ -817,7 +576,7 @@ class FailoverClient:
                 if attempt < max_retries:
                     try:
                         await self._handle_connection_failure()
-                        print(f"= Retrying call on failover connection...")
+                        print("Retrying call on failover connection...")
                     except Exception as failover_error:
                         print(f"Failover failed: {failover_error}")
                         if attempt == max_retries - 1:
@@ -829,7 +588,7 @@ class FailoverClient:
         """Close current connection."""
         if self.current_client:
             await self.current_client.close()
-            print("= Failover client disconnected")
+            print("Failover client disconnected")
 
 # Usage example
 async def failover_client_example():
@@ -849,7 +608,7 @@ async def failover_client_example():
         await failover_client.connect()
         
         # Make resilient calls
-        for i in range(10):
+        for i in range(3):
             try:
                 result = await failover_client.resilient_call(
                     "calculator.Multiply",
@@ -869,23 +628,22 @@ async def failover_client_example():
 await failover_client_example()
 ```
 
-## Best Practices
+## Configuration and Best Practices
 
 ### Connection Configuration
 
 ```python
-from dataclasses import dataclass
-from typing import Optional, Dict, Any, List
 import os
+from dataclasses import dataclass
 
 @dataclass
 class DirectConnectionConfig:
     """Configuration for direct connections."""
     
     # Connection settings
-    host: Optional[str] = None
-    port: Optional[int] = None
-    unix_socket: Optional[str] = None
+    host: str | None = None
+    port: int | None = None
+    unix_socket: str | None = None
     
     # Timeouts
     connect_timeout: float = 10.0
@@ -893,19 +651,14 @@ class DirectConnectionConfig:
     
     # Security
     enable_mtls: bool = False
-    client_cert: Optional[str] = None
-    client_key: Optional[str] = None
-    ca_cert: Optional[str] = None
+    client_cert: str | None = None
+    client_key: str | None = None
+    ca_cert: str | None = None
     
     # Performance
     compression: str = "gzip"
     max_message_size: int = 4 * 1024 * 1024
     keepalive_time: float = 30.0
-    keepalive_timeout: float = 5.0
-    
-    # Health monitoring
-    enable_health_checks: bool = True
-    health_check_interval: float = 30.0
     
     @classmethod
     def from_environment(cls, prefix: str = "PLUGIN_CLIENT_") -> 'DirectConnectionConfig':
@@ -935,15 +688,14 @@ class DirectConnectionConfig:
         
         return config
     
-    def create_client_kwargs(self) -> Dict[str, Any]:
+    def create_client_kwargs(self) -> dict:
         """Convert config to plugin_client kwargs."""
         
         kwargs = {
             "timeout": self.connect_timeout,
             "compression": self.compression,
             "max_message_size": self.max_message_size,
-            "keepalive_time": self.keepalive_time,
-            "keepalive_timeout": self.keepalive_timeout
+            "keepalive_time": self.keepalive_time
         }
         
         # Connection method
@@ -975,11 +727,10 @@ async with plugin_client(**client_kwargs) as client:
     result = await client.service.Method(param="value")
 ```
 
-### Production Deployment Patterns
+### Production Deployment
 
 ```python
 import asyncio
-from typing import List, Dict, Any, Optional
 import logging
 from contextlib import asynccontextmanager
 
@@ -987,7 +738,7 @@ class ProductionDirectClient:
     """Production-ready direct connection client."""
     
     def __init__(self, 
-                 endpoints: List[Dict[str, Any]],
+                 endpoints: list[dict],
                  service_name: str,
                  enable_metrics: bool = True,
                  enable_logging: bool = True):
@@ -995,7 +746,6 @@ class ProductionDirectClient:
         self.endpoints = endpoints
         self.service_name = service_name
         self.enable_metrics = enable_metrics
-        self.enable_logging = enable_logging
         
         # Setup logging
         if enable_logging:
@@ -1029,14 +779,14 @@ class ProductionDirectClient:
                     if self.enable_metrics:
                         self.metrics["active_connections"] += 1
                     
-                    if self.enable_logging:
+                    if hasattr(self, 'logger'):
                         self.logger.info(f"Connected to {endpoint}")
                     
                     yield client
                     break
                     
                 except Exception as e:
-                    if self.enable_logging:
+                    if hasattr(self, 'logger'):
                         self.logger.warning(f"Failed to connect to {endpoint}: {e}")
                     continue
             else:
@@ -1076,7 +826,7 @@ class ProductionDirectClient:
             
             return await method(**kwargs)
     
-    def get_metrics(self) -> Dict[str, Any]:
+    def get_metrics(self) -> dict:
         """Get client metrics."""
         if not self.enable_metrics:
             return {}
@@ -1133,6 +883,126 @@ async def production_usage_example():
 
 # Usage
 await production_usage_example()
+```
+
+## Debugging and Troubleshooting
+
+### Connection Diagnostics
+
+```python
+import asyncio
+import grpc
+from pyvider.rpcplugin import plugin_client
+
+async def diagnose_connection(host: str, port: int):
+    """Diagnose connection issues."""
+    
+    print(f"Diagnosing connection to {host}:{port}")
+    
+    try:
+        # Test basic connectivity
+        print("Testing basic connectivity...")
+        client = plugin_client(host=host, port=port, timeout=5.0)
+        await client.start()
+        
+        print("Connection established successfully")
+        
+        # Test service availability
+        try:
+            services = client.get_available_services()
+            print(f"Available services: {services}")
+        except Exception as e:
+            print(f"Service discovery failed: {e}")
+        
+        # Test health endpoint if available
+        if hasattr(client, 'health'):
+            try:
+                health = await client.health.Check(service="")
+                print(f"Health status: {health.status}")
+            except Exception as e:
+                print(f"Health check failed: {e}")
+        
+        await client.close()
+        print("Connection diagnostic completed successfully")
+        
+    except grpc.aio.AioRpcError as e:
+        print(f"gRPC error: {e.code()} - {e.details()}")
+    except Exception as e:
+        print(f"Connection failed: {e}")
+
+# Usage
+await diagnose_connection("127.0.0.1", 8080)
+```
+
+### Performance Monitoring
+
+```python
+import time
+import asyncio
+
+class PerformanceMonitor:
+    """Monitor connection performance."""
+    
+    def __init__(self):
+        self.request_times = []
+        self.error_count = 0
+        self.total_requests = 0
+    
+    async def timed_call(self, client, service_method: str, **kwargs):
+        """Make a timed RPC call."""
+        
+        start_time = time.time()
+        self.total_requests += 1
+        
+        try:
+            service_name, method_name = service_method.split('.')
+            service = getattr(client, service_name.lower())
+            method = getattr(service, method_name)
+            
+            result = await method(**kwargs)
+            
+            # Record timing
+            duration = time.time() - start_time
+            self.request_times.append(duration)
+            
+            return result
+            
+        except Exception as e:
+            self.error_count += 1
+            duration = time.time() - start_time
+            self.request_times.append(duration)
+            raise
+    
+    def get_stats(self) -> dict:
+        """Get performance statistics."""
+        
+        if not self.request_times:
+            return {}
+        
+        return {
+            "total_requests": self.total_requests,
+            "error_count": self.error_count,
+            "error_rate": self.error_count / self.total_requests,
+            "avg_response_time": sum(self.request_times) / len(self.request_times),
+            "min_response_time": min(self.request_times),
+            "max_response_time": max(self.request_times)
+        }
+
+# Usage
+async def performance_test():
+    monitor = PerformanceMonitor()
+    
+    async with plugin_client(host="127.0.0.1", port=8080) as client:
+        # Run performance test
+        for i in range(100):
+            try:
+                await monitor.timed_call(client, "calculator.Add", a=i, b=1)
+            except Exception as e:
+                print(f"Request {i} failed: {e}")
+        
+        # Print stats
+        stats = monitor.get_stats()
+        print(f"Performance stats: {stats}")
 ```
 
 ## Next Steps
