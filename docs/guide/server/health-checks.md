@@ -431,7 +431,7 @@ class PrometheusHealthMetrics:
         return "\n".join(metrics)
 ```
 
-## Testing Health Checks
+## Testing and Best Practices
 
 ### Health Check Testing
 
@@ -448,14 +448,9 @@ class TestHealthChecks:
     async def test_system_resource_check(self, health_checker):
         """Test system resource health checking."""
         with patch('psutil.cpu_percent', return_value=50.0), \
-             patch('psutil.virtual_memory') as mock_memory, \
-             patch('psutil.disk_usage') as mock_disk:
+             patch('psutil.virtual_memory') as mock_memory:
             
-            # Mock memory usage
-            mock_memory.return_value = Mock(percent=60.0, used=1024*1024*1024)  # 1GB
-            
-            # Mock disk usage
-            mock_disk.return_value = Mock(used=50*1024*1024*1024, total=100*1024*1024*1024)  # 50% used
+            mock_memory.return_value = Mock(percent=60.0, used=1024*1024*1024)
             
             report = await health_checker.get_comprehensive_health_report()
             
@@ -467,7 +462,6 @@ class TestHealthChecks:
     @pytest.mark.asyncio
     async def test_dependency_health_check(self, health_checker):
         """Test external dependency health checking."""
-        # Register mock dependency
         async def mock_healthy_dependency():
             return True
         
@@ -481,25 +475,7 @@ class TestHealthChecks:
         
         assert "dependency_healthy_service" in report.metrics
         assert report.metrics["dependency_healthy_service"].status == "healthy"
-        
-        assert "dependency_unhealthy_service" in report.metrics
         assert report.metrics["dependency_unhealthy_service"].status == "critical"
-    
-    @pytest.mark.asyncio
-    async def test_grpc_health_service(self):
-        """Test gRPC health service."""
-        health_service = HealthCheckServicer()
-        
-        # Set service status
-        health_service.set_service_status("test.Service", HealthStatus.SERVING)
-        
-        # Mock request
-        request = Mock(service="test.Service")
-        context = Mock()
-        
-        response = await health_service.Check(request, context)
-        
-        assert response.status == HealthStatus.SERVING.value
     
     @pytest.mark.asyncio
     async def test_health_check_timeout(self, health_checker):
@@ -514,41 +490,33 @@ class TestHealthChecks:
         
         assert "dependency_slow_service" in report.metrics
         assert report.metrics["dependency_slow_service"].status == "warning"
-        assert "timeout" in report.metrics["dependency_slow_service"].message
-
-# Usage
-pytest.main([__file__])
 ```
 
-## Health Check Best Practices
-
-### Production Health Check Configuration
+### Production Configuration
 
 ```python
-def create_production_health_setup():
+def create_production_health_setup(config: PluginHealthConfig):
     """Create production-ready health check setup."""
     
-    # Create health checker with appropriate thresholds
     health_checker = AdvancedHealthChecker()
     health_checker.resource_thresholds = {
-        "cpu_percent": 85.0,    # Higher threshold for production
-        "memory_percent": 90.0,  # Higher threshold for production
+        "cpu_percent": config.resource_cpu_threshold,
+        "memory_percent": config.resource_memory_threshold,
         "disk_usage_percent": 85.0
     }
     
     # Register critical dependencies
     health_checker.register_dependency("primary_database", check_primary_db)
     health_checker.register_dependency("cache_service", check_cache)
-    health_checker.register_dependency("message_queue", check_message_queue)
     
     # Create gRPC health service
     health_service = HealthCheckServicer()
-    health_service.register_health_checker("", lambda: True)  # Overall health
+    health_service.register_health_checker("", lambda: True)
     health_service.register_health_checker("database", check_primary_db)
     
     # Setup monitoring integration
-    prometheus_metrics = PrometheusHealthMetrics()
-    k8s_integration = KubernetesHealthIntegration(health_checker)
+    prometheus_metrics = PrometheusHealthMetrics() if config.enable_prometheus else None
+    k8s_integration = KubernetesHealthIntegration(health_checker, config)
     
     return {
         "health_checker": health_checker,
@@ -566,11 +534,39 @@ async def check_cache():
     """Check cache service health."""
     # Implement actual cache health check
     return True
+```
 
-async def check_message_queue():
-    """Check message queue health."""
-    # Implement actual message queue health check
-    return True
+### Health Endpoints
+
+Health checks provide multiple endpoints for different monitoring needs:
+
+- `/health` - Overall service health (gRPC Check)
+- `/ready` - Service readiness for traffic
+- `/metrics` - Prometheus metrics export
+- Health file at `PLUGIN_HEALTH_FILE_PATH` for Kubernetes exec probes
+
+### Troubleshooting
+
+Common health check issues:
+
+1. **Timeout errors**: Reduce checker complexity or increase timeout values
+2. **Resource threshold alerts**: Adjust thresholds via `PLUGIN_RESOURCE_*_THRESHOLD` 
+3. **Dependency failures**: Implement proper retry logic and circuit breakers
+4. **File probe issues**: Ensure health file path is writable and monitored
+
+### Integration with Foundation
+
+Health checks integrate seamlessly with Foundation logging and configuration:
+
+```python
+# Use Foundation logging patterns
+logger = logging.getLogger("plugin.health")
+
+# Environment-based configuration
+health_config = PluginHealthConfig()
+
+# Structured health reports for monitoring systems
+health_service = HealthCheckServicer()
 ```
 
 ## Next Steps
@@ -578,6 +574,6 @@ async def check_message_queue():
 With comprehensive health checks implemented:
 
 - **[Security](../security/)** - Secure your health endpoints
-- **[Configuration](../config/)** - Configure health check parameters
+- **[Configuration](../config/)** - Configure health check parameters  
 - **[Production Deployment](../production/)** - Deploy with monitoring integration
 - **[Client Development](../client/)** - Implement client-side health checking
