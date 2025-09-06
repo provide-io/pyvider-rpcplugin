@@ -1,15 +1,31 @@
 # Rate Limiting
 
-Pyvider RPC Plugin includes built-in server-side rate limiting using a token bucket algorithm to protect against abuse, ensure fair resource usage, and maintain service quality under high load conditions.
+Pyvider RPC Plugin integrates with Foundation's rate limiting system, providing server-side protection using a token bucket algorithm to protect against abuse, ensure fair resource usage, and maintain service quality under high load conditions.
 
 ## Overview
 
-Rate limiting operates at the server level and applies to all incoming requests regardless of the client or request type. It uses a token bucket algorithm that provides:
+Rate limiting operates at the server level using Foundation's `TokenBucketRateLimiter` and applies to all incoming requests regardless of the client or request type. It uses a token bucket algorithm that provides:
 
 - **Sustained rate control**: Limits average requests per second over time
 - **Burst handling**: Allows temporary spikes in traffic up to a configured limit
 - **Fair resource allocation**: Prevents any single client from overwhelming the server
 - **Graceful degradation**: Returns standard gRPC errors when limits are exceeded
+
+### Foundation Integration
+
+The rate limiting is implemented using Foundation's rate limiting utilities:
+
+```python
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+from pyvider.rpcplugin.config import rpcplugin_config
+
+# Rate limiter is automatically configured from environment
+if rpcplugin_config.plugin_rate_limit_enabled:
+    rate_limiter = TokenBucketRateLimiter(
+        requests_per_second=rpcplugin_config.plugin_rate_limit_requests_per_second,
+        burst_capacity=rpcplugin_config.plugin_rate_limit_burst_capacity
+    )
+```
 
 ## Configuration
 
@@ -19,7 +35,7 @@ Enable rate limiting with default settings:
 
 ```bash
 # Enable rate limiting with defaults
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
+export PLUGIN_RATE_LIMIT_ENABLED=true
 # Default: 100 requests/second, 200 burst capacity
 ```
 
@@ -29,18 +45,18 @@ Configure specific rate and burst limits:
 
 ```bash
 # Custom rate limiting configuration
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="50.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="100.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=50.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
 ```
 
 ### Configuration Parameters
 
 | Parameter | Environment Variable | Type | Default | Description |
 |-----------|---------------------|------|---------|-------------|
-| **Enabled** | `PYVIDER_PLUGIN_RATE_LIMIT_ENABLED` | `bool` | `false` | Enable/disable rate limiting |
-| **Rate** | `PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` | `float` | `100.0` | Average requests per second allowed |
-| **Burst** | `PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY` | `float` | `200.0` | Maximum requests in burst (token bucket size) |
+| **Enabled** | `PLUGIN_RATE_LIMIT_ENABLED` | `bool` | `false` | Enable/disable rate limiting |
+| **Rate** | `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` | `float` | `100.0` | Average requests per second allowed |
+| **Burst** | `PLUGIN_RATE_LIMIT_BURST_CAPACITY` | `float` | `200.0` | Maximum requests in burst (token bucket size) |
 
 ## Token Bucket Algorithm
 
@@ -58,8 +74,8 @@ The rate limiter uses a token bucket algorithm with the following behavior:
 #### Scenario 1: Steady Traffic
 ```bash
 # Configuration: 10 RPS, 20 burst capacity
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="10.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="20.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=10.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=20.0
 ```
 
 - **Sustained load**: 10 requests/second are consistently allowed
@@ -69,8 +85,8 @@ export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="20.0"
 #### Scenario 2: Bursty Traffic
 ```bash
 # Configuration: 50 RPS, 200 burst capacity  
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="50.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="200.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=50.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=200.0
 ```
 
 - **Initial burst**: 200 requests can be processed immediately
@@ -80,8 +96,8 @@ export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="200.0"
 #### Scenario 3: High Throughput
 ```bash
 # Configuration: 1000 RPS, 2000 burst capacity
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="1000.0" 
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="2000.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000.0
 ```
 
 - **High capacity**: Handles 1000 requests/second consistently
@@ -96,9 +112,9 @@ For development, use lenient rate limiting to avoid interrupting testing:
 
 ```bash
 # Development rate limiting - very permissive
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="1000.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="5000.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=5000.0
 ```
 
 ### Production Environment
@@ -106,33 +122,33 @@ export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="5000.0"
 #### Web API Backend
 ```bash
 # Typical web API rate limiting
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="100.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="300.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=300.0
 ```
 
 #### High-Throughput Service
 ```bash
 # High-throughput microservice
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="1000.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="2000.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000.0
 ```
 
 #### Administrative Interface
 ```bash
 # Conservative rate limiting for admin operations
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="10.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="50.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=10.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=50.0
 ```
 
 #### Public API
 ```bash
 # Public-facing API with abuse protection
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="20.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="100.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=20.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
 ```
 
 ## Error Handling
@@ -334,12 +350,12 @@ For high-throughput services:
 
 ```bash
 # High-performance configuration
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="5000.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="10000.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=5000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=10000.0
 
 # Consider disabling rate limiting for internal services
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="false"
+export PLUGIN_RATE_LIMIT_ENABLED=false
 ```
 
 ## Advanced Patterns
@@ -447,12 +463,12 @@ asyncio.create_task(adaptive_limiter.update_rate_limits())
 
 ```bash
 # Before (too restrictive)
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="5.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="10.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=5.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=10.0
 
 # After (more permissive)
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="20.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="100.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=20.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
 ```
 
 #### 2. Rate Limiting Not Working
@@ -461,8 +477,8 @@ export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="100.0"
 
 ```bash
 # Check configuration
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"  # Must be explicit
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="100.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true  # Must be explicit
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
 ```
 
 #### 3. Client Retry Storms
@@ -488,7 +504,7 @@ async def retry_with_backoff(func, max_attempts=3):
 Enable debug logging to see rate limiting decisions:
 
 ```bash
-export PYVIDER_PLUGIN_LOG_LEVEL="DEBUG"
+export PLUGIN_LOG_LEVEL=DEBUG
 ```
 
 Debug logs will show:
