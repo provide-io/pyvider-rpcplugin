@@ -91,6 +91,22 @@ Build domain-specific communication protocols for specialized use cases:
 - Financial data feeds with domain-specific compression
 - Video streaming with adaptive quality protocols
 
+### 🏗️ [Foundation Integration](foundation-integration.md)
+Advanced integration patterns with Foundation infrastructure:
+
+- **Configuration Inheritance** - Custom config classes extending RuntimeConfig
+- **Certificate Management** - Dynamic certificate generation and rotation
+- **Per-Client Rate Limiting** - Sophisticated rate limiting strategies
+- **Structured Logging** - Context-aware observability patterns
+- **Circuit Breakers** - Resilient error handling and recovery
+- **Connection Pooling** - Efficient resource management
+
+**Use Cases:**
+- Multi-tenant SaaS platforms with per-client rate limits
+- High-security environments requiring certificate rotation
+- Microservices with comprehensive observability requirements
+- Systems requiring automatic failover and recovery
+
 ### ⚡ [Performance Tuning](performance.md)  
 Optimize plugin performance for production workloads:
 
