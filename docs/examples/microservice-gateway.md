@@ -354,12 +354,7 @@ class GatewayServicer(GatewayServiceServicer):
                 logger.error(f"Stream routing failed: {e}")
                 yield GatewayResponse(status_code=500, error_message=f"Stream routing failed: {e}")
     
-    async def RegisterService(
-        self, 
-        request: ServiceRegistration, 
-        context: ServicerContext
-    ) -> RegistrationResponse:
-        """Register backend service instance."""
+    async def RegisterService(self, request: ServiceRegistration, context: ServicerContext) -> RegistrationResponse:
         logger.info(f"Registering service: {request.service_name}@{request.host}:{request.port}")
         
         instance = BackendInstance(
@@ -383,12 +378,7 @@ class GatewayServicer(GatewayServiceServicer):
             message=f"Service {request.service_name} registered successfully"
         )
     
-    async def UnregisterService(
-        self, 
-        request: ServiceUnregistration, 
-        context: ServicerContext
-    ) -> RegistrationResponse:
-        """Unregister backend service instance."""
+    async def UnregisterService(self, request: ServiceUnregistration, context: ServicerContext) -> RegistrationResponse:
         logger.info(f"Unregistering service: {request.service_name}#{request.instance_id}")
         
         service_registry = self.services.get(request.service_name)
@@ -402,12 +392,7 @@ class GatewayServicer(GatewayServiceServicer):
             message=f"Service instance {request.instance_id} unregistered"
         )
     
-    async def ListServices(
-        self, 
-        request: ListServicesRequest, 
-        context: ServicerContext
-    ) -> ListServicesResponse:
-        """List registered services."""
+    async def ListServices(self, request: ListServicesRequest, context: ServicerContext) -> ListServicesResponse:
         services = []
         
         for service_name, registry in self.services.items():
@@ -440,12 +425,7 @@ class GatewayServicer(GatewayServiceServicer):
         
         return ListServicesResponse(services=services)
     
-    async def HealthCheck(
-        self, 
-        request: HealthRequest, 
-        context: ServicerContext
-    ) -> HealthResponse:
-        """Gateway health check."""
+    async def HealthCheck(self, request: HealthRequest, context: ServicerContext) -> HealthResponse:
         backend_services = {}
         
         for service_name, registry in self.services.items():
@@ -476,12 +456,7 @@ class GatewayServicer(GatewayServiceServicer):
             backend_services=backend_services
         )
     
-    async def GetMetrics(
-        self, 
-        request: MetricsRequest, 
-        context: ServicerContext
-    ) -> MetricsResponse:
-        """Get gateway metrics."""
+    async def GetMetrics(self, request: MetricsRequest, context: ServicerContext) -> MetricsResponse:
         service_metrics = {}
         
         for service_name, registry in self.services.items():
@@ -518,12 +493,7 @@ class GatewayServicer(GatewayServiceServicer):
             service_metrics=service_metrics
         )
     
-    async def _forward_request(
-        self, 
-        request: GatewayRequest, 
-        instance: BackendInstance
-    ) -> GatewayResponse:
-        """Forward request to backend instance."""
+    async def _forward_request(self, request: GatewayRequest, instance: BackendInstance) -> GatewayResponse:
         target = f"{instance.host}:{instance.port}"
         
         try:
@@ -549,12 +519,10 @@ class GatewayServicer(GatewayServiceServicer):
             raise
     
     async def _validate_auth_token(self, token: str) -> bool:
-        """Validate authentication token."""
         # Simplified JWT validation - implement proper JWT validation in production
         return token.startswith("Bearer ") and len(token) > 7
     
     async def _health_check_instance(self, instance: BackendInstance) -> bool:
-        """Perform health check on service instance."""
         try:
             target = f"{instance.host}:{instance.port}"
             channel = grpc.aio.insecure_channel(target)
@@ -566,7 +534,6 @@ class GatewayServicer(GatewayServiceServicer):
             return False
     
     async def _health_check_loop(self):
-        """Background health check loop."""
         while True:
             try:
                 for registry in self.services.values():
