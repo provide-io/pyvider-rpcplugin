@@ -49,18 +49,11 @@ syntax = "proto3";
 package gateway;
 
 service GatewayService {
-  // Route request to backend service
   rpc RouteRequest(GatewayRequest) returns (GatewayResponse);
-  
-  // Stream requests for real-time services
   rpc RouteStream(stream GatewayRequest) returns (stream GatewayResponse);
-  
-  // Service management
   rpc RegisterService(ServiceRegistration) returns (RegistrationResponse);
   rpc UnregisterService(ServiceUnregistration) returns (RegistrationResponse);
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse);
-  
-  // Health and metrics
   rpc HealthCheck(HealthRequest) returns (HealthResponse);
   rpc GetMetrics(MetricsRequest) returns (MetricsResponse);
 }
@@ -88,9 +81,7 @@ message ServiceRegistration {
   string instance_id = 2;
   string host = 3;
   int32 port = 4;
-  map<string, string> metadata = 5;
-  repeated string methods = 6;
-  int32 weight = 7; // For load balancing
+  int32 weight = 5;
 }
 
 message ServiceUnregistration {
@@ -104,7 +95,7 @@ message RegistrationResponse {
 }
 
 message ListServicesRequest {
-  string service_name = 1; // Optional filter
+  string service_name = 1;
 }
 
 message ListServicesResponse {
@@ -138,9 +129,7 @@ message HealthResponse {
 }
 
 message MetricsRequest {
-  string service_name = 1; // Optional filter
-  int64 start_time = 2;
-  int64 end_time = 3;
+  string service_name = 1;
 }
 
 message MetricsResponse {
@@ -164,12 +153,10 @@ message ServiceMetrics {
 **gateway_service.py**
 ```python
 import asyncio
-import hashlib
 import json
 import logging
 import random
 import time
-import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Any, AsyncIterator
@@ -200,7 +187,7 @@ class BackendInstance:
     request_count: int = 0
     error_count: int = 0
     response_times: deque = field(default_factory=lambda: deque(maxlen=1000))
-    circuit_breaker_state: str = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+    circuit_breaker_state: str = "CLOSED"
     circuit_breaker_failures: int = 0
     circuit_breaker_last_failure: float = 0
 
@@ -225,37 +212,28 @@ class ServiceRegistry:
             if instance.healthy and instance.circuit_breaker_state != "OPEN"
         ]
     
-    def select_instance(self, method: str = "round_robin") -> BackendInstance | None:
+    def select_instance(self, method: str = "weighted") -> BackendInstance | None:
         """Select instance using load balancing."""
         healthy_instances = self.get_healthy_instances()
-        
         if not healthy_instances:
             return None
         
-        if method == "round_robin":
-            instance = healthy_instances[self.load_balancer_index % len(healthy_instances)]
-            self.load_balancer_index += 1
-            return instance
-        
-        elif method == "weighted":
-            # Weighted random selection
+        if method == "weighted":
             total_weight = sum(inst.weight for inst in healthy_instances)
             if total_weight == 0:
                 return random.choice(healthy_instances)
             
             rand_weight = random.randint(1, total_weight)
             current_weight = 0
-            
             for instance in healthy_instances:
                 current_weight += instance.weight
                 if rand_weight <= current_weight:
                     return instance
         
-        elif method == "least_connections":
-            # Select instance with lowest request count
-            return min(healthy_instances, key=lambda x: x.request_count)
-        
-        return random.choice(healthy_instances)
+        # Round-robin fallback
+        instance = healthy_instances[self.load_balancer_index % len(healthy_instances)]
+        self.load_balancer_index += 1
+        return instance
 
 class CircuitBreaker:
     """Circuit breaker for fault tolerance."""
@@ -267,13 +245,11 @@ class CircuitBreaker:
     def should_allow_request(self, instance: BackendInstance) -> bool:
         """Check if request should be allowed."""
         current_time = time.time()
-        
         if instance.circuit_breaker_state == "OPEN":
             if current_time - instance.circuit_breaker_last_failure > self.timeout:
                 instance.circuit_breaker_state = "HALF_OPEN"
                 return True
             return False
-        
         return True
     
     def record_success(self, instance: BackendInstance):
@@ -286,7 +262,6 @@ class CircuitBreaker:
         """Record failed request."""
         instance.circuit_breaker_failures += 1
         instance.circuit_breaker_last_failure = time.time()
-        
         if instance.circuit_breaker_failures >= self.failure_threshold:
             instance.circuit_breaker_state = "OPEN"
             logger.warning(f"Circuit breaker OPEN for {instance.instance_id}")
@@ -294,7 +269,7 @@ class CircuitBreaker:
 class RateLimiter:
     """Token bucket rate limiter."""
     
-    def __init__(self, requests_per_second: int = 100):
+    def __init__(self, requests_per_second: int = 1000):
         self.requests_per_second = requests_per_second
         self.buckets: dict[str, dict[str, float]] = defaultdict(
             lambda: {"tokens": requests_per_second, "last_refill": time.time()}
@@ -305,20 +280,14 @@ class RateLimiter:
         current_time = time.time()
         bucket = self.buckets[client_id]
         
-        # Refill tokens
         time_passed = current_time - bucket["last_refill"]
         tokens_to_add = time_passed * self.requests_per_second
-        bucket["tokens"] = min(
-            self.requests_per_second,
-            bucket["tokens"] + tokens_to_add
-        )
+        bucket["tokens"] = min(self.requests_per_second, bucket["tokens"] + tokens_to_add)
         bucket["last_refill"] = current_time
         
-        # Check if request can be served
         if bucket["tokens"] >= 1:
             bucket["tokens"] -= 1
             return True
-        
         return False
 
 class GatewayServicer(GatewayServiceServicer):
