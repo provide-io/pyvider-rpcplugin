@@ -123,14 +123,8 @@ class SecurityError(RPCPluginError):
         return "RPC_SECURITY_ERROR"
 
 
-class CertificateError(SecurityError):
-    """
-    Errors related to security certificates, private keys, or other credential
-    validation and management issues.
-    """
-    
-    def _default_code(self) -> str:
-        return "RPC_CERTIFICATE_ERROR"
+# Import CertificateError from Foundation instead of defining locally
+from provide.foundation.crypto import CertificateError
 
 
 # 🐍🏗️🔌

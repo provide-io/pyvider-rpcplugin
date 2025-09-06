@@ -3,7 +3,7 @@
 import pytest
 from unittest import mock
 
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import SecurityError

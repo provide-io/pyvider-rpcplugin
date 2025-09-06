@@ -2,7 +2,7 @@
 
 import pytest
 
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.handshake import build_handshake_response
 from pyvider.rpcplugin.exception import HandshakeError  # Added import
 
