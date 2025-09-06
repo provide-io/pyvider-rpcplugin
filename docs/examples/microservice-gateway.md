@@ -626,63 +626,23 @@ class GatewayClient:
             return result
         
         except grpc.RpcError as e:
-            logger.error(f"Gateway request failed: {e.code()}: {e.details()}")
+            logger.error(f"Gateway request failed: {e.details()}")
             raise
     
-    async def register_service(
-        self, 
-        service_name: str,
-        instance_id: str,
-        host: str,
-        port: int,
-        weight: int = 1,
-        methods: list[str] | None = None
-    ) -> bool:
-        """Register service with gateway."""
-        request = ServiceRegistration(
-            service_name=service_name,
-            instance_id=instance_id,
-            host=host,
-            port=port,
-            weight=weight,
-            methods=methods or []
-        )
-        
+    async def register_service(self, service_name: str, instance_id: str, host: str, port: int, weight: int = 1) -> bool:
+        request = ServiceRegistration(service_name=service_name, instance_id=instance_id, host=host, port=port, weight=weight)
         try:
             response = await self.stub.RegisterService(request)
-            
-            if response.success:
-                logger.info(f"Service registered: {service_name}@{host}:{port}")
-            else:
-                logger.error(f"Service registration failed: {response.message}")
-            
             return response.success
-        
-        except grpc.RpcError as e:
-            logger.error(f"Service registration RPC failed: {e.code()}: {e.details()}")
+        except grpc.RpcError:
             return False
     
-    async def unregister_service(
-        self, 
-        service_name: str,
-        instance_id: str
-    ) -> bool:
-        """Unregister service from gateway."""
-        request = ServiceUnregistration(
-            service_name=service_name,
-            instance_id=instance_id
-        )
-        
+    async def unregister_service(self, service_name: str, instance_id: str) -> bool:
+        request = ServiceUnregistration(service_name=service_name, instance_id=instance_id)
         try:
             response = await self.stub.UnregisterService(request)
-            
-            if response.success:
-                logger.info(f"Service unregistered: {service_name}#{instance_id}")
-            
             return response.success
-        
-        except grpc.RpcError as e:
-            logger.error(f"Service unregistration failed: {e.code()}: {e.details()}")
+        except grpc.RpcError:
             return False
     
     async def list_services(self, service_name: str | None = None) -> list[dict[str, Any]]:
