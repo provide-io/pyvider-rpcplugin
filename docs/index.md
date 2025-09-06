@@ -77,7 +77,7 @@ class EchoProtocol(RPCPluginProtocol):
 
 # Launch the plugin server
 async def main():
-    server = await plugin_server(
+    server = plugin_server(
         protocol=EchoProtocol(),
         handler=EchoService()
     )

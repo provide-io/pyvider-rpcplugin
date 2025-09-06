@@ -164,7 +164,7 @@ All APIs are async-first for maximum performance:
 ```python
 # Server
 async def main():
-    server = await plugin_server(protocol=MyProtocol(), handler=MyHandler())
+    server = plugin_server(protocol=MyProtocol(), handler=MyHandler())
     await server.serve()
 
 # Client  
