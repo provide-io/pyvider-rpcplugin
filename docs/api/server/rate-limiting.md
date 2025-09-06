@@ -952,4 +952,11 @@ quota_manager.set_quota("premium_client", requests_per_month=1000000)
 quota_manager.set_quota("basic_client", requests_per_month=100000)
 ```
 
+## Quick Examples
+
+For executable code samples:
+
+- **[Rate Limiting](../../examples/short/rate-limiting.md)** - Basic token bucket implementation  
+- **[Basic Server](../../examples/short/basic-server.md)** - Server without rate limiting for comparison
+
 These enhancements would provide comprehensive rate limiting suitable for large-scale production deployments with complex traffic management requirements.
