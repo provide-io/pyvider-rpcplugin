@@ -574,54 +574,34 @@ def test_magic_cookie_validation():
 
 ## Best Practices
 
-### Test Organization
+### Test Organization and Patterns
 
 ```python
-# ✅ Good: Organize tests by component and functionality
+# ✅ Good: Organize tests by component with descriptive names
 class TestUnixSocketTransport:
     """Test suite for Unix socket transport."""
     
     @pytest.mark.asyncio
     async def test_basic_lifecycle(self, transport_factory):
-        """Test basic Unix socket lifecycle."""
+        """Test Unix socket creation and cleanup."""
         pass
     
     @pytest.mark.asyncio
     async def test_permission_handling(self, transport_factory):
-        """Test file permission handling."""
-        pass
-    
-    @pytest.mark.asyncio
-    async def test_error_conditions(self, transport_factory):
-        """Test error scenarios."""
+        """Test file permission validation."""
         pass
 
-class TestTCPSocketTransport:
-    """Test suite for TCP socket transport."""
-    
-    @pytest.mark.asyncio
-    async def test_port_assignment(self, transport_factory):
-        """Test port assignment logic."""
-        pass
-
-# ✅ Good: Use descriptive test names
+# ✅ Good: Descriptive test names
 @pytest.mark.asyncio
 async def test_server_starts_successfully_with_unix_transport():
     pass
 
-@pytest.mark.asyncio  
-async def test_client_retries_connection_on_handshake_timeout():
-    pass
-
-# ❌ Avoid: Generic or unclear test names
+# ❌ Avoid: Generic test names
 def test_server():
-    pass
-
-def test_client_stuff():
     pass
 ```
 
-### Fixture Best Practices
+### Fixture and Assertion Patterns
 
 ```python
 # ✅ Good: Proper fixture cleanup
@@ -629,8 +609,8 @@ def test_client_stuff():
 async def managed_server(mock_protocol, mock_handler):
     """Server fixture with guaranteed cleanup."""
     server = plugin_server(protocol=mock_protocol, handler=mock_handler)
-    
     server_task = None
+    
     try:
         server_task = asyncio.create_task(server.serve())
         await server.wait_for_server_ready(timeout=5.0)
@@ -640,99 +620,48 @@ async def managed_server(mock_protocol, mock_handler):
         if server_task:
             await asyncio.wait_for(server_task, timeout=5.0)
 
-# ✅ Good: Scoped fixtures
-@pytest.fixture(scope="session")
-def test_certificates():
-    """Generate certificates once per test session."""
-    return generate_test_certificates()
-
-@pytest.fixture(scope="function")
-def transport_factory():
-    """Create fresh transport factory for each test."""
-    pass
-
-# ❌ Avoid: Fixtures without cleanup
-@pytest.fixture
-async def leaky_server():
-    server = plugin_server(protocol=protocol, handler=handler)
-    await server.serve()  # Never cleaned up
-    return server
-```
-
-### Assertion Best Practices
-
-```python
-# ✅ Good: Specific assertions with helpful messages
-def test_transport_endpoint_format():
+# ✅ Good: Specific assertions with context
+def test_endpoint_format():
     transport = TCPSocketTransport(host="127.0.0.1", port=8080)
     endpoint = await transport.listen()
     
-    assert endpoint == "127.0.0.1:8080", f"Expected specific endpoint format, got: {endpoint}"
-    assert ":" in endpoint, "TCP endpoint should contain port separator"
-    
+    assert endpoint == "127.0.0.1:8080", f"Expected format, got: {endpoint}"
     host, port = endpoint.split(":")
-    assert host == "127.0.0.1", f"Unexpected host: {host}"
-    assert int(port) == 8080, f"Unexpected port: {port}"
+    assert host == "127.0.0.1" and int(port) == 8080
 
 # ✅ Good: Test error conditions explicitly
-def test_invalid_config_raises_specific_error():
+def test_config_error_handling():
     with pytest.raises(ConfigError) as exc_info:
         raise ConfigError("Invalid value", hint="Use valid option")
     
     error = exc_info.value
     assert "Invalid value" in error.message
     assert error.hint == "Use valid option"
-
-# ❌ Avoid: Vague assertions
-def test_something():
-    result = do_something()
-    assert result  # What should result be?
-    assert len(result) > 0  # Why should it be non-empty?
 ```
 
-### Running Tests
+### Running Tests and Markers
 
 ```bash
-# Run all tests
-pytest
+# Basic test execution
+pytest                       # Run all tests
+pytest --cov=pyvider        # With coverage
+pytest -v                   # Verbose output
+pytest -k "transport"       # Filter by name
+pytest -m "not slow"        # Skip slow tests
 
-# Run with coverage
-pytest --cov=pyvider --cov-report=html
-
-# Run specific test categories
-pytest tests/unit/           # Unit tests only
-pytest tests/integration/    # Integration tests only
-pytest -k "transport"        # Tests matching "transport"
-
-# Run with verbose output
-pytest -v
-
-# Run tests in parallel (if pytest-xdist installed)
+# Parallel execution (with pytest-xdist)
 pytest -n auto
-
-# Run with specific markers
-pytest -m "asyncio"          # Only async tests
-pytest -m "not slow"         # Skip slow tests
 ```
 
-### Test Markers
-
 ```python
-# Define custom markers in pytest.ini or pyproject.toml
-# [tool.pytest.ini_options]
-# markers = [
-#     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-#     "integration: marks tests as integration tests",
-#     "unit: marks tests as unit tests"
-# ]
-
+# Test markers (define in pyproject.toml)
 @pytest.mark.slow
 @pytest.mark.asyncio
 async def test_large_scale_connections():
-    """Test with many concurrent connections - takes time."""
+    """Test with many concurrent connections."""
     pass
 
-@pytest.mark.integration
+@pytest.mark.integration  
 @pytest.mark.asyncio
 async def test_full_client_server_workflow():
     """Full integration test."""
@@ -747,7 +676,7 @@ def test_config_validation():
 ## Related Documentation
 
 - [Configuration](../api/config/) - Configuration testing patterns
-- [Exception Handling](../api/exceptions/) - Testing error conditions
+- [Exception Handling](../api/exceptions/) - Testing error conditions  
 - [Server API](../api/server/server.md) - Server testing specifics
 - [Client API](../api/client/client.md) - Client testing specifics
 - [Transport Layer](../api/transport/) - Transport testing details
