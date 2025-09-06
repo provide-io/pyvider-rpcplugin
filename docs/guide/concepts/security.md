@@ -93,130 +93,101 @@ export PLUGIN_SERVER_ROOT_CERTS="file:///etc/ssl/ca.crt"
 
 ## Certificate Management
 
-### Generating Certificates
+### Certificate Requirements
 
-Use the built-in certificate utilities:
+For mTLS authentication, you need the following certificate components:
 
-```python
-from pyvider.rpcplugin.crypto import Certificate
+- **Certificate Authority (CA)** - Root certificate that signs both server and client certificates
+- **Server Certificate** - Used by the plugin process to authenticate itself
+- **Client Certificate** - Used by the host application to authenticate to the plugin
+- **Private Keys** - Corresponding private keys for server and client certificates
 
+### Certificate Generation
+
+Certificates can be generated using standard tools like OpenSSL:
+
+```bash
 # 1. Create Certificate Authority
-ca_cert = Certificate.create_ca(
-    common_name="My Plugin CA",
-    organization_name="My Company",
-    validity_days=365
-)
+openssl req -new -x509 -days 365 -keyout ca.key -out ca.crt \
+    -subj "/CN=My Plugin CA/O=My Company"
 
-# 2. Create Server Certificate
-server_cert = Certificate.create_signed_certificate(
-    ca_certificate=ca_cert,
-    common_name="plugin-server.example.com",
-    alt_names=["localhost", "127.0.0.1"],
-    is_client_cert=False,
-    validity_days=90
-)
+# 2. Generate Server Certificate
+openssl req -new -keyout server.key -out server.csr \
+    -subj "/CN=plugin-server.example.com"
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+    -CAcreateserial -out server.crt -days 90
 
-# 3. Create Client Certificate
-client_cert = Certificate.create_signed_certificate(
-    ca_certificate=ca_cert,
-    common_name="plugin-client.example.com",
-    is_client_cert=True,
-    validity_days=90
-)
+# 3. Generate Client Certificate  
+openssl req -new -keyout client.key -out client.csr \
+    -subj "/CN=plugin-client.example.com"
+openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key \
+    -CAcreateserial -out client.crt -days 90
 ```
 
-### Using Certificates
+### Using External Certificates
+
+Once certificates are generated, they can be used with the plugin system:
 
 ```python
-# Save certificates to files
-with open("ca.crt", "w") as f:
-    f.write(ca_cert.cert)
-
-with open("server.crt", "w") as f:
-    f.write(server_cert.cert)
-    
-with open("server.key", "w") as f:
-    f.write(server_cert.key)
-
-# Or use directly as PEM strings
+# Load certificates from files
 configure(
     auto_mtls=True,
-    server_cert=server_cert.cert,  # PEM string
-    server_key=server_cert.key,    # PEM string
-    client_cert=client_cert.cert,  # PEM string
-    client_key=client_cert.key,    # PEM string
-    server_root_certs=ca_cert.cert # PEM string
+    server_cert="file:///path/to/server.crt",
+    server_key="file:///path/to/server.key",
+    client_cert="file:///path/to/client.crt", 
+    client_key="file:///path/to/client.key",
+    server_root_certs="file:///path/to/ca.crt",
+    client_root_certs="file:///path/to/ca.crt"
 )
 ```
 
 ## Complete mTLS Example
 
-Here's a working example demonstrating end-to-end mTLS setup:
+Here's an example demonstrating mTLS setup with pre-generated certificates:
 
 ```python
 #!/usr/bin/env python3
 import asyncio
-import tempfile
+import os
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
-from pyvider.rpcplugin.crypto import Certificate
 from provide.foundation import logger
 
 async def secure_plugin_example():
-    """Complete mTLS plugin example."""
+    """Complete mTLS plugin example using external certificates."""
     logger.info("🔒 Setting up secure plugin with mTLS...")
     
-    # Create temporary directory for certificates
-    with tempfile.TemporaryDirectory(prefix="secure_plugin_") as temp_dir:
-        temp_path = Path(temp_dir)
-        
-        # 1. Generate certificates
-        logger.info("🔑 Generating certificates...")
-        
-        # CA certificate
-        ca_cert = Certificate.create_ca(
-            common_name="Secure Plugin CA",
-            organization_name="My Company",
-            validity_days=1
-        )
-        
-        # Server certificate (for plugin)
-        server_cert = Certificate.create_signed_certificate(
-            ca_certificate=ca_cert,
-            common_name="secure-plugin.local",
-            alt_names=["localhost", "127.0.0.1"],
-            is_client_cert=False,
-            validity_days=1
-        )
-        
-        # Client certificate (for host)
-        client_cert = Certificate.create_signed_certificate(
-            ca_certificate=ca_cert,
-            common_name="secure-host.local",
-            is_client_cert=True,
-            validity_days=1
-        )
-        
-        # 2. Save server certificates to files (for plugin subprocess)
-        server_cert_file = temp_path / "server.crt"
-        server_key_file = temp_path / "server.key"
-        ca_cert_file = temp_path / "ca.crt"
-        
-        server_cert_file.write_text(server_cert.cert)
-        server_key_file.write_text(server_cert.key)
-        ca_cert_file.write_text(ca_cert.cert)
-        
-        # 3. Configure host application (client) mTLS
+    # Assume certificates were generated externally (e.g., using OpenSSL)
+    cert_dir = Path("/etc/ssl/plugin-certs")
+    
+    # Certificate file paths
+    ca_cert_file = cert_dir / "ca.crt"
+    server_cert_file = cert_dir / "server.crt"
+    server_key_file = cert_dir / "server.key"
+    client_cert_file = cert_dir / "client.crt"
+    client_key_file = cert_dir / "client.key"
+    
+    # Verify certificates exist
+    required_files = [ca_cert_file, server_cert_file, server_key_file, 
+                     client_cert_file, client_key_file]
+    
+    for cert_file in required_files:
+        if not cert_file.exists():
+            logger.error(f"❌ Certificate file missing: {cert_file}")
+            return
+    
+    try:
+        # 1. Configure host application (client) mTLS
         configure(
             auto_mtls=True,
-            client_cert=client_cert.cert,      # PEM string
-            client_key=client_cert.key,        # PEM string  
-            server_root_certs=ca_cert.cert,    # Trust server certs from this CA
+            client_cert=f"file://{client_cert_file}",
+            client_key=f"file://{client_key_file}",
+            server_root_certs=f"file://{ca_cert_file}",
             magic_cookie_key="SECURE_PLUGIN_COOKIE",
             magic_cookie="ultra-secure-token-456"
         )
         
-        # 4. Prepare plugin environment
+        # 2. Prepare plugin environment
         plugin_env = {
             "PLUGIN_AUTO_MTLS": "true",
             "PLUGIN_SERVER_CERT": f"file://{server_cert_file}",
@@ -227,7 +198,7 @@ async def secure_plugin_example():
             "PLUGIN_MAGIC_COOKIE_VALUE": "ultra-secure-token-456"
         }
         
-        # 5. Launch secure plugin
+        # 3. Launch secure plugin
         client = None
         try:
             logger.info("🚀 Launching secure plugin...")
@@ -249,6 +220,9 @@ async def secure_plugin_example():
             if client:
                 await client.close()
                 logger.info("🔒 Secure plugin shutdown complete")
+                
+    except Exception as e:
+        logger.error(f"❌ mTLS configuration failed: {e}")
 
 if __name__ == "__main__":
     asyncio.run(secure_plugin_example())
@@ -260,17 +234,19 @@ if __name__ == "__main__":
 
 **Certificate Rotation:**
 ```python
-# Implement automatic certificate renewal
+# Implement certificate renewal workflow
 async def rotate_certificates():
-    # Generate new certificates before expiration
-    new_server_cert = Certificate.create_signed_certificate(
-        ca_certificate=ca_cert,
-        common_name="plugin-server.example.com",
-        validity_days=90
-    )
+    # Check certificate expiration dates
+    cert_expiry_threshold = 30  # days
     
-    # Update running services
-    await update_server_certificates(new_server_cert)
+    # Generate new certificates using external tools before expiration
+    # This would typically involve:
+    # 1. Running OpenSSL commands to generate new certificates
+    # 2. Updating certificate files on disk
+    # 3. Restarting plugin services to pick up new certificates
+    
+    logger.info("Certificate rotation would be implemented here")
+    # Implementation depends on your certificate management infrastructure
 ```
 
 **Certificate Storage:**
@@ -366,12 +342,17 @@ async def security_health_check():
     """Monitor plugin security status."""
     checks = []
     
-    # Check certificate expiration
-    cert_expires = server_cert.not_valid_after
-    days_until_expiry = (cert_expires - datetime.now()).days
+    # Check certificate expiration (would require external certificate parsing)
+    # This would typically involve using cryptography library or OpenSSL
+    # to parse certificate files and check expiration dates
     
-    if days_until_expiry < 30:
-        checks.append(f"⚠️ Certificate expires in {days_until_expiry} days")
+    # Example conceptual check:
+    # cert_expires = parse_certificate_expiry("/path/to/server.crt")
+    # days_until_expiry = (cert_expires - datetime.now()).days
+    # if days_until_expiry < 30:
+    #     checks.append(f"⚠️ Certificate expires in {days_until_expiry} days")
+    
+    checks.append("ℹ️ Certificate expiry monitoring would be implemented here")
     
     # Check connection security
     if client.grpc_channel._channel.get_state() != grpc.ChannelConnectivity.READY:
@@ -419,12 +400,162 @@ chown plugin-user:plugin-group cert-dir/
 # Enable debug logging
 configure(log_level="DEBUG")
 
-# Check certificate details
-cert_info = Certificate.from_file("server.crt")
-logger.info(f"Certificate expires: {cert_info.not_valid_after}")
-logger.info(f"Subject: {cert_info.subject}")
-logger.info(f"SANs: {cert_info.subject_alt_names}")
+# Check certificate details using external tools
+# For example, using OpenSSL command line:
+# openssl x509 -in server.crt -text -noout
+# 
+# Or using Python cryptography library:
+# from cryptography import x509
+# from cryptography.hazmat.backends import default_backend
+# 
+# with open("server.crt", "rb") as f:
+#     cert = x509.load_pem_x509_certificate(f.read(), default_backend())
+#     logger.info(f"Certificate expires: {cert.not_valid_after}")
+#     logger.info(f"Subject: {cert.subject}")
+
+logger.info("Certificate debugging would use external tools or libraries")
 ```
+
+## Future Improvements
+
+The following enhancements could be added to improve certificate management and security workflows:
+
+### Built-in Certificate Management
+
+A future version could include built-in certificate utilities:
+
+```python
+# Conceptual API for future implementation
+from pyvider.rpcplugin.crypto import Certificate
+
+# Certificate Authority creation
+ca_cert = Certificate.create_ca(
+    common_name="My Plugin CA",
+    organization_name="My Company",
+    validity_days=365
+)
+
+# Server certificate generation
+server_cert = Certificate.create_signed_certificate(
+    ca_certificate=ca_cert,
+    common_name="plugin-server.example.com",
+    alt_names=["localhost", "127.0.0.1"],
+    is_client_cert=False,
+    validity_days=90
+)
+
+# Client certificate generation
+client_cert = Certificate.create_signed_certificate(
+    ca_certificate=ca_cert,
+    common_name="plugin-client.example.com",
+    is_client_cert=True,
+    validity_days=90
+)
+```
+
+### Advanced Certificate Features
+
+```python
+# Automatic certificate rotation
+async def auto_rotate_certificates():
+    # Monitor certificate expiration
+    # Generate new certificates automatically
+    # Hot-reload certificates without service restart
+    pass
+
+# Certificate validation and inspection
+class CertificateInspector:
+    def validate_certificate_chain(self, cert_path: str) -> bool:
+        """Validate certificate chain and trust."""
+        pass
+    
+    def get_certificate_info(self, cert_path: str) -> dict[str, any]:
+        """Extract certificate metadata and validity."""
+        pass
+    
+    def check_expiration(self, cert_path: str) -> int:
+        """Return days until certificate expiration."""
+        pass
+
+# HSM and key management integration
+class SecureKeyManager:
+    def store_private_key(self, key_data: bytes, key_id: str) -> bool:
+        """Store private key in HSM or secure key store."""
+        pass
+    
+    def retrieve_private_key(self, key_id: str) -> bytes:
+        """Retrieve private key from secure storage."""
+        pass
+```
+
+### Enhanced Security Monitoring
+
+```python
+# Advanced security event monitoring
+class SecurityMonitor:
+    async def monitor_certificate_health(self) -> list[str]:
+        """Continuous certificate health monitoring."""
+        alerts = []
+        
+        # Check certificate expiration
+        for cert_file in self.certificate_files:
+            days_left = self.check_expiration(cert_file)
+            if days_left < 30:
+                alerts.append(f"Certificate {cert_file} expires in {days_left} days")
+        
+        # Validate certificate chains
+        if not self.validate_certificate_chains():
+            alerts.append("Certificate chain validation failed")
+        
+        # Check for revoked certificates
+        revoked_certs = await self.check_certificate_revocation()
+        if revoked_certs:
+            alerts.append(f"Revoked certificates detected: {revoked_certs}")
+        
+        return alerts
+    
+    async def security_audit_log(self, event: str, details: dict[str, any]):
+        """Enhanced security audit logging."""
+        audit_entry = {
+            "timestamp": datetime.now().isoformat(),
+            "event": event,
+            "details": details,
+            "security_level": self.classify_security_event(event)
+        }
+        
+        # Log to secure audit trail
+        await self.write_audit_log(audit_entry)
+        
+        # Trigger alerts for critical events
+        if audit_entry["security_level"] == "critical":
+            await self.send_security_alert(audit_entry)
+```
+
+### Certificate Lifecycle Automation
+
+```python
+# Automated certificate lifecycle management
+class CertificateLifecycleManager:
+    def __init__(self, ca_config: dict, renewal_threshold_days: int = 30):
+        self.ca_config = ca_config
+        self.renewal_threshold = renewal_threshold_days
+    
+    async def auto_renew_certificates(self):
+        """Automatically renew expiring certificates."""
+        for cert_config in self.managed_certificates:
+            if self.should_renew_certificate(cert_config):
+                new_cert = await self.generate_renewed_certificate(cert_config)
+                await self.deploy_certificate(new_cert)
+                await self.validate_deployment(new_cert)
+    
+    async def certificate_rollback(self, cert_id: str):
+        """Rollback to previous certificate version on deployment failure."""
+        previous_cert = self.get_previous_certificate_version(cert_id)
+        await self.deploy_certificate(previous_cert)
+        logger.info(f"Rolled back certificate {cert_id} to previous version")
+```
+
+These features would provide comprehensive certificate management, automated security monitoring, and simplified deployment workflows for production environments.
 
 ## What's Next?
 
@@ -433,4 +564,3 @@ Now that you understand the security model:
 - **[Configuration](configuration.md)** - Explore all security configuration options
 - **[Production Deployment](../production/)** - Security considerations for production
 - **[Monitoring](../monitoring/)** - Security monitoring and alerting
-- **[Certificate Lifecycle](../advanced/certificates/)** - Advanced certificate management
