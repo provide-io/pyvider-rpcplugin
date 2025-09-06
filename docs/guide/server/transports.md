@@ -172,14 +172,13 @@ configure(
 
 ```python
 import asyncio
-from typing import Dict, List
 
 class TCPConnectionManager:
     """Manage TCP connections for high-throughput scenarios."""
     
     def __init__(self, max_connections: int = 100):
         self.max_connections = max_connections
-        self.active_connections: Dict[str, List] = {}
+        self.active_connections: dict[str, list] = {}
         self.connection_stats = {
             "total_connections": 0,
             "active_count": 0,
@@ -222,7 +221,7 @@ class TCPConnectionManager:
         # Shown here for completeness
         pass
     
-    def get_connection_stats(self) -> Dict:
+    def get_connection_stats(self) -> dict:
         """Get connection statistics."""
         return {
             **self.connection_stats,
@@ -373,7 +372,7 @@ class CertificateManager:
         
         return context
     
-    def get_certificate_info(self) -> Dict[str, Dict]:
+    def get_certificate_info(self) -> dict[str, dict]:
         """Get information about loaded certificates."""
         info = {}
         
@@ -410,7 +409,6 @@ ssl_context = cert_manager.create_ssl_context(is_server=True)
 import time
 import asyncio
 from dataclasses import dataclass
-from typing import Dict, List
 
 @dataclass
 class TransportMetrics:
@@ -430,7 +428,7 @@ class TransportMonitor:
     
     def __init__(self):
         self.metrics = TransportMetrics()
-        self.request_durations: List[float] = []
+        self.request_durations: list[float] = []
         self.last_metrics_update = time.time()
         self.monitoring_active = False
     
@@ -487,7 +485,7 @@ class TransportMonitor:
         
         self.last_metrics_update = current_time
     
-    def get_metrics_summary(self) -> Dict:
+    def get_metrics_summary(self) -> dict:
         """Get comprehensive metrics summary."""
         self.update_calculated_metrics()
         

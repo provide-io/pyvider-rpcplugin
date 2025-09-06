@@ -9,7 +9,6 @@ Master asynchronous programming patterns for building high-performance plugin se
 ```python
 import asyncio
 import time
-from typing import List, Dict, Any
 
 class AsyncHandler:
     def __init__(self):
@@ -67,7 +66,7 @@ class AsyncHandler:
 
 ```python
 import asyncio
-from typing import List, Callable, TypeVar, Awaitable
+from typing import Callable, TypeVar, Awaitable
 
 T = TypeVar('T')
 R = TypeVar('R')
@@ -163,7 +162,7 @@ class BatchHandler:
 ```python
 import asyncio
 import logging
-from typing import Dict, Set, Callable, Awaitable
+from typing import Callable, Awaitable
 from datetime import datetime, timedelta
 
 class BackgroundTaskManager:
@@ -361,7 +360,6 @@ class AsyncPluginHandler:
 ```python
 import asyncio
 import aiosqlite
-from typing import Optional, Dict, Any
 from contextlib import asynccontextmanager
 
 class DatabasePool:
@@ -520,7 +518,6 @@ class DatabaseHandler:
 ```python
 import aiohttp
 import asyncio
-from typing import Optional, Dict, Any
 
 class HTTPClientPool:
     """Async HTTP client connection pool."""
@@ -651,7 +648,6 @@ class APIHandler:
 ```python
 import asyncio
 import contextvars
-from typing import Dict, Any, Optional
 from datetime import datetime
 
 # Context variables
@@ -780,7 +776,7 @@ class ContextAwareHandler:
 
 ```python
 import asyncio
-from typing import TypeVar, Callable, Awaitable, List, Optional
+from typing import TypeVar, Callable, Awaitable
 
 T = TypeVar('T')
 
