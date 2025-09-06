@@ -26,7 +26,12 @@ def test_rate_limiter_init_invalid_refill_rate():
 async def test_rate_limiter_denies_when_empty(mocker): # Removed caplog
     # Patch time.monotonic to control time precisely
     mock_time = mocker.patch("time.monotonic")
-    mock_logger_warning = mocker.patch("pyvider.rpcplugin.rate_limiter.logger.warning") # Patch logger
+    # Mock the logger at the foundation level since it's imported dynamically
+    mock_logger_warning = mocker.patch("provide.foundation.logger.get_logger") 
+
+    # Create mock logger instance
+    mock_logger_instance = mocker.MagicMock()
+    mock_logger_warning.return_value = mock_logger_instance
 
     # Initial time
     mock_time.return_value = 1000.0
@@ -42,12 +47,12 @@ async def test_rate_limiter_denies_when_empty(mocker): # Removed caplog
 
     # Check for the warning log
     found_log = False
-    for call_args_tuple in mock_logger_warning.call_args_list:
+    for call_args_tuple in mock_logger_instance.warning.call_args_list:
         args, _ = call_args_tuple
         if args and "Request denied. No tokens available." in args[0]:
             found_log = True
             break
-    assert found_log, f"Expected 'Request denied' log not found. Logs: {mock_logger_warning.call_args_list}"
+    assert found_log, f"Expected 'Request denied' log not found. Logs: {mock_logger_instance.warning.call_args_list}"
 
 @pytest.mark.asyncio
 async def test_get_current_tokens(mocker):
