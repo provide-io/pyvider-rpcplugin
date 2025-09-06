@@ -331,7 +331,7 @@ class InputValidator:
     """Input validation utilities for gRPC services."""
     
     @staticmethod
-    def validate_required_fields(obj: Any, required_fields: List[str]):
+    def validate_required_fields(obj: Any, required_fields: list[str]):
         """Validate required fields are present."""
         missing = [field for field in required_fields if not hasattr(obj, field)]
         if missing:
@@ -385,14 +385,14 @@ class UserHandler(InputValidator, ServiceErrorHandler):
 
 ```python
 import time
-from typing import Dict, Any
+from typing import Any
 from datetime import datetime, timedelta
 
 class SessionManager:
     """Manage user sessions in stateful services."""
     
     def __init__(self, session_timeout: float = 3600):  # 1 hour
-        self.sessions: Dict[str, Dict[str, Any]] = {}
+        self.sessions: dict[str, dict[str, Any]] = {}
         self.session_timeout = session_timeout
     
     def create_session(self, user_id: str) -> str:
@@ -409,7 +409,7 @@ class SessionManager:
         
         return session_id
     
-    def get_session(self, session_id: str) -> Dict[str, Any]:
+    def get_session(self, session_id: str) -> dict[str, Any]:
         """Get session data."""
         session = self.sessions.get(session_id)
         
