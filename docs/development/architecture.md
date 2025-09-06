@@ -274,14 +274,14 @@ class ServerConfig:
         
         return cls(
             transport=TransportConfig(
-                host=os.getenv('PLUGIN_RPC_HOST', 'localhost'),
-                port=int(os.getenv('PLUGIN_RPC_PORT', '50051')),
-                tls_enabled=os.getenv('PLUGIN_RPC_TLS_ENABLED', 'false').lower() == 'true',
-                cert_file=os.getenv('PLUGIN_RPC_CERT_FILE'),
-                key_file=os.getenv('PLUGIN_RPC_KEY_FILE'),
+                host=os.getenv('PLUGIN_HOST', 'localhost'),
+                port=int(os.getenv('PLUGIN_PORT', '50051')),
+                tls_enabled=os.getenv('PLUGIN_TLS_ENABLED', 'false').lower() == 'true',
+                cert_file=os.getenv('PLUGIN_CERT_FILE'),
+                key_file=os.getenv('PLUGIN_KEY_FILE'),
             ),
-            max_workers=int(os.getenv('PLUGIN_RPC_MAX_WORKERS', '10')),
-            log_level=os.getenv('PLUGIN_RPC_LOG_LEVEL', 'INFO'),
+            max_workers=int(os.getenv('PLUGIN_MAX_WORKERS', '10')),
+            log_level=os.getenv('PLUGIN_LOG_LEVEL', 'INFO'),
         )
 ```
 

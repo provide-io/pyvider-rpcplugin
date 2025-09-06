@@ -55,7 +55,7 @@ os.environ.update({
     "PLUGIN_SERVER_TRANSPORTS": '["unix", "tcp"]',
     "PLUGIN_AUTO_MTLS": "true",
     "PLUGIN_MAX_CONCURRENT_STREAMS": "500",
-    "LOG_LEVEL": "DEBUG"
+    "PLUGIN_LOG_LEVEL": "DEBUG"
 })
 
 # Configuration automatically loaded

@@ -47,9 +47,9 @@ configure(transports=["unix", "tcp"])  # Both, prefer unix
 
 ```bash
 # Transport selection
-export PLUGIN_RPC_SERVER_TRANSPORTS="unix,tcp"
-export PLUGIN_RPC_TCP_PORT="8080" 
-export PLUGIN_RPC_UNIX_SOCKET_PATH="/tmp/my-plugin.sock"
+export PLUGIN_SERVER_TRANSPORTS="unix,tcp"
+export PLUGIN_TCP_PORT="8080" 
+export PLUGIN_UNIX_SOCKET_PATH="/tmp/my-plugin.sock"
 ```
 
 ## Implementation Details

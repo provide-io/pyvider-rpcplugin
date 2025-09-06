@@ -235,7 +235,7 @@ async def main():
         "retry_delay": 1.0,
         "environment": {
             "DEBUG": "1",
-            "LOG_LEVEL": "INFO"
+            "PLUGIN_LOG_LEVEL": "INFO"
         }
     }
     
@@ -439,7 +439,7 @@ config = {
     # Environment variables for server process
     "environment": {
         "DEBUG": "1",
-        "LOG_LEVEL": "INFO",
+        "PLUGIN_LOG_LEVEL": "INFO",
         "CUSTOM_CONFIG": "/path/to/config.json"
     }
 }
