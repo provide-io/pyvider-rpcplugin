@@ -6,7 +6,6 @@ A plugin server using TCP instead of Unix sockets.
 #!/usr/bin/env python3
 import asyncio
 from pyvider.rpcplugin.factories import plugin_protocol, plugin_server
-from pyvider.rpcplugin.config import RPCPluginConfig
 
 class NetworkHandler:
     """Handler for TCP-based plugin."""
@@ -19,18 +18,13 @@ class NetworkHandler:
         return f"Network response: {request}"
 
 async def main():
-    # Configure for TCP transport
-    config = RPCPluginConfig(
-        plugin_server_transports=["tcp"]
-    )
-    
     # Create server with TCP transport
     handler = NetworkHandler()
     protocol = plugin_protocol(service_name="NetworkPlugin")
     server = plugin_server(
         protocol=protocol, 
         handler=handler, 
-        config=config
+        transport="tcp"
     )
     
     try:
@@ -45,7 +39,7 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `plugin_server_transports=["tcp"]` forces TCP transport  
+- `transport="tcp"` parameter forces TCP transport
 - Server automatically binds to available TCP port
 - Useful for Windows or network-distributed plugins
 - Client automatically detects transport from handshake
