@@ -9,7 +9,6 @@ Implement comprehensive health monitoring for plugin servers with gRPC health ch
 ```python
 import asyncio
 from enum import Enum
-from typing import Dict, Optional
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 from grpc_health.v1.health_pb2 import HealthCheckResponse
@@ -23,12 +22,8 @@ class HealthCheckServicer(health_pb2_grpc.HealthServicer):
     """gRPC Health Check service implementation."""
     
     def __init__(self):
-        self.service_status: Dict[str, HealthStatus] = {}
-        self.health_checkers: Dict[str, callable] = {}
-    
-    def set_service_status(self, service_name: str, status: HealthStatus):
-        """Set health status for a specific service."""
-        self.service_status[service_name] = status
+        self.service_status: dict[str, HealthStatus] = {}
+        self.health_checkers: dict[str, callable] = {}
     
     def register_health_checker(self, service_name: str, checker: callable):
         """Register a health check function for a service."""
@@ -39,13 +34,11 @@ class HealthCheckServicer(health_pb2_grpc.HealthServicer):
         service = request.service
         
         try:
-            # Check if we have a dynamic health checker
             if service in self.health_checkers:
                 checker = self.health_checkers[service]
                 is_healthy = await self._run_health_checker(checker)
                 status = HealthStatus.SERVING if is_healthy else HealthStatus.NOT_SERVING
             else:
-                # Use static status
                 status = self.service_status.get(service, HealthStatus.SERVICE_UNKNOWN)
             
             return health_pb2.HealthCheckResponse(status=status.value)
@@ -61,7 +54,6 @@ class HealthCheckServicer(health_pb2_grpc.HealthServicer):
         
         while not context.cancelled():
             try:
-                # Get current status
                 if service in self.health_checkers:
                     checker = self.health_checkers[service]
                     is_healthy = await self._run_health_checker(checker)
@@ -69,12 +61,10 @@ class HealthCheckServicer(health_pb2_grpc.HealthServicer):
                 else:
                     current_status = self.service_status.get(service, HealthStatus.SERVICE_UNKNOWN)
                 
-                # Send status if changed
                 if current_status != last_status:
                     yield health_pb2.HealthCheckResponse(status=current_status.value)
                     last_status = current_status
                 
-                # Wait before next check
                 await asyncio.sleep(5.0)
                 
             except asyncio.CancelledError:
@@ -92,11 +82,7 @@ class HealthCheckServicer(health_pb2_grpc.HealthServicer):
             else:
                 result = checker()
             return bool(result)
-        except asyncio.TimeoutError:
-            logging.warning("Health checker timed out")
-            return False
-        except Exception as e:
-            logging.error(f"Health checker failed: {e}")
+        except (asyncio.TimeoutError, Exception):
             return False
 
 # Integration with plugin server
@@ -105,66 +91,27 @@ class HealthyPluginServer:
         self.protocol = protocol
         self.handler = handler
         self.health_service = HealthCheckServicer()
-        self.server = None
     
     def setup_health_checks(self):
         """Setup health checks for server components."""
-        
-        # Register health checkers for different components
-        self.health_service.register_health_checker("database", self.check_database_health)
-        self.health_service.register_health_checker("external_api", self.check_external_api_health)
-        self.health_service.register_health_checker("file_system", self.check_file_system_health)
-        
-        # Set overall service as serving
+        self.health_service.register_health_checker("database", self._check_database)
+        self.health_service.register_health_checker("external_api", self._check_external_api)
         self.health_service.set_service_status("", HealthStatus.SERVING)
     
-    async def check_database_health(self) -> bool:
-        """Check database connectivity."""
-        try:
-            # Example database health check
-            # Replace with actual database ping
-            await asyncio.sleep(0.01)  # Simulate DB ping
-            return True
-        except Exception:
-            return False
+    async def _check_database(self) -> bool:
+        """Check database connectivity.""" 
+        # Replace with actual database ping
+        return True
     
-    async def check_external_api_health(self) -> bool:
+    async def _check_external_api(self) -> bool:
         """Check external API availability."""
-        try:
-            # Example API health check
-            import aiohttp
-            async with aiohttp.ClientSession() as session:
-                async with session.get("https://api.example.com/health", 
-                                     timeout=aiohttp.ClientTimeout(total=3)) as response:
-                    return response.status == 200
-        except Exception:
-            return False
-    
-    async def check_file_system_health(self) -> bool:
-        """Check file system accessibility."""
-        try:
-            import tempfile
-            import os
-            
-            # Try to create and delete a temporary file
-            with tempfile.NamedTemporaryFile(delete=False) as tmp:
-                tmp.write(b"health_check")
-                tmp_path = tmp.name
-            
-            # Check if file exists and remove it
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-                return True
-            
-            return False
-        except Exception:
-            return False
+        # Replace with actual API health check
+        return True
     
     async def start(self):
         """Start server with health checks."""
         self.setup_health_checks()
         
-        # Create server with health service
         self.server = plugin_server(
             protocol=self.protocol,
             handler=self.handler,
@@ -174,10 +121,6 @@ class HealthyPluginServer:
         )
         
         await self.server.serve()
-
-# Usage
-server = HealthyPluginServer(MyProtocol(), MyHandler())
-await server.start()
 ```
 
 ## Custom Health Indicators
