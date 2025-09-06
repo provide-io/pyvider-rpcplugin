@@ -172,33 +172,23 @@ class DiscoveryClient:
 
 # Usage example
 async def service_discovery_example():
-    """Demonstrate service discovery integration."""
-    
-    # Setup registry
     registry = ServiceRegistry()
     
     # Register services (normally done by servers)
     registry.register_service(
-        "calculator", 
-        "127.0.0.1", 8080, 
-        ["calculator.Calculator"],
-        {"version": "1.0"}
+        "calculator", "127.0.0.1", 8080, 
+        ["calculator.Calculator"], {"version": "1.0"}
     )
     
     # Use discovery client
     discovery = DiscoveryClient(registry)
     
     try:
-        # Connect to specific service
         calc_client = await discovery.connect_to_service("calculator")
         result = await calc_client.calculator.Add(a=15, b=25)
         print(f"Calculator result: {result.result}")
-        
     finally:
         await calc_client.close()
-
-# Usage
-await service_discovery_example()
 ```
 
 ### External Service Discovery
@@ -337,34 +327,24 @@ class LoadBalancedClient:
 
 # Usage example
 async def load_balancing_example():
-    """Demonstrate load balancing across multiple servers."""
-    
-    # Define multiple endpoints
     endpoints = [
         {"host": "127.0.0.1", "port": 8080},
         {"host": "127.0.0.1", "port": 8081},
         {"host": "127.0.0.1", "port": 8082},
     ]
     
-    # Create load-balanced client
     lb_client = LoadBalancedClient(endpoints, strategy="round_robin")
     
     try:
         await lb_client.initialize()
         
-        # Make multiple calls - should distribute across servers
         for i in range(5):
             result = await lb_client.call_with_load_balancing(
-                "calculator.Add",
-                a=i, b=i*2
+                "calculator.Add", a=i, b=i*2
             )
             print(f"Request {i}: {i} + {i*2} = {result.result}")
-    
     finally:
         await lb_client.close_all()
-
-# Usage
-await load_balancing_example()
 ```
 
 ## Health Monitoring and Failover
@@ -592,14 +572,10 @@ class FailoverClient:
 
 # Usage example
 async def failover_client_example():
-    """Demonstrate automatic failover client."""
-    
-    # Configure primary and backup servers
     primary = {"host": "127.0.0.1", "port": 8080}
     backups = [
         {"host": "127.0.0.1", "port": 8081},
-        {"host": "127.0.0.1", "port": 8082},
-        {"unix_socket": "/tmp/backup_plugin.sock"}
+        {"host": "127.0.0.1", "port": 8082}
     ]
     
     failover_client = FailoverClient(primary, backups, failover_timeout=3.0)
@@ -607,25 +583,17 @@ async def failover_client_example():
     try:
         await failover_client.connect()
         
-        # Make resilient calls
         for i in range(3):
             try:
                 result = await failover_client.resilient_call(
-                    "calculator.Multiply",
-                    a=i, b=2,
-                    max_retries=2
+                    "calculator.Multiply", a=i, b=2, max_retries=2
                 )
                 print(f"Resilient call {i}: {i} * 2 = {result.result}")
             except Exception as e:
                 print(f"All attempts failed for call {i}: {e}")
-            
             await asyncio.sleep(1)
-    
     finally:
         await failover_client.close()
-
-# Usage
-await failover_client_example()
 ```
 
 ## Configuration and Best Practices
@@ -835,9 +803,6 @@ class ProductionDirectClient:
 
 # Usage in production
 async def production_usage_example():
-    """Production deployment example."""
-    
-    # Configure multiple endpoints for high availability
     endpoints = [
         {
             "host": "plugin-primary.internal", 
@@ -855,7 +820,6 @@ async def production_usage_example():
         }
     ]
     
-    # Create production client
     prod_client = ProductionDirectClient(
         endpoints=endpoints,
         service_name="payment_processor",
@@ -864,7 +828,6 @@ async def production_usage_example():
     )
     
     try:
-        # Make production calls
         result = await prod_client.call(
             "payment.ProcessPayment",
             amount=100.00,
@@ -873,16 +836,11 @@ async def production_usage_example():
         )
         
         print(f"Payment processed: {result.transaction_id}")
-        
-        # Check metrics
         metrics = prod_client.get_metrics()
         print(f"Client metrics: {metrics}")
         
     except Exception as e:
         print(f"Production call failed: {e}")
-
-# Usage
-await production_usage_example()
 ```
 
 ## Debugging and Troubleshooting
