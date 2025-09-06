@@ -25,26 +25,23 @@ from collections.abc import Callable
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
     """gRPC Health Check servicer implementation."""
+
+    def __init__(
+        self,
+        app_is_healthy_callable: Callable[[], bool],
+        service_name: str = ""
+    ) -> None:
+        """Initialize health servicer.
+        
+        Args:
+            app_is_healthy_callable: Function returning True if application is healthy
+            service_name: Primary service name (empty string means overall server)
+        """
 ```
 
-#### Constructor
-
-```python
-def __init__(
-    self,
-    app_is_healthy_callable: Callable[[], bool],
-    service_name: str = ""
-) -> None:
-```
-
-**Parameters:**
-- `app_is_healthy_callable` (Callable[[], bool]): Function that returns True if the application is healthy
-- `service_name` (str): Name of the primary service this health checker monitors (empty string means overall server)
-
-**Example:**
+**Basic Usage:**
 ```python
 def is_app_healthy() -> bool:
-    """Check if the application is healthy."""
     try:
         # Your application-specific health checks here
         return True  # or False if unhealthy
@@ -71,49 +68,14 @@ async def Check(
 
 Perform health check for the monitored service or overall system health.
 
-**Parameters:**
-- `request` (HealthCheckRequest): Health check request with optional service name
-- `context` (grpc.aio.ServicerContext): gRPC service context
-
-**Returns:**
-- `HealthCheckResponse`: Health status based on the `app_is_healthy_callable` result
-
 **Response Status Values:**
-- `SERVING`: Application is healthy (app_is_healthy_callable returns True)
-- `NOT_SERVING`: Application is unhealthy (app_is_healthy_callable returns False)  
-- Returns `NOT_FOUND` error if requested service doesn't match the configured service name
-
-**Example:**
-```python
-# Check overall health (empty service name)
-request = health_pb2.HealthCheckRequest()
-response = await health_servicer.Check(request, context)
-assert response.status == health_pb2.HealthCheckResponse.SERVING
-
-# Check specific service
-request = health_pb2.HealthCheckRequest(service="MyPluginService")
-response = await health_servicer.Check(request, context)
-```
+- `SERVING`: Application is healthy
+- `NOT_SERVING`: Application is unhealthy
+- `NOT_FOUND`: Requested service doesn't match configured service name
 
 #### `Watch`
 
-```python
-async def Watch(
-    self, 
-    request: health_pb2.HealthCheckRequest, 
-    context: grpc.aio.ServicerContext
-) -> AsyncIterator[health_pb2.HealthCheckResponse]:
-```
-
-**⚠️ NOT IMPLEMENTED**: This method always returns `UNIMPLEMENTED` error.
-
-The Watch method for streaming health status updates is not implemented in the current version.
-
-**Current Behavior:**
-- Always raises `grpc.StatusCode.UNIMPLEMENTED`
-- Does not provide streaming health updates
-
-For continuous health monitoring, use repeated `Check` calls instead.
+**⚠️ NOT IMPLEMENTED**: Always returns `UNIMPLEMENTED` error. Use repeated `Check` calls for continuous monitoring.
 
 ## Integration Examples
 
