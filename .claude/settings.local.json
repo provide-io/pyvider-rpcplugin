@@ -6,7 +6,8 @@
       "Bash(do [ ! -f \"docs/$file\" ])",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []
