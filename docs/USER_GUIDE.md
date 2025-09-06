@@ -1,6 +1,6 @@
-# Pyvider RPCPlugin: User and Developer Guide
+# Pyvider RPC Plugin: User and Developer Guide
 
-Welcome to the comprehensive guide for Pyvider RPCPlugin. This document serves as the main entry point for accessing all available documentation.
+Welcome to the comprehensive guide for Pyvider RPC Plugin. This document serves as the main entry point for accessing all available documentation.
 
 ## Documentation Structure
 

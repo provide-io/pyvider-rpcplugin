@@ -83,7 +83,7 @@ Pyvider RPC Plugin automatically installs these key dependencies:
 Pyvider RPC Plugin is built on Foundation's infrastructure:
 
 ```python
-# Foundation provides the foundation for plugin configuration
+# Foundation provides the infrastructure for plugin configuration
 from provide.foundation.config import RuntimeConfig
 from provide.foundation import logger
 from provide.foundation.crypto import Certificate
