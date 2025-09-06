@@ -347,20 +347,20 @@ For focused, executable examples (15-30 lines each):
 - **[Core Concepts](../guide/concepts/)** - Deep dive into architecture
 - **[Security](../guide/concepts/security.md)** - Enable mTLS for production
 - **[Transports](../guide/concepts/transports.md)** - Unix vs TCP sockets
-- **[Configuration](../guide/concepts/configuration.md)** - Environment variables and settings
+- **[Configuration](../guide/config/index.md)** - Environment variables and settings
 
 ### 🛠️ Practical Guides
 
 - **[Server Development](../guide/server/)** - Advanced server patterns
 - **[Client Development](../guide/client/)** - Connection management and retry logic
-- **[Error Handling](../guide/error-handling/)** - Robust error handling patterns
-- **[Testing](../guide/testing/)** - Unit and integration testing strategies
+- **[Error Handling](../guide/client/error-handling.md)** - Robust error handling patterns
+- **[Testing](../development/testing.md)** - Unit and integration testing strategies
 
 ### 🚀 Advanced Topics
 
-- **[Async Patterns](../guide/async-patterns/)** - Stream processing and concurrency
-- **[Performance](../guide/performance/)** - Optimization and benchmarking
-- **[Production Deployment](../guide/production/)** - Scaling and monitoring
+- **[Async Patterns](../guide/server/async-patterns.md)** - Stream processing and concurrency
+- **[Performance](../guide/advanced/performance.md)** - Optimization and benchmarking
+- **[Production Deployment](../guide/config/production.md)** - Scaling and monitoring
 
 ## Common Issues
 
