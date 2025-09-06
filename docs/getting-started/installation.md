@@ -54,17 +54,14 @@ import pyvider.rpcplugin
 # Check version
 print(f"Pyvider RPC Plugin version: {pyvider.rpcplugin.__version__}")
 
-# Test basic imports - Foundation integration
 from provide.foundation import logger
 from provide.foundation.config import RuntimeConfig
-
-# Test RPC plugin imports
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
 
-logger.info("✅ Installation successful!")
-logger.info(f"📋 Config system: {type(rpcplugin_config).__name__}")
-print("✅ Foundation integration verified!")
+logger.info("Installation successful!")
+logger.info(f"Config system: {type(rpcplugin_config).__name__}")
+print("Foundation integration verified!")
 ```
 
 ## Dependencies
@@ -83,14 +80,12 @@ Pyvider RPC Plugin automatically installs these key dependencies:
 Pyvider RPC Plugin is built on Foundation's infrastructure:
 
 ```python
-# Foundation provides the infrastructure for plugin configuration
 from provide.foundation.config import RuntimeConfig
 from provide.foundation import logger
 from provide.foundation.crypto import Certificate
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
-# Pyvider extends Foundation for RPC-specific needs
-from pyvider.rpcplugin.config import RPCPluginConfig  # Extends RuntimeConfig
+from pyvider.rpcplugin.config import RPCPluginConfig
 from pyvider.rpcplugin import plugin_server, plugin_client
 ```
 
@@ -164,20 +159,20 @@ class TestHandler:
         return "Installation working!"
 
 async def test_installation():
-    logger.info("🧪 Testing Pyvider RPC Plugin installation...")
+    logger.info("Testing Pyvider RPC Plugin installation...")
     
     # Test server creation
     server = plugin_server(
         protocol=TestProtocol(),
         handler=TestHandler()
     )
-    logger.info("✅ Server creation successful")
+    logger.info("Server creation successful")
     
     # Test configuration access
     config = server._config if hasattr(server, '_config') else None
-    logger.info("✅ Configuration access successful")
+    logger.info("Configuration access successful")
     
-    logger.info("🎉 Installation test completed successfully!")
+    logger.info("Installation test completed successfully!")
 
 if __name__ == "__main__":
     asyncio.run(test_installation())
@@ -191,10 +186,10 @@ python test_installation.py
 
 Expected output:
 ```
-2024-01-15 10:30:45.123 [info     ] 🧪 Testing Pyvider RPC Plugin installation...
-2024-01-15 10:30:45.124 [info     ] ✅ Server creation successful
-2024-01-15 10:30:45.125 [info     ] ✅ Configuration access successful
-2024-01-15 10:30:45.126 [info     ] 🎉 Installation test completed successfully!
+2024-01-15 10:30:45.123 [info     ] Testing Pyvider RPC Plugin installation...
+2024-01-15 10:30:45.124 [info     ] Server creation successful
+2024-01-15 10:30:45.125 [info     ] Configuration access successful
+2024-01-15 10:30:45.126 [info     ] Installation test completed successfully!
 ```
 
 ## Troubleshooting

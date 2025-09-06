@@ -29,14 +29,13 @@ Pyvider RPC Plugin is built on Foundation's infrastructure. Foundation provides:
 
 ```python
 # Foundation imports you'll commonly use
-from provide.foundation import logger                    # Structured logging
-from provide.foundation.config import RuntimeConfig     # Configuration base
-from provide.foundation.crypto import Certificate       # TLS certificates 
+from provide.foundation import logger
+from provide.foundation.config import RuntimeConfig
+from provide.foundation.crypto import Certificate
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
-# Pyvider RPC Plugin builds on Foundation
 from pyvider.rpcplugin import plugin_server, plugin_client
-from pyvider.rpcplugin.config import rpcplugin_config  # Extends RuntimeConfig
+from pyvider.rpcplugin.config import rpcplugin_config
 ```
 
 ## Your First Plugin
@@ -56,10 +55,9 @@ Demonstrates Foundation integration:
 - Plugin extends Foundation's capabilities for RPC communication
 """
 import asyncio
-from pyvider.rpcplugin import plugin_protocol, plugin_server
-from provide.foundation import logger  # Foundation's structured logging
 
-# Simple handler for demonstration
+from pyvider.rpcplugin import plugin_protocol, plugin_server
+from provide.foundation import logger
 class DummyHandler:
     def __init__(self):
         logger.info("🔌 Plugin handler initialized")
@@ -106,9 +104,10 @@ Demonstrates Foundation integration:
 import asyncio
 import sys
 from pathlib import Path
+
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger  # Foundation's structured logging
+from provide.foundation import logger
 
 async def main():
     logger.info("🚀 Starting host application...")
