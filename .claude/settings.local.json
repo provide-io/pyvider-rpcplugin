@@ -7,7 +7,9 @@
       "Bash(echo:*)",
       "Bash(done)",
       "Bash(find:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(source env.sh)",
+      "Bash(python -m pytest tests/utils/test_rate_limiting.py -v)"
     ],
     "deny": [],
     "ask": [],
