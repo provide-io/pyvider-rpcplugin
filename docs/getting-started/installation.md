@@ -57,6 +57,7 @@ print(f"Pyvider RPC Plugin version: {pyvider.rpcplugin.__version__}")
 # Test basic imports
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
+from provide.foundation import logger  # Foundation logging
 
 print("✅ Installation successful!")
 ```
@@ -66,11 +67,11 @@ print("✅ Installation successful!")
 Pyvider RPC Plugin automatically installs these key dependencies:
 
 ### Core Dependencies
-- **[provide-foundation](https://foundation.provide.io)** - Structured logging, configuration, and utilities
+- **Foundation** - Structured logging, configuration, cryptography, and utilities
 - **grpcio** - gRPC runtime for Python
 - **grpcio-tools** - Protocol Buffer compiler and tools
 - **attrs** - Modern Python data classes
-- **cryptography** - Cryptographic utilities for mTLS
+- **cryptography** - Additional cryptographic utilities
 
 ### Optional Dependencies
 
@@ -115,7 +116,7 @@ Create a simple test to verify everything works:
 import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
+from provide.foundation import logger  # Foundation logging
 
 class TestProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self):
