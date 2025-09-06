@@ -1,79 +1,117 @@
 # Getting Started
 
-Welcome to Pyvider RPC Plugin! This section will help you get up and running quickly with your first RPC plugin.
+**Build production-ready plugin systems in minutes with Foundation integration**
 
-## What You'll Learn
+This guide takes you from installation to your first working plugin with clear learning paths for different experience levels and use cases.
 
-In this getting started guide, you'll learn how to:
+## Learning Outcomes
 
-- **Install** pyvider-rpcplugin and set up your development environment
-- **Create your first plugin** with a simple echo service  
-- **Build a client** to interact with your plugin
-- **Understand core concepts** like transports, protocols, and security
-- **Explore examples** to see real-world usage patterns
+By the end of this guide, you'll be able to:
+
+- **Deploy plugin systems** using Foundation's configuration patterns and `PLUGIN_*` environment variables
+- **Implement secure communication** with automatic mTLS and certificate management
+- **Build type-safe services** using modern Python 3.11+ patterns and gRPC Protocol Buffers
+- **Integrate with Foundation** for unified logging, configuration, and development workflows
+- **Choose appropriate patterns** for your specific use case (microservices, plugin architectures, IPC)
 
 ## Prerequisites
 
-Before starting, make sure you have:
+**Technical Requirements:**
+- **Python 3.11+** with native type annotations (`dict`, `list`, union operators)
+- **Basic async/await** knowledge (we'll show the patterns)
+- **Foundation familiarity** (optional - we'll explain integration points)
 
-- **Python 3.11+** installed on your system
-- Basic familiarity with **async/await** patterns in Python  
-- Understanding of **RPC concepts** (we'll cover the specifics)
-- A code editor or IDE for Python development
+**Experience Levels:**
+- **Beginner**: New to RPC or plugin systems → Start with **Installation** then **Quick Start**
+- **Experienced**: Familiar with gRPC or microservices → Jump to **First Plugin** for complete examples
+- **Foundation User**: Already using provide.foundation → See **Foundation Integration** patterns throughout
 
-## Quick Navigation
+## Choose Your Path
 
 <div class="grid cards" markdown>
 
--   :material-download: **Installation**
+-   :material-download: **Installation & Setup**
     
     ---
     
-    Install pyvider-rpcplugin using pip, uv, or poetry
+    **5 minutes** • Install dependencies and verify environment
     
-    [:octicons-arrow-right-24: Install Now](installation.md)
+    Foundation configuration and `PLUGIN_*` environment setup
+    
+    [:octicons-arrow-right-24: Start Here](installation.md)
 
 -   :material-flash: **Quick Start**
     
     ---
     
-    Get a basic plugin running in 5 minutes
+    **10 minutes** • Working plugin with automatic process management
+    
+    Demonstrates core patterns with minimal configuration
     
     [:octicons-arrow-right-24: Quick Start](quick-start.md)
 
--   :material-puzzle: **First Plugin**
+-   :material-puzzle: **Complete Plugin Tutorial**
     
     ---
     
-    Build your first complete plugin with server and client
+    **25 minutes** • Production-ready echo service with all features
     
-    [:octicons-arrow-right-24: First Plugin](first-plugin.md)
+    Covers protocols, security, logging, and testing patterns
+    
+    [:octicons-arrow-right-24: Full Tutorial](first-plugin.md)
 
--   :material-book: **Examples**
+-   :material-rocket: **Advanced Patterns**
     
     ---
     
-    Explore working examples and common patterns
+    **Explore examples** • Real-world patterns and production deployments
+    
+    Database plugins, microservice gateways, and security implementations
     
     [:octicons-arrow-right-24: See Examples](examples.md)
 
 </div>
 
-## Learning Path
+## Progressive Learning Path
 
-We recommend following this sequence:
+**Foundation Integration Approach:** Each step builds on Foundation patterns
 
-1. **[Installation](installation.md)** - Set up your environment
-2. **[Quick Start](quick-start.md)** - Run your first plugin in minutes  
-3. **[First Plugin](first-plugin.md)** - Build a complete echo service
-4. **[Examples](examples.md)** - Explore more advanced patterns
-5. **[User Guide](../guide/)** - Deep dive into concepts and advanced features
+**Beginner Path** (Total: ~40 minutes)
+1. **[Installation](installation.md)** (5 min) → Environment setup with Foundation toolchain
+2. **[Quick Start](quick-start.md)** (10 min) → Basic plugin with `PLUGIN_*` configuration 
+3. **[Complete Tutorial](first-plugin.md)** (25 min) → Production patterns with structured logging
 
-## Need Help?
+**Experienced Developer Path** (Total: ~15 minutes)
+1. **[Installation](installation.md)** (2 min) → Quick dependency installation
+2. **[Complete Tutorial](first-plugin.md)** (10 min) → Skip to production patterns
+3. **[Advanced Examples](examples.md)** (3 min) → Real-world implementations
 
-- 📚 Check the [User Guide](../guide/) for comprehensive documentation
-- 🔍 Browse the [API Reference](../api/) for detailed method documentation  
-- 💻 Look at [Examples](../examples/) for working code samples
-- 🐛 Report issues on [GitHub](https://github.com/provide-io/pyvider-rpcplugin/issues)
+**Next Steps After Completion:**
+- **[Security Guide](../guide/security/)** - mTLS, certificates, and authentication patterns
+- **[Production Configuration](../guide/config/production.md)** - Environment-driven configuration for deployment
+- **[API Reference](../api/)** - Complete method documentation and advanced usage
 
-Ready to get started? Let's [install pyvider-rpcplugin](installation.md)!
+## Support & Troubleshooting
+
+**Quick Help:**
+- **Common Issues**: Configuration problems, environment setup, import errors
+- **Foundation Integration**: Logging not working, configuration not loading
+- **Performance**: Transport selection, connection issues, timeout problems
+
+**Resources:**
+- 📚 **[User Guide](../guide/)** - Comprehensive concepts and advanced features
+- 🔍 **[API Reference](../api/)** - Complete method documentation with examples
+- 💻 **[Working Examples](../examples/)** - Production patterns and real-world implementations
+- 🐛 **[GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)** - Bug reports and feature requests
+
+## Quick Start Options
+
+**Ready to begin?** Choose based on your experience:
+
+<div class="grid" markdown>
+
+[**New to plugins?** Start with Installation :material-arrow-right:](installation.md){ .md-button .md-button--primary }
+
+[**Want to jump in?** Quick Start Guide :material-arrow-right:](quick-start.md){ .md-button }
+
+</div>
