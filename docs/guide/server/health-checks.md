@@ -327,156 +327,108 @@ class HealthAwareHandler:
             return HealthReportResponse(overall_status="critical")
 ```
 
-## Health Check Integration
+## Monitoring Integration
 
-### Kubernetes Integration
+### Foundation Configuration
+
+Health checks integrate with Foundation logging and configuration using `PLUGIN_*` environment variables:
 
 ```python
-import json
+import os
 from pathlib import Path
 
-class KubernetesHealthIntegration:
-    """Integration with Kubernetes health checks."""
+class PluginHealthConfig:
+    """Health check configuration using Foundation patterns."""
     
-    def __init__(self, health_checker: AdvancedHealthChecker, health_file_path: str = "/tmp/health"):
+    def __init__(self):
+        self.health_check_interval = float(os.getenv("PLUGIN_HEALTH_CHECK_INTERVAL", "30"))
+        self.resource_cpu_threshold = float(os.getenv("PLUGIN_RESOURCE_CPU_THRESHOLD", "80"))
+        self.resource_memory_threshold = float(os.getenv("PLUGIN_RESOURCE_MEMORY_THRESHOLD", "85"))
+        self.health_file_path = os.getenv("PLUGIN_HEALTH_FILE_PATH", "/tmp/health")
+        self.enable_prometheus = os.getenv("PLUGIN_ENABLE_PROMETHEUS", "false").lower() == "true"
+
+class KubernetesHealthIntegration:
+    """Kubernetes health check integration."""
+    
+    def __init__(self, health_checker: AdvancedHealthChecker, config: PluginHealthConfig):
         self.health_checker = health_checker
-        self.health_file_path = Path(health_file_path)
+        self.config = config
+        self.health_file_path = Path(config.health_file_path)
     
     async def start_health_file_updater(self):
         """Start background task to update health status file."""
-        async def update_health_file():
-            while True:
-                try:
-                    report = await self.health_checker.get_comprehensive_health_report()
-                    
-                    health_data = {
-                        "status": report.overall_status,
-                        "timestamp": report.timestamp.isoformat(),
-                        "uptime": report.uptime_seconds,
-                        "healthy": report.overall_status in ["healthy", "warning"]
-                    }
-                    
-                    # Write health status to file for Kubernetes probes
-                    with open(self.health_file_path, 'w') as f:
-                        json.dump(health_data, f)
-                    
-                    await asyncio.sleep(10)  # Update every 10 seconds
-                    
-                except Exception as e:
-                    logging.error(f"Health file update failed: {e}")
-                    await asyncio.sleep(5)
-        
-        asyncio.create_task(update_health_file())
-    
-    def create_kubernetes_manifests(self) -> Dict[str, str]:
-        """Generate Kubernetes health check manifests."""
-        return {
-            "livenessProbe": """
+        while True:
+            try:
+                report = await self.health_checker.get_comprehensive_health_report()
+                
+                health_data = {
+                    "status": report.overall_status,
+                    "timestamp": report.timestamp.isoformat(),
+                    "uptime": report.uptime_seconds,
+                    "healthy": report.overall_status in ["healthy", "warning"]
+                }
+                
+                with open(self.health_file_path, 'w') as f:
+                    json.dump(health_data, f)
+                
+                await asyncio.sleep(self.config.health_check_interval)
+                
+            except Exception as e:
+                logging.error(f"Health file update failed: {e}")
+                await asyncio.sleep(5)
+
+# Kubernetes probe configuration
+KUBERNETES_PROBES = {
+    "liveness": """
 livenessProbe:
   httpGet:
     path: /health
     port: 8080
   initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-            """,
-            
-            "readinessProbe": """
+  periodSeconds: 10""",
+    
+    "readiness": """
 readinessProbe:
   httpGet:
     path: /ready
     port: 8080
   initialDelaySeconds: 5
-  periodSeconds: 5
-  timeoutSeconds: 3
-  failureThreshold: 3
-            """,
-            
-            "exec_probe": f"""
-livenessProbe:
-  exec:
-    command:
-    - cat
-    - {self.health_file_path}
-  initialDelaySeconds: 30
-  periodSeconds: 10
-            """
-        }
-```
-
-### Prometheus Metrics Integration
-
-```python
-from typing import Counter, Histogram, Gauge
+  periodSeconds: 5"""
+}
 
 class PrometheusHealthMetrics:
-    """Export health metrics in Prometheus format."""
+    """Simplified Prometheus metrics export."""
     
     def __init__(self):
-        # Simulated Prometheus metrics (replace with actual prometheus_client)
-        self.health_check_duration = {}  # Histogram
-        self.health_status_gauge = {}    # Gauge  
-        self.health_check_total = {}     # Counter
+        self.health_status_gauge = {}
+        self.health_check_total = {}
+        self.health_check_duration = {}
     
     def record_health_check(self, service: str, duration: float, status: str):
         """Record health check metrics."""
-        # Record duration
+        self.health_status_gauge[service] = 1 if status == "healthy" else 0
+        self.health_check_total[service] = self.health_check_total.get(service, 0) + 1
+        
         if service not in self.health_check_duration:
             self.health_check_duration[service] = []
         self.health_check_duration[service].append(duration)
-        
-        # Update status gauge (1 = healthy, 0 = unhealthy)
-        self.health_status_gauge[service] = 1 if status == "healthy" else 0
-        
-        # Increment counter
-        if service not in self.health_check_total:
-            self.health_check_total[service] = 0
-        self.health_check_total[service] += 1
     
     def get_prometheus_metrics(self) -> str:
         """Generate Prometheus-formatted metrics."""
         metrics = []
         
-        # Health status gauges
         for service, status in self.health_status_gauge.items():
             metrics.append(f'health_status{{service="{service}"}} {status}')
         
-        # Health check counters
         for service, count in self.health_check_total.items():
             metrics.append(f'health_checks_total{{service="{service}"}} {count}')
         
-        # Health check duration histograms (simplified)
         for service, durations in self.health_check_duration.items():
             if durations:
                 avg_duration = sum(durations) / len(durations)
                 metrics.append(f'health_check_duration_seconds{{service="{service}"}} {avg_duration:.3f}')
         
         return "\n".join(metrics)
-
-# Integration with health checker
-class MonitoredHealthChecker(AdvancedHealthChecker):
-    def __init__(self):
-        super().__init__()
-        self.prometheus_metrics = PrometheusHealthMetrics()
-    
-    async def check_service_health(self, service_name: str, checker: callable) -> bool:
-        """Check service health with metrics recording."""
-        start_time = time.time()
-        
-        try:
-            is_healthy = await self._run_dependency_checker(checker)
-            status = "healthy" if is_healthy else "unhealthy"
-            
-        except Exception:
-            is_healthy = False
-            status = "error"
-        
-        finally:
-            duration = time.time() - start_time
-            self.prometheus_metrics.record_health_check(service_name, duration, status)
-        
-        return is_healthy
 ```
 
 ## Testing Health Checks
