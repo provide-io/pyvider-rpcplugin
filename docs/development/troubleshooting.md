@@ -604,9 +604,9 @@ def generate_test_token(secret: str, payload: dict[str, Any]) -> str:
 2. **Secret key mismatches:**
    ```python
    # Ensure consistent secret across client and server
-   SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+   SECRET_KEY = os.getenv('PLUGIN_JWT_SECRET')
    if not SECRET_KEY:
-       raise ValueError("JWT_SECRET_KEY environment variable not set")
+       raise ValueError("PLUGIN_JWT_SECRET environment variable not set")
    ```
 
 3. **Algorithm mismatches:**

@@ -553,7 +553,7 @@ data:
     middleware:
       - name: "authentication"
         config:
-          jwt_secret: "${JWT_SECRET}"
+          jwt_secret: "${PLUGIN_JWT_SECRET}"
       - name: "rate_limiting"
         config:
           requests_per_minute: 1000
@@ -590,7 +590,7 @@ spec:
         - containerPort: 8081
           name: metrics
         env:
-        - name: JWT_SECRET
+        - name: PLUGIN_JWT_SECRET
           valueFrom:
             secretKeyRef:
               name: plugin-secrets
