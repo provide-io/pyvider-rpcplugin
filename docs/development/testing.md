@@ -413,17 +413,17 @@ async def test_port_conflict_error(transport_factory):
 
 ## Performance Testing
 
-### Load Testing
+### Load and Memory Testing
 
 ```python
 import asyncio
 import time
-from concurrent.futures import ThreadPoolExecutor
+import gc
+import os
 
 @pytest.mark.asyncio
 async def test_concurrent_connections(transport_factory):
     """Test multiple concurrent connections."""
-    # Create server transport
     server_transport = await transport_factory("unix")
     endpoint = await server_transport.listen()
     
@@ -433,41 +433,28 @@ async def test_concurrent_connections(transport_factory):
     
     for i in range(num_clients):
         client_transport = await transport_factory("unix")
-        task = asyncio.create_task(
-            client_transport.connect(endpoint)
-        )
+        task = asyncio.create_task(client_transport.connect(endpoint))
         client_tasks.append(task)
     
-    # Wait for all connections
     start_time = time.time()
     await asyncio.gather(*client_tasks)
     duration = time.time() - start_time
     
-    # Verify reasonable performance
     assert duration < 5.0  # All connections within 5 seconds
     print(f"Connected {num_clients} clients in {duration:.2f}s")
 
 @pytest.mark.asyncio
-async def test_server_performance(mock_protocol, mock_handler, transport_factory):
-    """Test basic server performance metrics."""
-    server = plugin_server(
-        protocol=mock_protocol,
-        handler=mock_handler,
-        transport="unix"
-    )
+async def test_server_startup_performance(mock_protocol, mock_handler, transport_factory):
+    """Test server performance metrics."""
+    server = plugin_server(protocol=mock_protocol, handler=mock_handler, transport="unix")
     
-    # Measure startup time
     start_time = time.time()
-    
     server_task = asyncio.create_task(server.serve())
     await server.wait_for_server_ready(timeout=10.0)
-    
     startup_time = time.time() - start_time
     
     try:
-        # Verify reasonable startup time
-        assert startup_time < 2.0  # Should start within 2 seconds
-        print(f"Server startup time: {startup_time:.2f}s")
+        assert startup_time < 2.0  # Start within 2 seconds
         
         # Test shutdown time
         shutdown_start = time.time()
@@ -475,28 +462,21 @@ async def test_server_performance(mock_protocol, mock_handler, transport_factory
         await asyncio.wait_for(server_task, timeout=5.0)
         shutdown_time = time.time() - shutdown_start
         
-        assert shutdown_time < 1.0  # Should shutdown within 1 second
-        print(f"Server shutdown time: {shutdown_time:.2f}s")
+        assert shutdown_time < 1.0  # Shutdown within 1 second
         
     except Exception:
         await server.stop()
         server_task.cancel()
         raise
-```
 
-### Memory Testing
-
-```python
-import gc
-import psutil
-import os
-
-def test_memory_usage():
-    """Test memory usage patterns."""
-    process = psutil.Process(os.getpid())
-    
-    # Measure initial memory
-    initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+def test_memory_usage_pattern():
+    """Test memory usage with resource cleanup."""
+    try:
+        import psutil
+        process = psutil.Process(os.getpid())
+        initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+    except ImportError:
+        pytest.skip("psutil not available for memory testing")
     
     # Create and destroy many transports
     transports = []
@@ -509,41 +489,34 @@ def test_memory_usage():
     # Clean up
     transports.clear()
     gc.collect()
-    
     final_memory = process.memory_info().rss / 1024 / 1024  # MB
     
-    print(f"Memory usage - Initial: {initial_memory:.1f}MB, "
-          f"Peak: {peak_memory:.1f}MB, Final: {final_memory:.1f}MB")
-    
-    # Memory should return close to initial after cleanup
     memory_growth = final_memory - initial_memory
     assert memory_growth < 10.0  # Less than 10MB growth
 ```
 
 ## Security Testing
 
-### Certificate Testing
+### Certificate and Authentication Testing
 
 ```python
 from provide.foundation.crypto import Certificate
+from unittest.mock import patch
 
 @pytest.fixture
 def test_certificates():
     """Generate test certificates for security testing."""
-    # Create CA certificate
     ca_cert = Certificate.create_self_signed_ca(
         common_name="Test CA",
         organization_name="Test Org"
     )
     
-    # Create server certificate
     server_cert = Certificate.create_self_signed_server_cert(
         common_name="test-server",
         organization_name="Test Org",
         alt_names=["localhost", "127.0.0.1"]
     )
     
-    # Create client certificate
     client_cert = Certificate(generate_keypair=True, key_type="ecdsa")
     
     return {
@@ -556,15 +529,10 @@ def test_certificate_generation(test_certificates):
     """Test certificate generation and validation."""
     certs = test_certificates
     
-    # Verify certificates were generated
-    assert certs["ca"].cert is not None
-    assert certs["ca"].key is not None
-    
-    assert certs["server"].cert is not None
-    assert certs["server"].key is not None
-    
-    assert certs["client"].cert is not None
-    assert certs["client"].key is not None
+    # Verify all certificates generated
+    for cert_type in ["ca", "server", "client"]:
+        assert certs[cert_type].cert is not None
+        assert certs[cert_type].key is not None
     
     # Verify certificate format
     assert "-----BEGIN CERTIFICATE-----" in certs["server"].cert
@@ -588,18 +556,11 @@ async def test_mtls_configuration(test_certificates, mock_protocol, mock_handler
         }
     )
     
-    # Verify mTLS configuration
     assert server.config["PLUGIN_AUTO_MTLS"] == False
     assert certs["server"].cert in server.config["PLUGIN_SERVER_CERT"]
-```
 
-### Authentication Testing
-
-```python
 def test_magic_cookie_validation():
     """Test magic cookie authentication."""
-    
-    # Test with valid cookie
     with patch.dict(os.environ, {
         'PLUGIN_MAGIC_COOKIE_KEY': 'TEST_COOKIE',
         'PLUGIN_MAGIC_COOKIE_VALUE': 'valid-cookie-123',
@@ -609,15 +570,6 @@ def test_magic_cookie_validation():
         
         assert rpcplugin_config.plugin_magic_cookie_key == 'TEST_COOKIE'
         assert rpcplugin_config.plugin_magic_cookie_value == 'valid-cookie-123'
-    
-    # Test with missing cookie
-    with patch.dict(os.environ, {
-        'PLUGIN_MAGIC_COOKIE_KEY': 'MISSING_COOKIE',
-        'PLUGIN_MAGIC_COOKIE_VALUE': 'test-value'
-    }, clear=True):
-        # This would be tested in actual handshake validation
-        # Test implementation depends on handshake logic
-        pass
 ```
 
 ## Best Practices
