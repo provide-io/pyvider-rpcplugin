@@ -52,7 +52,7 @@ from attrs import define, field
 from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.crypto.certificate import Certificate
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import (
     HandshakeError,
     ProtocolError,
