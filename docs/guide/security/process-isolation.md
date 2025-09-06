@@ -51,17 +51,17 @@ async def isolated_plugin_example():
 ### 1. **Sandbox Configuration**
 Configure comprehensive isolation settings including user/group isolation, filesystem restrictions, network limits, and resource quotas.
 
-→ **[Detailed Sandbox Configuration Guide](sandbox-configuration.md)**
+→ **Detailed Sandbox Configuration** - Configure comprehensive isolation settings
 
 ### 2. **Container Integration** 
 Use Docker and Kubernetes for robust containerized plugin isolation with industry-standard security boundaries.
 
-→ **[Container Integration Guide](container-integration.md)**
+→ **Container Integration** - Use Docker and Kubernetes for robust isolation
 
 ### 3. **Resource Monitoring**
 Monitor and enforce resource limits with real-time tracking of CPU, memory, disk, and network usage.
 
-→ **[Process Monitoring Guide](process-monitoring.md)**
+→ **Process Monitoring** - Monitor and enforce resource limits
 
 ## Common Patterns
 
@@ -147,8 +147,7 @@ async def safe_plugin_execution():
 
 ## Next Steps
 
-- **[Sandbox Configuration](sandbox-configuration.md)** - Detailed configuration options
-- **[Container Integration](container-integration.md)** - Docker and Kubernetes setup  
-- **[Process Monitoring](process-monitoring.md)** - Resource tracking and enforcement
+- **[Security Overview](index.md)** - Comprehensive security guide
+- **[Magic Cookies](magic-cookies.md)** - Plugin authentication
 - **[mTLS Security](mtls.md)** - Network-level security
 - **[Certificate Management](certificates.md)** - PKI for plugin authentication
