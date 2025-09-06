@@ -201,11 +201,11 @@ from pyvider.rpcplugin.config import rpcplugin_config
 
 # Set environment variables for automatic configuration
 os.environ.update({
-    "PYVIDER_PLUGIN_PROTOCOL_VERSION": "1",
-    "PYVIDER_PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
-    "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-    "PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT": "30",
-    "PYVIDER_PLUGIN_MAX_CONCURRENT_STREAMS": "1000"
+    "PLUGIN_PROTOCOL_VERSION": "1",
+    "PLUGIN_SERVER_TRANSPORTS": "[\"unix\", \"tcp\"]",
+    "PLUGIN_AUTO_MTLS": "true",
+    "PLUGIN_HANDSHAKE_TIMEOUT": "30",
+    "PLUGIN_MAX_CONCURRENT_STREAMS": "1000"
 })
 
 # Configuration loads automatically from environment

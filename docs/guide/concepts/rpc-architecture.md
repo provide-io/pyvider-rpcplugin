@@ -488,9 +488,9 @@ The RPC architecture integrates with the security model:
 ```python
 # Automatic mTLS integration
 os.environ.update({
-    "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-    "PYVIDER_PLUGIN_SERVER_CERT": "file:///etc/ssl/server.pem",
-    "PYVIDER_PLUGIN_SERVER_KEY": "file:///etc/ssl/server.key"
+    "PLUGIN_AUTO_MTLS": "true",
+    "PLUGIN_SERVER_CERT": "file:///etc/ssl/server.pem",
+    "PLUGIN_SERVER_KEY": "file:///etc/ssl/server.key"
 })
 
 # gRPC automatically uses TLS for all communication

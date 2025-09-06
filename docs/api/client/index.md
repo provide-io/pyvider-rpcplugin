@@ -79,10 +79,10 @@ Key client configuration options:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PYVIDER_PLUGIN_CLIENT_RETRY_ENABLED` | `true` | Enable connection retry |
-| `PYVIDER_PLUGIN_CLIENT_MAX_RETRIES` | `3` | Maximum retry attempts |
-| `PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT` | `10.0` | Handshake timeout seconds |
-| `PYVIDER_PLUGIN_CONNECTION_TIMEOUT` | `30.0` | Connection timeout seconds |
+| `PLUGIN_CLIENT_RETRY_ENABLED` | `true` | Enable connection retry |
+| `PLUGIN_CLIENT_MAX_RETRIES` | `3` | Maximum retry attempts |
+| `PLUGIN_HANDSHAKE_TIMEOUT` | `10.0` | Handshake timeout seconds |
+| `PLUGIN_CONNECTION_TIMEOUT` | `30.0` | Connection timeout seconds |
 
 ## Error Handling
 
