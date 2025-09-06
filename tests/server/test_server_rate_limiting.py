@@ -51,10 +51,23 @@ def server_config_override_rl(request):
     if hasattr(request, "param") and request.param is not None:
         params_to_apply.update(request.param)
 
-    # Set rpcplugin_config values
+    # Map environment variable keys to Foundation attribute names
+    key_to_attr = {
+        "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
+        "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": "plugin_rate_limit_requests_per_second",
+        "PLUGIN_RATE_LIMIT_BURST_CAPACITY": "plugin_rate_limit_burst_capacity",
+        "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
+        "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
+        "PLUGIN_MAGIC_COOKIE_KEY": "plugin_magic_cookie_key",
+        "PLUGIN_MAGIC_COOKIE_VALUE": "plugin_magic_cookie_value",
+    }
+    
+    # Set rpcplugin_config values using direct attribute access
     for key, value in params_to_apply.items():
-        original_config_values[key] = rpcplugin_config.get(key)
-        rpcplugin_config.set(key, value)
+        attr_name = key_to_attr.get(key)
+        if attr_name and hasattr(rpcplugin_config, attr_name):
+            original_config_values[attr_name] = getattr(rpcplugin_config, attr_name)
+            setattr(rpcplugin_config, attr_name, value)
 
     # Set environment variables
     for key, value in env_vars_to_set.items():
@@ -67,9 +80,9 @@ def server_config_override_rl(request):
 
     yield
 
-    # Restore rpcplugin_config values
-    for key, value in original_config_values.items():
-        rpcplugin_config.set(key, value)
+    # Restore rpcplugin_config values using direct attribute access
+    for attr_name, value in original_config_values.items():
+        setattr(rpcplugin_config, attr_name, value)
 
     # Restore environment variables
     for key, value in original_env_values.items():

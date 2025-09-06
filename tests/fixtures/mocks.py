@@ -202,32 +202,25 @@ async def mock_server_protocol() -> MockProtocol:
 def mock_server_config(monkeypatch):
     """Provides the global RPCPluginConfig instance, applying temporary test defaults."""
 
-    # Ensure the global rpcplugin_config.config dictionary is initialized
-    _ = (
-        rpcplugin_config.instance()
-    )  # Ensures .config dictionary exists on the singleton
-
-    test_defaults = {
-        "PLUGIN_MAGIC_COOKIE_KEY": "PLUGIN_MAGIC_COOKIE",
-        "PLUGIN_MAGIC_COOKIE_VALUE": "hello-fixture-mock-TLS-v2",  # Ensure distinct value
-        "PLUGIN_MAGIC_COOKIE": "hello-fixture-mock-TLS-v2",
-        "PLUGIN_PROTOCOL_VERSIONS": [7],  # Example distinct value
-        "PLUGIN_SERVER_TRANSPORTS": ["unix"],  # Example distinct value
-        "PLUGIN_SERVER_ENDPOINT": None,
-        "PLUGIN_SERVER_CERT": None,
-        "PLUGIN_SERVER_KEY": None,
-        "PLUGIN_CLIENT_CERT": None,
+    # Map legacy keys to Foundation attribute names
+    test_attribute_defaults = {
+        "plugin_magic_cookie_key": "PLUGIN_MAGIC_COOKIE",
+        "plugin_magic_cookie_value": "hello-fixture-mock-TLS-v2",
+        "plugin_protocol_versions": [7],
+        "plugin_server_transports": ["unix"],
+        "plugin_server_endpoint": None,
+        "plugin_server_cert": None,
+        "plugin_server_key": None,
+        "plugin_client_cert": None,
     }
 
-    for key, value in test_defaults.items():
-        # rpcplugin_config.config should exist after .instance() call.
-        # If it might not (e.g. very first test run and complex init), add defensive check.
-        if rpcplugin_config.config is not None:
-            monkeypatch.setitem(rpcplugin_config.config, key, value)
+    # Apply test defaults by patching attributes directly
+    for attr_name, value in test_attribute_defaults.items():
+        if hasattr(rpcplugin_config, attr_name):
+            monkeypatch.setattr(rpcplugin_config, attr_name, value)
         else:
-            # This state would be problematic for tests relying on this fixture.
             logger.error(
-                "CRITICAL: rpcplugin_config.config is None in mock_server_config fixture! This should not happen."
+                f"CRITICAL: rpcplugin_config does not have attribute '{attr_name}' in mock_server_config fixture!"
             )
 
     yield rpcplugin_config

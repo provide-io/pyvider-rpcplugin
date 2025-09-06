@@ -31,15 +31,15 @@ async def server_instance(
     from pyvider.rpcplugin.config import rpcplugin_config
 
     try:
-        # Set environment variables
-        rpcplugin_config.set("PLUGIN_MAGIC_COOKIE_KEY", "PLUGIN_MAGIC_COOKIE")
-        rpcplugin_config.set(
-            "PLUGIN_MAGIC_COOKIE",
-            "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2",
-        )
-        rpcplugin_config.set("PLUGIN_PROTOCOL_VERSIONS", "6")
-        rpcplugin_config.set("PLUGIN_TRANSPORTS", "unix")
-        rpcplugin_config.get("PLUGIN_CLIENT_CERT")
+        # Set configuration using Foundation patterns
+        rpcplugin_config.plugin_magic_cookie_key = "PLUGIN_MAGIC_COOKIE"
+        rpcplugin_config.plugin_magic_cookie_value = "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2"
+        # Set config using Foundation patterns
+        rpcplugin_config.plugin_protocol_versions = [6]
+        # Note: PLUGIN_TRANSPORTS appears to be legacy - using server_transports
+        rpcplugin_config.plugin_server_transports = ["unix"]
+        # Access client cert (this line seems to be just checking the value)
+        _ = rpcplugin_config.plugin_client_cert
 
         # Start the server with mock handler
         server = RPCPluginServer(

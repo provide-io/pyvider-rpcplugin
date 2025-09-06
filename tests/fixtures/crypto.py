@@ -12,8 +12,8 @@ def client_cert():
     """Loads the server certificate from the environment variable."""
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    cert_env_val = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-    key_env_val = rpcplugin_config.get("PLUGIN_CLIENT_KEY")
+    cert_env_val = rpcplugin_config.plugin_client_cert
+    key_env_val = rpcplugin_config.plugin_client_key
 
     # Determine if the fetched env values are actual PEMs or placeholders/errors
     cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith(
@@ -62,8 +62,8 @@ def server_cert():
     """Loads the server certificate from the environment variable."""
     from pyvider.rpcplugin.config import rpcplugin_config
 
-    cert_env_val = rpcplugin_config.get("PLUGIN_SERVER_CERT")
-    key_env_val = rpcplugin_config.get("PLUGIN_SERVER_KEY")
+    cert_env_val = rpcplugin_config.plugin_server_cert
+    key_env_val = rpcplugin_config.plugin_server_key
 
     # Determine if the fetched env values are actual PEMs or placeholders/errors
     cert_is_pem_like = cert_env_val and cert_env_val.strip().startswith(

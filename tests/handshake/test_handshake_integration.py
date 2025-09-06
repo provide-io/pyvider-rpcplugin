@@ -75,87 +75,96 @@ def setup_environment(monkeypatch):
 @pytest.mark.asyncio
 async def test_build_handshake_response_unix(monkeypatch):
     """Test building handshake response with Unix transport."""
-    transport = UnixSocketTransport()
-    transport.listen = AsyncMock(return_value="/tmp/test.sock")
-    transport.endpoint = "/tmp/test.sock"
+    # Mock the core version to ensure consistent test expectations
+    from unittest.mock import patch
+    with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
+        transport = UnixSocketTransport()
+        transport.listen = AsyncMock(return_value="/tmp/test.sock")
+        transport.endpoint = "/tmp/test.sock"
 
-    response = await build_handshake_response(
-        plugin_version=6, transport_name="unix", transport=transport, server_cert=None
-    )
+        response = await build_handshake_response(
+            plugin_version=6, transport_name="unix", transport=transport, server_cert=None
+        )
 
-    # Verify expected format
-    parts = response.split("|")
-    assert len(parts) == 6
-    assert parts[0] == "1"  # Core version
-    assert parts[1] == "6"  # Plugin version
-    assert parts[2] == "unix"  # Transport name
-    assert parts[3] == "/tmp/test.sock"  # Endpoint
-    assert parts[4] == "grpc"  # Protocol
-    assert parts[5] == ""  # No certificate
+        # Verify expected format
+        parts = response.split("|")
+        assert len(parts) == 6
+        assert parts[0] == "1"  # Core version
+        assert parts[1] == "6"  # Plugin version
+        assert parts[2] == "unix"  # Transport name
+        assert parts[3] == "/tmp/test.sock"  # Endpoint
+        assert parts[4] == "grpc"  # Protocol
+        assert parts[5] == ""  # No certificate
 
-    # Clean up
-    await transport.close()
+        # Clean up
+        await transport.close()
 
 
 @pytest.mark.asyncio
 async def test_build_handshake_response_with_certificate():
     """Test building handshake response with a certificate."""
-    transport = TCPSocketTransport()
+    # Mock the core version to ensure consistent test expectations
+    from unittest.mock import patch
+    with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
+        transport = TCPSocketTransport()
 
-    # Create a simple certificate
-    cert = Certificate(generate_keypair=True)
+        # Create a simple certificate
+        cert = Certificate(generate_keypair=True)
 
-    response = await build_handshake_response(
-        plugin_version=7,
-        transport_name="tcp",
-        transport=transport,
-        server_cert=cert,
-        port=12345,
-    )
+        response = await build_handshake_response(
+            plugin_version=7,
+            transport_name="tcp",
+            transport=transport,
+            server_cert=cert,
+            port=12345,
+        )
 
-    # Verify expected format
-    parts = response.split("|")
-    assert len(parts) == 6
-    assert parts[0] == "1"  # Core version
-    assert parts[1] == "7"  # Plugin version
-    assert parts[2] == "tcp"  # Transport name
-    assert parts[3] == "127.0.0.1:12345"  # Endpoint
-    assert parts[4] == "grpc"  # Protocol
-    assert parts[5] != ""  # Certificate data
+        # Verify expected format
+        parts = response.split("|")
+        assert len(parts) == 6
+        assert parts[0] == "1"  # Core version
+        assert parts[1] == "7"  # Plugin version
+        assert parts[2] == "tcp"  # Transport name
+        assert parts[3] == "127.0.0.1:12345"  # Endpoint
+        assert parts[4] == "grpc"  # Protocol
+        assert parts[5] != ""  # Certificate data
 
-    # Clean up
-    await transport.close()
+        # Clean up
+        await transport.close()
 
 
 @pytest.mark.asyncio
 async def test_full_handshake_cycle():
     """Test a complete handshake cycle with building and parsing."""
-    transport = TCPSocketTransport()
+    # Mock the core version to ensure consistent test expectations
+    from unittest.mock import patch
+    with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
+        transport = TCPSocketTransport()
 
-    # Build the response
-    response = await build_handshake_response(
-        plugin_version=6,
-        transport_name="tcp",
-        transport=transport,
-        server_cert=None,
-        port=8080,
-    )
+        # Build the response
+        response = await build_handshake_response(
+            plugin_version=6,
+            transport_name="tcp",
+            transport=transport,
+            server_cert=None,
+            port=8080,
+        )
 
-    # Parse the response
-    core_version, plugin_version, network, address, protocol, cert = (
-        parse_handshake_response(response)
-    )
+        # Parse the response
+        core_version, plugin_version, network, address, protocol, cert = (
+            parse_handshake_response(response)
+        )
 
-    # Verify parsed values match
-    assert core_version == 1
-    assert plugin_version == 6
-    assert network == "tcp"
-    assert address == "127.0.0.1:8080"
-    assert protocol == "grpc"
-    assert cert is None
+        # Verify parsed values match
+        assert core_version == 1
+        assert plugin_version == 6
+        assert network == "tcp"
+        assert address == "127.0.0.1:8080"
+        assert protocol == "grpc"
+        assert cert is None
 
-    # Clean up
-    await transport.close()
+        # Clean up
+        await transport.close()
 
 
 @pytest.mark.asyncio
@@ -166,24 +175,13 @@ async def test_server_handshake_integration(
 
     # Ensure the server runs in insecure mode for this test's original intent
     # (checking handshake output, not TLS setup).
-    def mock_config_get(key, default=None):
-        if key == "PLUGIN_AUTO_MTLS":
-            return False
-        if key == "PLUGIN_SERVER_CERT":
-            return None
-        if key == "PLUGIN_SERVER_KEY":
-            return None
-        # Values set by setup_environment fixture
-        if key == "PLUGIN_MAGIC_COOKIE_KEY":
-            return "PLUGIN_MAGIC_COOKIE" # As set by setup_environment
-        if key == "PLUGIN_MAGIC_COOKIE_VALUE":
-            return "test_cookie_value" # As set by setup_environment
-
-        # For other keys, return their actual values from the global config
-        # This ensures values set by setup_environment are respected.
-        return rpcplugin_config.config.get(key, default)
-
-    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get)
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
+    mocker.patch.object(rpcplugin_config, "plugin_server_cert", None)
+    mocker.patch.object(rpcplugin_config, "plugin_server_key", None)
+    mocker.patch.object(rpcplugin_config, "plugin_magic_cookie_key", "PLUGIN_MAGIC_COOKIE")
+    mocker.patch.object(rpcplugin_config, "plugin_magic_cookie_value", "test_cookie_value")
+    # Mock the core version to ensure consistent test expectations
+    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1)
 
     # Patch sys.stdout to capture handshake output
     with (

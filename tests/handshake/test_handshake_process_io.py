@@ -244,7 +244,7 @@ async def test_create_stderr_relay_exception_in_reader(mocker):
 )
 def test_parse_handshake_response_valid_and_core_version_mismatch(handshake_line, expected, mocker):
     """Test parsing valid handshake lines and core version mismatch."""
-    mocker.patch.object(rpcplugin_config, 'get', lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default)
+    mocker.patch.object(rpcplugin_config, 'plugin_core_version', 1)
 
     if isinstance(expected, tuple):
         result = parse_handshake_response(handshake_line)
@@ -270,7 +270,7 @@ def test_parse_handshake_response_valid_and_core_version_mismatch(handshake_line
 )
 def test_parse_handshake_response_invalid(handshake_line, error_message_core, mocker):
     """Test parsing handshake with invalid inputs."""
-    mocker.patch.object(rpcplugin_config, 'get', lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default)
+    mocker.patch.object(rpcplugin_config, 'plugin_core_version', 1)
     # Adjusted regex to match the wrapped error message
     flexible_pattern = rf"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] {re.escape(error_message_core)}"
     with pytest.raises(HandshakeError, match=flexible_pattern):

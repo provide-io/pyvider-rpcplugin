@@ -193,17 +193,11 @@ async def test_server_lifecycle_and_connectivity(
     transport_type, transport_factory, server_factory, unused_tcp_port, mocker, monkeypatch # Added monkeypatch
 ):
     # Set the expected magic cookie in the environment for the server to validate
-    monkeypatch.setenv(rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_KEY"), rpcplugin_config.get("PLUGIN_MAGIC_COOKIE_VALUE"))
+    monkeypatch.setenv(rpcplugin_config.plugin_magic_cookie_key, rpcplugin_config.plugin_magic_cookie_value)
 
-    # Configure for an insecure setup for both tcp and unix variants
-    def mock_config_get_insecure(key, default=None):
-        if key == "PLUGIN_AUTO_MTLS":
-            return False
-        if key == "PLUGIN_SERVER_CERT":
-            return None
-        return rpcplugin_config.config.get(key, default)
-
-    mocker.patch.object(rpcplugin_config, "get", side_effect=mock_config_get_insecure)
+    # Configure for an insecure setup for both tcp and unix variants using Foundation patterns
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
+    mocker.patch.object(rpcplugin_config, "plugin_server_cert", None)
 
     # Ensure the magic cookie environment variable is set for direct server instantiation
     cookie_key = rpcplugin_config.magic_cookie_key()
@@ -219,8 +213,8 @@ async def test_server_lifecycle_and_connectivity(
 
     rpc_server = await server_factory(transport=server_transport)
 
-    original_client_cert_config = rpcplugin_config.get("PLUGIN_CLIENT_CERT")
-    rpcplugin_config.set("PLUGIN_CLIENT_CERT", None)
+    original_client_cert_config = rpcplugin_config.plugin_client_cert
+    rpcplugin_config.plugin_client_cert = None
 
     actual_server_endpoint = None
 
@@ -264,7 +258,7 @@ async def test_server_lifecycle_and_connectivity(
             f"Server readiness or connectivity check failed for {transport_type}: {e}"
         )
     finally:
-        rpcplugin_config.set("PLUGIN_CLIENT_CERT", original_client_cert_config)
+        rpcplugin_config.plugin_client_cert = original_client_cert_config
 
     await rpc_server.stop()
     try:

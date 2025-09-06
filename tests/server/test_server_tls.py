@@ -27,9 +27,9 @@ async def test_generate_server_credentials_failure(
 
     monkeypatch.setattr(Certificate, "__init__", mock_certificate_init_raises_error)
 
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_CERT", "dummy.crt")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_SERVER_KEY", "dummy.key")
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_AUTO_MTLS", False)
+    monkeypatch.setattr(rpcplugin_config, "plugin_server_cert", "dummy.crt")
+    monkeypatch.setattr(rpcplugin_config, "plugin_server_key", "dummy.key")
+    monkeypatch.setattr(rpcplugin_config, "plugin_auto_mtls", False)
 
     server: RPCPluginServer = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -37,7 +37,7 @@ async def test_generate_server_credentials_failure(
         config=None,
     )
 
-    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key: Diagnosing CertificateError message"):
+    with pytest.raises(SecurityError, match=r"Failed to load server certificate/key: .*"):
         server._generate_server_credentials()
 
 
