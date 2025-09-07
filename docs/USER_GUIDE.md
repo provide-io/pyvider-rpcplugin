@@ -1,45 +1,74 @@
-# Pyvider RPCPlugin: User and Developer Guide
+# Pyvider RPC Plugin: User and Developer Guide
 
-Welcome to the comprehensive guide for Pyvider RPCPlugin. This document serves as the main entry point and table of contents for the detailed, chapter-based documentation.
+Welcome to the comprehensive guide for Pyvider RPC Plugin. This document serves as the main entry point for accessing all available documentation.
 
-## Table of Contents
+## Documentation Structure
 
-**Part 1: Introduction & Setup**
-*   [Chapter 1: Welcome to Pyvider RPCPlugin](./guide/ch01_welcome.md)
-*   [Chapter 2: Getting Started](./guide/ch02_getting_started.md)
-    *   Example: Quick Start - Launching a Plugin (covered in Chapter 2)
+**Getting Started**
+*   [Installation](./getting-started/installation.md)
+*   [Quick Start](./getting-started/quick-start.md)
+*   [First Plugin](./getting-started/first-plugin.md)
+*   [Examples Overview](./getting-started/examples.md)
 
-**Part 2: Building Your Plugin Server**
-*   [Chapter 3: Basic Server Setup](./guide/ch03_basic_server_setup.md)
-*   [Chapter 4: Understanding Transports](./guide/ch04_understanding_transports.md)
-*   [Chapter 5: Implementing a Service (Echo Demo)](./guide/ch05_implementing_a_service.md)
+**User Guide**
+*   [Core Concepts](./guide/concepts/index.md)
+    *   [RPC Architecture](./guide/concepts/rpc-architecture.md)
+    *   [Transports](./guide/concepts/transports.md)
+    *   [Protocols](./guide/concepts/protocols.md)
+    *   [Security](./guide/concepts/security.md)
+    *   [Handshake Process](./guide/concepts/handshake.md)
+*   [Server Development](./guide/server/index.md)
+    *   [Basic Setup](./guide/server/basic-setup.md)
+    *   [Services](./guide/server/services.md)
+    *   [Transports](./guide/server/transports.md)
+    *   [Async Patterns](./guide/server/async-patterns.md)
+    *   [Health Checks](./guide/server/health-checks.md)
+*   [Client Development](./guide/client/index.md)
+    *   [Basic Setup](./guide/client/basic-setup.md)
+    *   [Connections](./guide/client/connections.md)
+    *   [Direct Connections](./guide/client/direct-connections.md)
+    *   [Error Handling](./guide/client/error-handling.md)
+    *   [Retry Logic](./guide/client/retry-logic.md)
+*   [Security](./guide/security/index.md)
+    *   [mTLS](./guide/security/mtls.md)
+    *   [Certificates](./guide/security/certificates.md)
+    *   [Magic Cookies](./guide/security/magic-cookies.md)
+    *   [Process Isolation](./guide/security/process-isolation.md)
+*   [Configuration](./guide/config/index.md)
+    *   [Environment Variables](./guide/config/environment.md)
+    *   [Production Setup](./guide/config/production.md)
+    *   [Logging](./guide/config/logging.md)
+    *   [Rate Limiting](./guide/config/rate-limiting.md)
+*   [Advanced Topics](./guide/advanced/index.md)
+    *   [Custom Protocols](./guide/advanced/custom-protocols.md)
+    *   [Middleware](./guide/advanced/middleware.md)
+    *   [Performance](./guide/advanced/performance.md)
+    *   [Lifecycle Management](./guide/advanced/lifecycle.md)
 
-**Part 3: Building Your Plugin Client**
-*   [Chapter 6: Basic Client Setup](./guide/ch06_basic_client_setup.md)
-*   [Chapter 7: Client-Side of the Echo Demo](./guide/ch07_echo_client.md)
-*   [Chapter 8: Direct Client Connections](./guide/ch08_direct_client_connections.md)
+**API Reference**
+*   [Server API](./api/server/index.md)
+*   [Client API](./api/client/index.md)
+*   [Transport API](./api/transport/index.md)
+*   [Configuration API](./api/config/index.md)
+*   [Exception API](./api/exceptions/index.md)
+*   [Factory Functions](./api/factories.md)
 
-**Part 4: Advanced Topics**
-*   [Chapter 9: Security with mTLS](./guide/ch09_security_mtls.md)
-*   [Chapter 10: Asynchronous Patterns](./guide/ch10_async_patterns.md)
-*   [Chapter 11: Error Handling](./guide/ch11_error_handling.md)
-*   [Chapter 12: Production Configuration & Deployment](./guide/ch12_production_config.md)
-*   [Chapter 13: Custom Protocols & Middleware](./guide/ch13_custom_protocols.md)
-*   [Chapter 14: Performance Tuning](./guide/ch14_performance_tuning.md)
-*   [Chapter 15: End-to-End Example Walkthrough](./guide/ch15_e2e_example.md)
+**Examples**
+*   [Echo Service](./examples/echo-service.md)
+*   [File Transfer](./examples/file-transfer.md)
+*   [Microservice Gateway](./examples/microservice-gateway.md)
+*   [Database Plugin](./examples/database-plugin.md)
+*   [Production Setup](./examples/production.md)
+*   [Short Examples](./examples/short/)
 
-**Part 5: Reference**
-*   [Chapter 16: Core Architecture](./guide/ch16_core_architecture.md)
-*   [Chapter 17: API Reference](./guide/ch17_api_reference.md)
-*   [Chapter 18: Configuration Variables](./guide/ch18_configuration_variables.md)
-
-**Part 6: Contributing & Further Information**
-*   [Chapter 19: Contributing to Pyvider RPCPlugin](./guide/ch19_contributing.md)
-*   [Chapter 20: Troubleshooting](./guide/ch20_troubleshooting.md)
-*   [Chapter 21: Glossary](./guide/ch21_glossary.md)
-*   [Chapter 22: Comparison with HashiCorp's go-plugin](./guide/ch22_go_plugin_comparison.md)
+**Development**
+*   [Architecture](./development/architecture.md)
+*   [Contributing](./development/contributing.md)
+*   [Testing](./development/testing.md)
+*   [CI/CD](./development/ci-cd.md)
+*   [Troubleshooting](./development/troubleshooting.md)
 
 ---
 
-Navigate to the respective chapter files for detailed information.
-This guide aims to provide a comprehensive understanding of the `pyvider.rpcplugin` library, from initial setup to advanced deployment and customization.
+Navigate to the respective sections for detailed information.
+This guide provides comprehensive coverage of the `pyvider.rpcplugin` library, from initial setup to advanced deployment and customization.

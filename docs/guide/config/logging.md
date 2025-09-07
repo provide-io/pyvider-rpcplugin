@@ -21,13 +21,13 @@ Control logging verbosity with the log level setting:
 
 ```bash
 # Development: Verbose logging
-export PYVIDER_PLUGIN_LOG_LEVEL="DEBUG"
+export PLUGIN_LOG_LEVEL=DEBUG
 
 # Production: Standard logging
-export PYVIDER_PLUGIN_LOG_LEVEL="INFO"
+export PLUGIN_LOG_LEVEL=INFO
 
 # High-traffic production: Minimal logging
-export PYVIDER_PLUGIN_LOG_LEVEL="WARNING"
+export PLUGIN_LOG_LEVEL=WARNING
 ```
 
 ### Emoji Enhancement
@@ -36,10 +36,10 @@ Enable or disable emoji indicators in log messages:
 
 ```bash
 # Enable emoji enhancement (development)
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="true"
+export PLUGIN_SHOW_EMOJI_MATRIX=true
 
 # Disable emoji enhancement (production log aggregation)
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"
+export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
 ## Log Levels and Content
@@ -228,8 +228,8 @@ Configure for ELK ingestion:
 
 ```bash
 # Production ELK configuration
-export PYVIDER_PLUGIN_LOG_LEVEL="INFO"
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"
+export PLUGIN_LOG_LEVEL=INFO
+export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
 Logstash configuration:
@@ -270,8 +270,8 @@ Configure for Splunk ingestion:
 
 ```bash
 # Splunk configuration
-export PYVIDER_PLUGIN_LOG_LEVEL="INFO" 
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"
+export PLUGIN_LOG_LEVEL=INFO 
+export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
 Splunk props.conf:
@@ -289,8 +289,8 @@ Configure for Datadog log management:
 
 ```bash
 # Datadog configuration  
-export PYVIDER_PLUGIN_LOG_LEVEL="INFO"
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"
+export PLUGIN_LOG_LEVEL=INFO
+export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
 Datadog agent configuration:
@@ -408,8 +408,8 @@ Optimal settings for development:
 
 ```bash
 # Development logging configuration
-export PYVIDER_PLUGIN_LOG_LEVEL="DEBUG"
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="true"
+export PLUGIN_LOG_LEVEL=DEBUG
+export PLUGIN_SHOW_EMOJI_MATRIX=true
 ```
 
 ### Debugging Specific Components
@@ -610,15 +610,15 @@ groups:
 ### Production Logging
 
 1. **Use appropriate log levels**: INFO for production, DEBUG only for troubleshooting
-2. **Disable emoji enhancement**: Set `PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"`
+2. **Disable emoji enhancement**: Set `PLUGIN_SHOW_EMOJI_MATRIX="false"`
 3. **Structured output**: Use JSON format for log aggregation systems
 4. **Log rotation**: Implement proper log rotation to prevent disk space issues
 5. **Sensitive data**: Never log passwords, tokens, or personal information
 
 ### Development Logging
 
-1. **Enable emoji enhancement**: Set `PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="true"`
-2. **Use DEBUG level**: Set `PYVIDER_PLUGIN_LOG_LEVEL="DEBUG"`
+1. **Enable emoji enhancement**: Set `PLUGIN_SHOW_EMOJI_MATRIX="true"`
+2. **Use DEBUG level**: Set `PLUGIN_LOG_LEVEL="DEBUG"`
 3. **Console output**: Human-readable format for development
 4. **Request tracing**: Enable correlation IDs for request flow tracking
 
@@ -636,7 +636,7 @@ groups:
 #### No Log Output
 ```bash
 # Check log level configuration
-export PYVIDER_PLUGIN_LOG_LEVEL="DEBUG"
+export PLUGIN_LOG_LEVEL=DEBUG
 
 # Verify logger configuration
 python -c "from provide.foundation import logger; logger.info('Test message')"
@@ -645,10 +645,10 @@ python -c "from provide.foundation import logger; logger.info('Test message')"
 #### Log Format Issues
 ```bash
 # For machine processing, disable emoji
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"
+export PLUGIN_SHOW_EMOJI_MATRIX=false
 
 # For human reading, enable emoji
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="true"
+export PLUGIN_SHOW_EMOJI_MATRIX=true
 ```
 
 #### Missing Context Information

@@ -546,5 +546,5 @@ The following section provides detailed API reference for the RPCPluginClient cl
 - [Server API](../server/server.md) - Corresponding server implementation
 - [Transport Layer](../transport/) - Transport protocol details
 - [Configuration](../config/) - Complete configuration reference
-- [Exception Handling](../../guide/error-handling.md) - Error handling patterns
-- [Testing Guide](../../guide/testing.md) - Testing client implementations
+- [Exception Handling](../../guide/client/error-handling.md) - Error handling patterns
+- [Testing Guide](../../development/testing.md) - Testing client implementations

@@ -33,6 +33,7 @@ class BasicHandler:
     
     def __init__(self):
         logger.info("🔌 Basic handler initialized")
+        logger.info("Foundation logging active for structured output")
 
 async def main():
     """Main server function."""

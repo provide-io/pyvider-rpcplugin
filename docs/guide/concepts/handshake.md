@@ -59,8 +59,8 @@ magic_cookie = secrets.token_hex(32)
 
 # Configure both client and server with same cookie
 os.environ.update({
-    "PYVIDER_PLUGIN_MAGIC_COOKIE_KEY": "auth",
-    "PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE": magic_cookie
+    "PLUGIN_MAGIC_COOKIE_KEY": "auth",
+    "PLUGIN_MAGIC_COOKIE_VALUE": magic_cookie
 })
 
 # Server receives cookie during handshake

@@ -10,10 +10,10 @@ Deploying Pyvider RPC Plugin applications to production requires careful attenti
 
 ```bash
 # Enable mTLS with proper certificates
-export PYVIDER_PLUGIN_AUTO_MTLS="true"
-export PYVIDER_PLUGIN_SERVER_CERT="file:///etc/ssl/certs/plugin-server.pem" 
-export PYVIDER_PLUGIN_SERVER_KEY="file:///etc/ssl/private/plugin-server.key"
-export PYVIDER_PLUGIN_CLIENT_ROOT_CERTS="file:///etc/ssl/certs/ca-bundle.pem"
+export PLUGIN_AUTO_MTLS=true
+export PLUGIN_SERVER_CERT=file:///etc/ssl/certs/plugin-server.pem
+export PLUGIN_SERVER_KEY=file:///etc/ssl/private/plugin-server.key
+export PLUGIN_CLIENT_ROOT_CERTS=file:///etc/ssl/certs/ca-bundle.pem
 ```
 
 #### Certificate Best Practices
@@ -36,10 +36,10 @@ Use cryptographically secure random strings for magic cookies:
 
 ```bash
 # Generate secure magic cookie
-export PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE="$(openssl rand -hex 32)"
+export PLUGIN_MAGIC_COOKIE_VALUE=$(openssl rand -hex 32)
 
 # Or use a secrets management system
-export PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE="$(aws secretsmanager get-secret-value --secret-id plugin-auth-token --query SecretString --output text)"
+export PLUGIN_MAGIC_COOKIE_VALUE=$(aws secretsmanager get-secret-value --secret-id plugin-auth-token --query SecretString --output text)
 ```
 
 ### Network Security
@@ -48,14 +48,14 @@ Configure appropriate network transport and firewall rules:
 
 ```bash
 # TCP configuration for networked deployments
-export PYVIDER_PLUGIN_SERVER_TRANSPORTS="tcp"
-export PYVIDER_PLUGIN_SERVER_ENDPOINT="0.0.0.0:8080"  # Container/K8s
+export PLUGIN_SERVER_TRANSPORTS=["tcp"]
+export PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080  # Container/K8s
 # or
-export PYVIDER_PLUGIN_SERVER_ENDPOINT="10.0.1.100:8080"  # Specific interface
+export PLUGIN_SERVER_ENDPOINT=10.0.1.100:8080  # Specific interface
 
 # Unix socket for same-host deployments (higher security)
-export PYVIDER_PLUGIN_SERVER_TRANSPORTS="unix"
-export PYVIDER_PLUGIN_SERVER_ENDPOINT="/var/run/plugin/plugin.sock"
+export PLUGIN_SERVER_TRANSPORTS=["unix"]
+export PLUGIN_SERVER_ENDPOINT=/var/run/plugin/plugin.sock
 ```
 
 ## Performance Configuration
@@ -66,12 +66,12 @@ Adjust timeouts based on your network conditions and service requirements:
 
 ```bash
 # Conservative timeouts for reliable networks
-export PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT="30.0"
-export PYVIDER_PLUGIN_CONNECTION_TIMEOUT="60.0"
+export PLUGIN_HANDSHAKE_TIMEOUT=30.0
+export PLUGIN_CONNECTION_TIMEOUT=60.0
 
 # Aggressive timeouts for fast networks
-export PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT="10.0"
-export PYVIDER_PLUGIN_CONNECTION_TIMEOUT="30.0"
+export PLUGIN_HANDSHAKE_TIMEOUT=10.0
+export PLUGIN_CONNECTION_TIMEOUT=30.0
 ```
 
 ### Rate Limiting
@@ -80,17 +80,17 @@ Enable server-side rate limiting to protect against abuse:
 
 ```bash
 # Enable rate limiting with reasonable defaults
-export PYVIDER_PLUGIN_RATE_LIMIT_ENABLED="true"
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="100.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="200.0"
+export PLUGIN_RATE_LIMIT_ENABLED=true
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=200.0
 
 # High-throughput configuration
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="1000.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="2000.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000.0
 
 # Restrictive configuration for sensitive operations
-export PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND="10.0"
-export PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY="50.0"
+export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=10.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=50.0
 ```
 
 ### Client Retry Configuration
@@ -99,12 +99,12 @@ Configure robust client retry behavior:
 
 ```bash
 # Production client retry settings
-export PYVIDER_PLUGIN_CLIENT_RETRY_ENABLED="true"
-export PYVIDER_PLUGIN_CLIENT_MAX_RETRIES="5"
-export PYVIDER_PLUGIN_CLIENT_INITIAL_BACKOFF_MS="1000"
-export PYVIDER_PLUGIN_CLIENT_MAX_BACKOFF_MS="10000"
-export PYVIDER_PLUGIN_CLIENT_RETRY_JITTER_MS="250"
-export PYVIDER_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S="120"
+export PLUGIN_CLIENT_RETRY_ENABLED=true
+export PLUGIN_CLIENT_MAX_RETRIES=5
+export PLUGIN_CLIENT_INITIAL_BACKOFF_MS=1000
+export PLUGIN_CLIENT_MAX_BACKOFF_MS=10000
+export PLUGIN_CLIENT_RETRY_JITTER_MS=250
+export PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S=120
 ```
 
 ## Observability and Monitoring
@@ -115,8 +115,8 @@ Configure structured logging for production monitoring:
 
 ```bash
 # Production logging settings
-export PYVIDER_PLUGIN_LOG_LEVEL="INFO"  # Or WARNING to reduce volume
-export PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX="false"  # Disable for log aggregation
+export PLUGIN_LOG_LEVEL=INFO  # Or WARNING to reduce volume
+export PLUGIN_SHOW_EMOJI_MATRIX=false  # Disable for log aggregation
 ```
 
 ### Health Checks
@@ -125,7 +125,7 @@ Enable health services for load balancer and orchestrator integration:
 
 ```bash
 # Enable health checking service
-export PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED="true"
+export PLUGIN_HEALTH_SERVICE_ENABLED=true
 ```
 
 #### Kubernetes Health Check Example
@@ -163,10 +163,10 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: PYVIDER_PLUGIN_SERVER_ENDPOINT
-          value: "0.0.0.0:8080"
-        - name: PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED
-          value: "true"
+        - name: PLUGIN_SERVER_ENDPOINT
+          value: 0.0.0.0:8080
+        - name: PLUGIN_HEALTH_SERVICE_ENABLED
+          value: true
         livenessProbe:
           exec:
             command:
@@ -236,12 +236,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - PYVIDER_PLUGIN_LOG_LEVEL=INFO
-      - PYVIDER_PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080
-      - PYVIDER_PLUGIN_AUTO_MTLS=true
-      - PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED=true
-      - PYVIDER_PLUGIN_RATE_LIMIT_ENABLED=true
-      - PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
+      - PLUGIN_LOG_LEVEL=INFO
+      - PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080
+      - PLUGIN_AUTO_MTLS=true
+      - PLUGIN_HEALTH_SERVICE_ENABLED=true
+      - PLUGIN_RATE_LIMIT_ENABLED=true
+      - PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
     volumes:
       - ./certs:/etc/ssl/certs:ro
       - ./private:/etc/ssl/private:ro
@@ -289,9 +289,9 @@ User=plugin
 Group=plugin
 ExecStart=/opt/plugin/venv/bin/python -m my_plugin.server
 WorkingDirectory=/opt/plugin
-Environment=PYVIDER_PLUGIN_LOG_LEVEL=INFO
-Environment=PYVIDER_PLUGIN_AUTO_MTLS=true
-Environment=PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED=true
+Environment=PLUGIN_LOG_LEVEL=INFO
+Environment=PLUGIN_AUTO_MTLS=true
+Environment=PLUGIN_HEALTH_SERVICE_ENABLED=true
 EnvironmentFile=-/etc/plugin/environment
 
 # Security
@@ -322,47 +322,47 @@ WantedBy=multi-user.target
 
 ```bash
 # .env.development
-PYVIDER_PLUGIN_LOG_LEVEL=DEBUG
-PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX=true
-PYVIDER_PLUGIN_AUTO_MTLS=false
-PYVIDER_PLUGIN_SERVER_TRANSPORTS=unix
-PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT=5.0
-PYVIDER_PLUGIN_CONNECTION_TIMEOUT=10.0
+PLUGIN_LOG_LEVEL=DEBUG
+PLUGIN_SHOW_EMOJI_MATRIX=true
+PLUGIN_AUTO_MTLS=false
+PLUGIN_SERVER_TRANSPORTS=unix
+PLUGIN_HANDSHAKE_TIMEOUT=5.0
+PLUGIN_CONNECTION_TIMEOUT=10.0
 ```
 
 ### Staging Environment
 
 ```bash
 # .env.staging
-PYVIDER_PLUGIN_LOG_LEVEL=INFO
-PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX=false
-PYVIDER_PLUGIN_AUTO_MTLS=true
-PYVIDER_PLUGIN_SERVER_TRANSPORTS=tcp
-PYVIDER_PLUGIN_SERVER_CERT=file:///etc/ssl/certs/staging-server.pem
-PYVIDER_PLUGIN_SERVER_KEY=file:///etc/ssl/private/staging-server.key
-PYVIDER_PLUGIN_RATE_LIMIT_ENABLED=true
-PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED=true
+PLUGIN_LOG_LEVEL=INFO
+PLUGIN_SHOW_EMOJI_MATRIX=false
+PLUGIN_AUTO_MTLS=true
+PLUGIN_SERVER_TRANSPORTS=tcp
+PLUGIN_SERVER_CERT=file:///etc/ssl/certs/staging-server.pem
+PLUGIN_SERVER_KEY=file:///etc/ssl/private/staging-server.key
+PLUGIN_RATE_LIMIT_ENABLED=true
+PLUGIN_HEALTH_SERVICE_ENABLED=true
 ```
 
 ### Production Environment
 
 ```bash
 # .env.production
-PYVIDER_PLUGIN_LOG_LEVEL=WARNING
-PYVIDER_PLUGIN_SHOW_EMOJI_MATRIX=false
-PYVIDER_PLUGIN_AUTO_MTLS=true
-PYVIDER_PLUGIN_SERVER_TRANSPORTS=tcp
-PYVIDER_PLUGIN_SERVER_CERT=file:///etc/ssl/certs/production-server.pem
-PYVIDER_PLUGIN_SERVER_KEY=file:///etc/ssl/private/production-server.key
-PYVIDER_PLUGIN_CLIENT_ROOT_CERTS=file:///etc/ssl/certs/ca-bundle.pem
-PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT=30.0
-PYVIDER_PLUGIN_CONNECTION_TIMEOUT=60.0
-PYVIDER_PLUGIN_RATE_LIMIT_ENABLED=true
-PYVIDER_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=500.0
-PYVIDER_PLUGIN_RATE_LIMIT_BURST_CAPACITY=1000.0
-PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED=true
-PYVIDER_PLUGIN_CLIENT_MAX_RETRIES=5
-PYVIDER_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S=180
+PLUGIN_LOG_LEVEL=WARNING
+PLUGIN_SHOW_EMOJI_MATRIX=false
+PLUGIN_AUTO_MTLS=true
+PLUGIN_SERVER_TRANSPORTS=tcp
+PLUGIN_SERVER_CERT=file:///etc/ssl/certs/production-server.pem
+PLUGIN_SERVER_KEY=file:///etc/ssl/private/production-server.key
+PLUGIN_CLIENT_ROOT_CERTS=file:///etc/ssl/certs/ca-bundle.pem
+PLUGIN_HANDSHAKE_TIMEOUT=30.0
+PLUGIN_CONNECTION_TIMEOUT=60.0
+PLUGIN_RATE_LIMIT_ENABLED=true
+PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=500.0
+PLUGIN_RATE_LIMIT_BURST_CAPACITY=1000.0
+PLUGIN_HEALTH_SERVICE_ENABLED=true
+PLUGIN_CLIENT_MAX_RETRIES=5
+PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S=180
 ```
 
 ## Resource Management
@@ -410,7 +410,7 @@ Implement proper shutdown handling for zero-downtime deployments:
 
 ```bash
 # Enable file-based shutdown signaling
-export PYVIDER_PLUGIN_SHUTDOWN_FILE_PATH="/tmp/shutdown-plugin"
+export PLUGIN_SHUTDOWN_FILE_PATH=/tmp/shutdown-plugin
 ```
 
 ```python
