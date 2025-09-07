@@ -214,7 +214,7 @@ spec:
       serviceAccountName: pyvider-service-account
       containers:
       - name: api-service
-        image: your-registry/pyvider-api-service:1.0.0
+        image: registry.example.com/pyvider-api-service:1.0.0
         ports:
         - containerPort: 50051
           name: grpc
@@ -370,7 +370,7 @@ spec:
   backup:
     retentionPolicy: "30d"
     barmanObjectStore:
-      destinationPath: "s3://your-backup-bucket/postgres"
+      destinationPath: "s3://backups.example.com/postgres"
 ---
 apiVersion: v1
 kind: Service
