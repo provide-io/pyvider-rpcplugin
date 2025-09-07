@@ -138,9 +138,9 @@ for plugin_name, cookie in plugin_cookies.items():
 export PLUGIN_MAGIC_COOKIE="$(python -c 'from pyvider.rpcplugin.security import MagicCookie; print(MagicCookie.generate().value)')"
 
 # Multiple plugins  
-export DATA_PLUGIN_MAGIC_COOKIE="<generated-cookie-1>"
-export FILE_PLUGIN_MAGIC_COOKIE="<generated-cookie-2>"
-export NOTIFY_PLUGIN_MAGIC_COOKIE="<generated-cookie-3>"
+export PLUGIN_DATA_MAGIC_COOKIE="<generated-cookie-1>"
+export PLUGIN_FILE_MAGIC_COOKIE="<generated-cookie-2>"
+export PLUGIN_NOTIFY_MAGIC_COOKIE="<generated-cookie-3>"
 ```
 
 ### Configuration Files
@@ -148,12 +148,12 @@ export NOTIFY_PLUGIN_MAGIC_COOKIE="<generated-cookie-3>"
 # config.yaml
 plugins:
   data_processor:
-    magic_cookie: "${DATA_PLUGIN_MAGIC_COOKIE}"
+    magic_cookie: "${PLUGIN_DATA_MAGIC_COOKIE}"
     require_cookie: true
     timeout: 300
     
   file_handler:
-    magic_cookie: "${FILE_PLUGIN_MAGIC_COOKIE}"  
+    magic_cookie: "${PLUGIN_FILE_MAGIC_COOKIE}"  
     require_cookie: true
     timeout: 600
 ```

@@ -203,7 +203,7 @@ async def multiple_clients_example():
 ## Client Factory Pattern
 
 ```python
-from typing import Dict, Any
+from typing import Any
 from dataclasses import dataclass
 
 @dataclass

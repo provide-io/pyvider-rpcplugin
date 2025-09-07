@@ -474,17 +474,27 @@ async def security_health_check():
 health = await security_health_check()
 ```
 
-## Examples and Resources
+## Configuration Integration
+
+### Security Configuration Resources
+- **[Security Configuration Guide](../config/index.md)** - Environment-driven security configuration with comprehensive examples
+- **[Production Configuration](../config/production.md)** - Production-grade security configuration patterns
+- **[Configuration API Reference](../../api/config/index.md)** - Programmatic security configuration access
+
+### Conceptual Foundation
+- **[Security Model Concepts](../concepts/security.md)** - Understand the security architecture and how different layers work together
+- **[Transport Security](../concepts/transports.md)** - How transport selection impacts security
+
+## Examples and Learning Path
+
+### Hands-On Examples
+- **[Echo Service Example](../../examples/echo-service.md)** - Basic security implementation in a working service
+- **[Basic Server Example](../../examples/short/basic-server.md)** - Simple server setup with security considerations
 
 ### Working Examples
-- **[ch09_security_mtls_example.py](../../examples/ch09_security_mtls_example.py)** - Complete mTLS implementation
+- **`ch09_security_mtls_example.py`** - Complete mTLS implementation
 - **Production configuration examples** in each security section
 - **Certificate generation and management scripts**
-
-### Related Documentation
-- **[Configuration Guide](../config/)** - Security-related configuration variables
-- **[API Reference](../../api/)** - Security-related API documentation
-- **[Production Setup](../config/production.md)** - Production security deployment
 
 ## Next Steps
 

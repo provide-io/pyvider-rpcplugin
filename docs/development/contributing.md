@@ -186,6 +186,16 @@ def process_data(
     callback: Optional[Callable[[str], bool]] = None
 ) -> List[str]:
     pass
+
+# ✅ Good - Use modern Python 3.11+ typing
+from collections.abc import Callable
+from typing import Any
+
+def process_data(
+    data: dict[str, Any],
+    callback: Callable[[str], bool] | None = None
+) -> list[str]:
+    pass
 ```
 
 #### Modern Python Features

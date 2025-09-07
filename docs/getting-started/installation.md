@@ -85,7 +85,7 @@ from provide.foundation import logger
 from provide.foundation.crypto import Certificate
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
-from pyvider.rpcplugin.config import RPCPluginConfig
+from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin import plugin_server, plugin_client
 ```
 
@@ -243,10 +243,21 @@ If you encounter issues:
 
 ## Next Steps
 
-Now that you have Pyvider RPC Plugin installed:
-
+### Get Started Quickly
 1. **[Quick Start](quick-start.md)** - Run your first plugin in 5 minutes
-2. **[First Plugin](first-plugin.md)** - Build a complete echo service
-3. **[User Guide](../guide/)** - Learn the concepts and patterns
+2. **[First Plugin](first-plugin.md)** - Build a complete echo service with all RPC patterns
+
+### Explore Examples
+- **[Basic Server Example](../examples/short/basic-server.md)** - Minimal server implementation using factory functions
+- **[Echo Service Example](../examples/echo-service.md)** - Complete service with unary, streaming, and bidirectional RPC patterns
+
+### Learn Core Concepts
+- **[Transport Concepts](../guide/concepts/transports.md)** - Understanding Unix sockets, TCP, and transport selection
+- **[Security Model](../guide/concepts/security.md)** - Learn about mTLS, certificates, and authentication
+- **[Configuration Guide](../guide/config/)** - Environment-driven configuration and deployment patterns
+
+### Advanced Topics
+- **[Server Development](../guide/server/)** - Production-ready server patterns and optimization
+- **[Security Implementation](../guide/security/)** - Complete security setup and certificate management
 
 Ready to create your first plugin? Let's go to the [Quick Start](quick-start.md)!

@@ -364,13 +364,11 @@ Additional examples that would be valuable:
 
 The following additional examples are available in the repository:
 
-- **[Streaming Data](streaming.md)** - Server and client streaming patterns
-- **[Error Recovery](error-recovery.md)** - Robust error handling and retry logic  
-- **[Plugin Pool](plugin-pool.md)** - Connection pooling and load balancing
-- **[Custom Transport](custom-transport.md)** - Custom transport implementation
-- **[Production Setup](production-setup.md)** - Complete production deployment
-- **[Testing Strategies](testing.md)** - Unit and integration testing patterns
-- **[Performance Benchmarks](benchmarks.md)** - Performance testing and optimization
+- **[Echo Service](echo-service.md)** - Complete RPC service with streaming patterns
+- **[Database Plugin](database-plugin.md)** - Production database integration patterns  
+- **[File Transfer](file-transfer.md)** - Streaming file transfer implementation
+- **[Microservice Gateway](microservice-gateway.md)** - Service composition and routing
+- **[Production Setup](production.md)** - Complete production deployment guide
 
 ### Running Examples
 

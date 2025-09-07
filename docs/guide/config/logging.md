@@ -417,17 +417,21 @@ export PLUGIN_SHOW_EMOJI_MATRIX=true
 Enable targeted debugging:
 
 ```python
-import logging
 from provide.foundation import logger
 
-# Enable debug logging for specific components
-logging.getLogger("pyvider.rpcplugin.transport").setLevel(logging.DEBUG)
-logging.getLogger("pyvider.rpcplugin.security").setLevel(logging.DEBUG)
-logging.getLogger("pyvider.rpcplugin.handshake").setLevel(logging.INFO)  # Less verbose
+# Foundation handles logger configuration - use Foundation's contextualize patterns
+with logger.contextualize(component="transport"):
+    logger.debug("Transport-specific debug logging enabled")
+    
+with logger.contextualize(component="security"):
+    logger.debug("Security-specific debug logging enabled")
+    
+with logger.contextualize(component="handshake"):
+    logger.info("Handshake logging at INFO level")
 
-# Temporarily increase log level
-with logger.level("DEBUG"):
-    # All logging in this block will be at DEBUG level
+# Use Foundation's logging context for connection
+with logger.contextualize(connection_type="unix", socket_path="/tmp/plugin.sock"):
+    logger.debug("Attempting connection with full context")
     await client.connect("unix:/tmp/plugin.sock")
 ```
 
@@ -468,24 +472,24 @@ class TracingMiddleware:
 Configure log rotation for file output:
 
 ```python
-import logging.handlers
 from provide.foundation import logger
+from provide.foundation.config import RuntimeConfig
 
-# Configure rotating file handler
-file_handler = logging.handlers.RotatingFileHandler(
-    "/var/log/plugin/plugin.log",
-    maxBytes=100 * 1024 * 1024,  # 100MB
-    backupCount=10,
-    encoding="utf-8"
-)
+# Foundation handles log rotation and formatting automatically
+# Configure through environment variables or RuntimeConfig
+config = RuntimeConfig()
+log_config = {
+    "log_file": "/var/log/plugin/plugin.log",
+    "log_level": "INFO",
+    "log_format": "json",  # Foundation supports 'json' and 'console' formats
+    "log_rotation": {
+        "max_bytes": 100 * 1024 * 1024,  # 100MB
+        "backup_count": 10
+    }
+}
 
-# Set JSON formatter for file output
-file_handler.setFormatter(logging.Formatter(
-    '{"timestamp": "%(asctime)s", "level": "%(levelname)s", "logger": "%(name)s", "message": "%(message)s"}'
-))
-
-# Add to logger
-logger.addHandler(file_handler)
+# Foundation automatically configures structured logging
+logger.info("Log rotation configured through Foundation", extra=log_config)
 ```
 
 ### Logrotate Configuration
@@ -635,11 +639,13 @@ groups:
 
 #### No Log Output
 ```bash
-# Check log level configuration
+# Check log level configuration using Foundation patterns
 export PLUGIN_LOG_LEVEL=DEBUG
+export PLUGIN_LOG_FORMAT=json
+export PLUGIN_LOG_FILE=/var/log/plugin/plugin.log
 
-# Verify logger configuration
-python -c "from provide.foundation import logger; logger.info('Test message')"
+# Verify Foundation logger configuration
+python -c "from provide.foundation import logger; logger.info('Foundation logging test', extra={'test_key': 'test_value'})"
 ```
 
 #### Log Format Issues

@@ -583,4 +583,4 @@ server = plugin_server(
 - **[Server API](../server/)** - Transport integration with servers
 - **[Client API](../client/)** - Transport usage in clients
 - **[Configuration API](../config/)** - Transport configuration options
-- **[Security](../security/)** - Transport security considerations
+- **[Security](../../guide/security/index.md)** - Transport security considerations
