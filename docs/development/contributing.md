@@ -100,7 +100,7 @@ from typing import Any
 import asyncio
 
 class NewFeature:
-    """A new feature for the RPC plugin system."""
+    """A new feature for the RPC Plugin system."""
     
     def __init__(self):
         self._initialized = False

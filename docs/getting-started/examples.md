@@ -102,9 +102,9 @@ from provide.foundation.crypto import Certificate
 
 # Configure mTLS
 os.environ.update({
-    "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-    "PYVIDER_PLUGIN_SERVER_CERT": server_cert.cert,
-    "PYVIDER_PLUGIN_SERVER_KEY": server_cert.key,
+    "PLUGIN_AUTO_MTLS": "true",
+    "PLUGIN_SERVER_CERT": server_cert.cert,
+    "PLUGIN_SERVER_KEY": server_cert.key,
 })
 
 server = plugin_server(protocol=protocol, handler=handler)

@@ -18,11 +18,11 @@ from pyvider.rpcplugin import plugin_server
 
 # Enable comprehensive security
 os.environ.update({
-    "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-    "PYVIDER_PLUGIN_SERVER_CERT": "file:///etc/ssl/server.pem",
-    "PYVIDER_PLUGIN_SERVER_KEY": "file:///etc/ssl/server.key",
-    "PYVIDER_PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/ca-bundle.pem",
-    "PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE": "$(openssl rand -hex 32)"
+    "PLUGIN_AUTO_MTLS": "true",
+    "PLUGIN_SERVER_CERT": "file:///etc/ssl/server.pem",
+    "PLUGIN_SERVER_KEY": "file:///etc/ssl/server.key",
+    "PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/ca-bundle.pem",
+    "PLUGIN_MAGIC_COOKIE_VALUE": "$(openssl rand -hex 32)"
 })
 
 server = plugin_server(protocol=my_protocol, handler=my_handler)
@@ -137,12 +137,12 @@ async def development_secure_server():
     
     # Configure mTLS with generated certificates
     os.environ.update({
-        "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-        "PYVIDER_PLUGIN_SERVER_CERT": server_cert.cert,
-        "PYVIDER_PLUGIN_SERVER_KEY": server_cert.key,
-        "PYVIDER_PLUGIN_CLIENT_CERT": client_cert.cert,
-        "PYVIDER_PLUGIN_CLIENT_KEY": client_cert.key,
-        "PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE": "dev-secure-cookie-123"
+        "PLUGIN_AUTO_MTLS": "true",
+        "PLUGIN_SERVER_CERT": server_cert.cert,
+        "PLUGIN_SERVER_KEY": server_cert.key,
+        "PLUGIN_CLIENT_CERT": client_cert.cert,
+        "PLUGIN_CLIENT_KEY": client_cert.key,
+        "PLUGIN_MAGIC_COOKIE_VALUE": "dev-secure-cookie-123"
     })
     
     server = plugin_server(protocol=my_protocol, handler=my_handler)
@@ -168,22 +168,22 @@ def configure_production_security():
     
     # Use proper certificate files
     os.environ.update({
-        "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-        "PYVIDER_PLUGIN_SERVER_CERT": "file:///etc/ssl/certs/plugin-server.pem",
-        "PYVIDER_PLUGIN_SERVER_KEY": "file:///etc/ssl/private/plugin-server.key",
-        "PYVIDER_PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/certs/ca-bundle.pem",
-        "PYVIDER_PLUGIN_SERVER_ROOT_CERTS": "file:///etc/ssl/certs/ca-bundle.pem"
+        "PLUGIN_AUTO_MTLS": "true",
+        "PLUGIN_SERVER_CERT": "file:///etc/ssl/certs/plugin-server.pem",
+        "PLUGIN_SERVER_KEY": "file:///etc/ssl/private/plugin-server.key",
+        "PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/certs/ca-bundle.pem",
+        "PLUGIN_SERVER_ROOT_CERTS": "file:///etc/ssl/certs/ca-bundle.pem"
     })
     
     # Generate cryptographically secure magic cookie
     magic_cookie = secrets.token_hex(32)  # 256-bit security
-    os.environ["PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE"] = magic_cookie
+    os.environ["PLUGIN_MAGIC_COOKIE_VALUE"] = magic_cookie
     
     # Additional security settings
     os.environ.update({
-        "PYVIDER_PLUGIN_RATE_LIMIT_ENABLED": "true",
-        "PYVIDER_PLUGIN_HEALTH_SERVICE_ENABLED": "true",
-        "PYVIDER_PLUGIN_LOG_LEVEL": "INFO"  # Avoid debug logs in production
+        "PLUGIN_RATE_LIMIT_ENABLED": "true",
+        "PLUGIN_HEALTH_SERVICE_ENABLED": "true",
+        "PLUGIN_LOG_LEVEL": "INFO"  # Avoid debug logs in production
     })
 
 async def main():
@@ -239,9 +239,9 @@ def secure_certificate_setup():
 # Apply secure certificate setup
 cert_config = secure_certificate_setup()
 os.environ.update({
-    "PYVIDER_PLUGIN_SERVER_CERT": cert_config["server_cert"],
-    "PYVIDER_PLUGIN_SERVER_KEY": cert_config["server_key"], 
-    "PYVIDER_PLUGIN_CLIENT_ROOT_CERTS": cert_config["ca_bundle"]
+    "PLUGIN_SERVER_CERT": cert_config["server_cert"],
+    "PLUGIN_SERVER_KEY": cert_config["server_key"], 
+    "PLUGIN_CLIENT_ROOT_CERTS": cert_config["ca_bundle"]
 })
 ```
 
@@ -275,7 +275,7 @@ def configure_magic_cookie_security():
     """Configure magic cookie with security best practices."""
     
     # Check if cookie is already set (e.g., from secrets manager)
-    cookie_key = "PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE"
+    cookie_key = "PLUGIN_MAGIC_COOKIE_VALUE"
     existing_cookie = os.environ.get(cookie_key)
     
     if existing_cookie:
@@ -290,9 +290,9 @@ def configure_magic_cookie_security():
         logger.info("🍪 Generated new secure magic cookie")
     
     # Ensure cookie key is set
-    cookie_key_var = "PYVIDER_PLUGIN_MAGIC_COOKIE_KEY"
+    cookie_key_var = "PLUGIN_MAGIC_COOKIE_KEY"
     if not os.environ.get(cookie_key_var):
-        os.environ[cookie_key_var] = "PYVIDER_PLUGIN_MAGIC_COOKIE"
+        os.environ[cookie_key_var] = "PLUGIN_MAGIC_COOKIE"
 
 # Apply magic cookie security
 configure_magic_cookie_security()
@@ -412,14 +412,14 @@ async def security_health_check():
     }
     
     # Check mTLS configuration
-    mtls_enabled = os.getenv("PYVIDER_PLUGIN_AUTO_MTLS", "").lower() == "true"
+    mtls_enabled = os.getenv("PLUGIN_AUTO_MTLS", "").lower() == "true"
     health_status["mtls_enabled"] = mtls_enabled
     
     if not mtls_enabled:
         health_status["issues"].append("mTLS is not enabled")
     
     # Check certificate validity
-    cert_path = os.getenv("PYVIDER_PLUGIN_SERVER_CERT")
+    cert_path = os.getenv("PLUGIN_SERVER_CERT")
     if cert_path and cert_path.startswith("file://"):
         cert_file = Path(cert_path[7:])
         if cert_file.exists():
@@ -440,7 +440,7 @@ async def security_health_check():
             health_status["issues"].append("Certificate file not found")
     
     # Check magic cookie
-    cookie_value = os.getenv("PYVIDER_PLUGIN_MAGIC_COOKIE_VALUE")
+    cookie_value = os.getenv("PLUGIN_MAGIC_COOKIE_VALUE")
     if cookie_value and len(cookie_value) >= 32:
         health_status["magic_cookie_configured"] = True
     else:

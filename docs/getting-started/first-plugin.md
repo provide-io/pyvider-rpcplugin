@@ -141,7 +141,6 @@ import os
 from pyvider.rpcplugin import plugin_server, rpcplugin_config
 from provide.foundation import logger
 
-# Import our custom components
 from echo_handler import EchoHandler
 from echo_protocol import EchoProtocol
 
@@ -192,7 +191,6 @@ from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
 from provide.foundation import logger
 
-# Import generated gRPC client
 from echo_pb2 import EchoRequest
 from echo_pb2_grpc import EchoServiceStub
 

@@ -4,7 +4,48 @@ Comprehensive API documentation for Pyvider RPC Plugin. This reference covers al
 
 ## Architecture Overview
 
-The Pyvider RPC Plugin provides a complete plugin architecture built on gRPC with automatic configuration, security, and lifecycle management. The API is organized into focused modules:
+The Pyvider RPC Plugin provides a complete plugin architecture built on gRPC with automatic configuration, security, and lifecycle management. Built on Foundation's infrastructure, it extends Foundation's capabilities with RPC-specific functionality.
+
+### Foundation Integration
+
+Pyvider RPC Plugin is built on [Foundation](https://foundation.provide.io), which provides:
+- **Configuration Management**: Type-safe, validated configuration via `RuntimeConfig`
+- **Structured Logging**: Consistent logging across all components
+- **Cryptography**: X.509 certificate management and TLS operations  
+- **Rate Limiting**: Token bucket rate limiting for server protection
+- **Error Handling**: Standardized exception hierarchy
+
+While Pyvider RPC Plugin adds:
+- **RPC Protocol**: gRPC-based plugin communication
+- **Transport Layer**: Unix sockets and TCP transport management
+- **Plugin Lifecycle**: Handshake, serving, and shutdown coordination
+- **Client Management**: Plugin discovery and connection handling
+
+## Foundation vs Pyvider RPC Plugin Feature Matrix
+
+| Feature Category | Foundation (`provide.foundation`) | Pyvider RPC Plugin (`pyvider.rpcplugin`) |
+|-----------------|-----------------------------------|------------------------------------------|
+| **Configuration** | `RuntimeConfig` - Environment loading, type safety, validation | `RPCPluginConfig` - Extends RuntimeConfig with RPC-specific fields |
+| **Logging** | Structured logging with JSON output, log levels, context | Uses Foundation logging, adds RPC request/response logging |
+| **Cryptography** | X.509 certificate management, TLS context creation, key handling | Uses Foundation crypto for mTLS, adds certificate discovery |
+| **Rate Limiting** | `TokenBucketRateLimiter` implementation | Uses Foundation rate limiter in server middleware |
+| **Error Handling** | Base exception classes, error context, validation | Extends with RPC-specific exceptions (HandshakeError, etc.) |
+| **Transport** | N/A | Unix socket and TCP transport implementations |
+| **Protocol** | N/A | gRPC protocol handling, service registration |
+| **Plugin Lifecycle** | N/A | Handshake protocol, graceful shutdown, health checks |
+| **Client/Server** | N/A | Complete RPC client/server implementations |
+| **Service Discovery** | N/A | Plugin endpoint discovery and connection management |
+| **Testing** | Testing utilities, fixtures | RPC-specific testing helpers and mock servers |
+
+### Integration Points
+
+- **Configuration**: `rpcplugin_config` extends `RuntimeConfig` for seamless environment loading
+- **Logging**: All RPC operations use Foundation's structured logging automatically  
+- **Security**: Foundation's crypto module handles all certificate management for mTLS
+- **Performance**: Foundation's rate limiter protects RPC servers from overload
+- **Development**: Both use modern Python 3.11+ typing and async patterns
+
+The API is organized into focused modules:
 
 - **[Server](server/)** - Plugin server with health checks, rate limiting, and graceful shutdown
 - **[Client](client/)** - Plugin client with automatic retry, connection pooling, and failover
@@ -106,6 +147,7 @@ The Pyvider RPC Plugin provides a complete plugin architecture built on gRPC wit
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_client
+from provide.foundation import logger
 from my_services import MyProtocol, MyHandler
 
 # Create server with automatic configuration
@@ -135,7 +177,8 @@ await server_task
 ```python
 from pyvider.rpcplugin import RPCPluginServer
 from pyvider.rpcplugin.transport import TCPSocketTransport
-from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.config import rpcplugin_config  # Extends Foundation's RuntimeConfig
+from provide.foundation import logger
 
 # Configure production-grade server
 transport = TCPSocketTransport(
@@ -201,11 +244,11 @@ from pyvider.rpcplugin.config import rpcplugin_config
 
 # Set environment variables for automatic configuration
 os.environ.update({
-    "PYVIDER_PLUGIN_PROTOCOL_VERSION": "1",
-    "PYVIDER_PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
-    "PYVIDER_PLUGIN_AUTO_MTLS": "true",
-    "PYVIDER_PLUGIN_HANDSHAKE_TIMEOUT": "30",
-    "PYVIDER_PLUGIN_MAX_CONCURRENT_STREAMS": "1000"
+    "PLUGIN_PROTOCOL_VERSION": "1",
+    "PLUGIN_SERVER_TRANSPORTS": "[\"unix\", \"tcp\"]",
+    "PLUGIN_AUTO_MTLS": "true",
+    "PLUGIN_HANDSHAKE_TIMEOUT": "30",
+    "PLUGIN_MAX_CONCURRENT_STREAMS": "1000"
 })
 
 # Configuration loads automatically from environment
@@ -322,9 +365,9 @@ except TransportError as e:
         await switch_to_fallback_endpoint()
 ```
 
-## Integration with provide.foundation
+## Foundation Architecture Integration
 
-Built on the [provide.foundation](https://foundation.provide.io) framework for enterprise-grade features:
+Built on Foundation for enterprise-grade features. The integration is seamless - Foundation provides the infrastructure, while Pyvider RPC Plugin adds RPC-specific capabilities:
 
 ### Structured Logging and Observability
 
@@ -332,7 +375,6 @@ Built on the [provide.foundation](https://foundation.provide.io) framework for e
 from provide.foundation import logger
 from pyvider.rpcplugin import plugin_server
 
-# Rich logging with context and emoji enhancement
 server = plugin_server(protocol=my_protocol, handler=my_handler)
 logger.info("🚀 Plugin server started", extra={
     "server_id": server.id,
@@ -368,24 +410,29 @@ transport.configure_tls(cert=cert, key=key)
 ### Configuration and Environment Management
 
 ```python
-from provide.foundation.config import ConfigManager
-from pyvider.rpcplugin.config import rpcplugin_config
+from provide.foundation.config import RuntimeConfig
+from pyvider.rpcplugin.config import rpcplugin_config  # Extends RuntimeConfig
 
-# Foundation provides the configuration infrastructure
-# Environment variables loaded automatically
-# Validation and type coercion built-in
-# Hot-reload support for development
+# - Environment variables loaded automatically
+# - Validation and type coercion built-in  
+# - Multi-source configuration loading
+# - Hot-reload support for development
 
+# Pyvider extends Foundation's RuntimeConfig with RPC-specific fields
 # Access any configuration value with type safety
-handshake_timeout: int = rpcplugin_config.handshake_timeout()
+handshake_timeout: float = rpcplugin_config.handshake_timeout()
 transports: list[str] = rpcplugin_config.server_transports()
 mtls_enabled: bool = rpcplugin_config.auto_mtls_enabled()
+
+# All configuration follows Foundation's validation patterns
+class RPCPluginConfig(RuntimeConfig):  # Extends Foundation
+    plugin_handshake_timeout: float = field(default=10.0, validator=validate_range(0.1, 300.0))
+    plugin_server_transports: list[str] = field(validator=validate_transport_list)
 ```
 
 ### Performance and Resource Management
 
 ```python
-# Foundation provides automatic resource management
 # Connection pooling and lifecycle management
 # Memory usage monitoring and optimization
 # Graceful shutdown with resource cleanup
@@ -402,8 +449,8 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 1. **[Quick Start Guide](../getting-started/)** - Get up and running in minutes
 2. **[Examples](../examples/)** - Working code samples for common scenarios
 3. **[User Guide](../guide/)** - Conceptual explanations and best practices
-4. **[Testing Guide](../guide/testing.md)** - Testing patterns and fixtures
-5. **[Configuration Guide](../guide/configuration/)** - Environment setup and options
+4. **[Testing Guide](../development/testing.md)** - Testing patterns and fixtures
+5. **[Configuration Guide](../guide/config/)** - Environment setup and options
 
 ### API Documentation
 
