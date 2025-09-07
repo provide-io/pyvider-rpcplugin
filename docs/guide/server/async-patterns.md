@@ -9,7 +9,7 @@ Master asynchronous programming patterns for building high-performance plugin se
 ```python
 import asyncio
 import time
-from typing import List, Dict, Any
+from provide.foundation import logger
 
 class AsyncHandler:
     def __init__(self):
@@ -21,19 +21,33 @@ class AsyncHandler:
         request_id = self.request_counter
         self.request_counter += 1
         
-        # Track active request
+        # Track active request with structured logging
+        start_time = time.time()
         self.active_requests[request_id] = {
-            'started': time.time(),
+            'started': start_time,
             'client': context.peer(),
             'method': 'ProcessData'
         }
+        
+        logger.debug("Starting async request processing", extra={
+            "request_id": request_id,
+            "client": context.peer(),
+            "method": "ProcessData"
+        })
         
         try:
             # Simulate async processing
             await asyncio.sleep(0.1)
             
-            # Actual business logic
-            result = await self.process_business_logic(request.data)
+            # Actual business logic with Foundation logging
+            with logger.contextualize(request_id=request_id):
+                result = await self.process_business_logic(request.data)
+                
+                processing_time = time.time() - start_time
+                logger.info("Request processed successfully", extra={
+                    "processing_time_ms": processing_time * 1000,
+                    "result_length": len(str(result))
+                })
             
             return ProcessResponse(
                 result=result,
@@ -43,7 +57,13 @@ class AsyncHandler:
         
         finally:
             # Clean up tracking
-            self.active_requests.pop(request_id, None)
+            request_info = self.active_requests.pop(request_id, None)
+            if request_info:
+                total_time = time.time() - request_info['started']
+                logger.debug("Request cleanup completed", extra={
+                    "request_id": request_id,
+                    "total_time_ms": total_time * 1000
+                })
     
     async def process_business_logic(self, data: str) -> str:
         """Simulate async business logic processing."""
@@ -55,7 +75,7 @@ class AsyncHandler:
         
         return f"Processed: {data}"
     
-    def get_active_requests(self) -> Dict[str, Any]:
+    def get_active_requests(self) -> dict[str, Any]:
         """Get information about active requests."""
         return {
             'count': len(self.active_requests),
@@ -67,7 +87,7 @@ class AsyncHandler:
 
 ```python
 import asyncio
-from typing import List, Callable, TypeVar, Awaitable
+from typing import Callable, TypeVar, Awaitable
 
 T = TypeVar('T')
 R = TypeVar('R')
@@ -163,7 +183,7 @@ class BatchHandler:
 ```python
 import asyncio
 import logging
-from typing import Dict, Set, Callable, Awaitable
+from typing import Callable, Awaitable
 from datetime import datetime, timedelta
 
 class BackgroundTaskManager:
@@ -361,7 +381,6 @@ class AsyncPluginHandler:
 ```python
 import asyncio
 import aiosqlite
-from typing import Optional, Dict, Any
 from contextlib import asynccontextmanager
 
 class DatabasePool:
@@ -520,7 +539,6 @@ class DatabaseHandler:
 ```python
 import aiohttp
 import asyncio
-from typing import Optional, Dict, Any
 
 class HTTPClientPool:
     """Async HTTP client connection pool."""
@@ -651,7 +669,6 @@ class APIHandler:
 ```python
 import asyncio
 import contextvars
-from typing import Dict, Any, Optional
 from datetime import datetime
 
 # Context variables
@@ -780,7 +797,7 @@ class ContextAwareHandler:
 
 ```python
 import asyncio
-from typing import TypeVar, Callable, Awaitable, List, Optional
+from typing import TypeVar, Callable, Awaitable
 
 T = TypeVar('T')
 

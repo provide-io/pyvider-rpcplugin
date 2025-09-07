@@ -433,8 +433,17 @@ def test_with_custom_config():
 
 ## Related Documentation
 
+### Implementation Guides
+- **[Configuration Guide](../../guide/config/index.md)** - Complete guide to configuration setup, best practices, and environment-specific patterns
+- **[Security Configuration Guide](../../guide/security/index.md)** - Security-focused configuration patterns with examples
+- **[Production Configuration](../../guide/config/production.md)** - Production deployment configuration patterns
+
+### API References
 - [Configuration Schema Reference](schema.md) - Complete configuration option reference
 - [Environment Variables Guide](environment.md) - Environment variable setup patterns
 - [Server Configuration](../server/server.md) - Using configuration in servers
 - [Client Configuration](../client/client.md) - Using configuration in clients
-- [Security Configuration](../../guide/security/index.md) - Security-focused configuration patterns
+
+### Transport and Security Integration
+- **[Transport Concepts](../../guide/concepts/transports.md)** - Understanding transport configuration options
+- **[Server Transport Configuration](../../guide/server/transports.md)** - Advanced server transport setup

@@ -6,10 +6,10 @@ A minimal client that connects to a plugin server.
 #!/usr/bin/env python3
 import asyncio
 
-from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin import plugin_client
 
 async def main():
-    client = RPCPluginClient(command=["python", "my_server.py"])
+    client = plugin_client(command=["python", "my_server.py"])
     
     try:
         await client.start()
@@ -22,7 +22,7 @@ async def main():
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        await client.stop()
+        await client.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -30,12 +30,12 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `RPCPluginClient` handles plugin process management automatically
-- Always call `client.stop()` to clean up resources
+- `plugin_client()` factory creates a client that handles plugin process management automatically
+- Always call `client.close()` to clean up resources
 - Use `client.grpc_channel` to get the gRPC channel for making RPC calls
 - The plugin process is started as a subprocess with the provided command
 
 ## Related Examples
 
-- [Full Client Guide](../guide/client/basic-setup.md)
-- [Error Handling](../guide/client/error-handling.md)
+- [Full Client Guide](../../guide/client/basic-setup.md)
+- [Error Handling](../../guide/client/error-handling.md)

@@ -70,9 +70,9 @@ The API is organized into focused modules:
 
 | Function | Purpose | Configuration |
 |----------|---------|---------------|
-| [`plugin_server()`](factories.md#plugin-server) | Create configured server instance | Automatic transport, protocol, and security setup |
-| [`plugin_client()`](factories.md#plugin-client) | Create configured client instance | Connection discovery, retry logic, timeout management |
-| [`plugin_protocol()`](factories.md#plugin-protocol) | Protocol implementation factory | Service registration, descriptor management |
+| [`plugin_server()`](factories.md#plugin_server) | Create configured server instance | Automatic transport, protocol, and security setup |
+| [`plugin_client()`](factories.md#plugin_client) | Create configured client instance | Connection discovery, retry logic, timeout management |
+| [`plugin_protocol()`](factories.md#plugin_protocol) | Protocol implementation factory | Service registration, descriptor management |
 
 ## API Modules
 

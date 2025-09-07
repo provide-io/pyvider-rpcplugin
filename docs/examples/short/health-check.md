@@ -55,4 +55,4 @@ if __name__ == "__main__":
 ## Related Examples
 
 - [Basic Server](basic-server.md) - Simple server without health checks
-- [Full Health Guide](../guide/server/health-monitoring.md)
+- [Full Health Guide](../../guide/server/health-checks.md)

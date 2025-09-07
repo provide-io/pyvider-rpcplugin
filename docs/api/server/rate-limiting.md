@@ -19,14 +19,15 @@ The rate limiting system provides essential traffic control capabilities:
 Token bucket algorithm implementation for rate limiting with burst capability.
 
 ```python
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 import asyncio
 import time
 from typing import final
+from provide.foundation import logger
 
 @final
 class TokenBucketRateLimiter:
-    """Token Bucket rate limiter for asyncio applications."""
+    """Foundation's Token Bucket rate limiter for asyncio applications with structured logging."""
 ```
 
 #### Constructor
@@ -84,24 +85,31 @@ Check if a request is allowed and consume one token if available.
 
 **Example:**
 ```python
-# Basic usage
+# Basic usage with Foundation logging
+from provide.foundation import logger
+
 if await rate_limiter.is_allowed():
-    # Process request - token was consumed
+    logger.debug("Request approved by rate limiter")
     await handle_request()
 else:
-    # Rate limited - no token available
+    logger.warning("Request rate limited", extra={"client_id": client_id})
     raise RateLimitExceeded("Too many requests")
 
 # With error handling
 try:
     allowed = await rate_limiter.is_allowed()
     if not allowed:
+        logger.warning("Rate limit exceeded", extra={
+            "bucket_tokens": await rate_limiter.available_tokens(),
+            "refill_rate": rate_limiter.tokens_per_second
+        })
         return {"error": "Rate limit exceeded", "retry_after": 1}
     
+    logger.debug("Request approved by rate limiter")
     return await process_request()
     
 except Exception as e:
-    logger.error(f"Rate limiter error: {e}")
+    logger.error("Rate limiter error", extra={"error": str(e)}, exc_info=True)
     # Fail open - allow request on limiter error
     return await process_request()
 ```
@@ -142,27 +150,38 @@ for i in range(10):
 ```python
 import grpc
 from grpc import aio
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+from provide.foundation import logger
 
 class RateLimitedServicer:
-    """Example gRPC servicer with rate limiting."""
+    """Example gRPC servicer with Foundation rate limiting."""
     
     def __init__(self):
         # Create rate limiter: 50 RPS with burst of 100
         self.rate_limiter = TokenBucketRateLimiter(
-            capacity=100.0,
-            refill_rate=50.0
+            tokens_per_second=50.0,
+            bucket_size=100
         )
+        logger.info("Rate limiter initialized", extra={
+            "rps_limit": 50.0,
+            "burst_capacity": 100
+        })
     
     async def SomeMethod(self, request, context):
         """Rate-limited RPC method."""
         
         # Check rate limit
-        if not await self.rate_limiter.is_allowed():
+        if not await self.rate_limiter.acquire():
+            logger.warning("Rate limit exceeded for RPC call", extra={
+                "method": "SomeMethod",
+                "peer": context.peer()
+            })
             # Set error details
             context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
             context.set_details("Rate limit exceeded. Try again later.")
             return None
+        
+        logger.debug("Rate limiter approved request")
         
         # Process the request
         return await self._process_request(request)
@@ -192,7 +211,8 @@ async def serve():
 ```python
 import hashlib
 from collections import defaultdict
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+from provide.foundation import logger
 
 class PerClientRateLimiter:
     """Rate limiter that tracks separate limits per client."""
@@ -203,6 +223,11 @@ class PerClientRateLimiter:
         self.cleanup_interval = cleanup_interval
         self.limiters: dict[str, TokenBucketRateLimiter] = {}
         self.last_access: dict[str, float] = {}
+        logger.info("Per-client rate limiter initialized", extra={
+            "capacity": capacity,
+            "refill_rate": refill_rate,
+            "cleanup_interval": cleanup_interval
+        })
     
     def _get_client_key(self, request, context) -> str:
         """Extract client identifier from request context."""
@@ -234,9 +259,14 @@ class PerClientRateLimiter:
         
         if client_key not in self.limiters:
             self.limiters[client_key] = TokenBucketRateLimiter(
-                capacity=self.capacity,
-                refill_rate=self.refill_rate
+                tokens_per_second=self.refill_rate,
+                bucket_size=self.capacity
             )
+            logger.debug("Created rate limiter for new client", extra={
+                "client_key": client_key,
+                "rps_limit": self.refill_rate,
+                "burst_capacity": self.capacity
+            })
         
         self.last_access[client_key] = time.time()
         return self.limiters[client_key]
@@ -245,7 +275,15 @@ class PerClientRateLimiter:
         """Check if request from client is allowed."""
         client_key = self._get_client_key(request, context)
         limiter = self._get_limiter(client_key)
-        return await limiter.is_allowed()
+        allowed = await limiter.acquire()
+        
+        if not allowed:
+            logger.warning("Per-client rate limit exceeded", extra={
+                "client_key": client_key,
+                "peer": context.peer() if hasattr(context, 'peer') else 'unknown'
+            })
+        
+        return allowed
     
     def cleanup_stale_limiters(self):
         """Remove rate limiters for inactive clients."""
@@ -262,7 +300,10 @@ class PerClientRateLimiter:
             del self.last_access[client_key]
         
         if stale_clients:
-            print(f"Cleaned up {len(stale_clients)} stale rate limiters")
+            logger.info("Cleaned up stale rate limiters", extra={
+                "count": len(stale_clients),
+                "stale_clients": stale_clients[:10]  # Log first 10 for debugging
+            })
 
 # Usage
 class ServicerWithPerClientLimits:
@@ -275,10 +316,15 @@ class ServicerWithPerClientLimits:
     
     async def SomeMethod(self, request, context):
         if not await self.rate_limiter.is_allowed(request, context):
+            logger.warning("Client rate limit exceeded", extra={
+                "peer": context.peer(),
+                "method": "SomeMethod"
+            })
             context.set_code(grpc.StatusCode.RESOURCE_EXHAUSTED)
             context.set_details("Rate limit exceeded for client")
             return None
         
+        logger.debug("Client rate limit check passed")
         return await self._process_request(request)
 ```
 
@@ -387,7 +433,7 @@ class DecoratedServicer:
 import asyncio
 import time
 from statistics import mean, median
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 async def load_test_rate_limiter():
     """Load test the rate limiter performance."""

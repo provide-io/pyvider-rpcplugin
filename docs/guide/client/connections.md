@@ -37,7 +37,7 @@ class ManagedConnection:
                 
                 if attempt < max_attempts - 1:
                     wait_time = 2 ** attempt  # Exponential backoff
-                    print(f"ó Waiting {wait_time}s before retry...")
+                    print(f"ï¿½ Waiting {wait_time}s before retry...")
                     await asyncio.sleep(wait_time)
         
         raise ConnectionError("Failed to connect after all attempts")
@@ -98,7 +98,6 @@ await managed_connection_example()
 ```python
 import asyncio
 import time
-from typing import Dict, Optional
 from datetime import datetime, timedelta
 
 class HealthMonitoredClient:
@@ -161,7 +160,7 @@ class HealthMonitoredClient:
         """Perform health check on connection."""
         try:
             if not self.client or not self.client.is_connected():
-                print("  Connection lost, attempting reconnection...")
+                print("ï¿½ Connection lost, attempting reconnection...")
                 await self._reconnect()
                 return
             
@@ -170,7 +169,7 @@ class HealthMonitoredClient:
                 start_time = time.time()
                 await self.client.health.Check(service="")
                 latency = (time.time() - start_time) * 1000
-                print(f"=š Health check OK (latency: {latency:.1f}ms)")
+                print(f"=ï¿½ Health check OK (latency: {latency:.1f}ms)")
             
         except Exception as e:
             print(f"d=% Health check failed: {e}")
@@ -205,14 +204,14 @@ class HealthMonitoredClient:
             # Update success stats
             self.health_stats["last_successful_call"] = datetime.now()
             latency = (time.time() - start_time) * 1000
-            print(f"=Þ Call {service_method} succeeded (latency: {latency:.1f}ms)")
+            print(f"=ï¿½ Call {service_method} succeeded (latency: {latency:.1f}ms)")
             
             return result
             
         except Exception as e:
             # Update failure stats
             self.health_stats["failed_calls"] += 1
-            print(f"=ÞL Call {service_method} failed: {e}")
+            print(f"=ï¿½L Call {service_method} failed: {e}")
             raise
     
     def get_health_report(self) -> Dict:
@@ -254,7 +253,7 @@ async def health_monitored_example():
         
         # Check health report
         health = client.get_health_report()
-        print(f"=Ê Health Report: {health}")
+        print(f"=ï¿½ Health Report: {health}")
         
     finally:
         await client.disconnect()
@@ -268,7 +267,6 @@ await health_monitored_example()
 
 ```python
 import asyncio
-from typing import List, Optional
 from contextlib import asynccontextmanager
 
 class ConnectionPool:
@@ -402,8 +400,8 @@ async def connection_pool_example():
         tasks = [calculate(i) for i in range(10)]
         results = await asyncio.gather(*tasks)
         
-        print(f"=Ê Completed {len(results)} calculations")
-        print(f"=È Pool stats: {pool.get_pool_stats()}")
+        print(f"=ï¿½ Completed {len(results)} calculations")
+        print(f"=ï¿½ Pool stats: {pool.get_pool_stats()}")
         
     finally:
         await pool.close_all()
@@ -426,7 +424,7 @@ class AutoReconnectClient:
     
     def __init__(self, command: list[str]):
         self.command = command
-        self.client: Optional[plugin_client] = None
+        self.client: plugin_client | None = None
         
         # Reconnection settings
         self.max_reconnect_attempts = 5
@@ -509,11 +507,11 @@ class AutoReconnectClient:
                 self.consecutive_failures += 1
                 self.last_disconnect_time = time.time()
                 
-                print(f"=ÞL Call failed: {e}")
+                print(f"=ï¿½L Call failed: {e}")
                 
                 # Check if we should give up
                 if self.consecutive_failures > 3:
-                    print(f"=« Too many consecutive failures ({self.consecutive_failures})")
+                    print(f"=ï¿½ Too many consecutive failures ({self.consecutive_failures})")
                     raise
                 
                 # Try to reconnect
@@ -565,7 +563,7 @@ await auto_reconnect_example()
 ```python
 from enum import Enum
 import asyncio
-from typing import Dict, Callable, Optional
+from typing import Callable
 
 class ConnectionState(Enum):
     DISCONNECTED = "disconnected"
@@ -580,11 +578,11 @@ class StatefulConnection:
     
     def __init__(self, command: list[str]):
         self.command = command
-        self.client: Optional[plugin_client] = None
+        self.client: plugin_client | None = None
         self.state = ConnectionState.DISCONNECTED
         
         # State change callbacks
-        self.state_callbacks: Dict[ConnectionState, list[Callable]] = {
+        self.state_callbacks: dict[ConnectionState, list[Callable]] = {
             state: [] for state in ConnectionState
         }
         
@@ -615,7 +613,7 @@ class StatefulConnection:
                 else:
                     callback(old_state, new_state)
             except Exception as e:
-                print(f"  State callback error: {e}")
+                print(f"ï¿½ State callback error: {e}")
     
     async def connect(self):
         """Connect with state management."""
@@ -707,10 +705,10 @@ async def stateful_connection_example():
     
     # Register state change callbacks
     async def on_connected(old_state, new_state):
-        print(f"<‰ Successfully connected!")
+        print(f"<ï¿½ Successfully connected!")
     
     async def on_failed(old_state, new_state):
-        print(f"=¥ Connection failed!")
+        print(f"=ï¿½ Connection failed!")
     
     connection.on_state_change(ConnectionState.CONNECTED, on_connected)
     connection.on_state_change(ConnectionState.FAILED, on_failed)
@@ -724,7 +722,7 @@ async def stateful_connection_example():
         
         # Check state
         state_info = connection.get_state_info()
-        print(f"=Ê Connection info: {state_info}")
+        print(f"=ï¿½ Connection info: {state_info}")
         
     finally:
         await connection.disconnect()

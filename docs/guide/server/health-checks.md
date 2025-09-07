@@ -575,5 +575,5 @@ With comprehensive health checks implemented:
 
 - **[Security](../security/)** - Secure your health endpoints
 - **[Configuration](../config/)** - Configure health check parameters  
-- **[Production Deployment](../production/)** - Deploy with monitoring integration
+- **[Production Deployment](../config/production.md)** - Deploy with monitoring integration
 - **[Client Development](../client/)** - Implement client-side health checking
