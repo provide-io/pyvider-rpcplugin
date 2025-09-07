@@ -442,6 +442,65 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 # Server includes all foundation features automatically
 ```
 
+## Foundation vs Pyvider RPC Plugin Feature Matrix
+
+| Feature Category | Foundation (provide.foundation) | Pyvider RPC Plugin |
+|-----------------|----------------------------------|-------------------|
+| **Core Infrastructure** | | |
+| Configuration Management | ✅ RuntimeConfig base class | ✅ RPCPluginConfig extends RuntimeConfig |
+| Structured Logging | ✅ Centralized logger with context | 🔗 Uses Foundation logger |
+| Error Handling | ✅ Base exception hierarchy | ✅ RPC-specific exceptions |
+| Type System | ✅ Modern Python 3.11+ typing | ✅ Extends with RPC types |
+| **Cryptography & Security** | | |
+| X.509 Certificates | ✅ Certificate, PrivateKey classes | 🔗 Uses for mTLS |
+| TLS Operations | ✅ SSL context creation | 🔗 Applied to transports |
+| Certificate Generation | ✅ Self-signed cert utilities | 🔗 Used in auto-mTLS |
+| Key Management | ✅ Secure key handling | 🔗 Integrated |
+| **Rate Limiting** | | |
+| Token Bucket Algorithm | ✅ TokenBucketRateLimiter | 🔗 Used in servers |
+| Async Rate Limiting | ✅ Async-safe implementation | 🔗 Applied to RPC calls |
+| **RPC & Plugin Features** | | |
+| gRPC Server/Client | ❌ Not included | ✅ Full implementation |
+| Plugin Protocol | ❌ Not included | ✅ Terraform-compatible |
+| Transport Layer | ❌ Not included | ✅ Unix/TCP transports |
+| Handshake Protocol | ❌ Not included | ✅ Magic cookie auth |
+| Service Discovery | ❌ Not included | ✅ Dynamic registration |
+| Protocol Buffers | ❌ Not included | ✅ Full protobuf support |
+| **Lifecycle Management** | | |
+| Process Management | ✅ Basic utilities | ✅ Plugin subprocess control |
+| Health Checks | ✅ Basic health utilities | ✅ gRPC health service |
+| Graceful Shutdown | ✅ Signal handling | ✅ RPC-aware shutdown |
+| **Development Tools** | | |
+| Testing Utilities | ✅ Test fixtures, mocks | ✅ RPC test fixtures |
+| Debug Helpers | ✅ Debug logging, tracing | ✅ RPC call tracing |
+| Performance Monitoring | ✅ Basic metrics | ✅ RPC metrics, latency |
+
+### Usage Patterns
+
+**Foundation provides infrastructure:**
+```python
+from provide.foundation import logger
+from provide.foundation.config import RuntimeConfig
+from provide.foundation.crypto import Certificate
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+```
+
+**Pyvider RPC Plugin builds on top:**
+```python
+from pyvider.rpcplugin import plugin_server, plugin_client
+from pyvider.rpcplugin.config import rpcplugin_config  # Extends RuntimeConfig
+from pyvider.rpcplugin.transport import UnixTransport, TCPTransport
+from pyvider.rpcplugin.protocol import RPCPluginProtocol
+```
+
+### Key Relationships
+
+1. **Configuration**: Pyvider's `RPCPluginConfig` extends Foundation's `RuntimeConfig`
+2. **Logging**: All Pyvider components use Foundation's structured logger
+3. **Security**: mTLS implementation uses Foundation's crypto modules
+4. **Rate Limiting**: Server rate limiting uses Foundation's `TokenBucketRateLimiter`
+5. **Error Handling**: RPC exceptions extend Foundation's base exceptions
+
 ## Getting Started
 
 ### Next Steps

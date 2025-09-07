@@ -19,7 +19,7 @@ Before you begin, ensure you have:
 
 ```bash
 # Fork the repository on GitHub, then clone your fork
-git clone https://github.com/YOUR_USERNAME/pyvider-rpcplugin.git
+git clone https://github.com/<username>/pyvider-rpcplugin.git
 cd pyvider-rpcplugin
 
 # Add the upstream repository
@@ -60,13 +60,13 @@ We use a **feature branch workflow**:
 
 ```bash
 # Create a new feature branch
-git checkout -b feature/your-feature-name
+git checkout -b feature/<feature-name>
 
 # Make your changes
 # ... code, test, commit ...
 
 # Push to your fork
-git push origin feature/your-feature-name
+git push origin feature/<feature-name>
 
 # Create a Pull Request on GitHub
 ```
@@ -179,12 +179,12 @@ def process_data(
     return list(data.keys())
 
 # ❌ Bad - Avoid deprecated typing
-from typing import Dict, List, Optional, Callable
+from typing import Callable
 
 def process_data(
-    data: Dict[str, Any],
-    callback: Optional[Callable[[str], bool]] = None
-) -> List[str]:
+    data: dict[str, Any],
+    callback: Callable[[str], bool] | None = None
+) -> list[str]:
     pass
 
 # ✅ Good - Use modern Python 3.11+ typing

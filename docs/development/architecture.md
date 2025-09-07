@@ -195,7 +195,8 @@ The client provides a simplified interface for making RPC calls:
 ```python
 # src/pyvider/client/client.py
 import asyncio
-from typing import Generic, TypeVar, AsyncIterator
+from typing import TypeVar, Generic
+from collections.abc import AsyncIterator
 from grpc.aio import insecure_channel, secure_channel
 
 T = TypeVar('T')
@@ -292,7 +293,7 @@ class ServerConfig:
 ```python
 # example_service.py
 import asyncio
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 from pyvider.service import BaseService
 from .generated import service_pb2, service_pb2_grpc
 
@@ -421,7 +422,6 @@ class ErrorHandlingInterceptor:
 # src/pyvider/client/pool.py
 import asyncio
 import time
-from typing import Any
 from collections import deque
 
 class ConnectionPool:
@@ -505,7 +505,6 @@ sequenceDiagram
 # src/pyvider/security/auth.py
 import jwt
 import time
-from typing import Any
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 

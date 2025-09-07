@@ -13,7 +13,7 @@ export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'
 export PLUGIN_AUTO_MTLS=true
 
 # Security and authentication
-export PLUGIN_MAGIC_COOKIE_VALUE="your-secure-cookie-here"
+export PLUGIN_MAGIC_COOKIE_VALUE="<SECURE_VALUE_HERE>"
 export PLUGIN_SERVER_CERT="file:///path/to/server.pem"
 export PLUGIN_SERVER_KEY="file:///path/to/server.key"
 

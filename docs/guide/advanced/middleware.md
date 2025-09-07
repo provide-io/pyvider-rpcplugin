@@ -443,7 +443,7 @@ async def create_server_with_middleware():
     logging_interceptor = RequestLoggingInterceptor()
     metrics_interceptor = MetricsInterceptor()
     auth_interceptor = JWTAuthInterceptor(
-        secret_key="your-secret-key",
+        secret_key="<YOUR_SECRET_KEY>",
         exempt_methods={'/grpc.health.v1.Health/Check'}
     )
     rate_limit_interceptor = RateLimitingInterceptor(
@@ -515,7 +515,7 @@ def requires_auth(handler_call_details) -> bool:
 
 auth_middleware = ConditionalMiddleware(
     condition=requires_auth,
-    middleware=JWTAuthInterceptor("secret-key")
+    middleware=JWTAuthInterceptor("<YOUR_SECRET_KEY>")
 )
 ```
 
