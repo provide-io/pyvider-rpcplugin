@@ -48,13 +48,13 @@ Configure appropriate network transport and firewall rules:
 
 ```bash
 # TCP configuration for networked deployments
-export PLUGIN_SERVER_TRANSPORTS=["tcp"]
+export PLUGIN_SERVER_TRANSPORTS='["tcp"]'
 export PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080  # Container/K8s
 # or
 export PLUGIN_SERVER_ENDPOINT=10.0.1.100:8080  # Specific interface
 
 # Unix socket for same-host deployments (higher security)
-export PLUGIN_SERVER_TRANSPORTS=["unix"]
+export PLUGIN_SERVER_TRANSPORTS='["unix"]'
 export PLUGIN_SERVER_ENDPOINT=/var/run/plugin/plugin.sock
 ```
 
@@ -325,7 +325,7 @@ WantedBy=multi-user.target
 PLUGIN_LOG_LEVEL=DEBUG
 PLUGIN_SHOW_EMOJI_MATRIX=true
 PLUGIN_AUTO_MTLS=false
-PLUGIN_SERVER_TRANSPORTS=unix
+PLUGIN_SERVER_TRANSPORTS='["unix"]'
 PLUGIN_HANDSHAKE_TIMEOUT=5.0
 PLUGIN_CONNECTION_TIMEOUT=10.0
 ```
@@ -337,7 +337,7 @@ PLUGIN_CONNECTION_TIMEOUT=10.0
 PLUGIN_LOG_LEVEL=INFO
 PLUGIN_SHOW_EMOJI_MATRIX=false
 PLUGIN_AUTO_MTLS=true
-PLUGIN_SERVER_TRANSPORTS=tcp
+PLUGIN_SERVER_TRANSPORTS='["tcp"]'
 PLUGIN_SERVER_CERT=file:///etc/ssl/certs/staging-server.pem
 PLUGIN_SERVER_KEY=file:///etc/ssl/private/staging-server.key
 PLUGIN_RATE_LIMIT_ENABLED=true
@@ -351,7 +351,7 @@ PLUGIN_HEALTH_SERVICE_ENABLED=true
 PLUGIN_LOG_LEVEL=WARNING
 PLUGIN_SHOW_EMOJI_MATRIX=false
 PLUGIN_AUTO_MTLS=true
-PLUGIN_SERVER_TRANSPORTS=tcp
+PLUGIN_SERVER_TRANSPORTS='["tcp"]'
 PLUGIN_SERVER_CERT=file:///etc/ssl/certs/production-server.pem
 PLUGIN_SERVER_KEY=file:///etc/ssl/private/production-server.key
 PLUGIN_CLIENT_ROOT_CERTS=file:///etc/ssl/certs/ca-bundle.pem

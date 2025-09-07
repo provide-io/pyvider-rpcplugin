@@ -47,7 +47,7 @@ configure(transports=["unix", "tcp"])  # Both, prefer unix
 
 ```bash
 # Transport selection
-export PLUGIN_SERVER_TRANSPORTS="unix,tcp"
+export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'
 export PLUGIN_TCP_PORT="8080" 
 export PLUGIN_UNIX_SOCKET_PATH="/tmp/my-plugin.sock"
 ```
