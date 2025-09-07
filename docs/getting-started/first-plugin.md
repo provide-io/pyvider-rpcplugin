@@ -335,6 +335,15 @@ sequenceDiagram
 
 Now that you understand the plugin architecture:
 
+### 📝 Quick Reference Examples
+
+For focused, executable examples (15-30 lines each):
+
+- **[Basic Server](../examples/short/basic-server.md)** - Minimal factory-based server
+- **[Health Checks](../examples/short/health-check.md)** - Health monitoring integration  
+- **[Rate Limiting](../examples/short/rate-limiting.md)** - Request throttling patterns
+- **[Custom Protocol](../examples/short/custom-protocol.md)** - Like the Echo example above
+
 ### 📚 Learn More
 
 - **[Core Concepts](../guide/concepts/)** - Deep dive into architecture

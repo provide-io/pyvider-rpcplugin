@@ -655,4 +655,11 @@ Comprehensive health checking:
 - **Metrics Collection**: Connection performance metrics
 - **Alerting Integration**: Health status notifications
 
+## Quick Examples
+
+For executable code samples:
+
+- **[Basic Client](../../examples/short/basic-client.md)** - Simple connection setup
+- **[TCP Transport](../../examples/short/tcp-transport.md)** - Network transport configuration
+
 These features would significantly enhance the connection management capabilities for production deployments with high availability requirements.

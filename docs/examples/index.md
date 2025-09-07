@@ -330,219 +330,32 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Secure Plugin
+## Future Improvements
 
-Demonstrates mTLS authentication and encrypted communication.
+### Secure Plugin with mTLS
 
-### Secure Server (`secure_server.py`)
+A secure plugin implementation with mutual TLS authentication would include:
 
-```python
-#!/usr/bin/env python3
-"""Secure plugin server with mTLS."""
-import asyncio
-import os
-import tempfile
-from pathlib import Path
-from pyvider.rpcplugin import plugin_server, plugin_protocol, configure
-from pyvider.rpcplugin.crypto import Certificate
-from provide.foundation import logger
+- Certificate generation and management utilities
+- Automatic certificate rotation and validation  
+- Client and server certificate authentication
+- Encrypted gRPC communication channels
+- Certificate-based authorization policies
 
-class SecureHandler:
-    """Secure handler demonstrating security features."""
-    
-    def __init__(self):
-        logger.info("🔒 Secure handler initialized")
+This would require implementing:
+- `pyvider.rpcplugin.crypto.Certificate` - Certificate management utilities
+- mTLS configuration options in RPCPluginConfig
+- Certificate validation and rotation logic
+- Integration with PKI infrastructure
 
-async def setup_certificates(temp_dir: Path) -> tuple[str, str, str]:
-    """Set up mTLS certificates."""
-    logger.info("🔑 Generating mTLS certificates...")
-    
-    # Generate CA certificate
-    ca_cert = Certificate.create_ca(
-        common_name="Secure Plugin CA",
-        organization_name="Example Corp",
-        validity_days=1
-    )
-    
-    # Generate server certificate
-    server_cert = Certificate.create_signed_certificate(
-        ca_certificate=ca_cert,
-        common_name="secure-plugin-server",
-        alt_names=["localhost", "127.0.0.1"],
-        is_client_cert=False,
-        validity_days=1
-    )
-    
-    # Save certificates to temporary files
-    ca_file = temp_dir / "ca.crt"
-    server_cert_file = temp_dir / "server.crt"
-    server_key_file = temp_dir / "server.key"
-    
-    ca_file.write_text(ca_cert.cert)
-    server_cert_file.write_text(server_cert.cert)
-    server_key_file.write_text(server_cert.key)
-    
-    logger.info(f"📁 Certificates saved to {temp_dir}")
-    
-    return str(ca_file), str(server_cert_file), str(server_key_file)
+### Other Future Examples
 
-async def main():
-    """Main secure server function."""
-    logger.info("🔒 Starting secure plugin server...")
-    
-    # Create temporary directory for certificates
-    with tempfile.TemporaryDirectory(prefix="secure_plugin_") as temp_dir:
-        temp_path = Path(temp_dir)
-        
-        # Set up certificates
-        ca_file, server_cert_file, server_key_file = await setup_certificates(temp_path)
-        
-        # Configure mTLS
-        os.environ.update({
-            "PLUGIN_AUTO_MTLS": "true",
-            "PLUGIN_SERVER_CERT": f"file://{server_cert_file}",
-            "PLUGIN_SERVER_KEY": f"file://{server_key_file}",
-            "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_file}",
-        })
-        
-        # Create secure server
-        protocol = plugin_protocol()
-        handler = SecureHandler()
-        server = plugin_server(protocol=protocol, handler=handler)
-        
-        try:
-            logger.info("🔒 Starting secure server with mTLS...")
-            await server.serve()
-            logger.info("Secure server finished")
-        except KeyboardInterrupt:
-            logger.info("Secure server stopped by user")
-        except Exception as e:
-            logger.error(f"Secure server error: {e}", exc_info=True)
+Additional examples that would be valuable:
 
-if __name__ == "__main__":
-    asyncio.run(main())
-```
-
-### Secure Client (`secure_client.py`)
-
-```python
-#!/usr/bin/env python3
-"""Secure client with mTLS."""
-import asyncio
-import sys
-import tempfile
-from pathlib import Path
-from pyvider.rpcplugin import plugin_client, configure
-from pyvider.rpcplugin.crypto import Certificate
-from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger
-
-async def setup_client_certificates(temp_dir: Path):
-    """Set up client mTLS certificates."""
-    logger.info("🔑 Setting up client certificates...")
-    
-    # Generate same CA as server (in real usage, share CA cert)
-    ca_cert = Certificate.create_ca(
-        common_name="Secure Plugin CA",
-        organization_name="Example Corp",
-        validity_days=1
-    )
-    
-    # Generate client certificate
-    client_cert = Certificate.create_signed_certificate(
-        ca_certificate=ca_cert,
-        common_name="secure-plugin-client",
-        is_client_cert=True,
-        validity_days=1
-    )
-    
-    # Configure client mTLS using PEM strings
-    configure(
-        auto_mtls=True,
-        client_cert=client_cert.cert,      # PEM string
-        client_key=client_cert.key,        # PEM string
-        server_root_certs=ca_cert.cert,    # Trust server certs from this CA
-        magic_cookie_key="SECURE_PLUGIN_COOKIE",
-        magic_cookie="ultra-secure-token-456"
-    )
-    
-    # Return server certificates for plugin subprocess
-    server_cert = Certificate.create_signed_certificate(
-        ca_certificate=ca_cert,
-        common_name="secure-plugin-server",
-        alt_names=["localhost", "127.0.0.1"],
-        is_client_cert=False,
-        validity_days=1
-    )
-    
-    # Save server certificates for plugin
-    ca_file = temp_dir / "ca.crt"
-    server_cert_file = temp_dir / "server.crt"
-    server_key_file = temp_dir / "server.key"
-    
-    ca_file.write_text(ca_cert.cert)
-    server_cert_file.write_text(server_cert.cert)
-    server_key_file.write_text(server_cert.key)
-    
-    return {
-        "PLUGIN_AUTO_MTLS": "true",
-        "PLUGIN_SERVER_CERT": f"file://{server_cert_file}",
-        "PLUGIN_SERVER_KEY": f"file://{server_key_file}",
-        "PLUGIN_CLIENT_ROOT_CERTS": f"file://{ca_file}",
-        "SECURE_PLUGIN_COOKIE": "ultra-secure-token-456",
-        "PLUGIN_MAGIC_COOKIE_KEY": "SECURE_PLUGIN_COOKIE",
-        "PLUGIN_MAGIC_COOKIE_VALUE": "ultra-secure-token-456"
-    }
-
-async def main():
-    """Main secure client function."""
-    logger.info("🔒 Starting secure client...")
-    
-    # Create temporary directory for certificates
-    with tempfile.TemporaryDirectory(prefix="secure_client_") as temp_dir:
-        temp_path = Path(temp_dir)
-        
-        # Set up client certificates and get server environment
-        server_env = await setup_client_certificates(temp_path)
-        
-        # Define plugin command
-        plugin_path = Path(__file__).parent / "secure_server.py"
-        plugin_command = [sys.executable, str(plugin_path)]
-        
-        client = None
-        try:
-            logger.info("🚀 Launching secure plugin...")
-            
-            # Create client with server environment
-            client = plugin_client(
-                command=plugin_command,
-                config={"env": server_env}
-            )
-            
-            await client.start()  # mTLS handshake happens here
-            
-            logger.info("✅ Secure connection established!")
-            logger.info("🔒 All communication is now encrypted with mTLS")
-            
-            # Connection is ready for encrypted RPC calls
-            await asyncio.sleep(2)
-            logger.info("🎉 Secure example completed!")
-            
-        except RPCPluginError as e:
-            logger.error(f"❌ Secure plugin error: {e.message}")
-            if e.hint:
-                logger.error(f"💡 Hint: {e.hint}")
-        except Exception as e:
-            logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-        finally:
-            if client:
-                logger.info("🔒 Shutting down secure connection...")
-                await client.close()
-                logger.info("Secure shutdown complete")
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
+- **Database Plugin**: Persistent state management and connection pooling
+- **Streaming Plugin**: Bi-directional streaming with flow control  
+- **Batch Processing Plugin**: High-throughput data processing patterns
+- **Multi-Service Plugin**: Single plugin exposing multiple gRPC services
 
 ## More Examples
 

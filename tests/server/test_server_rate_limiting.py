@@ -6,7 +6,7 @@ from typing import Any
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.server import RPCPluginServer, RateLimitingInterceptor
-from pyvider.rpcplugin.rate_limiter import TokenBucketRateLimiter
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import ServerT
 from provide.foundation import logger
