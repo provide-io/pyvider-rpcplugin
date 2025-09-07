@@ -174,6 +174,17 @@ Now that you have the basics working:
 3. **[Security Setup](../guide/concepts/security.md)** - Enable mTLS for production
 4. **[Advanced Patterns](../guide/)** - Explore async patterns, error handling, and more
 
+### 📝 Short Examples
+
+For focused, executable examples (15-30 lines each):
+
+- **[Basic Client](../examples/short/basic-client.md)** - Minimal client connection
+- **[Basic Server](../examples/short/basic-server.md)** - Simple plugin server  
+- **[Health Checks](../examples/short/health-check.md)** - Server with health monitoring
+- **[Rate Limiting](../examples/short/rate-limiting.md)** - Request throttling with token bucket
+- **[TCP Transport](../examples/short/tcp-transport.md)** - Network transport configuration
+- **[Custom Protocol](../examples/short/custom-protocol.md)** - Custom gRPC service integration
+
 ## Common Issues
 
 ### Plugin Won't Start

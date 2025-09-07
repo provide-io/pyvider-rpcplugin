@@ -810,4 +810,11 @@ Plugin-specific health checking:
 - **Weighted Health**: Different importance levels for health checks
 - **Cascading Health**: Health checks that depend on other checks
 
+## Quick Examples
+
+For executable code samples:
+
+- **[Health Check](../../examples/short/health-check.md)** - Basic health monitoring setup
+- **[Basic Server](../../examples/short/basic-server.md)** - Server without health checks for comparison
+
 These enhancements would provide enterprise-grade health monitoring capabilities suitable for production microservice deployments.
