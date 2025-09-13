@@ -103,10 +103,10 @@ async def test_connect_handshake_retry_success_after_failures(
     assert client_instance._handshake_failed_event.is_set() is False
 
     spied_logger_warning.assert_any_call(
-        "Attempt 1 failed: Simulated handshake failure attempt 1"
+        "Attempt 1/4 failed: [HandshakeError] Simulated handshake failure attempt 1 [Code: RPC_HANDSHAKE_ERROR]"
     )
     spied_logger_warning.assert_any_call(
-        "Attempt 2 failed: Simulated handshake failure attempt 2"
+        "Attempt 2/4 failed: [HandshakeError] Simulated handshake failure attempt 2 [Code: RPC_HANDSHAKE_ERROR]"
     )
 
 
@@ -414,11 +414,12 @@ async def test_connect_handshake_max_retries_reached(client_instance_local, mock
     # Check logger calls
     for i in range(max_retries_config + 1):
         mock_logger_warning.assert_any_call(
-            f"Attempt {i + 1} failed: Simulated persistent handshake failure"
+            f"Attempt {i + 1}/{max_retries_config + 1} failed: [HandshakeError] Simulated persistent handshake failure [Code: RPC_HANDSHAKE_ERROR]"
         )
 
     mock_logger_error.assert_any_call(
-        f"Maximum retry attempts ({max_retries_config + 1}) reached for connection/handshake. Last error: {simulated_error}"
+        f"All {max_retries_config + 1} attempts failed. Last error: {simulated_error}",
+        exc_info=True,
     )
     assert client_instance._handshake_failed_event.is_set()
 
