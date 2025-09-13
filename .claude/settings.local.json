@@ -89,7 +89,11 @@
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_init_stubs -xvs)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_init_stubs_no_channel -xvs)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel -xvs)",
-      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel_knock_ack_false -xvs)"
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel_knock_ack_false -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel_knock_ack_false -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_stubs.py -v)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel_no_stub -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py -v)"
     ],
     "deny": [],
     "ask": [],

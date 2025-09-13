@@ -321,7 +321,8 @@ class ClientProcessMixin:
             ProtocolError: If broker operations fail
         """
         if not self._broker_stub:
-            raise ProtocolError("Broker stub not available for subchannel operations")
+            self.logger.warning("Broker stub not available for subchannel operations")
+            return
 
         try:
             self.logger.debug(
@@ -343,7 +344,16 @@ class ClientProcessMixin:
             # Wait for acknowledgment
             response = await stream.read()
             if response and response.service_id == sub_id:
-                self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
+                # Check knock acknowledgment
+                if hasattr(response, 'knock') and hasattr(response.knock, 'ack'):
+                    if response.knock.ack:
+                        self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
+                    else:
+                        error_msg = response.knock.error if hasattr(response.knock, 'error') else "Unknown error"
+                        self.logger.error(f"Subchannel open failed: {error_msg}")
+                        # Don't raise exception, just log error and continue
+                else:
+                    self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
             else:
                 raise ProtocolError(
                     f"Failed to get acknowledgment for broker subchannel {sub_id}"
