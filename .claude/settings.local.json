@@ -20,7 +20,15 @@
       "Bash(awk:*)",
       "Bash(pip install:*)",
       "Bash(sort:*)",
-      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/client/test_client_init.py -v --tb=no)"
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/client/test_client_init.py -v --tb=no)",
+      "Bash(PYTHONPATH=./src python -c \"from pyvider.rpcplugin.client import RPCPluginClient; print(''Client import successful'')\")",
+      "Bash(PYTHONPATH=./src python -c \"from pyvider.rpcplugin.server import RPCPluginServer; print(''Server import successful'')\")",
+      "Bash(PYTHONPATH=./src python -c \"from pyvider.rpcplugin.transport.unix import UnixSocketTransport; print(''Unix transport import successful'')\")",
+      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 15s python -m pytest tests/client/test_client_init.py::test_client_initialization -v --tb=no)",
+      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/server/test_server_lifecycle.py::test_server_initialization -v --tb=no)",
+      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/server/test_server_lifecycle.py -k \"test\" --co -q)",
+      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/server/test_server_lifecycle.py::test_attrs_post_init_handshake_config_error -v --tb=no)",
+      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/transport/unix/test_transport_unix.py::test_normalize_unix_path_double_slash -v --tb=no)"
     ],
     "deny": [],
     "ask": [],
