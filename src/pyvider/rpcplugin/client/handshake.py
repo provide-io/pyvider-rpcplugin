@@ -87,6 +87,11 @@ class ClientHandshakeMixin:
                     f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
                 )
 
+                # Start stdio reading task
+                if self._stdio_stub:
+                    self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+                    self.logger.debug("Started stdio reading task")
+
                 self.is_started = True
                 self._handshake_complete_event.set()
             except Exception as e:
@@ -154,6 +159,11 @@ class ClientHandshakeMixin:
                     self.logger.info(
                         f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
                     )
+
+                    # Start stdio reading task
+                    if self._stdio_stub:
+                        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+                        self.logger.debug("Started stdio reading task")
 
                     self.is_started = True
                     self._handshake_complete_event.set()

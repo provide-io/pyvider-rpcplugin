@@ -58,6 +58,8 @@ async def test_start_complete_flow(
             await client_instance._create_grpc_channel()
             # _init_stubs is called from within _create_grpc_channel normally
             client_instance._init_stubs()
+            # After channel creation, stdio task would be created which calls _read_stdio_logs
+            await client_instance._read_stdio_logs()
             return None
 
         mock_connect_handshake.side_effect = connect_handshake_side_effect
