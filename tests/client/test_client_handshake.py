@@ -133,7 +133,7 @@ async def test_perform_handshake_process_exit(client_instance, mock_process):
     mock_process.stderr.readline.return_value = b""
     with pytest.raises(
         HandshakeError,
-        match=r"Plugin process exited prematurely \(code 1\) before handshake.",
+        match=r"\[HandshakeError\] Plugin process exited prematurely.*before completing handshake.*",
     ):
         await client_instance._perform_handshake()
 
@@ -545,7 +545,7 @@ async def test_read_raw_handshake_line_process_exits_no_stderr(
     mocker.patch.object(asyncio, "sleep")
     with pytest.raises(
         HandshakeError,
-        match=r"Plugin process exited prematurely \(code 1\) before handshake.",
+        match=r"\[HandshakeError\] Plugin process exited prematurely.*before completing handshake.*",
     ):
         await client_instance._read_raw_handshake_line_from_stdout()
 
