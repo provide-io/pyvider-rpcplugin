@@ -27,6 +27,7 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
+from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
 # Process and gRPC-related methods that will be mixed into RPCPluginClient

@@ -20,6 +20,11 @@ from pyvider.rpcplugin.server.core import (
 )
 from pyvider.rpcplugin.server.network import ServerNetworkMixin
 
+# Import additional items from other modules that were previously in server.py
+from grpc.aio import server as GRPCServer
+from pyvider.rpcplugin.handshake import validate_magic_cookie
+from provide.foundation import logger
+
 __all__ = [
     "RPCPluginServer",
     "RateLimitingInterceptor",
@@ -30,6 +35,9 @@ __all__ = [
     "ServerT",
     "HandlerT",
     "TransportT",
+    "GRPCServer",
+    "validate_magic_cookie",
+    "logger",
 ]
 
 # 🐍🏗️🔌
