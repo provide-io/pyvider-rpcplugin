@@ -12,31 +12,31 @@ async def test_start_complete_flow(
     """Test the full client start flow."""
     with (
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._setup_client_certificates",
+            "pyvider.rpcplugin.client.handshake.RPCPluginClient._setup_client_certificates",
             new_callable=AsyncMock,
         ) as mock_setup_certs,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._launch_process",
+            "pyvider.rpcplugin.client.process.RPCPluginClient._launch_process",
             new_callable=AsyncMock,
         ) as mock_launch,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
+            "pyvider.rpcplugin.client.handshake.RPCPluginClient._perform_handshake",
             new_callable=AsyncMock,
         ) as mock_handshake,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._create_grpc_channel",
+            "pyvider.rpcplugin.client.process.RPCPluginClient._create_grpc_channel",
             new_callable=AsyncMock,
         ) as mock_create_channel,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._init_stubs",
+            "pyvider.rpcplugin.client.process.RPCPluginClient._init_stubs",
             new_callable=MagicMock,
         ) as mock_init_stubs,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._relay_stderr_background",
+            "pyvider.rpcplugin.client.process.RPCPluginClient._relay_stderr_background",
             new_callable=AsyncMock,
         ),
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._read_stdio_logs",
+            "pyvider.rpcplugin.client.process.RPCPluginClient._read_stdio_logs",
             new_callable=AsyncMock,
         ) as mock_read_stdio_logs,
         # REMOVE: patch("asyncio.create_task") as mock_create_task,
