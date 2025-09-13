@@ -43,7 +43,8 @@
       "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 60s python -m pytest)",
       "Bash(PYTHONPATH=./src:$PYTHONPATH python -m pytest tests/client/test_client_grpc.py::test_rebuild_x509_pem -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success -xvs)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success -xvs)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_init.py tests/client/test_client_transport.py tests/server/test_server_lifecycle.py -q)"
     ],
     "deny": [],
     "ask": [],
