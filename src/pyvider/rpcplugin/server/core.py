@@ -18,26 +18,19 @@ from typing import Any, Generic, TypeVar, cast
 
 import grpc
 from attrs import define, field
-from grpc.aio import server as GRPCServer
-from grpc_health.v1 import health_pb2_grpc
+from provide.foundation import logger
+from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 from pyvider.rpcplugin.config import (
     ConfigError,
     rpcplugin_config,
 )
-from pyvider.rpcplugin.exception import (
-    ProtocolError,
-    TransportError,
-)
 from pyvider.rpcplugin.handshake import HandshakeConfig
 from pyvider.rpcplugin.health_servicer import HealthServicer
-from pyvider.rpcplugin.protocol import register_protocol_service
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
-from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
 )
-from provide.foundation import logger
 
 # Import the network mixin
 from .network import ServerNetworkMixin
@@ -257,7 +250,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         try:
             await asyncio.wait_for(self._serving_event.wait(), timeout=timeout)
             logger.debug("Server is ready")
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             error_msg = f"Server failed to become ready within {timeout} seconds"
             logger.error(error_msg)
             raise TimeoutError(error_msg) from e

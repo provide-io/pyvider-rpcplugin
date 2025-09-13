@@ -9,23 +9,18 @@ certificate setup, handshake parsing, and X.509 certificate processing.
 """
 
 import asyncio
-import functools
-import os
 import random
 import time
-import traceback
 from typing import Any, NamedTuple
 
-from pyvider.rpcplugin.config import rpcplugin_config
 from provide.foundation.crypto import Certificate
+
+from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import (
     HandshakeError,
-    ProtocolError,
     SecurityError,
-    TransportError,
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
-from provide.foundation import logger
 
 
 class HandshakeData(NamedTuple):
@@ -168,7 +163,8 @@ class ClientHandshakeMixin:
                     )
                     await self._create_grpc_channel()
                     self.logger.info(
-                        f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
+                        "Successfully connected to gRPC endpoint: "
+                        f"{self.target_endpoint}"
                     )
 
                     self.is_started = True

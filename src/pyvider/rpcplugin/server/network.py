@@ -10,15 +10,15 @@ server configuration.
 """
 
 import asyncio
-import socket
 import sys
 from typing import Any, cast
 
 import grpc
 from grpc.aio import server as GRPCServer
 from grpc_health.v1 import health_pb2_grpc
-
+from provide.foundation import logger
 from provide.foundation.crypto import Certificate
+
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import (
     ProtocolError,
@@ -36,7 +36,6 @@ from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
 )
-from provide.foundation import logger
 
 
 # Network and transport-related methods that will be mixed into RPCPluginServer
