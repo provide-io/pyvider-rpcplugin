@@ -39,7 +39,7 @@ async def test_setup_server_unix_success_secure(
 
     # Call _negotiate_handshake to correctly set internal state like _transport
     mocker.patch('pyvider.rpcplugin.server.validate_magic_cookie')
-    mocker.patch('pyvider.rpcplugin.server.negotiate_protocol_version', return_value=1)
+    mocker.patch('pyvider.rpcplugin.handshake.negotiation.negotiate_protocol_version', return_value=1)
     await server._negotiate_handshake()
 
 
@@ -94,7 +94,7 @@ async def test_setup_server_add_port_failure(
 
     # Call _negotiate_handshake to correctly set internal state like _transport.
     mocker.patch('pyvider.rpcplugin.server.validate_magic_cookie')
-    mocker.patch('pyvider.rpcplugin.server.negotiate_protocol_version', return_value=1)
+    mocker.patch('pyvider.rpcplugin.handshake.negotiation.negotiate_protocol_version', return_value=1)
     await server._negotiate_handshake()
 
     dummy_server = DummyGRPCServer()

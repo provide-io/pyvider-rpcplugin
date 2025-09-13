@@ -35,7 +35,7 @@ async def test_client_integration(test_client_command):
             "pyvider.rpcplugin.client.core.GRPCControllerStub"
         ) as mock_controller_stub_class,
         patch(
-            "pyvider.rpcplugin.client.core.TCPSocketTransport"
+            "pyvider.rpcplugin.transport.TCPSocketTransport"
         ) as mock_transport_class,
         patch("threading.Thread"),
     ):  # Corrected target for threading.Thread

@@ -59,7 +59,9 @@
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_integration.py::test_client_integration -xvs)",
       "Bash(PYTHONPATH=./src timeout 90s python -m pytest --tb=no --quiet)",
       "Bash(PYTHONPATH=./src timeout 90s python -m pytest --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_init.py tests/client/test_client_transport.py tests/server/test_server_lifecycle.py -v)"
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_init.py tests/client/test_client_transport.py tests/server/test_server_lifecycle.py -v)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success tests/client/test_client_handshake.py::test_perform_handshake_with_cert tests/client/test_client_handshake.py::test_perform_handshake_with_unix_transport -v)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_integration.py::test_client_integration -xvs)"
     ],
     "deny": [],
     "ask": [],
