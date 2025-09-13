@@ -20,7 +20,8 @@
       "Bash(awk:*)",
       "Bash(pip install:*)",
       "Bash(sort:*)",
-      "Bash(PYTHONPATH=src python -c \"from pyvider.rpcplugin.client import RPCPluginClient, HandshakeData; print(''Client imports work'')\")"
+      "Bash(PYTHONPATH=src python -c \"from pyvider.rpcplugin.client import RPCPluginClient, HandshakeData; print(''Client imports work'')\")",
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"from pyvider.rpcplugin.client import RPCPluginClient; print(''✅ Import successful'')\")"
     ],
     "deny": [],
     "ask": [],
