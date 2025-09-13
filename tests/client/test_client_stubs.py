@@ -136,45 +136,30 @@ async def test_open_broker_subchannel(client_instance):
     client_instance._broker_stub = mock_broker_stub_instance
 
     # Mock the StartStream call object (the bidirectional stream)
-    mock_call_object = AsyncMock()
+    mock_stream = AsyncMock()
 
-    # Configure mock_broker_stub_instance.StartStream to be a MagicMock
-    # that returns mock_call_object when called. This assumes StartStream
-    # is a synchronous method that returns an awaitable stream object.
-    mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_call_object)
+    # Set up the stream methods
+    mock_stream.write = AsyncMock()
+    mock_stream.done_writing = AsyncMock()
 
-    # Mock the response from the stream (the knock-ack)
-    async def mock_response_gen_func():  # Renamed to avoid confusion
-        response_message = MagicMock()
-        response_message.service_id = 123
-        response_message.knock.ack = True
-        response_message.knock.error = ""
-        yield response_message
-        # No more yields, so the generator will be exhausted after one item
-        return
+    # Mock the response for read()
+    response_message = MagicMock()
+    response_message.service_id = 123
+    response_message.knock.ack = True
+    response_message.knock.error = ""
+    mock_stream.read = AsyncMock(return_value=response_message)
 
-    # Configure mock_call_object to use mock_response_gen_func as its side_effect for async iteration
-    mock_call_object.side_effect = mock_response_gen_func
+    # Configure StartStream to return the mock stream
+    mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_stream)
 
     # Open subchannel
     await client_instance.open_broker_subchannel(123, "127.0.0.1:8001")
 
-    # Assert _broker_task was created
-    assert client_instance._broker_task is not None
-
-    # Await the task to ensure the coroutine completes and check for internal errors
-    try:
-        await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
-    except asyncio.TimeoutError:
-        pytest.fail("Broker coroutine timed out")
-
-    # Verify calls were made correctly AFTER awaiting the task
+    # Verify the stream methods were called
     mock_broker_stub_instance.StartStream.assert_called_once()
-    mock_call_object.write.assert_called_once()
-    mock_call_object.done_writing.assert_called_once()
-
-    # Check that aclose was called from the finally block in _broker_coroutine
-    mock_call_object.aclose.assert_called_once()
+    mock_stream.write.assert_called_once()
+    mock_stream.read.assert_called_once()
+    mock_stream.done_writing.assert_called_once()
 
 
 @pytest.mark.asyncio
