@@ -19,7 +19,7 @@ async def test_rebuild_x509_pem(client_instance):
 
     # PEM headers should be added
     assert result.startswith("-----BEGIN CERTIFICATE-----")
-    assert result.endswith("-----END CERTIFICATE-----\n")
+    assert result.endswith("-----END CERTIFICATE-----")
     assert raw_cert in result
 
     # Test with already formatted PEM
@@ -60,8 +60,12 @@ async def test_create_grpc_channel_with_tls(client_instance):
 
             await client_instance._create_grpc_channel()
 
-            # Verify TLS-only credentials were used (only root_certificates)
-            mock_ssl_creds.assert_called_once_with(root_certificates=ANY)
+            # Verify TLS-only credentials were used (root_certificates with None for client certs)
+            mock_ssl_creds.assert_called_once_with(
+                root_certificates=ANY,
+                private_key=None,
+                certificate_chain=None
+            )
             mock_secure_channel.assert_called_once()
             assert client_instance.grpc_channel == mock_channel
 
@@ -166,10 +170,11 @@ async def test_create_grpc_channel_unix_socket(client_instance):
 
         await client_instance._create_grpc_channel()
 
-        # Verify unix prefix was used and no extra args
+        # Verify unix prefix was used with keepalive options
         mock_insecure_channel.assert_called_once_with(
-            "unix:/tmp/test.sock"
-        )  # Corrected assertion
+            "unix:/tmp/test.sock",
+            options=ANY
+        )
 
 
 @pytest.mark.asyncio

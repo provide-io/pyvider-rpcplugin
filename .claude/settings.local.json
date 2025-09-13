@@ -45,7 +45,12 @@
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success -xvs)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_init.py tests/client/test_client_transport.py tests/server/test_server_lifecycle.py -q)",
-      "Bash(PYTHONPATH=./src timeout 90s python -m pytest tests/client/ -q --tb=line)"
+      "Bash(PYTHONPATH=./src timeout 90s python -m pytest tests/client/ -q --tb=line)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_grpc.py::test_rebuild_x509_pem -xvs)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py::test_rebuild_x509_pem -xvs)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_with_tls -xvs)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_unix_socket -xvs)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_ready_timeout_unix -xvs)"
     ],
     "deny": [],
     "ask": [],
