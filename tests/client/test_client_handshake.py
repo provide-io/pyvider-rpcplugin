@@ -345,8 +345,8 @@ async def test_perform_handshake_transport_not_initialized(
         "pyvider.rpcplugin.client.core.parse_handshake_response",
         return_value=(1, 1, "tcp", "127.0.0.1:1234", "grpc", None),
     )
-    mocker.patch("pyvider.rpcplugin.client.core.TCPSocketTransport", return_value=None)
-    mocker.patch("pyvider.rpcplugin.client.core.UnixSocketTransport", return_value=None)
+    mocker.patch("pyvider.rpcplugin.transport.TCPSocketTransport", return_value=None)
+    mocker.patch("pyvider.rpcplugin.transport.UnixSocketTransport", return_value=None)
     with pytest.raises(
         HandshakeError,
         match=r"Internal error: Transport was not initialized before attempting to connect.",
