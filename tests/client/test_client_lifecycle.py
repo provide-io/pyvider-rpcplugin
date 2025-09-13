@@ -375,8 +375,9 @@ async def test_close_process_wait_generic_exception(client_instance, mocker):
 @pytest.mark.asyncio
 async def test_start_generic_exception(client_instance, mocker):
     """Test the client start flow when a generic exception occurs."""
-    mocker.patch(
-        "pyvider.rpcplugin.client.core.RPCPluginClient._setup_client_certificates",
+    mocker.patch.object(
+        client_instance,
+        "_setup_client_certificates",
         new_callable=AsyncMock,
         side_effect=Exception("Generic setup error") # Simulate error early in start
     )
@@ -386,7 +387,7 @@ async def test_start_generic_exception(client_instance, mocker):
         close_called_event.set()
         # Do nothing else, or raise a specific, different exception if we want to test that propagation
 
-    mocker.patch("pyvider.rpcplugin.client.core.RPCPluginClient.close", mock_close_method)
+    mocker.patch.object(client_instance, "close", mock_close_method)
 
     with pytest.raises(Exception, match="Generic setup error"):
         await client_instance.start()

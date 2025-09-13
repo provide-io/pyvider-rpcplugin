@@ -95,7 +95,8 @@
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel_no_stub -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py -v)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_start_complete_flow -xvs)",
-      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_close_transport_exception -xvs)"
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_close_transport_exception -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_close_process_wait_generic_exception -xvs)"
     ],
     "deny": [],
     "ask": [],
