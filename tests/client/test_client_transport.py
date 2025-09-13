@@ -48,7 +48,9 @@ async def test_launch_process_with_client_cert(client_instance):
 @pytest.mark.asyncio
 async def test_launch_process_already_running(client_instance):
     """Test _launch_process when process already exists."""
-    client_instance._process = MagicMock()  # Process already exists
+    mock_process = MagicMock()
+    mock_process.poll.return_value = None  # Process is still running
+    client_instance._process = mock_process
 
     with patch("pyvider.rpcplugin.client.process.subprocess.Popen") as mock_popen:
         await client_instance._launch_process()
