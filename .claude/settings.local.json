@@ -77,7 +77,14 @@
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/server/test_server_transport.py -xvs --tb=short)",
       "Bash(PYTHONPATH=./src timeout 20s python -m pytest tests/server/ --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 30s python -m pytest --tb=no --quiet)"
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest --tb=no --quiet)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_read_stdio_logs_stream_exception -xvs)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_read_stdio_logs_stream_exception tests/client/test_client_stubs.py::test_shutdown_plugin_rpc_error -v)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_shutdown_plugin_rpc_error -xvs)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_shutdown_plugin_rpc_error tests/client/test_client_stubs.py::test_read_stdio_logs_stream_exception -v)",
+      "Bash(PYTHONPATH=./src timeout 5s python -m pytest tests/client/test_client_stubs.py::test_read_stdio_logs_stream_exception -xvs)",
+      "Bash(PYTHONPATH=./src timeout 5s python -m pytest tests/client/test_client_stubs.py::test_read_stdio_logs_stream_exception -v)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest --tb=no --quiet)"
     ],
     "deny": [],
     "ask": [],
