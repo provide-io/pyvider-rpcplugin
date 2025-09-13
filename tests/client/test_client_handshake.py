@@ -27,12 +27,14 @@ def client_instance_for_retry_tests(mocker):
 
 @pytest.mark.asyncio
 async def test_perform_handshake_success(client_instance, mock_process):
-    client_instance._process = mock_process
+    # Ensure mock process has stderr so relay task is created
+    mock_process.stderr = AsyncMock()
+    client_instance._process = None  # So _launch_process will actually launch
+
     with (
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._relay_stderr_background",
-            new_callable=AsyncMock,
-        ) as mock_relay,
+            "pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process
+        ),
         patch(
             "pyvider.rpcplugin.transport.TCPSocketTransport"
         ) as mock_transport_class,
@@ -41,7 +43,8 @@ async def test_perform_handshake_success(client_instance, mock_process):
         mock_transport_class.return_value = mock_transport_instance
         mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
         await client_instance._perform_handshake()
-        mock_relay.assert_called_once()
+        # Should have created stderr relay task
+        assert client_instance._stdio_task is not None
         assert client_instance._protocol_version == 1
         assert client_instance._transport is mock_transport_instance
         assert client_instance._server_cert is None
