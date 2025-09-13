@@ -350,8 +350,8 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if not self._serving_future.done():
             self._serving_future.set_result(None)
 
-        # Exit if configured to do so
-        if self._exit_on_stop:
+        # Exit if configured to do so (only in non-test environments)
+        if self._exit_on_stop and not os.environ.get("PYTEST_CURRENT_TEST"):
             logger.info("⚡ Exiting process...")
             sys.exit(0)
 
