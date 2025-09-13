@@ -291,10 +291,15 @@ class ClientHandshakeMixin:
                 stderr_output = ""
                 if self._process.stderr:
                     try:
-                        stderr_output = self._process.stderr.read().decode(
-                            "utf-8", errors="replace"
+                        # Use non-blocking read with timeout for stderr
+                        stderr_bytes = await asyncio.wait_for(
+                            asyncio.get_event_loop().run_in_executor(
+                                None, self._process.stderr.read
+                            ),
+                            timeout=1.0,
                         )
-                    except Exception as e_stderr:
+                        stderr_output = stderr_bytes.decode("utf-8", errors="replace")
+                    except (TimeoutError, Exception) as e_stderr:
                         stderr_output = f"Error reading stderr: {e_stderr}"
 
                 stderr_output_truncated = (
