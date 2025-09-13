@@ -119,7 +119,7 @@ async def test_perform_handshake_no_process(client_instance):
     client_instance._process = None
     with pytest.raises(
         HandshakeError,
-        match="Plugin process or its stdout stream is not available for handshake.",
+        match="Plugin process or stdout not available for handshake.",
     ):
         await client_instance._perform_handshake()
 
