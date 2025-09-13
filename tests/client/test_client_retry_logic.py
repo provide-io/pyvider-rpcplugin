@@ -152,14 +152,16 @@ async def test_connect_handshake_retry_process_exits(client_instance_local, mock
 
     mock_logger_error = mocker.spy(client_instance.logger, "error")
 
-    # Corrected regex
-    expected_error_msg = r"Plugin process exited \(code 1\) during retry sequence\."
+    # Process exits are handled like any other handshake failure - retries until max attempts reached
+    expected_error_msg = r"Failed to connect after .* attempts\. Last error:"
     with pytest.raises(HandshakeError, match=expected_error_msg):
         await client_instance._connect_and_handshake_with_retry()
 
-    mock_perform_handshake.assert_called_once()
+    # Should attempt all 4 times (max_retries=3, so max_retries+1=4 attempts)
+    assert mock_perform_handshake.call_count == 4
     mock_logger_error.assert_any_call(
-        "Plugin process exited with code 1 during retry attempt 2. Aborting retries."
+        "All 4 attempts failed. Last error: [HandshakeError] Simulated first handshake failure [Code: RPC_HANDSHAKE_ERROR]",
+        exc_info=True,
     )
     assert client_instance._handshake_failed_event.is_set()
 
