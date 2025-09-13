@@ -287,7 +287,7 @@ def test_parse_handshake_core_version_config_issues(
 
 def test_parse_handshake_response_generic_exception(mocker):
     """Test that a generic exception during parsing is caught and wrapped."""
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.core.logger.error")
 
     mock_response_str = mocker.MagicMock(spec=str)
     mock_response_str.strip.return_value.split.side_effect = Exception(
