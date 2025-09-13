@@ -37,9 +37,9 @@ async def test_setup_client_certificates_with_auto_mtls(client_instance):
     """Test client certificate setup with auto-mTLS enabled and no pre-existing certs."""
     with (
         patch(
-            "pyvider.rpcplugin.client.handshake.rpcplugin_config.auto_mtls_enabled",
-            return_value=True,
-        ) as mock_auto_mtls_enabled,
+            "pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls",
+            True,
+        ) as mock_plugin_auto_mtls,
         patch(
             "pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_client_cert",
             None,
@@ -54,14 +54,12 @@ async def test_setup_client_certificates_with_auto_mtls(client_instance):
         mock_cert_instance = MagicMock()
         mock_cert_instance.cert = "test-cert"
         mock_cert_instance.key = "test-key"
-        mock_cert_class.return_value = mock_cert_instance
+        mock_cert_class.create_self_signed_client_cert.return_value = mock_cert_instance
 
         await client_instance._setup_client_certificates()
 
-        mock_auto_mtls_enabled.assert_called_once()
         # Attributes were accessed via patches
 
-        mock_cert_class.assert_called_once()  # New cert should be generated
         assert client_instance.client_cert == "test-cert"
         assert client_instance.client_key_pem == "test-key"
 
@@ -71,9 +69,9 @@ async def test_setup_client_certificates_with_existing_certs(client_instance):
     """Test client certificate setup with auto-mTLS enabled and pre-existing certs."""
     with (
         patch(
-            "pyvider.rpcplugin.client.handshake.rpcplugin_config.auto_mtls_enabled",
-            return_value=True,
-        ) as mock_auto_mtls_enabled,
+            "pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls",
+            True,
+        ) as mock_plugin_auto_mtls,
         patch(
             "pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_client_cert",
             "existing-cert",
@@ -87,7 +85,6 @@ async def test_setup_client_certificates_with_existing_certs(client_instance):
 
         await client_instance._setup_client_certificates()
 
-        mock_auto_mtls_enabled.assert_called_once()
         # Attributes were accessed via patches
 
         mock_cert_class.assert_not_called()  # New cert should NOT be generated
@@ -98,15 +95,14 @@ async def test_setup_client_certificates_with_existing_certs(client_instance):
 @pytest.mark.asyncio
 async def test_setup_client_certificates_without_mtls(client_instance):
     """Test client certificate setup with mTLS disabled."""
-    # Mock auto_mtls_enabled directly to return False
+    # Mock plugin_auto_mtls directly to return False
     with patch(
-        "pyvider.rpcplugin.client.handshake.rpcplugin_config.auto_mtls_enabled",
-        return_value=False,
+        "pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls",
+        False,
     ) as mock_auto_mtls_disabled:
         await client_instance._setup_client_certificates()
 
         # Ensure the mock was called (optional but good practice)
-        mock_auto_mtls_disabled.assert_called_once()
 
         # No certificates should be set
         assert client_instance.client_cert is None
@@ -116,7 +112,7 @@ async def test_setup_client_certificates_without_mtls(client_instance):
 @pytest.mark.asyncio
 async def test_setup_client_certificates_mtls_missing_key(client_instance, mocker):
     """Test mTLS enabled, cert provided, but key is missing -> should generate."""
-    mocker.patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.auto_mtls_enabled", return_value=True)
+    mocker.patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls", True)
 
     # Mock the Foundation attributes directly
     mocker.patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_client_cert", "dummy-cert-pem")
