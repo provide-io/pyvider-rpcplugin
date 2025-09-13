@@ -18,7 +18,8 @@
       "Read(//Users/tim/code/gh/provide-io/provide-foundation/**)",
       "Read(///**)",
       "Bash(awk:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(sort:*)"
     ],
     "deny": [],
     "ask": [],
