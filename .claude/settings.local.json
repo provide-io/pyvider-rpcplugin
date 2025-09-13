@@ -30,7 +30,8 @@
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" ruff check src/pyvider/rpcplugin/client/ src/pyvider/rpcplugin/server/ src/pyvider/rpcplugin/transport/unix/)",
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" ruff check --fix src/pyvider/rpcplugin/client/ src/pyvider/rpcplugin/server/ src/pyvider/rpcplugin/transport/unix/)",
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 30s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_outer_timeout_with_stderr -v)",
-      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/server/test_server_health_check.py::test_health_service_enabled_and_serving -v)"
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/server/test_server_health_check.py::test_health_service_enabled_and_serving -v)",
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_outer_timeout_with_stderr -v)"
     ],
     "deny": [],
     "ask": [],
