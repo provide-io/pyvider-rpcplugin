@@ -11,6 +11,7 @@ initialization, and core lifecycle methods like start, close, and shutdown.
 import asyncio
 import subprocess  # nosec B404
 import sys
+import time
 from types import TracebackType
 from typing import Any
 
@@ -29,6 +30,7 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEm
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
+from pyvider.rpcplugin.handshake import parse_handshake_response
 from provide.foundation import logger
 
 # Import mixins for the split functionality
@@ -227,7 +229,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                     try:
                         await asyncio.wait_for(
                             asyncio.get_event_loop().run_in_executor(
-                                None, self._process.wait
+                                None, lambda: self._process.wait(timeout=7)
                             ),
                             timeout=5.0,
                         )
@@ -244,8 +246,10 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 else:
                     self.logger.debug("✅ Plugin process already terminated.")
             except Exception as e:
-                self.logger.warning(
-                    f"⚠️ Error terminating plugin process: {e}", exc_info=True
+                self.logger.error(
+                    f"⚠️ Error sending terminate signal to plugin process: {e}",
+                    extra={"trace": str(e)},
+                    exc_info=True
                 )
             finally:
                 self._process = None

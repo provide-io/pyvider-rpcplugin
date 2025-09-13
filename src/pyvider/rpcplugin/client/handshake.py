@@ -97,8 +97,8 @@ class ClientHandshakeMixin:
         else:
             # Retry logic enabled
             max_retries = rpcplugin_config.plugin_client_max_retries
-            retry_interval_ms = rpcplugin_config.plugin_client_retry_interval_ms
-            total_timeout_ms = rpcplugin_config.plugin_client_total_timeout_ms
+            retry_interval_ms = rpcplugin_config.plugin_client_initial_backoff_ms
+            total_timeout_ms = rpcplugin_config.plugin_client_retry_total_timeout_s * 1000
 
             self.logger.info(
                 f"Client retries enabled. Max retries: {max_retries}, "
@@ -253,7 +253,7 @@ class ClientHandshakeMixin:
                 "Plugin process or stdout not available for handshake."
             )
 
-        outer_timeout_ms = rpcplugin_config.plugin_client_handshake_timeout_ms
+        outer_timeout_ms = rpcplugin_config.plugin_handshake_timeout * 1000
         outer_timeout_s = outer_timeout_ms / 1000.0
         inner_timeout_s = min(2.0, outer_timeout_s / 2)
 

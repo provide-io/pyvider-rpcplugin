@@ -75,6 +75,10 @@ class ClientProcessMixin:
 
         # Prepare environment variables
         env = os.environ.copy()
+
+        # Set PYTHONUNBUFFERED for real-time output
+        env["PYTHONUNBUFFERED"] = "1"
+
         if self.config and "env" in self.config:
             env.update(self.config["env"])
 
@@ -82,6 +86,10 @@ class ClientProcessMixin:
         env[rpcplugin_config.plugin_magic_cookie_key] = (
             rpcplugin_config.plugin_magic_cookie_value
         )
+
+        # Add client certificate to environment if available
+        if self.client_cert:
+            env["PLUGIN_CLIENT_CERT"] = self.client_cert
 
         self.logger.debug(f"Launching plugin process: {self.command}")
         self.logger.debug(
@@ -108,7 +116,7 @@ class ClientProcessMixin:
 
         except Exception as e:
             self.logger.error(f"Failed to launch plugin process: {e}", exc_info=True)
-            raise HandshakeError(f"Failed to launch plugin subprocess: {e}") from e
+            raise TransportError(f"Failed to launch plugin subprocess for command: '{' '.join(self.command)}'. Error: {e}") from e
 
     async def _relay_stderr_background(self) -> None:
         """
