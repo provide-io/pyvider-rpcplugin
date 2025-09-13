@@ -67,7 +67,9 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py -v)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_no_process -xvs)",
       "Bash(PYTHONPATH=./src timeout 20s python -m pytest tests/client/test_client_handshake.py --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_retry_logic.py -v --tb=short)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_retry_logic.py -v --tb=short)",
+      "Bash(PYTHONPATH=./src timeout 20s python -m pytest tests/client/test_client_retry_logic.py --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py -v --tb=short)"
     ],
     "deny": [],
     "ask": [],
