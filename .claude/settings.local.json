@@ -19,7 +19,8 @@
       "Read(///**)",
       "Bash(awk:*)",
       "Bash(pip install:*)",
-      "Bash(sort:*)"
+      "Bash(sort:*)",
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/client/test_client_init.py -v --tb=no)"
     ],
     "deny": [],
     "ask": [],
