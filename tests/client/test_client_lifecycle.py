@@ -23,9 +23,9 @@ async def test_start_complete_flow(
         ) as mock_launch,
         patch.object(
             client_instance,
-            "_perform_handshake",
+            "_connect_and_handshake_with_retry",
             new_callable=AsyncMock,
-        ) as mock_handshake,
+        ) as mock_connect_handshake,
         patch.object(
             client_instance,
             "_create_grpc_channel",
@@ -49,27 +49,23 @@ async def test_start_complete_flow(
         # REMOVE: patch("asyncio.create_task") as mock_create_task,
     ):
         mock_read_stdio_logs.return_value = None  # Ensure the mock coroutine has a return value
-        # Configure mock_handshake side_effect
-        async def perform_handshake_side_effect_revised():  # No 'slf' argument, uses client_instance from outer scope
-            client_instance._address = "mock_unix_socket.sock"
-            client_instance._transport_name = "unix"
-            # The real _perform_handshake also sets:
-            # client_instance._protocol_version = 1
-            # client_instance._server_cert = None # or some mock cert
-            # client_instance._transport = UnixSocketTransport(path=client_instance._address) # or TCPSocketTransport()
-            # await client_instance._transport.connect(client_instance._address)
-            # For this test, since _create_grpc_channel is mocked, only _address and _transport_name are strictly needed
-            # to pass the check that causes the HandshakeError.
+
+        # Configure mock_connect_handshake side effect to simulate the full flow
+        async def connect_handshake_side_effect():
+            # Simulate calls that would happen in _connect_and_handshake_with_retry
+            await client_instance._launch_process()
+            await client_instance._setup_client_certificates()
+            await client_instance._create_grpc_channel()
             return None
 
-        mock_handshake.side_effect = perform_handshake_side_effect_revised
+        mock_connect_handshake.side_effect = connect_handshake_side_effect
 
         await client_instance.start()  # Call start on the instance
 
-        # Assertions remain the same
+        # Assertions
+        mock_connect_handshake.assert_called_once()
         mock_setup_certs.assert_called_once()
         mock_launch.assert_called_once()
-        mock_handshake.assert_called_once()
         mock_create_channel.assert_called_once()
         mock_init_stubs.assert_called_once()
         # Check that asyncio.create_task was called.

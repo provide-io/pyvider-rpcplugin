@@ -75,6 +75,9 @@ class ClientHandshakeMixin:
                     f"Transport: {self._transport_name}"
                 )
 
+                # Set up client certificates for mTLS if needed
+                await self._setup_client_certificates()
+
                 self.logger.debug(
                     f"Creating gRPC channel to {self._address} "
                     f"({self._transport_name})..."
@@ -139,6 +142,9 @@ class ClientHandshakeMixin:
                         f"Handshake successful on attempt {attempt + 1}. "
                         f"Endpoint: {self._address}, Transport: {self._transport_name}"
                     )
+
+                    # Set up client certificates for mTLS if needed
+                    await self._setup_client_certificates()
 
                     self.logger.debug(
                         f"Creating gRPC channel to {self._address} "
