@@ -209,7 +209,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         if self.grpc_channel:
             try:
                 self.logger.debug("🔌 Closing gRPC channel...")
-                await self.grpc_channel.close()
+                await self.grpc_channel.close(grace=0.5)
                 self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
                 self.logger.warning(

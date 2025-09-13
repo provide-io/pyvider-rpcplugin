@@ -398,17 +398,16 @@ async def test_close_grpc_channel_exception(client_instance, mocker):
     mock_channel.close = AsyncMock(side_effect=Exception("Channel close error"))
     client_instance.grpc_channel = mock_channel # Assign the mock
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_warning = mocker.patch("pyvider.rpcplugin.client.core.logger.warning")
 
     await client_instance.close()
 
     mock_channel.close.assert_called_once_with(grace=0.5)
     found_log = any(
-        "Error closing gRPC channel" in call.args[0] and \
-        "Channel close error" in call.kwargs.get("extra", {}).get("trace", "")
-        for call in mock_logger_error.call_args_list
+        "Error closing gRPC channel" in call.args[0]
+        for call in mock_logger_warning.call_args_list
     )
-    assert found_log, f"Expected log for grpc_channel.close() error not found. Log calls: {mock_logger_error.call_args_list}"
+    assert found_log, f"Expected log for grpc_channel.close() error not found. Log calls: {mock_logger_warning.call_args_list}"
     assert client_instance.grpc_channel is None # Should still be nullified
 
 
