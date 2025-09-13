@@ -25,7 +25,8 @@
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"\nfrom pyvider.rpcplugin.server import RPCPluginServer\nprint(''✅ Server import successful'')\nprint(f''Server class: {RPCPluginServer.__name__}'')\n\")",
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"\nfrom pyvider.rpcplugin.transport import UnixSocketTransport\nprint(''✅ UnixSocketTransport import successful'')\nprint(f''Transport class: {UnixSocketTransport.__name__}'')\n\")",
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"\nfrom pyvider.rpcplugin import RPCPluginClient, RPCPluginServer\nprint(''✅ Main package imports successful'')\nprint(f''Client class: {RPCPluginClient.__name__}'')\nprint(f''Server class: {RPCPluginServer.__name__}'')\n\")",
-      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -m pytest tests/ -v --tb=short)"
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -m pytest tests/ -v --tb=short)",
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python:*)"
     ],
     "deny": [],
     "ask": [],
