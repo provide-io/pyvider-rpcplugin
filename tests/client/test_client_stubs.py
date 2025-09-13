@@ -231,36 +231,34 @@ async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
     mock_broker_stub_instance = AsyncMock()
     client_instance._broker_stub = mock_broker_stub_instance
 
-    mock_call_object = AsyncMock()
-    mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_call_object)
+    # Mock the StartStream call object (the bidirectional stream)
+    mock_stream = AsyncMock()
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    # Set up the stream methods
+    mock_stream.write = AsyncMock()
+    mock_stream.done_writing = AsyncMock()
 
-    async def mock_response_gen_func_error_ack():
-        response_message = MagicMock()
-        response_message.service_id = 456
-        response_message.knock.ack = False
-        response_message.knock.error = "Failed to establish subchannel"
-        response_message = MagicMock()
-        response_message.service_id = 456
-        response_message.knock.ack = False
-        response_message.knock.error = "Failed to establish subchannel"
-        yield response_message
-
-    mock_call_object.__aiter__ = lambda self: self
+    # Mock the response for read() with ack = False
     response_message = MagicMock()
     response_message.service_id = 456
     response_message.knock.ack = False
     response_message.knock.error = "Failed to establish subchannel"
-    mock_call_object.__anext__.side_effect = [response_message, StopAsyncIteration]
+    mock_stream.read = AsyncMock(return_value=response_message)
+
+    # Configure StartStream to return the mock stream
+    mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_stream)
+
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     await client_instance.open_broker_subchannel(456, "127.0.0.1:8002")
-    assert client_instance._broker_task is not None
-    try:
-        await asyncio.wait_for(client_instance._broker_task, timeout=1.0)
-    except asyncio.TimeoutError:
-        pytest.fail("Broker coroutine timed out in knock_ack_false test")
 
+    # Verify the stream methods were called
+    mock_broker_stub_instance.StartStream.assert_called_once()
+    mock_stream.write.assert_called_once()
+    mock_stream.read.assert_called_once()
+    mock_stream.done_writing.assert_called_once()
+
+    # Since ack is False, this should trigger an error log
     mock_logger_error.assert_called_once()
     args, _ = mock_logger_error.call_args
     assert "Subchannel open failed: Failed to establish subchannel" in args[0]
