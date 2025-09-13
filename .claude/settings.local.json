@@ -40,7 +40,8 @@
       "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/transport/unix/test_transport_unix.py::test_normalize_unix_path_double_slash -v --tb=short)",
       "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/client/test_client_transport.py -v --tb=short)",
       "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 60s python -m pytest tests/client/test_client_init.py tests/client/test_client_transport.py tests/server/test_server_lifecycle.py tests/transport/unix/test_transport_unix.py::test_normalize_unix_path_double_slash -v --tb=short)",
-      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 60s python -m pytest)"
+      "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 60s python -m pytest)",
+      "Bash(PYTHONPATH=./src:$PYTHONPATH python -m pytest tests/client/test_client_grpc.py::test_rebuild_x509_pem -xvs)"
     ],
     "deny": [],
     "ask": [],
