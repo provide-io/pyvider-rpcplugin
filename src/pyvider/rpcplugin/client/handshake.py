@@ -114,24 +114,24 @@ class ClientHandshakeMixin:
         else:
             # Retry logic enabled
             max_retries = rpcplugin_config.plugin_client_max_retries
-            retry_interval_ms = rpcplugin_config.plugin_client_retry_interval_ms
-            total_timeout_ms = rpcplugin_config.plugin_client_total_timeout_ms
+            retry_interval_ms = rpcplugin_config.plugin_client_retry_jitter_ms
+            total_timeout_s = rpcplugin_config.plugin_client_retry_total_timeout_s
 
             self.logger.info(
                 f"Client retries enabled. Max retries: {max_retries}, "
                 f"Retry interval: {retry_interval_ms}ms, "
-                f"Total timeout: {total_timeout_ms}ms"
+                f"Total timeout: {total_timeout_s}s"
             )
 
             start_time = time.time() * 1000  # Convert to milliseconds
             attempt = 0
 
             while attempt <= max_retries:
-                elapsed_time_ms = (time.time() * 1000) - start_time
-                if elapsed_time_ms >= total_timeout_ms:
+                elapsed_time_s = (time.time() * 1000 - start_time) / 1000.0
+                if elapsed_time_s >= total_timeout_s:
                     error_msg = (
-                        f"Total timeout of {total_timeout_ms}ms exceeded after "
-                        f"{attempt} attempts. Elapsed time: {elapsed_time_ms:.1f}ms"
+                        f"Total timeout of {total_timeout_s}s exceeded after "
+                        f"{attempt} attempts. Elapsed time: {elapsed_time_s:.1f}s"
                     )
                     self.logger.error(error_msg)
                     self._handshake_failed_event.set()
@@ -271,8 +271,7 @@ class ClientHandshakeMixin:
                 "Plugin process or stdout not available for handshake."
             )
 
-        outer_timeout_ms = rpcplugin_config.plugin_client_handshake_timeout_ms
-        outer_timeout_s = outer_timeout_ms / 1000.0
+        outer_timeout_s = rpcplugin_config.plugin_handshake_timeout
         inner_timeout_s = min(2.0, outer_timeout_s / 2)
 
         self.logger.debug(
