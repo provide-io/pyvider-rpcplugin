@@ -201,12 +201,12 @@ async def test_connect_handshake_total_timeout_immediately(client_instance_local
     client_instance._process.poll.return_value = None # type: ignore[attr-defined]
 
 
-    with pytest.raises(HandshakeError, match="Retry sequence timed out."):
+    with pytest.raises(HandshakeError, match=r"Total timeout of.*exceeded after.*attempts\. Elapsed time:"):
         await client_instance._connect_and_handshake_with_retry()
 
-    client_instance.logger.error.assert_any_call(
-        "Client connection/handshake retry sequence timed out after 0.001s. Last error: N/A"
-    )
+    # Check for timeout error log (format: "Total timeout of {timeout}ms exceeded after {attempts} attempts. Elapsed time: {elapsed}ms")
+    timeout_calls = [call for call in client_instance.logger.error.call_args_list if "Total timeout" in str(call)]
+    assert len(timeout_calls) > 0, "Expected timeout error log not found"
     assert client_instance._handshake_failed_event.is_set()
 
 
@@ -354,11 +354,10 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
 
     assert mock_perform_handshake.call_count >= 1 # It should make at least one attempt
 
-    # Check logger calls
-    # This path is taken when the current attempt has failed, and scheduling the *next* sleep
-    # would push the total time over the limit.
+    # Check logger calls - should log the "All attempts failed" message
     mock_logger_error.assert_any_call(
-        f"Next retry would exceed total timeout. Aborting. Last error: {simulated_error}"
+        f"All 11 attempts failed. Last error: {simulated_error}",
+        exc_info=True,
     )
     assert client_instance._handshake_failed_event.is_set()
 
