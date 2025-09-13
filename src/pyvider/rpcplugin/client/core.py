@@ -10,30 +10,30 @@ initialization, and core lifecycle methods like start, close, and shutdown.
 
 import asyncio
 import subprocess  # nosec B404
+import sys
 from types import TracebackType
 from typing import Any
 
 import grpc
 from attrs import define, field
-from provide.foundation import logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.handshake import parse_handshake_response
+from pyvider.rpcplugin.exception import (
+    HandshakeError,
+    ProtocolError,
+    SecurityError,
+    TransportError,
+)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
-from provide.foundation.crypto import Certificate
-import time
-
-# Import the mixin classes
-from .handshake import ClientHandshakeMixin
-from .process import ClientProcessMixin
+from provide.foundation import logger
 
 
 @define
-class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
+class RPCPluginClient:
     """
     Client interface for interacting with Terraform-compatible plugin servers.
 
@@ -83,7 +83,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen[bytes] | None = field(init=False, default=None)
+    _process: subprocess.Popen | None = field(init=False, default=None)
     _transport: TransportType | None = field(init=False, default=None)
     _transport_name: str | None = field(init=False, default=None)
 
@@ -103,8 +103,8 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)
-    _broker_task: asyncio.Task[None] | None = field(init=False, default=None)
+    _stdio_task: asyncio.Task | None = field(init=False, default=None)
+    _broker_task: asyncio.Task | None = field(init=False, default=None)
 
     # Events for handshake status
     _handshake_complete_event: asyncio.Event = field(factory=asyncio.Event, init=False)
@@ -228,7 +228,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                             timeout=5.0,
                         )
                         self.logger.debug("✅ Plugin process terminated gracefully.")
-                    except TimeoutError:
+                    except asyncio.TimeoutError:
                         self.logger.warning(
                             "⚠️ Plugin process did not terminate gracefully, killing..."
                         )

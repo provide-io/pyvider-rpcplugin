@@ -12,31 +12,31 @@ async def test_start_complete_flow(
     """Test the full client start flow."""
     with (
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._setup_client_certificates",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._setup_client_certificates",
             new_callable=AsyncMock,
         ) as mock_setup_certs,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._launch_process",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._launch_process",
             new_callable=AsyncMock,
         ) as mock_launch,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
             new_callable=AsyncMock,
         ) as mock_handshake,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._create_grpc_channel",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._create_grpc_channel",
             new_callable=AsyncMock,
         ) as mock_create_channel,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._init_stubs",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._init_stubs",
             new_callable=MagicMock,
         ) as mock_init_stubs,
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._relay_stderr_background",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._relay_stderr_background",
             new_callable=AsyncMock,
         ),
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._read_stdio_logs",
+            "pyvider.rpcplugin.client.base.RPCPluginClient._read_stdio_logs",
             new_callable=AsyncMock,
         ) as mock_read_stdio_logs,
         # REMOVE: patch("asyncio.create_task") as mock_create_task,
@@ -300,7 +300,7 @@ async def test_close_process_terminate_error(client_instance, mocker):
 
     mock_process.poll.return_value = None  # Add this line
     mock_process.terminate.side_effect = OSError("Failed to terminate process")
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
     await client_instance.close()
 
@@ -345,7 +345,7 @@ async def test_close_process_wait_generic_exception(client_instance, mocker):
     mock_process.wait.side_effect = Exception("Generic wait error")
 
     # Mock logger to check for error log
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
     await client_instance.close()
 
@@ -369,7 +369,7 @@ async def test_close_process_wait_generic_exception(client_instance, mocker):
 async def test_start_generic_exception(client_instance, mocker):
     """Test the client start flow when a generic exception occurs."""
     mocker.patch(
-        "pyvider.rpcplugin.client.core.RPCPluginClient._setup_client_certificates",
+        "pyvider.rpcplugin.client.base.RPCPluginClient._setup_client_certificates",
         new_callable=AsyncMock,
         side_effect=Exception("Generic setup error") # Simulate error early in start
     )
@@ -379,7 +379,7 @@ async def test_start_generic_exception(client_instance, mocker):
         close_called_event.set()
         # Do nothing else, or raise a specific, different exception if we want to test that propagation
 
-    mocker.patch("pyvider.rpcplugin.client.core.RPCPluginClient.close", mock_close_method)
+    mocker.patch("pyvider.rpcplugin.client.base.RPCPluginClient.close", mock_close_method)
 
     with pytest.raises(Exception, match="Generic setup error"):
         await client_instance.start()
@@ -398,7 +398,7 @@ async def test_close_grpc_channel_exception(client_instance, mocker):
     mock_channel.close = AsyncMock(side_effect=Exception("Channel close error"))
     client_instance.grpc_channel = mock_channel # Assign the mock
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
     await client_instance.close()
 
@@ -422,7 +422,7 @@ async def test_close_transport_exception(client_instance, mocker):
     mock_transport.close = AsyncMock(side_effect=Exception("Transport close error"))
     client_instance._transport = mock_transport # Assign the mock
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
     await client_instance.close()
 
@@ -443,22 +443,22 @@ async def test_aexit_shutdown_plugin_exception(client_instance, mocker):
     client_instance._controller_stub = AsyncMock()
 
     # Mock shutdown_plugin by patching the class method
-    mock_shutdown_plugin_method = mocker.patch("pyvider.rpcplugin.client.core.RPCPluginClient.shutdown_plugin", new_callable=AsyncMock)
+    mock_shutdown_plugin_method = mocker.patch("pyvider.rpcplugin.client.base.RPCPluginClient.shutdown_plugin", new_callable=AsyncMock)
     # We will add side_effect later if the simple call works
 
     # Mock close to check it's still called by patching the class method
-    mock_close_method = mocker.patch("pyvider.rpcplugin.client.core.RPCPluginClient.close", new_callable=AsyncMock)
+    mock_close_method = mocker.patch("pyvider.rpcplugin.client.base.RPCPluginClient.close", new_callable=AsyncMock)
 
     # Create a new client instance AFTER patching
-    from pyvider.rpcplugin.client import RPCPluginClient # Local import for clarity
+    from pyvider.rpcplugin.client.base import RPCPluginClient # Local import for clarity
     client = RPCPluginClient(command=client_instance.command) # Use command from fixture instance
     client._controller_stub = AsyncMock() # Ensure this path is taken
 
     # Patch the global logger for this specific test's check
-    mock_logger_error_global = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_error_global = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
 
     # Mock the start method to prevent HandshakeError
-    mocker.patch("pyvider.rpcplugin.client.core.RPCPluginClient.start", new_callable=AsyncMock)
+    mocker.patch("pyvider.rpcplugin.client.base.RPCPluginClient.start", new_callable=AsyncMock)
 
     async with client:
         pass # Simulate some operation within the context

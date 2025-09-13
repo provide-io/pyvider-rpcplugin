@@ -9,18 +9,23 @@ certificate setup, handshake parsing, and X.509 certificate processing.
 """
 
 import asyncio
+import functools
+import os
 import random
 import time
+import traceback
 from typing import Any, NamedTuple
 
-from provide.foundation.crypto import Certificate
-
 from pyvider.rpcplugin.config import rpcplugin_config
+from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import (
     HandshakeError,
+    ProtocolError,
     SecurityError,
+    TransportError,
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
+from provide.foundation import logger
 
 
 class HandshakeData(NamedTuple):
@@ -33,28 +38,6 @@ class HandshakeData(NamedTuple):
 # Handshake-related methods that will be mixed into RPCPluginClient
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
-
-    # Forward declarations for attributes that will be on the main client class
-    _address: str | None
-    _transport_name: str | None
-    _protocol_version: int | None
-    _server_cert: str | None
-    _transport: Any
-    _process: Any
-    _handshake_complete_event: asyncio.Event
-    _handshake_failed_event: asyncio.Event
-    is_started: bool
-    target_endpoint: str | None
-    grpc_channel: Any
-    logger: Any
-    client_cert: str | None
-    client_key_pem: str | None
-
-    # Forward declarations for methods that will be on the main client class
-    async def _perform_handshake(self) -> None: ...
-    async def _create_grpc_channel(self) -> None: ...
-    async def _launch_process(self) -> None: ...
-    def _rebuild_x509_pem(self, maybe_cert: str) -> str: ...
 
     async def _connect_and_handshake_with_retry(self) -> None:
         """
@@ -114,24 +97,24 @@ class ClientHandshakeMixin:
         else:
             # Retry logic enabled
             max_retries = rpcplugin_config.plugin_client_max_retries
-            retry_interval_ms = rpcplugin_config.plugin_client_retry_jitter_ms
-            total_timeout_s = rpcplugin_config.plugin_client_retry_total_timeout_s
+            retry_interval_ms = rpcplugin_config.plugin_client_retry_interval_ms
+            total_timeout_ms = rpcplugin_config.plugin_client_total_timeout_ms
 
             self.logger.info(
                 f"Client retries enabled. Max retries: {max_retries}, "
                 f"Retry interval: {retry_interval_ms}ms, "
-                f"Total timeout: {total_timeout_s}s"
+                f"Total timeout: {total_timeout_ms}ms"
             )
 
             start_time = time.time() * 1000  # Convert to milliseconds
             attempt = 0
 
             while attempt <= max_retries:
-                elapsed_time_s = (time.time() * 1000 - start_time) / 1000.0
-                if elapsed_time_s >= total_timeout_s:
+                elapsed_time_ms = (time.time() * 1000) - start_time
+                if elapsed_time_ms >= total_timeout_ms:
                     error_msg = (
-                        f"Total timeout of {total_timeout_s}s exceeded after "
-                        f"{attempt} attempts. Elapsed time: {elapsed_time_s:.1f}s"
+                        f"Total timeout of {total_timeout_ms}ms exceeded after "
+                        f"{attempt} attempts. Elapsed time: {elapsed_time_ms:.1f}ms"
                     )
                     self.logger.error(error_msg)
                     self._handshake_failed_event.set()
@@ -163,8 +146,7 @@ class ClientHandshakeMixin:
                     )
                     await self._create_grpc_channel()
                     self.logger.info(
-                        "Successfully connected to gRPC endpoint: "
-                        f"{self.target_endpoint}"
+                        f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
                     )
 
                     self.is_started = True
@@ -209,9 +191,6 @@ class ClientHandshakeMixin:
                         f"Waiting {wait_time_ms}ms before retry {attempt + 1}..."
                     )
                     await asyncio.sleep(wait_time_s)
-
-                # Increment attempt counter
-                attempt += 1
 
     async def _setup_client_certificates(self) -> None:
         """
@@ -274,7 +253,8 @@ class ClientHandshakeMixin:
                 "Plugin process or stdout not available for handshake."
             )
 
-        outer_timeout_s = rpcplugin_config.plugin_handshake_timeout
+        outer_timeout_ms = rpcplugin_config.plugin_client_handshake_timeout_ms
+        outer_timeout_s = outer_timeout_ms / 1000.0
         inner_timeout_s = min(2.0, outer_timeout_s / 2)
 
         self.logger.debug(
@@ -291,15 +271,10 @@ class ClientHandshakeMixin:
                 stderr_output = ""
                 if self._process.stderr:
                     try:
-                        # Use non-blocking read with timeout for stderr
-                        stderr_bytes = await asyncio.wait_for(
-                            asyncio.get_event_loop().run_in_executor(
-                                None, self._process.stderr.read
-                            ),
-                            timeout=1.0,
+                        stderr_output = self._process.stderr.read().decode(
+                            "utf-8", errors="replace"
                         )
-                        stderr_output = stderr_bytes.decode("utf-8", errors="replace")
-                    except (TimeoutError, Exception) as e_stderr:
+                    except Exception as e_stderr:
                         stderr_output = f"Error reading stderr: {e_stderr}"
 
                 stderr_output_truncated = (
@@ -400,13 +375,9 @@ class ClientHandshakeMixin:
         stderr_output = ""
         if self._process.stderr:
             try:
-                stderr_bytes = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(
-                        None, self._process.stderr.read
-                    ),
-                    timeout=1.0,
+                stderr_output = self._process.stderr.read().decode(
+                    "utf-8", errors="replace"
                 )
-                stderr_output = stderr_bytes.decode("utf-8", errors="replace")
             except Exception as e_stderr_final:
                 stderr_output = f"Error reading stderr: {e_stderr_final}"
 
@@ -502,11 +473,6 @@ class ClientHandshakeMixin:
         if not maybe_cert:
             return ""
 
-        # If it's already a proper PEM format, return as-is
-        if (maybe_cert.startswith("-----BEGIN CERTIFICATE-----") and
-            "-----END CERTIFICATE-----" in maybe_cert):
-            return maybe_cert
-
         # Remove any existing PEM headers/footers and whitespace
         clean_cert = maybe_cert.replace("-----BEGIN CERTIFICATE-----", "")
         clean_cert = clean_cert.replace("-----END CERTIFICATE-----", "")
@@ -520,6 +486,6 @@ class ClientHandshakeMixin:
         # Split into 64-character lines
         for i in range(0, len(clean_cert), 64):
             pem_cert += clean_cert[i : i + 64] + "\n"
-        pem_cert += "-----END CERTIFICATE-----\n"
+        pem_cert += "-----END CERTIFICATE-----"
 
         return pem_cert
