@@ -361,7 +361,7 @@ async def test_close_process_wait_generic_exception(client_instance, mocker):
 
     # Check that the specific error from wait() was logged
     found_log = any(
-        "Error waiting for plugin process to terminate" in call.args[0] and \
+        "⚠️ Error sending terminate signal to plugin process" in call.args[0] and \
         "Generic wait error" in call.kwargs.get("extra", {}).get("trace", "")
         for call in mock_logger_error.call_args_list
     )
