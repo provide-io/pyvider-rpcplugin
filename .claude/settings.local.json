@@ -65,7 +65,8 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_lifecycle.py::test_close_grpc_channel_exception -xvs)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_no_process -xvs)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py -v)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_no_process -xvs)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_no_process -xvs)",
+      "Bash(PYTHONPATH=./src timeout 20s python -m pytest tests/client/test_client_handshake.py --tb=no -q)"
     ],
     "deny": [],
     "ask": [],

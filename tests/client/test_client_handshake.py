@@ -121,7 +121,7 @@ async def test_perform_handshake_no_process(client_instance):
         HandshakeError,
         match="Plugin process or stdout not available for handshake.",
     ):
-        await client_instance._perform_handshake()
+        await client_instance._read_raw_handshake_line_from_stdout()
 
 
 @pytest.mark.asyncio
