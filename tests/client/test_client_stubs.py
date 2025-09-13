@@ -37,10 +37,10 @@ async def test_init_stubs(client_instance):
 
     # Mock all stub classes
     with (
-        patch("pyvider.rpcplugin.client.base.GRPCStdioStub") as mock_stdio_stub_class,
-        patch("pyvider.rpcplugin.client.base.GRPCBrokerStub") as mock_broker_stub_class,
+        patch("pyvider.rpcplugin.client.core.GRPCStdioStub") as mock_stdio_stub_class,
+        patch("pyvider.rpcplugin.client.core.GRPCBrokerStub") as mock_broker_stub_class,
         patch(
-            "pyvider.rpcplugin.client.base.GRPCControllerStub"
+            "pyvider.rpcplugin.client.core.GRPCControllerStub"
         ) as mock_controller_stub_class,
     ):
         mock_stdio_stub = MagicMock()
@@ -224,7 +224,7 @@ async def test_read_stdio_logs_stream_exception(client_instance, mocker):
     mock_stdio_stub_instance.StreamStdio = MagicMock(
         return_value=mock_stream_generator_with_error()
     )
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     # The method should catch the exception and log it, then exit gracefully.
     await client_instance._read_stdio_logs()
@@ -245,7 +245,7 @@ async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
     mock_call_object = AsyncMock()
     mock_broker_stub_instance.StartStream = MagicMock(return_value=mock_call_object)
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     async def mock_response_gen_func_error_ack():
         response_message = MagicMock()
@@ -287,7 +287,7 @@ async def test_shutdown_plugin_rpc_error(client_instance, mocker):
     # Configure the Shutdown method of the AsyncMock instance
     mock_controller_stub.Shutdown = AsyncMock(side_effect=original_rpc_error)
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.base.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     # Expect TransportError and match its message
     # For a vanilla RpcError("Shutdown RPC failed"), details() is "Shutdown RPC failed"

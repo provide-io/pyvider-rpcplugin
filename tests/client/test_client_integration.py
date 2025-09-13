@@ -4,7 +4,7 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
+from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 @pytest.mark.asyncio
@@ -20,22 +20,22 @@ async def test_client_integration(test_client_command):
     """
     # Mock all external dependencies
     with (
-        patch("pyvider.rpcplugin.client.base.subprocess.Popen") as mock_popen,
+        patch("pyvider.rpcplugin.client.core.subprocess.Popen") as mock_popen,
         patch(
-            "pyvider.rpcplugin.client.base.RPCPluginClient._read_raw_handshake_line_from_stdout",
+            "pyvider.rpcplugin.client.core.RPCPluginClient._read_raw_handshake_line_from_stdout",
             new_callable=AsyncMock,
         ) as mock_read_handshake_line,
-        patch("pyvider.rpcplugin.client.base.Certificate") as mock_cert_class,
+        patch("pyvider.rpcplugin.client.core.Certificate") as mock_cert_class,
         patch(
-            "pyvider.rpcplugin.client.base.grpc.aio.insecure_channel"
+            "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel"
         ) as mock_channel_func,
-        patch("pyvider.rpcplugin.client.base.GRPCStdioStub") as mock_stdio_stub_class,
-        patch("pyvider.rpcplugin.client.base.GRPCBrokerStub") as mock_broker_stub_class,
+        patch("pyvider.rpcplugin.client.core.GRPCStdioStub") as mock_stdio_stub_class,
+        patch("pyvider.rpcplugin.client.core.GRPCBrokerStub") as mock_broker_stub_class,
         patch(
-            "pyvider.rpcplugin.client.base.GRPCControllerStub"
+            "pyvider.rpcplugin.client.core.GRPCControllerStub"
         ) as mock_controller_stub_class,
         patch(
-            "pyvider.rpcplugin.client.base.TCPSocketTransport"
+            "pyvider.rpcplugin.client.core.TCPSocketTransport"
         ) as mock_transport_class,
         patch("threading.Thread"),
     ):  # Corrected target for threading.Thread
@@ -95,7 +95,7 @@ async def test_client_integration(test_client_command):
 
         # Mock config for mTLS using Foundation patterns
         with patch(
-            "pyvider.rpcplugin.client.base.rpcplugin_config.plugin_auto_mtls", True
+            "pyvider.rpcplugin.client.core.rpcplugin_config.plugin_auto_mtls", True
         ):
 
             # Start client

@@ -4,7 +4,7 @@ import pytest_asyncio
 import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
+from pyvider.rpcplugin.client.core import RPCPluginClient
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 

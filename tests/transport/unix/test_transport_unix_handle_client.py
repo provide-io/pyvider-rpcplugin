@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock # Added
 
 from provide.foundation import logger
-from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+from pyvider.rpcplugin.transport.unix.transport import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.transport import managed_unix_socket_path
