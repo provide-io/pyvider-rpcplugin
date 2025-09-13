@@ -21,7 +21,8 @@
       "Bash(pip install:*)",
       "Bash(sort:*)",
       "Bash(PYTHONPATH=src python -c \"from pyvider.rpcplugin.client import RPCPluginClient, HandshakeData; print(''Client imports work'')\")",
-      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"from pyvider.rpcplugin.client import RPCPluginClient; print(''✅ Import successful'')\")"
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"from pyvider.rpcplugin.client import RPCPluginClient; print(''✅ Import successful'')\")",
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" python -c \"\nfrom pyvider.rpcplugin.server import RPCPluginServer\nprint(''✅ Server import successful'')\nprint(f''Server class: {RPCPluginServer.__name__}'')\n\")"
     ],
     "deny": [],
     "ask": [],

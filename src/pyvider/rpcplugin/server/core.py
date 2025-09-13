@@ -14,7 +14,7 @@ import os
 import signal
 import sys
 from collections.abc import Awaitable, Callable
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 import grpc
 from attrs import define, field
@@ -272,6 +272,8 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     def _shutdown_requested(self, *args: Any) -> None:
         """Handle shutdown request from signal or file watcher."""
         logger.info("Shutdown requested")
+        if not self._serving_future.done():
+            self._serving_future.set_result(None)
         self._shutdown_event.set()
 
     async def serve(self) -> None:
@@ -289,12 +291,14 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         logger.info("🚀 Starting RPCPluginServer...")
 
         try:
-            # Setup server infrastructure
-            await self._setup_server()
-            await self._negotiate_handshake()
-
             # Register signal handlers for graceful shutdown
             self._register_signal_handlers()
+
+            # Negotiate handshake and setup transport
+            await self._negotiate_handshake()
+
+            # Setup server infrastructure
+            await self._setup_server()
 
             # Start shutdown file watcher if configured
             if self._shutdown_file_path:
@@ -302,12 +306,15 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                     self._watch_shutdown_file()
                 )
 
+            # Send handshake response to stdout
+            await self._build_and_send_handshake_response()
+
             # Indicate server is ready
             self._serving_event.set()
             logger.info("✅ RPCPluginServer is ready and serving")
 
             # Wait for shutdown signal
-            await self._shutdown_event.wait()
+            await self._serving_future
             logger.info("🛑 Shutdown event received")
 
         except Exception as e:
@@ -329,26 +336,26 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         # Cancel shutdown watcher task
         if self._shutdown_watcher_task and not self._shutdown_watcher_task.done():
             self._shutdown_watcher_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._shutdown_watcher_task
-            except asyncio.CancelledError:
-                pass
 
         # Stop gRPC server
-        if self._server:
+        if self._server is not None:
             logger.debug("Stopping gRPC server...")
-            await self._server.stop(grace=5.0)
+            server_to_stop = cast(grpc.aio.Server, self._server)
+            await server_to_stop.stop(grace=0.5)
             self._server = None
 
         # Clean up transport
-        if self._transport:
+        if self._transport is not None:
             logger.debug("Closing transport...")
-            try:
-                await self._transport.close()
-            except Exception as e:
-                logger.warning(f"Error closing transport: {e}", exc_info=True)
-            finally:
-                self._transport = None
+            transport_to_close = cast(RPCPluginTransportType, self._transport)
+            await transport_to_close.close()
+            self._transport = None
+
+        # Complete the serving future if not already done
+        if not self._serving_future.done():
+            self._serving_future.set_result(None)
 
         # Exit if configured to do so
         if self._exit_on_stop:
