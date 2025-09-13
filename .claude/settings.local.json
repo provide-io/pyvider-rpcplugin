@@ -55,7 +55,11 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py -v)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py --tb=no -v)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_not_initialized -xvs)"
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_not_initialized -xvs)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_integration.py::test_client_integration -xvs)",
+      "Bash(PYTHONPATH=./src timeout 90s python -m pytest --tb=no --quiet)",
+      "Bash(PYTHONPATH=./src timeout 90s python -m pytest --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_init.py tests/client/test_client_transport.py tests/server/test_server_lifecycle.py -v)"
     ],
     "deny": [],
     "ask": [],
