@@ -218,7 +218,7 @@ async def test_read_raw_handshake_line_process_exits_with_stderr(
     mocker.patch.object(asyncio, "sleep")
     with pytest.raises(
         HandshakeError,
-        match=r"Plugin process exited prematurely \(code 1\) before handshake.",
+        match=r"\[HandshakeError\] Plugin process exited prematurely.*before completing handshake.*",
     ):
         await client_instance._read_raw_handshake_line_from_stdout()
 
