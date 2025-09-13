@@ -400,9 +400,13 @@ class ClientHandshakeMixin:
         stderr_output = ""
         if self._process.stderr:
             try:
-                stderr_output = self._process.stderr.read().decode(
-                    "utf-8", errors="replace"
+                stderr_bytes = await asyncio.wait_for(
+                    asyncio.get_event_loop().run_in_executor(
+                        None, self._process.stderr.read
+                    ),
+                    timeout=1.0,
                 )
+                stderr_output = stderr_bytes.decode("utf-8", errors="replace")
             except Exception as e_stderr_final:
                 stderr_output = f"Error reading stderr: {e_stderr_final}"
 
