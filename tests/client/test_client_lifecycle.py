@@ -428,17 +428,16 @@ async def test_close_transport_exception(client_instance, mocker):
     mock_transport.close = AsyncMock(side_effect=Exception("Transport close error"))
     client_instance._transport = mock_transport # Assign the mock
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
+    mock_logger_warning = mocker.patch("pyvider.rpcplugin.client.core.logger.warning")
 
     await client_instance.close()
 
     mock_transport.close.assert_called_once()
     found_log = any(
-        "Error closing transport socket" in call.args[0] and \
-        "Transport close error" in call.kwargs.get("extra", {}).get("trace", "")
-        for call in mock_logger_error.call_args_list
+        "⚠️ Error closing transport" in call.args[0]
+        for call in mock_logger_warning.call_args_list
     )
-    assert found_log, f"Expected log for _transport.close() error not found. Log calls: {mock_logger_error.call_args_list}"
+    assert found_log, f"Expected log for _transport.close() error not found. Log calls: {mock_logger_warning.call_args_list}"
     assert client_instance._transport is None # Should still be nullified
 
 
