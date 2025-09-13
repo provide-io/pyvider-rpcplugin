@@ -210,6 +210,9 @@ class ClientHandshakeMixin:
                     )
                     await asyncio.sleep(wait_time_s)
 
+                # Increment attempt counter
+                attempt += 1
+
     async def _setup_client_certificates(self) -> None:
         """
         Set up client certificates for mTLS authentication.
