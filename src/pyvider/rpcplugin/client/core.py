@@ -31,9 +31,13 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
 from provide.foundation import logger
 
+# Import the mixin classes
+from .handshake import ClientHandshakeMixin
+from .process import ClientProcessMixin
+
 
 @define
-class RPCPluginClient:
+class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     """
     Client interface for interacting with Terraform-compatible plugin servers.
 

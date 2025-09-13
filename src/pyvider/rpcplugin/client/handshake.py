@@ -39,6 +39,28 @@ class HandshakeData(NamedTuple):
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
 
+    # Forward declarations for attributes that will be on the main client class
+    _address: str | None
+    _transport_name: str | None
+    _protocol_version: int | None
+    _server_cert: str | None
+    _transport: Any
+    _process: Any
+    _handshake_complete_event: asyncio.Event
+    _handshake_failed_event: asyncio.Event
+    is_started: bool
+    target_endpoint: str | None
+    grpc_channel: Any
+    logger: Any
+    client_cert: str | None
+    client_key_pem: str | None
+
+    # Forward declarations for methods that will be on the main client class
+    async def _perform_handshake(self) -> None: ...
+    async def _create_grpc_channel(self) -> None: ...
+    async def _launch_process(self) -> None: ...
+    def _rebuild_x509_pem(self, maybe_cert: str) -> str: ...
+
     async def _connect_and_handshake_with_retry(self) -> None:
         """
         Performs handshake and creates gRPC channel, with retry logic.
