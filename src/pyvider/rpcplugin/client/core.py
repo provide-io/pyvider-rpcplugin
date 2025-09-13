@@ -87,7 +87,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)
+    _process: subprocess.Popen[bytes] | None = field(init=False, default=None)
     _transport: TransportType | None = field(init=False, default=None)
     _transport_name: str | None = field(init=False, default=None)
 
@@ -107,8 +107,8 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: asyncio.Task | None = field(init=False, default=None)
-    _broker_task: asyncio.Task | None = field(init=False, default=None)
+    _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)
+    _broker_task: asyncio.Task[None] | None = field(init=False, default=None)
 
     # Events for handshake status
     _handshake_complete_event: asyncio.Event = field(factory=asyncio.Event, init=False)

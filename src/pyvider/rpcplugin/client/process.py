@@ -36,6 +36,27 @@ from provide.foundation import logger
 class ClientProcessMixin:
     """Mixin class containing process and gRPC methods for RPCPluginClient."""
 
+    # Forward declarations for attributes that will be on the main client class
+    command: list[str]
+    config: dict[str, Any] | None
+    logger: Any  # From provide.foundation.logger
+    _process: subprocess.Popen[bytes] | None
+    _stdio_task: asyncio.Task[None] | None
+    _address: str | None
+    _transport_name: str | None
+    target_endpoint: str | None
+    _server_cert: str | None
+    client_cert: str | None
+    client_key_pem: str | None
+    grpc_channel: grpc.aio.Channel | None
+    _stdio_stub: GRPCStdioStub | None
+    _broker_stub: GRPCBrokerStub | None
+    _controller_stub: GRPCControllerStub | None
+    _stubs: dict[str, Any]
+
+    # Forward declarations for methods from other mixins/main class
+    def _rebuild_x509_pem(self, cert_bytes: str) -> str: ...
+
     async def _launch_process(self) -> None:
         """
         Launch the plugin subprocess with proper environment and configuration.
