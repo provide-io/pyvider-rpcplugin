@@ -495,6 +495,11 @@ class ClientHandshakeMixin:
         if not maybe_cert:
             return ""
 
+        # If it's already a proper PEM format, return as-is
+        if (maybe_cert.startswith("-----BEGIN CERTIFICATE-----") and
+            "-----END CERTIFICATE-----" in maybe_cert):
+            return maybe_cert
+
         # Remove any existing PEM headers/footers and whitespace
         clean_cert = maybe_cert.replace("-----BEGIN CERTIFICATE-----", "")
         clean_cert = clean_cert.replace("-----END CERTIFICATE-----", "")
@@ -508,6 +513,6 @@ class ClientHandshakeMixin:
         # Split into 64-character lines
         for i in range(0, len(clean_cert), 64):
             pem_cert += clean_cert[i : i + 64] + "\n"
-        pem_cert += "-----END CERTIFICATE-----"
+        pem_cert += "-----END CERTIFICATE-----\n"
 
         return pem_cert
