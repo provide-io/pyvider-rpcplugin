@@ -27,8 +27,10 @@ def client_instance_for_retry_tests(mocker):
 
 @pytest.mark.asyncio
 async def test_perform_handshake_success(client_instance, mock_process):
-    # Ensure mock process has stderr so relay task is created
-    mock_process.stderr = AsyncMock()
+    # Set up mock process with proper stderr that returns bytes
+    mock_stderr = MagicMock()
+    mock_stderr.readline = MagicMock(return_value=b"")
+    mock_process.stderr = mock_stderr
     client_instance._process = None  # So _launch_process will actually launch
 
     with (
@@ -46,7 +48,9 @@ async def test_perform_handshake_success(client_instance, mock_process):
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
         assert client_instance._protocol_version == 1
-        assert client_instance._transport is mock_transport_instance
+        # Transport is not created during handshake, only transport metadata is stored
+        assert client_instance._transport_name == "tcp"
+        assert client_instance._address == "127.0.0.1:8000"
         assert client_instance._server_cert is None
 
 
