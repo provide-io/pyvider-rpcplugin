@@ -33,7 +33,8 @@
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/server/test_server_health_check.py::test_health_service_enabled_and_serving -v)",
       "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_outer_timeout_with_stderr -v)",
       "Bash(PYTHONPATH=\"./pyvider-rpcplugin/src:$PYTHONPATH\" python -c \"\nimport asyncio\nimport time\nfrom pyvider.rpcplugin.client.handshake import ClientHandshakeMixin\n\n# Simple test to see if we can import without hanging\nprint(''✅ Import successful'')\n\")",
-      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 60s python -m pytest tests/ --tb=no -q)"
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 60s python -m pytest tests/ --tb=no -q)",
+      "Bash(PYTHONPATH=\"./src:$PYTHONPATH\" timeout 15s python -m pytest tests/client/test_client_init.py::test_setup_client_certificates_with_auto_mtls -v)"
     ],
     "deny": [],
     "ask": [],
