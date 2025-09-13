@@ -56,6 +56,8 @@ async def test_start_complete_flow(
             await client_instance._launch_process()
             await client_instance._setup_client_certificates()
             await client_instance._create_grpc_channel()
+            # _init_stubs is called from within _create_grpc_channel normally
+            client_instance._init_stubs()
             return None
 
         mock_connect_handshake.side_effect = connect_handshake_side_effect
