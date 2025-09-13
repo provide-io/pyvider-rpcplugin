@@ -19,8 +19,6 @@ from pyvider.rpcplugin.server import (
     RPCPluginServer,
     _ServerT,
     _TransportT,
-)
-from pyvider.rpcplugin.server import (
     _HandlerT as ServerHandlerT,
 )
 from pyvider.rpcplugin.transport import (
