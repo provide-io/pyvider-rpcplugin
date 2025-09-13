@@ -71,7 +71,13 @@
       "Bash(PYTHONPATH=./src timeout 20s python -m pytest tests/client/test_client_retry_logic.py --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py -v --tb=short)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/ --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/server/ -v --tb=short)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/server/ -v --tb=short)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/server/test_server_transport.py -xvs)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/server/test_server_transport.py::test_setup_server_unix_success_secure -xvs)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/server/test_server_transport.py -xvs --tb=short)",
+      "Bash(PYTHONPATH=./src timeout 20s python -m pytest tests/server/ --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest --tb=no --quiet)"
     ],
     "deny": [],
     "ask": [],
