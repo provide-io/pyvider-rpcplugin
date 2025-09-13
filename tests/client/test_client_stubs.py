@@ -37,10 +37,10 @@ async def test_init_stubs(client_instance):
 
     # Mock all stub classes
     with (
-        patch("pyvider.rpcplugin.client.core.GRPCStdioStub") as mock_stdio_stub_class,
-        patch("pyvider.rpcplugin.client.core.GRPCBrokerStub") as mock_broker_stub_class,
+        patch("pyvider.rpcplugin.client.process.GRPCStdioStub") as mock_stdio_stub_class,
+        patch("pyvider.rpcplugin.client.process.GRPCBrokerStub") as mock_broker_stub_class,
         patch(
-            "pyvider.rpcplugin.client.core.GRPCControllerStub"
+            "pyvider.rpcplugin.client.process.GRPCControllerStub"
         ) as mock_controller_stub_class,
     ):
         mock_stdio_stub = MagicMock()

@@ -257,8 +257,9 @@ class ClientProcessMixin:
         part of the standard go-plugin protocol.
         """
         if not self.grpc_channel:
+            error_msg = "Cannot initialize gRPC stubs; gRPC channel is not available."
             self.logger.warning("Cannot initialize stubs: gRPC channel not available")
-            return
+            raise ProtocolError(error_msg)
 
         try:
             self._stdio_stub = GRPCStdioStub(self.grpc_channel)
