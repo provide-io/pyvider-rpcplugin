@@ -95,7 +95,7 @@ async def test_negotiate_transport_exception_handling():
 async def test_negotiate_transport_tempfile_exception(mocker):
     """Test that an exception during tempfile.gettempdir is handled."""
     mocker.patch("tempfile.gettempdir", side_effect=OSError("Disk full"))
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
 
     with pytest.raises(
         TransportError,
