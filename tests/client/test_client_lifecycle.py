@@ -375,6 +375,17 @@ async def test_close_process_wait_generic_exception(client_instance, mocker):
 @pytest.mark.asyncio
 async def test_start_generic_exception(client_instance, mocker):
     """Test the client start flow when a generic exception occurs."""
+    # Mock the entire handshake flow to just call _setup_client_certificates to trigger the exception
+    async def mock_connect_and_handshake():
+        # This will trigger the exception we want to test
+        await client_instance._setup_client_certificates()
+
+    mocker.patch.object(
+        client_instance,
+        "_connect_and_handshake_with_retry",
+        side_effect=mock_connect_and_handshake
+    )
+
     mocker.patch.object(
         client_instance,
         "_setup_client_certificates",

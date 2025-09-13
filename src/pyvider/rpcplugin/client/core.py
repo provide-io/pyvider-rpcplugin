@@ -149,6 +149,8 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         except Exception as e:
             self.logger.error(f"❌ Failed to start RPCPluginClient: {e}")
             self._handshake_failed_event.set()
+            # Clean up any partial state on start failure
+            await self.close()
             raise
 
     async def shutdown_plugin(self) -> None:
