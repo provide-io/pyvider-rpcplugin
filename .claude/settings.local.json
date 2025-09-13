@@ -88,7 +88,8 @@
       "Bash(PYTHONPATH=./src timeout 5s python -c \"from pyvider.rpcplugin.config import RPCPluginConfig; print(''Import successful'')\")",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_init_stubs -xvs)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_init_stubs_no_channel -xvs)",
-      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel -xvs)"
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel -xvs)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_stubs.py::test_open_broker_subchannel_knock_ack_false -xvs)"
     ],
     "deny": [],
     "ask": [],
