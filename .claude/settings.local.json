@@ -157,7 +157,8 @@
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py -k \"not byte_by_byte\" --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_process_exits_with_stderr -xvs)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_process_exits_with_stderr tests/client/test_client_handshake.py::test_read_raw_handshake_line_process_stdout_becomes_none tests/client/test_client_handshake.py::test_read_raw_handshake_line_outer_timeout_with_stderr -v)",
-      "Bash(PYTHONPATH=./src timeout 5s python -c \"from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter; print(''Import successful'')\")"
+      "Bash(PYTHONPATH=./src timeout 5s python -c \"from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter; print(''Import successful'')\")",
+      "Bash(PYTHONPATH=./src timeout 10s python -c \"from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter; print(''Import successful'')\")"
     ],
     "deny": [],
     "ask": [],
