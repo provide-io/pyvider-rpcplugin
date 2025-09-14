@@ -6,7 +6,6 @@ from unittest.mock import patch, MagicMock, AsyncMock
 import subprocess  # Added for spec=subprocess.Popen
 
 from provide.testkit.mocking import magic_mock_factory, async_mock_factory
-from provide.testkit.transport import transport_fixtures
 
 from pyvider.rpcplugin.exception import (
     HandshakeError,
