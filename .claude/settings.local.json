@@ -132,7 +132,8 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_stdout_none tests/client/test_client_handshake.py::test_connect_handshake_retry_success_first_attempt -v)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest:*)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_connect_handshake_retry_success_first_attempt -xvs)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_connect_handshake_retry_success_first_attempt tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_success -v)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_connect_handshake_retry_success_first_attempt tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_success -v)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_connect_handshake_retry_success_first_attempt tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_success --tb=no -v)"
     ],
     "deny": [],
     "ask": [],
