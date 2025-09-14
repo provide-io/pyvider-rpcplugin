@@ -478,7 +478,7 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(
         return f
 
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_wrapper
-    with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake line"):
+    with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake response"):
         await client_instance._read_raw_handshake_line_from_stdout()
 
 
@@ -609,7 +609,7 @@ async def test_connect_handshake_retry_success_first_attempt(
     assert client_instance._handshake_failed_event.is_set() is False
     for call_args in logger_mock.warning.call_args_list:
         assert "failed:" not in call_args[0][0].lower()
-    logger_mock.info.assert_any_call("Attempt 1 of 4 to connect and handshake...")
+    logger_mock.info.assert_any_call("Successfully connected to gRPC endpoint: mock_target_endpoint")
     logger_mock.info.assert_any_call(
         "Handshake attempt 1 successful. Endpoint: mock_address, Transport: mock_transport"
     )
