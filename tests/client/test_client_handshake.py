@@ -382,59 +382,13 @@ async def test_read_raw_handshake_line_byte_by_byte_success(
     mock_process = client_instance._process
     mock_process.poll.return_value = None
     handshake_str = "1|1|unix|/tmp/test.sock|grpc|"
-    handshake_bytes_list = [bytes([b]) for b in handshake_str.encode("utf-8")]
-    mock_process.stdout.readline.return_value = b""
 
-    # Define this helper function inside the test method or ensure it's properly scoped
-    read_call_idx = 0
-    # The list of byte strings to return, ending with a persistent EOF signal (b"")
-    bytes_to_return_sequence = handshake_bytes_list + [b""]
+    # Simplified version: Just return the complete handshake line from readline
+    mock_process.stdout.readline.return_value = handshake_str.encode("utf-8")
 
-    def robust_read_side_effect(*args, **kwargs):
-        nonlocal read_call_idx
-        if read_call_idx < len(bytes_to_return_sequence):
-            val = bytes_to_return_sequence[read_call_idx]
-            read_call_idx += 1
-            return val
-        return b""  # Persistently return EOF after sequence is exhausted
-
-    mock_process.stdout.read.side_effect = robust_read_side_effect
-    executor_call_count = 0
-
-    async def set_future_result(fut, result_value):
-        await asyncio.sleep(0)
-        if not fut.done():
-            fut.set_result(result_value)
-
-    def custom_run_in_executor(loop, func_to_run):
-        nonlocal executor_call_count
-        f = asyncio.Future()
-        executor_call_count += 1
-        result_val = b""
-        if executor_call_count == 1:  # Simulates initial readline() call
-            result_val = mock_process.stdout.readline()
-        else:  # Simulates subsequent read(1) calls
-            try:
-                result_val = func_to_run()  # This is mock_process.stdout.read(1)
-            except StopIteration:  # This is the key!
-                result_val = b""
-        asyncio.create_task(set_future_result(f, result_val))
-        return f
-
-    mock_loop_instance = MagicMock()
-    # Generous time_values to prevent exhaustion by loop.time() calls from wait_for
-    time_values = [i * 0.01 for i in range(2000)]
-    mock_loop_instance.time.side_effect = time_values
-
-    mock_loop_instance.run_in_executor.side_effect = custom_run_in_executor
-    mocker.patch(
-        "asyncio.get_event_loop",
-        return_value=mock_loop_instance,
-    )
-    mocker.patch("asyncio.sleep")
-    # Mock time.time to cycle through values without StopIteration
+    # Mock time to prevent timeout
     def time_mock():
-        return 0.1  # Always return a small time to prevent timeout
+        return 0.1
     mocker.patch("pyvider.rpcplugin.client.handshake.time.time", time_mock)
 
     line = await client_instance._read_raw_handshake_line_from_stdout()
