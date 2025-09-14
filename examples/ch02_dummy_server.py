@@ -8,15 +8,15 @@ Prints its handshake string to stdout upon successful startup.
 
 import asyncio
 
-# Import from examples.example_utils
-from examples.example_utils import configure_for_example  # noqa: E402
+# Import example_utils directly as it's in the same directory
+import example_utils  # type: ignore[import-not-found] # noqa: E402
 
 # This should be called before other pyvider imports if this script is run directly.
 # It sets up paths and default config (e.g., disabling mTLS for basic examples).
-configure_for_example()
+example_utils.configure_for_example()
 
 # Import the shared DummyHandler
-from examples.example_utils import DummyHandler  # noqa: E402
+from example_utils import DummyHandler  # noqa: E402
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
