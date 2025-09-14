@@ -2,17 +2,33 @@
 
 import pytest
 import asyncio
-from unittest.mock import patch
-
-from provide.testkit.crypto import client_cert
-from provide.testkit.mocking import async_mock_factory, magic_mock_factory
-from provide.testkit.process import subprocess_fixtures
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
+# provide-testkit inspired factory functions (inline implementation)
+def magic_mock_factory(name: str | None = None, **kwargs):
+    """Factory for creating MagicMock objects with testkit patterns."""
+    return MagicMock(name=name, **kwargs)
+
+
+def async_mock_factory(name: str | None = None, **kwargs):
+    """Factory for creating AsyncMock objects with testkit patterns."""
+    return AsyncMock(name=name, **kwargs)
+
+
+@pytest.fixture(scope="module")
+def test_client_cert():
+    """Create a test client certificate."""
+    class MockCert:
+        cert = "test-cert"
+        key = "test-key"
+    return MockCert()
+
+
 @pytest.mark.asyncio
-async def test_client_integration(test_client_command, client_cert, async_mock_factory, magic_mock_factory):
+async def test_client_integration(test_client_command, test_client_cert):
     """
     Integration test for RPCPluginClient full lifecycle.
 
@@ -63,12 +79,9 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_popen.return_value = mock_process
 
         # Mock certificate to use testkit cert but override for test expectations
-        mock_cert_class.return_value = client_cert
+        mock_cert_class.return_value = test_client_cert
         mock_cert_class.create_self_signed_client_cert = magic_mock_factory(name="create_self_signed_cert")
-        test_cert_mock = magic_mock_factory(name="test_cert")
-        test_cert_mock.cert = "test-cert"
-        test_cert_mock.key = "test-key"
-        mock_cert_class.create_self_signed_client_cert.return_value = test_cert_mock
+        mock_cert_class.create_self_signed_client_cert.return_value = test_client_cert
 
         # Mock transport using provide-testkit
         mock_transport = async_mock_factory(name="tcp_transport")
