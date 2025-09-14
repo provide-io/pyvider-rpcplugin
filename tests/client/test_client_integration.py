@@ -2,33 +2,16 @@
 
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
+
+from provide.testkit.crypto import client_cert
+from provide.testkit.mocking import async_mock_factory, magic_mock_factory
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
-# provide-testkit inspired factory functions (inline implementation)
-def magic_mock_factory(name: str | None = None, **kwargs):
-    """Factory for creating MagicMock objects with testkit patterns."""
-    return MagicMock(name=name, **kwargs)
-
-
-def async_mock_factory(name: str | None = None, **kwargs):
-    """Factory for creating AsyncMock objects with testkit patterns."""
-    return AsyncMock(name=name, **kwargs)
-
-
-@pytest.fixture(scope="module")
-def test_client_cert():
-    """Create a test client certificate."""
-    class MockCert:
-        cert = "test-cert"
-        key = "test-key"
-    return MockCert()
-
-
 @pytest.mark.asyncio
-async def test_client_integration(test_client_command, test_client_cert):
+async def test_client_integration(test_client_command, client_cert, async_mock_factory, magic_mock_factory):
     """
     Integration test for RPCPluginClient full lifecycle.
 
@@ -41,7 +24,7 @@ async def test_client_integration(test_client_command, test_client_cert):
     # Create mocks using provide-testkit factories
     mock_popen = magic_mock_factory(name="subprocess.Popen")
     mock_read_handshake_line = async_mock_factory(name="read_handshake_line", return_value="1|1|tcp|127.0.0.1:8000|grpc|")
-    mock_channel_func = async_mock_factory(name="grpc_channel_func")
+    mock_channel_func = magic_mock_factory(name="grpc_channel_func")
     mock_stdio_stub_class = magic_mock_factory(name="GRPCStdioStub")
     mock_broker_stub_class = magic_mock_factory(name="GRPCBrokerStub")
     mock_controller_stub_class = magic_mock_factory(name="GRPCControllerStub")
@@ -78,10 +61,10 @@ async def test_client_integration(test_client_command, test_client_cert):
         mock_process.poll.return_value = None
         mock_popen.return_value = mock_process
 
-        # Mock certificate to use testkit cert but override for test expectations
-        mock_cert_class.return_value = test_client_cert
-        mock_cert_class.create_self_signed_client_cert = magic_mock_factory(name="create_self_signed_cert")
-        mock_cert_class.create_self_signed_client_cert.return_value = test_client_cert
+        # Mock certificate to use provide-testkit client_cert fixture
+        mock_cert_class.return_value = client_cert
+        # Properly mock the class method
+        mock_cert_class.create_self_signed_client_cert = magic_mock_factory(name="create_self_signed_cert", return_value=client_cert)
 
         # Mock transport using provide-testkit
         mock_transport = async_mock_factory(name="tcp_transport")
@@ -134,7 +117,7 @@ async def test_client_integration(test_client_command, test_client_cert):
 
             # Verify client initialized correctly
             assert client._process == mock_process
-            assert client.client_cert == "test-cert"
+            assert client.client_cert == client_cert.cert
             assert client.grpc_channel == mock_channel
 
         # Test broker subchannel
