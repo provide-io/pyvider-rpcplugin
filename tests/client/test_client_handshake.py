@@ -347,10 +347,10 @@ async def test_read_raw_handshake_line_outer_timeout_no_stderr(
 
 
 @pytest.mark.asyncio
-async def test_perform_handshake_transport_metadata_missing(
+async def test_perform_handshake_parsing_failure(
     client_instance, mock_process, mocker, magic_mock_factory, async_mock_factory
 ):
-    """Test handshake when transport metadata is not properly set."""
+    """Test handshake when response parsing fails."""
     client_instance._process = mock_process
     if not hasattr(mock_process, "stdout") or not hasattr(
         mock_process.stdout, "readline"
@@ -362,14 +362,14 @@ async def test_perform_handshake_transport_metadata_missing(
         "_relay_stderr_background",
         new_callable=lambda: async_mock_factory(name="relay_stderr"),
     )
-    # Mock parse_handshake_response to return empty address to simulate failure
+    # Mock parse_handshake_response to raise an exception
     mocker.patch(
         "pyvider.rpcplugin.client.handshake.parse_handshake_response",
-        return_value=(1, 1, "tcp", "", "grpc", None),  # Empty address
+        side_effect=ValueError("Invalid handshake format"),
     )
     with pytest.raises(
         HandshakeError,
-        match=r"Handshake completed but critical endpoint data.*not set",
+        match=r"Failed to process handshake response.*Invalid handshake format",
     ):
         await client_instance._perform_handshake()
 
