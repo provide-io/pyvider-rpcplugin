@@ -114,8 +114,13 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         # StartStream itself is a synchronous method returning a stream
         mock_broker_stub.StartStream = magic_mock_factory(name="start_stream", return_value=mock_stream)
 
-        # Mock shutdown using provide-testkit
-        mock_controller_stub.Shutdown = AsyncMock(name="shutdown")
+        # Mock shutdown using provide-testkit - return coroutine to avoid TypeError
+        shutdown_called = False
+        async def mock_shutdown(*args, **kwargs):
+            nonlocal shutdown_called
+            shutdown_called = True
+            return None
+        mock_controller_stub.Shutdown = mock_shutdown
 
         # Create and configure client
         client = RPCPluginClient(command=test_client_command)
@@ -141,7 +146,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Test shutdown
         await client.shutdown_plugin()
-        mock_controller_stub.Shutdown.assert_called_once()
+        assert shutdown_called, "Expected shutdown to be called"
 
         # Clean up
         await client.close()
