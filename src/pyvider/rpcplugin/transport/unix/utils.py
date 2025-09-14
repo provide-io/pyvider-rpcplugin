@@ -35,12 +35,7 @@ def normalize_unix_path(path: str) -> str:
     elif path.startswith("/"):
         # Keep absolute paths as-is
         pass
-    else:
-        # Relative paths get current directory prepended
-        # This makes them absolute to avoid ambiguity
-        import os
-
-        path = os.path.abspath(path)
+    # Relative paths remain unchanged
 
     logger.debug(f"📞🔍✅ * Normalized Unix path: {path}")
     return path

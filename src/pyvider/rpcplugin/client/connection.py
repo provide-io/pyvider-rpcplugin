@@ -20,7 +20,6 @@ from collections.abc import (
 from typing import Any  # Added for __eq__ type hint
 
 from attrs import define, field
-
 from provide.foundation import logger
 
 # Type aliases for dependency-injected I/O functions using collections.abc

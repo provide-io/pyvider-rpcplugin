@@ -22,12 +22,13 @@ The transport layer is responsible for:
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.tcp import TCPSocketTransport
-from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+from pyvider.rpcplugin.transport.unix import UnixSocketTransport, normalize_unix_path
 
 __all__ = [
     "RPCPluginTransport",
     "TCPSocketTransport",
     "UnixSocketTransport",
+    "normalize_unix_path",
 ]
 
 # 🐍🏗️🔌
