@@ -119,7 +119,9 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_parsing_failure -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py --tb=line -q)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success tests/client/test_client_handshake.py::test_perform_handshake_parsing_failure -v)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_success tests/client/test_client_handshake.py::test_perform_handshake_parsing_failure -v)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/server/ --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/server/test_server_readiness.py::test_wait_for_server_ready_unix_path_not_exists -xvs)"
     ],
     "deny": [],
     "ask": [],
