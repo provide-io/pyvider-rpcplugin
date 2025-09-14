@@ -2,7 +2,7 @@ import pytest
 import subprocess  # Import subprocess
 from unittest.mock import MagicMock, AsyncMock
 from pyvider.rpcplugin.exception import HandshakeError
-from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 @pytest.fixture

@@ -9,7 +9,7 @@ import warnings
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.client.connection import ClientConnection # Added import
-from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+from pyvider.rpcplugin.transport.unix.transport import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.transport import unix_transport, managed_unix_socket_path

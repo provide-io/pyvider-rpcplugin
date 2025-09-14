@@ -9,7 +9,7 @@ from pyvider.rpcplugin.exception import TransportError  # Added import
 async def test_launch_process(client_instance):
     """Test the _launch_process method."""
     client_instance._process = None  # Ensure process is not considered running
-    with patch("pyvider.rpcplugin.client.core.subprocess.Popen") as mock_popen:
+    with patch("pyvider.rpcplugin.client.process.subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
         mock_popen.return_value = mock_process
 
@@ -32,7 +32,7 @@ async def test_launch_process_with_client_cert(client_instance):
     client_instance._process = None  # Ensure process is not considered running
     client_instance.client_cert = "test-cert"
 
-    with patch("pyvider.rpcplugin.client.core.subprocess.Popen") as mock_popen:
+    with patch("pyvider.rpcplugin.client.process.subprocess.Popen") as mock_popen:
         mock_process = MagicMock()
         mock_popen.return_value = mock_process
 
@@ -48,9 +48,11 @@ async def test_launch_process_with_client_cert(client_instance):
 @pytest.mark.asyncio
 async def test_launch_process_already_running(client_instance):
     """Test _launch_process when process already exists."""
-    client_instance._process = MagicMock()  # Process already exists
+    mock_process = MagicMock()
+    mock_process.poll.return_value = None  # Process is still running
+    client_instance._process = mock_process
 
-    with patch("pyvider.rpcplugin.client.core.subprocess.Popen") as mock_popen:
+    with patch("pyvider.rpcplugin.client.process.subprocess.Popen") as mock_popen:
         await client_instance._launch_process()
 
         # Popen should not be called
@@ -60,7 +62,7 @@ async def test_launch_process_already_running(client_instance):
 @pytest.mark.asyncio
 async def test_launch_process_error(client_instance):
     """Test _launch_process handling errors."""
-    with patch("pyvider.rpcplugin.client.core.subprocess.Popen") as mock_popen:
+    with patch("pyvider.rpcplugin.client.process.subprocess.Popen") as mock_popen:
         mock_popen.side_effect = OSError("Failed to launch")
 
         expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Failed to launch"
@@ -125,7 +127,7 @@ async def test_connect_unix_transport(
 @pytest.mark.asyncio
 async def test_launch_process_generic_error(client_instance):
     """Test _launch_process handling generic errors."""
-    with patch("pyvider.rpcplugin.client.core.subprocess.Popen") as mock_popen:
+    with patch("pyvider.rpcplugin.client.process.subprocess.Popen") as mock_popen:
         mock_popen.side_effect = Exception("Generic Popen failure")
 
         expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Generic Popen failure"

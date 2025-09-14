@@ -7,7 +7,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock  # Added MagicMock
 
 from pyvider.rpcplugin.exception import TransportError
-from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+from pyvider.rpcplugin.transport.unix.transport import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py
 from tests.fixtures.dummy import DummyReader, DummyWriter  # Re-added specific import
