@@ -105,7 +105,8 @@
       "Bash(PYTHONPATH=./src timeout 45s python -m pytest tests/client/test_client_handshake.py --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 45s python -m pytest tests/client/test_client_handshake.py -v)",
       "Bash(PYTHONPATH=./src timeout 45s python -m pytest tests/client/test_client_handshake.py --tb=line)",
-      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_not_initialized -xvs)"
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_not_initialized -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_integration.py::test_client_integration -xvs)"
     ],
     "deny": [],
     "ask": [],
