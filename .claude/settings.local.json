@@ -115,7 +115,9 @@
       "Bash(timeout:*)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_not_initialized -xvs)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py -v --tb=no)",
-      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_metadata_missing -xvs)"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_transport_metadata_missing -xvs)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_parsing_failure -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py --tb=no -q)"
     ],
     "deny": [],
     "ask": [],
