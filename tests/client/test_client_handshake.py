@@ -354,12 +354,13 @@ async def test_perform_handshake_transport_not_initialized(
     ):
         mock_process.stdout = MagicMock()
     mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:1234|grpc|\n"
-    mocker.patch(
-        "pyvider.rpcplugin.client.core.RPCPluginClient._relay_stderr_background",
+    mocker.patch.object(
+        client_instance,
+        "_relay_stderr_background",
         new_callable=AsyncMock,
     )
     mocker.patch(
-        "pyvider.rpcplugin.client.core.parse_handshake_response",
+        "pyvider.rpcplugin.client.handshake.parse_handshake_response",
         return_value=(1, 1, "tcp", "127.0.0.1:1234", "grpc", None),
     )
     mocker.patch("pyvider.rpcplugin.transport.TCPSocketTransport", return_value=None)
