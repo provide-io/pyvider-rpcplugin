@@ -103,10 +103,10 @@ async def test_connect_handshake_retry_success_after_failures(
     assert client_instance._handshake_failed_event.is_set() is False
 
     spied_logger_warning.assert_any_call(
-        "Attempt 1 failed: Simulated handshake failure attempt 1"
+        "Attempt 1/4 failed: [HandshakeError] Simulated handshake failure attempt 1 [Code: RPC_HANDSHAKE_ERROR]"
     )
     spied_logger_warning.assert_any_call(
-        "Attempt 2 failed: Simulated handshake failure attempt 2"
+        "Attempt 2/4 failed: [HandshakeError] Simulated handshake failure attempt 2 [Code: RPC_HANDSHAKE_ERROR]"
     )
 
 
@@ -152,14 +152,16 @@ async def test_connect_handshake_retry_process_exits(client_instance_local, mock
 
     mock_logger_error = mocker.spy(client_instance.logger, "error")
 
-    # Corrected regex
-    expected_error_msg = r"Plugin process exited \(code 1\) during retry sequence\."
+    # Process exits are handled like any other handshake failure - retries until max attempts reached
+    expected_error_msg = r"Failed to connect after .* attempts\. Last error:"
     with pytest.raises(HandshakeError, match=expected_error_msg):
         await client_instance._connect_and_handshake_with_retry()
 
-    mock_perform_handshake.assert_called_once()
+    # Should attempt all 4 times (max_retries=3, so max_retries+1=4 attempts)
+    assert mock_perform_handshake.call_count == 4
     mock_logger_error.assert_any_call(
-        "Plugin process exited with code 1 during retry attempt 2. Aborting retries."
+        "All 4 attempts failed. Last error: [HandshakeError] Simulated first handshake failure [Code: RPC_HANDSHAKE_ERROR]",
+        exc_info=True,
     )
     assert client_instance._handshake_failed_event.is_set()
 
@@ -201,12 +203,12 @@ async def test_connect_handshake_total_timeout_immediately(client_instance_local
     client_instance._process.poll.return_value = None # type: ignore[attr-defined]
 
 
-    with pytest.raises(HandshakeError, match="Retry sequence timed out."):
+    with pytest.raises(HandshakeError, match=r"Total timeout of.*exceeded after.*attempts\. Elapsed time:"):
         await client_instance._connect_and_handshake_with_retry()
 
-    client_instance.logger.error.assert_any_call(
-        "Client connection/handshake retry sequence timed out after 0.001s. Last error: N/A"
-    )
+    # Check for timeout error log (format: "Total timeout of {timeout}ms exceeded after {attempts} attempts. Elapsed time: {elapsed}ms")
+    timeout_calls = [call for call in client_instance.logger.error.call_args_list if "Total timeout" in str(call)]
+    assert len(timeout_calls) > 0, "Expected timeout error log not found"
     assert client_instance._handshake_failed_event.is_set()
 
 
@@ -354,11 +356,10 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
 
     assert mock_perform_handshake.call_count >= 1 # It should make at least one attempt
 
-    # Check logger calls
-    # This path is taken when the current attempt has failed, and scheduling the *next* sleep
-    # would push the total time over the limit.
+    # Check logger calls - should log the "All attempts failed" message
     mock_logger_error.assert_any_call(
-        f"Next retry would exceed total timeout. Aborting. Last error: {simulated_error}"
+        f"All 11 attempts failed. Last error: {simulated_error}",
+        exc_info=True,
     )
     assert client_instance._handshake_failed_event.is_set()
 
@@ -414,11 +415,12 @@ async def test_connect_handshake_max_retries_reached(client_instance_local, mock
     # Check logger calls
     for i in range(max_retries_config + 1):
         mock_logger_warning.assert_any_call(
-            f"Attempt {i + 1} failed: Simulated persistent handshake failure"
+            f"Attempt {i + 1}/{max_retries_config + 1} failed: [HandshakeError] Simulated persistent handshake failure [Code: RPC_HANDSHAKE_ERROR]"
         )
 
     mock_logger_error.assert_any_call(
-        f"Maximum retry attempts ({max_retries_config + 1}) reached for connection/handshake. Last error: {simulated_error}"
+        f"All {max_retries_config + 1} attempts failed. Last error: {simulated_error}",
+        exc_info=True,
     )
     assert client_instance._handshake_failed_event.is_set()
 

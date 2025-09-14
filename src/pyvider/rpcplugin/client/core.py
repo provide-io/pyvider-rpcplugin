@@ -149,6 +149,8 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         except Exception as e:
             self.logger.error(f"❌ Failed to start RPCPluginClient: {e}")
             self._handshake_failed_event.set()
+            # Clean up any partial state on start failure
+            await self.close()
             raise
 
     async def shutdown_plugin(self) -> None:
@@ -209,7 +211,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         if self.grpc_channel:
             try:
                 self.logger.debug("🔌 Closing gRPC channel...")
-                await self.grpc_channel.close()
+                await self.grpc_channel.close(grace=0.5)
                 self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
                 self.logger.warning(
