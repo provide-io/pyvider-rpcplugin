@@ -18,12 +18,12 @@ import tempfile
 import uuid
 
 from attrs import define, field
+from provide.foundation import logger
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path
-from provide.foundation import logger
 
 
 @define(frozen=False, slots=True)

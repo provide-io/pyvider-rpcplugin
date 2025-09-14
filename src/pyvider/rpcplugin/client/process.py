@@ -11,7 +11,6 @@ stub initialization, and stdio/broker operations.
 import asyncio
 import os
 import subprocess  # nosec B404
-import sys
 from typing import Any
 
 import grpc
@@ -29,7 +28,6 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerSt
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from provide.foundation import logger
 
 
 # Process and gRPC-related methods that will be mixed into RPCPluginClient
@@ -221,7 +219,7 @@ class ClientProcessMixin:
             # Initialize service stubs
             self._init_stubs()
 
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             error_msg = (
                 f"gRPC channel failed to become ready within {channel_ready_timeout}s "
                 f"for endpoint {self.target_endpoint}"
