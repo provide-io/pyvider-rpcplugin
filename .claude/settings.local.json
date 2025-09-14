@@ -127,7 +127,8 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/server/test_server_signals.py -v)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/transport/unix/ -v)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/transport/unix/test_transport_unix.py::test_unix_transport_init_with_relative_path -xvs)",
-      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_integration.py tests/client/test_client_handshake.py tests/server/test_server_readiness.py tests/server/test_server_signals.py tests/transport/unix/test_transport_unix.py::test_unix_transport_init_with_relative_path --tb=no -q)"
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_integration.py tests/client/test_client_handshake.py tests/server/test_server_readiness.py tests/server/test_server_signals.py tests/transport/unix/test_transport_unix.py::test_unix_transport_init_with_relative_path --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_integration.py::test_client_integration tests/server/test_server_readiness.py tests/server/test_server_signals.py tests/transport/unix/test_transport_unix.py::test_unix_transport_init_with_relative_path -v)"
     ],
     "deny": [],
     "ask": [],
