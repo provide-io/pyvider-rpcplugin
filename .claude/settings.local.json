@@ -139,7 +139,8 @@
       "Bash(PYTHONPATH=./src timeout 5s python examples/ch02_quick_start_client.py)",
       "Bash(PYTHONPATH=./src timeout 30s python examples/run_all_examples.py)",
       "Bash(PYTHONPATH=./src timeout 60s python examples/run_all_examples.py)",
-      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_integration.py::test_client_integration -v)"
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_integration.py::test_client_integration -v)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_success tests/server/test_server_rate_limiting.py::test_rate_limiter_denies_requests_when_limit_exceeded --tb=no -q)"
     ],
     "deny": [],
     "ask": [],
