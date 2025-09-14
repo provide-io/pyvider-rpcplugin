@@ -100,7 +100,8 @@
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_start_generic_exception -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py -v)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_handshake.py --tb=short -q)",
-      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_parse_error -xvs)"
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_perform_handshake_parse_error -xvs)",
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_process_stdout_becomes_none -xvs)"
     ],
     "deny": [],
     "ask": [],
