@@ -302,7 +302,8 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if sys.platform != "win32":
             loop = asyncio.get_event_loop()
             for sig in [signal.SIGINT, signal.SIGTERM]:
-                loop.add_signal_handler(sig, self._shutdown_requested)
+                with contextlib.suppress(RuntimeError):
+                    loop.add_signal_handler(sig, self._shutdown_requested)
 
     def _shutdown_requested(self, *args: Any) -> None:
         """Handle shutdown request from signal or file watcher."""
