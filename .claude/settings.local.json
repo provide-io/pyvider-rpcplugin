@@ -142,7 +142,9 @@
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_integration.py::test_client_integration -v)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_success tests/server/test_server_rate_limiting.py::test_rate_limiter_denies_requests_when_limit_exceeded --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_handshake.py --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_grpc.py tests/client/test_client_handshake.py::test_perform_handshake_success tests/protocol/grpctest/test_grpctest.py::test_service_bidirectional_stream --tb=no -q)"
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_grpc.py tests/client/test_client_handshake.py::test_perform_handshake_success tests/protocol/grpctest/test_grpctest.py::test_service_bidirectional_stream --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_grpc.py tests/client/test_client_handshake.py::test_perform_handshake_success --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/test_client_grpc.py tests/client/test_client_handshake.py tests/server/test_server_rate_limiting.py --tb=no -q)"
     ],
     "deny": [],
     "ask": [],
