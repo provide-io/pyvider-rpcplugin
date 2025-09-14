@@ -109,7 +109,8 @@
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_integration.py::test_client_integration -xvs)",
       "Bash(PYTHONPATH=./src:$PYTHONPATH timeout 30s python -m pytest tests/client/test_client_integration.py::test_client_integration -xvs)",
       "Bash(export PYTHONPATH=./src:$PYTHONPATH)",
-      "Bash(timeout 30s python -m pytest:*)"
+      "Bash(timeout 30s python -m pytest:*)",
+      "Bash(export:*)"
     ],
     "deny": [],
     "ask": [],
