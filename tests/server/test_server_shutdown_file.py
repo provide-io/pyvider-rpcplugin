@@ -62,7 +62,7 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, temp_unix_
 
     mocker.patch.object(server, '_negotiate_handshake', side_effect=mock_negotiate_side_effect)
 
-    async def mock_setup_server_side_effect(client_cert_str):
+    async def mock_setup_server_side_effect():
         server._serving_event.set()
 
     mocker.patch.object(server, '_setup_server', side_effect=mock_setup_server_side_effect)

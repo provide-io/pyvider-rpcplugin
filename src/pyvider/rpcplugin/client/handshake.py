@@ -75,6 +75,9 @@ class ClientHandshakeMixin:
                     f"Transport: {self._transport_name}"
                 )
 
+                # Set up client certificates for mTLS if needed
+                await self._setup_client_certificates()
+
                 self.logger.debug(
                     f"Creating gRPC channel to {self._address} "
                     f"({self._transport_name})..."
@@ -83,6 +86,11 @@ class ClientHandshakeMixin:
                 self.logger.info(
                     f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
                 )
+
+                # Start stdio reading task
+                if self._stdio_stub:
+                    self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+                    self.logger.debug("Started stdio reading task")
 
                 self.is_started = True
                 self._handshake_complete_event.set()
@@ -140,6 +148,9 @@ class ClientHandshakeMixin:
                         f"Endpoint: {self._address}, Transport: {self._transport_name}"
                     )
 
+                    # Set up client certificates for mTLS if needed
+                    await self._setup_client_certificates()
+
                     self.logger.debug(
                         f"Creating gRPC channel to {self._address} "
                         f"({self._transport_name})..."
@@ -148,6 +159,11 @@ class ClientHandshakeMixin:
                     self.logger.info(
                         f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
                     )
+
+                    # Start stdio reading task
+                    if self._stdio_stub:
+                        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+                        self.logger.debug("Started stdio reading task")
 
                     self.is_started = True
                     self._handshake_complete_event.set()
@@ -415,14 +431,19 @@ class ClientHandshakeMixin:
             self.logger.debug(f"Raw handshake received: {raw_handshake}")
 
             # Parse the handshake response
-            (
-                core_version,
-                plugin_version,
-                network,
-                address,
-                protocol,
-                server_cert,
-            ) = parse_handshake_response(raw_handshake)
+            try:
+                (
+                    core_version,
+                    plugin_version,
+                    network,
+                    address,
+                    protocol,
+                    server_cert,
+                ) = parse_handshake_response(raw_handshake)
+            except Exception as parse_error:
+                raise HandshakeError(
+                    f"Failed to process handshake response or establish transport connection: {parse_error}"
+                ) from parse_error
 
             # Store parsed handshake data
             self._address = address
