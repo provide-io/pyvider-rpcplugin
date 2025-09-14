@@ -347,9 +347,10 @@ async def test_read_raw_handshake_line_outer_timeout_no_stderr(
 
 
 @pytest.mark.asyncio
-async def test_perform_handshake_transport_not_initialized(
+async def test_perform_handshake_transport_metadata_missing(
     client_instance, mock_process, mocker, magic_mock_factory, async_mock_factory
 ):
+    """Test handshake when transport metadata is not properly set."""
     client_instance._process = mock_process
     if not hasattr(mock_process, "stdout") or not hasattr(
         mock_process.stdout, "readline"
@@ -361,16 +362,14 @@ async def test_perform_handshake_transport_not_initialized(
         "_relay_stderr_background",
         new_callable=lambda: async_mock_factory(name="relay_stderr"),
     )
+    # Mock parse_handshake_response to return empty address to simulate failure
     mocker.patch(
         "pyvider.rpcplugin.client.handshake.parse_handshake_response",
-        return_value=(1, 1, "tcp", "127.0.0.1:1234", "grpc", None),
+        return_value=(1, 1, "tcp", "", "grpc", None),  # Empty address
     )
-    # Use testkit patterns to mock transports at the correct import location
-    mocker.patch("pyvider.rpcplugin.client.process.TCPSocketTransport", return_value=None)
-    mocker.patch("pyvider.rpcplugin.client.process.UnixSocketTransport", return_value=None)
     with pytest.raises(
         HandshakeError,
-        match=r"Internal error: Transport was not initialized before attempting to connect.",
+        match=r"Handshake completed but critical endpoint data.*not set",
     ):
         await client_instance._perform_handshake()
 
