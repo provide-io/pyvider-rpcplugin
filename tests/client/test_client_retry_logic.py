@@ -2,7 +2,7 @@ import pytest
 import subprocess  # Import subprocess
 from unittest.mock import MagicMock, AsyncMock
 from pyvider.rpcplugin.exception import HandshakeError
-from pyvider.rpcplugin.client.base import RPCPluginClient
+from pyvider.rpcplugin.client import RPCPluginClient
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ async def test_connect_handshake_retry_success_after_failures(
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 10)
 
     mock_asyncio_sleep = mocker.patch(
-        "pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock
+        "pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock
     )
 
     handshake_attempts = 0
@@ -59,7 +59,7 @@ async def test_connect_handshake_retry_success_after_failures(
         client_instance._transport = AsyncMock()
 
     mock_perform_handshake_patcher = mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
         new_callable=AsyncMock,
     )
     mock_perform_handshake_patcher.side_effect = (
@@ -67,7 +67,7 @@ async def test_connect_handshake_retry_success_after_failures(
     )
 
     mock_create_grpc_channel_patcher = mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._create_grpc_channel",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._create_grpc_channel",
         new_callable=AsyncMock,
     )
 
@@ -123,10 +123,10 @@ async def test_connect_handshake_retry_process_exits(client_instance_local, mock
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_jitter_ms", 1)
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 10)
 
-    mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock)
+    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock)
 
     mock_perform_handshake = mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
         new_callable=AsyncMock,
         side_effect=HandshakeError("Simulated first handshake failure")
     )
@@ -193,8 +193,8 @@ async def test_connect_handshake_total_timeout_immediately(client_instance_local
             # client_instance.logger.debug(f"Mock time.monotonic returning final value: {final_monotonic_value_after_timeout}")
             return final_monotonic_value_after_timeout
 
-    mocker.patch("pyvider.rpcplugin.client.base.time.monotonic", side_effect=mock_monotonic_side_effect_func)
-    mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock) # Prevent actual sleep
+    mocker.patch("pyvider.rpcplugin.client.core.time.monotonic", side_effect=mock_monotonic_side_effect_func)
+    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock) # Prevent actual sleep
 
     if not client_instance._process:
         client_instance._process = MagicMock(spec=subprocess.Popen) # type: ignore[attr-defined]
@@ -217,7 +217,7 @@ async def test_connect_handshake_retry_disabled_failure(client_instance_local, m
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled", False)
 
     mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
         new_callable=AsyncMock,
         side_effect=HandshakeError("Simulated handshake failure, retries disabled")
     )
@@ -245,11 +245,11 @@ async def test_connect_handshake_retry_transport_close_fails(client_instance_loc
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled", True)
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_retries", 1)
 
-    mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock)
+    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock)
 
     # First attempt fails, triggering retry path
     mock_perform_handshake = mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
         new_callable=AsyncMock,
         side_effect=HandshakeError("Simulated first failure")
     )
@@ -292,12 +292,12 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
 
     # Mock asyncio.sleep to actually sleep, to allow time.monotonic() to advance
     # Patch time.monotonic to control its return value precisely around sleep
-    mock_time_monotonic = mocker.patch("pyvider.rpcplugin.client.base.time.monotonic")
+    mock_time_monotonic = mocker.patch("pyvider.rpcplugin.client.core.time.monotonic")
 
     # _perform_handshake will always fail
     simulated_error = HandshakeError("Simulated persistent handshake failure for timeout test")
     mock_perform_handshake = mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
         new_callable=AsyncMock,
         side_effect=simulated_error
     )
@@ -340,7 +340,7 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
     # We need actual sleep to allow monotonic time to be checked correctly if not fully mocked
     # For this test, fully mocking monotonic is better.
     # Let's mock asyncio.sleep to do nothing to speed up the test.
-    mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock)
+    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock)
 
 
     # Expect HandshakeError due to total timeout
@@ -381,12 +381,12 @@ async def test_connect_handshake_max_retries_reached(client_instance_local, mock
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_jitter_ms", 1)
     mocker.patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", 60)  # Large enough to not interfere
 
-    mock_sleep = mocker.patch("pyvider.rpcplugin.client.base.asyncio.sleep", new_callable=AsyncMock)
+    mock_sleep = mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock)
 
     # Mock _perform_handshake to always fail
     simulated_error = HandshakeError("Simulated persistent handshake failure")
     mock_perform_handshake = mocker.patch(
-        "pyvider.rpcplugin.client.base.RPCPluginClient._perform_handshake",
+        "pyvider.rpcplugin.client.core.RPCPluginClient._perform_handshake",
         new_callable=AsyncMock,
         side_effect=simulated_error
     )

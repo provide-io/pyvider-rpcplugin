@@ -98,7 +98,7 @@ async def test_read_handshake_response_process_exit_stderr_read_error(mocker):
     process.stderr = mocker.MagicMock()
     process.stderr.read.side_effect = OSError("Failed to read stderr")
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
 
     expected_regex = r".*Plugin process exited prematurely.*"
     with pytest.raises(HandshakeError, match=expected_regex):
@@ -118,7 +118,7 @@ async def test_read_handshake_response_timeout(mocker):
         "time.time", side_effect=[i * 2.0 for i in range(10)]
     )
 
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
 
     with pytest.raises(
         HandshakeError,
@@ -142,9 +142,9 @@ async def test_read_handshake_response_timeout_stderr_read_error(mocker):
     process.stderr = mocker.MagicMock()
     process.stderr.read.side_effect = OSError("Failed to read stderr on timeout")
 
-    mocker.patch("pyvider.rpcplugin.handshake.asyncio.sleep", new_callable=AsyncMock)
+    mocker.patch("pyvider.rpcplugin.handshake.negotiation.asyncio.sleep", new_callable=AsyncMock)
     mocker.patch(
-        "pyvider.rpcplugin.handshake.time.time", side_effect=[0, 2, 4, 6, 8, 10, 12]
+        "pyvider.rpcplugin.handshake.negotiation.time.time", side_effect=[0, 2, 4, 6, 8, 10, 12]
     )
 
     expected_regex = r".*Timed out waiting for handshake response.*"
@@ -196,7 +196,7 @@ async def test_create_stderr_relay_exception_in_reader(mocker):
     mock_process.stderr.readline = MagicMock()
     # Poll should return None (process running) a few times, then return 0 (process ended)
     mock_process.poll.side_effect = [None, None, None, 0]
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
     
     # Mock readline to raise exception on second call
     mock_process.stderr.readline.side_effect = [
@@ -281,7 +281,7 @@ def test_parse_handshake_response_invalid(handshake_line, error_message_core, mo
 async def test_create_stderr_relay_process_stderr_is_none_initially(mocker):
     mock_process = MagicMock(spec=subprocess.Popen)
     mock_process.stderr = None
-    mock_logger_debug = mocker.patch("pyvider.rpcplugin.handshake.logger.debug")
+    mock_logger_debug = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.debug")
     task = await create_stderr_relay(mock_process)
     assert task is None
     mock_logger_debug.assert_any_call("🤝📤⚠️ No process or stderr stream available for relay")
@@ -315,9 +315,9 @@ async def test_read_handshake_stdout_becomes_none(mocker):
     mock_process.poll.return_value = None
     mock_process.stderr = MagicMock()
     mock_process.stderr.read.return_value = b"no specific error on stderr"
-    mocker.patch("pyvider.rpcplugin.handshake.asyncio.sleep", new_callable=AsyncMock)
+    mocker.patch("pyvider.rpcplugin.handshake.negotiation.asyncio.sleep", new_callable=AsyncMock)
     time_side_effects = [i * 0.05 for i in range(400)]
-    mocker.patch("pyvider.rpcplugin.handshake.time.time", side_effect=time_side_effects)
+    mocker.patch("pyvider.rpcplugin.handshake.negotiation.time.time", side_effect=time_side_effects)
 
     with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake response from plugin after \d+\.\d+ seconds"):
         await read_handshake_response(mock_process)

@@ -1,13 +1,12 @@
 #
-# pyvider/rpcplugin/transport/unix.py
+# pyvider/rpcplugin/transport/unix/transport.py
 #
 """
 Unix Domain Socket Transport Implementation.
 
 This module provides the `UnixSocketTransport` class, an implementation of the
 `RPCPluginTransport` interface for communication over Unix domain sockets.
-It includes logic for path normalization, socket creation, connection handling,
-and robust cleanup, tailored for interoperability with Go-based plugins.
+It includes logic for socket creation, connection handling, and robust cleanup.
 """
 
 import asyncio
@@ -15,43 +14,16 @@ import errno
 import os
 import socket
 import stat
+import tempfile
+import uuid
 
 from attrs import define, field
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
+from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path
 from provide.foundation import logger
-
-
-def normalize_unix_path(path: str) -> str:
-    """
-    Standardized Unix socket path normalization, handling:
-    - unix: prefix
-    - unix:/ prefix
-    - unix:// prefix
-    - Multiple leading slashes
-
-    Returns a clean path suitable for socket operations.
-    """
-    logger.debug(f"📞🔍🚀 * Normalizing Unix path: {path}")
-
-    # Handle unix: prefix formats
-    if path.startswith("unix:"):
-        path = path[5:]  # Remove 'unix:'
-
-    # Handle multiple leading slashes
-    if path.startswith("//"):
-        # Split by / and rebuild with single leading slash
-        parts = [p for p in path.split("/") if p]
-        path = "/" + "/".join(parts)
-    elif path.startswith("/"):
-        # Keep absolute paths as-is
-        pass
-    # Relative paths remain unchanged
-
-    logger.debug(f"📞🔍✅ * Normalized path: {path}")
-    return path
 
 
 @define(frozen=False, slots=True)
@@ -65,7 +37,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     Key features:
     - Socket path normalization (supporting unix:, unix:/, unix:// prefixes)
-    - File permission management (0770 for cross-process access)
+    - File permission management (0660 for cross-process access)
     - Proper socket state verification and cleanup
     - Connection tracking
 
@@ -100,9 +72,6 @@ class UnixSocketTransport(RPCPluginTransport):
         """
         if not self.path:
             # Generate ephemeral path if none provided
-            import tempfile
-            import uuid
-
             self.path = os.path.join(
                 tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock"
             )
@@ -231,15 +200,13 @@ class UnixSocketTransport(RPCPluginTransport):
                     self._handle_client, path=self.path
                 )
 
-                # Set permissions for user and group (owner rwx, group rwx)
+                # Set permissions for user and group (owner rw, group rw)
                 # This is safer than 0o777 and suitable if client/server share a group.
                 # For broader interop where group sharing isn't guaranteed,
                 # this might be too restrictive.
                 # However, 0o777 is generally too permissive for production.
                 # Acknowledging the "test/interop environments" comment,
-                # 0o770 is a step down.
-                # Ideal solution might involve configurable permissions or
-                # group ownership.
+                # 0o660 provides read/write access for owner and group.
                 try:
                     current_mask = os.umask(
                         0
@@ -247,7 +214,7 @@ class UnixSocketTransport(RPCPluginTransport):
                     os.umask(current_mask)  # Restore original umask
                     desired_permissions = (
                         0o660 & ~current_mask
-                    )  # Apply umask, changed from 0o770
+                    )  # Apply umask
                     os.chmod(self.path, desired_permissions)  # nosec B103
                     logger.debug(
                         f"📞🕹✅ Set permissions to {oct(desired_permissions)} on "
@@ -579,10 +546,3 @@ class UnixSocketTransport(RPCPluginTransport):
         self.endpoint = None
         self._closing = False
         logger.debug("📞🔒✅ Unix socket transport closed completely")
-
-
-# 🐍🏗️🔌
-
-
-
-# 🐍🔌📄🪄
