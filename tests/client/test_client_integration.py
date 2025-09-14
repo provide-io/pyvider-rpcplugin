@@ -94,9 +94,17 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             return magic_mock_factory(name="shutdown_response")
         mock_controller_stub.Shutdown = AsyncMock(side_effect=mock_shutdown)
 
-        mock_stdio_stub_class.return_value = mock_stdio_stub
-        mock_broker_stub_class.return_value = mock_broker_stub
-        mock_controller_stub_class.return_value = mock_controller_stub
+        # Make sure the constructor returns our mocked stubs
+        def mock_controller_constructor(*args, **kwargs):
+            return mock_controller_stub
+        def mock_stdio_constructor(*args, **kwargs):
+            return mock_stdio_stub
+        def mock_broker_constructor(*args, **kwargs):
+            return mock_broker_stub
+
+        mock_stdio_stub_class.side_effect = mock_stdio_constructor
+        mock_broker_stub_class.side_effect = mock_broker_constructor
+        mock_controller_stub_class.side_effect = mock_controller_constructor
 
         # Setup mock stdio stream - fix coroutine issue
         async def mock_stream_stdio(_):
