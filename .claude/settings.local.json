@@ -137,7 +137,8 @@
       "Bash(PYTHONPATH=./src timeout 10s python examples/ch02_quick_start_client.py)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_success -xvs)",
       "Bash(PYTHONPATH=./src timeout 5s python examples/ch02_quick_start_client.py)",
-      "Bash(PYTHONPATH=./src timeout 30s python examples/run_all_examples.py)"
+      "Bash(PYTHONPATH=./src timeout 30s python examples/run_all_examples.py)",
+      "Bash(PYTHONPATH=./src timeout 60s python examples/run_all_examples.py)"
     ],
     "deny": [],
     "ask": [],
