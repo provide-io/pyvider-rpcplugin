@@ -43,10 +43,10 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel",
             mock_channel_func
         ),
-        patch("pyvider.rpcplugin.client.core.GRPCStdioStub", mock_stdio_stub_class),
-        patch("pyvider.rpcplugin.client.core.GRPCBrokerStub", mock_broker_stub_class),
+        patch("pyvider.rpcplugin.client.process.GRPCStdioStub", mock_stdio_stub_class),
+        patch("pyvider.rpcplugin.client.process.GRPCBrokerStub", mock_broker_stub_class),
         patch(
-            "pyvider.rpcplugin.client.core.GRPCControllerStub",
+            "pyvider.rpcplugin.client.process.GRPCControllerStub",
             mock_controller_stub_class
         ),
         patch(
