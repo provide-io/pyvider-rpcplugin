@@ -12,6 +12,7 @@ import asyncio
 import contextlib
 import os
 import signal
+import socket
 import sys
 from collections.abc import Awaitable, Callable
 from typing import Any, Generic, TypeVar, cast
@@ -25,6 +26,7 @@ from pyvider.rpcplugin.config import (
     ConfigError,
     rpcplugin_config,
 )
+from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.handshake import HandshakeConfig
 from pyvider.rpcplugin.health_servicer import HealthServicer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
