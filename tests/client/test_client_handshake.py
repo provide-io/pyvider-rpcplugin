@@ -268,7 +268,7 @@ async def test_read_raw_handshake_line_process_stdout_becomes_none(
         return_value=mock_loop_instance,
     )
     with pytest.raises(
-        HandshakeError, match=r"Timed out waiting for handshake line from plugin."
+        HandshakeError, match=r"Timed out waiting for handshake response from plugin after .* seconds."
     ):
         await client_instance._read_raw_handshake_line_from_stdout()
 
@@ -529,7 +529,7 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(
     )
     mocker.patch("asyncio.sleep")
     with pytest.raises(
-        HandshakeError, match=r"Timed out waiting for handshake line from plugin."
+        HandshakeError, match=r"Timed out waiting for handshake response from plugin after .* seconds."
     ):  # General timeout
         await client_instance._read_raw_handshake_line_from_stdout()
 
