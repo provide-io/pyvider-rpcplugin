@@ -149,7 +149,9 @@
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/server/test_server_rate_limiting.py::test_rate_limiter_denies_requests_when_limit_exceeded -xvs)",
       "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/server/test_server_rate_limiting.py tests/client/test_client_grpc.py tests/server/test_server_lifecycle.py --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_integration.py::test_client_integration -v --tb=short)",
-      "Bash(PYTHONPATH=./src timeout 10s python -c \"import tests.client.test_client_handshake; print(''module imported'')\")"
+      "Bash(PYTHONPATH=./src timeout 10s python -c \"import tests.client.test_client_handshake; print(''module imported'')\")",
+      "Bash(PYTHONPATH=./src timeout 3s python -m pytest tests/client/test_client_handshake.py --collect-only -q)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/client/test_client_handshake.py::test_read_raw_handshake_line_byte_by_byte_stdout_none -xvs)"
     ],
     "deny": [],
     "ask": [],

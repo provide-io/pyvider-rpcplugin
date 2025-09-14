@@ -396,6 +396,7 @@ async def test_read_raw_handshake_line_byte_by_byte_success(
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_read_raw_handshake_line_byte_by_byte_stdout_none(
     client_instance_for_retry_tests, mocker
 ):
