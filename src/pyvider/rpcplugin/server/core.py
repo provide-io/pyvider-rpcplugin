@@ -251,11 +251,51 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
 
         try:
             await asyncio.wait_for(self._serving_event.wait(), timeout=timeout)
+            logger.debug("Server serving event is set")
+
+            # Perform transport-specific readiness checks
+            await self._verify_transport_readiness()
+
             logger.debug("Server is ready")
         except TimeoutError as e:
             error_msg = f"Server failed to become ready within {timeout} seconds"
             logger.error(error_msg)
             raise TimeoutError(error_msg) from e
+
+    async def _verify_transport_readiness(self) -> None:
+        """
+        Verify that the transport is ready to accept connections.
+
+        Raises:
+            TransportError: If transport readiness verification fails
+        """
+        if not self._transport:
+            raise TransportError("Transport is not configured")
+
+        transport_name = getattr(self._transport, '_transport_name', None)
+
+        if transport_name == "unix":
+            # Unix socket readiness check
+            socket_path = getattr(self._transport, 'path', None)
+            if socket_path and not os.path.exists(socket_path):
+                raise TransportError(f"Unix socket file {socket_path} does not exist.")
+
+        elif transport_name == "tcp":
+            # TCP socket readiness check
+            if not hasattr(self, '_port') or self._port is None:
+                raise TransportError("TCP port not available for readiness check.")
+
+            # Attempt a connection to verify the port is ready
+            try:
+                host = getattr(self._transport, 'host', '127.0.0.1')
+                test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                test_socket.settimeout(1.0)
+                try:
+                    test_socket.connect((host, self._port))
+                finally:
+                    test_socket.close()
+            except OSError as e:
+                raise TransportError(f"Server readiness check failed: {e}") from e
 
     def _register_signal_handlers(self) -> None:
         """Register signal handlers for graceful shutdown."""

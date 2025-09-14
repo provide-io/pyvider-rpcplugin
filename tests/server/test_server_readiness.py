@@ -27,6 +27,7 @@ async def test_wait_for_server_ready_unix_path_not_exists(mocker):
     mock_unix_transport = AsyncMock(spec=UnixSocketTransport)
     mock_unix_transport.endpoint = "/tmp/test_unix.sock"
     mock_unix_transport.path = "/tmp/test_unix.sock" # Ensure path attribute is set
+    mock_unix_transport._transport_name = "unix" # Set transport type identifier
 
     server = RPCPluginServer(protocol=mock_protocol, handler=mock_handler, transport=mock_unix_transport)
     server._transport = mock_unix_transport # Explicitly assign to _transport as well
@@ -48,6 +49,7 @@ async def test_wait_for_server_ready_tcp_port_none(mocker):
     mock_tcp_transport = AsyncMock(spec=TCPSocketTransport)
     mock_tcp_transport.endpoint = "127.0.0.1:12345" # Endpoint is set
     mock_tcp_transport.host = "127.0.0.1"
+    mock_tcp_transport._transport_name = "tcp" # Set transport type identifier
     # server._port will be None initially
 
     server = RPCPluginServer(protocol=mock_protocol, handler=mock_handler, transport=mock_tcp_transport)
@@ -67,6 +69,7 @@ async def test_wait_for_server_ready_tcp_connect_fails(mocker):
     mock_tcp_transport = AsyncMock(spec=TCPSocketTransport)
     mock_tcp_transport.endpoint = "127.0.0.1:12345"
     mock_tcp_transport.host = "127.0.0.1"
+    mock_tcp_transport._transport_name = "tcp" # Set transport type identifier
 
     server = RPCPluginServer(protocol=mock_protocol, handler=mock_handler, transport=mock_tcp_transport)
     server._transport = mock_tcp_transport
