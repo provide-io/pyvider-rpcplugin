@@ -59,7 +59,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_process = magic_mock_factory(name="plugin_process")
         mock_process.stdout = magic_mock_factory(name="process_stdout")
         mock_process.stderr = magic_mock_factory(name="process_stderr")
-        mock_process.poll.return_value = None
+        mock_process.poll.return_value = 0  # Process is already terminated
         mock_process.terminate = magic_mock_factory(name="process_terminate")
         mock_process.kill = magic_mock_factory(name="process_kill")
         mock_process.wait = magic_mock_factory(name="process_wait", return_value=0)
