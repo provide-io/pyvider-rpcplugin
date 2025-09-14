@@ -11,6 +11,7 @@ from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_client_integration(test_client_command, client_cert, async_mock_factory, magic_mock_factory):
     """
     Integration test for RPCPluginClient full lifecycle.
