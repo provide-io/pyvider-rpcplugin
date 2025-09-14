@@ -98,7 +98,8 @@
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_close_transport_exception -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_close_process_wait_generic_exception -xvs)",
       "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_lifecycle.py::test_start_generic_exception -xvs)",
-      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py -v)"
+      "Bash(PYTHONPATH=./src timeout 30s python -m pytest tests/client/test_client_handshake.py -v)",
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_handshake.py --tb=short -q)"
     ],
     "deny": [],
     "ask": [],
