@@ -37,7 +37,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             "pyvider.rpcplugin.client.core.RPCPluginClient._read_raw_handshake_line_from_stdout",
             mock_read_handshake_line,
         ),
-        patch("provide.foundation.crypto.Certificate") as mock_cert_class,
+        patch("pyvider.rpcplugin.client.handshake.Certificate") as mock_cert_class,
         patch(
             "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel",
             mock_channel_func
@@ -96,10 +96,20 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         mock_stdio_stub.StreamStdio = lambda _: mock_stream_stdio(_)
 
-        # Mock broker call using provide-testkit
-        mock_call_object = async_mock_factory(name="broker_call_object")
-        # StartStream itself is a synchronous method returning an awaitable call object
-        mock_broker_stub.StartStream = magic_mock_factory(name="start_stream", return_value=mock_call_object)
+        # Mock broker call using provide-testkit - proper stream handling
+        mock_stream = magic_mock_factory(name="broker_stream")
+        mock_stream.write = async_mock_factory(name="stream_write")
+
+        # Mock the knock ack response for broker subchannel
+        mock_response = magic_mock_factory(name="broker_response")
+        mock_knock = magic_mock_factory(name="knock")
+        mock_knock.ack = True
+        mock_response.knock = mock_knock
+        mock_stream.read = async_mock_factory(name="stream_read", return_value=mock_response)
+
+        mock_stream.done_writing = magic_mock_factory(name="stream_done_writing")
+        # StartStream itself is a synchronous method returning a stream
+        mock_broker_stub.StartStream = magic_mock_factory(name="start_stream", return_value=mock_stream)
 
         # Mock shutdown using provide-testkit
         mock_controller_stub.Shutdown = async_mock_factory(name="shutdown")
