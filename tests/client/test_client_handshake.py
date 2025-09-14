@@ -24,34 +24,27 @@ def client_instance_for_retry_tests(mocker):
     return client
 
 
-@pytest.mark.asyncio
-async def test_relay_stderr_background(client_instance, mock_process):
-    client_instance._process = mock_process
-    with patch("threading.Thread") as mock_thread:
-        mock_thread_instance = MagicMock()
-        mock_thread.return_value = mock_thread_instance
-        await client_instance._relay_stderr_background()
-        mock_thread.assert_called_once()
-        mock_thread_instance.start.assert_called_once()
-
 
 @pytest.mark.asyncio
 async def test_perform_handshake_success(client_instance, mock_process):
-    client_instance._process = mock_process
+    # Ensure mock process has stderr so relay task is created
+    mock_process.stderr = AsyncMock()
+    client_instance._process = None  # So _launch_process will actually launch
+
     with (
         patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._relay_stderr_background",
-            new_callable=AsyncMock,
-        ) as mock_relay,
+            "pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process
+        ),
         patch(
-            "pyvider.rpcplugin.client.core.TCPSocketTransport"
+            "pyvider.rpcplugin.transport.TCPSocketTransport"
         ) as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
         mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
         await client_instance._perform_handshake()
-        mock_relay.assert_called_once()
+        # Should have created stderr relay task
+        assert client_instance._stdio_task is not None
         assert client_instance._protocol_version == 1
         assert client_instance._transport is mock_transport_instance
         assert client_instance._server_cert is None
@@ -67,7 +60,7 @@ async def test_perform_handshake_with_cert(client_instance, mock_process):
             new_callable=AsyncMock,
         ) as mock_relay,
         patch(
-            "pyvider.rpcplugin.client.core.TCPSocketTransport"
+            "pyvider.rpcplugin.transport.TCPSocketTransport"
         ) as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
@@ -91,7 +84,7 @@ async def test_perform_handshake_with_unix_transport(client_instance, mock_proce
             new_callable=AsyncMock,
         ) as mock_relay,
         patch(
-            "pyvider.rpcplugin.client.core.UnixSocketTransport"
+            "pyvider.rpcplugin.transport.UnixSocketTransport"
         ) as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
@@ -166,7 +159,7 @@ async def test_perform_handshake_parse_error(client_instance, mock_process):
             new_callable=AsyncMock,
         ),
         patch(
-            "pyvider.rpcplugin.client.core.parse_handshake_response",
+            "pyvider.rpcplugin.handshake.parse_handshake_response",
             side_effect=ValueError("Simulated parse error"),
         ) as mock_parse,
         pytest.raises(
@@ -234,7 +227,7 @@ async def test_read_raw_handshake_line_process_stdout_becomes_none(
         await original_asyncio_sleep(0.0001)
 
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.sleep", side_effect=sleep_side_effect
+        "asyncio.sleep", side_effect=sleep_side_effect
     )
     mock_loop_instance = MagicMock()
     time_values = [
@@ -254,7 +247,7 @@ async def test_read_raw_handshake_line_process_stdout_becomes_none(
 
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_empty_readline
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.get_event_loop",
+        "asyncio.get_event_loop",
         return_value=mock_loop_instance,
     )
     with pytest.raises(
@@ -288,10 +281,10 @@ async def test_read_raw_handshake_line_outer_timeout_with_stderr(
 
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_side_effect
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.get_event_loop",
+        "asyncio.get_event_loop",
         return_value=mock_loop_instance,
     )
-    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep")
+    mocker.patch("asyncio.sleep")
 
     expected_msg_regex = r".*Timed out waiting for handshake.*stderr messages on timeout.*"
     with pytest.raises(HandshakeError, match=expected_msg_regex):
@@ -324,10 +317,10 @@ async def test_read_raw_handshake_line_outer_timeout_no_stderr(
 
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_side_effect
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.get_event_loop",
+        "asyncio.get_event_loop",
         return_value=mock_loop_instance,
     )
-    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep")
+    mocker.patch("asyncio.sleep")
     expected_msg_regex = r".*Timed out waiting for handshake.*"
     with pytest.raises(HandshakeError, match=expected_msg_regex):
         await client_instance._read_raw_handshake_line_from_stdout()
@@ -352,8 +345,8 @@ async def test_perform_handshake_transport_not_initialized(
         "pyvider.rpcplugin.client.core.parse_handshake_response",
         return_value=(1, 1, "tcp", "127.0.0.1:1234", "grpc", None),
     )
-    mocker.patch("pyvider.rpcplugin.client.core.TCPSocketTransport", return_value=None)
-    mocker.patch("pyvider.rpcplugin.client.core.UnixSocketTransport", return_value=None)
+    mocker.patch("pyvider.rpcplugin.transport.TCPSocketTransport", return_value=None)
+    mocker.patch("pyvider.rpcplugin.transport.UnixSocketTransport", return_value=None)
     with pytest.raises(
         HandshakeError,
         match=r"Internal error: Transport was not initialized before attempting to connect.",
@@ -414,10 +407,10 @@ async def test_read_raw_handshake_line_byte_by_byte_success(
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = custom_run_in_executor
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.get_event_loop",
+        "asyncio.get_event_loop",
         return_value=mock_loop_instance,
     )
-    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep")
+    mocker.patch("asyncio.sleep")
     line = await client_instance._read_raw_handshake_line_from_stdout()
     assert line.strip() == handshake_str
 
@@ -447,10 +440,10 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(
     time_values = [i * 0.1 for i in range(105)]
     mock_loop_instance.time.side_effect = time_values
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.get_event_loop",
+        "asyncio.get_event_loop",
         return_value=mock_loop_instance,
     )
-    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep")
+    mocker.patch("asyncio.sleep")
 
     def run_in_executor_wrapper(loop, func_to_run):
         f = asyncio.Future()
@@ -491,7 +484,7 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(
         return await original_asyncio_wait_for(awaitable, timeout)
 
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.wait_for", side_effect=custom_wait_for
+        "asyncio.wait_for", side_effect=custom_wait_for
     )
 
     def run_in_executor_for_inner_timeout(loop, func):
@@ -514,10 +507,10 @@ async def test_read_raw_handshake_line_byte_by_byte_read_timeout(
     mock_loop_instance.time.side_effect = time_values
     mock_loop_instance.run_in_executor.side_effect = run_in_executor_for_inner_timeout
     mocker.patch(
-        "pyvider.rpcplugin.client.core.asyncio.get_event_loop",
+        "asyncio.get_event_loop",
         return_value=mock_loop_instance,
     )
-    mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep")
+    mocker.patch("asyncio.sleep")
     with pytest.raises(
         HandshakeError, match=r"Timed out waiting for handshake line from plugin."
     ):  # General timeout

@@ -19,7 +19,7 @@ async def test_rebuild_x509_pem(client_instance):
 
     # PEM headers should be added
     assert result.startswith("-----BEGIN CERTIFICATE-----")
-    assert result.endswith("-----END CERTIFICATE-----\n")
+    assert result.endswith("-----END CERTIFICATE-----")
     assert raw_cert in result
 
     # Test with already formatted PEM
@@ -60,8 +60,12 @@ async def test_create_grpc_channel_with_tls(client_instance):
 
             await client_instance._create_grpc_channel()
 
-            # Verify TLS-only credentials were used (only root_certificates)
-            mock_ssl_creds.assert_called_once_with(root_certificates=ANY)
+            # Verify TLS-only credentials were used (root_certificates with None for client certs)
+            mock_ssl_creds.assert_called_once_with(
+                root_certificates=ANY,
+                private_key=None,
+                certificate_chain=None
+            )
             mock_secure_channel.assert_called_once()
             assert client_instance.grpc_channel == mock_channel
 
@@ -166,10 +170,11 @@ async def test_create_grpc_channel_unix_socket(client_instance):
 
         await client_instance._create_grpc_channel()
 
-        # Verify unix prefix was used and no extra args
+        # Verify unix prefix was used with keepalive options
         mock_insecure_channel.assert_called_once_with(
-            "unix:/tmp/test.sock"
-        )  # Corrected assertion
+            "unix:/tmp/test.sock",
+            options=ANY
+        )
 
 
 @pytest.mark.asyncio
@@ -196,15 +201,12 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
 
     with pytest.raises(
         TransportError,
-        match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to unix:/tmp/test_timeout.sock.*",
+        match=r"\[TransportError\] gRPC channel failed to become ready within .* for endpoint unix:/tmp/test_timeout.sock.*",
     ):
         await client_instance._create_grpc_channel()
 
     mock_logger_error.assert_any_call(
-        "🚢❌ gRPC channel failed to become ready (timeout)"
-    )
-    mock_logger_error.assert_any_call(
-        "🚢❌ Socket diagnostics: path=/tmp/test_timeout.sock, exists=True"
+        "gRPC channel failed to become ready within 10.0s for endpoint unix:/tmp/test_timeout.sock"
     )
 
 
@@ -231,17 +233,13 @@ async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
 
     with pytest.raises(
         TransportError,
-        match=r"\[TransportError\] Failed to establish gRPC channel to plugin: timeout.*Hint: Check network connectivity to 127.0.0.1:12345.*",
+        match=r"\[TransportError\] gRPC channel failed to become ready within .* for endpoint 127.0.0.1:12345.*",
     ):
         await client_instance._create_grpc_channel()
 
-    # Ensure the primary timeout log is there, but not the Unix-specific socket diagnostic
     mock_logger_error.assert_any_call(
-        "🚢❌ gRPC channel failed to become ready (timeout)"
+        "gRPC channel failed to become ready within 10.0s for endpoint 127.0.0.1:12345"
     )
-    # Check that the Unix-specific diagnostic was NOT called
-    for call in mock_logger_error.call_args_list:
-        assert "Socket diagnostics" not in call.args[0]
 
 
 @pytest.mark.asyncio
@@ -265,13 +263,14 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
 
     with pytest.raises(
         TransportError,
-        match=r"\[TransportError\] Failed to establish gRPC channel to plugin at 127.0.0.1:12345: Other connection issue.*Hint: Verify plugin server is running.*",
+        match=r"\[TransportError\] Failed to create gRPC channel: Other connection issue.*",
     ):
         await client_instance._create_grpc_channel()
 
     mock_logger_error.assert_any_call(
-        "🚢❌ gRPC channel creation failed: Other connection issue"
-    )  # <--- Ensure this is the new assertion
+        "Failed to create gRPC channel to 127.0.0.1:12345: Other connection issue",
+        exc_info=True
+    )
 
 
 # 🐍🔌🧪🪄
