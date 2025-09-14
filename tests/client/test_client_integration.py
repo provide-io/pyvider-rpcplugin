@@ -89,8 +89,9 @@ async def test_client_integration(test_client_command, test_client_cert):
         mock_transport_class.return_value = mock_transport
 
         # Mock channel using provide-testkit
-        mock_channel = async_mock_factory(name="grpc_channel")
+        mock_channel = magic_mock_factory(name="grpc_channel")
         mock_channel.channel_ready = async_mock_factory(name="channel_ready")
+        mock_channel.close = async_mock_factory(name="channel_close")
         mock_channel_func.return_value = mock_channel
 
         # Mock stubs using provide-testkit
