@@ -431,14 +431,19 @@ class ClientHandshakeMixin:
             self.logger.debug(f"Raw handshake received: {raw_handshake}")
 
             # Parse the handshake response
-            (
-                core_version,
-                plugin_version,
-                network,
-                address,
-                protocol,
-                server_cert,
-            ) = parse_handshake_response(raw_handshake)
+            try:
+                (
+                    core_version,
+                    plugin_version,
+                    network,
+                    address,
+                    protocol,
+                    server_cert,
+                ) = parse_handshake_response(raw_handshake)
+            except Exception as parse_error:
+                raise HandshakeError(
+                    f"Failed to process handshake response or establish transport connection: {parse_error}"
+                ) from parse_error
 
             # Store parsed handshake data
             self._address = address

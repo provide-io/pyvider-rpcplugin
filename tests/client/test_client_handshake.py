@@ -170,12 +170,13 @@ async def test_perform_handshake_parse_error(client_instance, mock_process):
     client_instance._process = mock_process
     mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
     with (
-        patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._relay_stderr_background",
+        patch.object(
+            client_instance,
+            "_relay_stderr_background",
             new_callable=AsyncMock,
         ),
         patch(
-            "pyvider.rpcplugin.handshake.parse_handshake_response",
+            "pyvider.rpcplugin.client.handshake.parse_handshake_response",
             side_effect=ValueError("Simulated parse error"),
         ) as mock_parse,
         pytest.raises(
