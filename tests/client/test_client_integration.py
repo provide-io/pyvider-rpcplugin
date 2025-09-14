@@ -60,6 +60,9 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_process.stdout = magic_mock_factory(name="process_stdout")
         mock_process.stderr = magic_mock_factory(name="process_stderr")
         mock_process.poll.return_value = None
+        mock_process.terminate = magic_mock_factory(name="process_terminate")
+        mock_process.kill = magic_mock_factory(name="process_kill")
+        mock_process.wait = magic_mock_factory(name="process_wait", return_value=0)
         mock_popen.return_value = mock_process
 
         # Mock certificate to use provide-testkit client_cert fixture
@@ -88,7 +91,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         async def mock_shutdown(*args, **kwargs):
             nonlocal shutdown_called
             shutdown_called = True
-            return None
+            return magic_mock_factory(name="shutdown_response")
         mock_controller_stub.Shutdown = AsyncMock(side_effect=mock_shutdown)
 
         mock_stdio_stub_class.return_value = mock_stdio_stub
