@@ -5,6 +5,9 @@ import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 import subprocess  # Added for spec=subprocess.Popen
 
+from provide.testkit.mocking import magic_mock_factory, async_mock_factory
+from provide.testkit.transport import transport_fixtures
+
 from pyvider.rpcplugin.exception import (
     HandshakeError,
 )  # Added ProtocolError, SecurityError
@@ -346,25 +349,26 @@ async def test_read_raw_handshake_line_outer_timeout_no_stderr(
 
 @pytest.mark.asyncio
 async def test_perform_handshake_transport_not_initialized(
-    client_instance, mock_process, mocker
+    client_instance, mock_process, mocker, magic_mock_factory, async_mock_factory
 ):
     client_instance._process = mock_process
     if not hasattr(mock_process, "stdout") or not hasattr(
         mock_process.stdout, "readline"
     ):
-        mock_process.stdout = MagicMock()
+        mock_process.stdout = magic_mock_factory(name="process_stdout")
     mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:1234|grpc|\n"
     mocker.patch.object(
         client_instance,
         "_relay_stderr_background",
-        new_callable=AsyncMock,
+        new_callable=lambda: async_mock_factory(name="relay_stderr"),
     )
     mocker.patch(
         "pyvider.rpcplugin.client.handshake.parse_handshake_response",
         return_value=(1, 1, "tcp", "127.0.0.1:1234", "grpc", None),
     )
-    mocker.patch("pyvider.rpcplugin.transport.TCPSocketTransport", return_value=None)
-    mocker.patch("pyvider.rpcplugin.transport.UnixSocketTransport", return_value=None)
+    # Use testkit patterns to mock transports at the correct import location
+    mocker.patch("pyvider.rpcplugin.client.process.TCPSocketTransport", return_value=None)
+    mocker.patch("pyvider.rpcplugin.client.process.UnixSocketTransport", return_value=None)
     with pytest.raises(
         HandshakeError,
         match=r"Internal error: Transport was not initialized before attempting to connect.",
