@@ -8,7 +8,7 @@ import subprocess  # Added for spec=subprocess.Popen
 from pyvider.rpcplugin.exception import (
     HandshakeError,
 )  # Added ProtocolError, SecurityError
-from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 @pytest.fixture

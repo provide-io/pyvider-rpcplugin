@@ -4,7 +4,7 @@ import pytest
 import asyncio
 from unittest.mock import patch, MagicMock, AsyncMock
 
-from pyvider.rpcplugin.client import RPCPluginClient
+from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 @pytest.mark.asyncio

@@ -222,7 +222,7 @@ async def test_check_socket_in_use_connect_specific_errors(mocker, managed_unix_
 
 # Tests for normalize_unix_path
 def test_normalize_unix_path_double_slash():
-    from pyvider.rpcplugin.transport.unix import normalize_unix_path # Local import for clarity
+    from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path # Local import for clarity
     assert normalize_unix_path("//foo/bar") == "/foo/bar"
     assert normalize_unix_path("///foo/bar") == "/foo/bar"
     assert normalize_unix_path("//") == "/"
@@ -230,17 +230,17 @@ def test_normalize_unix_path_double_slash():
 
 
 def test_normalize_unix_path_single_slash():
-    from pyvider.rpcplugin.transport.unix import normalize_unix_path
+    from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path
     assert normalize_unix_path("/foo/bar") == "/foo/bar"
     assert normalize_unix_path("/") == "/"
 
 def test_normalize_unix_path_no_leading_slash():
-    from pyvider.rpcplugin.transport.unix import normalize_unix_path
+    from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path
     assert normalize_unix_path("foo/bar") == "foo/bar"
     assert normalize_unix_path("foo") == "foo"
 
 def test_normalize_unix_path_with_prefix():
-    from pyvider.rpcplugin.transport.unix import normalize_unix_path
+    from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path
     assert normalize_unix_path("unix:///foo/bar") == "/foo/bar"
     assert normalize_unix_path("unix://foo/bar") == "/foo/bar"
     assert normalize_unix_path("unix:/foo/bar") == "/foo/bar"

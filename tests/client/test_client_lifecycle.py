@@ -450,7 +450,7 @@ async def test_aexit_shutdown_plugin_exception(client_instance, mocker):
     mock_close_method = mocker.patch("pyvider.rpcplugin.client.core.RPCPluginClient.close", new_callable=AsyncMock)
 
     # Create a new client instance AFTER patching
-    from pyvider.rpcplugin.client import RPCPluginClient # Local import for clarity
+    from pyvider.rpcplugin.client.core import RPCPluginClient # Local import for clarity
     client = RPCPluginClient(command=client_instance.command) # Use command from fixture instance
     client._controller_stub = AsyncMock() # Ensure this path is taken
 
