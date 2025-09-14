@@ -111,7 +111,8 @@
       "Bash(export PYTHONPATH=./src:$PYTHONPATH)",
       "Bash(timeout 30s python -m pytest:*)",
       "Bash(export:*)",
-      "Read(//Users/tim/.local/share/uv/**)"
+      "Read(//Users/tim/.local/share/uv/**)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": [],
