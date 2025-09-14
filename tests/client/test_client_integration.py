@@ -25,7 +25,7 @@ async def test_client_integration(test_client_command):
             "pyvider.rpcplugin.client.core.RPCPluginClient._read_raw_handshake_line_from_stdout",
             new_callable=AsyncMock,
         ) as mock_read_handshake_line,
-        patch("pyvider.rpcplugin.client.core.Certificate") as mock_cert_class,
+        patch("provide.foundation.crypto.Certificate") as mock_cert_class,
         patch(
             "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel"
         ) as mock_channel_func,
