@@ -21,7 +21,6 @@ dependencies = [
     "grpcio-health-checking>=1.73.0",
     "protobuf>=5.29.3",
     "provide-foundation",
-    "pyvider-telemetry",
     "structlog>=25.1.0",
 ]
 
