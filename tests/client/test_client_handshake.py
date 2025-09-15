@@ -276,6 +276,7 @@ async def test_read_raw_handshake_line_process_stdout_becomes_none(
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_read_raw_handshake_line_outer_timeout_with_stderr(
     client_instance_for_retry_tests, mocker
 ):
@@ -312,6 +313,7 @@ async def test_read_raw_handshake_line_outer_timeout_with_stderr(
 
 
 @pytest.mark.asyncio
+@pytest.mark.slow
 async def test_read_raw_handshake_line_outer_timeout_no_stderr(
     client_instance_for_retry_tests, mocker
 ):
