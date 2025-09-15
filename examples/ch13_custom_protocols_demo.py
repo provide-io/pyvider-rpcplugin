@@ -10,13 +10,13 @@ from collections.abc import (  # For CustomProtocol
 )
 from typing import Any
 
-# Ensure example_utils is imported before other project modules
-# that might depend on its setup
-from examples import example_utils
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
+# Import example_utils directly as it's in the same directory
+import example_utils  # type: ignore[import-not-found]
 
 example_utils.configure_for_example()
+
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 
 class CustomProtocol(RPCPluginProtocol):

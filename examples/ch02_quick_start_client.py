@@ -8,13 +8,13 @@ import asyncio
 import sys
 from pathlib import Path
 
-# Changed to relative import for examples package
-from examples.example_utils import configure_for_example  # noqa: E402
+# Import example_utils directly as it's in the same directory
+import example_utils  # type: ignore[import-not-found] # noqa: E402
 
-configure_for_example(clear_env=True)  # Client context
+example_utils.configure_for_example(clear_env=True)  # Client context
 
 from pyvider.rpcplugin import plugin_client  # noqa: E402
-from pyvider.rpcplugin.client.base import (  # noqa: E402
+from pyvider.rpcplugin.client import (  # noqa: E402
     RPCPluginClient,
 )  # Retaining for clarity if user inspects client object
 from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
