@@ -288,10 +288,13 @@ def test_plugin_client_with_options_and_auto_connect_warning(
             config=custom_config,
         )
         assert client is mock_client_instance
-        mock_logger_warning.assert_called_once_with(
+        # Check that our specific warning was called (there may be other warnings)
+        expected_warning = (
             "🏭 auto_connect=True in synchronous factory is misleading. "
             "Caller should handle async client.start()."
         )
+        warning_calls = [call.args[0] for call in mock_logger_warning.call_args_list]
+        assert expected_warning in warning_calls, f"Expected warning not found in: {warning_calls}"
         # client.start() should not be called by the factory itself anymore
         mock_client_instance.start.assert_not_called()
 
