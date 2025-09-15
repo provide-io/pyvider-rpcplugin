@@ -98,18 +98,25 @@ norecursedirs = [
 ################################################################################
 
 [tool.ruff]
-line-length = 88
+line-length = 111
+indent-width = 4
+target-version = "py311"
 exclude = ["tests/*", "**/*pb2*.py"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "ANN", "B"]
-ignore = [
-    "ANN401", # Implicit `Any` return, consider fixing where possible
-    "B008",   # Function call in default argument
-]
+select = ["E", "F", "W", "I", "UP", "ANN", "B", "C90", "SIM", "PTH", "RUF"]
+ignore = ["ANN401", "B008", "E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pyvider", "tests"]
+force-sort-within-sections = true
+combine-as-imports = true
 
 [tool.ruff.format]
-# Standard ruff format options, no overrides needed for now.
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
 
 ################################################################################
 # coverage
