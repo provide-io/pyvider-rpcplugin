@@ -95,7 +95,7 @@ def test_unix_transport_init_with_relative_path(mocker):
     expected_normalized_path = relative_path  # Assuming no "unix:" prefix to strip
 
     mock_normalize = mocker.patch(
-        "pyvider.rpcplugin.transport.unix.normalize_unix_path",
+        "pyvider.rpcplugin.transport.unix.transport.normalize_unix_path",
         return_value=expected_normalized_path,
     )
 
