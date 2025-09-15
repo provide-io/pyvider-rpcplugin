@@ -85,10 +85,17 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
     try:
         await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
 
-        socket_path = server._transport.endpoint
-        assert socket_path, "Could not determine server socket path for client connection."
+        endpoint = server._transport.endpoint
+        assert endpoint, "Could not determine server endpoint for client connection."
 
-        async with grpc.aio.insecure_channel(f"unix:{socket_path}") as channel:
+        # Use appropriate connection string based on transport type
+        from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+        if isinstance(server._transport, UnixSocketTransport):
+            connection_string = f"unix:{endpoint}"
+        else:
+            connection_string = endpoint
+
+        async with grpc.aio.insecure_channel(connection_string) as channel:
             health_stub = health_pb2_grpc.HealthStub(channel)
             echo_stub = echo_pb2_grpc.EchoServiceStub(channel)
 

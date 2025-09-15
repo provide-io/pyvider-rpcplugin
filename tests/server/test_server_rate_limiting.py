@@ -120,10 +120,17 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
     try:
         await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
 
-        socket_path = server._transport.endpoint
-        assert socket_path, "Could not determine server socket path for client connection."
+        endpoint = server._transport.endpoint
+        assert endpoint, "Could not determine server endpoint for client connection."
 
-        channel = grpc.aio.insecure_channel(f"unix:{socket_path}")
+        # Use appropriate connection string based on transport type
+        from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+        if isinstance(server._transport, UnixSocketTransport):
+            connection_string = f"unix:{endpoint}"
+        else:
+            connection_string = endpoint
+
+        channel = grpc.aio.insecure_channel(connection_string)
         stub = echo_pb2_grpc.EchoServiceStub(channel)
 
         # Use up the burst capacity
