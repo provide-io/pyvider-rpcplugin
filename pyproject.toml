@@ -154,17 +154,21 @@ strict = true
 # mypy
 ################################################################################
 [tool.mypy]
-ignore_missing_imports = false # Default, but explicit
-# disable_error_code = ["import-untyped"] # Globally disable for now to test
+python_version = "3.11"
+mypy_path = "src"
+strict = true
+pretty = true
+show_error_codes = true
+show_column_numbers = true
+warn_unused_ignores = true
+warn_unused_configs = true
+disallow_untyped_decorators = false
 
-# Add specific ignores for problematic protobuf imports
 [[tool.mypy.overrides]]
 module = [
-    "google.protobuf.internal",
-    "google.protobuf.descriptor", # Often imported by generated code
-    "google.protobuf.message",    # Base class for messages
-    "google.protobuf.empty_pb2",  # For google.protobuf.empty_pb2
-    "google.protobuf"             # General fallback for the google.protobuf namespace
+    "google.protobuf.*",
+    "grpc.*",
+    "pytest.*",
 ]
 ignore_missing_imports = true
 
