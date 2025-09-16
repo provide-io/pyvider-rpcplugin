@@ -10,7 +10,6 @@ initialization, and core lifecycle methods like start, close, and shutdown.
 
 import asyncio
 import subprocess  # nosec B404
-import time
 from types import TracebackType
 from typing import Any
 
@@ -18,7 +17,6 @@ from attrs import define, field
 import grpc
 from provide.foundation import logger
 
-from pyvider.rpcplugin.config import rpcplugin_config
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
