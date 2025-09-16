@@ -115,7 +115,7 @@ async def test_read_handshake_response_timeout(mocker):
     process = MockProcess()
     mocker.patch("asyncio.sleep", new_callable=AsyncMock)
     mocker.patch(
-        "time.time", side_effect=[i * 2.0 for i in range(10)]
+        "time.time", side_effect=[i * 2.0 for i in range(100)]  # Provide enough values
     )
 
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
@@ -144,7 +144,7 @@ async def test_read_handshake_response_timeout_stderr_read_error(mocker):
 
     mocker.patch("pyvider.rpcplugin.handshake.negotiation.asyncio.sleep", new_callable=AsyncMock)
     mocker.patch(
-        "pyvider.rpcplugin.handshake.negotiation.time.time", side_effect=[0, 2, 4, 6, 8, 10, 12]
+        "pyvider.rpcplugin.handshake.negotiation.time.time", side_effect=[i * 2.0 for i in range(100)]  # Provide enough values
     )
 
     expected_regex = r".*Timed out waiting for handshake response.*"
