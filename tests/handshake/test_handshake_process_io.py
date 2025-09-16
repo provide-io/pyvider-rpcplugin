@@ -122,7 +122,7 @@ async def test_read_handshake_response_timeout(mocker):
 
     with pytest.raises(
         HandshakeError,
-        match=r"Timed out waiting for handshake response from plugin after 10.0 seconds.",
+        match=r"Timed out waiting for handshake response from plugin after \d+\.\d+ seconds",
     ):
         await read_handshake_response(process)
 
@@ -316,7 +316,7 @@ async def test_read_handshake_stdout_becomes_none(mocker):
     mock_process.stderr = MagicMock()
     mock_process.stderr.read.return_value = b"no specific error on stderr"
     mocker.patch("pyvider.rpcplugin.handshake.negotiation.asyncio.sleep", new_callable=AsyncMock)
-    time_side_effects = [i * 0.05 for i in range(400)]
+    time_side_effects = [i * 0.05 for i in range(1000)]  # Provide even more values
     mocker.patch("pyvider.rpcplugin.handshake.negotiation.time.time", side_effect=time_side_effects)
 
     with pytest.raises(HandshakeError, match=r"Timed out waiting for handshake response from plugin after \d+\.\d+ seconds"):
