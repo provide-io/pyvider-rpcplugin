@@ -201,9 +201,9 @@ class ClientProcessMixin:
 
             # Test channel connectivity
             if self.grpc_channel is not None:
-                channel_ready_timeout = 10.0  # seconds
                 await asyncio.wait_for(
-                    self.grpc_channel.channel_ready(), timeout=channel_ready_timeout
+                    self.grpc_channel.channel_ready(),
+                    timeout=rpcplugin_config.channel_ready_timeout()
                 )
 
             self.logger.debug("gRPC channel is ready")
