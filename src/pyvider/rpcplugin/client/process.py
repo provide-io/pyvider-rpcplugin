@@ -88,13 +88,14 @@ class ClientProcessMixin:
                 text=False,  # Use bytes for better control over encoding
             )
 
-            self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
+            if self._process is not None:
+                self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
 
-            # Start stderr relay task
-            if self._process.stderr:
-                self._stdio_task = asyncio.create_task(
-                    self._relay_stderr_background()
-                )
+                # Start stderr relay task
+                if self._process.stderr:
+                    self._stdio_task = asyncio.create_task(
+                        self._relay_stderr_background()
+                    )
 
         except Exception as e:
             self.logger.error(f"Failed to launch plugin process: {e}", exc_info=True)
@@ -199,10 +200,11 @@ class ClientProcessMixin:
                 )
 
             # Test channel connectivity
-            channel_ready_timeout = 10.0  # seconds
-            await asyncio.wait_for(
-                self.grpc_channel.channel_ready(), timeout=channel_ready_timeout
-            )
+            if self.grpc_channel is not None:
+                channel_ready_timeout = 10.0  # seconds
+                await asyncio.wait_for(
+                    self.grpc_channel.channel_ready(), timeout=channel_ready_timeout
+                )
 
             self.logger.debug("gRPC channel is ready")
 

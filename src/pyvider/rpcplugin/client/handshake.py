@@ -352,13 +352,16 @@ class ClientHandshakeMixin:
                         await asyncio.sleep(0.1)
                         continue
 
-                    chunk = await asyncio.wait_for(
-                        asyncio.get_event_loop().run_in_executor(
-                            None,
-                            lambda: self._process.stdout.read(1024),
-                        ),
-                        timeout=1.0,
-                    )
+                    if self._process and self._process.stdout:
+                        chunk = await asyncio.wait_for(
+                            asyncio.get_event_loop().run_in_executor(
+                                None,
+                                lambda: self._process.stdout.read(1024) if self._process and self._process.stdout else b"",
+                            ),
+                            timeout=1.0,
+                        )
+                    else:
+                        chunk = b""
 
                     if chunk:
                         chunk_str = chunk.decode("utf-8", errors="replace")
