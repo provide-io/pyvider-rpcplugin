@@ -173,7 +173,13 @@ class UnixSocketTransport(RPCPluginTransport):
                     logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
                     raise TransportError(f"Failed to create Unix socket directory: {e}") from e
 
-            if Path(self.path).exists():
+            try:
+                path_exists = Path(self.path).exists()
+            except PermissionError as e:
+                logger.warning(f"📞🕹⚠️ Permission denied checking if socket exists: {e}. Proceeding with socket creation.")
+                path_exists = False
+
+            if path_exists:
                 try:
                     Path(self.path).unlink()
                     logger.debug(f"📞🕹✅ Removed stale socket file: {self.path}")
