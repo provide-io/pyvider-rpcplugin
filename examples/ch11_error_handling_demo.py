@@ -14,6 +14,7 @@ from typing import (
 )
 
 from example_utils import configure_for_example  # type: ignore[import-not-found]
+from provide.foundation import logger
 
 from pyvider.rpcplugin.exception import (
     HandshakeError,
@@ -22,7 +23,6 @@ from pyvider.rpcplugin.exception import (
     SecurityError,
     TransportError,
 )
-from provide.foundation import logger
 
 configure_for_example()
 
@@ -64,9 +64,7 @@ async def graceful_degradation_example() -> None:
     result: str  # Explicit type annotation
     try:
         logger.info("🎯 Attempting primary service")
-        result = (
-            await attempt_primary_service()
-        )  # This line won't be reached due to Never
+        result = await attempt_primary_service()  # This line won't be reached due to Never
     except TransportError as e:
         logger.warning(f"⚠️  Primary service failed: {e}")
         logger.info("🔄 Falling back to secondary service")
@@ -81,9 +79,7 @@ async def circuit_breaker_example() -> None:
     logger.info("🔌 Circuit Breaker Example")
 
     class SimpleCircuitBreaker:
-        def __init__(
-            self, failure_threshold: int = 3, recovery_timeout: int = 5
-        ) -> None:
+        def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 5) -> None:
             self.failure_threshold = failure_threshold
             self.recovery_timeout = recovery_timeout
             self.failure_count = 0

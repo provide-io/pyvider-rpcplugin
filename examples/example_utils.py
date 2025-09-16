@@ -6,15 +6,15 @@ Provides consistent path resolution and environment setup.
 
 import logging
 import os
-import sys
 from pathlib import Path
+import sys
 from typing import Any, cast  # For DummyHandler type hint
 
 import grpc  # For DummyHandler type hint
+from provide.foundation import logger as dummy_handler_logger
 
 from pyvider.rpcplugin import configure as pyvider_configure
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation import logger as dummy_handler_logger
 
 
 def setup_example_environment() -> Path:
@@ -94,7 +94,7 @@ def configure_for_example(clear_env: bool = False) -> None:
             "PLUGIN_HANDSHAKE_TIMEOUT": "plugin_handshake_timeout",
             "PLUGIN_CONNECTION_TIMEOUT": "plugin_connection_timeout",
         }
-        
+
         for key, example_value in example_defaults.items():
             attr_name = key_to_attr.get(key)
             if not attr_name:
@@ -146,8 +146,7 @@ def configure_for_example(clear_env: bool = False) -> None:
                 final_other_kwargs = {
                     k: v
                     for k, v in other_kwargs.items()
-                    if k not in explicitly_handled_plugin_keys
-                    and k.startswith("PLUGIN_")
+                    if k not in explicitly_handled_plugin_keys and k.startswith("PLUGIN_")
                 }
 
                 pyvider_configure(
@@ -183,9 +182,7 @@ class DummyHandler:
     """
 
     async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
-        dummy_handler_logger.info(
-            "DummyHandler: NoOp called (generally not expected in basic examples)"
-        )
+        dummy_handler_logger.info("DummyHandler: NoOp called (generally not expected in basic examples)")
         return {}
 
 

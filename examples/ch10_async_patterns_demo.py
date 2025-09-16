@@ -20,9 +20,7 @@ async def concurrent_requests_example() -> None:
     async def mock_rpc_call(request_id: int) -> str:
         """Simulates an RPC call that takes some time."""
         delay = 0.1 * request_id  # Different requests take different times
-        logger.info(
-            f"  -> Starting mock RPC call {request_id} (will take {delay:.1f}s)"
-        )
+        logger.info(f"  -> Starting mock RPC call {request_id} (will take {delay:.1f}s)")
         await asyncio.sleep(delay)
         response = f"Response for request {request_id}"
         logger.info(f"  <- Finished mock RPC call {request_id}")
@@ -85,9 +83,7 @@ async def timeout_and_retry_example() -> None:
         try:
             # asyncio.wait_for adds a timeout to an awaitable. If the operation
             # takes longer than 1.0 second, it raises asyncio.TimeoutError.
-            result = await asyncio.wait_for(
-                unreliable_operation(current_attempt), timeout=1.0
-            )
+            result = await asyncio.wait_for(unreliable_operation(current_attempt), timeout=1.0)
             logger.info(f"✅ {result}")
             break  # Success, exit retry loop
         except TimeoutError:
@@ -103,9 +99,7 @@ async def timeout_and_retry_example() -> None:
 
         # If not successful and more retries are allowed, wait before next attempt
         if current_attempt <= max_retries:
-            delay = base_retry_delay * (
-                2 ** (current_attempt - 1)
-            )  # Exponential backoff
+            delay = base_retry_delay * (2 ** (current_attempt - 1))  # Exponential backoff
             logger.info(f"😴 Waiting {delay:.2f}s before next retry...")
             await asyncio.sleep(delay)
 

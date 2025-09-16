@@ -9,7 +9,7 @@ Prints its handshake string to stdout upon successful startup.
 import asyncio
 
 # Import example_utils directly as it's in the same directory
-import example_utils  # type: ignore[import-not-found] # noqa: E402
+import example_utils  # type: ignore[import-not-found]
 
 # This should be called before other pyvider imports if this script is run directly.
 # It sets up paths and default config (e.g., disabling mTLS for basic examples).
@@ -17,20 +17,18 @@ example_utils.configure_for_example()
 
 # Import the shared DummyHandler
 from example_utils import DummyHandler  # noqa: E402
+from provide.foundation import logger  # noqa: E402
+
 from pyvider.rpcplugin import plugin_protocol, plugin_server  # noqa: E402
 from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
-from provide.foundation import logger  # noqa: E402
 
 
 async def main() -> None:
     """Sets up and runs the dummy server for Chapter 2 Quick Start."""
-    logger.info(
-        "🚀 ch02_dummy_server.py (Quick Start version): "
-        "Starting as an executable plugin..."
-    )
+    logger.info("🚀 ch02_dummy_server.py (Quick Start version): Starting as an executable plugin...")
 
     # `configure_for_example()` called at the module level sets up default
     # configurations, including a default magic cookie key/value and disabling
@@ -49,9 +47,7 @@ async def main() -> None:
     # Determine if running as main for the special socket path writing behavior
     # or if specific env var PYVIDER_WRITE_SOCKET_PATH is set.
     # This allows ch08_direct_client_connection.py to work with this server.
-    should_write_socket_path = (
-        __name__ == "__main__" or os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true"
-    )
+    should_write_socket_path = __name__ == "__main__" or os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true"
     server_task = None
     socket_comm_file = None
 
@@ -62,8 +58,7 @@ async def main() -> None:
 
     try:
         logger.info(
-            "Dummy server (Quick Start version) attempting to start and serve "
-            "(will print handshake)..."
+            "Dummy server (Quick Start version) attempting to start and serve (will print handshake)..."
         )
 
         if should_write_socket_path:
@@ -76,26 +71,18 @@ async def main() -> None:
 
             if server.transport and server.transport.endpoint and socket_comm_file:
                 if server._transport_name == "unix":
-                    logger.info(
-                        f"ch08 skt: {server.transport.endpoint} to {socket_comm_file}"
-                    )
+                    logger.info(f"ch08 skt: {server.transport.endpoint} to {socket_comm_file}")
                     try:
                         with open(socket_comm_file, "w") as f:
                             f.write(str(server.transport.endpoint))
                     except OSError as e:
                         logger.error(f"Failed to write socket path: {e}")
                 else:
-                    logger.info(
-                        f"{server._transport_name} (not unix), no socket path written."
-                    )
+                    logger.info(f"{server._transport_name} (not unix), no socket path written.")
             else:
-                logger.warning(
-                    "Server transport/endpoint not available. Cannot write socket path."
-                )
+                logger.warning("Server transport/endpoint not available. Cannot write socket path.")
 
-            if (
-                server_task
-            ):  # server_task might not be set if wait_for_server_ready times out
+            if server_task:  # server_task might not be set if wait_for_server_ready times out
                 await server_task
         else:
             await server.serve()  # This performs handshake and starts serving.
@@ -142,8 +129,6 @@ if __name__ == "__main__":
 
     from pyvider.rpcplugin import (
         configure as pyvider_core_configure,
-    )
-    from pyvider.rpcplugin import (
         rpcplugin_config,
     )  # For standalone setup
 
@@ -151,9 +136,7 @@ if __name__ == "__main__":
         # If run for ch08, ensure magic cookie is set for self-handshake
         cookie_key_to_set_in_env = rpcplugin_config.magic_cookie_key()
         expected_cookie_value = rpcplugin_config.magic_cookie_value()
-        env_var_name_for_cookie = (
-            "PYVIDER_PLUGIN_MAGIC_COOKIE"  # Default from example_utils
-        )
+        env_var_name_for_cookie = "PYVIDER_PLUGIN_MAGIC_COOKIE"  # Default from example_utils
         if cookie_key_to_set_in_env != env_var_name_for_cookie:
             env_var_name_for_cookie = cookie_key_to_set_in_env
         os.environ[env_var_name_for_cookie] = expected_cookie_value

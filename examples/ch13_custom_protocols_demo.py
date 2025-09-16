@@ -15,8 +15,9 @@ import example_utils  # type: ignore[import-not-found]
 
 example_utils.configure_for_example()
 
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
 from provide.foundation import logger  # noqa: E402
+
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
 
 
 class CustomProtocol(RPCPluginProtocol):
@@ -55,9 +56,7 @@ class CustomProtocol(RPCPluginProtocol):
         """Add middleware to the protocol."""
         self.middleware_factories.append(middleware_factory)
         factory_name = (
-            middleware_factory.__name__
-            if hasattr(middleware_factory, "__name__")
-            else str(middleware_factory)
+            middleware_factory.__name__ if hasattr(middleware_factory, "__name__") else str(middleware_factory)
         )
         logger.info(f"➕ Added middleware factory: {factory_name}")
 
@@ -82,9 +81,7 @@ class LoggingMiddleware:
         if callable(original_method) and asyncio.iscoroutinefunction(original_method):
 
             async def logged_method(*args: Any, **kwargs: Any) -> Any:
-                logger.info(
-                    f"📝 [LOG] Calling: {self.next_handler.__class__.__name__}.{name}"
-                )
+                logger.info(f"📝 [LOG] Calling: {self.next_handler.__class__.__name__}.{name}")
                 try:
                     result = await original_method(*args, **kwargs)
                     logger.info(f"✅ [LOG] Completed: {name}")
@@ -120,9 +117,7 @@ class TimingMiddleware:
                     return result
                 except Exception as e:
                     duration = time.perf_counter() - start_time
-                    logger.error(
-                        f"⏱️  [TIMING] {name} failed after {duration:.4f}s: {e}"
-                    )
+                    logger.error(f"⏱️  [TIMING] {name} failed after {duration:.4f}s: {e}")
                     raise
 
             return timed_method

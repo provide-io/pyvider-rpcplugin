@@ -7,12 +7,14 @@ plugin launched as a subprocess.
 
 import asyncio
 import os
+from pathlib import Path
 import sys
 import tempfile
-from pathlib import Path
 
 # First-party imports (project-specific)
 from example_utils import configure_for_example  # type: ignore[import-not-found]
+from provide.foundation import logger
+from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin import (
     RPCPluginClient,
@@ -20,8 +22,6 @@ from pyvider.rpcplugin import (
     configure,
     plugin_client,
 )
-from provide.foundation.crypto import Certificate
-from provide.foundation import logger
 
 # Apply base configuration for examples (paths, logging)
 # Client context, clear its own env before specific mTLS config.
@@ -95,9 +95,7 @@ async def functional_mtls_example() -> None:
             f.write(server_cert_pem)
         with open(server_key_file_path, "w") as f:
             f.write(server_key_pem)
-        with open(
-            ca_cert_file_path, "w"
-        ) as f:  # This CA is for server to verify client
+        with open(ca_cert_file_path, "w") as f:  # This CA is for server to verify client
             f.write(ca_cert_pem)
         logger.info(f"🔑 Server-related certificates saved to {temp_dir_path}")
 
@@ -117,10 +115,7 @@ async def functional_mtls_example() -> None:
             handshake_timeout=30.0,  # Increased timeouts
             connection_timeout=25.0,
         )
-        logger.info(
-            "🔧 Client-side mTLS configured programmatically using PEM strings "
-            "via configure()."
-        )
+        logger.info("🔧 Client-side mTLS configured programmatically using PEM strings via configure().")
 
         # No need to set os.environ for client-side certs if configure() is
         # respected and not reset before client use. The main issue is ensuring
@@ -155,21 +150,14 @@ async def functional_mtls_example() -> None:
 
         client: RPCPluginClient | None = None
         try:
-            logger.info(
-                f"🚀 Launching mTLS-enabled dummy server: "
-                f"{' '.join(dummy_server_command)}"
-            )
-            client = plugin_client(
-                command=dummy_server_command, config={"env": server_env_vars}
-            )
+            logger.info(f"🚀 Launching mTLS-enabled dummy server: {' '.join(dummy_server_command)}")
+            client = plugin_client(command=dummy_server_command, config={"env": server_env_vars})
 
             await client.start()
             logger.info("✅ Successfully connected to mTLS-enabled server!")
 
             if client._controller_stub:  # Accessing private member for example check
-                logger.info(
-                    "✅ Controller stub available, basic connection seems okay."
-                )
+                logger.info("✅ Controller stub available, basic connection seems okay.")
             else:
                 logger.error("❌ Controller stub not available after connect.")
 
