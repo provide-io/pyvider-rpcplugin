@@ -16,7 +16,6 @@ from pyvider.rpcplugin.config import (
     rpcplugin_config,
 )
 from pyvider.rpcplugin.exception import (
-    CertificateError,
     ConfigError,
     HandshakeError,
     ProtocolError,
@@ -55,7 +54,6 @@ __all__ = [
     "ProtocolError",
     "TransportError",
     "SecurityError",
-    "CertificateError",
 ]
 
 # 🐍🏗️🔌
