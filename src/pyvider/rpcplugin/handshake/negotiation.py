@@ -282,7 +282,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
     raise HandshakeError(
         message=(
             "Timed out waiting for handshake response from plugin after "
-            f"{timeout} seconds."
+            f"{rpcplugin_config.handshake_timeout()} seconds."
         ),
         hint=(
             f"Ensure plugin starts and prints handshake to stdout promptly. "
