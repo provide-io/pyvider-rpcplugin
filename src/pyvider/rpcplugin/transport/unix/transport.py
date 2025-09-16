@@ -466,7 +466,8 @@ class UnixSocketTransport(RPCPluginTransport):
         await self._close_connections()
         await self._close_client_connection()
         await self._close_server()
-        await self._remove_socket_file(self.path)
+        if self.path:
+            await self._remove_socket_file(self.path)
 
         self.endpoint = None
         self._closing = False
