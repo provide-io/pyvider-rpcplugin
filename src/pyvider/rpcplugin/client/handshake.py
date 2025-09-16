@@ -15,7 +15,6 @@ import random
 import time
 from typing import TYPE_CHECKING, NamedTuple
 
-from provide.foundation import logger
 from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -266,9 +265,7 @@ class ClientHandshakeMixin:
         chunk = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._process.stdout.read(1024)
-                if self._process and self._process.stdout
-                else b"",
+                lambda: self._process.stdout.read(1024) if self._process and self._process.stdout else b"",
             ),
             timeout=1.0,
         )
@@ -276,9 +273,7 @@ class ClientHandshakeMixin:
         if chunk:
             chunk_str = chunk.decode("utf-8", errors="replace")
             new_buffer = buffer + chunk_str
-            self.logger.debug(
-                f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes"
-            )
+            self.logger.debug(f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes")
 
             if self._is_complete_handshake(new_buffer):
                 lines = new_buffer.split("\n")

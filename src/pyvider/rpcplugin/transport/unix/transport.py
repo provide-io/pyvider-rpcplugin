@@ -176,7 +176,9 @@ class UnixSocketTransport(RPCPluginTransport):
             try:
                 path_exists = Path(self.path).exists()
             except PermissionError as e:
-                logger.warning(f"📞🕹⚠️ Permission denied checking if socket exists: {e}. Proceeding with socket creation.")
+                logger.warning(
+                    f"📞🕹⚠️ Permission denied checking if socket exists: {e}. Proceeding with socket creation."
+                )
                 path_exists = False
 
             if path_exists:
