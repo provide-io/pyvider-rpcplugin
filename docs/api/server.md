@@ -1,8 +1,8 @@
-# Rpcplugin API
+# Server API
 
-Auto-generated API documentation for `pyvider.rpcplugin`.
+Auto-generated API documentation for `pyvider.rpcplugin.server`.
 
-::: pyvider.rpcplugin
+::: pyvider.rpcplugin.server
     options:
       show_root_heading: false
       members_order: source

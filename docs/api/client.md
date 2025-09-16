@@ -1,8 +1,8 @@
-# Rpcplugin API
+# Client API
 
-Auto-generated API documentation for `pyvider.rpcplugin`.
+Auto-generated API documentation for `pyvider.rpcplugin.client`.
 
-::: pyvider.rpcplugin
+::: pyvider.rpcplugin.client
     options:
       show_root_heading: false
       members_order: source
