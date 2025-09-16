@@ -18,12 +18,8 @@ import grpc
 ClientT = TypeVar("ClientT")  # Represents an RPCPluginClient instance type
 
 # Type Aliases for gRPC Clients
-GrpcChannelType: TypeAlias = (
-    grpc.aio.Channel | grpc.Channel
-)  # Represents gRPC channel types (async or sync)
-RpcConfigType: TypeAlias = dict[
-    str, Any
-]  # Represents the structure for RPC configuration dictionaries
+GrpcChannelType: TypeAlias = grpc.aio.Channel | grpc.Channel  # Represents gRPC channel types (async or sync)
+RpcConfigType: TypeAlias = dict[str, Any]  # Represents the structure for RPC configuration dictionaries
 
 # gRPC Credentials Type (used for TLS setup)
 GrpcCredentialsType: TypeAlias = (
@@ -43,10 +39,7 @@ class SecureRpcClientT(Protocol):
     async def close(self) -> None: ...
 
 
-
-
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄

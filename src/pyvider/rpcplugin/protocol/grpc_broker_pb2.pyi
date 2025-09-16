@@ -1,24 +1,24 @@
 from collections.abc import Mapping as _Mapping
 from typing import ClassVar as _ClassVar
 
-from google.protobuf import descriptor as _descriptor  # type: ignore[import-untyped]
-from google.protobuf import message as _message  # type: ignore[import-untyped]
+from google.protobuf import (
+    descriptor as _descriptor,  # type: ignore[import-untyped]
+    message as _message,  # type: ignore[import-untyped]
+)
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ConnInfo(_message.Message):
-    __slots__ = ("service_id", "network", "address", "knock")
+    __slots__ = ("address", "knock", "network", "service_id")
     class Knock(_message.Message):
-        __slots__ = ("knock", "ack", "error")
+        __slots__ = ("ack", "error", "knock")
         KNOCK_FIELD_NUMBER: _ClassVar[int]
         ACK_FIELD_NUMBER: _ClassVar[int]
         ERROR_FIELD_NUMBER: _ClassVar[int]
         knock: bool
         ack: bool
         error: str
-        def __init__(
-            self, knock: bool = ..., ack: bool = ..., error: str | None = ...
-        ) -> None: ...
+        def __init__(self, knock: bool = ..., ack: bool = ..., error: str | None = ...) -> None: ...
 
     SERVICE_ID_FIELD_NUMBER: _ClassVar[int]
     NETWORK_FIELD_NUMBER: _ClassVar[int]

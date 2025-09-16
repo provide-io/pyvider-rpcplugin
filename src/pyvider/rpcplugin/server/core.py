@@ -9,16 +9,16 @@ initialization, configuration, and core server lifecycle methods.
 """
 
 import asyncio
+from collections.abc import Awaitable, Callable
 import contextlib
 import os
 import signal
 import socket
 import sys
-from collections.abc import Awaitable, Callable
 from typing import Any, Generic, TypeVar, cast
 
-import grpc
 from attrs import define, field
+import grpc
 from provide.foundation import logger
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
@@ -48,15 +48,11 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
 
     async def intercept_service(
         self,
-        continuation: Callable[
-            [grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]
-        ],
+        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]],
         handler_call_details: grpc.HandlerCallDetails,
     ) -> grpc.RpcMethodHandler:
         if not await self._limiter.is_allowed():
-            raise grpc.aio.AbortError(
-                grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded."
-            )
+            raise grpc.aio.AbortError(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
         return await continuation(handler_call_details)
 
 
@@ -125,9 +121,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     _shutdown_watcher_task: asyncio.Task[None] | None = field(init=False, default=None)
     _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
     _health_servicer: HealthServicer | None = field(init=False, default=None)
-    _main_service_name: str = field(
-        default="pyvider.default.plugin.Service", init=False
-    )
+    _main_service_name: str = field(default="pyvider.default.plugin.Service", init=False)
 
     def _get_instance_override(self, key: str, default_value: Any) -> Any:
         """
@@ -184,13 +178,9 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                 rpcplugin_config.plugin_rate_limit_requests_per_second,
             )
             if capacity > 0 and refill_rate > 0:
-                self._rate_limiter = TokenBucketRateLimiter(
-                    capacity=capacity, refill_rate=refill_rate
-                )
+                self._rate_limiter = TokenBucketRateLimiter(capacity=capacity, refill_rate=refill_rate)
 
-        if hasattr(self.protocol, "service_name") and isinstance(
-            self.protocol.service_name, str
-        ):
+        if hasattr(self.protocol, "service_name") and isinstance(self.protocol.service_name, str):
             protocol_class_service_name = self.protocol.service_name
             if protocol_class_service_name:
                 self._main_service_name = protocol_class_service_name
@@ -217,9 +207,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                     with contextlib.suppress(OSError):
                         os.remove(self._shutdown_file_path)
                     self._shutdown_requested()
-                    logger.info(
-                        f"Shutdown triggered by file: {self._shutdown_file_path}"
-                    )
+                    logger.info(f"Shutdown triggered by file: {self._shutdown_file_path}")
                     break
                 consecutive_os_errors = 0
             except OSError:
@@ -275,22 +263,22 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if not self._transport:
             raise TransportError("Transport is not configured")
 
-        transport_name = getattr(self._transport, '_transport_name', None)
+        transport_name = getattr(self._transport, "_transport_name", None)
 
         if transport_name == "unix":
             # Unix socket readiness check
-            socket_path = getattr(self._transport, 'path', None)
+            socket_path = getattr(self._transport, "path", None)
             if socket_path and not os.path.exists(socket_path):
                 raise TransportError(f"Unix socket file {socket_path} does not exist.")
 
         elif transport_name == "tcp":
             # TCP socket readiness check
-            if not hasattr(self, '_port') or self._port is None:
+            if not hasattr(self, "_port") or self._port is None:
                 raise TransportError("TCP port not available for readiness check.")
 
             # Attempt a connection to verify the port is ready
             try:
-                host = getattr(self._transport, 'host', '127.0.0.1')
+                host = getattr(self._transport, "host", "127.0.0.1")
                 test_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 test_socket.settimeout(1.0)
                 try:
@@ -341,9 +329,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
 
             # Start shutdown file watcher if configured
             if self._shutdown_file_path:
-                self._shutdown_watcher_task = asyncio.create_task(
-                    self._watch_shutdown_file()
-                )
+                self._shutdown_watcher_task = asyncio.create_task(self._watch_shutdown_file())
 
             # Send handshake response to stdout
             await self._build_and_send_handshake_response()

@@ -12,14 +12,15 @@ consistent component creation.
 
 from typing import Any, TypeVar, cast
 
+from provide.foundation import logger
+
 from pyvider.rpcplugin.client import RPCPluginClient
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol, RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.server import (
     RPCPluginServer,
+    _HandlerT as ServerHandlerT,
     _ServerT,
     _TransportT,
-    _HandlerT as ServerHandlerT,
 )
 from pyvider.rpcplugin.transport import (
     TCPSocketTransport,
@@ -27,13 +28,10 @@ from pyvider.rpcplugin.transport import (
 )
 from pyvider.rpcplugin.types import (
     HandlerT,  # Retain this for plugin_server
-    RPCPluginHandler,  # For plugin_protocol factory
-)
-from pyvider.rpcplugin.types import (
     ProtocolT as BaseProtocolTDefinition,
+    RPCPluginHandler,  # For plugin_protocol factory
+    RPCPluginTransport as RPCPluginTransportType,
 )
-from pyvider.rpcplugin.types import RPCPluginTransport as RPCPluginTransportType
-from provide.foundation import logger
 
 # TypeVar for plugin_protocol factory
 T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol)
@@ -55,9 +53,7 @@ def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
                 self.service_name = service_name_override
 
         async def get_grpc_descriptors(self) -> tuple[Any, str]:
-            logger.debug(
-                f"BasicRPCPluginProtocol: get_grpc_descriptors for {self.service_name}"
-            )
+            logger.debug(f"BasicRPCPluginProtocol: get_grpc_descriptors for {self.service_name}")
             return (None, self.service_name)
 
         async def add_to_server(self, server: Any, handler: Any) -> None:
@@ -81,8 +77,7 @@ PT_co = TypeVar("PT_co")
 
 
 def plugin_protocol(
-    protocol_class: type[PT_co]
-    | None = None,  # PT_co bound to RPCPluginProtocol implicitly by usage
+    protocol_class: type[PT_co] | None = None,  # PT_co bound to RPCPluginProtocol implicitly by usage
     handler_class: type[RPCPluginHandler]  # Use imported RPCPluginHandler
     | None = None,
     service_name: str | None = None,
@@ -115,9 +110,7 @@ def plugin_protocol(
         elif "service_name_override" in instance_kwargs:
             # If service_name wasn't given directly to factory,
             # but was in **kwargs
-            final_basic_kwargs["service_name_override"] = instance_kwargs[
-                "service_name_override"
-            ]
+            final_basic_kwargs["service_name_override"] = instance_kwargs["service_name_override"]
         instance_kwargs = final_basic_kwargs
 
     return effective_protocol_class(**instance_kwargs)
@@ -136,8 +129,7 @@ def plugin_server(
     Factory for creating an RPC plugin server instance.
     """
     logger.debug(
-        f"🏭 Creating plugin server: transport={transport}, path={transport_path}, "
-        f"host={host}, port={port}"
+        f"🏭 Creating plugin server: transport={transport}, path={transport_path}, host={host}, port={port}"
     )
     transport_instance: RPCPluginTransportType
     if transport == "unix":
