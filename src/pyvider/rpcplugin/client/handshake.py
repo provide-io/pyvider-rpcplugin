@@ -26,7 +26,7 @@ from pyvider.rpcplugin.exception import (
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
 from provide.foundation import logger
-# from .types import ClientProtocol
+from .types import ClientProtocol
 
 
 class HandshakeData(NamedTuple):
@@ -40,7 +40,7 @@ class HandshakeData(NamedTuple):
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
 
-    async def _connect_and_handshake_with_retry(self) -> None:
+    async def _connect_and_handshake_with_retry(self: ClientProtocol) -> None:
         """
         Performs handshake and creates gRPC channel, with retry logic.
 

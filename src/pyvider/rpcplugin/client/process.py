@@ -30,7 +30,7 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import TransportType
 from provide.foundation import logger
-# from .types import ClientProtocol
+from .types import ClientProtocol
 
 
 # Process and gRPC-related methods that will be mixed into RPCPluginClient

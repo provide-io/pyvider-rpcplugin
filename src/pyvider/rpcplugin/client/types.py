@@ -91,6 +91,7 @@ class ClientProtocol(Protocol):
 
     # Background tasks
     _stdio_task: asyncio.Task[None] | None
+    _broker_task: asyncio.Task[None] | None
 
     # Methods expected by mixins
     async def _create_grpc_channel(self) -> None: ...
