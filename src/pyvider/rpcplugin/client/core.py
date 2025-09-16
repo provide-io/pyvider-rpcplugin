@@ -109,7 +109,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: asyncio.Task | None = field(init=False, default=None)
+    _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)
     _broker_task: asyncio.Task | None = field(init=False, default=None)
 
     # Events for handshake status
