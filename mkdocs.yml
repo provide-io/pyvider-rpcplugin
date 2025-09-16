@@ -5,6 +5,9 @@ site_url: https://rpcplugin.provide.io
 repo_url: https://github.com/provide-io/pyvider-rpcplugin
 repo_name: provide-io/pyvider-rpcplugin
 edit_uri: edit/main/docs/
+
+# Development server configuration
+dev_addr: '127.0.0.1:8006'
 copyright: Copyright &copy; 2024-2025 provide.io
 
 theme:
