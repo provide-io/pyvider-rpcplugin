@@ -10,6 +10,7 @@ initialization, and core lifecycle methods like start, close, and shutdown.
 
 import asyncio
 import subprocess  # nosec B404
+import time
 from types import TracebackType
 from typing import Any
 
