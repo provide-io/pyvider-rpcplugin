@@ -118,9 +118,6 @@ class SecurityError(RPCPluginError):
         return "RPC_SECURITY_ERROR"
 
 
-# Import CertificateError from Foundation instead of defining locally
-
-
 # 🐍🏗️🔌
 
 
