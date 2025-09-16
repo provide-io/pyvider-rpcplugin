@@ -91,7 +91,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     # Internal fields
     _process: subprocess.Popen | None = field(init=False, default=None)
     _transport: TransportType | None = field(init=False, default=None)
-    _transport_name: str | None = field(init=False, default=None)
+    _transport_name: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
     _address: str | None = field(init=False, default=None)
     _protocol_version: int | None = field(init=False, default=None)
