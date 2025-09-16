@@ -115,14 +115,14 @@ async def test_check_socket_in_use_stat_oserror(mocker, managed_unix_socket_path
     # Ensure file exists for the first check
     with open(managed_unix_socket_path, 'w') as f: f.write('')
 
-    mocker.patch("os.path.exists", return_value=True) # Ensure this is true for the test
-    mock_os_stat = mocker.patch("os.stat", side_effect=OSError("stat failed")) # Keep the mock to ensure it's called
+    mocker.patch("pathlib.Path.exists", return_value=True) # Ensure this is true for the test
+    mock_path_stat = mocker.patch("pathlib.Path.stat", side_effect=OSError("stat failed")) # Keep the mock to ensure it's called
     mock_logger_warning = mocker.patch("pyvider.rpcplugin.transport.unix.logger.warning")
 
     # Expect it to assume available (False) and log a warning
     assert not await transport._check_socket_in_use() # Function under test
 
-    mock_os_stat.assert_called_once_with(managed_unix_socket_path) # Verify os.stat was called
+    mock_path_stat.assert_called_once() # Verify Path.stat was called
     mock_logger_warning.assert_called_once()
     args, _ = mock_logger_warning.call_args
     assert f"Could not stat {managed_unix_socket_path}" in args[0]
@@ -169,10 +169,10 @@ async def test_check_socket_in_use_connect_other_oserror(mocker, managed_unix_so
     mock_socket_instance.settimeout = MagicMock()
 
     mocker.patch("socket.socket", return_value=mock_socket_instance)
-    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("pathlib.Path.exists", return_value=True)
     mock_stat_result = MagicMock()
     mock_stat_result.st_mode = stat.S_IFSOCK
-    mocker.patch("os.stat", return_value=mock_stat_result)
+    mocker.patch("pathlib.Path.stat", return_value=mock_stat_result)
 
     # Should assume available (False) and log a warning
     mock_logger_warning = mocker.patch("pyvider.rpcplugin.transport.unix.logger.warning")
@@ -191,10 +191,10 @@ async def test_check_socket_in_use_path_is_not_socket(mocker, managed_unix_socke
     with open(managed_unix_socket_path, 'w') as f:
         f.write('this is not a socket')
 
-    mocker.patch("os.path.exists", return_value=True)
+    mocker.patch("pathlib.Path.exists", return_value=True)
     mock_stat_result = MagicMock()
     mock_stat_result.st_mode = stat.S_IFREG # Simulate a regular file
-    mocker.patch("os.stat", return_value=mock_stat_result)
+    mocker.patch("pathlib.Path.stat", return_value=mock_stat_result)
 
     # _check_socket_in_use should return False (socket is available) if path is not a socket
     assert not await transport._check_socket_in_use()
@@ -212,10 +212,10 @@ async def test_check_socket_in_use_connect_specific_errors(mocker, managed_unix_
     mock_socket_instance.settimeout = MagicMock() # Ensure settimeout is mockable
 
     mocker.patch("socket.socket", return_value=mock_socket_instance)
-    mocker.patch("os.path.exists", return_value=True) # Assume path exists
+    mocker.patch("pathlib.Path.exists", return_value=True) # Assume path exists
     mock_stat_result = MagicMock()
     mock_stat_result.st_mode = stat.S_IFSOCK # Assume it's a socket file
-    mocker.patch("os.stat", return_value=mock_stat_result)
+    mocker.patch("pathlib.Path.stat", return_value=mock_stat_result)
 
     # _check_socket_in_use should return False (socket is available) for these errors
     assert not await transport._check_socket_in_use()

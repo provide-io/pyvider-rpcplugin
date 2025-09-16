@@ -156,8 +156,8 @@ async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_sock
 async def test_unix_connect_stat_fails(mocker, managed_unix_socket_path):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
-    mocker.patch("os.path.exists", return_value=True) # Path exists
-    mocker.patch("os.stat", side_effect=OSError("stat failed")) # stat call fails
+    mocker.patch("pathlib.Path.exists", return_value=True) # Path exists
+    mocker.patch("pathlib.Path.stat", side_effect=OSError("stat failed")) # stat call fails
 
     # This will also call normalize_unix_path, ensure it doesn't interfere or mock if needed
     # For this test, direct path usage is fine as normalize_unix_path is simple for absolute paths
