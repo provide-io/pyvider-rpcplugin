@@ -15,20 +15,15 @@ import subprocess
 from typing import TYPE_CHECKING, Any, Protocol, TypeAlias, TypeVar
 
 if TYPE_CHECKING:
-    from .base import RPCPluginClient
-    from .connection import ClientConnection
+    from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
+    from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
     from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
     from pyvider.rpcplugin.transport.types import TransportType
 
 import grpc
 
 # Generic TypeVars
-ClientT = TypeVar(
-    "ClientT", bound="RPCPluginClient"
-)  # Represents an RPCPluginClient instance type
-ConnectionT = TypeVar(
-    "ConnectionT", bound="ClientConnection"
-)  # Represents a ClientConnection instance type
+ClientT = TypeVar("ClientT")  # Represents an RPCPluginClient instance type
 
 # Type Aliases for gRPC Clients
 GrpcChannelType: TypeAlias = (
@@ -77,17 +72,38 @@ class ClientProtocol(Protocol):
     grpc_channel: grpc.aio.Channel | None
     target_endpoint: str | None
 
+    # Client state and status
+    is_started: bool
+
+    # Client certificates
+    client_cert: str | None
+    client_key_pem: str | None
+
     # Handshake events
     _handshake_complete_event: asyncio.Event
     _handshake_failed_event: asyncio.Event
 
-    # gRPC stubs
+    # gRPC stubs and stub storage
     _stdio_stub: GRPCStdioStub | None
+    _broker_stub: GRPCBrokerStub | None
+    _controller_stub: GRPCControllerStub | None
+    _stubs: dict[str, Any]
+
+    # Background tasks
+    _stdio_task: asyncio.Task[None] | None
 
     # Methods expected by mixins
     async def _create_grpc_channel(self) -> None: ...
     async def _read_stdio_logs(self) -> None: ...
+    async def _launch_process(self) -> None: ...
+    async def _relay_stderr_background(self) -> None: ...
     def _cleanup_process(self) -> None: ...
+    def _rebuild_x509_pem(self, cert_data: str) -> str: ...
+    def _init_stubs(self) -> None: ...
+    async def _perform_handshake(self) -> None: ...
+    async def _setup_client_certificates(self) -> None: ...
+    async def _read_raw_handshake_line_from_stdout(self) -> str: ...
+    async def _connect_and_handshake_with_retry(self) -> None: ...
 
 
 # 🐍🏗️🔌
