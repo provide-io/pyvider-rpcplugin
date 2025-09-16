@@ -120,13 +120,13 @@ async def test_unix_socket_connect_nonexistent_path() -> None:
 async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_socket_path): # Removed caplog
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
-    # os.path.exists will return False once, then True for subsequent calls
-    mocker.patch("os.path.exists", side_effect=[False, True, True, True])
+    # pathlib.Path.exists will return False once, then True for subsequent calls
+    mocker.patch("pathlib.Path.exists", side_effect=[False, True, True, True])
 
     # Mock stat to succeed after path "appears"
     mock_stat_result = MagicMock()
     mock_stat_result.st_mode = stat.S_IFSOCK
-    mocker.patch("os.stat", return_value=mock_stat_result)
+    mocker.patch("pathlib.Path.stat", return_value=mock_stat_result)
 
     # Mock open_unix_connection to succeed
     mock_reader, mock_writer = AsyncMock(spec=asyncio.StreamReader), AsyncMock(spec=asyncio.StreamWriter)
