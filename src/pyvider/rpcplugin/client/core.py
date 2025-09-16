@@ -228,23 +228,25 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                     self._process.terminate()
 
                     # Wait for graceful termination
-                    try:
-                        await asyncio.wait_for(
-                            asyncio.get_event_loop().run_in_executor(
-                                None, lambda: self._process.wait(timeout=7)
-                            ),
-                            timeout=5.0,
-                        )
-                        self.logger.debug("✅ Plugin process terminated gracefully.")
-                    except asyncio.TimeoutError:
-                        self.logger.warning(
-                            "⚠️ Plugin process did not terminate gracefully, killing..."
-                        )
-                        self._process.kill()
-                        await asyncio.get_event_loop().run_in_executor(
-                            None, self._process.wait
-                        )
-                        self.logger.debug("💀 Plugin process killed.")
+                    if self._process is not None:
+                        try:
+                            await asyncio.wait_for(
+                                asyncio.get_event_loop().run_in_executor(
+                                    None, lambda: self._process.wait(timeout=7) if self._process else None
+                                ),
+                                timeout=5.0,
+                            )
+                            self.logger.debug("✅ Plugin process terminated gracefully.")
+                        except asyncio.TimeoutError:
+                            self.logger.warning(
+                                "⚠️ Plugin process did not terminate gracefully, killing..."
+                            )
+                            if self._process:
+                                self._process.kill()
+                                await asyncio.get_event_loop().run_in_executor(
+                                    None, self._process.wait
+                                )
+                            self.logger.debug("💀 Plugin process killed.")
                 else:
                     self.logger.debug("✅ Plugin process already terminated.")
             except Exception as e:
