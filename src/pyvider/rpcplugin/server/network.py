@@ -10,6 +10,7 @@ server configuration.
 """
 
 import asyncio
+from pathlib import Path
 import sys
 from typing import Any, cast
 
@@ -129,7 +130,7 @@ class ServerNetworkMixin:
             require_auth = True
             try:
                 if isinstance(client_root_certs_conf, str) and client_root_certs_conf.startswith("file://"):
-                    with open(client_root_certs_conf[7:], "rb") as f:
+                    with Path(client_root_certs_conf[7:]).open("rb") as f:
                         client_ca_pem_bytes = f.read()
                 elif isinstance(client_root_certs_conf, str):
                     client_ca_pem_bytes = client_root_certs_conf.encode("utf-8")

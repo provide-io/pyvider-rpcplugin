@@ -12,6 +12,7 @@ import os
 import subprocess  # nosec B404 # For process type hint only
 import tempfile
 import time
+from pathlib import Path
 from typing import cast
 
 from provide.foundation import logger
@@ -47,7 +48,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         if "unix" in server_transports:
             logger.debug("🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available")
             temp_dir = os.environ.get("TEMP_DIR") or tempfile.gettempdir()
-            transport_path = os.path.join(temp_dir, f"pyvider-{os.getpid()}.sock")
+            transport_path = str(Path(temp_dir) / f"pyvider-{os.getpid()}.sock")
             from pyvider.rpcplugin.transport import UnixSocketTransport
 
             return "unix", cast(TransportT, UnixSocketTransport(path=transport_path))

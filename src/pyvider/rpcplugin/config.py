@@ -46,7 +46,7 @@ TRANSPORT_TYPES = Literal["unix", "tcp"]
 
 
 # RPC-specific validators
-def validate_transport_list(instance, attribute, value):
+def validate_transport_list(instance: Any, attribute: Any, value: list[str]) -> None:
     """
     Validate transport list for RPC plugin.
 
@@ -68,7 +68,7 @@ def validate_transport_list(instance, attribute, value):
         raise ValidationError(f"Invalid transport combination {value}. Must be one of: {valid_combinations}")
 
 
-def validate_protocol_version_list(instance, attribute, value):
+def validate_protocol_version_list(instance: Any, attribute: Any, value: list[int]) -> None:
     """
     Validate protocol version list for RPC plugin.
 

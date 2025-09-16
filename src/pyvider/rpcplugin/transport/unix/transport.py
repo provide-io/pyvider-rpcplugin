@@ -12,6 +12,7 @@ It includes logic for socket creation, connection handling, and robust cleanup.
 import asyncio
 import errno
 import os
+from pathlib import Path
 import socket
 import stat
 import tempfile
@@ -72,7 +73,7 @@ class UnixSocketTransport(RPCPluginTransport):
         """
         if not self.path:
             # Generate ephemeral path if none provided
-            self.path = os.path.join(tempfile.gettempdir(), f"pyvider-{uuid.uuid4().hex[:8]}.sock")
+            self.path = str(Path(tempfile.gettempdir()) / f"pyvider-{uuid.uuid4().hex[:8]}.sock")
             logger.debug(f"📞🚀✅ Generated ephemeral Unix socket path: {self.path}")
         else:
             # Normalize path if it has a unix: prefix
@@ -84,13 +85,13 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
-        if not self.path or not os.path.exists(self.path):
+        if not self.path or not Path(self.path).exists():
             logger.debug(f"📞🔍✅ Socket path {self.path} does not exist or is None, considering available.")
             return False
 
         # Path exists, check if it's actually a socket and connectable
         try:
-            mode = os.stat(self.path).st_mode
+            mode = Path(self.path).stat().st_mode
             if not stat.S_ISSOCK(mode):
                 logger.debug(
                     f"📞🔍✅ Path {self.path} exists but is not a socket "
@@ -153,10 +154,10 @@ class UnixSocketTransport(RPCPluginTransport):
                 )
 
             # Create directory if needed
-            dir_path = os.path.dirname(self.path)
-            if dir_path:
+            dir_path = Path(self.path).parent
+            if dir_path != Path("."):
                 try:
-                    os.makedirs(dir_path, exist_ok=True)
+                    dir_path.mkdir(parents=True, exist_ok=True)
                     logger.debug(f"📞🕹✅ Created directory: {dir_path}")
                 except (PermissionError, OSError) as e:
                     logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")

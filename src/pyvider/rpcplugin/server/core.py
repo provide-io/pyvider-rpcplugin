@@ -12,6 +12,7 @@ import asyncio
 from collections.abc import Awaitable, Callable
 import contextlib
 import os
+from pathlib import Path
 import signal
 import socket
 import sys
@@ -203,9 +204,9 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         consecutive_os_errors = 0
         while not self._shutdown_event.is_set():
             try:
-                if os.path.exists(self._shutdown_file_path):
+                if Path(self._shutdown_file_path).exists():
                     with contextlib.suppress(OSError):
-                        os.remove(self._shutdown_file_path)
+                        Path(self._shutdown_file_path).unlink()
                     self._shutdown_requested()
                     logger.info(f"Shutdown triggered by file: {self._shutdown_file_path}")
                     break
@@ -268,7 +269,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if transport_name == "unix":
             # Unix socket readiness check
             socket_path = getattr(self._transport, "path", None)
-            if socket_path and not os.path.exists(socket_path):
+            if socket_path and not Path(socket_path).exists():
                 raise TransportError(f"Unix socket file {socket_path} does not exist.")
 
         elif transport_name == "tcp":
