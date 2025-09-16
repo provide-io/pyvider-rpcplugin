@@ -130,8 +130,7 @@ plugins:
   
   - section-index
   
-  - tags:
-      tags_file: tags.md
+  - tags
   
 
 markdown_extensions:
