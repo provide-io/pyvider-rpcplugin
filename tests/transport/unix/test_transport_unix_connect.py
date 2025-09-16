@@ -21,28 +21,22 @@ async def test_unix_connect_success(monkeypatch, managed_unix_socket_path) -> No
     dummy_reader = DummyReader(b"dummy")  # From tests.fixtures import *
     dummy_writer = DummyWriter()  # From tests.fixtures import *
 
-    # Mock os.path.exists to return True for sock_path
-    original_os_path_exists = os.path.exists
+    # Mock pathlib.Path.exists to return True for sock_path
+    original_path_exists = lambda self: self._drv + self._root + str(self._path) == sock_path
     monkeypatch.setattr(
-        "os.path.exists",
-        lambda path_arg: True
-        if path_arg == sock_path
-        else original_os_path_exists(path_arg),
+        "pathlib.Path.exists",
+        lambda self: True if str(self) == sock_path else False,
     )
 
-    # Mock os.stat to return an object that makes stat.S_ISSOCK(mode) true
+    # Mock pathlib.Path.stat to return an object that makes stat.S_ISSOCK(mode) true
     mock_stat_obj = MagicMock()
     # S_IFSOCK (0o140000) ORed with permissions (e.g. 0o777)
     socket_st_mode = 0o140000 | 0o777
     mock_stat_obj.st_mode = socket_st_mode
 
-    original_os_stat = os.stat
-    # Ensure the mock handles the path argument correctly, and any other potential args like dir_fd
     monkeypatch.setattr(
-        "os.stat",
-        lambda path_arg, *args, **kwargs: mock_stat_obj
-        if path_arg == sock_path
-        else original_os_stat(path_arg, *args, **kwargs),
+        "pathlib.Path.stat",
+        lambda self: mock_stat_obj if str(self) == sock_path else self.__class__.stat(self),
     )
 
     # Mock stat.S_ISSOCK to correctly interpret our mocked st_mode

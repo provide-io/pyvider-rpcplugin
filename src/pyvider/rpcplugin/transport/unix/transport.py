@@ -85,8 +85,18 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
-        if not self.path or not Path(self.path).exists():
-            logger.debug(f"📞🔍✅ Socket path {self.path} does not exist or is None, considering available.")
+        if not self.path:
+            logger.debug(f"📞🔍✅ Socket path {self.path} is None, considering available.")
+            return False
+
+        try:
+            path_exists = Path(self.path).exists()
+        except PermissionError as e:
+            logger.warning(f"📞🔍⚠️ Permission denied checking if socket exists: {e}. Assuming available.")
+            return False
+
+        if not path_exists:
+            logger.debug(f"📞🔍✅ Socket path {self.path} does not exist, considering available.")
             return False
 
         # Path exists, check if it's actually a socket and connectable
