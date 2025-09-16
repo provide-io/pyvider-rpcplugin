@@ -49,7 +49,7 @@ class RPCPluginError(FoundationError):
         # Store original attributes for backward compatibility
         self.message = message
         self.hint = hint
-        self.code = code
+        self.code = str(code) if code is not None else None
         
         # Add hint and code to foundation context if provided
         if hint:
