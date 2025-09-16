@@ -289,7 +289,7 @@ nav:
       - api/client/index.md
       - RPCPluginClient: api/client/client.md
       - Connection: api/client/connection.md
-      - Retry Logic: api/client/retry.md
+      # Retry Logic: api/client/retry.md  # File does not exist
     
     - Transport:
       - api/transport/index.md
@@ -297,22 +297,23 @@ nav:
       - Unix Socket: api/transport/unix.md
       - TCP Socket: api/transport/tcp.md
     
-    - Protocol:
-      - api/protocol/index.md
-      - Base Protocol: api/protocol/base.md
-      - Service Protocol: api/protocol/service.md
-      - gRPC Integration: api/protocol/grpc.md
+    # Protocol section commented out - files do not exist
+    # - Protocol:
+    #   - api/protocol/index.md
+    #   - Base Protocol: api/protocol/base.md
+    #   - Service Protocol: api/protocol/service.md
+    #   - gRPC Integration: api/protocol/grpc.md
     
     - Configuration:
       - api/config/index.md
       - Config Schema: api/config/schema.md
       - Environment Loading: api/config/environment.md
-      - Validation: api/config/validation.md
+      # Validation: api/config/validation.md  # File does not exist
     
     - Exceptions:
       - api/exceptions/index.md
-      - Error Hierarchy: api/exceptions/hierarchy.md
-      - Error Handling: api/exceptions/handling.md
+      # Error Hierarchy: api/exceptions/hierarchy.md  # File does not exist
+      # Error Handling: api/exceptions/handling.md    # File does not exist
   
   - Examples:
     - examples/index.md
@@ -323,7 +324,8 @@ nav:
       - Microservice Gateway: examples/microservice-gateway.md
       - Production Deployment: examples/production.md
     - Quick Examples:
-      - examples/short/index.md
+      # Index file missing, but individual examples exist
+      # - examples/short/index.md  # File does not exist
       - Basic Client: examples/short/basic-client.md
       - Basic Server: examples/short/basic-server.md
       - Health Check: examples/short/health-check.md
