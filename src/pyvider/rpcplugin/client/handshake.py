@@ -39,6 +39,60 @@ class HandshakeData(NamedTuple):
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
 
+    async def _complete_handshake_setup(self: RPCPluginClient, attempt_num: int | None = None) -> None:  # type: ignore[misc]
+        """Complete the handshake setup including certificates, channel, and stdio."""
+        if not self._address or not self._transport_name:
+            raise HandshakeError(
+                "Handshake completed but critical endpoint data (address/transport_name) not set."
+            )
+
+        attempt_msg = f" on attempt {attempt_num}" if attempt_num else ""
+        self.logger.info(
+            f"Handshake successful{attempt_msg}. Endpoint: {self._address}, Transport: {self._transport_name}"
+        )
+
+        await self._setup_client_certificates()
+        self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
+        await self._create_grpc_channel()
+        self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
+
+        if self._stdio_stub:
+            self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+            self.logger.debug("Started stdio reading task")
+
+        self.is_started = True
+        self._handshake_complete_event.set()
+
+    async def _attempt_single_handshake(self: RPCPluginClient, attempt_num: int | None = None) -> None:  # type: ignore[misc]
+        """Attempt a single handshake and complete setup."""
+        self._handshake_complete_event.clear()
+        self._handshake_failed_event.clear()
+
+        if attempt_num:
+            self.logger.debug(f"Attempt {attempt_num}: Performing handshake with plugin server...")
+        else:
+            self.logger.debug("Performing handshake with plugin server...")
+
+        await self._perform_handshake()
+        await self._complete_handshake_setup(attempt_num)
+
+    async def _handle_retry_cleanup(self: RPCPluginClient, retry_interval_ms: int) -> None:  # type: ignore[misc]
+        """Handle cleanup and wait before retry."""
+        if self._transport:
+            try:
+                await self._transport.close()
+            except Exception as close_error:
+                self.logger.warning(f"Error closing transport before retry: {close_error}")
+            finally:
+                self._transport = None
+
+        jitter_ms = random.randint(0, min(100, retry_interval_ms // 4))
+        wait_time_ms = retry_interval_ms + jitter_ms
+        wait_time_s = wait_time_ms / 1000.0
+
+        self.logger.debug(f"Waiting {wait_time_ms}ms before retry...")
+        await asyncio.sleep(wait_time_s)
+
     async def _connect_and_handshake_with_retry(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Performs handshake and creates gRPC channel, with retry logic.
@@ -57,33 +111,7 @@ class ClientHandshakeMixin:
         if not retry_enabled:
             self.logger.info("Client retries disabled. Attempting connection and handshake once.")
             try:
-                self._handshake_complete_event.clear()
-                self._handshake_failed_event.clear()
-                self.logger.debug("Performing handshake with plugin server...")
-
-                await self._perform_handshake()
-                if not self._address or not self._transport_name:
-                    raise HandshakeError(
-                        "Handshake completed but critical endpoint data (address/transport_name) not set."
-                    )
-                self.logger.info(
-                    f"Handshake successful. Endpoint: {self._address}, Transport: {self._transport_name}"
-                )
-
-                # Set up client certificates for mTLS if needed
-                await self._setup_client_certificates()
-
-                self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
-                await self._create_grpc_channel()
-                self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
-
-                # Start stdio reading task
-                if self._stdio_stub:
-                    self._stdio_task = asyncio.create_task(self._read_stdio_logs())
-                    self.logger.debug("Started stdio reading task")
-
-                self.is_started = True
-                self._handshake_complete_event.set()
+                await self._attempt_single_handshake()
             except Exception as e:
                 self.logger.error(
                     f"Failed to connect and handshake with plugin (retry disabled): {e}",
@@ -91,96 +119,51 @@ class ClientHandshakeMixin:
                 )
                 self._handshake_failed_event.set()
                 raise
-        else:
-            # Retry logic enabled
-            max_retries = rpcplugin_config.plugin_client_max_retries
-            retry_interval_ms = rpcplugin_config.plugin_client_initial_backoff_ms
-            total_timeout_ms = rpcplugin_config.plugin_client_retry_total_timeout_s * 1000
+            return
 
-            self.logger.info(
-                f"Client retries enabled. Max retries: {max_retries}, "
-                f"Retry interval: {retry_interval_ms}ms, "
-                f"Total timeout: {total_timeout_ms}ms"
-            )
+        max_retries = rpcplugin_config.plugin_client_max_retries
+        retry_interval_ms = rpcplugin_config.plugin_client_initial_backoff_ms
+        total_timeout_ms = rpcplugin_config.plugin_client_retry_total_timeout_s * 1000
 
-            start_time = time.time() * 1000  # Convert to milliseconds
-            attempt = 0
+        self.logger.info(
+            f"Client retries enabled. Max retries: {max_retries}, "
+            f"Retry interval: {retry_interval_ms}ms, "
+            f"Total timeout: {total_timeout_ms}ms"
+        )
 
-            while attempt <= max_retries:
-                elapsed_time_ms = (time.time() * 1000) - start_time
-                if elapsed_time_ms >= total_timeout_ms:
-                    error_msg = (
-                        f"Total timeout of {total_timeout_ms}ms exceeded after "
-                        f"{attempt} attempts. Elapsed time: {elapsed_time_ms:.1f}ms"
+        start_time = time.time() * 1000
+        attempt = 0
+
+        while attempt <= max_retries:
+            elapsed_time_ms = (time.time() * 1000) - start_time
+            if elapsed_time_ms >= total_timeout_ms:
+                error_msg = (
+                    f"Total timeout of {total_timeout_ms}ms exceeded after "
+                    f"{attempt} attempts. Elapsed time: {elapsed_time_ms:.1f}ms"
+                )
+                self.logger.error(error_msg)
+                self._handshake_failed_event.set()
+                raise HandshakeError(error_msg)
+
+            try:
+                await self._attempt_single_handshake(attempt + 1)
+                return
+
+            except Exception as e:
+                attempt += 1
+                self.logger.warning(f"Attempt {attempt}/{max_retries + 1} failed: {e}")
+
+                if attempt > max_retries:
+                    self.logger.error(
+                        f"All {max_retries + 1} attempts failed. Last error: {e}",
+                        exc_info=True,
                     )
-                    self.logger.error(error_msg)
                     self._handshake_failed_event.set()
-                    raise HandshakeError(error_msg)
+                    raise HandshakeError(
+                        f"Failed to connect after {max_retries + 1} attempts. Last error: {e}"
+                    ) from e
 
-                try:
-                    self._handshake_complete_event.clear()
-                    self._handshake_failed_event.clear()
-                    self.logger.debug(
-                        f"Attempt {attempt + 1}/{max_retries + 1}: Performing handshake with plugin server..."
-                    )
-
-                    await self._perform_handshake()
-                    if not self._address or not self._transport_name:
-                        raise HandshakeError(
-                            "Handshake completed but critical endpoint data (address/transport_name) not set."
-                        )
-
-                    self.logger.info(
-                        f"Handshake successful on attempt {attempt + 1}. "
-                        f"Endpoint: {self._address}, Transport: {self._transport_name}"
-                    )
-
-                    # Set up client certificates for mTLS if needed
-                    await self._setup_client_certificates()
-
-                    self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
-                    await self._create_grpc_channel()
-                    self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
-
-                    # Start stdio reading task
-                    if self._stdio_stub:
-                        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
-                        self.logger.debug("Started stdio reading task")
-
-                    self.is_started = True
-                    self._handshake_complete_event.set()
-                    return  # Success, exit retry loop
-
-                except Exception as e:
-                    attempt += 1
-                    self.logger.warning(f"Attempt {attempt}/{max_retries + 1} failed: {e}")
-
-                    if attempt > max_retries:
-                        self.logger.error(
-                            f"All {max_retries + 1} attempts failed. Last error: {e}",
-                            exc_info=True,
-                        )
-                        self._handshake_failed_event.set()
-                        raise HandshakeError(
-                            f"Failed to connect after {max_retries + 1} attempts. Last error: {e}"
-                        ) from e
-
-                    # Close transport before retrying if it was created
-                    if self._transport:
-                        try:
-                            await self._transport.close()
-                        except Exception as close_error:
-                            self.logger.warning(f"Error closing transport before retry: {close_error}")
-                        finally:
-                            self._transport = None
-
-                    # Wait before retrying with jitter
-                    jitter_ms = random.randint(0, min(100, retry_interval_ms // 4))
-                    wait_time_ms = retry_interval_ms + jitter_ms
-                    wait_time_s = wait_time_ms / 1000.0
-
-                    self.logger.debug(f"Waiting {wait_time_ms}ms before retry {attempt + 1}...")
-                    await asyncio.sleep(wait_time_s)
+                await self._handle_retry_cleanup(retry_interval_ms)
 
     async def _setup_client_certificates(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
