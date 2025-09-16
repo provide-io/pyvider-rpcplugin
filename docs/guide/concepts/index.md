@@ -215,5 +215,5 @@ Now that you understand the core concepts, dive deeper into specific areas:
 
 Or jump to practical implementation:
 
-- **[Server Development](../server/)** - Build your first plugin server
-- **[Client Development](../client/)** - Connect to and manage plugins
+- **[Server Development](../server/index.md)** - Build your first plugin server
+- **[Client Development](../client/index.md)** - Connect to and manage plugins

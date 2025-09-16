@@ -601,7 +601,7 @@ async def test_concurrent_processing():
 
 ## See Also
 
-- [Server Configuration](../server/)
+- [Server Configuration](index.md)
 - [Performance Tuning](../advanced/performance.md)
 - [Error Handling](../advanced/error-handling.md)
 - [Foundation Integration](../advanced/foundation-integration.md)

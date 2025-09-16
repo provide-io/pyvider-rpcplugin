@@ -574,4 +574,4 @@ for function_name, cpu_time in hot_spots[:10]:  # Top 10 hot spots
 - **[Custom Protocols](custom-protocols.md)** - Advanced protocol development
 - **[Lifecycle Management](lifecycle.md)** - Plugin lifecycle optimization  
 - **[Middleware](middleware.md)** - Performance middleware patterns
-- **[Server Configuration](../server/)** - Server-side performance tuning
+- **[Server Configuration](../server/index.md)** - Server-side performance tuning

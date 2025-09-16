@@ -323,6 +323,6 @@ if __name__ == "__main__":
 
 ### Related APIs
 
-- **[Transport API](../transport/)** - Network transport implementations
-- **[Configuration API](../config/)** - Server configuration management
-- **[Exceptions API](../exceptions/)** - Server error handling
+- **[Transport API](../transport/index.md)** - Network transport implementations
+- **[Configuration API](../config/index.md)** - Server configuration management
+- **[Exceptions API](../exceptions/index.md)** - Server error handling

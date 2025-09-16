@@ -737,12 +737,12 @@ This echo service demonstrates the modern pyvider-rpcplugin patterns and provide
 ## Learning Path and Implementation Guides
 
 ### Next Steps for Implementation
-- **[Server Development Guide](../guide/server/)** - Learn advanced server patterns, including async programming, health checks, and production deployment
+- **[Server Development Guide](../guide/server/index.md)** - Learn advanced server patterns, including async programming, health checks, and production deployment
 - **[Transport Configuration](../guide/server/transports.md)** - Advanced transport configuration for performance and security optimization
-- **[Security Implementation](../guide/security/)** - Add mTLS, certificate management, and authentication to your services
+- **[Security Implementation](../guide/security/index.md)** - Add mTLS, certificate management, and authentication to your services
 
 ### Configuration and Production Readiness
-- **[Configuration Guide](../guide/config/)** - Environment-driven configuration for development and production environments
+- **[Configuration Guide](../guide/config/index.md)** - Environment-driven configuration for development and production environments
 - **[Production Configuration](../guide/config/production.md)** - Production-grade configuration patterns with security and performance optimization
 
 ### Understanding Core Concepts
@@ -750,5 +750,5 @@ This echo service demonstrates the modern pyvider-rpcplugin patterns and provide
 - **[Security Model](../guide/concepts/security.md)** - Learn about the layered security architecture used by the plugin system
 
 ### API References
-- **[Configuration API](../api/config/)** - Programmatic configuration access and validation
-- **[Server API](../api/server/)** - Complete server implementation API documentation
+- **[Configuration API](../api/config/index.md)** - Programmatic configuration access and validation
+- **[Server API](../api/server/index.md)** - Complete server implementation API documentation

@@ -697,6 +697,6 @@ The following sections provide detailed API reference for each factory function:
 
 - [Server API](server/server.md) - Server configuration and usage
 - [Client API](client/client.md) - Client configuration and usage
-- [Transport Layer](transport/) - Transport configuration options
-- [Configuration](config/) - Configuration system and options
+- [Transport Layer](transport/index.md) - Transport configuration options
+- [Configuration](config/index.md) - Configuration system and options
 - [Testing Guide](../development/testing.md) - Testing with factory functions

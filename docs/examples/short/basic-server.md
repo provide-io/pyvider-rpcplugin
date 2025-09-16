@@ -45,9 +45,9 @@ if __name__ == "__main__":
 ## Learning Path
 
 ### Next Steps for Development
-- **[Server Development Guide](../../guide/server/)** - Complete guide to building production-ready plugin servers
-- **[Configuration Guide](../../guide/config/)** - Environment-driven configuration setup and best practices
-- **[Security Implementation](../../guide/security/)** - Add mTLS, authentication, and secure communication
+- **[Server Development Guide](../../guide/server/index.md)** - Complete guide to building production-ready plugin servers
+- **[Configuration Guide](../../guide/config/index.md)** - Environment-driven configuration setup and best practices
+- **[Security Implementation](../../guide/security/index.md)** - Add mTLS, authentication, and secure communication
 
 ### Understanding the Framework
 - **[Transport Concepts](../../guide/concepts/transports.md)** - Learn about Unix sockets, TCP, and transport selection

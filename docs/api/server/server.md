@@ -333,8 +333,8 @@ server = plugin_server(
 ## Related Components
 
 - [Factory Functions](../factories.md) - `plugin_server()` factory function
-- [Transport Layer](../transport/) - Unix socket and TCP transport details
-- [Configuration](../config/) - Complete configuration reference
+- [Transport Layer](../transport/index.md) - Unix socket and TCP transport details
+- [Configuration](../config/index.md) - Complete configuration reference
 - [Health Service](health.md) - Health check implementation
 - [Rate Limiting](rate-limiting.md) - Request rate limiting details
 - [Client API](../client/client.md) - Corresponding client implementation

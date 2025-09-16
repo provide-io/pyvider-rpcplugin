@@ -244,7 +244,7 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 
 ### API Documentation
 - **[Configuration API Reference](../../api/config/index.md)** - Programmatic transport configuration access and validation
-- **[Server API Reference](../../api/server/)** - Server-side transport implementation details
+- **[Server API Reference](../../api/server/index.md)** - Server-side transport implementation details
 
 ## Related Concepts
 

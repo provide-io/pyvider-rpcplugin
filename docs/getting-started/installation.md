@@ -256,10 +256,10 @@ If you encounter issues:
 ### Learn Core Concepts
 - **[Transport Concepts](../guide/concepts/transports.md)** - Understanding Unix sockets, TCP, and transport selection
 - **[Security Model](../guide/concepts/security.md)** - Learn about mTLS, certificates, and authentication
-- **[Configuration Guide](../guide/config/)** - Environment-driven configuration and deployment patterns
+- **[Configuration Guide](../guide/config/index.md)** - Environment-driven configuration and deployment patterns
 
 ### Advanced Topics
-- **[Server Development](../guide/server/)** - Production-ready server patterns and optimization
-- **[Security Implementation](../guide/security/)** - Complete security setup and certificate management
+- **[Server Development](../guide/server/index.md)** - Production-ready server patterns and optimization
+- **[Security Implementation](../guide/security/index.md)** - Complete security setup and certificate management
 
 Ready to create your first plugin? Let's go to the [Quick Start](quick-start.md)!

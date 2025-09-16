@@ -368,6 +368,6 @@ class TestTokenBucketRateLimiter:
 ## See Also
 
 - [Foundation Rate Limiting Documentation](https://github.com/provide-io/provide-foundation)
-- [Server Configuration Guide](../../guide/server/)
+- [Server Configuration Guide](../../guide/server/index.md)
 - [Middleware Patterns](../../guide/advanced/middleware.md)
 - [Performance Tuning](../../guide/advanced/performance.md)
