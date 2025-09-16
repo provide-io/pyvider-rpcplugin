@@ -49,16 +49,17 @@ class RPCPluginError(FoundationError):
         # Store original attributes for backward compatibility
         self.message = message
         self.hint = hint
-        self.code = str(code) if code is not None else None
+        # Note: self.code will be set by FoundationError's __init__ to ensure it's always a string
         
         # Add hint and code to foundation context if provided
         if hint:
             kwargs.setdefault('context', {})['hint'] = hint
         if code is not None:
             kwargs.setdefault('context', {})['error_code'] = code
-            
-        # Pass the message as-is to FoundationError
-        super().__init__(message, *args, **kwargs)
+
+        # Pass the message and code to FoundationError
+        # Convert int codes to strings as required by FoundationError
+        super().__init__(message, code=str(code) if code is not None else None, *args, **kwargs)
     
     def __str__(self) -> str:
         """Format error message with prefix, code, and hint for backward compatibility."""

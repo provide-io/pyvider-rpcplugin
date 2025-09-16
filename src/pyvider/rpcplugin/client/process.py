@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 class ClientProcessMixin:
     """Mixin class containing process and gRPC methods for RPCPluginClient."""
 
-    async def _launch_process(self: RPCPluginClient) -> None:
+    async def _launch_process(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Launch the plugin subprocess with proper environment and configuration.
 
@@ -106,7 +106,7 @@ class ClientProcessMixin:
             self.logger.error(f"Failed to launch plugin process: {e}", exc_info=True)
             raise TransportError(f"Failed to launch plugin subprocess for command: '{' '.join(self.command)}'. Error: {e}") from e
 
-    async def _relay_stderr_background(self: RPCPluginClient) -> None:
+    async def _relay_stderr_background(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Background task to relay stderr from plugin process to logger.
 
@@ -138,7 +138,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("Stderr relay task ended")
 
-    async def _create_grpc_channel(self: RPCPluginClient) -> None:
+    async def _create_grpc_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Create and configure the gRPC channel for plugin communication.
 
@@ -241,7 +241,7 @@ class ClientProcessMixin:
                 f"Failed to create gRPC channel: {e}"
             ) from e
 
-    def _init_stubs(self: RPCPluginClient) -> None:
+    def _init_stubs(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Initialize gRPC service stubs for plugin communication.
 
@@ -268,7 +268,7 @@ class ClientProcessMixin:
             self.logger.error(f"Failed to initialize gRPC stubs: {e}", exc_info=True)
             raise ProtocolError(f"Failed to initialize gRPC stubs: {e}") from e
 
-    async def _read_stdio_logs(self: RPCPluginClient) -> None:
+    async def _read_stdio_logs(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Read and log stdio streams from the plugin via gRPC.
 
@@ -301,7 +301,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("stdio log streaming ended")
 
-    async def open_broker_subchannel(self: RPCPluginClient, sub_id: int, address: str) -> None:
+    async def open_broker_subchannel(self: RPCPluginClient, sub_id: int, address: str) -> None:  # type: ignore[misc]
         """
         Open a broker subchannel for multi-service communication.
 

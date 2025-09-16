@@ -89,27 +89,27 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)
-    _transport: TransportType | None = field(init=False, default=None)
-    _transport_name: str | None = field(init=False, default=None)
+    _process: subprocess.Popen | None = field(init=False, default=None)  # type: ignore[assignment]
+    _transport: TransportType | None = field(init=False, default=None)  # type: ignore[assignment]
+    _transport_name: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
-    _address: str | None = field(init=False, default=None)
-    _protocol_version: int | None = field(init=False, default=None)
+    _address: str | None = field(init=False, default=None)  # type: ignore[assignment]
+    _protocol_version: int | None = field(init=False, default=None)  # type: ignore[assignment]
     _server_cert: str | None = field(init=False, default=None)
-    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)
-    target_endpoint: str | None = field(init=False, default=None)
+    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)  # type: ignore[assignment]
+    target_endpoint: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
     # Generated or loaded client certificate
-    client_cert: str | None = field(init=False, default=None)
+    client_cert: str | None = field(init=False, default=None)  # type: ignore[assignment]
     client_key_pem: str | None = field(init=False, default=None)
 
     # gRPC stubs for the new services
-    _stdio_stub: GRPCStdioStub | None = field(init=False, default=None)
-    _broker_stub: GRPCBrokerStub | None = field(init=False, default=None)
-    _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
+    _stdio_stub: GRPCStdioStub | None = field(init=False, default=None)  # type: ignore[assignment]
+    _broker_stub: GRPCBrokerStub | None = field(init=False, default=None)  # type: ignore[assignment]
+    _controller_stub: GRPCControllerStub | None = field(init=False, default=None)  # type: ignore[assignment]
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)
+    _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)  # type: ignore[assignment]
     _broker_task: asyncio.Task[None] | None = field(init=False, default=None)
 
     # Events for handshake status
