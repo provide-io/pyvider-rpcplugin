@@ -155,7 +155,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
             # Create directory if needed
             dir_path = Path(self.path).parent
-            if dir_path != Path("."):
+            if dir_path != Path():
                 try:
                     dir_path.mkdir(parents=True, exist_ok=True)
                     logger.debug(f"📞🕹✅ Created directory: {dir_path}")
@@ -163,9 +163,9 @@ class UnixSocketTransport(RPCPluginTransport):
                     logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
                     raise TransportError(f"Failed to create Unix socket directory: {e}") from e
 
-            if os.path.exists(self.path):
+            if Path(self.path).exists():
                 try:
-                    os.unlink(self.path)
+                    Path(self.path).unlink()
                     logger.debug(f"📞🕹✅ Removed stale socket file: {self.path}")
                     # Brief pause to ensure file system syncs
                     await asyncio.sleep(0.1)
@@ -189,7 +189,7 @@ class UnixSocketTransport(RPCPluginTransport):
                     current_mask = os.umask(0)  # Get current umask, set to 0 temporarily
                     os.umask(current_mask)  # Restore original umask
                     desired_permissions = 0o660 & ~current_mask  # Apply umask
-                    os.chmod(self.path, desired_permissions)  # nosec B103
+                    Path(self.path).chmod(desired_permissions)  # nosec B103
                     logger.debug(
                         f"📞🕹✅ Set permissions to {oct(desired_permissions)} on "
                         f"{self.path} (considering umask {oct(current_mask)})"
@@ -243,19 +243,19 @@ class UnixSocketTransport(RPCPluginTransport):
         # Verify socket file exists with retries
         retries = 3
         for attempt in range(retries):
-            if os.path.exists(endpoint):
+            if Path(endpoint).exists():
                 break
             if attempt < retries - 1:
                 logger.debug(f"📞🤝⚠️ Socket file not found, retrying ({attempt + 1}/{retries})")
                 await asyncio.sleep(0.5)  # Short delay between retries
 
-        if not os.path.exists(endpoint):
+        if not Path(endpoint).exists():
             logger.error(f"📞🤝❌ Socket file does not exist: {endpoint}")
             raise TransportError(f"Socket {endpoint} does not exist")
 
         # Add validation that it's actually a socket
         try:
-            if not stat.S_ISSOCK(os.stat(endpoint).st_mode):
+            if not stat.S_ISSOCK(Path(endpoint).stat().st_mode):
                 logger.error(f"📞🤝❌ Path exists but is not a socket: {endpoint}")
                 raise TransportError(f"Path exists but is not a socket: {endpoint}")
         except OSError as e:
@@ -435,17 +435,17 @@ class UnixSocketTransport(RPCPluginTransport):
                 self._server = None
 
         socket_path = self.path
-        if socket_path and os.path.exists(socket_path):
+        if socket_path and Path(socket_path).exists():
             try:
                 # Make multiple attempts with proper error handling
                 for _ in range(3):
                     try:
                         # Permissions are intentionally 0o660 for
                         # owner/group r/w during cleanup.
-                        os.chmod(socket_path, 0o660)  # nosec B103
+                        Path(socket_path).chmod(0o660)  # nosec B103
                         # Changed from 0o770, to ensure write access if needed
                         # for unlinking
-                        os.unlink(socket_path)
+                        Path(socket_path).unlink()
                         logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
                         break
                     except OSError as e_unlink:
@@ -456,7 +456,7 @@ class UnixSocketTransport(RPCPluginTransport):
                             break  # File already gone
                 else:  # If all retries failed
                     # Only raise if file still exists after retries
-                    if os.path.exists(socket_path):
+                    if Path(socket_path).exists():
                         raise TransportError("Failed to remove socket file after multiple attempts")
             except Exception as e:
                 logger.error(f"📞🔒❌ Failed to remove socket file: {e}")

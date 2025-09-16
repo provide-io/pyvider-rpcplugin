@@ -9,10 +9,10 @@ and I/O operations for handshake processes.
 
 import asyncio
 import os
+from pathlib import Path
 import subprocess  # nosec B404 # For process type hint only
 import tempfile
 import time
-from pathlib import Path
 from typing import cast
 
 from provide.foundation import logger
