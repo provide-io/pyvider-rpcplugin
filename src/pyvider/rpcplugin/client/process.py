@@ -213,7 +213,7 @@ class ClientProcessMixin:
 
         except TimeoutError as e:
             error_msg = (
-                f"gRPC channel failed to become ready within {channel_ready_timeout}s "
+                f"gRPC channel failed to become ready within {rpcplugin_config.channel_ready_timeout()}s "
                 f"for endpoint {self.target_endpoint}"
             )
             self.logger.error(error_msg)
