@@ -30,14 +30,14 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.types import TransportType
 from provide.foundation import logger
-from .types import ClientProtocol
+# from .types import ClientProtocol
 
 
 # Process and gRPC-related methods that will be mixed into RPCPluginClient
 class ClientProcessMixin:
     """Mixin class containing process and gRPC methods for RPCPluginClient."""
 
-    async def _launch_process(self: ClientProtocol) -> None:
+    async def _launch_process(self) -> None:
         """
         Launch the plugin subprocess with proper environment and configuration.
 
@@ -101,7 +101,7 @@ class ClientProcessMixin:
             self.logger.error(f"Failed to launch plugin process: {e}", exc_info=True)
             raise TransportError(f"Failed to launch plugin subprocess for command: '{' '.join(self.command)}'. Error: {e}") from e
 
-    async def _relay_stderr_background(self: ClientProtocol) -> None:
+    async def _relay_stderr_background(self) -> None:
         """
         Background task to relay stderr from plugin process to logger.
 
@@ -133,7 +133,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("Stderr relay task ended")
 
-    async def _create_grpc_channel(self: ClientProtocol) -> None:
+    async def _create_grpc_channel(self) -> None:
         """
         Create and configure the gRPC channel for plugin communication.
 
@@ -233,7 +233,7 @@ class ClientProcessMixin:
                 f"Failed to create gRPC channel: {e}"
             ) from e
 
-    def _init_stubs(self: ClientProtocol) -> None:
+    def _init_stubs(self) -> None:
         """
         Initialize gRPC service stubs for plugin communication.
 
@@ -260,7 +260,7 @@ class ClientProcessMixin:
             self.logger.error(f"Failed to initialize gRPC stubs: {e}", exc_info=True)
             raise ProtocolError(f"Failed to initialize gRPC stubs: {e}") from e
 
-    async def _read_stdio_logs(self: ClientProtocol) -> None:
+    async def _read_stdio_logs(self) -> None:
         """
         Read and log stdio streams from the plugin via gRPC.
 
@@ -293,7 +293,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("stdio log streaming ended")
 
-    async def open_broker_subchannel(self: ClientProtocol, sub_id: int, address: str) -> None:
+    async def open_broker_subchannel(self, sub_id: int, address: str) -> None:
         """
         Open a broker subchannel for multi-service communication.
 

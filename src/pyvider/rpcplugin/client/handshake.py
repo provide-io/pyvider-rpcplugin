@@ -26,7 +26,7 @@ from pyvider.rpcplugin.exception import (
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
 from provide.foundation import logger
-from .types import ClientProtocol
+# from .types import ClientProtocol
 
 
 class HandshakeData(NamedTuple):
@@ -40,7 +40,7 @@ class HandshakeData(NamedTuple):
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
 
-    async def _connect_and_handshake_with_retry(self: ClientProtocol) -> None:
+    async def _connect_and_handshake_with_retry(self) -> None:
         """
         Performs handshake and creates gRPC channel, with retry logic.
 
@@ -209,7 +209,7 @@ class ClientHandshakeMixin:
                     )
                     await asyncio.sleep(wait_time_s)
 
-    async def _setup_client_certificates(self: ClientProtocol) -> None:
+    async def _setup_client_certificates(self) -> None:
         """
         Set up client certificates for mTLS authentication.
 
@@ -252,7 +252,7 @@ class ClientHandshakeMixin:
                     f"Failed to auto-generate client certificate: {e}"
                 ) from e
 
-    async def _read_raw_handshake_line_from_stdout(self: ClientProtocol) -> str:
+    async def _read_raw_handshake_line_from_stdout(self) -> str:
         """
         Read the raw handshake line from the plugin's stdout.
 
@@ -419,7 +419,7 @@ class ClientHandshakeMixin:
             ),
         )
 
-    async def _perform_handshake(self: ClientProtocol) -> None:
+    async def _perform_handshake(self) -> None:
         """
         Perform the complete handshake process with the plugin.
 
@@ -482,7 +482,7 @@ class ClientHandshakeMixin:
                     self._process = None
             raise
 
-    def _rebuild_x509_pem(self: ClientProtocol, maybe_cert: str) -> str:
+    def _rebuild_x509_pem(self, maybe_cert: str) -> str:
         """
         Rebuild X.509 PEM certificate from handshake response.
 
