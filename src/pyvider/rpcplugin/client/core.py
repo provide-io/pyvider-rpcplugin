@@ -18,6 +18,7 @@ from attrs import define, field
 import grpc
 from provide.foundation import logger
 
+from pyvider.rpcplugin.config import rpcplugin_config
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
