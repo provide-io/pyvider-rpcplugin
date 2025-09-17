@@ -37,7 +37,7 @@ from .types import ClientProtocol
 class ClientProcessMixin:
     """Mixin class containing process and gRPC methods for RPCPluginClient."""
 
-    async def _launch_process(self: ClientProtocol) -> None:
+    async def _launch_process(self) -> None:
         """
         Launch the plugin subprocess with proper environment and configuration.
 
@@ -88,19 +88,20 @@ class ClientProcessMixin:
                 text=False,  # Use bytes for better control over encoding
             )
 
-            self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
+            if self._process is not None:
+                self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
 
-            # Start stderr relay task
-            if self._process.stderr:
-                self._stdio_task = asyncio.create_task(
-                    self._relay_stderr_background()
-                )
+                # Start stderr relay task
+                if self._process.stderr:
+                    self._stdio_task = asyncio.create_task(
+                        self._relay_stderr_background()
+                    )
 
         except Exception as e:
             self.logger.error(f"Failed to launch plugin process: {e}", exc_info=True)
             raise TransportError(f"Failed to launch plugin subprocess for command: '{' '.join(self.command)}'. Error: {e}") from e
 
-    async def _relay_stderr_background(self: ClientProtocol) -> None:
+    async def _relay_stderr_background(self) -> None:
         """
         Background task to relay stderr from plugin process to logger.
 
@@ -132,7 +133,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("Stderr relay task ended")
 
-    async def _create_grpc_channel(self: ClientProtocol) -> None:
+    async def _create_grpc_channel(self) -> None:
         """
         Create and configure the gRPC channel for plugin communication.
 
@@ -199,10 +200,11 @@ class ClientProcessMixin:
                 )
 
             # Test channel connectivity
-            channel_ready_timeout = 10.0  # seconds
-            await asyncio.wait_for(
-                self.grpc_channel.channel_ready(), timeout=channel_ready_timeout
-            )
+            if self.grpc_channel is not None:
+                await asyncio.wait_for(
+                    self.grpc_channel.channel_ready(),
+                    timeout=rpcplugin_config.channel_ready_timeout()
+                )
 
             self.logger.debug("gRPC channel is ready")
 
@@ -211,7 +213,7 @@ class ClientProcessMixin:
 
         except TimeoutError as e:
             error_msg = (
-                f"gRPC channel failed to become ready within {channel_ready_timeout}s "
+                f"gRPC channel failed to become ready within {rpcplugin_config.channel_ready_timeout()}s "
                 f"for endpoint {self.target_endpoint}"
             )
             self.logger.error(error_msg)
@@ -231,7 +233,7 @@ class ClientProcessMixin:
                 f"Failed to create gRPC channel: {e}"
             ) from e
 
-    def _init_stubs(self: ClientProtocol) -> None:
+    def _init_stubs(self) -> None:
         """
         Initialize gRPC service stubs for plugin communication.
 
@@ -258,7 +260,7 @@ class ClientProcessMixin:
             self.logger.error(f"Failed to initialize gRPC stubs: {e}", exc_info=True)
             raise ProtocolError(f"Failed to initialize gRPC stubs: {e}") from e
 
-    async def _read_stdio_logs(self: ClientProtocol) -> None:
+    async def _read_stdio_logs(self) -> None:
         """
         Read and log stdio streams from the plugin via gRPC.
 
@@ -291,7 +293,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("stdio log streaming ended")
 
-    async def open_broker_subchannel(self: ClientProtocol, sub_id: int, address: str) -> None:
+    async def open_broker_subchannel(self, sub_id: int, address: str) -> None:
         """
         Open a broker subchannel for multi-service communication.
 

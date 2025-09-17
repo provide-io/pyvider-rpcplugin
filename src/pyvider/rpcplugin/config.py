@@ -250,6 +250,20 @@ class RPCPluginConfig(RuntimeConfig):
         description="Timeout for connection establishment in seconds",
         env_var="PLUGIN_CONNECTION_TIMEOUT",
     )
+
+    plugin_channel_ready_timeout: float = field(
+        default=10.0,
+        validator=validate_range(0.1, 300.0),
+        description="Timeout for gRPC channel ready check in seconds",
+        env_var="PLUGIN_CHANNEL_READY_TIMEOUT",
+    )
+
+    plugin_server_ready_timeout: float = field(
+        default=5.0,
+        validator=validate_range(0.1, 300.0),
+        description="Timeout for server ready check in seconds",
+        env_var="PLUGIN_SERVER_READY_TIMEOUT",
+    )
     
     # UI configuration
     plugin_show_emoji_matrix: bool = field(
@@ -364,6 +378,14 @@ class RPCPluginConfig(RuntimeConfig):
     def connection_timeout(self) -> float:
         """Get connection timeout."""
         return self.plugin_connection_timeout
+
+    def channel_ready_timeout(self) -> float:
+        """Get gRPC channel ready timeout."""
+        return self.plugin_channel_ready_timeout
+
+    def server_ready_timeout(self) -> float:
+        """Get server ready timeout."""
+        return self.plugin_server_ready_timeout
     
     def auto_mtls_enabled(self) -> bool:
         """Get auto mTLS enabled flag."""
