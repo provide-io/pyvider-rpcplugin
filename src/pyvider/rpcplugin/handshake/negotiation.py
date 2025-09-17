@@ -165,7 +165,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
 
     logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
 
-    timeout = 10.0
+    timeout = rpcplugin_config.handshake_timeout()
     start_time = time.time()
     buffer = ""
 

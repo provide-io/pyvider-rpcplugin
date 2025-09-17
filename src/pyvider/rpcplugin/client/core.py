@@ -90,27 +90,27 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
 
     # Internal fields
     _process: subprocess.Popen | None = field(init=False, default=None)
-    _transport: TransportType | None = field(init=False, default=None)
+    _transport: TransportType | None = field(init=False, default=None)  # type: ignore[assignment]
     _transport_name: str | None = field(init=False, default=None)
 
-    _address: str | None = field(init=False, default=None)
-    _protocol_version: int | None = field(init=False, default=None)
+    _address: str | None = field(init=False, default=None)  # type: ignore[assignment]
+    _protocol_version: int | None = field(init=False, default=None)  # type: ignore[assignment]
     _server_cert: str | None = field(init=False, default=None)
-    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)
-    target_endpoint: str | None = field(init=False, default=None)
+    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)  # type: ignore[assignment]
+    target_endpoint: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
     # Generated or loaded client certificate
-    client_cert: str | None = field(init=False, default=None)
+    client_cert: str | None = field(init=False, default=None)  # type: ignore[assignment]
     client_key_pem: str | None = field(init=False, default=None)
 
     # gRPC stubs for the new services
-    _stdio_stub: GRPCStdioStub | None = field(init=False, default=None)
-    _broker_stub: GRPCBrokerStub | None = field(init=False, default=None)
-    _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
+    _stdio_stub: GRPCStdioStub | None = field(init=False, default=None)  # type: ignore[assignment]
+    _broker_stub: GRPCBrokerStub | None = field(init=False, default=None)  # type: ignore[assignment]
+    _controller_stub: GRPCControllerStub | None = field(init=False, default=None)  # type: ignore[assignment]
 
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
-    _stdio_task: asyncio.Task | None = field(init=False, default=None)
-    _broker_task: asyncio.Task | None = field(init=False, default=None)
+    _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)  # type: ignore[assignment]
+    _broker_task: asyncio.Task[None] | None = field(init=False, default=None)
 
     # Events for handshake status
     _handshake_complete_event: asyncio.Event = field(factory=asyncio.Event, init=False)
@@ -228,23 +228,25 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                     self._process.terminate()
 
                     # Wait for graceful termination
-                    try:
-                        await asyncio.wait_for(
-                            asyncio.get_event_loop().run_in_executor(
-                                None, lambda: self._process.wait(timeout=7)
-                            ),
-                            timeout=5.0,
-                        )
-                        self.logger.debug("✅ Plugin process terminated gracefully.")
-                    except asyncio.TimeoutError:
-                        self.logger.warning(
-                            "⚠️ Plugin process did not terminate gracefully, killing..."
-                        )
-                        self._process.kill()
-                        await asyncio.get_event_loop().run_in_executor(
-                            None, self._process.wait
-                        )
-                        self.logger.debug("💀 Plugin process killed.")
+                    if self._process is not None:
+                        try:
+                            await asyncio.wait_for(
+                                asyncio.get_event_loop().run_in_executor(
+                                    None, lambda: self._process.wait(timeout=7) if self._process else None
+                                ),
+                                timeout=5.0,
+                            )
+                            self.logger.debug("✅ Plugin process terminated gracefully.")
+                        except asyncio.TimeoutError:
+                            self.logger.warning(
+                                "⚠️ Plugin process did not terminate gracefully, killing..."
+                            )
+                            if self._process:
+                                self._process.kill()
+                                await asyncio.get_event_loop().run_in_executor(
+                                    None, self._process.wait
+                                )
+                            self.logger.debug("💀 Plugin process killed.")
                 else:
                     self.logger.debug("✅ Plugin process already terminated.")
             except Exception as e:

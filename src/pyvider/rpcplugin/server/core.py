@@ -236,7 +236,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             await asyncio.sleep(1.0)
         logger.debug("Shutdown file watcher stopped")
 
-    async def wait_for_server_ready(self, timeout: float = 5.0) -> None:
+    async def wait_for_server_ready(self, timeout: float | None = None) -> None:
         """
         Wait for the server to be ready to accept connections.
 
@@ -247,6 +247,9 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             TimeoutError: If server doesn't become ready within timeout
             TransportError: If server setup fails
         """
+        if timeout is None:
+            timeout = rpcplugin_config.server_ready_timeout()
+
         logger.debug(f"Waiting for server to be ready (timeout: {timeout}s)")
 
         try:
