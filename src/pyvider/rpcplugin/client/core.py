@@ -10,7 +10,6 @@ initialization, and core lifecycle methods like start, close, and shutdown.
 
 import asyncio
 import subprocess  # nosec B404
-import time
 from types import TracebackType
 from typing import Any
 
@@ -18,7 +17,6 @@ from attrs import define, field
 import grpc
 from provide.foundation import logger
 
-from pyvider.rpcplugin.config import rpcplugin_config
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
@@ -165,17 +163,8 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         # Give the plugin a moment to shut down gracefully
         await asyncio.sleep(0.1)
 
-    async def close(self) -> None:
-        """
-        Close the client connection and clean up all resources.
-
-        This method performs a complete cleanup of the client state,
-        including stopping tasks, closing channels, terminating processes,
-        and cleaning up transport resources.
-        """
-        self.logger.debug("🔒 Closing RPCPluginClient...")
-
-        # Cancel streaming tasks
+    async def _cancel_tasks(self) -> None:
+        """Cancel all active streaming tasks."""
         for task_name, task in [
             ("stdio", self._stdio_task),
             ("broker", self._broker_task),
@@ -190,7 +179,8 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 except Exception as e:
                     self.logger.warning(f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True)
 
-        # Close gRPC channel
+    async def _close_grpc_channel(self) -> None:
+        """Close the gRPC channel with error handling."""
         if self.grpc_channel:
             try:
                 self.logger.debug("🔌 Closing gRPC channel...")
@@ -201,41 +191,44 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             finally:
                 self.grpc_channel = None
 
-        # Clean up process
-        if self._process:
-            try:
-                if self._process.poll() is None:  # Process is still running
-                    self.logger.debug("🛑 Terminating plugin process...")
-                    self._process.terminate()
+    async def _terminate_process(self) -> None:
+        """Terminate the plugin process gracefully or forcefully."""
+        if not self._process:
+            return
 
-                    # Wait for graceful termination
-                    if self._process is not None:
-                        try:
-                            await asyncio.wait_for(
-                                asyncio.get_event_loop().run_in_executor(
-                                    None, lambda: self._process.wait(timeout=7) if self._process else None
-                                ),
-                                timeout=5.0,
-                            )
-                            self.logger.debug("✅ Plugin process terminated gracefully.")
-                        except TimeoutError:
-                            self.logger.warning("⚠️ Plugin process did not terminate gracefully, killing...")
-                            if self._process:
-                                self._process.kill()
-                                await asyncio.get_event_loop().run_in_executor(None, self._process.wait)
-                            self.logger.debug("💀 Plugin process killed.")
-                else:
-                    self.logger.debug("✅ Plugin process already terminated.")
-            except Exception as e:
-                self.logger.error(
-                    f"⚠️ Error sending terminate signal to plugin process: {e}",
-                    extra={"trace": str(e)},
-                    exc_info=True,
-                )
-            finally:
-                self._process = None
+        try:
+            if self._process.poll() is None:
+                self.logger.debug("🛑 Terminating plugin process...")
+                self._process.terminate()
 
-        # Close transport
+                if self._process is not None:
+                    try:
+                        await asyncio.wait_for(
+                            asyncio.get_event_loop().run_in_executor(
+                                None, lambda: self._process.wait(timeout=7) if self._process else None
+                            ),
+                            timeout=5.0,
+                        )
+                        self.logger.debug("✅ Plugin process terminated gracefully.")
+                    except TimeoutError:
+                        self.logger.warning("⚠️ Plugin process did not terminate gracefully, killing...")
+                        if self._process:
+                            self._process.kill()
+                            await asyncio.get_event_loop().run_in_executor(None, self._process.wait)
+                        self.logger.debug("💀 Plugin process killed.")
+            else:
+                self.logger.debug("✅ Plugin process already terminated.")
+        except Exception as e:
+            self.logger.error(
+                f"⚠️ Error sending terminate signal to plugin process: {e}",
+                extra={"trace": str(e)},
+                exc_info=True,
+            )
+        finally:
+            self._process = None
+
+    async def _close_transport(self) -> None:
+        """Close the transport with error handling."""
         if self._transport:
             try:
                 self.logger.debug("🚪 Closing transport...")
@@ -246,12 +239,29 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             finally:
                 self._transport = None
 
-        # Reset state
+    def _reset_state(self) -> None:
+        """Reset client state after cleanup."""
         self.is_started = False
         self._stubs.clear()
         self._stdio_stub = None
         self._broker_stub = None
         self._controller_stub = None
+
+    async def close(self) -> None:
+        """
+        Close the client connection and clean up all resources.
+
+        This method performs a complete cleanup of the client state,
+        including stopping tasks, closing channels, terminating processes,
+        and cleaning up transport resources.
+        """
+        self.logger.debug("🔒 Closing RPCPluginClient...")
+
+        await self._cancel_tasks()
+        await self._close_grpc_channel()
+        await self._terminate_process()
+        await self._close_transport()
+        self._reset_state()
 
         self.logger.debug("✅ RPCPluginClient closed successfully.")
 

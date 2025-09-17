@@ -15,7 +15,6 @@ import random
 import time
 from typing import TYPE_CHECKING, NamedTuple
 
-from provide.foundation import logger
 from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -40,6 +39,60 @@ class HandshakeData(NamedTuple):
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
 
+    async def _complete_handshake_setup(self: RPCPluginClient, attempt_num: int | None = None) -> None:  # type: ignore[misc]
+        """Complete the handshake setup including certificates, channel, and stdio."""
+        if not self._address or not self._transport_name:
+            raise HandshakeError(
+                "Handshake completed but critical endpoint data (address/transport_name) not set."
+            )
+
+        attempt_msg = f" on attempt {attempt_num}" if attempt_num else ""
+        self.logger.info(
+            f"Handshake successful{attempt_msg}. Endpoint: {self._address}, Transport: {self._transport_name}"
+        )
+
+        await self._setup_client_certificates()
+        self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
+        await self._create_grpc_channel()
+        self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
+
+        if self._stdio_stub:
+            self._stdio_task = asyncio.create_task(self._read_stdio_logs())
+            self.logger.debug("Started stdio reading task")
+
+        self.is_started = True
+        self._handshake_complete_event.set()
+
+    async def _attempt_single_handshake(self: RPCPluginClient, attempt_num: int | None = None) -> None:  # type: ignore[misc]
+        """Attempt a single handshake and complete setup."""
+        self._handshake_complete_event.clear()
+        self._handshake_failed_event.clear()
+
+        if attempt_num:
+            self.logger.debug(f"Attempt {attempt_num}: Performing handshake with plugin server...")
+        else:
+            self.logger.debug("Performing handshake with plugin server...")
+
+        await self._perform_handshake()
+        await self._complete_handshake_setup(attempt_num)
+
+    async def _handle_retry_cleanup(self: RPCPluginClient, retry_interval_ms: int) -> None:  # type: ignore[misc]
+        """Handle cleanup and wait before retry."""
+        if self._transport:
+            try:
+                await self._transport.close()
+            except Exception as close_error:
+                self.logger.warning(f"Error closing transport before retry: {close_error}")
+            finally:
+                self._transport = None
+
+        jitter_ms = random.randint(0, min(100, retry_interval_ms // 4))
+        wait_time_ms = retry_interval_ms + jitter_ms
+        wait_time_s = wait_time_ms / 1000.0
+
+        self.logger.debug(f"Waiting {wait_time_ms}ms before retry...")
+        await asyncio.sleep(wait_time_s)
+
     async def _connect_and_handshake_with_retry(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Performs handshake and creates gRPC channel, with retry logic.
@@ -58,33 +111,7 @@ class ClientHandshakeMixin:
         if not retry_enabled:
             self.logger.info("Client retries disabled. Attempting connection and handshake once.")
             try:
-                self._handshake_complete_event.clear()
-                self._handshake_failed_event.clear()
-                self.logger.debug("Performing handshake with plugin server...")
-
-                await self._perform_handshake()
-                if not self._address or not self._transport_name:
-                    raise HandshakeError(
-                        "Handshake completed but critical endpoint data (address/transport_name) not set."
-                    )
-                self.logger.info(
-                    f"Handshake successful. Endpoint: {self._address}, Transport: {self._transport_name}"
-                )
-
-                # Set up client certificates for mTLS if needed
-                await self._setup_client_certificates()
-
-                self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
-                await self._create_grpc_channel()
-                self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
-
-                # Start stdio reading task
-                if self._stdio_stub:
-                    self._stdio_task = asyncio.create_task(self._read_stdio_logs())
-                    self.logger.debug("Started stdio reading task")
-
-                self.is_started = True
-                self._handshake_complete_event.set()
+                await self._attempt_single_handshake()
             except Exception as e:
                 self.logger.error(
                     f"Failed to connect and handshake with plugin (retry disabled): {e}",
@@ -92,96 +119,51 @@ class ClientHandshakeMixin:
                 )
                 self._handshake_failed_event.set()
                 raise
-        else:
-            # Retry logic enabled
-            max_retries = rpcplugin_config.plugin_client_max_retries
-            retry_interval_ms = rpcplugin_config.plugin_client_initial_backoff_ms
-            total_timeout_ms = rpcplugin_config.plugin_client_retry_total_timeout_s * 1000
+            return
 
-            self.logger.info(
-                f"Client retries enabled. Max retries: {max_retries}, "
-                f"Retry interval: {retry_interval_ms}ms, "
-                f"Total timeout: {total_timeout_ms}ms"
-            )
+        max_retries = rpcplugin_config.plugin_client_max_retries
+        retry_interval_ms = rpcplugin_config.plugin_client_initial_backoff_ms
+        total_timeout_ms = rpcplugin_config.plugin_client_retry_total_timeout_s * 1000
 
-            start_time = time.time() * 1000  # Convert to milliseconds
-            attempt = 0
+        self.logger.info(
+            f"Client retries enabled. Max retries: {max_retries}, "
+            f"Retry interval: {retry_interval_ms}ms, "
+            f"Total timeout: {total_timeout_ms}ms"
+        )
 
-            while attempt <= max_retries:
-                elapsed_time_ms = (time.time() * 1000) - start_time
-                if elapsed_time_ms >= total_timeout_ms:
-                    error_msg = (
-                        f"Total timeout of {total_timeout_ms}ms exceeded after "
-                        f"{attempt} attempts. Elapsed time: {elapsed_time_ms:.1f}ms"
+        start_time = time.time() * 1000
+        attempt = 0
+
+        while attempt <= max_retries:
+            elapsed_time_ms = (time.time() * 1000) - start_time
+            if elapsed_time_ms >= total_timeout_ms:
+                error_msg = (
+                    f"Total timeout of {total_timeout_ms}ms exceeded after "
+                    f"{attempt} attempts. Elapsed time: {elapsed_time_ms:.1f}ms"
+                )
+                self.logger.error(error_msg)
+                self._handshake_failed_event.set()
+                raise HandshakeError(error_msg)
+
+            try:
+                await self._attempt_single_handshake(attempt + 1)
+                return
+
+            except Exception as e:
+                attempt += 1
+                self.logger.warning(f"Attempt {attempt}/{max_retries + 1} failed: {e}")
+
+                if attempt > max_retries:
+                    self.logger.error(
+                        f"All {max_retries + 1} attempts failed. Last error: {e}",
+                        exc_info=True,
                     )
-                    self.logger.error(error_msg)
                     self._handshake_failed_event.set()
-                    raise HandshakeError(error_msg)
+                    raise HandshakeError(
+                        f"Failed to connect after {max_retries + 1} attempts. Last error: {e}"
+                    ) from e
 
-                try:
-                    self._handshake_complete_event.clear()
-                    self._handshake_failed_event.clear()
-                    self.logger.debug(
-                        f"Attempt {attempt + 1}/{max_retries + 1}: Performing handshake with plugin server..."
-                    )
-
-                    await self._perform_handshake()
-                    if not self._address or not self._transport_name:
-                        raise HandshakeError(
-                            "Handshake completed but critical endpoint data (address/transport_name) not set."
-                        )
-
-                    self.logger.info(
-                        f"Handshake successful on attempt {attempt + 1}. "
-                        f"Endpoint: {self._address}, Transport: {self._transport_name}"
-                    )
-
-                    # Set up client certificates for mTLS if needed
-                    await self._setup_client_certificates()
-
-                    self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
-                    await self._create_grpc_channel()
-                    self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
-
-                    # Start stdio reading task
-                    if self._stdio_stub:
-                        self._stdio_task = asyncio.create_task(self._read_stdio_logs())
-                        self.logger.debug("Started stdio reading task")
-
-                    self.is_started = True
-                    self._handshake_complete_event.set()
-                    return  # Success, exit retry loop
-
-                except Exception as e:
-                    attempt += 1
-                    self.logger.warning(f"Attempt {attempt}/{max_retries + 1} failed: {e}")
-
-                    if attempt > max_retries:
-                        self.logger.error(
-                            f"All {max_retries + 1} attempts failed. Last error: {e}",
-                            exc_info=True,
-                        )
-                        self._handshake_failed_event.set()
-                        raise HandshakeError(
-                            f"Failed to connect after {max_retries + 1} attempts. Last error: {e}"
-                        ) from e
-
-                    # Close transport before retrying if it was created
-                    if self._transport:
-                        try:
-                            await self._transport.close()
-                        except Exception as close_error:
-                            self.logger.warning(f"Error closing transport before retry: {close_error}")
-                        finally:
-                            self._transport = None
-
-                    # Wait before retrying with jitter
-                    jitter_ms = random.randint(0, min(100, retry_interval_ms // 4))
-                    wait_time_ms = retry_interval_ms + jitter_ms
-                    wait_time_s = wait_time_ms / 1000.0
-
-                    self.logger.debug(f"Waiting {wait_time_ms}ms before retry {attempt + 1}...")
-                    await asyncio.sleep(wait_time_s)
+                await self._handle_retry_cleanup(retry_interval_ms)
 
     async def _setup_client_certificates(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
@@ -222,6 +204,87 @@ class ClientHandshakeMixin:
             except Exception as e:
                 raise SecurityError(f"Failed to auto-generate client certificate: {e}") from e
 
+    def _get_stderr_output(self: RPCPluginClient) -> str:  # type: ignore[misc]
+        """Get stderr output from process with error handling."""
+        stderr_output = ""
+        if self._process and self._process.stderr:
+            try:
+                stderr_output = self._process.stderr.read().decode("utf-8", errors="replace")
+            except Exception as e:
+                stderr_output = f"Error reading stderr: {e}"
+        return (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
+
+    def _check_process_exit(self: RPCPluginClient) -> None:  # type: ignore[misc]
+        """Check if process exited and raise HandshakeError if so."""
+        if self._process and self._process.poll() is not None:
+            stderr_output = self._get_stderr_output()
+            self.logger.error(
+                f"Plugin process exited with code {self._process.returncode} before handshake completion"
+            )
+            raise HandshakeError(
+                f"Plugin process exited prematurely with code "
+                f"{self._process.returncode} before completing handshake.",
+                hint=(
+                    f"Check plugin logs or stderr. Stderr: '{stderr_output}'"
+                    if stderr_output
+                    else "Check plugin logs for errors."
+                ),
+                code=self._process.returncode,
+            )
+
+    def _is_complete_handshake(self, text: str) -> bool:
+        """Check if text contains a complete handshake response."""
+        return "|" in text and text.count("|") >= 5
+
+    async def _try_readline_strategy(self: RPCPluginClient, inner_timeout_s: float) -> str | None:  # type: ignore[misc]
+        """Try readline strategy to get handshake data."""
+        if not self._process or not self._process.stdout:
+            await asyncio.sleep(0.1)
+            return None
+
+        line_bytes = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(None, self._process.stdout.readline),
+            timeout=inner_timeout_s,
+        )
+
+        if line_bytes:
+            line = line_bytes.decode("utf-8", errors="replace").strip()
+            self.logger.debug(f"Read line from plugin stdout: '{line}'")
+            if self._is_complete_handshake(line):
+                self.logger.debug("Complete handshake response found in line.")
+                return line
+            return line
+        return None
+
+    async def _try_chunk_strategy(self: RPCPluginClient, buffer: str) -> str | None:  # type: ignore[misc]
+        """Try chunk read strategy to get handshake data."""
+        if not self._process or not self._process.stdout:
+            await asyncio.sleep(0.1)
+            return None
+
+        chunk = await asyncio.wait_for(
+            asyncio.get_event_loop().run_in_executor(
+                None,
+                lambda: self._process.stdout.read(1024) if self._process and self._process.stdout else b"",
+            ),
+            timeout=1.0,
+        )
+
+        if chunk:
+            chunk_str = chunk.decode("utf-8", errors="replace")
+            new_buffer = buffer + chunk_str
+            self.logger.debug(f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes")
+
+            if self._is_complete_handshake(new_buffer):
+                lines = new_buffer.split("\n")
+                for line_in_buf in lines:
+                    if self._is_complete_handshake(line_in_buf):
+                        self.logger.debug(f"Found complete handshake in buffer: {line_in_buf}")
+                        return line_in_buf
+                return new_buffer
+            return new_buffer
+        return buffer
+
     async def _read_raw_handshake_line_from_stdout(self: RPCPluginClient) -> str:  # type: ignore[misc]
         """
         Read the raw handshake line from the plugin's stdout.
@@ -251,125 +314,38 @@ class ClientHandshakeMixin:
         buffer = ""
 
         while (time.time() - start_time) < outer_timeout_s:
-            # Check if process exited
-            if self._process.poll() is not None:
-                stderr_output = ""
-                if self._process.stderr:
-                    try:
-                        stderr_output = self._process.stderr.read().decode("utf-8", errors="replace")
-                    except Exception as e_stderr:
-                        stderr_output = f"Error reading stderr: {e_stderr}"
-
-                stderr_output_truncated = (
-                    (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
-                )
-
-                self.logger.error(
-                    f"Plugin process exited with code {self._process.returncode} before handshake completion"
-                )
-                raise HandshakeError(
-                    f"Plugin process exited prematurely with code "
-                    f"{self._process.returncode} before completing handshake.",
-                    hint=(
-                        f"Check plugin logs or stderr. Stderr: '{stderr_output_truncated}'"
-                        if stderr_output_truncated
-                        else "Check plugin logs for errors."
-                    ),
-                    code=self._process.returncode,
-                )
+            self._check_process_exit()
 
             try:
-                # Ensure stdout is not None before accessing readline
-                if self._process.stdout is None:
-                    await asyncio.sleep(0.1)
-                    continue
-
-                line_bytes = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(None, self._process.stdout.readline),
-                    timeout=inner_timeout_s,
-                )
-
-                if line_bytes:
-                    line = line_bytes.decode("utf-8", errors="replace").strip()
-                    self.logger.debug(f"Read line from plugin stdout: '{line}'")
-
-                    # Look for complete handshake response (contains pipe separators)
-                    if "|" in line and line.count("|") >= 5:
-                        self.logger.debug("Complete handshake response found in line.")
+                line = await self._try_readline_strategy(inner_timeout_s)
+                if line is not None:
+                    if self._is_complete_handshake(line):
                         return line
-
-                    # Accumulate in buffer for potential multi-line handshake
                     buffer += line
-                    if "|" in buffer and buffer.count("|") >= 5:
+                    if self._is_complete_handshake(buffer):
                         self.logger.debug("Complete handshake response found in buffer.")
                         return buffer
 
             except TimeoutError:
                 self.logger.debug("Timeout reading line, trying chunk read strategy...")
-
                 try:
-                    # Ensure stdout is not None before accessing read
-                    if self._process.stdout is None:
-                        await asyncio.sleep(0.1)
-                        continue
-
-                    if self._process and self._process.stdout:
-                        chunk = await asyncio.wait_for(
-                            asyncio.get_event_loop().run_in_executor(
-                                None,
-                                lambda: self._process.stdout.read(1024)
-                                if self._process and self._process.stdout
-                                else b"",
-                            ),
-                            timeout=1.0,
-                        )
-                    else:
-                        chunk = b""
-
-                    if chunk:
-                        chunk_str = chunk.decode("utf-8", errors="replace")
-                        buffer += chunk_str
-                        self.logger.debug(
-                            f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(buffer)} bytes"
-                        )
-
-                        # Check if we now have a complete handshake
-                        if "|" in buffer and buffer.count("|") >= 5:
-                            # Try to extract handshake from buffer
-                            lines = buffer.split("\n")
-                            for line_in_buf in lines:
-                                if "|" in line_in_buf and line_in_buf.count("|") >= 5:
-                                    self.logger.debug(f"Found complete handshake in buffer: {line_in_buf}")
-                                    return line_in_buf
-                            # If no single line contains complete handshake,
-                            # maybe it's split across reads but now complete in buffer
-                            return buffer
-
+                    result = await self._try_chunk_strategy(buffer)
+                    if result and self._is_complete_handshake(result):
+                        return result
+                    buffer = result or buffer
                 except TimeoutError:
                     self.logger.debug("Timeout reading chunk, retrying...")
 
-            # Brief pause before next attempt
             await asyncio.sleep(0.1)
 
-        # If we get here, we've timed out
-        stderr_output = ""
-        if self._process.stderr:
-            try:
-                stderr_output = self._process.stderr.read().decode("utf-8", errors="replace")
-            except Exception as e_stderr_final:
-                stderr_output = f"Error reading stderr: {e_stderr_final}"
-
-        stderr_output_truncated = (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
-
+        stderr_output = self._get_stderr_output()
         raise HandshakeError(
             f"Timed out waiting for handshake response from plugin after {outer_timeout_s} seconds.",
             hint=(
                 f"Ensure plugin starts and prints handshake to stdout promptly. "
-                f"Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'"
-                if stderr_output_truncated
-                else (
-                    f"Ensure plugin starts and prints handshake to stdout promptly. Last buffer: '{buffer}'."
-                )
+                f"Last buffer: '{buffer}'. Stderr: '{stderr_output}'"
+                if stderr_output
+                else f"Ensure plugin starts and prints handshake to stdout promptly. Last buffer: '{buffer}'."
             ),
         )
 
