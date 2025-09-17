@@ -122,6 +122,53 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("Stderr relay task ended")
 
+    def _determine_target_endpoint(self: RPCPluginClient) -> None:  # type: ignore[misc]
+        """Determine the target endpoint format based on transport type."""
+        if self._transport_name == "unix":
+            self.target_endpoint = f"unix:{self._address}"
+        else:  # TCP
+            self.target_endpoint = self._address
+
+    def _get_channel_options(self) -> list[tuple[str, int | bool]]:
+        """Get standard gRPC channel options."""
+        return [
+            ("grpc.keepalive_time_ms", 30000),
+            ("grpc.keepalive_timeout_ms", 5000),
+            ("grpc.keepalive_permit_without_calls", True),
+            ("grpc.http2.max_pings_without_data", 0),
+            ("grpc.http2.min_ping_interval_without_data_ms", 300000),
+        ]
+
+    def _setup_channel_credentials(self: RPCPluginClient) -> grpc.ChannelCredentials | None:  # type: ignore[misc]
+        """Set up channel credentials for TLS/mTLS if certificates are available."""
+        if not self._server_cert:
+            self.logger.debug("Setting up insecure channel (no server certificate)")
+            return None
+
+        self.logger.debug("Setting up secure channel with server certificate")
+        server_cert_pem = self._rebuild_x509_pem(self._server_cert)
+        server_cert_bytes = server_cert_pem.encode("utf-8")
+
+        private_key_bytes = None
+        cert_chain_bytes = None
+
+        if self.client_cert and self.client_key_pem:
+            self.logger.debug("Using client certificate for mTLS")
+            private_key_bytes = self.client_key_pem.encode("utf-8")
+            cert_chain_bytes = self.client_cert.encode("utf-8")
+
+        return grpc.ssl_channel_credentials(
+            root_certificates=server_cert_bytes,
+            private_key=private_key_bytes,
+            certificate_chain=cert_chain_bytes,
+        )
+
+    async def _cleanup_failed_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
+        """Clean up gRPC channel on failure."""
+        if self.grpc_channel:
+            await self.grpc_channel.close()
+            self.grpc_channel = None
+
     async def _create_grpc_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Create and configure the gRPC channel for plugin communication.
@@ -132,51 +179,13 @@ class ClientProcessMixin:
         if not self._address or not self._transport_name:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
 
-        # Determine target endpoint format
-        if self._transport_name == "unix":
-            self.target_endpoint = f"unix:{self._address}"
-        else:  # TCP
-            self.target_endpoint = self._address
-
+        self._determine_target_endpoint()
         self.logger.debug(f"Creating gRPC channel to: {self.target_endpoint}")
 
-        # Set up channel credentials
-        credentials = None
-        options = [
-            ("grpc.keepalive_time_ms", 30000),
-            ("grpc.keepalive_timeout_ms", 5000),
-            ("grpc.keepalive_permit_without_calls", True),
-            ("grpc.http2.max_pings_without_data", 0),
-            ("grpc.http2.min_ping_interval_without_data_ms", 300000),
-        ]
-
-        # Configure TLS/mTLS if certificates are available
-        if self._server_cert:
-            self.logger.debug("Setting up secure channel with server certificate")
-
-            # Rebuild server certificate PEM format
-            server_cert_pem = self._rebuild_x509_pem(self._server_cert)
-            server_cert_bytes = server_cert_pem.encode("utf-8")
-
-            # Set up client credentials if available
-            private_key_bytes = None
-            cert_chain_bytes = None
-
-            if self.client_cert and self.client_key_pem:
-                self.logger.debug("Using client certificate for mTLS")
-                private_key_bytes = self.client_key_pem.encode("utf-8")
-                cert_chain_bytes = self.client_cert.encode("utf-8")
-
-            credentials = grpc.ssl_channel_credentials(
-                root_certificates=server_cert_bytes,
-                private_key=private_key_bytes,
-                certificate_chain=cert_chain_bytes,
-            )
-        else:
-            self.logger.debug("Setting up insecure channel (no server certificate)")
+        credentials = self._setup_channel_credentials()
+        options = self._get_channel_options()
 
         try:
-            # Create the channel
             if not self.target_endpoint:
                 raise TransportError("Target endpoint must be set before creating gRPC channel")
 
@@ -185,15 +194,12 @@ class ClientProcessMixin:
             else:
                 self.grpc_channel = grpc.aio.insecure_channel(self.target_endpoint, options=options)
 
-            # Test channel connectivity
             if self.grpc_channel is not None:
                 await asyncio.wait_for(
                     self.grpc_channel.channel_ready(), timeout=rpcplugin_config.channel_ready_timeout()
                 )
 
             self.logger.debug("gRPC channel is ready")
-
-            # Initialize service stubs
             self._init_stubs()
 
         except TimeoutError as e:
@@ -202,18 +208,14 @@ class ClientProcessMixin:
                 f"for endpoint {self.target_endpoint}"
             )
             self.logger.error(error_msg)
-            if self.grpc_channel:
-                await self.grpc_channel.close()
-                self.grpc_channel = None
+            await self._cleanup_failed_channel()
             raise TransportError(error_msg) from e
         except Exception as e:
             self.logger.error(
                 f"Failed to create gRPC channel to {self.target_endpoint}: {e}",
                 exc_info=True,
             )
-            if self.grpc_channel:
-                await self.grpc_channel.close()
-                self.grpc_channel = None
+            await self._cleanup_failed_channel()
             raise TransportError(f"Failed to create gRPC channel: {e}") from e
 
     def _init_stubs(self: RPCPluginClient) -> None:  # type: ignore[misc]

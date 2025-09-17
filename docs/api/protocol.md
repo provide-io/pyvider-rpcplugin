@@ -1,8 +1,8 @@
-# Rpcplugin API
+# Protocol API
 
-Auto-generated API documentation for `pyvider.rpcplugin`.
+Auto-generated API documentation for `pyvider.rpcplugin.protocol`.
 
-::: pyvider.rpcplugin
+::: pyvider.rpcplugin.protocol
     options:
       show_root_heading: false
       members_order: source

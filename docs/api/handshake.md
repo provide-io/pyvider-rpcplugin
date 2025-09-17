@@ -1,8 +1,8 @@
-# Rpcplugin API
+# Handshake API
 
-Auto-generated API documentation for `pyvider.rpcplugin`.
+Auto-generated API documentation for `pyvider.rpcplugin.handshake`.
 
-::: pyvider.rpcplugin
+::: pyvider.rpcplugin.handshake
     options:
       show_root_heading: false
       members_order: source

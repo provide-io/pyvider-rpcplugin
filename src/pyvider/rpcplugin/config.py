@@ -3,6 +3,8 @@
 This module provides a Foundation-based configuration system for the Pyvider RPC Plugin framework.
 Uses provide.foundation for modern async configuration loading, multi-source support, and validation.
 
+# ruff: noqa: RUF009
+
 Usage:
     # Get a configuration value
     from pyvider.rpcplugin import rpcplugin_config
@@ -36,10 +38,16 @@ from provide.foundation.config import (
 )
 from provide.foundation.errors.config import ValidationError
 
+from .defaults import (
+    DEFAULT_CLIENT_TRANSPORTS,
+    DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
+    DEFAULT_SERVER_TRANSPORTS,
+    DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
+)
 from .exception import ConfigError
 
 # Define supported protocol versions
-SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
+SUPPORTED_PROTOCOL_VERSIONS = DEFAULT_SUPPORTED_PROTOCOL_VERSIONS
 
 # Define supported transport types
 TRANSPORT_TYPES = Literal["unix", "tcp"]
@@ -97,8 +105,8 @@ class RPCPluginConfig(RuntimeConfig):
     """
 
     # Supported protocol versions (reference)
-    supported_protocol_versions: list[int] = field(
-        factory=lambda: [1, 2, 3, 4, 5, 6, 7],
+    supported_protocol_versions: list[int] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_SUPPORTED_PROTOCOL_VERSIONS.copy(),
         description="List of supported protocol versions",
         env_var="SUPPORTED_PROTOCOL_VERSIONS",
     )
@@ -133,16 +141,16 @@ class RPCPluginConfig(RuntimeConfig):
     )
 
     # Protocol configuration
-    plugin_protocol_versions: list[int] = field(
-        factory=lambda: [1],
+    plugin_protocol_versions: list[int] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
         validator=validate_protocol_version_list,
         description="List of protocol versions supported by this plugin",
         env_var="PLUGIN_PROTOCOL_VERSIONS",
     )
 
     # Server configuration
-    plugin_server_transports: list[str] = field(
-        factory=lambda: ["unix", "tcp"],
+    plugin_server_transports: list[str] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_SERVER_TRANSPORTS.copy(),
         validator=validate_transport_list,
         description="List of transports supported by the server",
         env_var="PLUGIN_SERVER_TRANSPORTS",
@@ -183,8 +191,8 @@ class RPCPluginConfig(RuntimeConfig):
     )
 
     # Client configuration
-    plugin_client_transports: list[str] = field(
-        factory=lambda: ["unix", "tcp"],
+    plugin_client_transports: list[str] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_CLIENT_TRANSPORTS.copy(),
         validator=validate_transport_list,
         description="List of transports supported by the client",
         env_var="PLUGIN_CLIENT_TRANSPORTS",

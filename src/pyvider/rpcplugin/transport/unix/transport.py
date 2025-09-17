@@ -85,8 +85,18 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
-        if not self.path or not Path(self.path).exists():
-            logger.debug(f"📞🔍✅ Socket path {self.path} does not exist or is None, considering available.")
+        if not self.path:
+            logger.debug(f"📞🔍✅ Socket path {self.path} is None, considering available.")
+            return False
+
+        try:
+            path_exists = Path(self.path).exists()
+        except PermissionError as e:
+            logger.warning(f"📞🔍⚠️ Permission denied checking if socket exists: {e}. Assuming available.")
+            return False
+
+        if not path_exists:
+            logger.debug(f"📞🔍✅ Socket path {self.path} does not exist, considering available.")
             return False
 
         # Path exists, check if it's actually a socket and connectable
@@ -163,7 +173,15 @@ class UnixSocketTransport(RPCPluginTransport):
                     logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
                     raise TransportError(f"Failed to create Unix socket directory: {e}") from e
 
-            if Path(self.path).exists():
+            try:
+                path_exists = Path(self.path).exists()
+            except PermissionError as e:
+                logger.warning(
+                    f"📞🕹⚠️ Permission denied checking if socket exists: {e}. Proceeding with socket creation."
+                )
+                path_exists = False
+
+            if path_exists:
                 try:
                     Path(self.path).unlink()
                     logger.debug(f"📞🕹✅ Removed stale socket file: {self.path}")
@@ -391,6 +409,61 @@ class UnixSocketTransport(RPCPluginTransport):
             else:
                 logger.debug("📞🔒✍️ writer has no transport attribute in finally.")
 
+    async def _close_connections(self) -> None:
+        """Close all active connections."""
+        async with self._lock:
+            connection_count = len(self._connections)
+            if connection_count > 0:
+                logger.debug(f"📞🔒🔄 Closing {connection_count} active connections")
+                close_tasks = [conn.close() for conn in self._connections]
+                await asyncio.gather(*close_tasks, return_exceptions=True)
+                self._connections.clear()
+
+    async def _close_client_connection(self) -> None:
+        """Close client writer/reader."""
+        if self._writer:
+            await self._close_writer(self._writer)
+            self._writer = None
+            self._reader = None
+
+    async def _close_server(self) -> None:
+        """Close the server with error handling."""
+        if self._server:
+            try:
+                self._server.close()
+                await self._server.wait_closed()
+                logger.debug("📞🔒✅ Closed server")
+            except Exception as e:
+                logger.error(f"📞🔒⚠️ Error closing server: {e}")
+            finally:
+                self._server = None
+
+    async def _remove_socket_file(self, socket_path: str) -> None:
+        """Remove socket file with retry logic."""
+        if not socket_path or not Path(socket_path).exists():
+            return
+
+        try:
+            for _ in range(3):
+                try:
+                    Path(socket_path).chmod(0o660)  # nosec B103
+                    Path(socket_path).unlink()
+                    logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
+                    break
+                except OSError as e_unlink:
+                    if e_unlink.errno != errno.ENOENT:
+                        logger.warning(f"📞🔒⚠️ Retry removing socket file: {e_unlink}")
+                        await asyncio.sleep(0.1)
+                    else:
+                        break
+            else:
+                if Path(socket_path).exists():
+                    raise TransportError("Failed to remove socket file after multiple attempts")
+        except Exception as e:
+            logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
+            await asyncio.sleep(0)
+            raise TransportError(f"Failed to remove socket file: {e}") from e
+
     async def close(self) -> None:
         """
         Closes the Unix socket transport.
@@ -408,61 +481,11 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = True
         self._running = False
 
-        # Close active connections
-        async with self._lock:
-            connection_count = len(self._connections)
-            if connection_count > 0:
-                logger.debug(f"📞🔒🔄 Closing {connection_count} active connections")
-                close_tasks = [conn.close() for conn in self._connections]
-                await asyncio.gather(*close_tasks, return_exceptions=True)
-                self._connections.clear()
-
-        # Close client writer/reader
-        if self._writer:
-            await self._close_writer(self._writer)
-            self._writer = None
-            self._reader = None
-
-        # Close server
-        if self._server:
-            try:
-                self._server.close()
-                await self._server.wait_closed()
-                logger.debug("📞🔒✅ Closed server")
-            except Exception as e:
-                logger.error(f"📞🔒⚠️ Error closing server: {e}")
-            finally:
-                self._server = None
-
-        socket_path = self.path
-        if socket_path and Path(socket_path).exists():
-            try:
-                # Make multiple attempts with proper error handling
-                for _ in range(3):
-                    try:
-                        # Permissions are intentionally 0o660 for
-                        # owner/group r/w during cleanup.
-                        Path(socket_path).chmod(0o660)  # nosec B103
-                        # Changed from 0o770, to ensure write access if needed
-                        # for unlinking
-                        Path(socket_path).unlink()
-                        logger.debug(f"📞🔒✅ Removed socket file: {socket_path}")
-                        break
-                    except OSError as e_unlink:
-                        if e_unlink.errno != errno.ENOENT:  # Ignore file not found
-                            logger.warning(f"📞🔒⚠️ Retry removing socket file: {e_unlink}")
-                            await asyncio.sleep(0.1)  # Brief pause before retry
-                        else:
-                            break  # File already gone
-                else:  # If all retries failed
-                    # Only raise if file still exists after retries
-                    if Path(socket_path).exists():
-                        raise TransportError("Failed to remove socket file after multiple attempts")
-            except Exception as e:
-                logger.error(f"📞🔒❌ Failed to remove socket file: {e}")
-                # Before raising, ensure loop has a chance to process other tasks
-                await asyncio.sleep(0)  # Yield just before raising the error from this path
-                raise TransportError(f"Failed to remove socket file: {e}") from e
+        await self._close_connections()
+        await self._close_client_connection()
+        await self._close_server()
+        if self.path:
+            await self._remove_socket_file(self.path)
 
         self.endpoint = None
         self._closing = False
