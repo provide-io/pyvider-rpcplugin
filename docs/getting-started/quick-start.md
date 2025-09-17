@@ -335,9 +335,9 @@ logger.info(f"mTLS enabled: {rpcplugin_config.auto_mtls_enabled()}")
 Now that you have the basics working:
 
 1. **[Build a Real Service](first-plugin.md)** - Create an Echo plugin with custom RPC methods
-2. **[Learn Core Concepts](../guide/concepts/)** - Understand the architecture in depth
+2. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
 3. **[Security Setup](../guide/concepts/security.md)** - Enable mTLS for production
-4. **[Advanced Patterns](../guide/)** - Explore async patterns, error handling, and more
+4. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
 
 ### 📝 Short Examples
 

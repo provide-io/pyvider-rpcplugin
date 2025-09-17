@@ -551,4 +551,4 @@ except Exception as e:
 - **[Rate Limiting](rate-limiting.md)** - Detailed rate limiting configuration and tuning
 - **[Logging Configuration](logging.md)** - Structured logging and observability setup
 - **[Environment Variables](environment.md)** - Complete configuration reference
-- **[API Configuration](../../api/config/)** - Programmatic configuration options
+- **[API Configuration](../../api/config/index.md)** - Programmatic configuration options

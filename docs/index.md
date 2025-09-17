@@ -185,7 +185,7 @@ graph TB
     
     Quick installation, setup guide, and your first plugin
     
-    [:octicons-arrow-right-24: Get Started](getting-started/)
+    [:octicons-arrow-right-24: Get Started](getting-started/index.md)
 
 -   :material-book-open: **User Guide**
 
@@ -193,7 +193,7 @@ graph TB
     
     Comprehensive guide covering concepts, server/client development, and advanced topics
     
-    [:octicons-arrow-right-24: User Guide](guide/)
+    [:octicons-arrow-right-24: User Guide](guide/index.md)
 
 -   :material-api: **API Reference**
 
@@ -201,7 +201,7 @@ graph TB
     
     Complete API documentation with examples and code snippets
     
-    [:octicons-arrow-right-24: API Reference](api/)
+    [:octicons-arrow-right-24: API Reference](api/index.md)
 
 -   :material-code-braces: **Examples**
 
@@ -209,7 +209,7 @@ graph TB
     
     Working examples from simple echo services to production deployments
     
-    [:octicons-arrow-right-24: Examples](examples/)
+    [:octicons-arrow-right-24: Examples](examples/index.md)
 
 </div>
 

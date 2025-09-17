@@ -429,7 +429,7 @@ We welcome contributions of new examples! Please:
 
 If you have questions about the examples:
 
-- Check the [User Guide](../guide/) for detailed concepts
-- Review the [API Reference](../api/) for technical details  
+- Check the [User Guide](../guide/index.md) for detailed concepts
+- Review the [API Reference](../api/index.md) for technical details  
 - Report issues on [GitHub](https://github.com/provide-io/pyvider-rpcplugin/issues)
 - Join discussions in [GitHub Discussions](https://github.com/provide-io/pyvider-rpcplugin/discussions)

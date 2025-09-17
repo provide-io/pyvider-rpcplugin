@@ -344,15 +344,15 @@ For focused, executable examples (15-30 lines each):
 
 ### 📚 Learn More
 
-- **[Core Concepts](../guide/concepts/)** - Deep dive into architecture
+- **[Core Concepts](../guide/concepts/index.md)** - Deep dive into architecture
 - **[Security](../guide/concepts/security.md)** - Enable mTLS for production
 - **[Transports](../guide/concepts/transports.md)** - Unix vs TCP sockets
 - **[Configuration](../guide/config/index.md)** - Environment variables and settings
 
 ### 🛠️ Practical Guides
 
-- **[Server Development](../guide/server/)** - Advanced server patterns
-- **[Client Development](../guide/client/)** - Connection management and retry logic
+- **[Server Development](../guide/server/index.md)** - Advanced server patterns
+- **[Client Development](../guide/client/index.md)** - Connection management and retry logic
 - **[Error Handling](../guide/client/error-handling.md)** - Robust error handling patterns
 - **[Testing](../development/testing.md)** - Unit and integration testing strategies
 
@@ -393,4 +393,4 @@ python echo_plugin.py
 # Should print connection details to stdout
 ```
 
-Ready to explore more advanced features? Check out the [User Guide](../guide/) for comprehensive documentation!
+Ready to explore more advanced features? Check out the [User Guide](../guide/index.md) for comprehensive documentation!

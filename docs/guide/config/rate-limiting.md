@@ -529,4 +529,4 @@ Debug logs will show:
 - **[Production Setup](production.md)** - Complete production configuration guide
 - **[Logging Configuration](logging.md)** - Observability and monitoring setup
 - **[Environment Variables](environment.md)** - Complete configuration reference
-- **[Server API](../../api/server/)** - Server-side rate limiting API details
+- **[Server API](../../api/server/index.md)** - Server-side rate limiting API details

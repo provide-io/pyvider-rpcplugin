@@ -638,5 +638,5 @@ except Exception:
 
 - [Server Error Handling](../server/server.md#error-handling) - Server-specific error patterns
 - [Client Error Handling](../client/client.md#error-handling) - Client-specific error patterns
-- [Transport Error Handling](../transport/) - Transport-specific error scenarios
+- [Transport Error Handling](../transport/index.md) - Transport-specific error scenarios
 - [Configuration Validation](../config/schema.md) - Configuration error handling
