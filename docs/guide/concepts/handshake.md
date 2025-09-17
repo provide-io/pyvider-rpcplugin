@@ -609,5 +609,5 @@ Now that you understand the handshake process:
 
 - **[Transports](transports.md)** - Transport layer implementation details
 - **[Security Model](security.md)** - Complete security architecture
-- **[Server Development](../server/)** - Building secure plugin servers  
-- **[Client Development](../client/)** - Implementing robust plugin clients
+- **[Server Development](../server/index.md)** - Building secure plugin servers  
+- **[Client Development](../client/index.md)** - Implementing robust plugin clients

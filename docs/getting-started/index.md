@@ -90,9 +90,9 @@ By the end of this guide, you'll be able to:
 3. **[Advanced Examples](examples.md)** (3 min) → Real-world implementations
 
 **Next Steps After Completion:**
-- **[Security Guide](../guide/security/)** - mTLS, certificates, and authentication patterns
+- **[Security Guide](../guide/security/index.md)** - mTLS, certificates, and authentication patterns
 - **[Production Configuration](../guide/config/production.md)** - Environment-driven configuration for deployment
-- **[API Reference](../api/)** - Complete method documentation and advanced usage
+- **[API Reference](../api/index.md)** - Complete method documentation and advanced usage
 
 ## Support & Troubleshooting
 
@@ -102,9 +102,9 @@ By the end of this guide, you'll be able to:
 - **Performance**: Transport selection, connection issues, timeout problems
 
 **Resources:**
-- 📚 **[User Guide](../guide/)** - Comprehensive concepts and advanced features
-- 🔍 **[API Reference](../api/)** - Complete method documentation with examples
-- 💻 **[Working Examples](../examples/)** - Production patterns and real-world implementations
+- 📚 **[User Guide](../guide/index.md)** - Comprehensive concepts and advanced features
+- 🔍 **[API Reference](../api/index.md)** - Complete method documentation with examples
+- 💻 **[Working Examples](../examples/index.md)** - Production patterns and real-world implementations
 - 🐛 **[GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)** - Bug reports and feature requests
 
 ## Quick Start Options

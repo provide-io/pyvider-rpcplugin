@@ -333,7 +333,7 @@ examples/
 
 ## Additional Resources
 
-- **[Complete Example Index](../examples/)** - All available examples with source code
-- **[User Guide](../guide/)** - Conceptual explanations and best practices  
-- **[API Reference](../api/)** - Complete API documentation
-- **[Configuration Guide](../guide/config/)** - Environment setup and options
+- **[Complete Example Index](../examples/index.md)** - All available examples with source code
+- **[User Guide](../guide/index.md)** - Conceptual explanations and best practices  
+- **[API Reference](../api/index.md)** - Complete API documentation
+- **[Configuration Guide](../guide/config/index.md)** - Environment setup and options

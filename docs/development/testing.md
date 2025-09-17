@@ -675,8 +675,8 @@ def test_config_validation():
 
 ## Related Documentation
 
-- [Configuration](../api/config/) - Configuration testing patterns
-- [Exception Handling](../api/exceptions/) - Testing error conditions  
+- [Configuration](../api/config/index.md) - Configuration testing patterns
+- [Exception Handling](../api/exceptions/index.md) - Testing error conditions  
 - [Server API](../api/server/server.md) - Server testing specifics
 - [Client API](../api/client/client.md) - Client testing specifics
-- [Transport Layer](../api/transport/) - Transport testing details
+- [Transport Layer](../api/transport/index.md) - Transport testing details

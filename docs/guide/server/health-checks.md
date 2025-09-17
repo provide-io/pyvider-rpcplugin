@@ -573,7 +573,7 @@ health_service = HealthCheckServicer()
 
 With comprehensive health checks implemented:
 
-- **[Security](../security/)** - Secure your health endpoints
-- **[Configuration](../config/)** - Configure health check parameters  
+- **[Security](../security/index.md)** - Secure your health endpoints
+- **[Configuration](../config/index.md)** - Configure health check parameters  
 - **[Production Deployment](../config/production.md)** - Deploy with monitoring integration
-- **[Client Development](../client/)** - Implement client-side health checking
+- **[Client Development](../client/index.md)** - Implement client-side health checking

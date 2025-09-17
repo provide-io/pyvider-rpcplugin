@@ -343,4 +343,4 @@ Common validation errors:
 - **[Production Setup](production.md)** - Production deployment configuration patterns
 - **[Rate Limiting](rate-limiting.md)** - Detailed rate limiting configuration
 - **[Logging Configuration](logging.md)** - Structured logging setup
-- **[Configuration API](../../api/config/)** - Programmatic configuration reference
+- **[Configuration API](../../api/config/index.md)** - Programmatic configuration reference

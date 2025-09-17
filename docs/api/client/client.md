@@ -544,7 +544,7 @@ The following section provides detailed API reference for the RPCPluginClient cl
 
 - [Factory Functions](../factories.md) - `plugin_client()` factory function
 - [Server API](../server/server.md) - Corresponding server implementation
-- [Transport Layer](../transport/) - Transport protocol details
-- [Configuration](../config/) - Complete configuration reference
+- [Transport Layer](../transport/index.md) - Transport protocol details
+- [Configuration](../config/index.md) - Complete configuration reference
 - [Exception Handling](../../guide/client/error-handling.md) - Error handling patterns
 - [Testing Guide](../../development/testing.md) - Testing client implementations

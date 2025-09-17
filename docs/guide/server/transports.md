@@ -609,4 +609,4 @@ def setup_production_transport():
 
 - **[Async Patterns](async-patterns.md)** - Master concurrency and async programming
 - **[Health Checks](health-checks.md)** - Implement monitoring and health checks
-- **[Security](../security/)** - Dive deeper into mTLS and security patterns
+- **[Security](../security/index.md)** - Dive deeper into mTLS and security patterns
