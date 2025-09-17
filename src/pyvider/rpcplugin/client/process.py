@@ -8,17 +8,18 @@ This module handles subprocess launching, gRPC channel creation,
 stub initialization, and stdio/broker operations.
 """
 
+from __future__ import annotations
+
 import asyncio
 import os
 import subprocess  # nosec B404
-from typing import Any
+from typing import TYPE_CHECKING
 
-import grpc
 from google.protobuf import empty_pb2  # type: ignore[import-untyped]
+import grpc
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import (
-    HandshakeError,
     ProtocolError,
     TransportError,
 )
@@ -27,17 +28,16 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
-from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
-from pyvider.rpcplugin.transport.types import TransportType
-from provide.foundation import logger
-from .types import ClientProtocol
+
+if TYPE_CHECKING:
+    from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 # Process and gRPC-related methods that will be mixed into RPCPluginClient
 class ClientProcessMixin:
     """Mixin class containing process and gRPC methods for RPCPluginClient."""
 
-    async def _launch_process(self) -> None:
+    async def _launch_process(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Launch the plugin subprocess with proper environment and configuration.
 
@@ -46,14 +46,10 @@ class ClientProcessMixin:
         """
         if self._process:
             if self._process.poll() is None:
-                self.logger.warning(
-                    "Plugin process already running. Skipping launch."
-                )
+                self.logger.warning("Plugin process already running. Skipping launch.")
                 return
             else:
-                self.logger.debug(
-                    "Previous plugin process has terminated. Launching new process."
-                )
+                self.logger.debug("Previous plugin process has terminated. Launching new process.")
 
         # Prepare environment variables
         env = os.environ.copy()
@@ -65,19 +61,14 @@ class ClientProcessMixin:
             env.update(self.config["env"])
 
         # Add required magic cookie for handshake
-        env[rpcplugin_config.plugin_magic_cookie_key] = (
-            rpcplugin_config.plugin_magic_cookie_value
-        )
+        env[rpcplugin_config.plugin_magic_cookie_key] = rpcplugin_config.plugin_magic_cookie_value
 
         # Add client certificate to environment if available
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
 
         self.logger.debug(f"Launching plugin process: {self.command}")
-        self.logger.debug(
-            f"Environment includes magic cookie: "
-            f"{rpcplugin_config.plugin_magic_cookie_key}"
-        )
+        self.logger.debug(f"Environment includes magic cookie: {rpcplugin_config.plugin_magic_cookie_key}")
 
         try:
             self._process = subprocess.Popen(
@@ -93,15 +84,15 @@ class ClientProcessMixin:
 
                 # Start stderr relay task
                 if self._process.stderr:
-                    self._stdio_task = asyncio.create_task(
-                        self._relay_stderr_background()
-                    )
+                    self._stdio_task = asyncio.create_task(self._relay_stderr_background())
 
         except Exception as e:
             self.logger.error(f"Failed to launch plugin process: {e}", exc_info=True)
-            raise TransportError(f"Failed to launch plugin subprocess for command: '{' '.join(self.command)}'. Error: {e}") from e
+            raise TransportError(
+                f"Failed to launch plugin subprocess for command: '{' '.join(self.command)}'. Error: {e}"
+            ) from e
 
-    async def _relay_stderr_background(self) -> None:
+    async def _relay_stderr_background(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Background task to relay stderr from plugin process to logger.
 
@@ -116,9 +107,7 @@ class ClientProcessMixin:
 
         try:
             while self._process.poll() is None:
-                line = await asyncio.get_event_loop().run_in_executor(
-                    None, self._process.stderr.readline
-                )
+                line = await asyncio.get_event_loop().run_in_executor(None, self._process.stderr.readline)
                 if not line:
                     await asyncio.sleep(0.1)
                     continue
@@ -133,7 +122,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("Stderr relay task ended")
 
-    async def _create_grpc_channel(self) -> None:
+    async def _create_grpc_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Create and configure the gRPC channel for plugin communication.
 
@@ -141,9 +130,7 @@ class ClientProcessMixin:
         connection options based on transport type and security configuration.
         """
         if not self._address or not self._transport_name:
-            raise TransportError(
-                "Address and transport type must be set before creating gRPC channel"
-            )
+            raise TransportError("Address and transport type must be set before creating gRPC channel")
 
         # Determine target endpoint format
         if self._transport_name == "unix":
@@ -190,20 +177,18 @@ class ClientProcessMixin:
 
         try:
             # Create the channel
+            if not self.target_endpoint:
+                raise TransportError("Target endpoint must be set before creating gRPC channel")
+
             if credentials:
-                self.grpc_channel = grpc.aio.secure_channel(
-                    self.target_endpoint, credentials, options=options
-                )
+                self.grpc_channel = grpc.aio.secure_channel(self.target_endpoint, credentials, options=options)
             else:
-                self.grpc_channel = grpc.aio.insecure_channel(
-                    self.target_endpoint, options=options
-                )
+                self.grpc_channel = grpc.aio.insecure_channel(self.target_endpoint, options=options)
 
             # Test channel connectivity
             if self.grpc_channel is not None:
                 await asyncio.wait_for(
-                    self.grpc_channel.channel_ready(),
-                    timeout=rpcplugin_config.channel_ready_timeout()
+                    self.grpc_channel.channel_ready(), timeout=rpcplugin_config.channel_ready_timeout()
                 )
 
             self.logger.debug("gRPC channel is ready")
@@ -229,11 +214,9 @@ class ClientProcessMixin:
             if self.grpc_channel:
                 await self.grpc_channel.close()
                 self.grpc_channel = None
-            raise TransportError(
-                f"Failed to create gRPC channel: {e}"
-            ) from e
+            raise TransportError(f"Failed to create gRPC channel: {e}") from e
 
-    def _init_stubs(self) -> None:
+    def _init_stubs(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Initialize gRPC service stubs for plugin communication.
 
@@ -260,7 +243,7 @@ class ClientProcessMixin:
             self.logger.error(f"Failed to initialize gRPC stubs: {e}", exc_info=True)
             raise ProtocolError(f"Failed to initialize gRPC stubs: {e}") from e
 
-    async def _read_stdio_logs(self) -> None:
+    async def _read_stdio_logs(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Read and log stdio streams from the plugin via gRPC.
 
@@ -293,7 +276,7 @@ class ClientProcessMixin:
         finally:
             self.logger.debug("stdio log streaming ended")
 
-    async def open_broker_subchannel(self, sub_id: int, address: str) -> None:
+    async def open_broker_subchannel(self: RPCPluginClient, sub_id: int, address: str) -> None:  # type: ignore[misc]
         """
         Open a broker subchannel for multi-service communication.
 
@@ -309,9 +292,7 @@ class ClientProcessMixin:
             return
 
         try:
-            self.logger.debug(
-                f"Opening broker subchannel {sub_id} at address {address}"
-            )
+            self.logger.debug(f"Opening broker subchannel {sub_id} at address {address}")
 
             # Create connection info
             conn_info = ConnInfo()
@@ -329,27 +310,23 @@ class ClientProcessMixin:
             response = await stream.read()
             if response and response.service_id == sub_id:
                 # Check knock acknowledgment
-                if hasattr(response, 'knock') and hasattr(response.knock, 'ack'):
+                if hasattr(response, "knock") and hasattr(response.knock, "ack"):
                     if response.knock.ack:
                         self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
                     else:
-                        error_msg = response.knock.error if hasattr(response.knock, 'error') else "Unknown error"
+                        error_msg = (
+                            response.knock.error if hasattr(response.knock, "error") else "Unknown error"
+                        )
                         self.logger.error(f"Subchannel open failed: {error_msg}")
                         # Don't raise exception, just log error and continue
                 else:
                     self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
             else:
-                raise ProtocolError(
-                    f"Failed to get acknowledgment for broker subchannel {sub_id}"
-                )
+                raise ProtocolError(f"Failed to get acknowledgment for broker subchannel {sub_id}")
 
             await stream.done_writing()
 
         except grpc.RpcError as e:
-            raise ProtocolError(
-                f"gRPC error opening broker subchannel {sub_id}: {e}"
-            ) from e
+            raise ProtocolError(f"gRPC error opening broker subchannel {sub_id}: {e}") from e
         except Exception as e:
-            raise ProtocolError(
-                f"Error opening broker subchannel {sub_id}: {e}"
-            ) from e
+            raise ProtocolError(f"Error opening broker subchannel {sub_id}: {e}") from e

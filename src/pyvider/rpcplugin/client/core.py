@@ -10,32 +10,23 @@ initialization, and core lifecycle methods like start, close, and shutdown.
 
 import asyncio
 import subprocess  # nosec B404
-import sys
 import time
 from types import TracebackType
 from typing import Any
 
-import grpc
 from attrs import define, field
+import grpc
+from provide.foundation import logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.exception import (
-    HandshakeError,
-    ProtocolError,
-    SecurityError,
-    TransportError,
-)
+# Import mixins for the split functionality
+from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
+from pyvider.rpcplugin.client.process import ClientProcessMixin
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
-from pyvider.rpcplugin.handshake import parse_handshake_response
-from provide.foundation import logger
-
-# Import mixins for the split functionality
-from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
-from pyvider.rpcplugin.client.process import ClientProcessMixin
 
 
 @define
@@ -89,9 +80,9 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)
+    _process: subprocess.Popen | None = field(init=False, default=None)  # type: ignore[assignment]
     _transport: TransportType | None = field(init=False, default=None)  # type: ignore[assignment]
-    _transport_name: str | None = field(init=False, default=None)
+    _transport_name: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
     _address: str | None = field(init=False, default=None)  # type: ignore[assignment]
     _protocol_version: int | None = field(init=False, default=None)  # type: ignore[assignment]
@@ -124,9 +115,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         Initialize client state after attributes are set.
         """
         self.logger = logger
-        self.logger.debug(
-            "🔧 RPCPluginClient.__attrs_post_init__: Client object created."
-        )
+        self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
 
     async def start(self) -> None:
         """
@@ -166,16 +155,12 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 await self._controller_stub.Shutdown(ControllerEmpty())
                 self.logger.debug("📤 Shutdown signal sent to plugin.")
             else:
-                self.logger.warning(
-                    "⚠️ No controller stub available for shutdown signal."
-                )
+                self.logger.warning("⚠️ No controller stub available for shutdown signal.")
         except grpc.RpcError as e:
             # Expected behavior when plugin shuts down immediately
             self.logger.debug(f"🔌 Plugin shutdown RPC completed: {e.code()}")
         except Exception as e:
-            self.logger.warning(
-                f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True
-            )
+            self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
         # Give the plugin a moment to shut down gracefully
         await asyncio.sleep(0.1)
@@ -203,9 +188,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 except asyncio.CancelledError:
                     self.logger.debug(f"✅ {task_name.title()} task cancelled.")
                 except Exception as e:
-                    self.logger.warning(
-                        f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True
-                    )
+                    self.logger.warning(f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True)
 
         # Close gRPC channel
         if self.grpc_channel:
@@ -214,9 +197,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 await self.grpc_channel.close(grace=0.5)
                 self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
-                self.logger.warning(
-                    f"⚠️ Error closing gRPC channel: {e}", exc_info=True
-                )
+                self.logger.warning(f"⚠️ Error closing gRPC channel: {e}", exc_info=True)
             finally:
                 self.grpc_channel = None
 
@@ -237,15 +218,11 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                                 timeout=5.0,
                             )
                             self.logger.debug("✅ Plugin process terminated gracefully.")
-                        except asyncio.TimeoutError:
-                            self.logger.warning(
-                                "⚠️ Plugin process did not terminate gracefully, killing..."
-                            )
+                        except TimeoutError:
+                            self.logger.warning("⚠️ Plugin process did not terminate gracefully, killing...")
                             if self._process:
                                 self._process.kill()
-                                await asyncio.get_event_loop().run_in_executor(
-                                    None, self._process.wait
-                                )
+                                await asyncio.get_event_loop().run_in_executor(None, self._process.wait)
                             self.logger.debug("💀 Plugin process killed.")
                 else:
                     self.logger.debug("✅ Plugin process already terminated.")
@@ -253,7 +230,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 self.logger.error(
                     f"⚠️ Error sending terminate signal to plugin process: {e}",
                     extra={"trace": str(e)},
-                    exc_info=True
+                    exc_info=True,
                 )
             finally:
                 self._process = None
@@ -265,9 +242,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 await self._transport.close()
                 self.logger.debug("✅ Transport closed.")
             except Exception as e:
-                self.logger.warning(
-                    f"⚠️ Error closing transport: {e}", exc_info=True
-                )
+                self.logger.warning(f"⚠️ Error closing transport: {e}", exc_info=True)
             finally:
                 self._transport = None
 
@@ -295,8 +270,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         try:
             await self.shutdown_plugin()
         except Exception as e:
-            self.logger.warning(
-                f"⚠️ Error during shutdown in context manager: {e}", exc_info=True
-            )
+            self.logger.warning(f"⚠️ Error during shutdown in context manager: {e}", exc_info=True)
         finally:
             await self.close()

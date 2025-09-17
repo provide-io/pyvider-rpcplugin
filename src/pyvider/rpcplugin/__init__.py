@@ -9,7 +9,6 @@ making them available for direct import from `pyvider.rpcplugin`.
 """
 
 from pyvider.rpcplugin._version import __version__
-
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
@@ -17,7 +16,6 @@ from pyvider.rpcplugin.config import (
     rpcplugin_config,
 )
 from pyvider.rpcplugin.exception import (
-    CertificateError,
     ConfigError,
     HandshakeError,
     ProtocolError,
@@ -35,32 +33,31 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 
 __all__ = [
-    "__version__",
     # Core Classes
     "RPCPluginClient",
-    "RPCPluginServer",
     "RPCPluginProtocol",
-    # Factory Functions
-    "plugin_client",
-    "plugin_server",
-    "plugin_protocol",
-    "create_basic_protocol",
+    "RPCPluginServer",
     # Configuration
     "RPCPluginConfig",
-    "rpcplugin_config",
     "configure",
+    "rpcplugin_config",
     # Exceptions
-    "RPCPluginError",
     "ConfigError",
     "HandshakeError",
     "ProtocolError",
-    "TransportError",
+    "RPCPluginError",
     "SecurityError",
-    "CertificateError",
+    "TransportError",
+    # Factory Functions
+    "create_basic_protocol",
+    "plugin_client",
+    "plugin_protocol",
+    "plugin_server",
+    # Version
+    "__version__",
 ]
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌🚀🪄

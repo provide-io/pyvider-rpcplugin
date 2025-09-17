@@ -7,17 +7,17 @@ This module contains the primary handshake configuration, validation,
 building, and parsing logic.
 """
 
-import os
 from enum import Enum, auto
+import os
 from typing import Literal, TypeGuard
 
 from attrs import define
+from provide.foundation import logger
+from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.transport.types import TransportT
-from provide.foundation import logger
 
 
 class _SentinelEnum(Enum):  # type: ignore[type-arg]
@@ -77,9 +77,7 @@ def validate_magic_cookie(
     logger.debug("Starting magic cookie validation...")
 
     cookie_key: str | None = (  # type: ignore[assignment]
-        rpcplugin_config.magic_cookie_key()
-        if magic_cookie_key is _SENTINEL_INSTANCE
-        else magic_cookie_key
+        rpcplugin_config.magic_cookie_key() if magic_cookie_key is _SENTINEL_INSTANCE else magic_cookie_key
     )
 
     # Determine the expected cookie value for the logic, resolving sentinel.
@@ -104,42 +102,28 @@ def validate_magic_cookie(
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
         cookie_provided_by_caller = os.environ.get(str(cookie_key))
-        logger.debug(
-            f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided_by_caller}'"
-        )
+        logger.debug(f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided_by_caller}'")
     else:
         # If magic_cookie param was explicitly passed (even if None), use that.
         cookie_provided_by_caller = magic_cookie
-        logger.debug(
-            f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'"
-        )
+        logger.debug(f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'")
 
     logger.debug(f"Final cookie_key for validation: {cookie_key}")
     logger.debug(f"Expected cookie value (for logic): {expected_value_for_logic}")
     logger.debug(f"Cookie provided by caller/env: {cookie_provided_by_caller}")
 
-    if (
-        cookie_key is None or cookie_key == ""
-    ):  # This check is for the config of the key itself
+    if cookie_key is None or cookie_key == "":  # This check is for the config of the key itself
         logger.error("Configuration error: magic_cookie_key is not set in config.")
         raise HandshakeError(
             message="Magic cookie key is not configured.",
-            hint=(
-                "Ensure 'PLUGIN_MAGIC_COOKIE_KEY' is defined in the application "
-                "configuration."
-            ),
+            hint=("Ensure 'PLUGIN_MAGIC_COOKIE_KEY' is defined in the application configuration."),
         )
 
     if expected_value_for_logic is None or expected_value_for_logic == "":
-        logger.error(
-            "Configuration error: magic_cookie_value (expected) is not set in config."
-        )
+        logger.error("Configuration error: magic_cookie_value (expected) is not set in config.")
         raise HandshakeError(
             message="Expected magic cookie value is not configured.",
-            hint=(
-                "Ensure 'PLUGIN_MAGIC_COOKIE_VALUE' is defined in the application "
-                "configuration."
-            ),
+            hint=("Ensure 'PLUGIN_MAGIC_COOKIE_VALUE' is defined in the application configuration."),
         )
 
     if cookie_provided_by_caller is None or cookie_provided_by_caller == "":
@@ -218,47 +202,28 @@ async def build_handshake_response(
     try:
         if transport_name == "tcp":
             if port is None:
-                logger.error(
-                    "🤝📝❌ TCP transport requires a valid port for handshake response."
-                )
+                logger.error("🤝📝❌ TCP transport requires a valid port for handshake response.")
                 raise HandshakeError(
-                    message=(
-                        "TCP transport requires a port number to build handshake "
-                        "response."
-                    ),
+                    message=("TCP transport requires a port number to build handshake response."),
                     hint=(
-                        "Ensure the port is correctly passed to "
-                        "build_handshake_response for TCP transport."
+                        "Ensure the port is correctly passed to build_handshake_response for TCP transport."
                     ),
                 )
             endpoint = f"127.0.0.1:{port}"
             logger.debug(f"🤝📝✅ TCP endpoint set: {endpoint}")
 
         elif transport_name == "unix":
-            if (
-                hasattr(transport, "_running")
-                and transport._running
-                and transport.endpoint
-            ):
-                logger.debug(
-                    "🤝📝✅ Using existing Unix transport endpoint: "
-                    f"{transport.endpoint}"
-                )
+            if hasattr(transport, "_running") and transport._running and transport.endpoint:
+                logger.debug(f"🤝📝✅ Using existing Unix transport endpoint: {transport.endpoint}")
                 endpoint = transport.endpoint
             else:
                 logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
                 endpoint = await transport.listen()
                 logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
         else:
-            logger.error(
-                "🤝📝❌ Unsupported transport type for handshake response: "
-                f"{transport_name}"
-            )
+            logger.error(f"🤝📝❌ Unsupported transport type for handshake response: {transport_name}")
             raise TransportError(
-                message=(
-                    "Unsupported transport type specified for handshake response: "
-                    f"'{transport_name}'."
-                ),
+                message=(f"Unsupported transport type specified for handshake response: '{transport_name}'."),
                 hint="Valid transport types are 'unix' or 'tcp'.",
             )
 
@@ -277,33 +242,22 @@ async def build_handshake_response(
             cert_lines = server_cert.cert.strip().split("\n")
             if len(cert_lines) < 3:
                 logger.error(
-                    "🤝🔐❌ Server certificate appears to be in an invalid PEM format "
-                    "(too few lines)."
+                    "🤝🔐❌ Server certificate appears to be in an invalid PEM format (too few lines)."
                 )
                 raise HandshakeError(
-                    message=(
-                        "Invalid server certificate format provided for handshake "
-                        "response."
-                    ),
-                    hint=(
-                        "Ensure the server certificate is a valid PEM-encoded X.509 "
-                        "certificate."
-                    ),
+                    message=("Invalid server certificate format provided for handshake response."),
+                    hint=("Ensure the server certificate is a valid PEM-encoded X.509 certificate."),
                 )
             cert_body = "".join(cert_lines[1:-1]).rstrip("=")
             response_parts[-1] = cert_body
             logger.debug("🤝🔐✅ Certificate data added to response.")
 
         handshake_response = "|".join(response_parts)
-        logger.debug(
-            f"🤝📝✅ Handshake response successfully built: {handshake_response}"
-        )
+        logger.debug(f"🤝📝✅ Handshake response successfully built: {handshake_response}")
         return handshake_response
 
     except Exception as e:
-        logger.error(
-            f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)}
-        )
+        logger.error(f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)})
         raise HandshakeError(
             message=f"Failed to build handshake response: {e}",
             hint="Review server logs for details on the failure.",
@@ -355,8 +309,7 @@ def parse_handshake_response(
                     f"{len(parts)}: '{response[:100]}...'"
                 ),
                 hint=(
-                    "Ensure the plugin's handshake output matches "
-                    "'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."
+                    "Ensure the plugin's handshake output matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."
                 ),
             )
         try:
@@ -364,12 +317,8 @@ def parse_handshake_response(
             plugin_version = int(parts[1])
         except ValueError as e_ver:
             raise HandshakeError(
-                message=(
-                    f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."
-                ),
-                hint=(
-                    "Core and plugin versions in the handshake string must be integers."
-                ),
+                message=(f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."),
+                hint=("Core and plugin versions in the handshake string must be integers."),
             ) from e_ver
 
         network = parts[2]
@@ -385,8 +334,7 @@ def parse_handshake_response(
         address = parts[3]
         if network == "tcp" and not address:
             logger.error(
-                "📡❌ Empty address received for TCP transport in handshake: "
-                f"{response}",
+                f"📡❌ Empty address received for TCP transport in handshake: {response}",
                 extra={"address": address},
             )
             raise HandshakeError(
@@ -427,12 +375,10 @@ def parse_handshake_response(
 
         if core_version != expected_core_version_int:
             logger.error(
-                "🤝 Unsupported handshake version: "
-                f"{core_version} (expected: {expected_core_version_int})"
+                f"🤝 Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
             )
             raise HandshakeError(
-                "Unsupported handshake version: "
-                f"{core_version} (expected: {expected_core_version_int})"
+                f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
             )
 
         if server_cert:

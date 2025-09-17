@@ -8,25 +8,25 @@ This module contains handshake-related methods including retry logic,
 certificate setup, handshake parsing, and X.509 certificate processing.
 """
 
+from __future__ import annotations
+
 import asyncio
-import functools
-import os
 import random
 import time
-import traceback
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
+
+from provide.foundation import logger
+from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.exception import (
     HandshakeError,
-    ProtocolError,
     SecurityError,
-    TransportError,
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
-from provide.foundation import logger
-from .types import ClientProtocol
+
+if TYPE_CHECKING:
+    from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 class HandshakeData(NamedTuple):
@@ -40,7 +40,7 @@ class HandshakeData(NamedTuple):
 class ClientHandshakeMixin:
     """Mixin class containing handshake-related methods for RPCPluginClient."""
 
-    async def _connect_and_handshake_with_retry(self: ClientProtocol) -> None:
+    async def _connect_and_handshake_with_retry(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Performs handshake and creates gRPC channel, with retry logic.
 
@@ -52,14 +52,11 @@ class ClientHandshakeMixin:
         retry_enabled_str = str(rpcplugin_config.plugin_client_retry_enabled)
         retry_enabled = str(retry_enabled_str).lower() == "true"
         self.logger.debug(
-            f"Client retry_enabled evaluated to: {retry_enabled} "
-            f"(from string '{retry_enabled_str}')"
+            f"Client retry_enabled evaluated to: {retry_enabled} (from string '{retry_enabled_str}')"
         )
 
         if not retry_enabled:
-            self.logger.info(
-                "Client retries disabled. Attempting connection and handshake once."
-            )
+            self.logger.info("Client retries disabled. Attempting connection and handshake once.")
             try:
                 self._handshake_complete_event.clear()
                 self._handshake_failed_event.clear()
@@ -68,25 +65,18 @@ class ClientHandshakeMixin:
                 await self._perform_handshake()
                 if not self._address or not self._transport_name:
                     raise HandshakeError(
-                        "Handshake completed but critical endpoint data "
-                        "(address/transport_name) not set."
+                        "Handshake completed but critical endpoint data (address/transport_name) not set."
                     )
                 self.logger.info(
-                    f"Handshake successful. Endpoint: {self._address}, "
-                    f"Transport: {self._transport_name}"
+                    f"Handshake successful. Endpoint: {self._address}, Transport: {self._transport_name}"
                 )
 
                 # Set up client certificates for mTLS if needed
                 await self._setup_client_certificates()
 
-                self.logger.debug(
-                    f"Creating gRPC channel to {self._address} "
-                    f"({self._transport_name})..."
-                )
+                self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
                 await self._create_grpc_channel()
-                self.logger.info(
-                    f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
-                )
+                self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
 
                 # Start stdio reading task
                 if self._stdio_stub:
@@ -97,8 +87,7 @@ class ClientHandshakeMixin:
                 self._handshake_complete_event.set()
             except Exception as e:
                 self.logger.error(
-                    "Failed to connect and handshake with plugin "
-                    f"(retry disabled): {e}",
+                    f"Failed to connect and handshake with plugin (retry disabled): {e}",
                     exc_info=True,
                 )
                 self._handshake_failed_event.set()
@@ -133,15 +122,13 @@ class ClientHandshakeMixin:
                     self._handshake_complete_event.clear()
                     self._handshake_failed_event.clear()
                     self.logger.debug(
-                        f"Attempt {attempt + 1}/{max_retries + 1}: "
-                        "Performing handshake with plugin server..."
+                        f"Attempt {attempt + 1}/{max_retries + 1}: Performing handshake with plugin server..."
                     )
 
                     await self._perform_handshake()
                     if not self._address or not self._transport_name:
                         raise HandshakeError(
-                            "Handshake completed but critical endpoint data "
-                            "(address/transport_name) not set."
+                            "Handshake completed but critical endpoint data (address/transport_name) not set."
                         )
 
                     self.logger.info(
@@ -152,14 +139,9 @@ class ClientHandshakeMixin:
                     # Set up client certificates for mTLS if needed
                     await self._setup_client_certificates()
 
-                    self.logger.debug(
-                        f"Creating gRPC channel to {self._address} "
-                        f"({self._transport_name})..."
-                    )
+                    self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
                     await self._create_grpc_channel()
-                    self.logger.info(
-                        f"Successfully connected to gRPC endpoint: {self.target_endpoint}"
-                    )
+                    self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
 
                     # Start stdio reading task
                     if self._stdio_stub:
@@ -172,20 +154,16 @@ class ClientHandshakeMixin:
 
                 except Exception as e:
                     attempt += 1
-                    self.logger.warning(
-                        f"Attempt {attempt}/{max_retries + 1} failed: {e}"
-                    )
+                    self.logger.warning(f"Attempt {attempt}/{max_retries + 1} failed: {e}")
 
                     if attempt > max_retries:
                         self.logger.error(
-                            f"All {max_retries + 1} attempts failed. "
-                            f"Last error: {e}",
+                            f"All {max_retries + 1} attempts failed. Last error: {e}",
                             exc_info=True,
                         )
                         self._handshake_failed_event.set()
                         raise HandshakeError(
-                            f"Failed to connect after {max_retries + 1} attempts. "
-                            f"Last error: {e}"
+                            f"Failed to connect after {max_retries + 1} attempts. Last error: {e}"
                         ) from e
 
                     # Close transport before retrying if it was created
@@ -193,9 +171,7 @@ class ClientHandshakeMixin:
                         try:
                             await self._transport.close()
                         except Exception as close_error:
-                            self.logger.warning(
-                                f"Error closing transport before retry: {close_error}"
-                            )
+                            self.logger.warning(f"Error closing transport before retry: {close_error}")
                         finally:
                             self._transport = None
 
@@ -204,12 +180,10 @@ class ClientHandshakeMixin:
                     wait_time_ms = retry_interval_ms + jitter_ms
                     wait_time_s = wait_time_ms / 1000.0
 
-                    self.logger.debug(
-                        f"Waiting {wait_time_ms}ms before retry {attempt + 1}..."
-                    )
+                    self.logger.debug(f"Waiting {wait_time_ms}ms before retry {attempt + 1}...")
                     await asyncio.sleep(wait_time_s)
 
-    async def _setup_client_certificates(self) -> None:
+    async def _setup_client_certificates(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Set up client certificates for mTLS authentication.
 
@@ -234,9 +208,7 @@ class ClientHandshakeMixin:
                 self.client_key_pem = cert_obj.key
                 self.logger.debug("Loaded existing client certificate for mTLS.")
             except Exception as e:
-                raise SecurityError(
-                    f"Failed to load client certificate/key: {e}"
-                ) from e
+                raise SecurityError(f"Failed to load client certificate/key: {e}") from e
         elif auto_mtls:
             try:
                 cert_obj = Certificate.create_self_signed_client_cert(
@@ -248,11 +220,9 @@ class ClientHandshakeMixin:
                 self.client_key_pem = cert_obj.key
                 self.logger.debug("Generated auto-mTLS client certificate.")
             except Exception as e:
-                raise SecurityError(
-                    f"Failed to auto-generate client certificate: {e}"
-                ) from e
+                raise SecurityError(f"Failed to auto-generate client certificate: {e}") from e
 
-    async def _read_raw_handshake_line_from_stdout(self) -> str:
+    async def _read_raw_handshake_line_from_stdout(self: RPCPluginClient) -> str:  # type: ignore[misc]
         """
         Read the raw handshake line from the plugin's stdout.
 
@@ -266,9 +236,7 @@ class ClientHandshakeMixin:
             HandshakeError: If handshake cannot be read or times out
         """
         if not self._process or not self._process.stdout:
-            raise HandshakeError(
-                "Plugin process or stdout not available for handshake."
-            )
+            raise HandshakeError("Plugin process or stdout not available for handshake.")
 
         outer_timeout_ms = rpcplugin_config.plugin_handshake_timeout * 1000
         outer_timeout_s = outer_timeout_ms / 1000.0
@@ -288,21 +256,16 @@ class ClientHandshakeMixin:
                 stderr_output = ""
                 if self._process.stderr:
                     try:
-                        stderr_output = self._process.stderr.read().decode(
-                            "utf-8", errors="replace"
-                        )
+                        stderr_output = self._process.stderr.read().decode("utf-8", errors="replace")
                     except Exception as e_stderr:
                         stderr_output = f"Error reading stderr: {e_stderr}"
 
                 stderr_output_truncated = (
-                    (stderr_output[:200] + "...")
-                    if len(stderr_output) > 200
-                    else stderr_output
+                    (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
                 )
 
                 self.logger.error(
-                    f"Plugin process exited with code {self._process.returncode} "
-                    "before handshake completion"
+                    f"Plugin process exited with code {self._process.returncode} before handshake completion"
                 )
                 raise HandshakeError(
                     f"Plugin process exited prematurely with code "
@@ -322,9 +285,7 @@ class ClientHandshakeMixin:
                     continue
 
                 line_bytes = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(
-                        None, self._process.stdout.readline
-                    ),
+                    asyncio.get_event_loop().run_in_executor(None, self._process.stdout.readline),
                     timeout=inner_timeout_s,
                 )
 
@@ -356,7 +317,9 @@ class ClientHandshakeMixin:
                         chunk = await asyncio.wait_for(
                             asyncio.get_event_loop().run_in_executor(
                                 None,
-                                lambda: self._process.stdout.read(1024) if self._process and self._process.stdout else b"",
+                                lambda: self._process.stdout.read(1024)
+                                if self._process and self._process.stdout
+                                else b"",
                             ),
                             timeout=1.0,
                         )
@@ -367,8 +330,7 @@ class ClientHandshakeMixin:
                         chunk_str = chunk.decode("utf-8", errors="replace")
                         buffer += chunk_str
                         self.logger.debug(
-                            f"Read chunk: {len(chunk_str)} bytes, "
-                            f"buffer now has {len(buffer)} bytes"
+                            f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(buffer)} bytes"
                         )
 
                         # Check if we now have a complete handshake
@@ -377,9 +339,7 @@ class ClientHandshakeMixin:
                             lines = buffer.split("\n")
                             for line_in_buf in lines:
                                 if "|" in line_in_buf and line_in_buf.count("|") >= 5:
-                                    self.logger.debug(
-                                        f"Found complete handshake in buffer: {line_in_buf}"
-                                    )
+                                    self.logger.debug(f"Found complete handshake in buffer: {line_in_buf}")
                                     return line_in_buf
                             # If no single line contains complete handshake,
                             # maybe it's split across reads but now complete in buffer
@@ -395,31 +355,25 @@ class ClientHandshakeMixin:
         stderr_output = ""
         if self._process.stderr:
             try:
-                stderr_output = self._process.stderr.read().decode(
-                    "utf-8", errors="replace"
-                )
+                stderr_output = self._process.stderr.read().decode("utf-8", errors="replace")
             except Exception as e_stderr_final:
                 stderr_output = f"Error reading stderr: {e_stderr_final}"
 
-        stderr_output_truncated = (
-            (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
-        )
+        stderr_output_truncated = (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
 
         raise HandshakeError(
-            f"Timed out waiting for handshake response from plugin after "
-            f"{outer_timeout_s} seconds.",
+            f"Timed out waiting for handshake response from plugin after {outer_timeout_s} seconds.",
             hint=(
                 f"Ensure plugin starts and prints handshake to stdout promptly. "
                 f"Last buffer: '{buffer}'. Stderr: '{stderr_output_truncated}'"
                 if stderr_output_truncated
                 else (
-                    f"Ensure plugin starts and prints handshake to stdout promptly. "
-                    f"Last buffer: '{buffer}'."
+                    f"Ensure plugin starts and prints handshake to stdout promptly. Last buffer: '{buffer}'."
                 )
             ),
         )
 
-    async def _perform_handshake(self) -> None:
+    async def _perform_handshake(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Perform the complete handshake process with the plugin.
 
@@ -474,15 +428,12 @@ class ClientHandshakeMixin:
                         if self._process.poll() is None:
                             self._process.kill()
                 except Exception as cleanup_error:
-                    self.logger.warning(
-                        f"Error cleaning up process after handshake failure: "
-                        f"{cleanup_error}"
-                    )
+                    self.logger.warning(f"Error cleaning up process after handshake failure: {cleanup_error}")
                 finally:
                     self._process = None
             raise
 
-    def _rebuild_x509_pem(self, maybe_cert: str) -> str:
+    def _rebuild_x509_pem(self: RPCPluginClient, maybe_cert: str) -> str:  # type: ignore[misc]
         """
         Rebuild X.509 PEM certificate from handshake response.
 

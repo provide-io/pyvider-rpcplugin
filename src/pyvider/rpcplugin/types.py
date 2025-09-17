@@ -4,22 +4,18 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable as AbcCallable
 import inspect
-from collections.abc import Awaitable
-from collections.abc import Callable as AbcCallable
 from typing import (
     TYPE_CHECKING,
     Any,
+    Protocol as TypeProtocol,
     TypeGuard,
     TypeVar,
     runtime_checkable,
 )
-from typing import (
-    Protocol as TypeProtocol,
-)
 
 import grpc
-
 from provide.foundation import logger
 
 """Type definitions for the Pyvider RPC plugin system.
@@ -172,10 +168,7 @@ class SerializableT(TypeProtocol):
 
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
-    logger.debug(
-        "🧰🔍✅ Checking if object implements SerializableT protocol "
-        "(manual runtime checks)"
-    )
+    logger.debug("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)")
 
     # Check to_dict method
     if not hasattr(obj, "to_dict"):
@@ -262,10 +255,7 @@ class ConnectionT(TypeProtocol):
 
 
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
-    logger.debug(
-        "🧰🔍✅ Checking if object implements ConnectionT protocol "
-        "(manual runtime checks)"
-    )
+    logger.debug("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)")
 
     methods_spec = {
         "send_data": {"params": 1, "is_async": True},
@@ -304,7 +294,6 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     return True
 
     # Type aliases for gRPC Clients
-    
 
 
 GrpcServerType = grpc.aio.Server  # pragma: no cover
@@ -351,10 +340,7 @@ class SecureRpcClientT(TypeProtocol):
 
 
 def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
-    logger.debug(
-        "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
-        "(manual runtime checks)"
-    )
+    logger.debug("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)")
 
     methods_spec = {
         "_perform_handshake": {"params": 0, "is_async": True},
@@ -374,9 +360,7 @@ def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
             return False
 
         if spec["is_async"] and not asyncio.iscoroutinefunction(method):
-            logger.debug(
-                f"SecureRpcClientT: Method {method_name} is not async as expected."
-            )
+            logger.debug(f"SecureRpcClientT: Method {method_name} is not async as expected.")
             return False
 
         try:
@@ -388,9 +372,7 @@ def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
                 )
                 return False
         except (TypeError, ValueError):
-            logger.debug(
-                f"SecureRpcClientT: Could not inspect {method_name} signature."
-            )
+            logger.debug(f"SecureRpcClientT: Could not inspect {method_name} signature.")
             return False
 
     logger.debug("SecureRpcClientT: All structural and signature checks passed.")
@@ -440,7 +422,6 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄
