@@ -17,9 +17,10 @@ configure_for_example()
 
 # from typing import Any  # Already at top
 
+from provide.foundation import logger  # noqa: E402
+
 from pyvider.rpcplugin import plugin_server  # noqa: E402
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
-from provide.foundation import logger  # noqa: E402
 
 
 class BasicProtocol(RPCPluginProtocol):

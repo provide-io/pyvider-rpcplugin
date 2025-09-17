@@ -4,18 +4,17 @@ import asyncio
 import os
 from typing import Any, cast
 
-import grpc
-
 # Ensure 'src' and project root are in sys.path for direct execution of examples
 # This needs to happen BEFORE attempting to import from 'examples.proto'
 from example_utils import configure_for_example  # type: ignore[import-not-found]
+import grpc
 
-configure_for_example(
-    clear_env=False
-)  # Server context, do not clear client-set env vars
+configure_for_example(clear_env=False)  # Server context, do not clear client-set env vars
 
 # Import generated code from the examples/proto directory
 # Assumes 'examples' is in PYTHONPATH or you run from project root.
+from provide.foundation import logger  # noqa: E402
+
 from examples.proto import echo_pb2, echo_pb2_grpc  # noqa: E402
 from pyvider.rpcplugin.factories import plugin_server  # noqa: E402
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol  # noqa: E402
@@ -24,8 +23,7 @@ from pyvider.rpcplugin.server import RPCPluginServer  # noqa: E402
 # Import pyvider components
 from pyvider.rpcplugin.types import (  # noqa: E402
     RPCPluginProtocol as TypesRPCPluginProtocol,
-)  # noqa: E402
-from provide.foundation import logger  # noqa: E402
+)
 
 
 # --- Implement the Handler (Servicer) ---
@@ -46,9 +44,7 @@ class EchoProtocol(RPCPluginProtocol):
 
     async def add_to_server(self, server: Any, handler: Any) -> None:
         # Register the handler with the gRPC server
-        echo_pb2_grpc.add_EchoServiceServicer_to_server(
-            cast(EchoHandler, handler), server
-        )
+        echo_pb2_grpc.add_EchoServiceServicer_to_server(cast(EchoHandler, handler), server)
         logger.info("EchoService handler registered with gRPC server.")
 
 
@@ -62,9 +58,7 @@ async def main() -> None:
     if "PLUGIN_MAGIC_COOKIE_KEY" not in os.environ:
         # This check is for the key, the value is set by the client.
         # The server reads the value from the key specified by PLUGIN_MAGIC_COOKIE_KEY.
-        logger.warning(
-            "PLUGIN_MAGIC_COOKIE_KEY env var not set. Using default for standalone run."
-        )
+        logger.warning("PLUGIN_MAGIC_COOKIE_KEY env var not set. Using default for standalone run.")
         os.environ["PLUGIN_MAGIC_COOKIE_KEY"] = "ECHO_PLUGIN_COOKIE_EXAMPLE"
         # The actual cookie value is usually set by the client that
         # launches this server.

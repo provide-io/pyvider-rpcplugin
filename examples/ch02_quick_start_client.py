@@ -5,20 +5,21 @@ Quick Start Example - Client launching an executable plugin server.
 """
 
 import asyncio
-import sys
 from pathlib import Path
+import sys
 
 # Import example_utils directly as it's in the same directory
-import example_utils  # type: ignore[import-not-found] # noqa: E402
+import example_utils  # type: ignore[import-not-found]
 
 example_utils.configure_for_example(clear_env=True)  # Client context
+
+from provide.foundation import logger  # noqa: E402
 
 from pyvider.rpcplugin import plugin_client  # noqa: E402
 from pyvider.rpcplugin.client import (  # noqa: E402
     RPCPluginClient,
 )  # Retaining for clarity if user inspects client object
 from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
-from provide.foundation import logger  # noqa: E402
 
 
 async def main() -> None:
@@ -41,9 +42,7 @@ async def main() -> None:
         await client.start()
 
         logger.info("✅ Client connected to dummy_server plugin successfully!")
-        logger.info(
-            "   The dummy_server uses a basic protocol with no custom RPC methods."
-        )
+        logger.info("   The dummy_server uses a basic protocol with no custom RPC methods.")
         # If your plugin had defined services (e.g., via .proto files),
         # you would create a gRPC stub here using client.grpc_channel:
         # stub = YourServiceStub(client.grpc_channel)

@@ -6,9 +6,9 @@ Runs all relevant Python example scripts and checks for unexpected failures.
 
 import asyncio
 import os
+from pathlib import Path
 import subprocess  # nosec B404
 import sys
-from pathlib import Path
 from typing import Any
 
 # Ensure sources are importable by example scripts
@@ -30,17 +30,13 @@ def print_section(title: str) -> None:
     print("=" * 70)
 
 
-def print_result(
-    script_name: str, success: bool, stdout: str, stderr: str, exit_code: int
-) -> None:
+def print_result(script_name: str, success: bool, stdout: str, stderr: str, exit_code: int) -> None:
     status = "✅ PASSED" if success else "❌ FAILED"
     print(f"\n--- {script_name} --- {status} ---")
     if stdout:
         print("--- STDOUT ---")
         print(stdout.strip())
-    if (
-        stderr and not success
-    ):  # Only print stderr if failed, or if specifically requested
+    if stderr and not success:  # Only print stderr if failed, or if specifically requested
         print("--- STDERR ---")
         print(stderr.strip())
     if not success:
@@ -76,9 +72,7 @@ async def run_script(
             cwd=str(effective_cwd),
             env=env,
         )
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(
-            process.communicate(), timeout=timeout
-        )
+        stdout_bytes, stderr_bytes = await asyncio.wait_for(process.communicate(), timeout=timeout)
         stdout = stdout_bytes.decode().strip()
         stderr = stderr_bytes.decode().strip()
         raw_exit_code = process.returncode
@@ -87,9 +81,7 @@ async def run_script(
         success = False
         if expected_to_fail:
             if exit_code != 0:
-                if expected_stderr_contains and expected_stderr_contains in stderr:
-                    success = True
-                elif not expected_stderr_contains:
+                if (expected_stderr_contains and expected_stderr_contains in stderr) or not expected_stderr_contains:
                     success = True
             else:
                 stderr += "\nERROR: Script was expected to fail but exited with 0."

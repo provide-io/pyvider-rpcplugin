@@ -4,8 +4,8 @@ Performance Tuning - Performance benchmarking and optimization patterns.
 """
 
 import asyncio
-import time
 from collections.abc import Generator  # Added for create_generator
+import time
 from typing import Any  # Import Any
 
 from example_utils import configure_for_example  # type: ignore[import-not-found]
@@ -168,10 +168,7 @@ async def memory_optimization_example() -> None:
     logger.info(f"📊 Generator memory usage: {gen_size:,} bytes")
 
     memory_savings = list_size - gen_size
-    logger.info(
-        f"💰 Memory savings: {memory_savings:,} bytes "
-        f"({memory_savings / list_size * 100:.1f}%)"
-    )
+    logger.info(f"💰 Memory savings: {memory_savings:,} bytes ({memory_savings / list_size * 100:.1f}%)")
 
     logger.info("✅ Memory optimization example completed")
 
