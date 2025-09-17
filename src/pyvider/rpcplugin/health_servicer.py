@@ -13,7 +13,6 @@ from collections.abc import AsyncIterator, Callable
 
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
-
 from provide.foundation import logger
 
 
@@ -22,9 +21,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
     Implements the standard gRPC Health Checking Protocol.
     """
 
-    def __init__(
-        self, app_is_healthy_callable: Callable[[], bool], service_name: str = ""
-    ) -> None:
+    def __init__(self, app_is_healthy_callable: Callable[[], bool], service_name: str = "") -> None:
         """
         Args:
             app_is_healthy_callable: A callable that returns True if the main
@@ -54,34 +51,23 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
 
         if not requested_service or requested_service == self._service_name:
             if self._app_is_healthy_callable():
-                logger.debug(
-                    f"❤️⚕️ Reporting SERVING for "
-                    f"'{requested_service or 'overall server'}'"
-                )
-                return health_pb2.HealthCheckResponse(
-                    status=health_pb2.HealthCheckResponse.SERVING
-                )
+                logger.debug(f"❤️⚕️ Reporting SERVING for '{requested_service or 'overall server'}'")
+                return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVING)
             else:
                 logger.warning(
                     f"❤️⚕️ Reporting NOT_SERVING for "
                     f"'{requested_service or 'overall server'}' as app is unhealthy."
                 )
-                return health_pb2.HealthCheckResponse(
-                    status=health_pb2.HealthCheckResponse.NOT_SERVING
-                )
+                return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.NOT_SERVING)
         else:
             logger.info(
                 f"❤️⚕️ Service '{requested_service}' not found by this health checker. "
                 f"Monitored: '{self._service_name}'."
             )
-            await context.abort(
-                grpc.StatusCode.NOT_FOUND, f"Service '{requested_service}' not found."
-            )
+            await context.abort(grpc.StatusCode.NOT_FOUND, f"Service '{requested_service}' not found.")
             # This line is technically unreachable due to abort, but linters/type
             # checkers might expect a return.
-            return health_pb2.HealthCheckResponse(
-                status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN
-            )
+            return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN)
 
     async def Watch(
         self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext
@@ -94,9 +80,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             f"❤️⚕️ Watch requested for service: '{requested_service}'. Monitored: "
             f"'{self._service_name}'. Watch is not implemented."
         )
-        await context.abort(
-            grpc.StatusCode.UNIMPLEMENTED, "Watch streaming is not implemented."
-        )
+        await context.abort(grpc.StatusCode.UNIMPLEMENTED, "Watch streaming is not implemented.")
         # This part is unreachable due to abort but makes type checkers happy
         # if they expect a yield for an AsyncIterator.
         if False:  # pylint: disable=using-constant-test
@@ -104,7 +88,6 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄

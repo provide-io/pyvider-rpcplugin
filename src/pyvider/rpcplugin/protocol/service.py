@@ -15,14 +15,15 @@ function to add these services to a gRPC server.
 """
 
 import asyncio
+from collections.abc import AsyncIterator
 import os
 import traceback
-from collections.abc import AsyncIterator
 from typing import Any
 
-import grpc  # For gRPC context type hint
 from attrs import define, field
 from google.protobuf import empty_pb2  # Use google.protobuf.empty_pb2
+import grpc  # For gRPC context type hint
+from provide.foundation import logger
 
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
@@ -39,7 +40,6 @@ from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import (
     GRPCStdioServicer,
     add_GRPCStdioServicer_to_server,
 )
-from provide.foundation import logger
 
 
 class BrokerError(Exception):
@@ -59,16 +59,13 @@ class SubchannelConnection:
 
     async def open(self) -> None:
         logger.debug(
-            f"🔌🔍✅ SubchannelConnection.open() => Opening subchannel {self.conn_id} "
-            f"at {self.address}"
+            f"🔌🔍✅ SubchannelConnection.open() => Opening subchannel {self.conn_id} at {self.address}"
         )
         await asyncio.sleep(0.05)  # simulate
         self.is_open = True
 
     async def close(self) -> None:
-        logger.debug(
-            f"🔌🔒✅ SubchannelConnection.close() => Closing subchannel {self.conn_id}"
-        )
+        logger.debug(f"🔌🔒✅ SubchannelConnection.close() => Closing subchannel {self.conn_id}")
         await asyncio.sleep(0.05)
         self.is_open = False
 
@@ -108,10 +105,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         Yields:
             Outgoing `ConnInfo` messages to the client.
         """
-        logger.debug(
-            "🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream "
-            "(bidirectional)."
-        )
+        logger.debug("🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream (bidirectional).")
         try:  # Outer try for iterator errors
             async for incoming in request_iterator:
                 sub_id = incoming.service_id
@@ -123,14 +117,8 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     )
 
                     if incoming.knock.knock:  # Request to open/ensure channel
-                        if (
-                            sub_id in self._subchannels
-                            and self._subchannels[sub_id].is_open
-                        ):
-                            logger.debug(
-                                f"🔌📡⚠️ Subchannel ID {sub_id} already exists "
-                                "and is open."
-                            )
+                        if sub_id in self._subchannels and self._subchannels[sub_id].is_open:
+                            logger.debug(f"🔌📡⚠️ Subchannel ID {sub_id} already exists and is open.")
                             yield ConnInfo(
                                 service_id=sub_id,
                                 network=incoming.network,
@@ -141,9 +129,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                             subchan = SubchannelConnection(sub_id, incoming.address)
                             await subchan.open()
                             self._subchannels[sub_id] = subchan
-                            logger.debug(
-                                f"🔌📡✅ Opened new subchannel {sub_id}, returning ack."
-                            )
+                            logger.debug(f"🔌📡✅ Opened new subchannel {sub_id}, returning ack.")
                             yield ConnInfo(
                                 service_id=sub_id,
                                 network=incoming.network,
@@ -160,43 +146,30 @@ class GRPCBrokerService(GRPCBrokerServicer):
                                 knock=ConnInfo.Knock(knock=False, ack=True, error=""),
                             )
                         else:
-                            logger.warning(
-                                "🔌📡⚠️ Request to close non-existent subchannel "
-                                f"{sub_id}."
-                            )
+                            logger.warning(f"🔌📡⚠️ Request to close non-existent subchannel {sub_id}.")
                             yield ConnInfo(
                                 service_id=sub_id,
-                                knock=ConnInfo.Knock(
-                                    knock=False, ack=True, error="Channel not found"
-                                ),
+                                knock=ConnInfo.Knock(knock=False, ack=True, error="Channel not found"),
                             )
                 except Exception as ex_inner:
-                    err_str_inner = (
-                        f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
-                    )
+                    err_str_inner = f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
                     logger.error(
                         f"🔌📡❌ {err_str_inner}",
                         extra={"trace": traceback.format_exc()},
                     )
                     yield ConnInfo(
                         service_id=sub_id,
-                        knock=ConnInfo.Knock(
-                            knock=False, ack=False, error=err_str_inner
-                        ),
+                        knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_inner),
                     )
                     # Crucial: process next item, don't fall into ex_outer
                     continue
         except Exception as ex_outer:
-            outer_error_sub_id = (
-                getattr(incoming, "service_id", 0) if "incoming" in locals() else 0
-            )
+            outer_error_sub_id = getattr(incoming, "service_id", 0) if "incoming" in locals() else 0
             err_str_outer = (
                 "Broker stream error from client iterator for sub_id "
                 f"{outer_error_sub_id} (outer loop): {ex_outer}"
             )
-            logger.error(
-                f"🔌📡❌ {err_str_outer}", extra={"trace": traceback.format_exc()}
-            )
+            logger.error(f"🔌📡❌ {err_str_outer}", extra={"trace": traceback.format_exc()})
             try:
                 yield ConnInfo(
                     service_id=0,
@@ -204,14 +177,10 @@ class GRPCBrokerService(GRPCBrokerServicer):
                 )
             except Exception as e_yield_fail:
                 logger.error(
-                    "🔌📡❌ Failed to yield error message after client iterator error: "
-                    f"{e_yield_fail}"
+                    f"🔌📡❌ Failed to yield error message after client iterator error: {e_yield_fail}"
                 )
 
-        logger.debug(
-            "🔌📡🛑 GRPCBrokerService.StartStream => stream processing "
-            "potentially ended."
-        )
+        logger.debug("🔌📡🛑 GRPCBrokerService.StartStream => stream processing potentially ended.")
 
 
 _SENTINEL = object()  # Module-level sentinel
@@ -223,9 +192,7 @@ class GRPCStdioService(GRPCStdioServicer):
     """
 
     def __init__(self) -> None:
-        self._message_queue: asyncio.Queue[Any] = (
-            asyncio.Queue()
-        )  # Allow Any for sentinel
+        self._message_queue: asyncio.Queue[Any] = asyncio.Queue()  # Allow Any for sentinel
         self._shutdown = False
 
     async def put_line(self, line: bytes, is_stderr: bool = False) -> None:
@@ -237,9 +204,7 @@ class GRPCStdioService(GRPCStdioServicer):
             is_stderr: True if the line is from stderr, False for stdout.
         """
         try:
-            data = StdioData(
-                channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line
-            )
+            data = StdioData(channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line)
             await self._message_queue.put(data)
         except Exception as e:
             logger.error(f"🔌📝❌ Error putting line in queue: {e}")
@@ -248,17 +213,14 @@ class GRPCStdioService(GRPCStdioServicer):
         self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext
     ) -> AsyncIterator[StdioData]:
         """Streams STDOUT/STDERR lines to the caller."""
-        logger.debug(
-            "🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host."
-        )
+        logger.debug("🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host.")
 
         done = asyncio.Event()
 
         # Revert to simpler signature if ctx not used, to satisfy mypy on callback type
         def on_rpc_done(_: Any) -> None:
             logger.debug(
-                "🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called "
-                "(client disconnected or call ended)."
+                "🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called (client disconnected or call ended)."
             )
             done.set()
 
@@ -274,9 +236,7 @@ class GRPCStdioService(GRPCStdioServicer):
 
         while not self._shutdown and not done.is_set():
             try:
-                get_task = asyncio.create_task(
-                    self._message_queue.get(), name="StdioGetMessage"
-                )
+                get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
                 done_wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
 
                 completed, pending = await asyncio.wait(
@@ -285,9 +245,7 @@ class GRPCStdioService(GRPCStdioServicer):
 
                 # Default should_break_loop based on done_wait_task completion
                 should_break_loop = (
-                    done_wait_task in completed
-                    and done_wait_task.done()
-                    and done_wait_task.result()
+                    done_wait_task in completed and done_wait_task.done() and done_wait_task.result()
                 )
 
                 if get_task in completed:
@@ -295,9 +253,7 @@ class GRPCStdioService(GRPCStdioServicer):
                         data_item = get_task.result()  # data_item can now be _SENTINEL
                         self._message_queue.task_done()
                         if data_item is _SENTINEL:
-                            logger.debug(
-                                "🔌📝 StreamStdio: Sentinel received, breaking loop."
-                            )
+                            logger.debug("🔌📝 StreamStdio: Sentinel received, breaking loop.")
                             should_break_loop = True  # Crucial for breaking loop
                         else:
                             # data_item is StdioData here
@@ -308,16 +264,10 @@ class GRPCStdioService(GRPCStdioServicer):
                             yield data_item  # type: ignore[misc]
                             await asyncio.sleep(0)
                     except asyncio.CancelledError:
-                        logger.debug(
-                            "🔌📝 GRPCStdioService.StreamStdio: get_task was cancelled."
-                        )
+                        logger.debug("🔌📝 GRPCStdioService.StreamStdio: get_task was cancelled.")
                         should_break_loop = True  # Also break if task was cancelled
-                    except (
-                        Exception
-                    ) as e_get_res:  # Catch other errors from get_task.result()
-                        logger.error(
-                            f"🔌📝❌ Error getting result from get_task: {e_get_res}"
-                        )
+                    except Exception as e_get_res:  # Catch other errors from get_task.result()
+                        logger.error(f"🔌📝❌ Error getting result from get_task: {e_get_res}")
                         should_break_loop = True
 
                 tasks_to_await_cleanup_pending = []
@@ -327,9 +277,7 @@ class GRPCStdioService(GRPCStdioServicer):
                         tasks_to_await_cleanup_pending.append(task_to_cancel)
 
                 if tasks_to_await_cleanup_pending:
-                    await asyncio.gather(
-                        *tasks_to_await_cleanup_pending, return_exceptions=True
-                    )
+                    await asyncio.gather(*tasks_to_await_cleanup_pending, return_exceptions=True)
                     logger.debug(
                         "🔌📝 GRPCStdioService.StreamStdio: Cleaned up "
                         f"{len(tasks_to_await_cleanup_pending)} pending tasks."
@@ -337,14 +285,11 @@ class GRPCStdioService(GRPCStdioServicer):
 
                 if should_break_loop:
                     logger.debug(
-                        "🔌📝 GRPCStdioService.StreamStdio: 'done' event set or "
-                        "task cancelled, exiting loop."
+                        "🔌📝 GRPCStdioService.StreamStdio: 'done' event set or task cancelled, exiting loop."
                     )
                     break
             except asyncio.CancelledError:
-                logger.debug(
-                    "🔌📝🛑 GRPCStdioService.StreamStdio task itself was cancelled."
-                )
+                logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio task itself was cancelled.")
                 # Further cleanup of get_task/done_wait_task if they exist
                 # (omitted for brevity as it's similar to below)
                 break
@@ -377,22 +322,15 @@ class GRPCStdioService(GRPCStdioServicer):
                     data_item = self._message_queue.get_nowait()
                     self._message_queue.task_done()
                     if data_item is _SENTINEL:  # Skip yielding sentinel during drain
-                        logger.debug(
-                            "🔌📝 StreamStdio: Sentinel found in drain, skipping."
-                        )
+                        logger.debug("🔌📝 StreamStdio: Sentinel found in drain, skipping.")
                         continue
                     logger.debug(
-                        "🔌📝✅ GRPCStdioService: Draining item: "
-                        f"{data_item.channel}, {data_item.data[:20]!r}"  # type: ignore[attr-defined]
+                        f"🔌📝✅ GRPCStdioService: Draining item: {data_item.channel}, {data_item.data[:20]!r}"  # type: ignore[attr-defined]
                     )
                     yield data_item  # type: ignore[misc]
                     await asyncio.sleep(0)
-                except (
-                    asyncio.QueueEmpty
-                ):  # Should not happen due to outer check but good practice
-                    logger.debug(
-                        "🔌📝 GRPCStdioService.StreamStdio: Queue empty during drain."
-                    )
+                except asyncio.QueueEmpty:  # Should not happen due to outer check but good practice
+                    logger.debug("🔌📝 GRPCStdioService.StreamStdio: Queue empty during drain.")
                     break
                 except Exception as e_drain:
                     logger.error(
@@ -410,13 +348,10 @@ class GRPCStdioService(GRPCStdioServicer):
         # Put sentinel into the queue to unblock .get()
         try:
             self._message_queue.put_nowait(_SENTINEL)
-            logger.debug(
-                "🔌📝⚠️ GRPCStdioService: Sentinel put in queue during shutdown."
-            )
+            logger.debug("🔌📝⚠️ GRPCStdioService: Sentinel put in queue during shutdown.")
         except asyncio.QueueFull:  # pragma: no cover
             logger.warning(
-                "🔌📝⚠️ GRPCStdioService: Queue full, could not put sentinel "
-                "immediately during shutdown."
+                "🔌📝⚠️ GRPCStdioService: Queue full, could not put sentinel immediately during shutdown."
             )
 
 
@@ -426,9 +361,7 @@ class GRPCControllerService(GRPCControllerServicer):
     Specifically, it handles the Shutdown RPC to gracefully terminate the plugin.
     """
 
-    def __init__(
-        self, shutdown_event: asyncio.Event, stdio_service: GRPCStdioService
-    ) -> None:
+    def __init__(self, shutdown_event: asyncio.Event, stdio_service: GRPCStdioService) -> None:
         """
         Initializes the GRPCControllerService.
 
@@ -439,9 +372,7 @@ class GRPCControllerService(GRPCControllerServicer):
         self._shutdown_event = shutdown_event or asyncio.Event()
         self._stdio_service = stdio_service
 
-    async def Shutdown(
-        self, request: CEmpty, context: grpc.aio.ServicerContext
-    ) -> CEmpty:
+    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext) -> CEmpty:
         """
         Handles the Shutdown RPC request from the client.
 
@@ -455,9 +386,7 @@ class GRPCControllerService(GRPCControllerServicer):
         Returns:
             An Empty response message.
         """
-        logger.debug(
-            "🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested."
-        )
+        logger.debug("🔌🛑✅ GRPCControllerService.Shutdown => plugin shutdown requested.")
         self._stdio_service.shutdown()
         self._shutdown_event.set()
 
@@ -482,9 +411,7 @@ class GRPCControllerService(GRPCControllerServicer):
             sys.exit(0)
 
 
-def register_protocol_service(
-    server: grpc.aio.Server, shutdown_event: asyncio.Event
-) -> None:
+def register_protocol_service(server: grpc.aio.Server, shutdown_event: asyncio.Event) -> None:
     """Registers all standard gRPC services for the plugin."""
     stdio_service = GRPCStdioService()
     broker_service = GRPCBrokerService()
@@ -494,13 +421,10 @@ def register_protocol_service(
     add_GRPCBrokerServicer_to_server(broker_service, server)
     add_GRPCControllerServicer_to_server(controller_service, server)
 
-    logger.debug(
-        "🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController."
-    )
+    logger.debug("🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController.")
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄

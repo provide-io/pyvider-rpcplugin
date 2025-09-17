@@ -215,7 +215,6 @@ async def collect_stream_data(stream):
     return results
 
 
-# @pytest.mark.skip # Still keeping it un-skipped for now
 @pytest.mark.asyncio
 async def test_stdio_stream_shutdown_terminates_loop(stdio_service, mock_context) -> None: # Renamed test
     # This test will now primarily verify that StreamStdio terminates on shutdown,

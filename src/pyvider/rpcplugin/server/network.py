@@ -10,6 +10,7 @@ server configuration.
 """
 
 import asyncio
+from pathlib import Path
 import sys
 from typing import Any, cast
 
@@ -65,9 +66,7 @@ class ServerNetworkMixin:
 
     def _read_client_cert(self) -> str | None:
         """Read client certificate configuration if available."""
-        return self._get_instance_override(
-            "PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert
-        )
+        return self._get_instance_override("PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert)
 
     def _generate_server_credentials(self) -> grpc.ServerCredentials | None:
         """
@@ -86,21 +85,14 @@ class ServerNetworkMixin:
         server_cert_conf = self._get_instance_override(
             "PLUGIN_SERVER_CERT", rpcplugin_config.plugin_server_cert
         )
-        server_key_conf = self._get_instance_override(
-            "PLUGIN_SERVER_KEY", rpcplugin_config.plugin_server_key
-        )
-        auto_mtls = self._get_instance_override(
-            "PLUGIN_AUTO_MTLS", rpcplugin_config.plugin_auto_mtls
-        )
+        server_key_conf = self._get_instance_override("PLUGIN_SERVER_KEY", rpcplugin_config.plugin_server_key)
+        auto_mtls = self._get_instance_override("PLUGIN_AUTO_MTLS", rpcplugin_config.plugin_auto_mtls)
         client_root_certs_conf = self._get_instance_override(
             "PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs
         )
 
         if not auto_mtls and not (server_cert_conf and server_key_conf):
-            logger.info(
-                "auto_mtls is false and no server cert/key provided. "
-                "Operating insecurely."
-            )
+            logger.info("auto_mtls is false and no server cert/key provided. Operating insecurely.")
             return None
 
         if server_cert_conf and server_key_conf:
@@ -109,9 +101,7 @@ class ServerNetworkMixin:
                     cert_pem_or_uri=server_cert_conf, key_pem_or_uri=server_key_conf
                 )
             except Exception as e:
-                raise SecurityError(
-                    f"Failed to load server certificate/key: {e}"
-                ) from e
+                raise SecurityError(f"Failed to load server certificate/key: {e}") from e
         elif auto_mtls:
             try:
                 self._server_cert_obj = Certificate.create_self_signed_server_cert(
@@ -120,33 +110,16 @@ class ServerNetworkMixin:
                     validity_days=365,
                     alt_names=["localhost"],
                 )
-                common_name_val = getattr(
-                    self._server_cert_obj, "common_name", "Unknown"
-                )
-                logger.info(
-                    "📜🔑🏭 Created new self-signed SERVER certificate for "
-                    f"CN={common_name_val}"
-                )
+                common_name_val = getattr(self._server_cert_obj, "common_name", "Unknown")
+                logger.info(f"📜🔑🏭 Created new self-signed SERVER certificate for CN={common_name_val}")
             except Exception as e:
-                raise SecurityError(
-                    f"Failed to auto-generate server certificate: {e}"
-                ) from e
+                raise SecurityError(f"Failed to auto-generate server certificate: {e}") from e
         else:
-            logger.warning(
-                "No server cert/key configured and auto_mtls is false. "
-                "Proceeding insecurely."
-            )
+            logger.warning("No server cert/key configured and auto_mtls is false. Proceeding insecurely.")
             return None
 
-        if not (
-            self._server_cert_obj
-            and self._server_cert_obj.cert
-            and self._server_cert_obj.key
-        ):
-            raise SecurityError(
-                "Server certificate object is invalid or missing PEM data "
-                "after processing."
-            )
+        if not (self._server_cert_obj and self._server_cert_obj.cert and self._server_cert_obj.key):
+            raise SecurityError("Server certificate object is invalid or missing PEM data after processing.")
 
         key_bytes = self._server_cert_obj.key.encode("utf-8")
         cert_bytes = self._server_cert_obj.cert.encode("utf-8")
@@ -156,10 +129,8 @@ class ServerNetworkMixin:
         if auto_mtls and client_root_certs_conf:
             require_auth = True
             try:
-                if isinstance(
-                    client_root_certs_conf, str
-                ) and client_root_certs_conf.startswith("file://"):
-                    with open(client_root_certs_conf[7:], "rb") as f:
+                if isinstance(client_root_certs_conf, str) and client_root_certs_conf.startswith("file://"):
+                    with Path(client_root_certs_conf[7:]).open("rb") as f:
                         client_ca_pem_bytes = f.read()
                 elif isinstance(client_root_certs_conf, str):
                     client_ca_pem_bytes = client_root_certs_conf.encode("utf-8")
@@ -199,9 +170,7 @@ class ServerNetworkMixin:
             from .core import RateLimitingInterceptor
 
             interceptors_list: list[grpc.aio.ServerInterceptor] = (
-                [RateLimitingInterceptor(self._rate_limiter)]
-                if self._rate_limiter
-                else []
+                [RateLimitingInterceptor(self._rate_limiter)] if self._rate_limiter else []
             )
             self._server = cast(
                 Any,  # ServerT
@@ -209,23 +178,15 @@ class ServerNetworkMixin:
             )
 
             proto_instance = self.protocol
-            await proto_instance.add_to_server(
-                handler=self.handler, server=self._server
-            )
+            await proto_instance.add_to_server(handler=self.handler, server=self._server)
 
             if self._server is None:
-                raise TransportError(
-                    "Server object not initialized before registration."
-                )
+                raise TransportError("Server object not initialized before registration.")
 
             concrete_server = cast(grpc.aio.Server, self._server)
-            register_protocol_service(
-                server=concrete_server, shutdown_event=self._shutdown_event
-            )
+            register_protocol_service(server=concrete_server, shutdown_event=self._shutdown_event)
             if self._health_servicer and self._server:
-                health_pb2_grpc.add_HealthServicer_to_server(
-                    self._health_servicer, concrete_server
-                )
+                health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, concrete_server)
 
             creds = self._generate_server_credentials()
 
@@ -239,25 +200,17 @@ class ServerNetworkMixin:
                 raise TransportError("Transport endpoint not available after listen.")
 
             bind_address = (
-                f"unix:{endpoint}"
-                if isinstance(active_transport_checked, UnixSocketTransport)
-                else endpoint
+                f"unix:{endpoint}" if isinstance(active_transport_checked, UnixSocketTransport) else endpoint
             )
 
             server_for_port = cast(grpc.aio.Server, self._server)
             port_num = 0
             if creds:
                 port_num = server_for_port.add_secure_port(bind_address, creds)
-                logger.info(
-                    f"🔒 Server starting in secure mode on {bind_address} "
-                    f"(port_num: {port_num})"
-                )
+                logger.info(f"🔒 Server starting in secure mode on {bind_address} (port_num: {port_num})")
             else:
                 port_num = server_for_port.add_insecure_port(bind_address)
-                logger.info(
-                    f"🔌 Server starting in insecure mode on {bind_address} "
-                    f"(port_num: {port_num})"
-                )
+                logger.info(f"🔌 Server starting in insecure mode on {bind_address} (port_num: {port_num})")
 
             if isinstance(active_transport_checked, TCPSocketTransport):
                 # Determine if a specific port was requested initially,
@@ -273,19 +226,14 @@ class ServerNetworkMixin:
                 # from self.transport or negotiated.
                 # In the failing test, self.transport is set, and is the same as
                 # active_transport_checked.
-                original_transport_config_port = (
-                    -1
-                )  # Sentinel for not configured via direct transport
+                original_transport_config_port = -1  # Sentinel for not configured via direct transport
                 if self.transport is not None and hasattr(self.transport, "port"):
                     # Check the port value of the transport instance provided
                     # at server construction
                     if isinstance(self.transport, TCPSocketTransport):
                         original_transport_config_port = self.transport.port
 
-                if (
-                    original_transport_config_port != -1
-                    and original_transport_config_port != 0
-                ):
+                if original_transport_config_port != -1 and original_transport_config_port != 0:
                     # A specific port was provided via the transport object itself
                     initial_requested_port_val = original_transport_config_port
                 else:
@@ -294,27 +242,19 @@ class ServerNetworkMixin:
                     endpoint_conf = self._get_instance_override(
                         "PLUGIN_SERVER_ENDPOINT", rpcplugin_config.plugin_server_endpoint
                     )
-                    if (
-                        endpoint_conf
-                        and isinstance(endpoint_conf, str)
-                        and ":" in endpoint_conf
-                    ):
+                    if endpoint_conf and isinstance(endpoint_conf, str) and ":" in endpoint_conf:
                         try:
                             # This part is tricky because is_valid_tcp_endpoint
                             # isn't accessible here easily. We rely on simple
                             # split and int conversion.
-                            initial_requested_port_val = int(
-                                endpoint_conf.split(":")[-1]
-                            )
+                            initial_requested_port_val = int(endpoint_conf.split(":")[-1])
                         except ValueError:
                             logger.warning(
                                 "Could not parse port from "
                                 f"PLUGIN_SERVER_ENDPOINT='{endpoint_conf}'. "
                                 "Assuming ephemeral."
                             )
-                            initial_requested_port_val = (
-                                0  # Fallback to ephemeral if parse fails
-                            )
+                            initial_requested_port_val = 0  # Fallback to ephemeral if parse fails
                     else:
                         # No PLUGIN_SERVER_ENDPOINT or it's not a typical
                         # host:port string, assume ephemeral
@@ -332,15 +272,9 @@ class ServerNetworkMixin:
                     )
 
                 self._port = port_num  # Store the actual bound port
-                active_transport_checked.port = (
-                    port_num  # Update transport's port with actual
-                )
+                active_transport_checked.port = port_num  # Update transport's port with actual
 
-                current_host = (
-                    active_transport_checked.host
-                    if active_transport_checked.host
-                    else "0.0.0.0"
-                )
+                current_host = active_transport_checked.host if active_transport_checked.host else "0.0.0.0"
                 active_transport_checked.endpoint = f"{current_host}:{port_num}"
 
             server_to_start = cast(grpc.aio.Server, self._server)
@@ -365,9 +299,7 @@ class ServerNetworkMixin:
             magic_cookie_key=self._handshake_config.magic_cookie_key,
             magic_cookie_value=self._handshake_config.magic_cookie_value,
         )
-        self._protocol_version = negotiate_protocol_version(
-            self._handshake_config.protocol_versions
-        )
+        self._protocol_version = negotiate_protocol_version(self._handshake_config.protocol_versions)
         if not self._transport:
             negotiated_transport_typed: RPCPluginTransportType
             (
@@ -376,9 +308,7 @@ class ServerNetworkMixin:
             ) = await negotiate_transport(self._handshake_config.supported_transports)
             self._transport = cast(Any, negotiated_transport_typed)  # TransportT
         else:
-            self._transport_name = (
-                "tcp" if isinstance(self._transport, TCPSocketTransport) else "unix"
-            )
+            self._transport_name = "tcp" if isinstance(self._transport, TCPSocketTransport) else "unix"
 
     async def _build_and_send_handshake_response(self) -> None:
         """
@@ -391,10 +321,7 @@ class ServerNetworkMixin:
             TransportError: If transport is not properly initialized
         """
         if self._transport is None:
-            err_msg = (
-                "Internal error: Transport is None before building "
-                "handshake response."
-            )
+            err_msg = "Internal error: Transport is None before building handshake response."
             logger.error(f"💣💥 {err_msg}")
             raise TransportError(err_msg)
 

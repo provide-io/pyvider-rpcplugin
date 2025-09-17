@@ -13,14 +13,11 @@ dependency injection for I/O functions to facilitate testing.
 import asyncio
 from collections.abc import (
     Awaitable,
-)
-from collections.abc import (
     Callable as AbcCallable,
 )
 from typing import Any  # Added for __eq__ type hint
 
 from attrs import define, field
-
 from provide.foundation import logger
 
 # Type aliases for dependency-injected I/O functions using collections.abc
@@ -103,9 +100,7 @@ class ClientConnection:
             self.update_metrics(bytes_sent=len(data))
             logger.debug(f"Sent data to {self.remote_addr}", extra={"bytes": len(data)})
         except OSError as e:
-            logger.error(
-                f"Error sending data to {self.remote_addr}", extra={"error": str(e)}
-            )
+            logger.error(f"Error sending data to {self.remote_addr}", extra={"error": str(e)})
             raise
 
     async def _default_receive(self, size: int = 16384) -> bytes:
@@ -125,14 +120,10 @@ class ClientConnection:
             data = await self.reader.read(size)
             if data:
                 self.update_metrics(bytes_received=len(data))
-                logger.debug(
-                    f"Received data from {self.remote_addr}", extra={"bytes": len(data)}
-                )
+                logger.debug(f"Received data from {self.remote_addr}", extra={"bytes": len(data)})
             return data
         except OSError as e:
-            logger.error(
-                f"Error receiving data from {self.remote_addr}", extra={"error": str(e)}
-            )
+            logger.error(f"Error receiving data from {self.remote_addr}", extra={"error": str(e)})
             raise
 
     async def send_data(self, data: bytes) -> None:
@@ -150,8 +141,7 @@ class ClientConnection:
         if self.send_func is None:
             # This should ideally not be reached if __attrs_post_init__ ran.
             raise RuntimeError(
-                "send_func was not initialized. This should not happen if "
-                "__attrs_post_init__ ran correctly."
+                "send_func was not initialized. This should not happen if __attrs_post_init__ ran correctly."
             )
         await self.send_func(data)
 
@@ -221,7 +211,6 @@ class ClientConnection:
 
 
 # 🐍🏗️🔌
-
 
 
 # 🐍🔌📄🪄
