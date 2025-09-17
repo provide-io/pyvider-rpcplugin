@@ -2,8 +2,8 @@
 # examples/ch07_echo_client.py
 import asyncio
 import os
-import sys
 from pathlib import Path
+import sys
 from typing import Any
 
 # Call configure_for_example() early to set up sys.path
@@ -13,11 +13,11 @@ import example_utils  # type: ignore[import-not-found]
 example_utils.configure_for_example(clear_env=True)  # Client context
 
 import grpc  # noqa: E402
+from provide.foundation import logger  # noqa: E402
 
 # Import pyvider components first, then specific example modules
 from examples.proto import echo_pb2, echo_pb2_grpc  # noqa: E402
 from pyvider.rpcplugin.client import RPCPluginClient  # noqa: E402
-from provide.foundation import logger  # noqa: E402
 
 
 class EchoClient:
@@ -49,9 +49,7 @@ class EchoClient:
         }
 
     async def start(self) -> bool:
-        logger.info(
-            f"Attempting to launch and connect to server: {self.server_script_path}"
-        )
+        logger.info(f"Attempting to launch and connect to server: {self.server_script_path}")
         try:
             self._client = RPCPluginClient(
                 command=[sys.executable, self.server_script_path],  # Use sys.executable
@@ -70,9 +68,7 @@ class EchoClient:
             logger.info("Client started and connected successfully. Echo stub created.")
             return True
         except TimeoutError:
-            logger.error(
-                "Timeout during client start (launching/connecting to server)."
-            )
+            logger.error("Timeout during client start (launching/connecting to server).")
             await self.close()
             return False
         except Exception as e:
@@ -99,9 +95,7 @@ class EchoClient:
             logger.error("RPC call to Echo method timed out.")
             return None
         except grpc.aio.AioRpcError as e:  # Catch gRPC specific errors
-            logger.error(
-                f"gRPC Error during Echo call: Code={e.code()} Details='{e.details()}'"
-            )
+            logger.error(f"gRPC Error during Echo call: Code={e.code()} Details='{e.details()}'")
             return None
         except Exception as e:
             logger.error(f"Unexpected error during Echo call: {e}", exc_info=True)
@@ -141,9 +135,7 @@ async def run_client() -> None:
             )
             return
 
-    logger.info(
-        f"Client (ch07_echo_client.py) will use server script: {server_script_path}"
-    )
+    logger.info(f"Client (ch07_echo_client.py) will use server script: {server_script_path}")
     client = EchoClient(str(server_script_path))
 
     if not await client.start():
@@ -155,18 +147,14 @@ async def run_client() -> None:
     if reply:
         logger.info(f"Verification: Client received reply -> '{reply}'")
     else:
-        logger.warning(
-            "Verification: Did not receive a valid reply for the first call."
-        )
+        logger.warning("Verification: Did not receive a valid reply for the first call.")
 
     # Example of calling again
     reply_again = await client.call_echo("Testing RPC call again!")
     if reply_again:
         logger.info(f"Verification: Second reply -> '{reply_again}'")
     else:
-        logger.warning(
-            "Verification: Did not receive a valid reply for the second call."
-        )
+        logger.warning("Verification: Did not receive a valid reply for the second call.")
 
     await client.close()
     logger.info(f"Client example ({Path(__file__).name}) finished.")

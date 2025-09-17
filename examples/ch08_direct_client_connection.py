@@ -23,8 +23,6 @@ To run this example:
 import asyncio
 from pathlib import Path
 
-import grpc  # For direct gRPC channel usage
-
 # example_utils.configure_for_example() should handle path adjustments.
 # Manual sys.path manipulation is generally discouraged if a utility handles it.
 # example_dir = Path(__file__).resolve().parent
@@ -32,12 +30,12 @@ import grpc  # For direct gRPC channel usage
 # src_path = project_root / "src"
 # if src_path.exists() and str(src_path) not in sys.path:
 #     sys.path.insert(0, str(src_path))
-from example_utils import (  # type: ignore[import-not-found] # noqa: E402
+from example_utils import (  # type: ignore[import-not-found]
     clear_plugin_env_vars,
     configure_for_example,
 )
-
-from provide.foundation import logger  # noqa: E402
+import grpc  # For direct gRPC channel usage
+from provide.foundation import logger
 
 # Define project_root for SOCKET_COMM_FILE path construction
 project_root = Path(__file__).resolve().parent.parent
@@ -50,9 +48,7 @@ async def run_direct_client() -> None:
     print("🚀 pyvider-rpcplugin Direct Client Connection Example")
     print("======================================================")
 
-    socket_path_read = (
-        None  # Renamed to avoid conflict with global SOCKET_PATH if it were used
-    )
+    socket_path_read = None  # Renamed to avoid conflict with global SOCKET_PATH if it were used
     try:
         socket_path_read = SOCKET_COMM_FILE.read_text().strip()
         logger.info(f"Read socket path from {SOCKET_COMM_FILE}: {socket_path_read}")
@@ -73,9 +69,7 @@ async def run_direct_client() -> None:
         print("❌ Socket path is empty in communication file.")
         return
 
-    logger.info(
-        f"Attempting to connect directly to server at Unix socket: {socket_path_read}"
-    )
+    logger.info(f"Attempting to connect directly to server at Unix socket: {socket_path_read}")
     logger.warning(f"Ensure a server is running and listening on '{socket_path_read}'.")
 
     # Configure client-side aspects if necessary (e.g., logging)
@@ -125,10 +119,7 @@ async def run_direct_client() -> None:
             f"Is the server running and the socket path '{socket_path_read}' correct?"
         )
         # Corrected to use socket_path_read in print message
-        print(
-            f"❌ Timeout connecting to {target}. Check server status "
-            f"and socket path '{socket_path_read}'."
-        )
+        print(f"❌ Timeout connecting to {target}. Check server status and socket path '{socket_path_read}'.")
     except grpc.aio.AioRpcError as e:
         logger.error(
             f"gRPC Error during connection: {e.code()} - {e.details()}",

@@ -9,12 +9,13 @@ from example_utils import configure_for_example  # type: ignore[import-not-found
 
 configure_for_example()
 
+from provide.foundation import logger  # noqa: E402
+
 from pyvider.rpcplugin.exception import (  # noqa: E402
     HandshakeError,
     RPCPluginError,
     TransportError,
 )
-from provide.foundation import logger  # noqa: E402
 
 
 async def basic_client_example() -> None:

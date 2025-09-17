@@ -8,11 +8,11 @@ import asyncio
 import os
 from typing import Any, cast
 
-import grpc
-
 # Ensure 'src' and project root are in sys.path for direct execution of examples
 # This needs to happen BEFORE attempting to import from 'examples.proto'
 from example_utils import configure_for_example  # type: ignore[import-not-found]
+import grpc
+from provide.foundation import logger
 
 # Import pyvider components
 # Import generated protobuf code for E2E Greeting service
@@ -23,11 +23,8 @@ from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.types import (
     RPCPluginProtocol as TypesRPCPluginProtocol,
 )
-from provide.foundation import logger
 
-configure_for_example(
-    clear_env=False
-)  # Server context, do not clear client-set env vars
+configure_for_example(clear_env=False)  # Server context, do not clear client-set env vars
 
 
 # --- Implement the Handler (Servicer) ---
@@ -45,10 +42,7 @@ class GreeterServiceHandler(e2e_greeting_pb2_grpc.GreeterServicer):
             "GreeterServiceHandler: Received Greet request",
             client_name=request.name,
         )
-        message = (
-            f"Hello, {request.name}! This is a real end-to-end call "
-            f"from the E2E server."
-        )
+        message = f"Hello, {request.name}! This is a real end-to-end call from the E2E server."
         return e2e_greeting_pb2.GreetingReply(message=message)
 
 
@@ -66,16 +60,12 @@ class E2EGreetingProtocol(RPCPluginProtocol):
         # For E2E Greeter service, 'Greet' is unary-unary.
         if "Greet" in method_name:
             return "unary_unary"
-        logger.warning(
-            f"Unknown method {method_name} in E2EGreetingProtocol, defaulting."
-        )
+        logger.warning(f"Unknown method {method_name} in E2EGreetingProtocol, defaulting.")
         return "unary_unary"  # Default for safety
 
     async def add_to_server(self, server: Any, handler: Any) -> None:
         # Register the handler with the gRPC server
-        e2e_greeting_pb2_grpc.add_GreeterServicer_to_server(
-            cast(GreeterServiceHandler, handler), server
-        )
+        e2e_greeting_pb2_grpc.add_GreeterServicer_to_server(cast(GreeterServiceHandler, handler), server)
         logger.info("GreeterService handler registered with gRPC server.")
 
 

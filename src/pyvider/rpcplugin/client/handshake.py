@@ -15,7 +15,6 @@ import random
 import time
 from typing import TYPE_CHECKING, NamedTuple
 
-from provide.foundation import logger
 from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
