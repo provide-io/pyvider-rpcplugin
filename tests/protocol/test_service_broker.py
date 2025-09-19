@@ -1,14 +1,14 @@
 # tests/protocol/test_service_broker.py
 """Tests for broker service and subchannel functionality."""
 
+from provide.testkit.mocking import MagicMock
 import pytest
-from provide.testkit.mocking import AsyncMock, MagicMock
 
-from pyvider.rpcplugin.protocol.service import (
-    SubchannelConnection,
-    GRPCBrokerService,
-)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.service import (
+    GRPCBrokerService,
+    SubchannelConnection,
+)
 
 
 @pytest.fixture
@@ -121,7 +121,9 @@ async def test_broker_start_stream_close_subchannel(
 
 
 @pytest.mark.asyncio
-async def test_broker_start_stream_exception(broker_service: GRPCBrokerService, mock_context: MagicMock) -> None:
+async def test_broker_start_stream_exception(
+    broker_service: GRPCBrokerService, mock_context: MagicMock
+) -> None:
     """Test StartStream with an exception during processing."""
     # Create a request that will cause an exception
     invalid_info = ConnInfo(
@@ -170,7 +172,7 @@ async def test_broker_service_subchannel_open_failure(
     responses = []
 
     # Mock SubchannelConnection to raise an exception during open
-    original_subchannel_class = broker_service.__class__.__dict__.get('_create_subchannel')
+    broker_service.__class__.__dict__.get("_create_subchannel")
 
     def mock_create_subchannel(service_id: int, address: str) -> SubchannelConnection:
         subchannel = SubchannelConnection(conn_id=service_id, address=address)

@@ -3,11 +3,12 @@
 
 import asyncio
 import subprocess
-import pytest
-from provide.testkit.mocking import patch, MagicMock, AsyncMock, magic_mock_factory, async_mock_factory
 
-from pyvider.rpcplugin.exception import HandshakeError
+from provide.testkit.mocking import MagicMock
+import pytest
+
 from pyvider.rpcplugin.client.core import RPCPluginClient
+from pyvider.rpcplugin.exception import HandshakeError
 
 
 @pytest.fixture
@@ -237,10 +238,7 @@ async def test_read_raw_handshake_line_byte_by_byte_stdout_none(
     def run_in_executor_wrapper(loop: object, func_to_run: object) -> asyncio.Future[bytes]:
         f: asyncio.Future[bytes] = asyncio.Future()
         try:
-            if client_instance._process.stdout:
-                result = func_to_run()
-            else:
-                result = b""
+            result = func_to_run() if client_instance._process.stdout else b""
             f.set_result(result)
         except Exception as e:
             f.set_exception(e)

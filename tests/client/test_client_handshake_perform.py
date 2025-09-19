@@ -2,11 +2,12 @@
 """Tests for basic handshake execution functionality."""
 
 import subprocess
-import pytest
-from provide.testkit.mocking import patch, MagicMock, AsyncMock
 
-from pyvider.rpcplugin.exception import HandshakeError
+from provide.testkit.mocking import AsyncMock, MagicMock, patch
+import pytest
+
 from pyvider.rpcplugin.client.core import RPCPluginClient
+from pyvider.rpcplugin.exception import HandshakeError
 
 
 @pytest.fixture
@@ -62,9 +63,7 @@ async def test_perform_handshake_with_cert(client_instance: RPCPluginClient, moc
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
-        mock_process.stdout.readline.return_value = "1|1|tcp|127.0.0.1:8000|grpc|{}\\n".format(
-            sample_cert
-        ).encode()
+        mock_process.stdout.readline.return_value = f"1|1|tcp|127.0.0.1:8000|grpc|{sample_cert}\\n".encode()
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None

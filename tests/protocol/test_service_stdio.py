@@ -2,12 +2,14 @@
 """Tests for stdio service functionality."""
 
 import asyncio
-import pytest
-from provide.testkit.mocking import AsyncMock, MagicMock, patch
+import contextlib
 
-from pyvider.rpcplugin.protocol.service import GRPCStdioService
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from google.protobuf.empty_pb2 import Empty
+from provide.testkit.mocking import MagicMock, patch
+import pytest
+
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+from pyvider.rpcplugin.protocol.service import GRPCStdioService
 
 
 @pytest.fixture
@@ -62,9 +64,7 @@ async def test_stdio_put_line_stderr(stdio_service: GRPCStdioService) -> None:
 
 @pytest.mark.asyncio
 async def test_stdio_put_line_error(stdio_service: GRPCStdioService) -> None:
-    with patch.object(
-        stdio_service._message_queue, "put", side_effect=Exception("Queue error")
-    ):
+    with patch.object(stdio_service._message_queue, "put", side_effect=Exception("Queue error")):
         await stdio_service.put_line(b"test data")
 
 
@@ -73,9 +73,7 @@ async def test_stdio_stream_stdio(stdio_service: GRPCStdioService, mock_context:
     test_data = b"test output"
     await stdio_service.put_line(test_data)
     request = Empty()
-    stream_task = asyncio.create_task(
-        collect_stream_data(stdio_service.StreamStdio(request, mock_context))
-    )
+    stream_task = asyncio.create_task(collect_stream_data(stdio_service.StreamStdio(request, mock_context)))
     await asyncio.sleep(0.1)
     await stdio_service.put_line(b"more data")
     stdio_service.shutdown()
@@ -88,7 +86,9 @@ async def test_stdio_stream_stdio(stdio_service: GRPCStdioService, mock_context:
 
 
 @pytest.mark.asyncio
-async def test_stdio_stream_shutdown_terminates_loop(stdio_service: GRPCStdioService, mock_context: MagicMock) -> None:
+async def test_stdio_stream_shutdown_terminates_loop(
+    stdio_service: GRPCStdioService, mock_context: MagicMock
+) -> None:
     # This test will now primarily verify that StreamStdio terminates on shutdown,
     # even if the queue is empty and .get() would normally block.
 
@@ -110,7 +110,7 @@ async def test_stdio_stream_shutdown_terminates_loop(stdio_service: GRPCStdioSer
     try:
         # If StreamStdio terminates correctly, consume_task will finish.
         await asyncio.wait_for(consume_task, timeout=1.0)
-    except asyncio.TimeoutError:  # pragma: no cover
+    except TimeoutError:  # pragma: no cover
         pytest.fail("StreamStdio did not terminate within 1s after shutdown.")
 
     assert len(results) == 0  # No items were put in the queue
@@ -125,16 +125,12 @@ async def test_stdio_stream_cancellation(stdio_service: GRPCStdioService, mock_c
         done_callback = callback
 
     mock_context.add_done_callback.side_effect = add_callback
-    stream_task = asyncio.create_task(
-        collect_with_cancel(stdio_service.StreamStdio(Empty(), mock_context))
-    )
+    stream_task = asyncio.create_task(collect_with_cancel(stdio_service.StreamStdio(Empty(), mock_context)))
     await asyncio.sleep(0.1)
     if done_callback:
         done_callback(MagicMock())
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await stream_task
-    except asyncio.CancelledError:
-        pass
 
 
 @pytest.mark.asyncio
@@ -160,9 +156,7 @@ async def test_stdio_stream_error_handling_item_retrieval(
     await stdio_service.put_line(b"test data")
 
     request = Empty()
-    stream_task = asyncio.create_task(
-        collect_stream_data(stdio_service.StreamStdio(request, mock_context))
-    )
+    stream_task = asyncio.create_task(collect_stream_data(stdio_service.StreamStdio(request, mock_context)))
 
     await asyncio.sleep(0.1)
     stdio_service.shutdown()
@@ -188,9 +182,7 @@ async def test_stdio_service_timeouts(stdio_service: GRPCStdioService, mock_cont
     stdio_service._message_queue.get = slow_get  # type: ignore[method-assign]
 
     # Start streaming
-    stream_task = asyncio.create_task(
-        collect_stream_data(stdio_service.StreamStdio(request, mock_context))
-    )
+    stream_task = asyncio.create_task(collect_stream_data(stdio_service.StreamStdio(request, mock_context)))
 
     # Add data quickly
     await stdio_service.put_line(b"fast data")
@@ -205,7 +197,7 @@ async def test_stdio_service_timeouts(stdio_service: GRPCStdioService, mock_cont
         results = await asyncio.wait_for(stream_task, timeout=2.0)
         # Should handle the timeout gracefully
         assert isinstance(results, list)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         # If it times out, that's also acceptable behavior
         pass
 

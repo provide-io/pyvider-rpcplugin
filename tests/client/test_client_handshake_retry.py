@@ -2,8 +2,9 @@
 """Tests for handshake retry logic and complex scenarios."""
 
 import subprocess
-import pytest
+
 from provide.testkit.mocking import AsyncMock
+import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
 
