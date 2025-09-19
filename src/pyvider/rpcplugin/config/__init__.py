@@ -24,6 +24,7 @@ Usage:
 
 from typing import Any
 
+from attrs import define
 from provide.foundation import logger
 from provide.foundation.config import (
     RuntimeConfig,
@@ -43,6 +44,7 @@ from pyvider.rpcplugin.defaults import (
 from pyvider.rpcplugin.exception import ConfigError
 
 
+@define
 class RPCPluginConfig(RuntimeConfig):
     """
     Unified configuration for the RPC plugin system.
