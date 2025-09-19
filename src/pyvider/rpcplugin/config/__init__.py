@@ -22,82 +22,403 @@ Usage:
     )
 """
 
-from typing import Any, Literal
+from typing import Any
 
 from attrs import define
 from provide.foundation import logger
-from provide.foundation.config import RuntimeConfig
-from provide.foundation.errors.config import ValidationError
-
-from ..exception import ConfigError
-from .client import ClientConfigMixin
-from .core import CoreConfigMixin
-from .features import FeaturesConfigMixin
-from .grpc import GRPCConfigMixin
-from .security import SecurityConfigMixin
-from .server import ServerConfigMixin
-from .transport import TransportConfigMixin
-
-
-@define
-class RPCPluginConfig(
+from provide.foundation.config import (
     RuntimeConfig,
-    CoreConfigMixin,
-    GRPCConfigMixin,
-    TransportConfigMixin,
-    SecurityConfigMixin,
-    ClientConfigMixin,
-    ServerConfigMixin,
-    FeaturesConfigMixin,
-):
+    field,
+    validate_choice,
+    validate_non_negative,
+    validate_positive,
+    validate_range,
+)
+
+from ..defaults import (
+    DEFAULT_CLIENT_TRANSPORTS,
+    DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
+    DEFAULT_SERVER_TRANSPORTS,
+    DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
+)
+from ..exception import ConfigError
+
+
+@define(slots=True, repr=False)
+class RPCPluginConfig(RuntimeConfig):
     """
     Configuration class for the RPC plugin system.
 
-    This class combines all configuration mixins and provides a single
-    interface for accessing all plugin configuration settings.
+    This class provides all configuration settings organized by functional area:
+    - Core settings (protocol versions, magic cookies)
+    - Transport settings (timeouts, buffer sizes, supported transports)
+    - Security settings (mTLS, certificates)
+    - gRPC settings (keepalive, grace periods)
+    - Client settings (retry logic)
+    - Server settings (host, port, paths)
+    - Feature settings (rate limiting, health checks, UI)
     """
 
-    def validate_transport_consistency(self) -> None:
-        """Validate that transport configuration is consistent."""
-        if not self.plugin_server_transports:
-            raise ConfigError("At least one server transport must be specified")
+    # =====================================================
+    # Core Configuration
+    # =====================================================
 
-        if not self.plugin_client_transports:
-            raise ConfigError("At least one client transport must be specified")
+    plugin_core_version: int = field(
+        default=1,
+        validator=validate_choice(DEFAULT_SUPPORTED_PROTOCOL_VERSIONS),
+        description="Core protocol version supported by this plugin",
+        env_var="PLUGIN_CORE_VERSION",
+    )
 
-        valid_transports = ["unix", "tcp"]
-        for transport in self.plugin_server_transports:
-            if transport not in valid_transports:
-                raise ConfigError(f"Invalid server transport: {transport}. Must be one of {valid_transports}")
+    plugin_protocol_versions: list[int] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
+        description="List of protocol versions this plugin supports",
+        env_var="PLUGIN_PROTOCOL_VERSIONS",
+    )
 
-        for transport in self.plugin_client_transports:
-            if transport not in valid_transports:
-                raise ConfigError(f"Invalid client transport: {transport}. Must be one of {valid_transports}")
+    plugin_protocol_version: int = field(
+        default=1,
+        validator=validate_choice(DEFAULT_SUPPORTED_PROTOCOL_VERSIONS),
+        description="Preferred protocol version for communication",
+        env_var="PLUGIN_PROTOCOL_VERSION",
+    )
 
-    def validate_security_consistency(self) -> None:
-        """Validate that security configuration is consistent."""
-        # If client cert is specified, client key must also be specified
-        if self.plugin_client_cert and not self.plugin_client_key:
-            raise ConfigError("Client certificate specified but client key is missing")
+    plugin_magic_cookie_key: str = field(
+        default="PLUGIN_MAGIC_COOKIE",
+        description="Environment variable name for the magic cookie",
+        env_var="PLUGIN_MAGIC_COOKIE_KEY",
+    )
 
-        if self.plugin_client_key and not self.plugin_client_cert:
-            raise ConfigError("Client key specified but client certificate is missing")
+    plugin_magic_cookie_value: str = field(
+        default="default-magic-cookie-value",
+        description="Magic cookie value for handshake authentication",
+        env_var="PLUGIN_MAGIC_COOKIE_VALUE",
+    )
 
-        # If server cert is specified, server key must also be specified
-        if self.plugin_server_cert and not self.plugin_server_key:
-            raise ConfigError("Server certificate specified but server key is missing")
+    # =====================================================
+    # Transport Configuration
+    # =====================================================
 
-        if self.plugin_server_key and not self.plugin_server_cert:
-            raise ConfigError("Server key specified but server certificate is missing")
+    plugin_server_transports: list[str] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_SERVER_TRANSPORTS.copy(),
+        description="List of server transport types supported",
+        env_var="PLUGIN_SERVER_TRANSPORTS",
+    )
 
-    def __attrs_post_init__(self) -> None:
-        """Post-initialization validation."""
-        super().__attrs_post_init__()
-        try:
-            self.validate_transport_consistency()
-            self.validate_security_consistency()
-        except ValidationError as e:
-            raise ConfigError(f"Configuration validation failed: {e}") from e
+    plugin_client_transports: list[str] = field(  # noqa: RUF009
+        factory=lambda: DEFAULT_CLIENT_TRANSPORTS.copy(),
+        description="List of client transport types supported",
+        env_var="PLUGIN_CLIENT_TRANSPORTS",
+    )
+
+    plugin_handshake_timeout: float = field(
+        default=10.0,
+        validator=validate_range(0.1, 300.0),
+        description="Timeout for plugin handshake in seconds",
+        env_var="PLUGIN_HANDSHAKE_TIMEOUT",
+    )
+
+    plugin_connection_timeout: float = field(
+        default=30.0,
+        validator=validate_range(0.1, 300.0),
+        description="Timeout for connection establishment in seconds",
+        env_var="PLUGIN_CONNECTION_TIMEOUT",
+    )
+
+    plugin_channel_ready_timeout: float = field(
+        default=10.0,
+        validator=validate_range(0.1, 300.0),
+        description="Timeout for gRPC channel ready check in seconds",
+        env_var="PLUGIN_CHANNEL_READY_TIMEOUT",
+    )
+
+    plugin_server_ready_timeout: float = field(
+        default=5.0,
+        validator=validate_range(0.1, 300.0),
+        description="Timeout for server ready check in seconds",
+        env_var="PLUGIN_SERVER_READY_TIMEOUT",
+    )
+
+    plugin_buffer_size: int = field(
+        default=16384,
+        validator=validate_positive,
+        description="Default buffer size for data operations in bytes",
+        env_var="PLUGIN_BUFFER_SIZE",
+    )
+
+    plugin_chunk_size: int = field(
+        default=1024,
+        validator=validate_positive,
+        description="Default chunk size for streaming in bytes",
+        env_var="PLUGIN_CHUNK_SIZE",
+    )
+
+    # =====================================================
+    # gRPC Configuration
+    # =====================================================
+
+    plugin_grpc_keepalive_time_ms: int = field(
+        default=30000,
+        validator=validate_positive,
+        description="gRPC keepalive time in milliseconds",
+        env_var="PLUGIN_GRPC_KEEPALIVE_TIME_MS",
+    )
+
+    plugin_grpc_keepalive_timeout_ms: int = field(
+        default=5000,
+        validator=validate_positive,
+        description="gRPC keepalive timeout in milliseconds",
+        env_var="PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS",
+    )
+
+    plugin_grpc_grace_period: float = field(
+        default=0.5,
+        validator=validate_positive,
+        description="gRPC channel close grace period in seconds",
+        env_var="PLUGIN_GRPC_GRACE_PERIOD",
+    )
+
+    # =====================================================
+    # Security Configuration
+    # =====================================================
+
+    plugin_auto_mtls: bool = field(
+        default=False,
+        description="Enable automatic mTLS certificate generation",
+        env_var="PLUGIN_AUTO_MTLS",
+    )
+
+    plugin_client_cert: str | None = field(
+        default=None,
+        description="Path to client certificate file for mTLS",
+        env_var="PLUGIN_CLIENT_CERT",
+    )
+
+    plugin_client_key: str | None = field(
+        default=None,
+        description="Path to client private key file for mTLS",
+        env_var="PLUGIN_CLIENT_KEY",
+    )
+
+    plugin_server_cert: str | None = field(
+        default=None,
+        description="Path to server certificate file",
+        env_var="PLUGIN_SERVER_CERT",
+    )
+
+    plugin_server_key: str | None = field(
+        default=None,
+        description="Path to server private key file",
+        env_var="PLUGIN_SERVER_KEY",
+    )
+
+    plugin_ca_cert: str | None = field(
+        default=None,
+        description="Path to certificate authority file",
+        env_var="PLUGIN_CA_CERT",
+    )
+
+    plugin_insecure: bool = field(
+        default=False,
+        description="Disable TLS for development (insecure)",
+        env_var="PLUGIN_INSECURE",
+    )
+
+    plugin_cert_validity_days: int = field(
+        default=365,
+        validator=validate_positive,
+        description="Certificate validity period in days",
+        env_var="PLUGIN_CERT_VALIDITY_DAYS",
+    )
+
+    # =====================================================
+    # Client Configuration
+    # =====================================================
+
+    plugin_client_retry_enabled: bool = field(
+        default=True,
+        description="Enable client retry mechanism",
+        env_var="PLUGIN_CLIENT_RETRY_ENABLED",
+    )
+
+    plugin_client_max_retries: int = field(
+        default=3,
+        validator=validate_non_negative,
+        description="Maximum number of retry attempts",
+        env_var="PLUGIN_CLIENT_MAX_RETRIES",
+    )
+
+    plugin_client_initial_backoff_ms: int = field(
+        default=500,
+        validator=validate_positive,
+        description="Initial backoff time in milliseconds",
+        env_var="PLUGIN_CLIENT_INITIAL_BACKOFF_MS",
+    )
+
+    plugin_client_max_backoff_ms: int = field(
+        default=5000,
+        validator=validate_positive,
+        description="Maximum backoff time in milliseconds",
+        env_var="PLUGIN_CLIENT_MAX_BACKOFF_MS",
+    )
+
+    plugin_client_retry_jitter_ms: int = field(
+        default=100,
+        validator=validate_non_negative,
+        description="Retry jitter in milliseconds",
+        env_var="PLUGIN_CLIENT_RETRY_JITTER_MS",
+    )
+
+    plugin_client_retry_total_timeout_s: int = field(
+        default=60,
+        validator=validate_positive,
+        description="Total retry timeout in seconds",
+        env_var="PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S",
+    )
+
+    # =====================================================
+    # Server Configuration
+    # =====================================================
+
+    plugin_server_host: str = field(
+        default="127.0.0.1",
+        description="Default server host for TCP transport",
+        env_var="PLUGIN_SERVER_HOST",
+    )
+
+    plugin_server_port: int = field(
+        default=0,  # 0 means auto-assign
+        description="Default server port for TCP transport (0 for auto-assign)",
+        env_var="PLUGIN_SERVER_PORT",
+    )
+
+    plugin_unix_socket_path: str | None = field(
+        default=None,
+        description="Default Unix socket path for Unix transport",
+        env_var="PLUGIN_UNIX_SOCKET_PATH",
+    )
+
+    # =====================================================
+    # Feature Configuration
+    # =====================================================
+
+    plugin_show_emoji_matrix: bool = field(
+        default=True,
+        description="Show emoji matrix in logs",
+        env_var="PLUGIN_SHOW_EMOJI_MATRIX",
+    )
+
+    plugin_shutdown_file_path: str | None = field(
+        default=None,
+        description="Path to shutdown signal file",
+        env_var="PLUGIN_SHUTDOWN_FILE_PATH",
+    )
+
+    plugin_rate_limit_enabled: bool = field(
+        default=False,
+        description="Enable rate limiting",
+        env_var="PLUGIN_RATE_LIMIT_ENABLED",
+    )
+
+    plugin_rate_limit_requests_per_second: float = field(
+        default=100.0,
+        validator=validate_positive,
+        description="Rate limit in requests per second",
+        env_var="PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND",
+    )
+
+    plugin_rate_limit_burst_capacity: float = field(
+        default=200.0,
+        validator=validate_positive,
+        description="Rate limit burst capacity",
+        env_var="PLUGIN_RATE_LIMIT_BURST_CAPACITY",
+    )
+
+    plugin_health_service_enabled: bool = field(
+        default=True,
+        description="Enable health service",
+        env_var="PLUGIN_HEALTH_SERVICE_ENABLED",
+    )
+
+    # =====================================================
+    # Helper Methods
+    # =====================================================
+
+    def magic_cookie_key(self) -> str:
+        """Get the magic cookie key."""
+        return self.plugin_magic_cookie_key
+
+    def magic_cookie_value(self) -> str:
+        """Get the magic cookie value."""
+        return self.plugin_magic_cookie_value
+
+    def server_transports(self) -> list[str]:
+        """Get server transport list."""
+        return self.plugin_server_transports
+
+    def client_transports(self) -> list[str]:
+        """Get client transport list."""
+        return self.plugin_client_transports
+
+    def handshake_timeout(self) -> float:
+        """Get handshake timeout."""
+        return self.plugin_handshake_timeout
+
+    def connection_timeout(self) -> float:
+        """Get connection timeout."""
+        return self.plugin_connection_timeout
+
+    def channel_ready_timeout(self) -> float:
+        """Get gRPC channel ready timeout."""
+        return self.plugin_channel_ready_timeout
+
+    def server_ready_timeout(self) -> float:
+        """Get server ready timeout."""
+        return self.plugin_server_ready_timeout
+
+    def buffer_size(self) -> int:
+        """Get default buffer size for data operations in bytes."""
+        return self.plugin_buffer_size
+
+    def chunk_size(self) -> int:
+        """Get default chunk size for streaming in bytes."""
+        return self.plugin_chunk_size
+
+    def grpc_keepalive_time_ms(self) -> int:
+        """Get gRPC keepalive time in milliseconds."""
+        return self.plugin_grpc_keepalive_time_ms
+
+    def grpc_keepalive_timeout_ms(self) -> int:
+        """Get gRPC keepalive timeout in milliseconds."""
+        return self.plugin_grpc_keepalive_timeout_ms
+
+    def grpc_grace_period(self) -> float:
+        """Get gRPC channel close grace period in seconds."""
+        return self.plugin_grpc_grace_period
+
+    def auto_mtls_enabled(self) -> bool:
+        """Get auto mTLS enabled flag."""
+        return self.plugin_auto_mtls
+
+    def cert_validity_days(self) -> int:
+        """Get certificate validity period in days."""
+        return self.plugin_cert_validity_days
+
+    def rate_limit_enabled(self) -> bool:
+        """Get rate limit enabled flag."""
+        return self.plugin_rate_limit_enabled
+
+    def rate_limit_requests_per_second(self) -> float:
+        """Get rate limit requests per second."""
+        return self.plugin_rate_limit_requests_per_second
+
+    def rate_limit_burst_capacity(self) -> float:
+        """Get rate limit burst capacity."""
+        return self.plugin_rate_limit_burst_capacity
+
+    def health_service_enabled(self) -> bool:
+        """Get health service enabled flag."""
+        return self.plugin_health_service_enabled
 
 
 # Create the global configuration instance
@@ -146,10 +467,6 @@ def configure(
             else:
                 logger.warning(f"Unknown configuration parameter: {key}")
 
-        # Validate the configuration after changes
-        rpcplugin_config.validate_transport_consistency()
-        rpcplugin_config.validate_security_consistency()
-
     except Exception as e:
         raise ConfigError(f"Failed to configure RPC plugin: {e}") from e
 
@@ -157,13 +474,6 @@ def configure(
 # Export commonly used items for backward compatibility
 __all__ = [
     "RPCPluginConfig",
-    "rpcplugin_config",
     "configure",
-    "CoreConfigMixin",
-    "GRPCConfigMixin",
-    "TransportConfigMixin",
-    "SecurityConfigMixin",
-    "ClientConfigMixin",
-    "ServerConfigMixin",
-    "FeaturesConfigMixin",
+    "rpcplugin_config",
 ]
