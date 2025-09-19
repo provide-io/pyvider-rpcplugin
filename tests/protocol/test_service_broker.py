@@ -150,6 +150,7 @@ async def test_broker_start_stream_exception(
 
     # Patch at module level where it's imported
     import pyvider.rpcplugin.protocol.service as service_module
+
     original_class = service_module.SubchannelConnection
     service_module.SubchannelConnection = mock_subchannel_constructor
 
@@ -186,6 +187,7 @@ async def test_broker_service_subchannel_open_failure(
 
     # Mock SubchannelConnection to raise an exception during open
     import pyvider.rpcplugin.protocol.service as service_module
+
     original_class = service_module.SubchannelConnection
 
     def mock_subchannel_constructor(conn_id: int, address: str) -> object:
@@ -227,6 +229,7 @@ async def test_broker_exception_handling_subchannel_open_fails(
 
     # Mock SubchannelConnection to raise an exception during open
     import pyvider.rpcplugin.protocol.service as service_module
+
     original_class = service_module.SubchannelConnection
 
     def mock_subchannel_constructor(conn_id: int, address: str) -> object:

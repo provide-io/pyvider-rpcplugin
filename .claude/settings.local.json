@@ -179,7 +179,9 @@
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_handshake.py tests/server/test_server_transport.py -m 'not slow' --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/core/test_config.py::test_rpcplugin_config_loading -v)",
       "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/core/test_config.py -v)",
-      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/core/test_types_handler_protocol_transport.py tests/core/test_types_serializable.py tests/core/test_types_connection_client.py tests/client/test_client_handshake_perform.py tests/client/test_client_handshake_read.py tests/client/test_client_handshake_retry.py tests/protocol/test_service_broker.py tests/protocol/test_service_stdio.py tests/protocol/test_service_controller.py --cov=pyvider.rpcplugin --cov-report=term-missing -v)"
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/core/test_types_handler_protocol_transport.py tests/core/test_types_serializable.py tests/core/test_types_connection_client.py tests/client/test_client_handshake_perform.py tests/client/test_client_handshake_read.py tests/client/test_client_handshake_retry.py tests/protocol/test_service_broker.py tests/protocol/test_service_stdio.py tests/protocol/test_service_controller.py --cov=pyvider.rpcplugin --cov-report=term-missing -v)",
+      "Bash(PYTHONPATH=./src ruff format tests/protocol/test_service_broker.py)",
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/core/test_types_handler_protocol_transport.py tests/core/test_types_serializable.py tests/core/test_types_connection_client.py tests/client/test_client_handshake_perform.py tests/client/test_client_handshake_read.py tests/client/test_client_handshake_retry.py tests/protocol/test_service_broker.py tests/protocol/test_service_stdio.py tests/protocol/test_service_controller.py --cov=pyvider.rpcplugin --cov-report=term-missing --tb=short)"
     ],
     "deny": [],
     "ask": [],
