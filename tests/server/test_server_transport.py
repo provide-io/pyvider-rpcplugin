@@ -4,7 +4,7 @@ import os
 import platform
 import pytest
 import asyncio
-from unittest import mock
+from provide.testkit.mocking import patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.exception import TransportError, SecurityError
@@ -106,7 +106,7 @@ async def test_setup_server_add_port_failure(
     mock_creds._credentials = mocker.MagicMock()
     mocker.patch.object(server, '_generate_server_credentials', return_value=mock_creds)
 
-    with mock.patch.object(dummy_server, "add_secure_port", side_effect=raised_exception):
+    with patch.object(dummy_server, "add_secure_port", side_effect=raised_exception):
         with pytest.raises(TransportError, match=expected_match):
             await server._setup_server()
 

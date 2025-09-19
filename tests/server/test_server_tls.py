@@ -1,7 +1,6 @@
 # pyvider/rpcplugin/tests/server/test_server_tls.py
 
 import pytest
-from unittest import mock
 
 from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.server import RPCPluginServer
