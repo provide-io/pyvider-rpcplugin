@@ -279,7 +279,7 @@ class RPCPluginConfig(RuntimeConfig):
     )
 
     plugin_grpc_grace_period: float = field(
-        default=5.0,
+        default=0.5,
         validator=validate_positive,
         description="gRPC channel close grace period in seconds",
         env_var="PLUGIN_GRPC_GRACE_PERIOD",
