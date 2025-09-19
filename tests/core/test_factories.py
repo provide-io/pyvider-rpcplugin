@@ -261,7 +261,7 @@ def test_plugin_server_tcp_transport_with_port(
         protocol=mock_protocol_inst,
         handler=mock_handler_inst,
         transport="tcp",
-        transport_port=8080,
+        port=8080,
         config={"test": "value"}
     )
 
