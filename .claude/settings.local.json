@@ -4,7 +4,8 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_ready_timeout_tcp -xvs)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config.py::TestValidation::test_timeout_range_validation -v)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config.py::TestConfigureFunction::test_configure_kwargs -v)",
-      "Bash(PYTHONPATH=./src timeout 5s python -m pytest tests/core/test_config.py --collect-only -q)"
+      "Bash(PYTHONPATH=./src timeout 5s python -m pytest tests/core/test_config.py --collect-only -q)",
+      "Bash(PYTHONPATH=./src timeout 120s python -m pytest --tb=no --quiet)"
     ],
     "deny": [],
     "ask": [],
