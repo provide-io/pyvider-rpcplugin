@@ -1,7 +1,7 @@
 """Core protocol and magic cookie configuration."""
 
 from attrs import define, field
-from provide.foundation.config import validate_choice, validate_range
+from provide.foundation.config import validate_choice
 
 from pyvider.rpcplugin.defaults import (
     DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
@@ -24,7 +24,7 @@ class CoreConfig:
         env_var="PLUGIN_CORE_VERSION",
     )
 
-    plugin_protocol_versions: list[int] = field(  # noqa: RUF009
+    plugin_protocol_versions: list[int] = field(
         factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
         description="List of protocol versions this plugin supports",
         env_var="PLUGIN_PROTOCOL_VERSIONS",
@@ -37,7 +37,7 @@ class CoreConfig:
         env_var="PLUGIN_PROTOCOL_VERSION",
     )
 
-    supported_protocol_versions: list[int] = field(  # noqa: RUF009
+    supported_protocol_versions: list[int] = field(
         factory=lambda: DEFAULT_SUPPORTED_PROTOCOL_VERSIONS.copy(),
         description="List of supported protocol versions (reference)",
         env_var="SUPPORTED_PROTOCOL_VERSIONS",

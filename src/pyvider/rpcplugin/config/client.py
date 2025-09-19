@@ -1,7 +1,7 @@
 """Client retry and connection configuration."""
 
 from attrs import define, field
-from provide.foundation.config import validate_positive, validate_non_negative
+from provide.foundation.config import validate_non_negative, validate_positive
 
 
 @define(slots=True)
