@@ -165,7 +165,8 @@
       "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/ --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 120s python -m pytest --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_with_mtls tests/transport/tcp/test_transport_tcp_connect.py::test_tcp_socket_transport_with_free_port -v)",
-      "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_with_mtls tests/transport/tcp/test_transport_tcp_connect.py::test_tcp_socket_transport_with_free_port tests/client/test_client_init.py::test_setup_client_certificates_mtls_missing_key -v)"
+      "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/test_client_grpc.py::test_create_grpc_channel_with_mtls tests/transport/tcp/test_transport_tcp_connect.py::test_tcp_socket_transport_with_free_port tests/client/test_client_init.py::test_setup_client_certificates_mtls_missing_key -v)",
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/transport/tcp/test_transport_tcp_connect.py::test_tcp_socket_transport_with_free_port -v)"
     ],
     "deny": [],
     "ask": [],
