@@ -19,7 +19,11 @@ from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 import grpc
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
+from pyvider.rpcplugin.defaults import (
+    DEFAULT_PROCESS_WAIT_TIME,
+    DEFAULT_GRPC_KEEPALIVE_TIME_MS,
+    DEFAULT_GRPC_KEEPALIVE_TIMEOUT_MS,
+)
 from pyvider.rpcplugin.exception import (
     ProtocolError,
     TransportError,
@@ -133,8 +137,8 @@ class ClientProcessMixin:
     def _get_channel_options(self) -> list[tuple[str, int | bool]]:
         """Get standard gRPC channel options."""
         return [
-            ("grpc.keepalive_time_ms", 30000),
-            ("grpc.keepalive_timeout_ms", 5000),
+            ("grpc.keepalive_time_ms", DEFAULT_GRPC_KEEPALIVE_TIME_MS),
+            ("grpc.keepalive_timeout_ms", DEFAULT_GRPC_KEEPALIVE_TIMEOUT_MS),
             ("grpc.keepalive_permit_without_calls", True),
             ("grpc.http2.max_pings_without_data", 0),
             ("grpc.http2.min_ping_interval_without_data_ms", 300000),

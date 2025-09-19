@@ -20,6 +20,8 @@ from typing import Any  # Added for __eq__ type hint
 from attrs import define, field
 from provide.foundation import logger
 
+from pyvider.rpcplugin.defaults import DEFAULT_BUFFER_SIZE
+
 # Type aliases for dependency-injected I/O functions using collections.abc
 SendFuncType = AbcCallable[[bytes], Awaitable[None]]
 ReceiveFuncType = AbcCallable[[int], Awaitable[bytes]]
@@ -103,7 +105,7 @@ class ClientConnection:
             logger.error(f"Error sending data to {self.remote_addr}", extra={"error": str(e)})
             raise
 
-    async def _default_receive(self, size: int = 16384) -> bytes:
+    async def _default_receive(self, size: int = DEFAULT_BUFFER_SIZE) -> bytes:
         """
         Default receive function: reads data from the reader and updates metrics.
 
@@ -145,7 +147,7 @@ class ClientConnection:
             )
         await self.send_func(data)
 
-    async def receive_data(self, size: int = 16384) -> bytes:
+    async def receive_data(self, size: int = DEFAULT_BUFFER_SIZE) -> bytes:
         """
         Receive data from the connection using the injected receive_func.
 
