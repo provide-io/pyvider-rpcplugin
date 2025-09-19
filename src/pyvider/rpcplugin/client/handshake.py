@@ -15,7 +15,6 @@ import random
 import time
 from typing import TYPE_CHECKING, NamedTuple
 
-from provide.foundation import logger  # noqa: F401 - used by tests
 from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config

@@ -1,13 +1,14 @@
 # tests/client/test_client_grpc.py
 
+from unittest.mock import ANY, AsyncMock, MagicMock, patch  # ANY added back
+
 import pytest
-import asyncio  # Added
-from unittest.mock import patch, MagicMock, AsyncMock, ANY  # ANY added back
-from pyvider.rpcplugin.transport import (
-    UnixSocketTransport,
-    TCPSocketTransport,
-)  # Import added
+
 from pyvider.rpcplugin.exception import TransportError  # Added import
+from pyvider.rpcplugin.transport import (
+    TCPSocketTransport,
+    UnixSocketTransport,
+)  # Import added
 
 
 @pytest.mark.asyncio
@@ -37,21 +38,15 @@ async def test_create_grpc_channel_with_tls(client_instance):
     client_instance._transport = MagicMock()
     client_instance._transport_name = "tcp"
     client_instance._address = "127.0.0.1:8000"
-    client_instance._server_cert = (
-        "MIIEpAIBADANBgkqhkiG9w0BAQEFAASCBJYwggSSAgEAAoIBAQDBj08sp"
-    )
+    client_instance._server_cert = "MIIEpAIBADANBgkqhkiG9w0BAQEFAASCBJYwggSSAgEAAoIBAQDBj08sp"
 
     # Mock SSL credentials
-    with patch(
-        "pyvider.rpcplugin.client.core.grpc.ssl_channel_credentials"
-    ) as mock_ssl_creds:
+    with patch("pyvider.rpcplugin.client.core.grpc.ssl_channel_credentials") as mock_ssl_creds:
         mock_creds = MagicMock()
         mock_ssl_creds.return_value = mock_creds
 
         # Mock secure channel
-        with patch(
-            "pyvider.rpcplugin.client.core.grpc.aio.secure_channel"
-        ) as mock_secure_channel:
+        with patch("pyvider.rpcplugin.client.core.grpc.aio.secure_channel") as mock_secure_channel:
             mock_channel = AsyncMock()
             mock_secure_channel.return_value = mock_channel
 
@@ -62,13 +57,10 @@ async def test_create_grpc_channel_with_tls(client_instance):
 
             # Verify TLS-only credentials were used (root_certificates with None for client certs)
             mock_ssl_creds.assert_called_once_with(
-                root_certificates=ANY,
-                private_key=None,
-                certificate_chain=None
+                root_certificates=ANY, private_key=None, certificate_chain=None
             )
             mock_secure_channel.assert_called_once()
             assert client_instance.grpc_channel == mock_channel
-
 
 
 @pytest.mark.asyncio
@@ -82,29 +74,29 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
 
     client_instance.client_cert = dummy_client_cert_pem
     client_instance.client_key_pem = dummy_client_key_pem
-    client_instance._server_cert = dummy_server_root_pem # Used if PLUGIN_SERVER_ROOT_CERTS is not primary
+    client_instance._server_cert = dummy_server_root_pem  # Used if PLUGIN_SERVER_ROOT_CERTS is not primary
 
     # Mock rpcplugin_config using Foundation patterns
-    mocker.patch("pyvider.rpcplugin.client.core.rpcplugin_config.plugin_auto_mtls", True)
-    mocker.patch("pyvider.rpcplugin.client.core.rpcplugin_config.plugin_client_cert", dummy_client_cert_pem)
-    mocker.patch("pyvider.rpcplugin.client.core.rpcplugin_config.plugin_client_key", dummy_client_key_pem)
-    mocker.patch("pyvider.rpcplugin.client.core.rpcplugin_config.plugin_server_root_certs", dummy_server_root_pem)
+    mocker.patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls", True)
+    mocker.patch(
+        "pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_client_cert", dummy_client_cert_pem
+    )
+    mocker.patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_client_key", dummy_client_key_pem)
+    mocker.patch(
+        "pyvider.rpcplugin.client.process.rpcplugin_config.plugin_server_root_certs", dummy_server_root_pem
+    )
 
     client_instance._transport = MagicMock()
     client_instance._transport_name = "tcp"
     client_instance._address = "127.0.0.1:8000"
 
     # Mock SSL credentials
-    with patch(
-        "pyvider.rpcplugin.client.core.grpc.ssl_channel_credentials"
-    ) as mock_ssl_creds:
+    with patch("pyvider.rpcplugin.client.core.grpc.ssl_channel_credentials") as mock_ssl_creds:
         mock_creds = MagicMock()
         mock_ssl_creds.return_value = mock_creds
 
         # Mock secure channel
-        with patch(
-            "pyvider.rpcplugin.client.core.grpc.aio.secure_channel"
-        ) as mock_secure_channel:
+        with patch("pyvider.rpcplugin.client.core.grpc.aio.secure_channel") as mock_secure_channel:
             mock_channel = AsyncMock()
             mock_secure_channel.return_value = mock_channel
 
@@ -118,7 +110,7 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
             mock_ssl_creds.assert_called_once_with(
                 root_certificates=expected_root_certs_pem.encode(),
                 private_key=dummy_client_key_pem.encode(),
-                certificate_chain=dummy_client_cert_pem.encode()
+                certificate_chain=dummy_client_cert_pem.encode(),
             )
             mock_secure_channel.assert_called_once()
             assert client_instance.grpc_channel == mock_channel
@@ -134,9 +126,7 @@ async def test_create_grpc_channel_insecure(client_instance):
     client_instance._server_cert = None  # No server cert = insecure channel
 
     # Mock insecure_channel
-    with patch(
-        "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel"
-    ) as mock_insecure_channel:
+    with patch("pyvider.rpcplugin.client.core.grpc.aio.insecure_channel") as mock_insecure_channel:
         mock_channel = AsyncMock()
         mock_insecure_channel.return_value = mock_channel
 
@@ -154,16 +144,12 @@ async def test_create_grpc_channel_insecure(client_instance):
 async def test_create_grpc_channel_unix_socket(client_instance):
     """Test creating a gRPC channel for Unix socket transport."""
     # Setup
-    client_instance._transport = AsyncMock(
-        spec=UnixSocketTransport
-    )  # Changed to use spec
+    client_instance._transport = AsyncMock(spec=UnixSocketTransport)  # Changed to use spec
     client_instance._transport_name = "unix"  # This is correct for the logic path
     client_instance._address = "/tmp/test.sock"  # This is the raw path
     client_instance._server_cert = None  # To ensure insecure_channel is called
 
-    with patch(
-        "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel"
-    ) as mock_insecure_channel:
+    with patch("pyvider.rpcplugin.client.core.grpc.aio.insecure_channel") as mock_insecure_channel:
         mock_channel = AsyncMock()
         mock_insecure_channel.return_value = mock_channel
         mock_channel.channel_ready = AsyncMock()  # Mock channel_ready
@@ -171,10 +157,7 @@ async def test_create_grpc_channel_unix_socket(client_instance):
         await client_instance._create_grpc_channel()
 
         # Verify unix prefix was used with keepalive options
-        mock_insecure_channel.assert_called_once_with(
-            "unix:/tmp/test.sock",
-            options=ANY
-        )
+        mock_insecure_channel.assert_called_once_with("unix:/tmp/test.sock", options=ANY)
 
 
 @pytest.mark.asyncio
@@ -186,17 +169,13 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
     client_instance._server_cert = None  # Insecure channel
 
     mock_channel = AsyncMock()
-    mock_channel.channel_ready = AsyncMock(
-        side_effect=asyncio.TimeoutError("Channel timed out")
-    )
+    mock_channel.channel_ready = AsyncMock(side_effect=TimeoutError("Channel timed out"))
 
     mocker.patch(
         "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel",
         return_value=mock_channel,
     )
-    mocker.patch(
-        "os.path.exists", return_value=True
-    )  # Assume socket file exists for the diagnostic log
+    mocker.patch("os.path.exists", return_value=True)  # Assume socket file exists for the diagnostic log
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     with pytest.raises(
@@ -213,17 +192,13 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
 @pytest.mark.asyncio
 async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
     """Test channel ready timeout for TCP socket."""
-    client_instance._transport = mocker.MagicMock(
-        spec=TCPSocketTransport
-    )  # Mock TCP transport
+    client_instance._transport = mocker.MagicMock(spec=TCPSocketTransport)  # Mock TCP transport
     client_instance._transport_name = "tcp"
     client_instance._address = "127.0.0.1:12345"
     client_instance._server_cert = None  # Insecure channel
 
     mock_channel = AsyncMock()
-    mock_channel.channel_ready = AsyncMock(
-        side_effect=asyncio.TimeoutError("Channel timed out")
-    )
+    mock_channel.channel_ready = AsyncMock(side_effect=TimeoutError("Channel timed out"))
 
     mocker.patch(
         "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel",
@@ -251,9 +226,7 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
     client_instance._server_cert = None
 
     mock_channel = AsyncMock()
-    mock_channel.channel_ready = AsyncMock(
-        side_effect=RuntimeError("Other connection issue")
-    )
+    mock_channel.channel_ready = AsyncMock(side_effect=RuntimeError("Other connection issue"))
 
     mocker.patch(
         "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel",
@@ -268,8 +241,7 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
         await client_instance._create_grpc_channel()
 
     mock_logger_error.assert_any_call(
-        "Failed to create gRPC channel to 127.0.0.1:12345: Other connection issue",
-        exc_info=True
+        "Failed to create gRPC channel to 127.0.0.1:12345: Other connection issue", exc_info=True
     )
 
 
