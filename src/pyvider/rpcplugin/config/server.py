@@ -1,7 +1,7 @@
 """Server hosting configuration."""
 
-from attrs import define, field
-from provide.foundation.config import validate_range
+from attrs import define
+from provide.foundation.config import field, validate_range
 
 
 @define(slots=True)

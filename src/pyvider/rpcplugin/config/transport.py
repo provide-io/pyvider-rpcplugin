@@ -1,7 +1,7 @@
 """Transport layer configuration."""
 
-from attrs import define, field
-from provide.foundation.config import validate_positive
+from attrs import define
+from provide.foundation.config import field, validate_positive
 
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLIENT_TRANSPORTS,
@@ -17,13 +17,13 @@ class TransportConfig:
     # Transport Types
     # =====================================================
 
-    plugin_server_transports: list[str] = field(
+    plugin_server_transports: list[str] = field(  # noqa: RUF009
         factory=lambda: DEFAULT_SERVER_TRANSPORTS.copy(),
         description="List of transports supported by the server",
         env_var="PLUGIN_SERVER_TRANSPORTS",
     )
 
-    plugin_client_transports: list[str] = field(
+    plugin_client_transports: list[str] = field(  # noqa: RUF009
         factory=lambda: DEFAULT_CLIENT_TRANSPORTS.copy(),
         description="List of transports supported by the client",
         env_var="PLUGIN_CLIENT_TRANSPORTS",
