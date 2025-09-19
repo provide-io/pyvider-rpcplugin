@@ -125,34 +125,47 @@ async def test_broker_start_stream_exception(
     broker_service: GRPCBrokerService, mock_context: MagicMock
 ) -> None:
     """Test StartStream with an exception during processing."""
-    # Create a request that will cause an exception
+    # Create a subchannel that will fail to open
     invalid_info = ConnInfo(
         service_id=999,
-        network="invalid",
-        address="",
+        network="tcp",
+        address="localhost:12345",
         knock=ConnInfo.Knock(knock=True, ack=False, error=""),
     )
 
-    # Mock the subchannel creation to raise an exception
-    original_method = broker_service._handle_subchannel_open
+    # Mock SubchannelConnection to raise an exception during open
+    original_subchannel_class = broker_service.__class__.__dict__.get("SubchannelConnection")
 
-    async def mock_handle_open(*args: object, **kwargs: object) -> ConnInfo:
-        raise Exception("Simulated error")
+    def mock_subchannel_constructor(conn_id: int, address: str) -> object:
+        subchannel = MagicMock()
+        subchannel.conn_id = conn_id
+        subchannel.address = address
+        subchannel.is_open = False
 
-    broker_service._handle_subchannel_open = mock_handle_open
+        async def failing_open() -> None:
+            raise Exception("Simulated error")
 
-    request_iterator = MockRequestIterator([invalid_info])
-    responses = []
-    async for response in broker_service.StartStream(request_iterator, mock_context):
-        responses.append(response)
+        subchannel.open = failing_open
+        return subchannel
 
-    # Should get a response with error
-    assert len(responses) == 1
-    assert responses[0].knock.ack is False
-    assert "Simulated error" in responses[0].knock.error
+    # Patch at module level where it's imported
+    import pyvider.rpcplugin.protocol.service as service_module
+    original_class = service_module.SubchannelConnection
+    service_module.SubchannelConnection = mock_subchannel_constructor
 
-    # Restore original method
-    broker_service._handle_subchannel_open = original_method
+    try:
+        request_iterator = MockRequestIterator([invalid_info])
+        responses = []
+        async for response in broker_service.StartStream(request_iterator, mock_context):
+            responses.append(response)
+
+        # Should get a response with error
+        assert len(responses) == 1
+        assert responses[0].knock.ack is False
+        assert "Simulated error" in responses[0].knock.error
+    finally:
+        # Restore original class
+        service_module.SubchannelConnection = original_class
 
 
 @pytest.mark.asyncio
@@ -172,25 +185,32 @@ async def test_broker_service_subchannel_open_failure(
     responses = []
 
     # Mock SubchannelConnection to raise an exception during open
-    broker_service.__class__.__dict__.get("_create_subchannel")
+    import pyvider.rpcplugin.protocol.service as service_module
+    original_class = service_module.SubchannelConnection
 
-    def mock_create_subchannel(service_id: int, address: str) -> SubchannelConnection:
-        subchannel = SubchannelConnection(conn_id=service_id, address=address)
+    def mock_subchannel_constructor(conn_id: int, address: str) -> object:
+        subchannel = MagicMock()
+        subchannel.conn_id = conn_id
+        subchannel.address = address
+        subchannel.is_open = False
 
         async def failing_open() -> None:
             raise Exception("Connection failed")
 
-        subchannel.open = failing_open  # type: ignore[method-assign]
+        subchannel.open = failing_open
         return subchannel
 
-    broker_service._create_subchannel = mock_create_subchannel  # type: ignore[method-assign]
+    service_module.SubchannelConnection = mock_subchannel_constructor
 
-    async for response in broker_service.StartStream(request_iterator, mock_context):
-        responses.append(response)
+    try:
+        async for response in broker_service.StartStream(request_iterator, mock_context):
+            responses.append(response)
 
-    assert len(responses) == 1
-    assert responses[0].knock.ack is False
-    assert "Connection failed" in responses[0].knock.error
+        assert len(responses) == 1
+        assert responses[0].knock.ack is False
+        assert "Connection failed" in responses[0].knock.error
+    finally:
+        service_module.SubchannelConnection = original_class
 
 
 @pytest.mark.asyncio
@@ -205,27 +225,35 @@ async def test_broker_exception_handling_subchannel_open_fails(
         knock=ConnInfo.Knock(knock=True, ack=False, error=""),
     )
 
-    # Mock the entire subchannel creation and opening process
-    async def mock_handle_subchannel_open(conn_info: ConnInfo) -> ConnInfo:
-        # Simulate failure in subchannel opening
-        response = ConnInfo(
-            service_id=conn_info.service_id,
-            network=conn_info.network,
-            address=conn_info.address,
-            knock=ConnInfo.Knock(knock=False, ack=False, error="Failed to establish subchannel connection"),
-        )
-        return response
+    # Mock SubchannelConnection to raise an exception during open
+    import pyvider.rpcplugin.protocol.service as service_module
+    original_class = service_module.SubchannelConnection
 
-    broker_service._handle_subchannel_open = mock_handle_subchannel_open  # type: ignore[method-assign]
+    def mock_subchannel_constructor(conn_id: int, address: str) -> object:
+        subchannel = MagicMock()
+        subchannel.conn_id = conn_id
+        subchannel.address = address
+        subchannel.is_open = False
 
-    request_iterator = MockRequestIterator([knock_info])
-    responses = []
+        async def failing_open() -> None:
+            raise Exception("Failed to establish subchannel connection")
 
-    async for response in broker_service.StartStream(request_iterator, mock_context):
-        responses.append(response)
+        subchannel.open = failing_open
+        return subchannel
 
-    assert len(responses) == 1
-    assert responses[0].knock.ack is False
-    assert "Failed to establish subchannel connection" in responses[0].knock.error
-    # Ensure subchannel wasn't added to the service
-    assert 3 not in broker_service._subchannels
+    service_module.SubchannelConnection = mock_subchannel_constructor
+
+    try:
+        request_iterator = MockRequestIterator([knock_info])
+        responses = []
+
+        async for response in broker_service.StartStream(request_iterator, mock_context):
+            responses.append(response)
+
+        assert len(responses) == 1
+        assert responses[0].knock.ack is False
+        assert "Failed to establish subchannel connection" in responses[0].knock.error
+        # Ensure subchannel wasn't added to the service
+        assert 3 not in broker_service._subchannels
+    finally:
+        service_module.SubchannelConnection = original_class
