@@ -161,7 +161,7 @@ class RPCPluginConfig(RuntimeConfig):
     )
 
     plugin_channel_ready_timeout: float = field(
-        default=5.0,
+        default=10.0,
         validator=validate_positive,
         description="Timeout for gRPC channel to become ready in seconds",
         env_var="PLUGIN_CHANNEL_READY_TIMEOUT",
