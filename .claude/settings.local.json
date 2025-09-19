@@ -161,7 +161,8 @@
       "Bash(PYTHONPATH=./src timeout 10s python -c \"from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter; print(''Import successful'')\")",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/server/test_server_rate_limiting.py --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/server/ --tb=no -q)",
-      "Bash(kill:*)"
+      "Bash(kill:*)",
+      "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/ --tb=no -q)"
     ],
     "deny": [],
     "ask": [],
