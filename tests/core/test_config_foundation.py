@@ -159,7 +159,7 @@ class TestValidation:
         """Test timeout validation rejects out-of-range values."""
         monkeypatch.setenv("PLUGIN_HANDSHAKE_TIMEOUT", "0.05")  # Below minimum
 
-        with pytest.raises(Exception) as exc_info:
+        with pytest.raises(ValidationError) as exc_info:
             RPCPluginConfig.from_env()
 
         # Check that validation error mentions the range
