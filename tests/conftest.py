@@ -7,6 +7,9 @@ from attrs import fields
 from pyvider.rpcplugin.config import RPCPluginConfig
 from tests.fixtures import *
 
+# Import provide-testkit fixtures directly
+from provide.testkit.mocking.fixtures import async_mock_factory, magic_mock_factory
+
 
 def get_all_env_vars() -> list[str]:
     """
