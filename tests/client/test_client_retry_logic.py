@@ -4,7 +4,7 @@ from provide.testkit.mocking import AsyncMock, MagicMock
 import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
-from pyvider.rpcplugin.exception import HandshakeError
+from pyvider.rpcplugin.exception import HandshakeError, TransportError
 
 
 @pytest.fixture
@@ -258,7 +258,7 @@ async def test_connect_handshake_retry_transport_close_fails(client_instance_loc
 
     # Mock transport that will be set during the (failed) handshake attempt
     mock_transport_instance = AsyncMock()
-    mock_transport_instance.close = AsyncMock(side_effect=Exception("Transport close failed"))
+    mock_transport_instance.close = AsyncMock(side_effect=TransportError("Transport close failed"))
 
     # Ensure _perform_handshake sets up a transport that will then fail to close
     async def perform_handshake_sets_transport_then_fails():
