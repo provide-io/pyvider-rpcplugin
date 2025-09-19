@@ -44,6 +44,23 @@ from pyvider.rpcplugin.defaults import (
 from pyvider.rpcplugin.exception import ConfigError
 
 
+def _validate_protocol_versions_list(value: list[int]) -> list[int]:
+    """Validate that all protocol versions in the list are supported."""
+    for version in value:
+        if version not in DEFAULT_SUPPORTED_PROTOCOL_VERSIONS:
+            raise ValueError(f"Protocol version {version} not in supported versions {DEFAULT_SUPPORTED_PROTOCOL_VERSIONS}")
+    return value
+
+
+def _validate_transports_list(value: list[str]) -> list[str]:
+    """Validate that all transports in the list are supported."""
+    valid_transports = ["unix", "tcp"]
+    for transport in value:
+        if transport not in valid_transports:
+            raise ValueError(f"Invalid transport '{transport}'. Must be one of: {valid_transports}")
+    return value
+
+
 @define
 class RPCPluginConfig(RuntimeConfig):
     """
@@ -72,6 +89,7 @@ class RPCPluginConfig(RuntimeConfig):
 
     plugin_protocol_versions: list[int] = field(  # noqa: RUF009
         factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
+        converter=_validate_protocol_versions_list,
         description="List of protocol versions this plugin supports",
         env_var="PLUGIN_PROTOCOL_VERSIONS",
     )
@@ -115,12 +133,14 @@ class RPCPluginConfig(RuntimeConfig):
 
     plugin_server_transports: list[str] = field(  # noqa: RUF009
         factory=lambda: DEFAULT_SERVER_TRANSPORTS.copy(),
+        converter=_validate_transports_list,
         description="List of transports supported by the server",
         env_var="PLUGIN_SERVER_TRANSPORTS",
     )
 
     plugin_client_transports: list[str] = field(  # noqa: RUF009
         factory=lambda: DEFAULT_CLIENT_TRANSPORTS.copy(),
+        converter=_validate_transports_list,
         description="List of transports supported by the client",
         env_var="PLUGIN_CLIENT_TRANSPORTS",
     )
