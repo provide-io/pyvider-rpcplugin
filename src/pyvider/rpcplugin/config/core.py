@@ -20,7 +20,7 @@ class CoreConfigMixin:
     )
 
     plugin_protocol_versions: list[int] = field(
-        default_factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
+        default=DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
         description="List of protocol versions this plugin supports",
         env_var="PLUGIN_PROTOCOL_VERSIONS",
     )

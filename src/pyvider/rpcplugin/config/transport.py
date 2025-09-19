@@ -13,13 +13,13 @@ class TransportConfigMixin:
 
     # Transport types
     plugin_server_transports: list[str] = field(
-        default_factory=lambda: DEFAULT_SERVER_TRANSPORTS.copy(),
+        default=DEFAULT_SERVER_TRANSPORTS,
         description="List of server transport types supported",
         env_var="PLUGIN_SERVER_TRANSPORTS",
     )
 
     plugin_client_transports: list[str] = field(
-        default_factory=lambda: DEFAULT_CLIENT_TRANSPORTS.copy(),
+        default=DEFAULT_CLIENT_TRANSPORTS,
         description="List of client transport types supported",
         env_var="PLUGIN_CLIENT_TRANSPORTS",
     )

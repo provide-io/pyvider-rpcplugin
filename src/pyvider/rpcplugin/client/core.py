@@ -25,10 +25,9 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEm
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
+from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLEANUP_WAIT_TIME,
-    DEFAULT_GRPC_GRACE_PERIOD,
-    DEFAULT_CONNECTION_TIMEOUT,
     DEFAULT_PROCESS_WAIT_TIMEOUT,
 )
 
@@ -190,7 +189,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         if self.grpc_channel:
             try:
                 self.logger.debug("🔌 Closing gRPC channel...")
-                await self.grpc_channel.close(grace=DEFAULT_GRPC_GRACE_PERIOD)
+                await self.grpc_channel.close(grace=rpcplugin_config.plugin_grpc_grace_period)
                 self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
                 self.logger.warning(f"⚠️ Error closing gRPC channel: {e}", exc_info=True)
