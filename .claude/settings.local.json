@@ -188,7 +188,8 @@
       "Bash(PYTHONPATH=./src timeout 30s python -c \"from pyvider.rpcplugin.config.core import CoreConfig; print(''Core config import successful'')\")",
       "Read(//private/tmp/**)",
       "Bash(PYTHONPATH=./src ruff check src/pyvider/rpcplugin/config/)",
-      "Bash(PYTHONPATH=/Users/tim/code/gh/provide-io/pyvider-rpcplugin/src python -c \"from pyvider.rpcplugin.config.core import CoreConfig; print(''✅ Core config import successful'')\")"
+      "Bash(PYTHONPATH=/Users/tim/code/gh/provide-io/pyvider-rpcplugin/src python -c \"from pyvider.rpcplugin.config.core import CoreConfig; print(''✅ Core config import successful'')\")",
+      "Bash(PYTHONPATH=/Users/tim/code/gh/provide-io/pyvider-rpcplugin/src python -c \"import sys; sys.path.insert(0, ''/Users/tim/code/gh/provide-io/pyvider-rpcplugin/src/pyvider/rpcplugin/config''); from core import CoreConfig; print(''✅ Direct core config import successful'')\")"
     ],
     "deny": [],
     "ask": [],
