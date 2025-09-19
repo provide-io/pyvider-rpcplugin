@@ -162,7 +162,8 @@
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/server/test_server_rate_limiting.py --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/server/ --tb=no -q)",
       "Bash(kill:*)",
-      "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/ --tb=no -q)"
+      "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/ --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 120s python -m pytest --tb=no -q)"
     ],
     "deny": [],
     "ask": [],
