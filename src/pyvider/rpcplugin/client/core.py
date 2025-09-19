@@ -20,16 +20,15 @@ from provide.foundation import logger
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import (
+    DEFAULT_CLEANUP_WAIT_TIME,
+)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
-from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.defaults import (
-    DEFAULT_CLEANUP_WAIT_TIME,
-    DEFAULT_PROCESS_WAIT_TIMEOUT,
-)
 
 
 @define

@@ -227,8 +227,11 @@ class ServerNetworkMixin:
                 # In the failing test, self.transport is set, and is the same as
                 # active_transport_checked.
                 original_transport_config_port = -1  # Sentinel for not configured via direct transport
-                if (self.transport is not None and hasattr(self.transport, "port")
-                    and isinstance(self.transport, TCPSocketTransport)):
+                if (
+                    self.transport is not None
+                    and hasattr(self.transport, "port")
+                    and isinstance(self.transport, TCPSocketTransport)
+                ):
                     # Check the port value of the transport instance provided
                     # at server construction
                     original_transport_config_port = self.transport.port

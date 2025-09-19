@@ -5,7 +5,7 @@ to maintain backward compatibility with existing code.
 """
 
 # Re-export everything from the new config package
-from .config import *  # noqa: F403, F401
+from .config import *  # noqa: F403
 
 # Ensure the global config instance is available
-from .config import rpcplugin_config, configure  # noqa: F401
+from .config import configure, rpcplugin_config  # noqa: F401

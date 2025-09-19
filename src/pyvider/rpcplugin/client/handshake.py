@@ -19,9 +19,9 @@ from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import (
-    DEFAULT_PROCESS_WAIT_TIME,
     DEFAULT_HANDSHAKE_CHUNK_TIMEOUT,
     DEFAULT_HANDSHAKE_INNER_TIMEOUT,
+    DEFAULT_PROCESS_WAIT_TIME,
 )
 from pyvider.rpcplugin.exception import (
     HandshakeError,
@@ -271,7 +271,9 @@ class ClientHandshakeMixin:
         chunk = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._process.stdout.read(rpcplugin_config.plugin_chunk_size) if self._process and self._process.stdout else b"",
+                lambda: self._process.stdout.read(rpcplugin_config.plugin_chunk_size)
+                if self._process and self._process.stdout
+                else b"",
             ),
             timeout=DEFAULT_HANDSHAKE_CHUNK_TIMEOUT,
         )

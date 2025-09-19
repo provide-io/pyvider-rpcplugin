@@ -18,7 +18,7 @@ from typing import cast
 from provide.foundation import logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME, DEFAULT_HANDSHAKE_RETRY_WAIT
+from pyvider.rpcplugin.defaults import DEFAULT_HANDSHAKE_RETRY_WAIT, DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
 from pyvider.rpcplugin.transport.types import TransportT
 
