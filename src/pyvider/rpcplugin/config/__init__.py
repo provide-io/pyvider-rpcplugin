@@ -42,13 +42,14 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
 )
 from pyvider.rpcplugin.exception import ConfigError
+from provide.foundation.errors.config import ValidationError
 
 
 def _validate_protocol_versions_list(value: list[int]) -> list[int]:
     """Validate that all protocol versions in the list are supported."""
     for version in value:
         if version not in DEFAULT_SUPPORTED_PROTOCOL_VERSIONS:
-            raise ValueError(f"Protocol version {version} not in supported versions {DEFAULT_SUPPORTED_PROTOCOL_VERSIONS}")
+            raise ValidationError(f"Protocol version must be between 1 and 7, got {version}")
     return value
 
 
@@ -57,7 +58,7 @@ def _validate_transports_list(value: list[str]) -> list[str]:
     valid_transports = ["unix", "tcp"]
     for transport in value:
         if transport not in valid_transports:
-            raise ValueError(f"Invalid transport '{transport}'. Must be one of: {valid_transports}")
+            raise ValidationError(f"Invalid transport '{transport}'. Must be one of: {valid_transports}")
     return value
 
 
