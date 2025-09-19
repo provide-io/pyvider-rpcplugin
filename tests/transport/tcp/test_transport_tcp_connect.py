@@ -31,12 +31,12 @@ async def test_tcp_socket_transport_connect_invalid_endpoint() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tcp_socket_transport_with_free_port() -> None:
+async def test_tcp_socket_transport_with_free_port(free_port) -> None:
     """
     Test TCP transport using provide-testkit's free port utility.
     """
     # Use provide-testkit to get a free port
-    port = free_port()
+    port = free_port
     transport = TCPSocketTransport(host="127.0.0.1", port=port)
 
     try:

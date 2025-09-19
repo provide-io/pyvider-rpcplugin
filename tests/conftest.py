@@ -15,7 +15,7 @@ from provide.testkit.mocking.fixtures import (
     auto_patch,
     mock_open_fixture,
 )
-from provide.testkit.transport.fixtures import free_tcp_port, free_udp_port
+from provide.testkit.transport.fixtures import free_port, tcp_client_server
 
 
 def get_all_env_vars() -> list[str]:
