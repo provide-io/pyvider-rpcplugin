@@ -176,7 +176,9 @@
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/core/test_factories.py -v)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/core/test_factories.py tests/client/test_client_handshake.py::test_perform_handshake_success tests/server/test_server_transport.py -m 'not slow' --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_retry_logic.py -v)",
-      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_handshake.py tests/server/test_server_transport.py -m 'not slow' --tb=no -q)"
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/client/test_client_handshake.py tests/server/test_server_transport.py -m 'not slow' --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/core/test_config.py::test_rpcplugin_config_loading -v)",
+      "Bash(PYTHONPATH=./src timeout 10s python -m pytest tests/core/test_config.py -v)"
     ],
     "deny": [],
     "ask": [],
