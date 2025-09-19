@@ -33,28 +33,23 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 
 __all__ = [
-    # Core Classes
-    "RPCPluginClient",
-    "RPCPluginProtocol",
-    "RPCPluginServer",
-    # Configuration
-    "RPCPluginConfig",
-    "configure",
-    "rpcplugin_config",
-    # Exceptions
     "ConfigError",
     "HandshakeError",
     "ProtocolError",
+    "RPCPluginClient",
+    "RPCPluginConfig",
     "RPCPluginError",
+    "RPCPluginProtocol",
+    "RPCPluginServer",
     "SecurityError",
     "TransportError",
-    # Factory Functions
+    "__version__",
+    "configure",
     "create_basic_protocol",
     "plugin_client",
     "plugin_protocol",
     "plugin_server",
-    # Version
-    "__version__",
+    "rpcplugin_config",
 ]
 
 # 🐍🏗️🔌

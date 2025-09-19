@@ -8,7 +8,14 @@ from pyvider.rpcplugin.config import RPCPluginConfig
 from tests.fixtures import *
 
 # Import provide-testkit fixtures directly
-from provide.testkit.mocking.fixtures import async_mock_factory, magic_mock_factory
+from provide.testkit.mocking.fixtures import (
+    async_mock_factory,
+    magic_mock_factory,
+    spy_fixture,
+    auto_patch,
+    mock_open_fixture,
+)
+from provide.testkit.transport.fixtures import free_tcp_port, free_udp_port
 
 
 def get_all_env_vars() -> list[str]:

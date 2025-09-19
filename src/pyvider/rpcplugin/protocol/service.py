@@ -390,7 +390,7 @@ class GRPCControllerService(GRPCControllerServicer):
         self._stdio_service.shutdown()
         self._shutdown_event.set()
 
-        asyncio.create_task(self._delayed_shutdown())
+        self._shutdown_task = asyncio.create_task(self._delayed_shutdown())
         return CEmpty()
 
     async def _delayed_shutdown(self) -> None:
