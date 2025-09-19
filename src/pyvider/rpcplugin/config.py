@@ -254,6 +254,51 @@ class RPCPluginConfig(RuntimeConfig):
         env_var="PLUGIN_SERVER_READY_TIMEOUT",
     )
 
+    # gRPC configuration
+    plugin_grpc_keepalive_time_ms: int = field(
+        default=30000,
+        validator=validate_positive,
+        description="gRPC keepalive time in milliseconds",
+        env_var="PLUGIN_GRPC_KEEPALIVE_TIME_MS",
+    )
+
+    plugin_grpc_keepalive_timeout_ms: int = field(
+        default=5000,
+        validator=validate_positive,
+        description="gRPC keepalive timeout in milliseconds",
+        env_var="PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS",
+    )
+
+    plugin_grpc_grace_period: float = field(
+        default=0.5,
+        validator=validate_positive,
+        description="gRPC channel close grace period in seconds",
+        env_var="PLUGIN_GRPC_GRACE_PERIOD",
+    )
+
+    # Buffer and data size configuration
+    plugin_buffer_size: int = field(
+        default=16384,
+        validator=validate_positive,
+        description="Default buffer size for data operations in bytes",
+        env_var="PLUGIN_BUFFER_SIZE",
+    )
+
+    plugin_chunk_size: int = field(
+        default=1024,
+        validator=validate_positive,
+        description="Default chunk size for streaming in bytes",
+        env_var="PLUGIN_CHUNK_SIZE",
+    )
+
+    # Certificate configuration
+    plugin_cert_validity_days: int = field(
+        default=365,
+        validator=validate_positive,
+        description="Certificate validity period in days",
+        env_var="PLUGIN_CERT_VALIDITY_DAYS",
+    )
+
     # UI configuration
     plugin_show_emoji_matrix: bool = field(
         default=True,
@@ -374,6 +419,30 @@ class RPCPluginConfig(RuntimeConfig):
     def server_ready_timeout(self) -> float:
         """Get server ready timeout."""
         return self.plugin_server_ready_timeout
+
+    def grpc_keepalive_time_ms(self) -> int:
+        """Get gRPC keepalive time in milliseconds."""
+        return self.plugin_grpc_keepalive_time_ms
+
+    def grpc_keepalive_timeout_ms(self) -> int:
+        """Get gRPC keepalive timeout in milliseconds."""
+        return self.plugin_grpc_keepalive_timeout_ms
+
+    def grpc_grace_period(self) -> float:
+        """Get gRPC channel close grace period in seconds."""
+        return self.plugin_grpc_grace_period
+
+    def buffer_size(self) -> int:
+        """Get default buffer size for data operations in bytes."""
+        return self.plugin_buffer_size
+
+    def chunk_size(self) -> int:
+        """Get default chunk size for streaming in bytes."""
+        return self.plugin_chunk_size
+
+    def cert_validity_days(self) -> int:
+        """Get certificate validity period in days."""
+        return self.plugin_cert_validity_days
 
     def auto_mtls_enabled(self) -> bool:
         """Get auto mTLS enabled flag."""
