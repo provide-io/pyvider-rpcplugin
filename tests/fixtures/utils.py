@@ -77,9 +77,7 @@ class LoopToucher:
     def __del__(self):
         try:
             asyncio.get_event_loop()
-            # print("LoopToucher.__del__ accessed loop") # For debugging if needed
         except RuntimeError:
-            # print("LoopToucher.__del__ loop already closed") # For debugging
             pass
 
 @pytest_asyncio.fixture(scope="function", autouse=True)

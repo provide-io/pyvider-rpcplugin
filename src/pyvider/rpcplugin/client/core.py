@@ -25,6 +25,7 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEm
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
+from pyvider.rpcplugin.defaults import DEFAULT_CLEANUP_WAIT_TIME
 
 
 @define
@@ -161,7 +162,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
         # Give the plugin a moment to shut down gracefully
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(DEFAULT_CLEANUP_WAIT_TIME)
 
     async def _cancel_tasks(self) -> None:
         """Cancel all active streaming tasks."""

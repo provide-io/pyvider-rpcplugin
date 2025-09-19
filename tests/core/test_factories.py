@@ -32,7 +32,7 @@ class MockHandler:
     pass
 
 
-# TODO: Add more mocks as needed for server/client tests
+# Additional test coverage for edge cases and comprehensive scenarios
 
 
 def test_create_basic_protocol():
@@ -128,7 +128,7 @@ async def test_plugin_protocol_custom_class():
     assert custom_protocol_instance_override.custom_arg == "another_value"
 
 
-# TODO: Add tests for plugin_server
+# Additional comprehensive plugin_server tests
 
 
 @patch("pyvider.rpcplugin.factories.RPCPluginServer")
@@ -248,7 +248,34 @@ def test_plugin_server_invalid_transport():
         )
 
 
-# TODO: Add tests for plugin_client
+@patch("pyvider.rpcplugin.factories.RPCPluginServer")
+@patch("pyvider.rpcplugin.factories.TCPSocketTransport")
+def test_plugin_server_tcp_transport_with_port(
+    mock_tcp_transport_cls, mock_rpc_plugin_server_cls
+):
+    """Test plugin_server with TCP transport and specific port."""
+    mock_protocol_inst = MockProtocol()
+    mock_handler_inst = MockHandler()
+
+    server = plugin_server(
+        protocol=mock_protocol_inst,
+        handler=mock_handler_inst,
+        transport="tcp",
+        transport_port=8080,
+        config={"test": "value"}
+    )
+
+    mock_tcp_transport_cls.assert_called_once_with(host="127.0.0.1", port=8080)
+    mock_rpc_plugin_server_cls.assert_called_once_with(
+        protocol=mock_protocol_inst,
+        handler=mock_handler_inst,
+        transport=mock_tcp_transport_cls.return_value,
+        config={"test": "value"},
+    )
+    assert server is mock_rpc_plugin_server_cls.return_value
+
+
+# Additional comprehensive plugin_client tests
 
 
 @patch("pyvider.rpcplugin.factories.RPCPluginClient")
@@ -297,6 +324,19 @@ def test_plugin_client_with_options_and_auto_connect_warning(
         assert expected_warning in warning_calls, f"Expected warning not found in: {warning_calls}"
         # client.start() should not be called by the factory itself anymore
         mock_client_instance.start.assert_not_called()
+
+
+@patch("pyvider.rpcplugin.factories.RPCPluginClient")
+def test_plugin_client_none_config(mock_rpc_client_cls):
+    """Test plugin_client with None config defaults to empty dict."""
+    command = ["/path/to/executable"]
+
+    client = plugin_client(command=command, config=None, auto_connect=False)
+
+    mock_rpc_client_cls.assert_called_once_with(
+        command=command, config={}
+    )
+    assert client is mock_rpc_client_cls.return_value
 
 
 # The tests for server_not_found and server_not_executable are no longer relevant

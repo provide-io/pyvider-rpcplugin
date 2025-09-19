@@ -19,6 +19,7 @@ from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 import grpc
 
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.exception import (
     ProtocolError,
     TransportError,
@@ -109,7 +110,7 @@ class ClientProcessMixin:
             while self._process.poll() is None:
                 line = await asyncio.get_event_loop().run_in_executor(None, self._process.stderr.readline)
                 if not line:
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                     continue
 
                 text = line.decode("utf-8", errors="replace").rstrip()

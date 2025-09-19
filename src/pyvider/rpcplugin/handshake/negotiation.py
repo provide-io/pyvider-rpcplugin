@@ -18,6 +18,7 @@ from typing import cast
 from provide.foundation import logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME, DEFAULT_HANDSHAKE_RETRY_WAIT
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
 from pyvider.rpcplugin.transport.types import TransportT
 
@@ -180,7 +181,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
         try:
             # Ensure stdout is not None before accessing readline
             if process.stdout is None:
-                await asyncio.sleep(0.1)  # Wait briefly if stdout not ready
+                await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)  # Wait briefly if stdout not ready
                 continue
 
             line_bytes = await asyncio.wait_for(
@@ -207,7 +208,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
             try:
                 # Ensure stdout is not None before accessing read
                 if process.stdout is None:
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                     continue
 
                 chunk = await asyncio.wait_for(
@@ -237,7 +238,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
             except TimeoutError:
                 logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
 
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(DEFAULT_HANDSHAKE_RETRY_WAIT)
 
     stderr_output = ""
     if process.stderr:
@@ -288,7 +289,7 @@ async def create_stderr_relay(
             try:
                 line = await asyncio.get_event_loop().run_in_executor(None, process.stderr.readline)
                 if not line:
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                     continue
 
                 text = line.decode("utf-8", errors="replace").rstrip()

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, NamedTuple
 from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.exception import (
     HandshakeError,
     SecurityError,
@@ -239,7 +240,7 @@ class ClientHandshakeMixin:
     async def _try_readline_strategy(self: RPCPluginClient, inner_timeout_s: float) -> str | None:  # type: ignore[misc]
         """Try readline strategy to get handshake data."""
         if not self._process or not self._process.stdout:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
             return None
 
         line_bytes = await asyncio.wait_for(
@@ -259,7 +260,7 @@ class ClientHandshakeMixin:
     async def _try_chunk_strategy(self: RPCPluginClient, buffer: str) -> str | None:  # type: ignore[misc]
         """Try chunk read strategy to get handshake data."""
         if not self._process or not self._process.stdout:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
             return None
 
         chunk = await asyncio.wait_for(
@@ -336,7 +337,7 @@ class ClientHandshakeMixin:
                 except TimeoutError:
                     self.logger.debug("Timeout reading chunk, retrying...")
 
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
 
         stderr_output = self._get_stderr_output()
         raise HandshakeError(
@@ -400,7 +401,7 @@ class ClientHandshakeMixin:
                     if self._process.poll() is None:
                         self._process.terminate()
                         # Give process a moment to terminate gracefully
-                        await asyncio.sleep(0.1)
+                        await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                         if self._process.poll() is None:
                             self._process.kill()
                 except Exception as cleanup_error:
