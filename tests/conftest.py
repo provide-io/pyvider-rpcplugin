@@ -1,9 +1,12 @@
 # tests/conftest.py
-import sys
-import os
 import asyncio
-import pytest
+import os
+
 from attrs import fields
+
+# Import provide-testkit fixtures directly
+import pytest
+
 from pyvider.rpcplugin.config import RPCPluginConfig
 from tests.fixtures import *
 
@@ -35,14 +38,12 @@ from provide.testkit.crypto import (
 def get_all_env_vars() -> list[str]:
     """
     Extract all environment variable keys from RPCPluginConfig metadata.
-    
+
     This provides dynamic env var discovery without hardcoded constants,
     ensuring test isolation covers all config fields automatically.
     """
     return [
-        field.metadata.get('env_var')
-        for field in fields(RPCPluginConfig)
-        if field.metadata.get('env_var')
+        field.metadata.get("env_var") for field in fields(RPCPluginConfig) if field.metadata.get("env_var")
     ]
 
 
@@ -58,20 +59,21 @@ def _function_event_loop():
         # Python 3.9+ uses asyncio.all_tasks without loop parameter
         pending = asyncio.all_tasks()
         pending = {task for task in pending if task.get_loop() == loop}
-    
+
     for task in pending:
         task.cancel()
-    
+
     if pending:
         loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
     loop.close()
+
 
 @pytest.fixture(autouse=True, scope="function")
 def reset_rpcplugin_config_singleton():
     """
     Fixture to reset the RPCPluginConfig singleton and relevant env vars before each test.
     This ensures complete test isolation with respect to configuration.
-    
+
     Uses metadata-driven env var discovery to eliminate hardcoded constants.
     """
     # Foundation config doesn't use singleton pattern like old implementation
@@ -95,7 +97,7 @@ def reset_rpcplugin_config_singleton():
             os.environ[key] = value
         elif key in os.environ:
             del os.environ[key]
-    
+
     # Foundation config loads fresh from environment each time
     # No singleton cleanup needed
 
