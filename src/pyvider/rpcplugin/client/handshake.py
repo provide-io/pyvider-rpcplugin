@@ -22,7 +22,6 @@ from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.exception import (
     HandshakeError,
     SecurityError,
-    TransportError,
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
 
@@ -83,7 +82,7 @@ class ClientHandshakeMixin:
         if self._transport:
             try:
                 await self._transport.close()
-            except TransportError as close_error:
+            except Exception as close_error:
                 self.logger.warning(f"Error closing transport before retry: {close_error}")
             finally:
                 self._transport = None
