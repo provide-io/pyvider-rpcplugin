@@ -31,12 +31,8 @@ async def test_perform_handshake_success(client_instance: RPCPluginClient, mock_
     client_instance._process = None  # So _launch_process will actually launch
 
     with (
-        patch(
-            "pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process
-        ),
-        patch(
-            "pyvider.rpcplugin.transport.TCPSocketTransport"
-        ) as mock_transport_class,
+        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process),
+        patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
@@ -61,18 +57,14 @@ async def test_perform_handshake_with_cert(client_instance: RPCPluginClient, moc
     sample_cert = "dGVzdA=="
 
     with (
-        patch(
-            "pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process
-        ),
-        patch(
-            "pyvider.rpcplugin.transport.TCPSocketTransport"
-        ) as mock_transport_class,
+        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process),
+        patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
-        mock_process.stdout.readline.return_value = (
-            "1|1|tcp|127.0.0.1:8000|grpc|{}\\n".format(sample_cert).encode()
-        )
+        mock_process.stdout.readline.return_value = "1|1|tcp|127.0.0.1:8000|grpc|{}\\n".format(
+            sample_cert
+        ).encode()
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
@@ -84,7 +76,9 @@ async def test_perform_handshake_with_cert(client_instance: RPCPluginClient, moc
 
 
 @pytest.mark.asyncio
-async def test_perform_handshake_with_unix_transport(client_instance: RPCPluginClient, mock_process: MagicMock) -> None:
+async def test_perform_handshake_with_unix_transport(
+    client_instance: RPCPluginClient, mock_process: MagicMock
+) -> None:
     # Set up mock process with proper stderr that returns bytes
     mock_stderr = MagicMock()
     mock_stderr.readline = MagicMock(return_value=b"")
@@ -92,12 +86,8 @@ async def test_perform_handshake_with_unix_transport(client_instance: RPCPluginC
     client_instance._process = None  # So _launch_process will actually launch
 
     with (
-        patch(
-            "pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process
-        ),
-        patch(
-            "pyvider.rpcplugin.transport.UnixSocketTransport"
-        ) as mock_transport_class,
+        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process),
+        patch("pyvider.rpcplugin.transport.UnixSocketTransport") as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
@@ -122,7 +112,9 @@ async def test_perform_handshake_no_process(client_instance: RPCPluginClient) ->
 
 
 @pytest.mark.asyncio
-async def test_perform_handshake_process_exit(client_instance: RPCPluginClient, mock_process: MagicMock) -> None:
+async def test_perform_handshake_process_exit(
+    client_instance: RPCPluginClient, mock_process: MagicMock
+) -> None:
     client_instance._process = mock_process
     mock_process.poll.return_value = 1
     mock_process.returncode = 1
@@ -163,7 +155,9 @@ async def test_perform_handshake_invalid_format(
 
 
 @pytest.mark.asyncio
-async def test_perform_handshake_parse_error(client_instance: RPCPluginClient, mock_process: MagicMock) -> None:
+async def test_perform_handshake_parse_error(
+    client_instance: RPCPluginClient, mock_process: MagicMock
+) -> None:
     client_instance._process = mock_process
     mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
     with (
@@ -186,11 +180,11 @@ async def test_perform_handshake_parse_error(client_instance: RPCPluginClient, m
 
 
 @pytest.mark.asyncio
-async def test_perform_handshake_invalid_network_type(client_instance: RPCPluginClient, mock_process: MagicMock) -> None:
+async def test_perform_handshake_invalid_network_type(
+    client_instance: RPCPluginClient, mock_process: MagicMock
+) -> None:
     client_instance._process = mock_process
-    mock_process.stdout.readline.return_value = (
-        b"1|1|invalid_net|127.0.0.1:8000|grpc|\n"
-    )
+    mock_process.stdout.readline.return_value = b"1|1|invalid_net|127.0.0.1:8000|grpc|\n"
     with (
         patch.object(
             client_instance,
