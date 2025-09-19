@@ -34,6 +34,7 @@ from provide.foundation.config import (
     validate_positive,
     validate_range,
 )
+from provide.foundation.errors.config import ValidationError
 
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLIENT_TRANSPORTS,
@@ -42,7 +43,6 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
 )
 from pyvider.rpcplugin.exception import ConfigError
-from provide.foundation.errors.config import ValidationError
 
 
 def _validate_protocol_versions_list(value: list[int]) -> list[int]:

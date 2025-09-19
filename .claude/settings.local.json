@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(PYTHONPATH=./src timeout 5s python -c \"\nimport os\nos.environ[''PLUGIN_PROTOCOL_VERSIONS''] = ''8,9,10''\nfrom pyvider.rpcplugin.config import RPCPluginConfig\ntry:\n    config = RPCPluginConfig.from_env()\n    print(f''No validation error raised. protocol_versions: {config.plugin_protocol_versions}'')\nexcept Exception as e:\n    print(f''Exception raised: {type(e).__name__}: {e}'')\n\")"
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config.py::TestValidation::test_protocol_version_validation -v)",
+      "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config.py::TestValidation::test_transport_validation -v)"
     ],
     "deny": [],
     "ask": [],
