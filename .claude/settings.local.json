@@ -169,7 +169,8 @@
       "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/transport/tcp/test_transport_tcp_connect.py::test_tcp_socket_transport_with_free_port -v)",
       "Bash(PYTHONPATH=./src timeout 120s python -m pytest tests/client/test_client_grpc.py tests/client/test_client_init.py tests/client/test_client_integration.py tests/transport/tcp/test_transport_tcp_connect.py::test_tcp_socket_transport_with_free_port --tb=no -q)",
       "Bash(PYTHONPATH=./src timeout 240s python -m pytest tests/client/ --tb=no -q)",
-      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/ -m 'not slow' --tb=no -q)"
+      "Bash(PYTHONPATH=./src timeout 60s python -m pytest tests/ -m 'not slow' --tb=no -q)",
+      "Bash(PYTHONPATH=./src timeout 10s python -c \"from provide.testkit.crypto import *; print(''SUCCESS: All crypto fixtures imported'')\")"
     ],
     "deny": [],
     "ask": [],

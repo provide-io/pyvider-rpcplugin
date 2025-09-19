@@ -25,20 +25,7 @@ from tests.fixtures.mocks import (
     mock_server_config,
     server_with_mocks,
 )
-from tests.fixtures.crypto import (
-    client_cert,
-    server_cert,
-    valid_key_pem,
-    valid_cert_pem,
-    invalid_key_pem,
-    invalid_cert_pem,
-    malformed_cert_pem,
-    empty_cert,
-    temporary_cert_file,
-    temporary_key_file,
-    dev_root_ca,
-    external_dev_ca_pem,
-)
+# Crypto fixtures now imported from provide-testkit.crypto via conftest.py
 from tests.fixtures.handshake import (
     mock_core_version,
     handshake_config,
@@ -88,19 +75,7 @@ __all__ = [
     "mock_server_protocol",
     "mock_server_config",
     "server_with_mocks",
-    # crypto
-    "client_cert",
-    "server_cert",
-    "valid_key_pem",
-    "valid_cert_pem",
-    "invalid_key_pem",
-    "invalid_cert_pem",
-    "malformed_cert_pem",
-    "empty_cert",
-    "temporary_cert_file",
-    "temporary_key_file",
-    "dev_root_ca",
-    "external_dev_ca_pem",
+    # crypto fixtures now available from provide-testkit.crypto via conftest.py
     # handshake
     "mock_core_version",
     "handshake_config",
