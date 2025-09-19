@@ -1,6 +1,6 @@
 # tests/handshake/test_handshake_responses.py
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock  # Added AsyncMock
+from provide.testkit.mocking import patch, MagicMock, AsyncMock  # Added AsyncMock
 from pyvider.rpcplugin.transport import UnixSocketTransport # Added import
 
 from pyvider.rpcplugin.handshake import (

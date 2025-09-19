@@ -1,7 +1,7 @@
 import asyncio
 import pytest
 import contextlib
-from unittest.mock import AsyncMock, patch
+from provide.testkit.mocking import AsyncMock, patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
 

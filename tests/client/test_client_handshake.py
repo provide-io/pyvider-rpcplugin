@@ -2,7 +2,7 @@
 
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from provide.testkit.mocking import patch, MagicMock, AsyncMock
 import subprocess  # Added for spec=subprocess.Popen
 
 from provide.testkit.mocking import magic_mock_factory, async_mock_factory

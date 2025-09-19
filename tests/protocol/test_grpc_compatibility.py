@@ -2,7 +2,7 @@
 
 import pytest
 import importlib
-from unittest.mock import patch, MagicMock
+from provide.testkit.mocking import patch, MagicMock
 
 from pyvider.rpcplugin.protocol import (
     grpc_broker_pb2_grpc,

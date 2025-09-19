@@ -66,7 +66,7 @@ async def test_negotiate_transport_valid_unix() -> None:
     assert isinstance(transport, UnixSocketTransport)
 
 
-from unittest.mock import patch # Added for the new tests
+from provide.testkit.mocking import patch # Added for the new tests
 import tempfile # Added for the new tests
 
 @pytest.mark.asyncio

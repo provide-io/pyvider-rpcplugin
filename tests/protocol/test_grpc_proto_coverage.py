@@ -1,7 +1,7 @@
 # tests/protocol/test_grpc_proto_coverage.py
 
 import pytest
-from unittest.mock import MagicMock, patch
+from provide.testkit.mocking import MagicMock, patch
 import importlib
 import os  # Added import
 

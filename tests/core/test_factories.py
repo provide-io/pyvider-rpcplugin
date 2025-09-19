@@ -3,7 +3,7 @@
 import pytest
 from attrs import define
 import asyncio # asyncio import re-added
-from unittest.mock import MagicMock, patch
+from provide.testkit.mocking import MagicMock, patch
 import os
 
 from pyvider.rpcplugin.factories import (

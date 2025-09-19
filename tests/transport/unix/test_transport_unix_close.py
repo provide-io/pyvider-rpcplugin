@@ -4,7 +4,7 @@ import os
 import pytest
 import asyncio
 import errno # Added import
-from unittest.mock import patch, AsyncMock, MagicMock # Added AsyncMock, MagicMock
+from provide.testkit.mocking import patch, AsyncMock, MagicMock # Added AsyncMock, MagicMock
 import warnings
 
 from pyvider.rpcplugin.exception import TransportError

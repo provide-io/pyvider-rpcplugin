@@ -7,7 +7,7 @@ import stat
 import socket # Ensured socket is imported
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock # Ensured AsyncMock is imported for other tests if needed
+from provide.testkit.mocking import MagicMock, AsyncMock # Ensured AsyncMock is imported for other tests if needed
 
 from provide.foundation import logger
 from pyvider.rpcplugin.transport import UnixSocketTransport

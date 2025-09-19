@@ -1,7 +1,7 @@
 # tests/client/test_client_transport.py
 
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from provide.testkit.mocking import patch, MagicMock, AsyncMock
 from pyvider.rpcplugin.exception import TransportError  # Added import
 
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import contextlib
 
 import pytest
-from unittest.mock import AsyncMock
+from provide.testkit.mocking import AsyncMock
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.server import RPCPluginServer

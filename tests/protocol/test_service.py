@@ -4,7 +4,7 @@ import os
 import asyncio
 import signal  # Moved import signal to top level of module
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from provide.testkit.mocking import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.protocol.service import (
     SubchannelConnection,
