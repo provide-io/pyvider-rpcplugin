@@ -187,7 +187,8 @@
       "Bash(PYTHONPATH=./src timeout 30s python -c \"from pyvider.rpcplugin.config import rpcplugin_config; print(''Configuration import successful''); print(f''Magic cookie: {rpcplugin_config.plugin_magic_cookie_value}''); print(f''Protocol versions: {rpcplugin_config.plugin_protocol_versions}''); print(f''Supported versions: {rpcplugin_config.supported_protocol_versions}''); print(f''Log level: {rpcplugin_config.plugin_log_level}''); print(f''Client root certs: {rpcplugin_config.plugin_client_root_certs}'')\")",
       "Bash(PYTHONPATH=./src timeout 30s python -c \"from pyvider.rpcplugin.config.core import CoreConfig; print(''Core config import successful'')\")",
       "Read(//private/tmp/**)",
-      "Bash(PYTHONPATH=./src ruff check src/pyvider/rpcplugin/config/)"
+      "Bash(PYTHONPATH=./src ruff check src/pyvider/rpcplugin/config/)",
+      "Bash(PYTHONPATH=/Users/tim/code/gh/provide-io/pyvider-rpcplugin/src python -c \"from pyvider.rpcplugin.config.core import CoreConfig; print(''✅ Core config import successful'')\")"
     ],
     "deny": [],
     "ask": [],

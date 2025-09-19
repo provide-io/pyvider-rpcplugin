@@ -9,7 +9,7 @@ from pyvider.rpcplugin.defaults import (
 )
 
 
-@define(slots=True)
+@define
 class CoreConfig:
     """Core protocol and magic cookie configuration."""
 

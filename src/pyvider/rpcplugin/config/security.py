@@ -4,7 +4,7 @@ from attrs import define
 from provide.foundation.config import field, validate_positive
 
 
-@define(slots=True)
+@define
 class SecurityConfig:
     """Security and mTLS configuration."""
 

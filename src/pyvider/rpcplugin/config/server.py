@@ -4,7 +4,7 @@ from attrs import define
 from provide.foundation.config import field, validate_range
 
 
-@define(slots=True)
+@define
 class ServerConfig:
     """Server hosting configuration."""
 
