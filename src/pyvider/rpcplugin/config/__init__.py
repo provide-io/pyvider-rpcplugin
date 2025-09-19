@@ -470,7 +470,6 @@ class RPCPluginConfig(RuntimeConfig):
     # Backward Compatibility Properties
     # =====================================================
 
-    @property
     def protocol_versions(self) -> list[int]:
         """Alias for plugin_protocol_versions for backward compatibility."""
         return self.plugin_protocol_versions
@@ -485,6 +484,7 @@ def configure(
     protocol_version: int | None = None,
     transports: list[str] | None = None,
     auto_mtls: bool | None = None,
+    handshake_timeout: float | None = None,
     **kwargs: Any,
 ) -> None:
     """
@@ -498,6 +498,7 @@ def configure(
         protocol_version: Preferred protocol version
         transports: List of supported transports
         auto_mtls: Enable automatic mTLS certificate generation
+        handshake_timeout: Timeout for handshake operations in seconds
         **kwargs: Additional configuration parameters
     """
     try:
@@ -514,6 +515,9 @@ def configure(
 
         if auto_mtls is not None:
             rpcplugin_config.plugin_auto_mtls = auto_mtls
+
+        if handshake_timeout is not None:
+            rpcplugin_config.plugin_handshake_timeout = handshake_timeout
 
         # Apply any additional keyword arguments
         for key, value in kwargs.items():
