@@ -7,7 +7,8 @@
       "Bash(PYTHONPATH=./src timeout 5s python -m pytest tests/core/test_config.py --collect-only -q)",
       "Bash(PYTHONPATH=./src timeout 120s python -m pytest --tb=no --quiet)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config_foundation.py::TestValidation::test_timeout_range_validation -xvs)",
-      "Bash(PYTHONPATH=./src timeout 5s python -c \"from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config, configure; print(''✅ All imports successful'')\")"
+      "Bash(PYTHONPATH=./src timeout 5s python -c \"from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config, configure; print(''✅ All imports successful'')\")",
+      "Bash(PYTHONPATH=./src timeout:*)"
     ],
     "deny": [],
     "ask": [],
