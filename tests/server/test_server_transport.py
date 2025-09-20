@@ -25,7 +25,7 @@ async def test_setup_server_unix_success_secure(
     sock_path = managed_unix_socket_path
     test_transport = UnixSocketTransport(path=sock_path)
 
-    mocker.patch.object(rpcplugin_config, "auto_mtls_enabled", return_value=True)
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", True)
 
     server = RPCPluginServer(
         protocol=mock_server_protocol,
@@ -90,7 +90,7 @@ async def test_setup_server_add_port_failure(
         transport=transport,
     )
 
-    mocker.patch.object(rpcplugin_config, "auto_mtls_enabled", return_value=True)
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", True)
 
     # Call _negotiate_handshake to correctly set internal state like _transport.
     mocker.patch("pyvider.rpcplugin.server.network.validate_magic_cookie")
