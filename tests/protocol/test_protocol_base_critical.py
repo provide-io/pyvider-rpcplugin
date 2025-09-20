@@ -1,7 +1,7 @@
 # tests/protocol/test_protocol_base_critical.py
 
 import pytest
-from unittest.mock import MagicMock
+from provide.testkit.mocking import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 

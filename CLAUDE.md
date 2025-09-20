@@ -116,3 +116,4 @@ The framework implements a Terraform-compatible plugin protocol:
 - Bandit security analysis on `src/` directory
 - Pre-commit safety checks for dependencies
 - No hardcoded secrets or credentials
+- If it makes sense to be more specific for an exception, then implement that across the tests and the code.

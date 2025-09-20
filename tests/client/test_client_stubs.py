@@ -3,7 +3,7 @@
 import pytest
 import asyncio
 import grpc
-from unittest.mock import (
+from provide.testkit.mocking import (
     patch,
     MagicMock,
     AsyncMock,

@@ -8,7 +8,8 @@ import pytest
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
-from unittest.mock import MagicMock, AsyncMock # Added AsyncMock
+from provide.testkit.mocking import MagicMock, AsyncMock
+from provide.testkit.transport import free_port
 
 
 @pytest.mark.asyncio
@@ -27,6 +28,23 @@ async def test_tcp_socket_transport_connect_invalid_endpoint() -> None:
     """
     transport = TCPSocketTransport()
     await transport.listen()
+
+
+@pytest.mark.asyncio
+async def test_tcp_socket_transport_with_free_port(free_port) -> None:
+    """
+    Test TCP transport using provide-testkit's free port utility.
+    """
+    # Use provide-testkit to get a free port
+    port = free_port
+    transport = TCPSocketTransport(host="127.0.0.1", port=port)
+
+    try:
+        # This should work since we got a free port
+        await transport.listen()
+        assert transport.endpoint == f"127.0.0.1:{port}"
+    finally:
+        await transport.close()
 
     # Use a valid format but an unlikely to be used port
     with pytest.raises(TransportError):

@@ -1,7 +1,7 @@
 # tests/transport/tcp/test_transport_tcp_close.py
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from provide.testkit.mocking import AsyncMock, MagicMock
 
 import pytest
 

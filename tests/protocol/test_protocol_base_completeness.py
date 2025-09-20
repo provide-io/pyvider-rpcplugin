@@ -2,7 +2,7 @@
 
 import pytest
 from typing import Any
-from unittest.mock import MagicMock
+from provide.testkit.mocking import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import HandlerT, ServerT

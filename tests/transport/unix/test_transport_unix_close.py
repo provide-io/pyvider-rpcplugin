@@ -4,7 +4,7 @@ import os
 import pytest
 import asyncio
 import errno # Added import
-from unittest.mock import patch, AsyncMock, MagicMock # Added AsyncMock, MagicMock
+from provide.testkit.mocking import patch, AsyncMock, MagicMock # Added AsyncMock, MagicMock
 import warnings
 
 from pyvider.rpcplugin.exception import TransportError
@@ -289,9 +289,9 @@ async def test_unix_socket_close_unlink_fails_persistently(mocker, managed_unix_
                 await asyncio.gather(*tasks, return_exceptions=True)
         except RuntimeError: # Loop might be closed
             pass
-        except Exception as e_task_cancel: # Catch any other error during task cancellation
-            # Log this, as it's unexpected during cleanup
-            print(f"Error during task cancellation in finally block: {e_task_cancel}")
+        except Exception: # Catch any other error during task cancellation
+            # Ignore errors during task cancellation in finally block
+            pass
 
 
         await asyncio.sleep(0.1) # Give event loop time to process cleanup

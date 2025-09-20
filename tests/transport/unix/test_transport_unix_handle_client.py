@@ -3,7 +3,7 @@
 import asyncio
 import os
 import pytest
-from unittest.mock import AsyncMock, MagicMock # Added
+from provide.testkit.mocking import AsyncMock, MagicMock # Added
 
 from provide.foundation import logger
 from pyvider.rpcplugin.transport.unix.transport import UnixSocketTransport

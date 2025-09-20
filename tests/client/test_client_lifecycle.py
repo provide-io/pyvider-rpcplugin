@@ -2,7 +2,7 @@
 
 import pytest
 import asyncio  # Make sure asyncio is imported
-from unittest.mock import patch, MagicMock, AsyncMock
+from provide.testkit.mocking import patch, MagicMock, AsyncMock
 
 
 @pytest.mark.asyncio

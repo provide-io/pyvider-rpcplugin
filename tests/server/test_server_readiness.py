@@ -1,6 +1,6 @@
 import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from provide.testkit.mocking import AsyncMock, MagicMock, patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.transport import UnixSocketTransport, TCPSocketTransport

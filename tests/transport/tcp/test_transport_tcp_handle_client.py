@@ -5,7 +5,7 @@
 # test_tcp_handle_client_direct REMOVED - Incompatible with new listen()
 
 import asyncio
-from unittest.mock import AsyncMock
+from provide.testkit.mocking import AsyncMock
 
 import pytest
 

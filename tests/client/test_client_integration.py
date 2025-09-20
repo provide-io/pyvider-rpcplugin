@@ -1,7 +1,7 @@
 # tests/client/test_client_integration.py
 
 import asyncio
-from unittest.mock import AsyncMock, patch
+from provide.testkit.mocking import AsyncMock, patch
 
 import pytest
 

@@ -20,6 +20,8 @@ from typing import Any  # Added for __eq__ type hint
 from attrs import define, field
 from provide.foundation import logger
 
+from pyvider.rpcplugin.config import rpcplugin_config
+
 # Type aliases for dependency-injected I/O functions using collections.abc
 SendFuncType = AbcCallable[[bytes], Awaitable[None]]
 ReceiveFuncType = AbcCallable[[int], Awaitable[bytes]]
@@ -103,7 +105,7 @@ class ClientConnection:
             logger.error(f"Error sending data to {self.remote_addr}", extra={"error": str(e)})
             raise
 
-    async def _default_receive(self, size: int = 16384) -> bytes:
+    async def _default_receive(self, size: int | None = None) -> bytes:
         """
         Default receive function: reads data from the reader and updates metrics.
 
@@ -117,7 +119,8 @@ class ClientConnection:
             OSError: If an error occurs during receiving.
         """
         try:
-            data = await self.reader.read(size)
+            buffer_size = size if size is not None else rpcplugin_config.plugin_buffer_size
+            data = await self.reader.read(buffer_size)
             if data:
                 self.update_metrics(bytes_received=len(data))
                 logger.debug(f"Received data from {self.remote_addr}", extra={"bytes": len(data)})
@@ -145,7 +148,7 @@ class ClientConnection:
             )
         await self.send_func(data)
 
-    async def receive_data(self, size: int = 16384) -> bytes:
+    async def receive_data(self, size: int | None = None) -> bytes:
         """
         Receive data from the connection using the injected receive_func.
 
@@ -166,7 +169,8 @@ class ClientConnection:
                 "receive_func was not initialized. This should not happen if "
                 "__attrs_post_init__ ran correctly."
             )
-        return await self.receive_func(size)
+        buffer_size = size if size is not None else rpcplugin_config.plugin_buffer_size
+        return await self.receive_func(buffer_size)
 
     async def close(self) -> None:
         """

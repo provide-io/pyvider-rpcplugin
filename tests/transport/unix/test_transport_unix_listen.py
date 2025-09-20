@@ -3,7 +3,7 @@
 import asyncio
 import os
 import tempfile
-from unittest.mock import AsyncMock, patch
+from provide.testkit.mocking import AsyncMock, patch
 
 import pytest
 

@@ -4,7 +4,7 @@ import asyncio
 import io
 import sys
 from contextlib import contextmanager
-from unittest.mock import AsyncMock, MagicMock, patch
+from provide.testkit.mocking import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -76,7 +76,7 @@ def setup_environment(monkeypatch):
 async def test_build_handshake_response_unix(monkeypatch):
     """Test building handshake response with Unix transport."""
     # Mock the core version to ensure consistent test expectations
-    from unittest.mock import patch
+    from provide.testkit.mocking import patch
     with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
         transport = UnixSocketTransport()
         transport.listen = AsyncMock(return_value="/tmp/test.sock")
@@ -104,7 +104,7 @@ async def test_build_handshake_response_unix(monkeypatch):
 async def test_build_handshake_response_with_certificate():
     """Test building handshake response with a certificate."""
     # Mock the core version to ensure consistent test expectations
-    from unittest.mock import patch
+    from provide.testkit.mocking import patch
     with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
         transport = TCPSocketTransport()
 
@@ -137,7 +137,7 @@ async def test_build_handshake_response_with_certificate():
 async def test_full_handshake_cycle():
     """Test a complete handshake cycle with building and parsing."""
     # Mock the core version to ensure consistent test expectations
-    from unittest.mock import patch
+    from provide.testkit.mocking import patch
     with patch("pyvider.rpcplugin.config.rpcplugin_config.plugin_core_version", 1):
         transport = TCPSocketTransport()
 

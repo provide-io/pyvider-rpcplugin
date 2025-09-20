@@ -20,7 +20,7 @@ from pyvider.rpcplugin import types as types_module_logger_ref
 
 
 # Test for is_valid_handler
-from unittest.mock import MagicMock, patch
+from provide.testkit.mocking import MagicMock, patch
 
 
 def test_is_valid_handler_true(mocker):

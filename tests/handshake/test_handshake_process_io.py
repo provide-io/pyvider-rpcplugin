@@ -1,7 +1,7 @@
 # tests/handshake/test_handshake_process_io.py
 import pytest
 import asyncio
-from unittest.mock import patch, MagicMock, AsyncMock
+from provide.testkit.mocking import patch, MagicMock, AsyncMock
 import subprocess  # For Popen spec
 import re  # For escaping regex if needed
 

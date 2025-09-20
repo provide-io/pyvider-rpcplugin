@@ -1,7 +1,7 @@
 import asyncio
 import gc
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from provide.testkit.mocking import AsyncMock, MagicMock
 
 
 from pyvider.rpcplugin.config import ConfigError, rpcplugin_config, rpcplugin_config

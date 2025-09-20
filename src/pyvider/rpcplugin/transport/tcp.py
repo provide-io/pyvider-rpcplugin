@@ -6,7 +6,7 @@
 TCP Socket Transport implementation using asyncio.
 Uses Python 3.11+ features such as TypeGuard and structural pattern matching.
 Logging uses a three-emoji system:
-  [Component][Action][Result] – e.g. "🔌🚀✅" means Transport starting successfully.
+  [Component][Action][Result] - e.g. "🔌🚀✅" means Transport starting successfully.
 """
 
 import asyncio
@@ -276,7 +276,7 @@ class TCPSocketTransport(RPCPluginTransport):
                         await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
                         logger.info("🔌🔒✅: TCP server closed successfully")
                     else:  # If it wasn't serving, log that no action was needed.
-                        logger.debug("🔌🔒ℹ️: TCP server was not serving, no close/wait action needed.")
+                        logger.debug("🔌🔒i: TCP server was not serving, no close/wait action needed.")
                 except TimeoutError:
                     logger.warning(
                         "🔌🔒⚠️ Timeout closing TCP server for endpoint "

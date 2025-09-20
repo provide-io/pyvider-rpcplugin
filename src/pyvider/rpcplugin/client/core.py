@@ -20,6 +20,10 @@ from provide.foundation import logger
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import (
+    DEFAULT_CLEANUP_WAIT_TIME,
+)
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
@@ -161,7 +165,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
         # Give the plugin a moment to shut down gracefully
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(DEFAULT_CLEANUP_WAIT_TIME)
 
     async def _cancel_tasks(self) -> None:
         """Cancel all active streaming tasks."""
@@ -184,7 +188,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         if self.grpc_channel:
             try:
                 self.logger.debug("🔌 Closing gRPC channel...")
-                await self.grpc_channel.close(grace=0.5)
+                await self.grpc_channel.close(grace=rpcplugin_config.plugin_grpc_grace_period)
                 self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
                 self.logger.warning(f"⚠️ Error closing gRPC channel: {e}", exc_info=True)
