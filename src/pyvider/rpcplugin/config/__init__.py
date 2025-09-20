@@ -26,30 +26,34 @@ from typing import Any
 
 from attrs import define
 from provide.foundation import logger
-from provide.foundation.config import (
-    RuntimeConfig,
-    field,
-    validate_choice,
-    validate_non_negative,
-    validate_positive,
-    validate_range,
-)
+from provide.foundation.config import RuntimeConfig
 
-from ..defaults import (
-    DEFAULT_CLIENT_TRANSPORTS,
-    DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
-    DEFAULT_SERVER_TRANSPORTS,
-    DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
-)
-from ..exception import ConfigError
+from pyvider.rpcplugin.config.client import ClientConfig
+from pyvider.rpcplugin.config.core import CoreConfig
+from pyvider.rpcplugin.config.features import FeaturesConfig
+from pyvider.rpcplugin.config.grpc import GRPCConfig
+from pyvider.rpcplugin.config.security import SecurityConfig
+from pyvider.rpcplugin.config.server import ServerConfig
+from pyvider.rpcplugin.config.transport import TransportConfig
+from pyvider.rpcplugin.exception import ConfigError
 
 
 @define(slots=True, repr=False)
-class RPCPluginConfig(RuntimeConfig):
+class RPCPluginConfig(
+    RuntimeConfig,
+    CoreConfig,
+    TransportConfig,
+    SecurityConfig,
+    GRPCConfig,
+    ClientConfig,
+    ServerConfig,
+    FeaturesConfig,
+):
     """
-    Configuration class for the RPC plugin system.
+    Unified configuration for the RPC plugin system.
 
-    This class provides all configuration settings organized by functional area:
+    This class provides all configuration settings organized by functional area
+    through composition via multiple inheritance:
     - Core settings (protocol versions, magic cookies)
     - Transport settings (timeouts, buffer sizes, supported transports)
     - Security settings (mTLS, certificates)
@@ -58,287 +62,6 @@ class RPCPluginConfig(RuntimeConfig):
     - Server settings (host, port, paths)
     - Feature settings (rate limiting, health checks, UI)
     """
-
-    # =====================================================
-    # Core Configuration
-    # =====================================================
-
-    plugin_core_version: int = field(
-        default=1,
-        validator=validate_choice(DEFAULT_SUPPORTED_PROTOCOL_VERSIONS),
-        description="Core protocol version supported by this plugin",
-        env_var="PLUGIN_CORE_VERSION",
-    )
-
-    plugin_protocol_versions: list[int] = field(  # noqa: RUF009
-        factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
-        description="List of protocol versions this plugin supports",
-        env_var="PLUGIN_PROTOCOL_VERSIONS",
-    )
-
-    plugin_protocol_version: int = field(
-        default=1,
-        validator=validate_choice(DEFAULT_SUPPORTED_PROTOCOL_VERSIONS),
-        description="Preferred protocol version for communication",
-        env_var="PLUGIN_PROTOCOL_VERSION",
-    )
-
-    plugin_magic_cookie_key: str = field(
-        default="PLUGIN_MAGIC_COOKIE",
-        description="Environment variable name for the magic cookie",
-        env_var="PLUGIN_MAGIC_COOKIE_KEY",
-    )
-
-    plugin_magic_cookie_value: str = field(
-        default="default-magic-cookie-value",
-        description="Magic cookie value for handshake authentication",
-        env_var="PLUGIN_MAGIC_COOKIE_VALUE",
-    )
-
-    # =====================================================
-    # Transport Configuration
-    # =====================================================
-
-    plugin_server_transports: list[str] = field(  # noqa: RUF009
-        factory=lambda: DEFAULT_SERVER_TRANSPORTS.copy(),
-        description="List of server transport types supported",
-        env_var="PLUGIN_SERVER_TRANSPORTS",
-    )
-
-    plugin_client_transports: list[str] = field(  # noqa: RUF009
-        factory=lambda: DEFAULT_CLIENT_TRANSPORTS.copy(),
-        description="List of client transport types supported",
-        env_var="PLUGIN_CLIENT_TRANSPORTS",
-    )
-
-    plugin_handshake_timeout: float = field(
-        default=10.0,
-        validator=validate_range(0.1, 300.0),
-        description="Timeout for plugin handshake in seconds",
-        env_var="PLUGIN_HANDSHAKE_TIMEOUT",
-    )
-
-    plugin_connection_timeout: float = field(
-        default=30.0,
-        validator=validate_range(0.1, 300.0),
-        description="Timeout for connection establishment in seconds",
-        env_var="PLUGIN_CONNECTION_TIMEOUT",
-    )
-
-    plugin_channel_ready_timeout: float = field(
-        default=10.0,
-        validator=validate_range(0.1, 300.0),
-        description="Timeout for gRPC channel ready check in seconds",
-        env_var="PLUGIN_CHANNEL_READY_TIMEOUT",
-    )
-
-    plugin_server_ready_timeout: float = field(
-        default=5.0,
-        validator=validate_range(0.1, 300.0),
-        description="Timeout for server ready check in seconds",
-        env_var="PLUGIN_SERVER_READY_TIMEOUT",
-    )
-
-    plugin_buffer_size: int = field(
-        default=16384,
-        validator=validate_positive,
-        description="Default buffer size for data operations in bytes",
-        env_var="PLUGIN_BUFFER_SIZE",
-    )
-
-    plugin_chunk_size: int = field(
-        default=1024,
-        validator=validate_positive,
-        description="Default chunk size for streaming in bytes",
-        env_var="PLUGIN_CHUNK_SIZE",
-    )
-
-    # =====================================================
-    # gRPC Configuration
-    # =====================================================
-
-    plugin_grpc_keepalive_time_ms: int = field(
-        default=30000,
-        validator=validate_positive,
-        description="gRPC keepalive time in milliseconds",
-        env_var="PLUGIN_GRPC_KEEPALIVE_TIME_MS",
-    )
-
-    plugin_grpc_keepalive_timeout_ms: int = field(
-        default=5000,
-        validator=validate_positive,
-        description="gRPC keepalive timeout in milliseconds",
-        env_var="PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS",
-    )
-
-    plugin_grpc_grace_period: float = field(
-        default=0.5,
-        validator=validate_positive,
-        description="gRPC channel close grace period in seconds",
-        env_var="PLUGIN_GRPC_GRACE_PERIOD",
-    )
-
-    # =====================================================
-    # Security Configuration
-    # =====================================================
-
-    plugin_auto_mtls: bool = field(
-        default=False,
-        description="Enable automatic mTLS certificate generation",
-        env_var="PLUGIN_AUTO_MTLS",
-    )
-
-    plugin_client_cert: str | None = field(
-        default=None,
-        description="Path to client certificate file for mTLS",
-        env_var="PLUGIN_CLIENT_CERT",
-    )
-
-    plugin_client_key: str | None = field(
-        default=None,
-        description="Path to client private key file for mTLS",
-        env_var="PLUGIN_CLIENT_KEY",
-    )
-
-    plugin_server_cert: str | None = field(
-        default=None,
-        description="Path to server certificate file",
-        env_var="PLUGIN_SERVER_CERT",
-    )
-
-    plugin_server_key: str | None = field(
-        default=None,
-        description="Path to server private key file",
-        env_var="PLUGIN_SERVER_KEY",
-    )
-
-    plugin_ca_cert: str | None = field(
-        default=None,
-        description="Path to certificate authority file",
-        env_var="PLUGIN_CA_CERT",
-    )
-
-    plugin_insecure: bool = field(
-        default=False,
-        description="Disable TLS for development (insecure)",
-        env_var="PLUGIN_INSECURE",
-    )
-
-    plugin_cert_validity_days: int = field(
-        default=365,
-        validator=validate_positive,
-        description="Certificate validity period in days",
-        env_var="PLUGIN_CERT_VALIDITY_DAYS",
-    )
-
-    # =====================================================
-    # Client Configuration
-    # =====================================================
-
-    plugin_client_retry_enabled: bool = field(
-        default=True,
-        description="Enable client retry mechanism",
-        env_var="PLUGIN_CLIENT_RETRY_ENABLED",
-    )
-
-    plugin_client_max_retries: int = field(
-        default=3,
-        validator=validate_non_negative,
-        description="Maximum number of retry attempts",
-        env_var="PLUGIN_CLIENT_MAX_RETRIES",
-    )
-
-    plugin_client_initial_backoff_ms: int = field(
-        default=500,
-        validator=validate_positive,
-        description="Initial backoff time in milliseconds",
-        env_var="PLUGIN_CLIENT_INITIAL_BACKOFF_MS",
-    )
-
-    plugin_client_max_backoff_ms: int = field(
-        default=5000,
-        validator=validate_positive,
-        description="Maximum backoff time in milliseconds",
-        env_var="PLUGIN_CLIENT_MAX_BACKOFF_MS",
-    )
-
-    plugin_client_retry_jitter_ms: int = field(
-        default=100,
-        validator=validate_non_negative,
-        description="Retry jitter in milliseconds",
-        env_var="PLUGIN_CLIENT_RETRY_JITTER_MS",
-    )
-
-    plugin_client_retry_total_timeout_s: int = field(
-        default=60,
-        validator=validate_positive,
-        description="Total retry timeout in seconds",
-        env_var="PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S",
-    )
-
-    # =====================================================
-    # Server Configuration
-    # =====================================================
-
-    plugin_server_host: str = field(
-        default="127.0.0.1",
-        description="Default server host for TCP transport",
-        env_var="PLUGIN_SERVER_HOST",
-    )
-
-    plugin_server_port: int = field(
-        default=0,  # 0 means auto-assign
-        description="Default server port for TCP transport (0 for auto-assign)",
-        env_var="PLUGIN_SERVER_PORT",
-    )
-
-    plugin_unix_socket_path: str | None = field(
-        default=None,
-        description="Default Unix socket path for Unix transport",
-        env_var="PLUGIN_UNIX_SOCKET_PATH",
-    )
-
-    # =====================================================
-    # Feature Configuration
-    # =====================================================
-
-    plugin_show_emoji_matrix: bool = field(
-        default=True,
-        description="Show emoji matrix in logs",
-        env_var="PLUGIN_SHOW_EMOJI_MATRIX",
-    )
-
-    plugin_shutdown_file_path: str | None = field(
-        default=None,
-        description="Path to shutdown signal file",
-        env_var="PLUGIN_SHUTDOWN_FILE_PATH",
-    )
-
-    plugin_rate_limit_enabled: bool = field(
-        default=False,
-        description="Enable rate limiting",
-        env_var="PLUGIN_RATE_LIMIT_ENABLED",
-    )
-
-    plugin_rate_limit_requests_per_second: float = field(
-        default=100.0,
-        validator=validate_positive,
-        description="Rate limit in requests per second",
-        env_var="PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND",
-    )
-
-    plugin_rate_limit_burst_capacity: float = field(
-        default=200.0,
-        validator=validate_positive,
-        description="Rate limit burst capacity",
-        env_var="PLUGIN_RATE_LIMIT_BURST_CAPACITY",
-    )
-
-    plugin_health_service_enabled: bool = field(
-        default=True,
-        description="Enable health service",
-        env_var="PLUGIN_HEALTH_SERVICE_ENABLED",
-    )
 
     # =====================================================
     # Helper Methods
@@ -419,6 +142,15 @@ class RPCPluginConfig(RuntimeConfig):
     def health_service_enabled(self) -> bool:
         """Get health service enabled flag."""
         return self.plugin_health_service_enabled
+
+    # =====================================================
+    # Backward Compatibility Properties
+    # =====================================================
+
+    @property
+    def protocol_versions(self) -> list[int]:
+        """Alias for plugin_protocol_versions for backward compatibility."""
+        return self.plugin_protocol_versions
 
 
 # Create the global configuration instance
