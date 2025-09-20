@@ -197,7 +197,7 @@ class ClientProcessMixin:
 
             if self.grpc_channel is not None:
                 await asyncio.wait_for(
-                    self.grpc_channel.channel_ready(), timeout=rpcplugin_config.channel_ready_timeout()
+                    self.grpc_channel.channel_ready(), timeout=rpcplugin_config.plugin_channel_ready_timeout
                 )
 
             self.logger.debug("gRPC channel is ready")
@@ -205,7 +205,7 @@ class ClientProcessMixin:
 
         except TimeoutError as e:
             error_msg = (
-                f"gRPC channel failed to become ready within {rpcplugin_config.channel_ready_timeout()}s "
+                f"gRPC channel failed to become ready within {rpcplugin_config.plugin_channel_ready_timeout}s "
                 f"for endpoint {self.target_endpoint}"
             )
             self.logger.error(error_msg)
