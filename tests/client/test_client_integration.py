@@ -1,11 +1,9 @@
 # tests/client/test_client_integration.py
 
-import pytest
 import asyncio
-from unittest.mock import patch, AsyncMock
+from unittest.mock import AsyncMock, patch
 
-from provide.testkit.crypto import client_cert
-from provide.testkit.mocking import async_mock_factory, magic_mock_factory
+import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
 
@@ -24,7 +22,9 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     """
     # Create mocks using provide-testkit factories
     mock_popen = magic_mock_factory(name="subprocess.Popen")
-    mock_read_handshake_line = async_mock_factory(name="read_handshake_line", return_value="1|1|tcp|127.0.0.1:8000|grpc|")
+    mock_read_handshake_line = async_mock_factory(
+        name="read_handshake_line", return_value="1|1|tcp|127.0.0.1:8000|grpc|"
+    )
     mock_channel_func = magic_mock_factory(name="grpc_channel_func")
     mock_stdio_stub_class = magic_mock_factory(name="GRPCStdioStub")
     mock_broker_stub_class = magic_mock_factory(name="GRPCBrokerStub")
@@ -39,20 +39,11 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             mock_read_handshake_line,
         ),
         patch("pyvider.rpcplugin.client.handshake.Certificate") as mock_cert_class,
-        patch(
-            "pyvider.rpcplugin.client.core.grpc.aio.insecure_channel",
-            mock_channel_func
-        ),
+        patch("pyvider.rpcplugin.client.core.grpc.aio.insecure_channel", mock_channel_func),
         patch("pyvider.rpcplugin.client.process.GRPCStdioStub", mock_stdio_stub_class),
         patch("pyvider.rpcplugin.client.process.GRPCBrokerStub", mock_broker_stub_class),
-        patch(
-            "pyvider.rpcplugin.client.process.GRPCControllerStub",
-            mock_controller_stub_class
-        ),
-        patch(
-            "pyvider.rpcplugin.transport.TCPSocketTransport",
-            mock_transport_class
-        ),
+        patch("pyvider.rpcplugin.client.process.GRPCControllerStub", mock_controller_stub_class),
+        patch("pyvider.rpcplugin.transport.TCPSocketTransport", mock_transport_class),
         patch("threading.Thread"),
     ):
         # Mock process using provide-testkit patterns
@@ -68,7 +59,9 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         # Mock certificate to use provide-testkit client_cert fixture
         mock_cert_class.return_value = client_cert
         # Properly mock the class method
-        mock_cert_class.create_self_signed_client_cert = magic_mock_factory(name="create_self_signed_cert", return_value=client_cert)
+        mock_cert_class.create_self_signed_client_cert = magic_mock_factory(
+            name="create_self_signed_cert", return_value=client_cert
+        )
 
         # Mock transport using provide-testkit
         mock_transport = async_mock_factory(name="tcp_transport")
@@ -88,17 +81,21 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Mock shutdown using AsyncMock to properly support await
         shutdown_called = False
+
         async def mock_shutdown(*args, **kwargs):
             nonlocal shutdown_called
             shutdown_called = True
             return magic_mock_factory(name="shutdown_response")
+
         mock_controller_stub.Shutdown = AsyncMock(side_effect=mock_shutdown)
 
         # Make sure the constructor returns our mocked stubs
         def mock_controller_constructor(*args, **kwargs):
             return mock_controller_stub
+
         def mock_stdio_constructor(*args, **kwargs):
             return mock_stdio_stub
+
         def mock_broker_constructor(*args, **kwargs):
             return mock_broker_stub
 
@@ -138,10 +135,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         client = RPCPluginClient(command=test_client_command)
 
         # Mock config for mTLS using Foundation patterns
-        with patch(
-            "pyvider.rpcplugin.client.core.rpcplugin_config.plugin_auto_mtls", True
-        ):
-
+        with patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls", True):
             # Start client
             await client.start()
 

@@ -139,7 +139,7 @@ async def test_setup_client_certificates_mtls_missing_key(client_instance, mocke
         client_instance.logger = MagicMock()
 
     # Patch the logger at the module level where it's used
-    mock_logger_info = mocker.patch("pyvider.rpcplugin.client.handshake.logger.info")
+    mock_logger_info = mocker.patch("pyvider.rpcplugin.client.core.logger.debug")
 
     await client_instance._setup_client_certificates()
 
