@@ -8,7 +8,8 @@
       "Bash(PYTHONPATH=./src timeout 120s python -m pytest --tb=no --quiet)",
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config_foundation.py::TestValidation::test_timeout_range_validation -xvs)",
       "Bash(PYTHONPATH=./src timeout 5s python -c \"from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config, configure; print(''✅ All imports successful'')\")",
-      "Bash(PYTHONPATH=./src timeout:*)"
+      "Bash(PYTHONPATH=./src timeout:*)",
+      "Bash(PYTHONPATH=./src PLUGIN_LOG_LEVEL=DEBUG timeout 15s python -m pytest tests/core/test_config.py::TestFoundationConfigIntegration::test_automatic_list_int_conversion -xvs --log-cli-level=DEBUG)"
     ],
     "deny": [],
     "ask": [],

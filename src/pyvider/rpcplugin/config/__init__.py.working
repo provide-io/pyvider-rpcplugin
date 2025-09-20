@@ -1,8 +1,31 @@
-"""Runtime configuration for Pyvider RPC Plugin."""
+"""Configuration management for Pyvider RPC Plugin.
 
-from __future__ import annotations
+This module provides a Foundation-based configuration system for the Pyvider RPC Plugin framework.
+Uses provide.foundation for modern async configuration loading, multi-source support, and validation.
+
+Usage:
+    # Get a configuration value
+    from pyvider.rpcplugin.config import rpcplugin_config
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
+
+    # Use helper methods
+    transports = rpcplugin_config.server_transports()
+    timeout = rpcplugin_config.handshake_timeout()
+
+    # Use the simplified configuration helper
+    from pyvider.rpcplugin.config import configure
+    configure(
+        magic_cookie="my-plugin-cookie",
+        protocol_version=1,
+        transports=["unix", "tcp"],
+        auto_mtls=True,
+    )
+"""
+
+from typing import Any
 
 from attrs import define
+from provide.foundation import logger
 from provide.foundation.config import (
     RuntimeConfig,
     field,
@@ -11,8 +34,8 @@ from provide.foundation.config import (
     validate_positive,
     validate_range,
 )
+from provide.foundation.errors.config import ValidationError
 
-from pyvider.rpcplugin.config.validation import _validate_protocol_versions_list, _validate_transports_list
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLIENT_TRANSPORTS,
     DEFAULT_PLUGIN_AUTO_MTLS,
@@ -50,6 +73,24 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_SERVER_TRANSPORTS,
     DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
 )
+from pyvider.rpcplugin.exception import ConfigError
+
+
+def _validate_protocol_versions_list(value: list[int]) -> list[int]:
+    """Validate that all protocol versions in the list are supported."""
+    for version in value:
+        if version not in DEFAULT_SUPPORTED_PROTOCOL_VERSIONS:
+            raise ValidationError(f"Protocol version must be between 1 and 7, got {version}")
+    return value
+
+
+def _validate_transports_list(value: list[str]) -> list[str]:
+    """Validate that all transports in the list are supported."""
+    valid_transports = ["unix", "tcp"]
+    for transport in value:
+        if transport not in valid_transports:
+            raise ValidationError(f"Invalid transport '{transport}'. Must be one of: {valid_transports}")
+    return value
 
 
 @define
@@ -488,3 +529,66 @@ class RPCPluginConfig(RuntimeConfig):
 
 # Create the global configuration instance
 rpcplugin_config = RPCPluginConfig()
+
+
+def configure(
+    magic_cookie: str | None = None,
+    protocol_version: int | None = None,
+    transports: list[str] | None = None,
+    auto_mtls: bool | None = None,
+    handshake_timeout: float | None = None,
+    **kwargs: Any,
+) -> None:
+    """
+    Configure the RPC plugin system with common settings.
+
+    This is a convenience function for setting up the most commonly
+    used configuration options.
+
+    Args:
+        magic_cookie: Magic cookie value for handshake authentication
+        protocol_version: Preferred protocol version
+        transports: List of supported transports
+        auto_mtls: Enable automatic mTLS certificate generation
+        handshake_timeout: Timeout for handshake operations in seconds
+        **kwargs: Additional configuration parameters
+    """
+    try:
+        if magic_cookie is not None:
+            rpcplugin_config.plugin_magic_cookie_value = magic_cookie
+
+        if protocol_version is not None:
+            rpcplugin_config.plugin_core_version = protocol_version
+            rpcplugin_config.plugin_protocol_versions = [protocol_version]
+
+        if transports is not None:
+            rpcplugin_config.plugin_server_transports = transports
+            rpcplugin_config.plugin_client_transports = transports
+
+        if auto_mtls is not None:
+            rpcplugin_config.plugin_auto_mtls = auto_mtls
+
+        if handshake_timeout is not None:
+            rpcplugin_config.plugin_handshake_timeout = handshake_timeout
+
+        # Apply any additional keyword arguments
+        for key, value in kwargs.items():
+            # Check if the field exists with plugin_ prefix
+            plugin_key = f"plugin_{key}"
+            if hasattr(rpcplugin_config, plugin_key):
+                setattr(rpcplugin_config, plugin_key, value)
+            elif hasattr(rpcplugin_config, key):
+                setattr(rpcplugin_config, key, value)
+            else:
+                logger.warning(f"Unknown configuration parameter: {key}")
+
+    except Exception as e:
+        raise ConfigError(f"Failed to configure RPC plugin: {e}") from e
+
+
+# Export commonly used items for backward compatibility
+__all__ = [
+    "RPCPluginConfig",
+    "configure",
+    "rpcplugin_config",
+]

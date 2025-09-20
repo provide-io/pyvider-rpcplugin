@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from provide.foundation.errors.config import ValidationError
 
-from pyvider.rpcplugin.defaults import DEFAULT_SERVER_TRANSPORTS, DEFAULT_SUPPORTED_PROTOCOL_VERSIONS
+from pyvider.rpcplugin.defaults import DEFAULT_SUPPORTED_PROTOCOL_VERSIONS
 
 
 def _validate_protocol_versions_list(value: list[int]) -> list[int]:
@@ -16,8 +16,9 @@ def _validate_protocol_versions_list(value: list[int]) -> list[int]:
 
 
 def _validate_transports_list(value: list[str]) -> list[str]:
-    """Validate that all transports are supported."""
+    """Validate that all transports in the list are supported."""
+    valid_transports = ["unix", "tcp"]
     for transport in value:
-        if transport not in DEFAULT_SERVER_TRANSPORTS:
-            raise ValidationError("Invalid transport")
+        if transport not in valid_transports:
+            raise ValidationError(f"Invalid transport '{transport}'. Must be one of: {valid_transports}")
     return value
