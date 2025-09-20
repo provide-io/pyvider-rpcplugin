@@ -1,7 +1,7 @@
 # tests/client/test_client_init.py
 
 import pytest
-from unittest.mock import patch, MagicMock
+from provide.testkit.mocking import patch, MagicMock
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
 from provide.foundation.crypto import Certificate

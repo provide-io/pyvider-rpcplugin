@@ -28,18 +28,16 @@ from .negotiation import (
 )
 
 __all__ = [
-    # Core
+    "_SENTINEL_INSTANCE",
     "HandshakeConfig",
     "_SentinelEnum",
-    "_SENTINEL_INSTANCE",
     "_SentinelType",
-    "is_valid_handshake_parts",
-    "validate_magic_cookie",
     "build_handshake_response",
-    "parse_handshake_response",
-    # Negotiation
-    "negotiate_transport",
-    "negotiate_protocol_version",
-    "read_handshake_response",
     "create_stderr_relay",
+    "is_valid_handshake_parts",
+    "negotiate_protocol_version",
+    "negotiate_transport",
+    "parse_handshake_response",
+    "read_handshake_response",
+    "validate_magic_cookie",
 ]

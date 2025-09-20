@@ -19,6 +19,7 @@ from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 import grpc
 
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.exception import (
     ProtocolError,
     TransportError,
@@ -109,7 +110,7 @@ class ClientProcessMixin:
             while self._process.poll() is None:
                 line = await asyncio.get_event_loop().run_in_executor(None, self._process.stderr.readline)
                 if not line:
-                    await asyncio.sleep(0.1)
+                    await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                     continue
 
                 text = line.decode("utf-8", errors="replace").rstrip()
@@ -132,8 +133,8 @@ class ClientProcessMixin:
     def _get_channel_options(self) -> list[tuple[str, int | bool]]:
         """Get standard gRPC channel options."""
         return [
-            ("grpc.keepalive_time_ms", 30000),
-            ("grpc.keepalive_timeout_ms", 5000),
+            ("grpc.keepalive_time_ms", rpcplugin_config.plugin_grpc_keepalive_time_ms),
+            ("grpc.keepalive_timeout_ms", rpcplugin_config.plugin_grpc_keepalive_timeout_ms),
             ("grpc.keepalive_permit_without_calls", True),
             ("grpc.http2.max_pings_without_data", 0),
             ("grpc.http2.min_ping_interval_without_data_ms", 300000),

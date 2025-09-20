@@ -5,7 +5,7 @@ import pytest
 import pytest_asyncio
 import attr  # Added import
 
-from unittest.mock import patch, AsyncMock
+from provide.testkit.mocking import patch, AsyncMock
 
 import grpc
 from google.protobuf.empty_pb2 import Empty

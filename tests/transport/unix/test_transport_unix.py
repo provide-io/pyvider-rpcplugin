@@ -7,7 +7,7 @@ import stat
 import socket # Ensured socket is imported
 
 import pytest
-from unittest.mock import MagicMock, AsyncMock # Ensured AsyncMock is imported for other tests if needed
+from provide.testkit.mocking import MagicMock, AsyncMock # Ensured AsyncMock is imported for other tests if needed
 
 from provide.foundation import logger
 from pyvider.rpcplugin.transport import UnixSocketTransport
@@ -20,14 +20,11 @@ from pyvider.rpcplugin.transport import UnixSocketTransport
 
 @pytest.mark.asyncio
 async def test_unix_transport_server_initialization(unix_transport) -> None:
-    print(f"DEBUG: unix_transport type: {type(unix_transport)}")
-
     # Ensure _server attribute exists and is initialized
     assert hasattr(unix_transport, "_server"), (
         "UnixSocketTransport instance is missing '_server' attribute"
     )
     assert unix_transport._server is not None, "_server is not initialized"
-    print(f"DEBUG: _server attribute initialized: {unix_transport._server}")
 
 
 @pytest.mark.asyncio

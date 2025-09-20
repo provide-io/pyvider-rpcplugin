@@ -4,7 +4,7 @@ import asyncio
 import gc
 
 import pytest
-from unittest.mock import patch
+from provide.testkit.mocking import patch
 
 
 from pyvider.rpcplugin.client.connection import ClientConnection
@@ -164,7 +164,7 @@ async def test_del_warning() -> None:
     # Patch the logger.warning specifically in the module where ClientConnection uses it.
     # ClientConnection.py does: from provide.foundation import logger
     # So the target is 'pyvider.rpcplugin.client.connection.logger.warning'.
-    from unittest.mock import MagicMock
+    from provide.testkit.mocking import MagicMock
 
     with patch(
         "pyvider.rpcplugin.client.connection.logger.warning", new_callable=MagicMock

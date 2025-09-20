@@ -2,7 +2,7 @@
 
 import pytest
 import asyncio
-from unittest.mock import MagicMock, AsyncMock  # Ensure AsyncMock is imported
+from provide.testkit.mocking import MagicMock, AsyncMock  # Ensure AsyncMock is imported
 
 
 class DummyReader:
@@ -50,7 +50,7 @@ class DummyGRPCServer:
     """A dummy replacement for grpc.aio.Server."""
 
     def __init__(self) -> None:
-        # from unittest.mock import MagicMock, AsyncMock # Already imported at top
+        # from provide.testkit.mocking import MagicMock, AsyncMock # Already imported at top
         self.ports: list[str] = []
         self.add_generic_rpc_handlers = MagicMock()
         self.add_registered_method_handlers = MagicMock()  # Added this

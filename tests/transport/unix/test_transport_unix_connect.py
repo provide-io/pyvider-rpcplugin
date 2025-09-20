@@ -4,7 +4,7 @@ import asyncio
 import os
 import stat  # Added import
 import pytest
-from unittest.mock import AsyncMock, MagicMock  # Added MagicMock
+from provide.testkit.mocking import AsyncMock, MagicMock  # Added MagicMock
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.unix.transport import UnixSocketTransport
