@@ -200,8 +200,8 @@ async def test_server_lifecycle_and_connectivity(
     mocker.patch.object(rpcplugin_config, "plugin_server_cert", None)
 
     # Ensure the magic cookie environment variable is set for direct server instantiation
-    cookie_key = rpcplugin_config.magic_cookie_key()
-    cookie_value = rpcplugin_config.magic_cookie_value()
+    cookie_key = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
     monkeypatch.setenv(cookie_key, cookie_value)
 
     server_transport_kwargs = (

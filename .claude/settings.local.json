@@ -9,7 +9,13 @@
       "Bash(PYTHONPATH=./src timeout 15s python -m pytest tests/core/test_config_foundation.py::TestValidation::test_timeout_range_validation -xvs)",
       "Bash(PYTHONPATH=./src timeout 5s python -c \"from pyvider.rpcplugin.config import RPCPluginConfig, rpcplugin_config, configure; print(''✅ All imports successful'')\")",
       "Bash(PYTHONPATH=./src timeout:*)",
-      "Bash(PYTHONPATH=./src PLUGIN_LOG_LEVEL=DEBUG timeout 15s python -m pytest tests/core/test_config.py::TestFoundationConfigIntegration::test_automatic_list_int_conversion -xvs --log-cli-level=DEBUG)"
+      "Bash(PYTHONPATH=./src PLUGIN_LOG_LEVEL=DEBUG timeout 15s python -m pytest tests/core/test_config.py::TestFoundationConfigIntegration::test_automatic_list_int_conversion -xvs --log-cli-level=DEBUG)",
+      "Bash(pkill:*)",
+      "Bash(PYTHONPATH=./src ruff format src/pyvider/rpcplugin/config/runtime.py)",
+      "Bash(PYTHONPATH=./src ruff format src/pyvider/rpcplugin/defaults.py src/pyvider/rpcplugin/config/runtime.py)",
+      "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes src/pyvider/rpcplugin/defaults.py src/pyvider/rpcplugin/config/runtime.py)",
+      "Bash(PYTHONPATH=./src ruff format tests/server/test_server_rate_limiting.py tests/server/test_server_health_check.py)",
+      "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes tests/server/test_server_rate_limiting.py tests/server/test_server_health_check.py)"
     ],
     "deny": [],
     "ask": [],

@@ -65,7 +65,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
                 extra={"server_transports": server_transports},
             )
             client_supported = (
-                rpcplugin_config.client_transports() if rpcplugin_config else "config not loaded"
+                rpcplugin_config.plugin_client_transports if rpcplugin_config else "config not loaded"
             )
             raise TransportError(
                 message=(f"No compatible transport found. Server offered: {server_transports}."),
@@ -147,7 +147,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
 
     logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
 
-    timeout = rpcplugin_config.handshake_timeout()
+    timeout = rpcplugin_config.plugin_handshake_timeout
     start_time = time.time()
     buffer = ""
 

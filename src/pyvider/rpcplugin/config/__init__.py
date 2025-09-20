@@ -16,12 +16,14 @@ The configuration is organized into separate modules:
 
 from pyvider.rpcplugin.config.configure import configure
 from pyvider.rpcplugin.config.runtime import RPCPluginConfig
+from pyvider.rpcplugin.exception import ConfigError
 
 # Create global configuration instance
 rpcplugin_config = RPCPluginConfig.from_env()
 
 __all__ = [
     "RPCPluginConfig",
-    "rpcplugin_config",
     "configure",
+    "rpcplugin_config",
+    "ConfigError",
 ]

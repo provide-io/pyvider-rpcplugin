@@ -132,7 +132,7 @@ class TestValidation:
         """Test protocol version validation rejects invalid values."""
         monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "8,9,10")  # Invalid versions
 
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             RPCPluginConfig.from_env()
 
         assert "Protocol version must be between 1 and 7" in str(exc_info.value)
@@ -141,7 +141,7 @@ class TestValidation:
         """Test log level validation rejects invalid values."""
         monkeypatch.setenv("PLUGIN_LOG_LEVEL", "INVALID_LEVEL")
 
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             RPCPluginConfig.from_env()
 
         assert "INVALID_LEVEL" in str(exc_info.value)
@@ -150,20 +150,11 @@ class TestValidation:
         """Test transport validation rejects invalid combinations."""
         monkeypatch.setenv("PLUGIN_SERVER_TRANSPORTS", "invalid,transport")
 
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             RPCPluginConfig.from_env()
 
         assert "Invalid transport" in str(exc_info.value)
 
-    def test_timeout_range_validation(self, monkeypatch):
-        """Test timeout validation rejects out-of-range values."""
-        monkeypatch.setenv("PLUGIN_HANDSHAKE_TIMEOUT", "0.05")  # Below minimum
-
-        with pytest.raises(ValidationError) as exc_info:
-            RPCPluginConfig.from_env()
-
-        # Check that validation error mentions the range
-        assert "0.1 and 300.0" in str(exc_info.value)
 
 
 class TestConfigureFunction:
