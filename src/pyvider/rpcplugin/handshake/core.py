@@ -77,7 +77,9 @@ def validate_magic_cookie(
     logger.debug("Starting magic cookie validation...")
 
     cookie_key: str | None = (  # type: ignore[assignment]
-        rpcplugin_config.plugin_magic_cookie_key if magic_cookie_key is _SENTINEL_INSTANCE else magic_cookie_key
+        rpcplugin_config.plugin_magic_cookie_key
+        if magic_cookie_key is _SENTINEL_INSTANCE
+        else magic_cookie_key
     )
 
     # Determine the expected cookie value for the logic, resolving sentinel.

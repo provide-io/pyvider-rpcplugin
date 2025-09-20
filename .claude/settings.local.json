@@ -15,7 +15,9 @@
       "Bash(PYTHONPATH=./src ruff format src/pyvider/rpcplugin/defaults.py src/pyvider/rpcplugin/config/runtime.py)",
       "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes src/pyvider/rpcplugin/defaults.py src/pyvider/rpcplugin/config/runtime.py)",
       "Bash(PYTHONPATH=./src ruff format tests/server/test_server_rate_limiting.py tests/server/test_server_health_check.py)",
-      "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes tests/server/test_server_rate_limiting.py tests/server/test_server_health_check.py)"
+      "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes tests/server/test_server_rate_limiting.py tests/server/test_server_health_check.py)",
+      "Bash(PYTHONPATH=./src ruff format src/pyvider/rpcplugin/config/validators.py src/pyvider/rpcplugin/config/runtime.py src/pyvider/rpcplugin/handshake/core.py src/pyvider/rpcplugin/handshake/negotiation.py tests/server/test_server_health_check.py tests/transport/test_transport_suite.py tests/core/test_config.py tests/core/test_config_foundation.py)",
+      "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes src/pyvider/rpcplugin/config/validators.py src/pyvider/rpcplugin/config/runtime.py src/pyvider/rpcplugin/handshake/core.py src/pyvider/rpcplugin/handshake/negotiation.py tests/server/test_server_health_check.py tests/transport/test_transport_suite.py tests/core/test_config.py tests/core/test_config_foundation.py)"
     ],
     "deny": [],
     "ask": [],
