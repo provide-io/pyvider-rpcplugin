@@ -27,3 +27,66 @@ DEFAULT_HANDSHAKE_CHUNK_TIMEOUT = 1.0  # Timeout for chunk reading
 DEFAULT_HANDSHAKE_INNER_TIMEOUT = 2.0  # Inner timeout for handshake operations
 DEFAULT_NEGOTIATION_TIMEOUT = 2.0  # Timeout for protocol negotiation
 DEFAULT_PROCESS_WAIT_TIMEOUT = 7.0  # Process wait timeout in seconds
+
+# =================================
+# Core Configuration Defaults
+# =================================
+DEFAULT_PLUGIN_CORE_VERSION = 1
+DEFAULT_PLUGIN_PROTOCOL_VERSION = 1
+DEFAULT_PLUGIN_MAGIC_COOKIE_KEY = "PLUGIN_MAGIC_COOKIE"
+DEFAULT_PLUGIN_MAGIC_COOKIE_VALUE = "test_cookie_value"
+DEFAULT_PLUGIN_LOG_LEVEL = "INFO"
+
+# =================================
+# Timeout Configuration Defaults (in seconds)
+# =================================
+DEFAULT_PLUGIN_HANDSHAKE_TIMEOUT = 10.0
+DEFAULT_PLUGIN_CONNECTION_TIMEOUT = 30.0
+DEFAULT_PLUGIN_CHANNEL_READY_TIMEOUT = 10.0
+DEFAULT_PLUGIN_SERVER_READY_TIMEOUT = 5.0
+
+# =================================
+# Buffer and Size Defaults (in bytes)
+# =================================
+DEFAULT_PLUGIN_BUFFER_SIZE = 16384
+DEFAULT_PLUGIN_CHUNK_SIZE = 8192
+
+# =================================
+# Security Configuration Defaults
+# =================================
+DEFAULT_PLUGIN_AUTO_MTLS = True
+DEFAULT_PLUGIN_INSECURE = False
+DEFAULT_PLUGIN_CERT_VALIDITY_DAYS = 365
+
+# =================================
+# gRPC Configuration Defaults
+# =================================
+DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIME_MS = 30000
+DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS = 5000
+DEFAULT_PLUGIN_GRPC_GRACE_PERIOD = 0.5
+
+# =================================
+# Client Retry Configuration Defaults
+# =================================
+DEFAULT_PLUGIN_CLIENT_RETRY_ENABLED = True
+DEFAULT_PLUGIN_CLIENT_MAX_RETRIES = 3
+DEFAULT_PLUGIN_CLIENT_INITIAL_BACKOFF_MS = 100
+DEFAULT_PLUGIN_CLIENT_MAX_BACKOFF_MS = 5000
+DEFAULT_PLUGIN_CLIENT_RETRY_JITTER_MS = 50
+DEFAULT_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S = 30.0
+
+# =================================
+# Server Configuration Defaults
+# =================================
+DEFAULT_PLUGIN_SERVER_HOST = "localhost"
+DEFAULT_PLUGIN_SERVER_PORT = 0
+DEFAULT_PLUGIN_UNIX_SOCKET_PATH = "/tmp/plugin.sock"
+
+# =================================
+# Feature Configuration Defaults
+# =================================
+DEFAULT_PLUGIN_RATE_LIMIT_ENABLED = False
+DEFAULT_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND = 100.0
+DEFAULT_PLUGIN_RATE_LIMIT_BURST_CAPACITY = 200.0
+DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED = True
+DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX = False
