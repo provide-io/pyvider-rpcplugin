@@ -118,3 +118,4 @@ The framework implements a Terraform-compatible plugin protocol:
 - No hardcoded secrets or credentials
 - If it makes sense to be more specific for an exception, then implement that across the tests and the code.
 - never use relative imports. only absolute imports always.
+- never use print when debugging. always use the logger.
