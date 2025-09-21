@@ -396,6 +396,10 @@ result.json*.bf.txt
 .testmondata
 *.bf.txt
 
+# Temporary socket files and dumps
+dummy_server_socket.txt
+*.sock
+
 # Ignore protobuf generated files
 *_pb2.py
 *_pb2_grpc.py

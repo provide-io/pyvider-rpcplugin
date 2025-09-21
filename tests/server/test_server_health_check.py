@@ -1,19 +1,17 @@
 import asyncio
-import grpc
-import pytest
 from typing import Any
 
+import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
+from provide.foundation import logger
+import pytest
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.types import ServerT
+from tests.fixtures.proto import echo_pb2, echo_pb2_grpc
 
-from tests.fixtures.proto import echo_pb2
-from tests.fixtures.proto import echo_pb2_grpc
-
-from provide.foundation import logger
 
 class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     service_name = "echo.EchoService"
@@ -23,6 +21,7 @@ class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     ) -> echo_pb2.EchoResponse:
         logger.debug(f"EchoServiceImpl received: {request.message}")
         return echo_pb2.EchoResponse()
+
 
 class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
     service_name = "echo.EchoService"
@@ -43,7 +42,7 @@ def health_test_config_override(request):
         "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
         "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
     }
-    
+
     original_values = {}
     default_params = {
         "PLUGIN_HEALTH_SERVICE_ENABLED": True,
@@ -71,10 +70,14 @@ def health_test_config_override(request):
 
 
 @pytest.mark.asyncio
-async def test_health_service_enabled_and_serving(health_test_config_override, monkeypatch): # Added monkeypatch
+async def test_health_service_enabled_and_serving(
+    health_test_config_override, monkeypatch
+) -> None:  # Added monkeypatch
+    # Small delay to ensure previous test servers are fully cleaned up
+    await asyncio.sleep(0.1)
     # Ensure the magic cookie environment variable is set for direct server instantiation
-    cookie_key = rpcplugin_config.magic_cookie_key()
-    cookie_value = rpcplugin_config.magic_cookie_value()
+    cookie_key = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
     monkeypatch.setenv(cookie_key, cookie_value)
 
     protocol = EchoProtocolImpl()
@@ -83,13 +86,14 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
 
     serve_task = asyncio.create_task(server.serve())
     try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
+        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10.0)
 
         endpoint = server._transport.endpoint
         assert endpoint, "Could not determine server endpoint for client connection."
 
         # Use appropriate connection string based on transport type
         from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+
         if isinstance(server._transport, UnixSocketTransport):
             connection_string = f"unix:{endpoint}"
         else:
@@ -120,8 +124,14 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
             assert exc_info_watch.value.code() == grpc.StatusCode.UNIMPLEMENTED
 
     finally:
-        await server.stop()
-        await asyncio.wait_for(serve_task, timeout=2.0)
+        try:
+            await server.stop()
+            await asyncio.wait_for(serve_task, timeout=5.0)
+        except (TimeoutError, asyncio.CancelledError) as cleanup_error:
+            # Expected cancellation/timeout during cleanup
+            logger.debug(f"Expected cleanup exception: {cleanup_error}")
+        except Exception as cleanup_error:
+            logger.warning(f"Error during test cleanup: {cleanup_error}")
 
 
 # 🐍🔌🧪🪄

@@ -13,47 +13,64 @@ from __future__ import annotations
 from attrs import define
 from provide.foundation.config import RuntimeConfig
 from provide.foundation.config.env import env_field
-from provide.foundation.config.validators import validate_choice, validate_positive, validate_range
-from provide.foundation.errors import ValidationError
-from provide.foundation.utils.parsing import parse_list
+from provide.foundation.config.parsers.structured import parse_log_level
 
-from pyvider.rpcplugin.defaults import *
-
-
-def _validate_protocol_versions_list(value: str | list[int]) -> list[int]:
-    """Validate that all protocol versions in the list are supported."""
-    if isinstance(value, str):
-        # Parse comma-separated string
-        str_list = parse_list(value)
-        try:
-            int_list = [int(x) for x in str_list if x.strip()]
-        except ValueError as e:
-            raise ValidationError(f"Invalid protocol version format: {e}") from e
-    elif isinstance(value, list):
-        int_list = value
-    else:
-        raise ValidationError(f"Protocol versions must be a list or comma-separated string, got {type(value)}")
-
-    for version in int_list:
-        if version not in DEFAULT_SUPPORTED_PROTOCOL_VERSIONS:
-            raise ValidationError(f"Protocol version must be between 1 and 7, got {version}")
-    return int_list
-
-
-def _validate_transport_list(value: str | list[str]) -> list[str]:
-    """Validate that all transports in the list are supported."""
-    if isinstance(value, str):
-        # Parse comma-separated string
-        str_list = parse_list(value)
-    elif isinstance(value, list):
-        str_list = value
-    else:
-        raise ValidationError(f"Transports must be a list or comma-separated string, got {type(value)}")
-
-    for transport in str_list:
-        if transport not in DEFAULT_SUPPORTED_TRANSPORTS:
-            raise ValidationError(f"Invalid transport '{transport}'. Must be one of: {DEFAULT_SUPPORTED_TRANSPORTS}")
-    return str_list
+from pyvider.rpcplugin.config.validators import validate_protocol_versions_list, validate_transport_list
+from pyvider.rpcplugin.defaults import (
+    DEFAULT_PLUGIN_AUTO_MTLS,
+    DEFAULT_PLUGIN_BUFFER_SIZE,
+    DEFAULT_PLUGIN_CA_CERT,
+    DEFAULT_PLUGIN_CERT_VALIDITY_DAYS,
+    DEFAULT_PLUGIN_CHANNEL_READY_TIMEOUT,
+    DEFAULT_PLUGIN_CHUNK_SIZE,
+    DEFAULT_PLUGIN_CLIENT_BACKOFF_MULTIPLIER,
+    DEFAULT_PLUGIN_CLIENT_CERT,
+    DEFAULT_PLUGIN_CLIENT_CERT_FILE,
+    DEFAULT_PLUGIN_CLIENT_INITIAL_BACKOFF_MS,
+    DEFAULT_PLUGIN_CLIENT_KEY,
+    DEFAULT_PLUGIN_CLIENT_KEY_FILE,
+    DEFAULT_PLUGIN_CLIENT_MAX_BACKOFF_MS,
+    DEFAULT_PLUGIN_CLIENT_MAX_RETRIES,
+    DEFAULT_PLUGIN_CLIENT_MAX_RETRY_DELAY,
+    DEFAULT_PLUGIN_CLIENT_RETRY_DELAY,
+    DEFAULT_PLUGIN_CLIENT_RETRY_ENABLED,
+    DEFAULT_PLUGIN_CLIENT_RETRY_JITTER_MS,
+    DEFAULT_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S,
+    DEFAULT_PLUGIN_CLIENT_ROOT_CERTS,
+    DEFAULT_PLUGIN_CLIENT_TRANSPORTS,
+    DEFAULT_PLUGIN_CONNECTION_TIMEOUT,
+    DEFAULT_PLUGIN_CORE_VERSION,
+    DEFAULT_PLUGIN_GRPC_GRACE_PERIOD,
+    DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIME_MS,
+    DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS,
+    DEFAULT_PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE,
+    DEFAULT_PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE,
+    DEFAULT_PLUGIN_HANDSHAKE_TIMEOUT,
+    DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED,
+    DEFAULT_PLUGIN_INSECURE,
+    DEFAULT_PLUGIN_LOG_LEVEL,
+    DEFAULT_PLUGIN_MAGIC_COOKIE_KEY,
+    DEFAULT_PLUGIN_MAGIC_COOKIE_VALUE,
+    DEFAULT_PLUGIN_MTLS_CERT_DIR,
+    DEFAULT_PLUGIN_PROTOCOL_VERSION,
+    DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
+    DEFAULT_PLUGIN_RATE_LIMIT_BURST_CAPACITY,
+    DEFAULT_PLUGIN_RATE_LIMIT_ENABLED,
+    DEFAULT_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND,
+    DEFAULT_PLUGIN_SERVER_CERT,
+    DEFAULT_PLUGIN_SERVER_HOST,
+    DEFAULT_PLUGIN_SERVER_KEY,
+    DEFAULT_PLUGIN_SERVER_PORT,
+    DEFAULT_PLUGIN_SERVER_READY_TIMEOUT,
+    DEFAULT_PLUGIN_SERVER_ROOT_CERTS,
+    DEFAULT_PLUGIN_SERVER_TRANSPORTS,
+    DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH,
+    DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX,
+    DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH,
+    DEFAULT_PLUGIN_UI_ENABLED,
+    DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
+    DEFAULT_SUPPORTED_TRANSPORTS,
+)
 
 
 @define
@@ -83,7 +100,7 @@ class RPCPluginConfig(RuntimeConfig):
 
     plugin_protocol_versions: list[int] = env_field(
         factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
-        parser=_validate_protocol_versions_list,
+        parser=validate_protocol_versions_list,
         env_var="PLUGIN_PROTOCOL_VERSIONS",
     )
 
@@ -110,6 +127,7 @@ class RPCPluginConfig(RuntimeConfig):
 
     plugin_log_level: str = env_field(
         default=DEFAULT_PLUGIN_LOG_LEVEL,
+        parser=parse_log_level,
         env_var="PLUGIN_LOG_LEVEL",
     )
 
@@ -143,13 +161,13 @@ class RPCPluginConfig(RuntimeConfig):
 
     plugin_server_transports: list[str] = env_field(
         factory=lambda: DEFAULT_PLUGIN_SERVER_TRANSPORTS.copy(),
-        parser=_validate_transport_list,
+        parser=validate_transport_list,
         env_var="PLUGIN_SERVER_TRANSPORTS",
     )
 
     plugin_client_transports: list[str] = env_field(
         factory=lambda: DEFAULT_PLUGIN_CLIENT_TRANSPORTS.copy(),
-        parser=_validate_transport_list,
+        parser=validate_transport_list,
         env_var="PLUGIN_CLIENT_TRANSPORTS",
     )
 
@@ -162,6 +180,18 @@ class RPCPluginConfig(RuntimeConfig):
         default=DEFAULT_PLUGIN_BUFFER_SIZE,
         parser=int,
         env_var="PLUGIN_TRANSPORT_BUFFER_SIZE",
+    )
+
+    plugin_buffer_size: int = env_field(
+        default=DEFAULT_PLUGIN_BUFFER_SIZE,
+        parser=int,
+        env_var="PLUGIN_BUFFER_SIZE",
+    )
+
+    plugin_chunk_size: int = env_field(
+        default=DEFAULT_PLUGIN_CHUNK_SIZE,
+        parser=int,
+        env_var="PLUGIN_CHUNK_SIZE",
     )
 
     # =====================================================
@@ -194,20 +224,62 @@ class RPCPluginConfig(RuntimeConfig):
         env_var="PLUGIN_CLIENT_ROOT_CERTS",
     )
 
+    plugin_insecure: bool = env_field(
+        default=DEFAULT_PLUGIN_INSECURE,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_INSECURE",
+    )
+
+    plugin_cert_validity_days: int = env_field(
+        default=DEFAULT_PLUGIN_CERT_VALIDITY_DAYS,
+        parser=int,
+        env_var="PLUGIN_CERT_VALIDITY_DAYS",
+    )
+
+    plugin_server_cert: str | None = env_field(
+        default=DEFAULT_PLUGIN_SERVER_CERT,
+        env_var="PLUGIN_SERVER_CERT",
+    )
+
+    plugin_server_key: str | None = env_field(
+        default=DEFAULT_PLUGIN_SERVER_KEY,
+        env_var="PLUGIN_SERVER_KEY",
+    )
+
+    plugin_server_root_certs: str | None = env_field(
+        default=DEFAULT_PLUGIN_SERVER_ROOT_CERTS,
+        env_var="PLUGIN_SERVER_ROOT_CERTS",
+    )
+
+    plugin_client_cert: str | None = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_CERT,
+        env_var="PLUGIN_CLIENT_CERT",
+    )
+
+    plugin_client_key: str | None = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_KEY,
+        env_var="PLUGIN_CLIENT_KEY",
+    )
+
+    plugin_ca_cert: str | None = env_field(
+        default=DEFAULT_PLUGIN_CA_CERT,
+        env_var="PLUGIN_CA_CERT",
+    )
+
     # =====================================================
     # gRPC Configuration
     # =====================================================
 
-    plugin_grpc_keepalive_time: float = env_field(
-        default=DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIME,
-        parser=float,
-        env_var="PLUGIN_GRPC_KEEPALIVE_TIME",
+    plugin_grpc_keepalive_time_ms: int = env_field(
+        default=DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIME_MS,
+        parser=int,
+        env_var="PLUGIN_GRPC_KEEPALIVE_TIME_MS",
     )
 
-    plugin_grpc_keepalive_timeout: float = env_field(
-        default=DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIMEOUT,
-        parser=float,
-        env_var="PLUGIN_GRPC_KEEPALIVE_TIMEOUT",
+    plugin_grpc_keepalive_timeout_ms: int = env_field(
+        default=DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS,
+        parser=int,
+        env_var="PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS",
     )
 
     plugin_grpc_grace_period: float = env_field(
@@ -254,6 +326,36 @@ class RPCPluginConfig(RuntimeConfig):
         default=DEFAULT_PLUGIN_CLIENT_MAX_RETRY_DELAY,
         parser=float,
         env_var="PLUGIN_CLIENT_MAX_RETRY_DELAY",
+    )
+
+    plugin_client_retry_enabled: bool = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_RETRY_ENABLED,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_CLIENT_RETRY_ENABLED",
+    )
+
+    plugin_client_initial_backoff_ms: int = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_INITIAL_BACKOFF_MS,
+        parser=int,
+        env_var="PLUGIN_CLIENT_INITIAL_BACKOFF_MS",
+    )
+
+    plugin_client_max_backoff_ms: int = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_MAX_BACKOFF_MS,
+        parser=int,
+        env_var="PLUGIN_CLIENT_MAX_BACKOFF_MS",
+    )
+
+    plugin_client_retry_jitter_ms: int = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_RETRY_JITTER_MS,
+        parser=int,
+        env_var="PLUGIN_CLIENT_RETRY_JITTER_MS",
+    )
+
+    plugin_client_retry_total_timeout_s: float = env_field(
+        default=DEFAULT_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S,
+        parser=float,
+        env_var="PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S",
     )
 
     # =====================================================
@@ -315,26 +417,14 @@ class RPCPluginConfig(RuntimeConfig):
         env_var="PLUGIN_UI_ENABLED",
     )
 
-    # =====================================================
-    # Helper Methods
-    # =====================================================
+    plugin_show_emoji_matrix: bool = env_field(
+        default=DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_SHOW_EMOJI_MATRIX",
+    )
 
-    def server_ready_timeout(self) -> float:
-        """Get server ready timeout value."""
-        return self.plugin_server_ready_timeout
-
-    def channel_ready_timeout(self) -> float:
-        """Get channel ready timeout value."""
-        return self.plugin_channel_ready_timeout
-
-    def handshake_timeout(self) -> float:
-        """Get handshake timeout value."""
-        return self.plugin_handshake_timeout
-
-    def connection_timeout(self) -> float:
-        """Get connection timeout value."""
-        return self.plugin_connection_timeout
-
-    def grpc_grace_period(self) -> float:
-        """Get gRPC grace period value."""
-        return self.plugin_grpc_grace_period
+    # All helper methods have been removed.
+    # Use direct attribute access instead:
+    # - config.plugin_magic_cookie_key instead of config.magic_cookie_key()
+    # - config.plugin_handshake_timeout instead of config.handshake_timeout()
+    # - etc.
