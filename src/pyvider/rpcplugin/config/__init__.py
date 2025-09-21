@@ -179,7 +179,7 @@ class RPCPluginConfig(RuntimeConfig):
 
     plugin_handshake_timeout: float = field(
         default=DEFAULT_PLUGIN_HANDSHAKE_TIMEOUT,
-        validator=validate_positive,
+        validator=validate_range(0.1, 300.0),
         description="Timeout for handshake operations in seconds",
         env_var="PLUGIN_HANDSHAKE_TIMEOUT",
     )
