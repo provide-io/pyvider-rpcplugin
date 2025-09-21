@@ -234,7 +234,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             TransportError: If server setup fails
         """
         if timeout is None:
-            timeout = rpcplugin_config.server_ready_timeout()
+            timeout = rpcplugin_config.plugin_server_ready_timeout
 
         logger.debug(f"Waiting for server to be ready (timeout: {timeout}s)")
 

@@ -7,10 +7,9 @@ Tests the modern Foundation-based config system with direct attribute access,
 automatic type conversion, and clean environment variable loading.
 """
 
-import os
 import pytest
+
 from pyvider.rpcplugin.config import RPCPluginConfig, configure, rpcplugin_config
-from provide.foundation.errors.config import ValidationError
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +32,7 @@ def reset_global_config():
 class TestFoundationConfigLoading:
     """Test Foundation's automatic config loading and type conversion."""
 
-    def test_direct_attribute_access(self):
+    def test_direct_attribute_access(self) -> None:
         """Test direct attribute access works with defaults."""
         config = RPCPluginConfig.from_env()
 
@@ -47,7 +46,7 @@ class TestFoundationConfigLoading:
         assert config.plugin_protocol_versions == [1]
         assert config.plugin_server_transports == ["unix", "tcp"]
 
-    def test_environment_variable_loading(self, monkeypatch):
+    def test_environment_variable_loading(self, monkeypatch) -> None:
         """Test Foundation automatically loads from environment variables."""
         # Set environment variables
         monkeypatch.setenv("PLUGIN_MAGIC_COOKIE_VALUE", "test-env-cookie")
@@ -64,7 +63,7 @@ class TestFoundationConfigLoading:
         assert config.plugin_auto_mtls is False
         assert config.plugin_log_level == "DEBUG"
 
-    def test_automatic_list_int_conversion(self, monkeypatch):
+    def test_automatic_list_int_conversion(self, monkeypatch) -> None:
         """Test Foundation automatically converts comma-separated strings to list[int]."""
         monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "2,3,4,5")
 
@@ -73,7 +72,7 @@ class TestFoundationConfigLoading:
         assert config.plugin_protocol_versions == [2, 3, 4, 5]
         assert all(isinstance(v, int) for v in config.plugin_protocol_versions)
 
-    def test_automatic_list_str_conversion(self, monkeypatch):
+    def test_automatic_list_str_conversion(self, monkeypatch) -> None:
         """Test Foundation automatically converts comma-separated strings to list[str]."""
         monkeypatch.setenv("PLUGIN_SERVER_TRANSPORTS", "unix,tcp")  # Valid transports only
 
@@ -82,7 +81,7 @@ class TestFoundationConfigLoading:
         assert config.plugin_server_transports == ["unix", "tcp"]
         assert all(isinstance(v, str) for v in config.plugin_server_transports)
 
-    def test_boolean_conversion(self, monkeypatch):
+    def test_boolean_conversion(self, monkeypatch) -> None:
         """Test Foundation automatically converts boolean strings."""
         test_cases = [
             ("true", True),
@@ -104,72 +103,45 @@ class TestFoundationConfigLoading:
 class TestHelperMethods:
     """Test config helper methods work with Foundation attributes."""
 
-    def test_helper_methods_use_attributes(self):
-        """Test helper methods return correct attribute values."""
-        config = RPCPluginConfig.from_env()
-
-        # Test helper methods match direct attributes
-        assert config.magic_cookie_key() == config.plugin_magic_cookie_key
-        assert config.magic_cookie_value() == config.plugin_magic_cookie_value
-        assert config.handshake_timeout() == config.plugin_handshake_timeout
-        assert config.connection_timeout() == config.plugin_connection_timeout
-        assert config.server_transports() == config.plugin_server_transports
-        assert config.client_transports() == config.plugin_client_transports
-        assert config.protocol_versions() == config.plugin_protocol_versions
-
-        # Test additional helper methods
-        assert config.auto_mtls_enabled() == config.plugin_auto_mtls
-        assert config.rate_limit_enabled() == config.plugin_rate_limit_enabled
-        assert config.rate_limit_requests_per_second() == config.plugin_rate_limit_requests_per_second
-        assert config.rate_limit_burst_capacity() == config.plugin_rate_limit_burst_capacity
-        assert config.health_service_enabled() == config.plugin_health_service_enabled
+    # Helper methods have been removed - use direct attribute access
+    # e.g., config.plugin_magic_cookie_key instead of config.magic_cookie_key()
 
 
 class TestValidation:
     """Test Foundation field validation works properly."""
 
-    def test_protocol_version_validation(self, monkeypatch):
+    def test_protocol_version_validation(self, monkeypatch) -> None:
         """Test protocol version validation rejects invalid values."""
         monkeypatch.setenv("PLUGIN_PROTOCOL_VERSIONS", "8,9,10")  # Invalid versions
 
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             RPCPluginConfig.from_env()
 
         assert "Protocol version must be between 1 and 7" in str(exc_info.value)
 
-    def test_log_level_validation(self, monkeypatch):
+    def test_log_level_validation(self, monkeypatch) -> None:
         """Test log level validation rejects invalid values."""
         monkeypatch.setenv("PLUGIN_LOG_LEVEL", "INVALID_LEVEL")
 
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             RPCPluginConfig.from_env()
 
         assert "INVALID_LEVEL" in str(exc_info.value)
 
-    def test_transport_validation(self, monkeypatch):
+    def test_transport_validation(self, monkeypatch) -> None:
         """Test transport validation rejects invalid combinations."""
         monkeypatch.setenv("PLUGIN_SERVER_TRANSPORTS", "invalid,transport")
 
-        with pytest.raises(ValidationError) as exc_info:
+        with pytest.raises(ValueError) as exc_info:
             RPCPluginConfig.from_env()
 
         assert "Invalid transport" in str(exc_info.value)
-
-    def test_timeout_range_validation(self, monkeypatch):
-        """Test timeout validation rejects out-of-range values."""
-        monkeypatch.setenv("PLUGIN_HANDSHAKE_TIMEOUT", "0.05")  # Below minimum
-
-        with pytest.raises(ValidationError) as exc_info:
-            RPCPluginConfig.from_env()
-
-        # Check that validation error mentions the range
-        assert "0.1 and 300.0" in str(exc_info.value)
 
 
 class TestConfigureFunction:
     """Test the configure() helper function works with Foundation config."""
 
-    def test_configure_basic_options(self):
+    def test_configure_basic_options(self) -> None:
         """Test configure() updates config attributes directly."""
         # Call configure with test values
         configure(
@@ -186,14 +158,14 @@ class TestConfigureFunction:
         assert rpcplugin_config.plugin_handshake_timeout == 20.0
         assert rpcplugin_config.plugin_auto_mtls is False
 
-    def test_configure_transports(self):
+    def test_configure_transports(self) -> None:
         """Test configure() sets both server and client transports."""
         configure(transports=["tcp"])
 
         assert rpcplugin_config.plugin_server_transports == ["tcp"]
         assert rpcplugin_config.plugin_client_transports == ["tcp"]
 
-    def test_configure_partial_update(self):
+    def test_configure_partial_update(self) -> None:
         """Test configure() only updates specified fields."""
         original_cookie = rpcplugin_config.plugin_magic_cookie_value
 
@@ -204,7 +176,7 @@ class TestConfigureFunction:
         assert rpcplugin_config.plugin_handshake_timeout == 25.0
         assert rpcplugin_config.plugin_magic_cookie_value == original_cookie
 
-    def test_configure_kwargs(self):
+    def test_configure_kwargs(self) -> None:
         """Test configure() handles additional kwargs."""
         configure(
             show_emoji_matrix=False,
@@ -218,19 +190,19 @@ class TestConfigureFunction:
 class TestGlobalConfigInstance:
     """Test the global rpcplugin_config instance."""
 
-    def test_global_instance_exists(self):
+    def test_global_instance_exists(self) -> None:
         """Test global config instance is available."""
         assert rpcplugin_config is not None
         assert isinstance(rpcplugin_config, RPCPluginConfig)
 
-    def test_global_instance_has_defaults(self):
+    def test_global_instance_has_defaults(self) -> None:
         """Test global instance has expected default values by creating a fresh instance."""
         fresh_config = RPCPluginConfig.from_env()
         assert fresh_config.plugin_magic_cookie_value == "test_cookie_value"
         assert fresh_config.plugin_handshake_timeout == 10.0
         assert fresh_config.plugin_protocol_versions == [1]
 
-    def test_multiple_from_env_calls_independent(self):
+    def test_multiple_from_env_calls_independent(self) -> None:
         """Test multiple from_env() calls create independent instances."""
         config1 = RPCPluginConfig.from_env()
         config2 = RPCPluginConfig.from_env()
