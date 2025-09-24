@@ -179,7 +179,4 @@ where = ["src"]
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}
 
-[tool.uv.sources]
-provide-foundation = { workspace = true }
-
 # 🐍🏗️📋
