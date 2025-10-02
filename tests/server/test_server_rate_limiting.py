@@ -144,7 +144,7 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
     channel = None
 
     try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10.0)
+        await server.wait_for_server_ready(timeout=10.0)
 
         endpoint = server._transport.endpoint
         assert endpoint, "Could not determine server endpoint for client connection."

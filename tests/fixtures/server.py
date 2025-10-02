@@ -51,7 +51,7 @@ async def server_instance(
         serve_task = asyncio.create_task(server.serve())
 
         # Wait for server readiness
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10)
+        await server.wait_for_server_ready(timeout=10)
 
         yield server
     finally:

@@ -86,7 +86,7 @@ async def test_health_service_enabled_and_serving(
 
     serve_task = asyncio.create_task(server.serve())
     try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10.0)
+        await server.wait_for_server_ready(timeout=10.0)
 
         endpoint = server._transport.endpoint
         assert endpoint, "Could not determine server endpoint for client connection."

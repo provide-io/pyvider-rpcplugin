@@ -211,7 +211,7 @@ async def test_server_lifecycle_and_connectivity(
     server_task = asyncio.create_task(rpc_server.serve())
     try:
         await asyncio.sleep(0.1)
-        await asyncio.wait_for(rpc_server.wait_for_server_ready(), timeout=7.0)
+        await rpc_server.wait_for_server_ready(timeout=7.0)
         logger.info(f"Server reported ready for {transport_type}.")
 
         assert rpc_server._transport is not None, "Server's transport not initialized"
