@@ -21,7 +21,10 @@
       "Bash(PYTHONPATH=./src ruff format tests/server/test_server_transport.py)",
       "Bash(PYTHONPATH=./src ruff check --fix --unsafe-fixes tests/server/test_server_transport.py)",
       "Bash(PYTHONPATH=./src python -m pytest --collect-only -q)",
-      "Bash(PYTHONPATH=./src python -m pytest -q --tb=line)"
+      "Bash(PYTHONPATH=./src python -m pytest -q --tb=line)",
+      "Bash(PYTHONPATH=./src python -m pytest --co -q)",
+      "Bash(PYTHONPATH=./src python -m pytest -v --maxfail=1)",
+      "Bash(echo \"Exit code: $?\")"
     ],
     "deny": [],
     "ask": [],
