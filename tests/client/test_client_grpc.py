@@ -47,7 +47,7 @@ async def test_create_grpc_channel_with_tls(client_instance):
 
         # Mock secure channel
         with patch("pyvider.rpcplugin.client.core.grpc.aio.secure_channel") as mock_secure_channel:
-            mock_channel = AsyncMock()
+            mock_channel = MagicMock()
             mock_secure_channel.return_value = mock_channel
 
             # Mock channel_ready() to return immediately
@@ -97,7 +97,7 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
 
         # Mock secure channel
         with patch("pyvider.rpcplugin.client.core.grpc.aio.secure_channel") as mock_secure_channel:
-            mock_channel = AsyncMock()
+            mock_channel = MagicMock()
             mock_secure_channel.return_value = mock_channel
 
             # Mock channel_ready() to return immediately
@@ -127,7 +127,7 @@ async def test_create_grpc_channel_insecure(client_instance):
 
     # Mock insecure_channel
     with patch("pyvider.rpcplugin.client.core.grpc.aio.insecure_channel") as mock_insecure_channel:
-        mock_channel = AsyncMock()
+        mock_channel = MagicMock()
         mock_insecure_channel.return_value = mock_channel
 
         # Mock channel_ready() to return immediately
@@ -150,7 +150,7 @@ async def test_create_grpc_channel_unix_socket(client_instance):
     client_instance._server_cert = None  # To ensure insecure_channel is called
 
     with patch("pyvider.rpcplugin.client.core.grpc.aio.insecure_channel") as mock_insecure_channel:
-        mock_channel = AsyncMock()
+        mock_channel = MagicMock()
         mock_insecure_channel.return_value = mock_channel
         mock_channel.channel_ready = AsyncMock()  # Mock channel_ready
 
