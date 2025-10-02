@@ -109,9 +109,11 @@ def server_config_override_rl(request):
         fresh_config = RPCPluginConfig.from_env()
         # Update only the fields we didn't explicitly track
         for field_name in dir(fresh_config):
-            if field_name.startswith("plugin_") and field_name not in [
-                k for k in original_config_values
-            ] and hasattr(rpcplugin_config, field_name):
+            if (
+                field_name.startswith("plugin_")
+                and field_name not in [k for k in original_config_values]
+                and hasattr(rpcplugin_config, field_name)
+            ):
                 setattr(rpcplugin_config, field_name, getattr(fresh_config, field_name))
     except Exception:
         # If reset fails, it's not critical - the next test will reset anyway

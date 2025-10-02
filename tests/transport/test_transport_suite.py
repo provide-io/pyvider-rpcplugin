@@ -307,7 +307,9 @@ async def test_connection_refused_consolidated(transport_type, transport_factory
 # long-running
 @pytest.mark.asyncio
 @pytest.mark.parametrize("transport_type", ["tcp", "unix"])
-async def test_transport_error_scenarios_consolidated(transport_type, transport_factory, unused_tcp_port) -> None:
+async def test_transport_error_scenarios_consolidated(
+    transport_type, transport_factory, unused_tcp_port
+) -> None:
     if transport_type == "tcp":
         invalid_transport_tcp = await transport_factory("tcp", port=unused_tcp_port)
         with pytest.raises(TransportError, match="Invalid TCP endpoint format"):
