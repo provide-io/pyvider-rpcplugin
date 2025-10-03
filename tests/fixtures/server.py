@@ -33,7 +33,9 @@ async def server_instance(
     try:
         # Set configuration using Foundation patterns
         rpcplugin_config.plugin_magic_cookie_key = "PLUGIN_MAGIC_COOKIE"
-        rpcplugin_config.plugin_magic_cookie_value = "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2"
+        rpcplugin_config.plugin_magic_cookie_value = (
+            "d602bf8f470bc67ca7faa0386276bbdd4330efaf76d1a219cb4d6991ca9872b2"
+        )
         # Set config using Foundation patterns
         rpcplugin_config.plugin_protocol_versions = [6]
         # Note: PLUGIN_TRANSPORTS appears to be legacy - using server_transports
@@ -51,7 +53,7 @@ async def server_instance(
         serve_task = asyncio.create_task(server.serve())
 
         # Wait for server readiness
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10)
+        await server.wait_for_server_ready(timeout=10)
 
         yield server
     finally:
@@ -61,13 +63,9 @@ async def server_instance(
             logger.debug("Attempting to await server.serve() task in fixture cleanup.")
             try:
                 await asyncio.wait_for(serve_task, timeout=5.0)
-                logger.debug(
-                    "server.serve() task completed successfully in fixture cleanup."
-                )
+                logger.debug("server.serve() task completed successfully in fixture cleanup.")
             except asyncio.TimeoutError:
-                logger.error(
-                    "Timeout waiting for server.serve() task to complete in fixture."
-                )
+                logger.error("Timeout waiting for server.serve() task to complete in fixture.")
                 # Optionally, cancel the task if it timed out, though stop() should handle it.
                 # serve_task.cancel()
                 # try:
@@ -77,13 +75,9 @@ async def server_instance(
             except asyncio.CancelledError:
                 logger.info("Server.serve() task was cancelled during fixture cleanup.")
             except Exception as e:
-                logger.error(
-                    f"An unexpected error occurred while awaiting serve_task: {e}"
-                )
+                logger.error(f"An unexpected error occurred while awaiting serve_task: {e}")
         else:
-            logger.debug(
-                "serve_task was already done or not created in fixture cleanup."
-            )
+            logger.debug("serve_task was already done or not created in fixture cleanup.")
         # Socket cleanup is now fully handled by the managed_unix_socket_path fixture
         # which is used by the unix_transport fixture, which mock_server_transport might be.
         # No need to check transport_name or os.path.exists here.

@@ -22,8 +22,8 @@ from pyvider.rpcplugin.exception import ConfigError
 rpcplugin_config = RPCPluginConfig.from_env()
 
 __all__ = [
+    "ConfigError",
     "RPCPluginConfig",
     "configure",
     "rpcplugin_config",
-    "ConfigError",
 ]

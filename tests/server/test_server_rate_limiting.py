@@ -109,9 +109,11 @@ def server_config_override_rl(request):
         fresh_config = RPCPluginConfig.from_env()
         # Update only the fields we didn't explicitly track
         for field_name in dir(fresh_config):
-            if field_name.startswith("plugin_") and field_name not in [
-                k for k in original_config_values
-            ] and hasattr(rpcplugin_config, field_name):
+            if (
+                field_name.startswith("plugin_")
+                and field_name not in [k for k in original_config_values]
+                and hasattr(rpcplugin_config, field_name)
+            ):
                 setattr(rpcplugin_config, field_name, getattr(fresh_config, field_name))
     except Exception:
         # If reset fails, it's not critical - the next test will reset anyway
@@ -144,7 +146,7 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
     channel = None
 
     try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=10.0)
+        await server.wait_for_server_ready(timeout=10.0)
 
         endpoint = server._transport.endpoint
         assert endpoint, "Could not determine server endpoint for client connection."
