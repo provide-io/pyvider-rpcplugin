@@ -242,25 +242,21 @@ class ServerNetworkMixin:
                 else:
                     # No specific port on direct transport, or no direct
                     # transport, check config
-                    endpoint_conf = self._get_instance_override(
-                        "PLUGIN_SERVER_ENDPOINT", rpcplugin_config.plugin_server_endpoint
+                    port_conf = self._get_instance_override(
+                        "PLUGIN_SERVER_PORT", rpcplugin_config.plugin_server_port
                     )
-                    if endpoint_conf and isinstance(endpoint_conf, str) and ":" in endpoint_conf:
+                    if port_conf is not None:
                         try:
-                            # This part is tricky because is_valid_tcp_endpoint
-                            # isn't accessible here easily. We rely on simple
-                            # split and int conversion.
-                            initial_requested_port_val = int(endpoint_conf.split(":")[-1])
-                        except ValueError:
+                            initial_requested_port_val = int(port_conf)
+                        except (ValueError, TypeError):
                             logger.warning(
                                 "Could not parse port from "
-                                f"PLUGIN_SERVER_ENDPOINT='{endpoint_conf}'. "
+                                f"PLUGIN_SERVER_PORT='{port_conf}'. "
                                 "Assuming ephemeral."
                             )
                             initial_requested_port_val = 0  # Fallback to ephemeral if parse fails
                     else:
-                        # No PLUGIN_SERVER_ENDPOINT or it's not a typical
-                        # host:port string, assume ephemeral
+                        # No PLUGIN_SERVER_PORT set, assume ephemeral
                         initial_requested_port_val = 0
 
                 is_specific_port_requested = initial_requested_port_val != 0
