@@ -375,8 +375,7 @@ async def test_try_chunk_strategy_detect_complete(client_instance_for_retry_test
     client = client_instance_for_retry_tests
     buffer = "head"
     fut = asyncio.Future()
-    fut.set_result(b"
-1|1|tcp|127.0.0.1:9000|grpc|")
+    fut.set_result(b"\n1|1|tcp|127.0.0.1:9000|grpc|")
     loop_mock = MagicMock()
     loop_mock.run_in_executor.return_value = fut
     mocker.patch('asyncio.get_event_loop', return_value=loop_mock)
