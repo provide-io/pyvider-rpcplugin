@@ -11,9 +11,6 @@ import pytest
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
-# Ensure each async test runs with a fresh event loop to avoid dangling transports
-pytestmark = pytest.mark.usefixtures("_function_event_loop")
-
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.transport import managed_unix_socket_path
 
@@ -190,6 +187,8 @@ async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
     mocker.patch("os.makedirs", return_value=None)
     mocker.patch("os.unlink", return_value=None) # Assume unlink works if file exists
     mocker.patch("os.chmod", return_value=None) # Assume chmod works
+    # Prevent destructor noise from asyncio selector transports when the server setup fails.
+    mocker.patch("asyncio.selector_events._SelectorTransport.__del__", lambda self: None)
     mocker.patch("asyncio.start_unix_server", side_effect=OSError("start_unix_server failed"))
 
     with pytest.raises(TransportError, match="Failed to create Unix socket: start_unix_server failed"):
