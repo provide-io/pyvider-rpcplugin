@@ -236,14 +236,8 @@ class GRPCStdioService(GRPCStdioServicer):
                 [get_task, wait_task], return_when=asyncio.FIRST_COMPLETED
             )
 
-            if wait_task in completed and wait_task.result():
-                return None
-
             if get_task in completed:
-                try:
-                    item = get_task.result()
-                except Exception:
-                    raise
+                item = get_task.result()
                 self._message_queue.task_done()
                 if item is _SENTINEL:
                     logger.debug("🔌📝 StreamStdio: Sentinel received, stopping stream.")
@@ -254,8 +248,14 @@ class GRPCStdioService(GRPCStdioServicer):
                     item.data[:20],
                 )
                 return item
+
+            if wait_task in completed and wait_task.result():
+                if not get_task.done():
+                    get_task.cancel()
+                return None
         finally:
-            get_task.cancel()
+            if not get_task.done():
+                get_task.cancel()
             wait_task.cancel()
 
         return None
