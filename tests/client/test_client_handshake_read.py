@@ -227,20 +227,20 @@ async def test_read_raw_handshake_line_buffer_completion(
     client_instance_for_retry_tests: RPCPluginClient, mocker: object
 ) -> None:
     client = client_instance_for_retry_tests
+    chunks = ["1|1|tcp|127.0.0.1:9000|", "grpc|"]
+
+    async def readline_side_effect(_: float) -> str:
+        return chunks.pop(0) if chunks else ""
+
     mocker.patch.object(
         client,
         "_try_readline_strategy",
-        AsyncMock(side_effect=["1|1|tcp|127.0.0.1:9000|", None]),
-    )
-    mocker.patch.object(
-        client,
-        "_is_complete_handshake",
-        side_effect=lambda text: text.count("|") >= 5,
+        AsyncMock(side_effect=readline_side_effect),
     )
     mocker.patch("asyncio.sleep", AsyncMock())
 
     result = await client._read_raw_handshake_line_from_stdout()
-    assert result.startswith("1|1|tcp|127.0.0.1:9000|")
+    assert result == "1|1|tcp|127.0.0.1:9000|grpc|"
 
 
 @pytest.mark.asyncio
