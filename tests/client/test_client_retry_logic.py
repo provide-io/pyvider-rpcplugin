@@ -433,3 +433,14 @@ async def test_connect_handshake_max_retries_reached(client_instance_local, mock
 
 
 # 🐍🔌🧪🪄
+
+
+@pytest.mark.asyncio
+async def test_connect_handshake_retry_success_first_attempt(client_instance_local, mocker):
+    client = client_instance_local
+    mocker.patch('pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_enabled', True)
+    mocker.patch('pyvider.rpcplugin.config.rpcplugin_config.plugin_client_max_retries', 3)
+    mocker.patch('pyvider.rpcplugin.client.core.asyncio.sleep', new_callable=AsyncMock)
+    mocker.patch.object(client, '_attempt_single_handshake', AsyncMock())
+    await client._connect_and_handshake_with_retry()
+    client._attempt_single_handshake.assert_awaited_once()

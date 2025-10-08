@@ -340,3 +340,31 @@ async def test_read_raw_handshake_line_process_exits_no_stderr(
         match=r"\[HandshakeError\] Plugin process exited prematurely.*before completing handshake.*",
     ):
         await client_instance._read_raw_handshake_line_from_stdout()
+
+
+@pytest.mark.asyncio
+async def test_try_chunk_strategy_partial_buffer(client_instance_for_retry_tests: RPCPluginClient, mocker: object, monkeypatch) -> None:
+    client = client_instance_for_retry_tests
+    buffer = "abc"
+    fut = asyncio.Future()
+    fut.set_result(b"def")
+    loop_mock = MagicMock()
+    loop_mock.run_in_executor.return_value = fut
+    mocker.patch('asyncio.get_event_loop', return_value=loop_mock)
+    monkeypatch.setattr('pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_chunk_size', 5)
+    mocker.patch.object(client, '_is_complete_handshake', return_value=False)
+    result = await client._try_chunk_strategy(buffer)
+    assert result == "abcdef"
+
+
+@pytest.mark.asyncio
+async def test_read_raw_handshake_line_chunk_timeout(client_instance_for_retry_tests: RPCPluginClient, mocker: object, monkeypatch) -> None:
+    client = client_instance_for_retry_tests
+    monkeypatch.setattr('pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_handshake_timeout', 0.001)
+    mocker.patch.object(client, '_try_readline_strategy', AsyncMock(side_effect=TimeoutError()))
+    mocker.patch.object(client, '_try_chunk_strategy', AsyncMock(side_effect=TimeoutError()))
+    mocker.patch('asyncio.sleep', AsyncMock())
+    times = iter([0.0, 0.002])
+    mocker.patch('time.time', side_effect=lambda: next(times))
+    with pytest.raises(HandshakeError, match='Timed out waiting for handshake response'):
+        await client._read_raw_handshake_line_from_stdout()
