@@ -26,7 +26,9 @@
       "Bash(PYTHONPATH=./src python -m pytest -v --maxfail=1)",
       "Bash(echo \"Exit code: $?\")",
       "Bash(PYTHONPATH=./src python -m pytest -q --tb=no)",
-      "Bash(PYTHONPATH=./src ruff format tests/server/test_server_health_check.py tests/server/test_server_rate_limiting.py tests/transport/test_transport_suite.py tests/fixtures/server.py src/pyvider/rpcplugin/server/network.py)"
+      "Bash(PYTHONPATH=./src ruff format tests/server/test_server_health_check.py tests/server/test_server_rate_limiting.py tests/transport/test_transport_suite.py tests/fixtures/server.py src/pyvider/rpcplugin/server/network.py)",
+      "Bash(source env.sh)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": [],
