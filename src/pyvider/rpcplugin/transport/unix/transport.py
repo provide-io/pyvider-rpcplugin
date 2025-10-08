@@ -376,6 +376,7 @@ class UnixSocketTransport(RPCPluginTransport):
             self._abort_transport(transport, "Transport not closing after writer.close().")
             return
 
+        logger.debug("📞🔒✍️ No is_closing, attempting abort for transport: %r", transport)
         self._abort_transport(transport, "Transport missing is_closing; aborting proactively.")
 
     async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:

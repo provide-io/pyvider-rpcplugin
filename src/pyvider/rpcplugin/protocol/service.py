@@ -210,6 +210,23 @@ class GRPCStdioService(GRPCStdioServicer):
             logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
     async def _next_queue_item(self, done: asyncio.Event) -> StdioData | None:
+        if not self._message_queue.empty():
+            try:
+                item = self._message_queue.get_nowait()
+            except asyncio.QueueEmpty:  # pragma: no cover - defensive
+                item = None
+            else:
+                self._message_queue.task_done()
+                if item is _SENTINEL:
+                    logger.debug("🔌📝 StreamStdio: Sentinel received, stopping stream.")
+                    return None
+                logger.debug(
+                    "🔌📝✅ GRPCStdioService: Dequeued item immediately: %s, %r",
+                    item.channel,
+                    item.data[:20],
+                )
+                return item
+
         get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
         wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
 
@@ -222,7 +239,10 @@ class GRPCStdioService(GRPCStdioServicer):
                 return None
 
             if get_task in completed:
-                item = get_task.result()
+                try:
+                    item = get_task.result()
+                except Exception:
+                    raise
                 self._message_queue.task_done()
                 if item is _SENTINEL:
                     logger.debug("🔌📝 StreamStdio: Sentinel received, stopping stream.")
@@ -257,7 +277,13 @@ class GRPCStdioService(GRPCStdioServicer):
 
     async def _stream_items(self, done: asyncio.Event) -> AsyncIterator[StdioData]:
         while not self._shutdown and not done.is_set():
-            item = await self._next_queue_item(done)
+            try:
+                item = await self._next_queue_item(done)
+            except Exception as exc:  # pragma: no cover - defensive path for queue errors
+                logger.error("🔌📝❌ Error retrieving stdio item: %s", exc)
+                await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
+                continue
+
             if item is None:
                 break
             yield item
