@@ -368,3 +368,18 @@ async def test_read_raw_handshake_line_chunk_timeout(client_instance_for_retry_t
     mocker.patch('time.time', side_effect=lambda: next(times))
     with pytest.raises(HandshakeError, match='Timed out waiting for handshake response'):
         await client._read_raw_handshake_line_from_stdout()
+
+
+@pytest.mark.asyncio
+async def test_try_chunk_strategy_detect_complete(client_instance_for_retry_tests: RPCPluginClient, mocker: object, monkeypatch) -> None:
+    client = client_instance_for_retry_tests
+    buffer = "head"
+    fut = asyncio.Future()
+    fut.set_result(b"
+1|1|tcp|127.0.0.1:9000|grpc|")
+    loop_mock = MagicMock()
+    loop_mock.run_in_executor.return_value = fut
+    mocker.patch('asyncio.get_event_loop', return_value=loop_mock)
+    monkeypatch.setattr('pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_chunk_size', 64)
+    result = await client._try_chunk_strategy(buffer)
+    assert result == "1|1|tcp|127.0.0.1:9000|grpc|"
