@@ -30,13 +30,60 @@ if "grpc_health.v1.health_pb2" not in sys.modules:
 
     health_pb2_grpc = types.ModuleType("grpc_health.v1.health_pb2_grpc")
 
+    import grpc
+
     class HealthServicer:  # pragma: no cover - simple stub
-        pass
+        async def Check(  # type: ignore[override]
+            self,
+            request: HealthCheckRequest,
+            context: grpc.aio.ServicerContext,
+        ) -> HealthCheckResponse:
+            raise NotImplementedError()
+
+        async def Watch(  # type: ignore[override]
+            self,
+            request: HealthCheckRequest,
+            context: grpc.aio.ServicerContext,
+        ):
+            raise NotImplementedError()
+
+    class HealthStub:
+        def __init__(self, channel: grpc.aio.Channel) -> None:
+            self.Check = channel.unary_unary(
+                "/grpc.health.v1.Health/Check",
+                request_serializer=lambda req: req.SerializeToString()
+                if hasattr(req, "SerializeToString")
+                else b"",
+                response_deserializer=lambda data: HealthCheckResponse(),  # pragma: no cover
+            )
+            self.Watch = channel.stream_stream(
+                "/grpc.health.v1.Health/Watch",
+                request_serializer=lambda req: req.SerializeToString()
+                if hasattr(req, "SerializeToString")
+                else b"",
+                response_deserializer=lambda data: HealthCheckResponse(),  # pragma: no cover
+            )
 
     def add_HealthServicer_to_server(servicer, server) -> None:  # pragma: no cover
-        server  # no-op to satisfy type checkers
+        rpc_method_handlers = {
+            "Check": grpc.aio.unary_unary_rpc_method_handler(
+                servicer.Check,
+                request_deserializer=lambda data: HealthCheckRequest(),
+                response_serializer=lambda resp: b"",
+            ),
+            "Watch": grpc.aio.stream_stream_rpc_method_handler(
+                servicer.Watch,
+                request_deserializer=lambda data: HealthCheckRequest(),
+                response_serializer=lambda resp: b"",
+            ),
+        }
+        generic_handler = grpc.method_handlers_generic_handler(
+            "grpc.health.v1.Health", rpc_method_handlers
+        )
+        server.add_generic_rpc_handlers((generic_handler,))
 
     health_pb2_grpc.HealthServicer = HealthServicer
+    health_pb2_grpc.HealthStub = HealthStub
     health_pb2_grpc.add_HealthServicer_to_server = add_HealthServicer_to_server
 
     grpc_health = types.ModuleType("grpc_health")
