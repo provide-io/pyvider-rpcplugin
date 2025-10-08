@@ -1,8 +1,53 @@
 # tests/conftest.py
 import asyncio
 import os
+import sys
+import types
+
+os.environ.setdefault("OPENOBSERVE_DISABLED", "1")
+os.environ.setdefault("OTEL_SDK_DISABLED", "1")
 
 from attrs import fields
+
+# Provide lightweight stubs for grpc-health when appropriate version is unavailable.
+if "grpc_health.v1.health_pb2" not in sys.modules:
+    health_pb2 = types.ModuleType("grpc_health.v1.health_pb2")
+
+    class HealthCheckResponse:
+        SERVING = 1
+        NOT_SERVING = 2
+        SERVICE_UNKNOWN = 3
+
+        def __init__(self, status: int | None = None) -> None:
+            self.status = status
+
+    class HealthCheckRequest:
+        def __init__(self, service: str = "") -> None:
+            self.service = service
+
+    health_pb2.HealthCheckResponse = HealthCheckResponse
+    health_pb2.HealthCheckRequest = HealthCheckRequest
+    health_pb2.Empty = type("Empty", (), {})  # minimal stub
+
+    health_pb2_grpc = types.ModuleType("grpc_health.v1.health_pb2_grpc")
+
+    class HealthServicer:  # pragma: no cover - simple stub
+        pass
+
+    def add_HealthServicer_to_server(servicer, server) -> None:  # pragma: no cover
+        server  # no-op to satisfy type checkers
+
+    health_pb2_grpc.HealthServicer = HealthServicer
+    health_pb2_grpc.add_HealthServicer_to_server = add_HealthServicer_to_server
+
+    grpc_health = types.ModuleType("grpc_health")
+    grpc_health.v1 = types.ModuleType("grpc_health.v1")
+    sys.modules["grpc_health"] = grpc_health
+    sys.modules["grpc_health.v1"] = grpc_health.v1
+    sys.modules["grpc_health.v1.health_pb2"] = health_pb2
+    sys.modules["grpc_health.v1.health_pb2_grpc"] = health_pb2_grpc
+    grpc_health.v1.health_pb2 = health_pb2
+    grpc_health.v1.health_pb2_grpc = health_pb2_grpc
 
 # Import provide-testkit fixtures directly
 import pytest
