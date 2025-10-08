@@ -123,6 +123,8 @@ async def test_terminate_process_handles_timeout(monkeypatch: pytest.MonkeyPatch
     client.logger.warning.assert_any_call("⚠️ Plugin process did not terminate gracefully, killing...")
     assert client._process is None
 
+    fut.cancel()
+
 
 @pytest.mark.asyncio
 async def test_terminate_process_handles_already_exited() -> None:
