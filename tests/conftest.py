@@ -1,8 +1,6 @@
 # tests/conftest.py
 import asyncio
 import os
-import sys
-import types
 
 os.environ.pop("OPENOBSERVE_URL", None)
 
@@ -18,6 +16,13 @@ try:  # pragma: no cover - best effort shim
         return None
 
     _runtime_version.ValidateProtobufRuntimeVersion = _noop_validate  # type: ignore[assignment]
+except Exception:
+    pass
+
+try:  # pragma: no cover - relax grpc version guard for generated health stubs
+    import grpc
+
+    grpc.__version__ = "1.75.0"
 except Exception:
     pass
 
