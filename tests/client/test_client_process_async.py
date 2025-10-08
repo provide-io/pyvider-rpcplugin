@@ -39,6 +39,7 @@ async def test_relay_stderr_background_reads_lines(basic_client: RPCPluginClient
 @pytest.mark.asyncio
 async def test_get_stderr_output_error(basic_client: RPCPluginClient) -> None:
     process = MagicMock(spec=subprocess.Popen)
+    process.stderr = MagicMock()
     process.stderr.read.side_effect = RuntimeError('boom')
     basic_client._process = process
     assert 'Error reading stderr' in basic_client._get_stderr_output()
