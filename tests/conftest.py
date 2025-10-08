@@ -4,10 +4,7 @@ import os
 import sys
 import types
 
-os.environ.setdefault("OPENOBSERVE_DISABLED", "1")
-os.environ.setdefault("OTEL_SDK_DISABLED", "1")
-os.environ.setdefault("FOUNDATION_DISABLE_OTLP", "1")
-os.environ.setdefault("PROVIDE_FOUNDATION_DISABLE_OTLP", "1")
+os.environ.pop("OPENOBSERVE_URL", None)
 
 from attrs import fields
 
