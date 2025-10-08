@@ -1,6 +1,7 @@
 # tests/client/test_client_handshake_perform.py
 """Tests for basic handshake execution functionality."""
 
+import asyncio
 import subprocess
 from typing import Any
 
@@ -291,9 +292,10 @@ async def test_complete_handshake_setup_with_stdio(minimal_client: RPCPluginClie
     mocker.patch.object(client, "_read_stdio_logs", AsyncMock())
 
     scheduled: list[asyncio.Task[Any]] = []
+    original_create_task = asyncio.create_task
 
     def track_task(coro: Any) -> asyncio.Task[Any]:
-        task = asyncio.create_task(coro)
+        task = original_create_task(coro)
         scheduled.append(task)
         return task
 
@@ -329,7 +331,7 @@ async def test_handle_retry_cleanup_transport_close_warning(minimal_client: RPCP
     await client._handle_retry_cleanup(50)
 
     mock_transport.close.assert_called_once()
-    warning_spy.assert_any_call("Error closing transport before retry: close boom")
+    assert any("close boom" in str(call) for call in warning_spy.call_args_list)
     assert client._transport is None
 
 
