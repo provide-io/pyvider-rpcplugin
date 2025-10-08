@@ -8,92 +8,18 @@ os.environ.pop("OPENOBSERVE_URL", None)
 
 from attrs import fields
 
-# Provide lightweight stubs for grpc-health when appropriate version is unavailable.
-if "grpc_health.v1.health_pb2" not in sys.modules:
-    health_pb2 = types.ModuleType("grpc_health.v1.health_pb2")
+# gRPC health stubs generated with newer releases perform a strict runtime check
+# via google.protobuf.runtime_version. On this environment (grpcio==1.74.x) the
+# check aborts; disable it so the stock modules import for test usage.
+try:  # pragma: no cover - best effort shim
+    from google.protobuf import runtime_version as _runtime_version
 
-    class HealthCheckResponse:
-        SERVING = 1
-        NOT_SERVING = 2
-        SERVICE_UNKNOWN = 3
+    def _noop_validate(*_: object, **__: object) -> None:
+        return None
 
-        def __init__(self, status: int | None = None) -> None:
-            self.status = status
-
-    class HealthCheckRequest:
-        def __init__(self, service: str = "") -> None:
-            self.service = service
-
-    health_pb2.HealthCheckResponse = HealthCheckResponse
-    health_pb2.HealthCheckRequest = HealthCheckRequest
-    health_pb2.Empty = type("Empty", (), {})  # minimal stub
-
-    health_pb2_grpc = types.ModuleType("grpc_health.v1.health_pb2_grpc")
-
-    import grpc
-
-    class HealthServicer:  # pragma: no cover - simple stub
-        async def Check(  # type: ignore[override]
-            self,
-            request: HealthCheckRequest,
-            context: grpc.aio.ServicerContext,
-        ) -> HealthCheckResponse:
-            raise NotImplementedError()
-
-        async def Watch(  # type: ignore[override]
-            self,
-            request: HealthCheckRequest,
-            context: grpc.aio.ServicerContext,
-        ):
-            raise NotImplementedError()
-
-    class HealthStub:
-        def __init__(self, channel: grpc.aio.Channel) -> None:
-            self.Check = channel.unary_unary(
-                "/grpc.health.v1.Health/Check",
-                request_serializer=lambda req: req.SerializeToString()
-                if hasattr(req, "SerializeToString")
-                else b"",
-                response_deserializer=lambda data: HealthCheckResponse(),  # pragma: no cover
-            )
-            self.Watch = channel.stream_stream(
-                "/grpc.health.v1.Health/Watch",
-                request_serializer=lambda req: req.SerializeToString()
-                if hasattr(req, "SerializeToString")
-                else b"",
-                response_deserializer=lambda data: HealthCheckResponse(),  # pragma: no cover
-            )
-
-    def add_HealthServicer_to_server(servicer, server) -> None:  # pragma: no cover
-        rpc_method_handlers = {
-            "Check": grpc.aio.unary_unary_rpc_method_handler(
-                servicer.Check,
-                request_deserializer=lambda data: HealthCheckRequest(),
-                response_serializer=lambda resp: b"",
-            ),
-            "Watch": grpc.aio.stream_stream_rpc_method_handler(
-                servicer.Watch,
-                request_deserializer=lambda data: HealthCheckRequest(),
-                response_serializer=lambda resp: b"",
-            ),
-        }
-        generic_handler = grpc.method_handlers_generic_handler(
-            "grpc.health.v1.Health", rpc_method_handlers
-        )
-        server.add_generic_rpc_handlers((generic_handler,))
-
-    health_pb2_grpc.HealthServicer = HealthServicer
-    health_pb2_grpc.HealthStub = HealthStub
-    health_pb2_grpc.add_HealthServicer_to_server = add_HealthServicer_to_server
-
-    grpc_health = types.ModuleType("grpc_health")
-    grpc_health.v1 = types.ModuleType("grpc_health.v1")
-    sys.modules["grpc_health"] = grpc_health
-    sys.modules["grpc_health.v1"] = grpc_health.v1
-    sys.modules["grpc_health.v1.health_pb2"] = health_pb2
-    sys.modules["grpc_health.v1.health_pb2_grpc"] = health_pb2_grpc
-    grpc_health.v1.health_pb2 = health_pb2
-    grpc_health.v1.health_pb2_grpc = health_pb2_grpc
+    _runtime_version.ValidateProtobufRuntimeVersion = _noop_validate  # type: ignore[assignment]
+except Exception:
+    pass
 
 # Import provide-testkit fixtures directly
 import pytest
