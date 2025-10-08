@@ -186,7 +186,8 @@ async def test_perform_handshake_parse_error(
     mock_parse.assert_called_once()
 
 
-def test_setup_client_certificates_existing_cert_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
+@pytest.mark.asyncio
+async def test_setup_client_certificates_existing_cert_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
     mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
     mocker.patch.object(rpcplugin_config, "plugin_client_cert", "cert-path")
     mocker.patch.object(rpcplugin_config, "plugin_client_key", "key-path")
@@ -195,10 +196,11 @@ def test_setup_client_certificates_existing_cert_failure(minimal_client: RPCPlug
     mock_certificate_cls.side_effect = ValueError("broken cert")
 
     with pytest.raises(SecurityError, match="Failed to load client certificate/key: broken cert"):
-        minimal_client._setup_client_certificates()
+        await minimal_client._setup_client_certificates()
 
 
-def test_setup_client_certificates_auto_mtls_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
+@pytest.mark.asyncio
+async def test_setup_client_certificates_auto_mtls_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
     mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", True)
     mocker.patch.object(rpcplugin_config, "plugin_client_cert", None)
     mocker.patch.object(rpcplugin_config, "plugin_client_key", None)
@@ -209,7 +211,7 @@ def test_setup_client_certificates_auto_mtls_failure(minimal_client: RPCPluginCl
     )
 
     with pytest.raises(SecurityError, match="Failed to auto-generate client certificate: auto failure"):
-        minimal_client._setup_client_certificates()
+        await minimal_client._setup_client_certificates()
 
 
 def test_rebuild_x509_pem_empty(minimal_client: RPCPluginClient) -> None:
