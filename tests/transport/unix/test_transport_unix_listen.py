@@ -11,6 +11,9 @@ import pytest
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport import UnixSocketTransport
 
+# Ensure each async test runs with a fresh event loop to avoid dangling transports
+pytestmark = pytest.mark.usefixtures("_function_event_loop")
+
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.transport import managed_unix_socket_path
 
