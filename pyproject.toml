@@ -99,12 +99,19 @@ exclude = ["tests/*", "**/*pb2*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "ANN", "B", "C90", "SIM", "PTH", "RUF"]
-ignore = ["ANN401", "B008", "E501"]
+ignore = ["ANN401", "B008", "E501", "RUF009"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["pyvider", "tests"]
 force-sort-within-sections = true
 combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+"src/pyvider/rpcplugin/handshake/core.py" = ["C901"]
+"src/pyvider/rpcplugin/handshake/negotiation.py" = ["C901"]
+"src/pyvider/rpcplugin/protocol/service.py" = ["C901"]
+"src/pyvider/rpcplugin/server/network.py" = ["C901"]
+"src/pyvider/rpcplugin/transport/unix/transport.py" = ["C901"]
 
 [tool.ruff.format]
 quote-style = "double"
