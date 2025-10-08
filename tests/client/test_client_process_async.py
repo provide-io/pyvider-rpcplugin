@@ -24,8 +24,7 @@ async def test_relay_stderr_background_reads_lines(basic_client: RPCPluginClient
     future1 = asyncio.Future()
     future1.set_result(b'')
     future2 = asyncio.Future()
-    future2.set_result(b'line
-')
+    future2.set_result(b'line\n')
 
     loop_mock = MagicMock()
     loop_mock.run_in_executor.side_effect = [future1, future2]
