@@ -7,7 +7,8 @@ from provide.testkit.mocking import AsyncMock, MagicMock, patch
 import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
-from pyvider.rpcplugin.exception import HandshakeError
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import HandshakeError, SecurityError
 
 
 @pytest.fixture
@@ -20,6 +21,13 @@ def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     mock_process_obj.stderr = MagicMock()
     mock_process_obj.stdout = MagicMock()
     client._process = mock_process_obj
+    return client
+
+
+@pytest.fixture
+def minimal_client(mocker: object) -> RPCPluginClient:
+    client = RPCPluginClient(command=["dummy"])
+    client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
     return client
 
 
