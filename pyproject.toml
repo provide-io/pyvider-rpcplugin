@@ -117,6 +117,15 @@ line-ending = "auto"
 ################################################################################
 
 [tool.coverage]
+include = [
+    "src/pyvider/rpcplugin/*"
+]
+omit = [
+    "src/pyvider/rpcplugin/protocol/grpc_*",
+    "src/pyvider/rpcplugin/protocol/*_pb2.py",
+    "src/pyvider/rpcplugin/protocol/*_pb2_grpc.py",
+]
+
 source = ["pyvider.rpcplugin"]
 branch = true
 
