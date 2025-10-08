@@ -4,7 +4,7 @@
 import asyncio
 import subprocess
 
-from provide.testkit.mocking import MagicMock
+from provide.testkit.mocking import AsyncMock, MagicMock
 import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
@@ -202,6 +202,45 @@ async def test_read_raw_handshake_line_byte_by_byte_success(
 
     line = await client_instance._read_raw_handshake_line_from_stdout()
     assert line.strip() == handshake_str
+
+
+@pytest.mark.asyncio
+async def test_read_raw_handshake_line_chunk_strategy_success(
+    client_instance_for_retry_tests: RPCPluginClient, mocker: object
+) -> None:
+    client = client_instance_for_retry_tests
+
+    mocker.patch.object(client, "_try_readline_strategy", AsyncMock(side_effect=TimeoutError()))
+    mocker.patch.object(
+        client,
+        "_try_chunk_strategy",
+        AsyncMock(return_value="1|1|tcp|127.0.0.1:9000|grpc|"),
+    )
+    mocker.patch("asyncio.sleep", AsyncMock())
+
+    line = await client._read_raw_handshake_line_from_stdout()
+    assert line == "1|1|tcp|127.0.0.1:9000|grpc|"
+
+
+@pytest.mark.asyncio
+async def test_read_raw_handshake_line_buffer_completion(
+    client_instance_for_retry_tests: RPCPluginClient, mocker: object
+) -> None:
+    client = client_instance_for_retry_tests
+    mocker.patch.object(
+        client,
+        "_try_readline_strategy",
+        AsyncMock(side_effect=["1|1|tcp|127.0.0.1:9000|", None]),
+    )
+    mocker.patch.object(
+        client,
+        "_is_complete_handshake",
+        side_effect=lambda text: text.count("|") >= 5,
+    )
+    mocker.patch("asyncio.sleep", AsyncMock())
+
+    result = await client._read_raw_handshake_line_from_stdout()
+    assert result.startswith("1|1|tcp|127.0.0.1:9000|")
 
 
 @pytest.mark.asyncio
