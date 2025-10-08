@@ -146,13 +146,10 @@ def _process_has_exited(process: subprocess.Popen, buffer: str) -> None:
         return
     stderr_output = _collect_process_stderr(process)
     truncated = (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
-    logger.error(
-        f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake"
-    )
+    logger.error(f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake")
     raise HandshakeError(
         message=(
-            f"Plugin process exited prematurely with code {process.returncode} "
-            "before completing handshake."
+            f"Plugin process exited prematurely with code {process.returncode} before completing handshake."
         ),
         hint=(
             f"Check plugin logs or stderr for details. Stderr captured: '{truncated}'"

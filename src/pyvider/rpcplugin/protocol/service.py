@@ -232,9 +232,7 @@ class GRPCStdioService(GRPCStdioServicer):
         wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
 
         try:
-            completed, _ = await asyncio.wait(
-                [get_task, wait_task], return_when=asyncio.FIRST_COMPLETED
-            )
+            completed, _ = await asyncio.wait([get_task, wait_task], return_when=asyncio.FIRST_COMPLETED)
 
             if get_task in completed:
                 item = get_task.result()

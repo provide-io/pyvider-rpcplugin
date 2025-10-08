@@ -146,9 +146,7 @@ def _ensure_supported_core_version(core_version: int, expected_version: int) -> 
             core_version,
             expected_version,
         )
-        raise HandshakeError(
-            f"Unsupported handshake version: {core_version} (expected: {expected_version})"
-        )
+        raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_version})")
 
 
 def _apply_certificate_padding(server_cert: str | None) -> str | None:
