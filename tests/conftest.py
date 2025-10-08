@@ -6,6 +6,8 @@ import types
 
 os.environ.setdefault("OPENOBSERVE_DISABLED", "1")
 os.environ.setdefault("OTEL_SDK_DISABLED", "1")
+os.environ.setdefault("FOUNDATION_DISABLE_OTLP", "1")
+os.environ.setdefault("PROVIDE_FOUNDATION_DISABLE_OTLP", "1")
 
 from attrs import fields
 
