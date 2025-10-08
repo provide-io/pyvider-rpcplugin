@@ -5,8 +5,8 @@ from __future__ import annotations
 import importlib
 from pathlib import Path
 
-import pytest
 from provide.foundation.errors import ValidationError
+import pytest
 
 from pyvider.rpcplugin import _version
 from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: F401 - imported for type checks

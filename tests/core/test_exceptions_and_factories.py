@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 import pytest
 
 from pyvider.rpcplugin import factories
-from pyvider.rpcplugin.exception import RPCPluginError, TransportError
+from pyvider.rpcplugin.exception import RPCPluginError
 
 
 def test_rpcplugin_error_str_formats_prefix_code_hint() -> None:

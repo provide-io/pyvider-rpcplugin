@@ -1,9 +1,9 @@
 import asyncio
-from types import SimpleNamespace
+from collections.abc import Iterator
 
-import pytest
-from provide.testkit.mocking import AsyncMock, MagicMock
 import grpc
+from provide.testkit.mocking import AsyncMock, MagicMock
+import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
 
@@ -71,7 +71,7 @@ async def test_cancel_tasks_handles_generic_exception(monkeypatch: pytest.Monkey
         def done(self) -> bool:
             return False
 
-        def __await__(self):
+        def __await__(self) -> Iterator[object]:
             async def raiser() -> None:
                 raise RuntimeError("task failure")
 
