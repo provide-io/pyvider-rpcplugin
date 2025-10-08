@@ -6,6 +6,7 @@ import pytest
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import SecurityError
 from pyvider.rpcplugin.server import RPCPluginServer
+import pyvider.rpcplugin.server.network as server_network
 
 
 @pytest.mark.asyncio
@@ -112,7 +113,7 @@ def test_generate_server_credentials_warn_when_missing_root(
 
     server = RPCPluginServer(protocol=mock_server_protocol, handler=mock_server_handler, config=None)
 
-    warning_spy = mocker.spy(server.logger, "warning")
+    warning_spy = mocker.spy(server_network.logger, "warning")
     server._generate_server_credentials()
     warning_spy.assert_any_call(
         "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. Client certs will not be required/verified."
