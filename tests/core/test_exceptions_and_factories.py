@@ -20,7 +20,9 @@ def test_rpcplugin_error_str_formats_prefix_code_hint() -> None:
 
 def test_rpcplugin_error_does_not_duplicate_existing_prefix() -> None:
     err = RPCPluginError("[RPCPluginError] Already prefixed")
-    assert str(err) == "[RPCPluginError] Already prefixed"
+    msg = str(err)
+    assert msg.startswith("[RPCPluginError] Already prefixed")
+    assert "[Code: RPC_PLUGIN_ERROR]" in msg
 
 
 @pytest.mark.asyncio

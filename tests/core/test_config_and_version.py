@@ -62,6 +62,7 @@ def test_config_module_reexports(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_configure_updates_prefixed_unprefixed_and_warns(monkeypatch: pytest.MonkeyPatch) -> None:
     config_module = importlib.import_module("pyvider.rpcplugin.config")
+    configure_module = importlib.import_module("pyvider.rpcplugin.config.configure")
     fresh_instance = config_module.RPCPluginConfig.from_env()
     monkeypatch.setattr(config_module, "rpcplugin_config", fresh_instance, raising=True)
 
@@ -70,9 +71,7 @@ def test_configure_updates_prefixed_unprefixed_and_warns(monkeypatch: pytest.Mon
     def fake_warning(message: str) -> None:
         warnings.append(message)
 
-    monkeypatch.setattr(
-        "pyvider.rpcplugin.config.configure.logger.warning", fake_warning, raising=True
-    )
+    monkeypatch.setattr(configure_module.logger, "warning", fake_warning, raising=True)
 
     configure(
         magic_cookie="magic-cookie",
