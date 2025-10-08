@@ -72,6 +72,41 @@ from pyvider.rpcplugin.defaults import (
 )
 
 
+PLUGIN_PROTOCOL_VERSIONS_FIELD = env_field(
+    factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
+    parser=validate_protocol_versions_list,
+    env_var="PLUGIN_PROTOCOL_VERSIONS",
+)
+
+PLUGIN_PROTOCOL_VERSION_FIELD = env_field(
+    default=DEFAULT_PLUGIN_PROTOCOL_VERSION,
+    parser=int,
+    env_var="PLUGIN_PROTOCOL_VERSION",
+)
+
+SUPPORTED_PROTOCOL_VERSIONS_FIELD = env_field(
+    factory=lambda: DEFAULT_SUPPORTED_PROTOCOL_VERSIONS.copy(),
+    env_var="SUPPORTED_PROTOCOL_VERSIONS",
+)
+
+PLUGIN_SERVER_TRANSPORTS_FIELD = env_field(
+    factory=lambda: DEFAULT_PLUGIN_SERVER_TRANSPORTS.copy(),
+    parser=validate_transport_list,
+    env_var="PLUGIN_SERVER_TRANSPORTS",
+)
+
+PLUGIN_CLIENT_TRANSPORTS_FIELD = env_field(
+    factory=lambda: DEFAULT_PLUGIN_CLIENT_TRANSPORTS.copy(),
+    parser=validate_transport_list,
+    env_var="PLUGIN_CLIENT_TRANSPORTS",
+)
+
+PLUGIN_SUPPORTED_TRANSPORTS_FIELD = env_field(
+    factory=lambda: DEFAULT_SUPPORTED_TRANSPORTS.copy(),
+    env_var="PLUGIN_SUPPORTED_TRANSPORTS",
+)
+
+
 @define
 class RPCPluginConfig(RuntimeConfig):
     """
@@ -97,22 +132,11 @@ class RPCPluginConfig(RuntimeConfig):
         env_var="PLUGIN_CORE_VERSION",
     )
 
-    plugin_protocol_versions: list[int] = env_field(
-        factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
-        parser=validate_protocol_versions_list,
-        env_var="PLUGIN_PROTOCOL_VERSIONS",
-    )
+    plugin_protocol_versions: list[int] = PLUGIN_PROTOCOL_VERSIONS_FIELD
 
-    plugin_protocol_version: int = env_field(
-        default=DEFAULT_PLUGIN_PROTOCOL_VERSION,
-        parser=int,
-        env_var="PLUGIN_PROTOCOL_VERSION",
-    )
+    plugin_protocol_version: int = PLUGIN_PROTOCOL_VERSION_FIELD
 
-    supported_protocol_versions: list[int] = env_field(
-        factory=lambda: DEFAULT_SUPPORTED_PROTOCOL_VERSIONS.copy(),
-        env_var="SUPPORTED_PROTOCOL_VERSIONS",
-    )
+    supported_protocol_versions: list[int] = SUPPORTED_PROTOCOL_VERSIONS_FIELD
 
     plugin_magic_cookie_key: str = env_field(
         default=DEFAULT_PLUGIN_MAGIC_COOKIE_KEY,
@@ -158,22 +182,11 @@ class RPCPluginConfig(RuntimeConfig):
         env_var="PLUGIN_SERVER_READY_TIMEOUT",
     )
 
-    plugin_server_transports: list[str] = env_field(
-        factory=lambda: DEFAULT_PLUGIN_SERVER_TRANSPORTS.copy(),
-        parser=validate_transport_list,
-        env_var="PLUGIN_SERVER_TRANSPORTS",
-    )
+    plugin_server_transports: list[str] = PLUGIN_SERVER_TRANSPORTS_FIELD
 
-    plugin_client_transports: list[str] = env_field(
-        factory=lambda: DEFAULT_PLUGIN_CLIENT_TRANSPORTS.copy(),
-        parser=validate_transport_list,
-        env_var="PLUGIN_CLIENT_TRANSPORTS",
-    )
+    plugin_client_transports: list[str] = PLUGIN_CLIENT_TRANSPORTS_FIELD
 
-    plugin_supported_transports: list[str] = env_field(
-        factory=lambda: DEFAULT_SUPPORTED_TRANSPORTS.copy(),
-        env_var="PLUGIN_SUPPORTED_TRANSPORTS",
-    )
+    plugin_supported_transports: list[str] = PLUGIN_SUPPORTED_TRANSPORTS_FIELD
 
     plugin_transport_buffer_size: int = env_field(
         default=DEFAULT_PLUGIN_BUFFER_SIZE,
