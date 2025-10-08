@@ -255,6 +255,21 @@ class GRPCStdioService(GRPCStdioServicer):
             )
             yield item
 
+    async def _stream_items(self, done: asyncio.Event) -> AsyncIterator[StdioData]:
+        while not self._shutdown and not done.is_set():
+            item = await self._next_queue_item(done)
+            if item is None:
+                break
+            yield item
+
+        if self._shutdown or not self._message_queue.empty():
+            logger.debug(
+                "🔌📝 GRPCStdioService.StreamStdio: Draining remaining %s items from queue...",
+                self._message_queue.qsize(),
+            )
+            async for remaining in self._drain_queue():
+                yield remaining
+
     async def StreamStdio(
         self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext
     ) -> AsyncIterator[StdioData]:
@@ -269,19 +284,8 @@ class GRPCStdioService(GRPCStdioServicer):
 
         context.add_done_callback(on_rpc_done)  # type: ignore[arg-type]
 
-        while not self._shutdown and not done.is_set():
-            item = await self._next_queue_item(done)
-            if item is None:
-                break
+        async for item in self._stream_items(done):
             yield item
-
-        if self._shutdown or not self._message_queue.empty():
-            logger.debug(
-                "🔌📝 GRPCStdioService.StreamStdio: Draining remaining %s items from queue...",
-                self._message_queue.qsize(),
-            )
-            async for remaining in self._drain_queue():
-                yield remaining
 
         logger.debug("🔌📝 GRPCStdioService.StreamStdio: Stream ending.")
 

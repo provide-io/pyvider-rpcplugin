@@ -112,6 +112,55 @@ def _prepare_server_cert(raw_part: str) -> str | None:
     return temp_cert.replace("\n", "").replace("\r", "").strip()
 
 
+def _resolve_expected_core_version() -> int:
+    """
+    Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
+    """
+    expected_value = rpcplugin_config.plugin_core_version
+    logger.debug(
+        "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: %s (type: %s)",
+        expected_value,
+        type(expected_value),
+    )
+    if expected_value is None:
+        logger.error(
+            "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1."
+        )
+        return 1
+
+    try:
+        return int(expected_value)
+    except (TypeError, ValueError) as exc:
+        logger.error(
+            "CRITICAL: Could not convert PLUGIN_CORE_VERSION '%s' to int. Falling back to default 1.",
+            expected_value,
+            exc_info=exc,
+        )
+        return 1
+
+
+def _ensure_supported_core_version(core_version: int, expected_version: int) -> None:
+    if core_version != expected_version:
+        logger.error(
+            "🤝 Unsupported handshake version: %s (expected: %s)",
+            core_version,
+            expected_version,
+        )
+        raise HandshakeError(
+            f"Unsupported handshake version: {core_version} (expected: {expected_version})"
+        )
+
+
+def _apply_certificate_padding(server_cert: str | None) -> str | None:
+    if not server_cert:
+        return None
+    padding = len(server_cert) % 4
+    if padding:
+        logger.debug("📡🔐 Restoring certificate padding for handshake parsing.")
+        server_cert += "=" * (4 - padding)
+    return server_cert
+
+
 def validate_magic_cookie(
     magic_cookie_key: str | None | _SentinelType = _SENTINEL_INSTANCE,
     magic_cookie_value: str | None | _SentinelType = _SENTINEL_INSTANCE,
@@ -357,44 +406,9 @@ def parse_handshake_response(
         _validate_network(network, address, response)
         protocol = parts[4]
         server_cert = _prepare_server_cert(parts[5])
-
-        expected_core_version_from_config = rpcplugin_config.plugin_core_version
-        logger.debug(
-            "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: "
-            f"{expected_core_version_from_config} "
-            f"(type: {type(expected_core_version_from_config)})"
-        )
-
-        if expected_core_version_from_config is None:
-            logger.error(
-                "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. "
-                "Falling back to schema default 1."
-            )
-            expected_core_version_int = 1
-        else:
-            try:
-                expected_core_version_int = int(expected_core_version_from_config)
-            except (ValueError, TypeError) as e:
-                logger.error(
-                    "CRITICAL: Could not convert PLUGIN_CORE_VERSION "
-                    f"'{expected_core_version_from_config}' to int. Error: {e}. "
-                    "Falling back to default 1."
-                )
-                expected_core_version_int = 1
-
-        if core_version != expected_core_version_int:
-            logger.error(
-                f"🤝 Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
-            )
-            raise HandshakeError(
-                f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
-            )
-
-        if server_cert:
-            padding = len(server_cert) % 4
-            if padding:
-                server_cert += "=" * (4 - padding)
-            logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
+        expected_core_version_int = _resolve_expected_core_version()
+        _ensure_supported_core_version(core_version, expected_core_version_int)
+        server_cert = _apply_certificate_padding(server_cert)
 
         logger.debug(
             "📡✅ Handshake parsing success: "
