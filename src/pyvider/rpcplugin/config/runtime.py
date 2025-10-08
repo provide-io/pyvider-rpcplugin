@@ -71,7 +71,6 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_SUPPORTED_TRANSPORTS,
 )
 
-
 PLUGIN_PROTOCOL_VERSIONS_FIELD = env_field(
     factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
     parser=validate_protocol_versions_list,
