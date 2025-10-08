@@ -25,6 +25,7 @@ from google.protobuf import empty_pb2  # Use google.protobuf.empty_pb2
 import grpc  # For gRPC context type hint
 from provide.foundation import logger
 
+from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
     GRPCBrokerServicer,
