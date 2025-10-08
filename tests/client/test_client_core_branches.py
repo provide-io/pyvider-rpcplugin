@@ -108,8 +108,10 @@ async def test_terminate_process_handles_timeout(monkeypatch: pytest.MonkeyPatch
     client._process = process
 
     loop = MagicMock()
-    fut = asyncio.Future()
-    loop.run_in_executor.return_value = fut
+    first_future = asyncio.Future()
+    second_future = asyncio.Future()
+    second_future.set_result(None)
+    loop.run_in_executor.side_effect = [first_future, second_future]
     monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
 
     async def raise_timeout(awaitable: object, timeout: float) -> None:
@@ -123,7 +125,6 @@ async def test_terminate_process_handles_timeout(monkeypatch: pytest.MonkeyPatch
     client.logger.warning.assert_any_call("⚠️ Plugin process did not terminate gracefully, killing...")
     assert client._process is None
 
-    fut.cancel()
 
 
 @pytest.mark.asyncio
