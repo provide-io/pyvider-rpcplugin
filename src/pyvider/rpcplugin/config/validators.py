@@ -10,8 +10,8 @@ custom validation logic beyond simple type checking.
 
 from __future__ import annotations
 
+from provide.foundation.config import parse_list
 from provide.foundation.errors import ValidationError
-from provide.foundation.utils.parsing import parse_list
 
 from pyvider.rpcplugin.defaults import DEFAULT_SUPPORTED_PROTOCOL_VERSIONS, DEFAULT_SUPPORTED_TRANSPORTS
 

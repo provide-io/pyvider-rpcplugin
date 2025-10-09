@@ -123,6 +123,31 @@ async def test_receive_data_oserror(monkeypatch, connection) -> None:
 
 
 @pytest.mark.asyncio
+async def test_send_data_without_send_func_set(connection) -> None:
+    connection.send_func = None
+    with pytest.raises(RuntimeError, match="send_func was not initialized"):
+        await connection.send_data(b"data")
+
+
+@pytest.mark.asyncio
+async def test_receive_data_without_receive_func_set(connection) -> None:
+    connection.receive_func = None
+    with pytest.raises(RuntimeError, match="receive_func was not initialized"):
+        await connection.receive_data()
+
+
+def test_client_connection_equality_and_hash(connection) -> None:
+    other_reader = DummyReader()
+    other_writer = DummyWriter()
+    other = ClientConnection(reader=other_reader, writer=other_writer, remote_addr="127.0.0.1")  # type: ignore[arg-type]
+
+    assert connection == connection
+    assert connection != other
+    assert connection.__eq__("not-a-connection") is NotImplemented  # type: ignore[arg-type]
+    assert isinstance(hash(connection), int)
+
+
+@pytest.mark.asyncio
 async def test_close_normal(connection, dummy_writer) -> None:
     # Ensure close() properly marks connection as closed and calls writer.close().
     connection._closed = False

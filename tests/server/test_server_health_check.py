@@ -41,6 +41,8 @@ def health_test_config_override(request):
         "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
         "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
         "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
+        "PLUGIN_SERVER_TRANSPORTS": "plugin_server_transports",
+        "PLUGIN_CLIENT_TRANSPORTS": "plugin_client_transports",
     }
 
     original_values = {}
@@ -49,6 +51,8 @@ def health_test_config_override(request):
         "PLUGIN_AUTO_MTLS": False,
         "PLUGIN_SHUTDOWN_FILE_PATH": None,
         "PLUGIN_RATE_LIMIT_ENABLED": False,
+        "PLUGIN_SERVER_TRANSPORTS": ["tcp"],
+        "PLUGIN_CLIENT_TRANSPORTS": ["tcp"],
     }
 
     params_to_apply = default_params.copy()

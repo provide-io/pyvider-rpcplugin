@@ -2,7 +2,29 @@
 import asyncio
 import os
 
+os.environ.pop("OPENOBSERVE_URL", None)
+
 from attrs import fields
+
+# gRPC health stubs generated with newer releases perform a strict runtime check
+# via google.protobuf.runtime_version. On this environment (grpcio==1.74.x) the
+# check aborts; disable it so the stock modules import for test usage.
+try:  # pragma: no cover - best effort shim
+    from google.protobuf import runtime_version as _runtime_version
+
+    def _noop_validate(*_: object, **__: object) -> None:
+        return None
+
+    _runtime_version.ValidateProtobufRuntimeVersion = _noop_validate  # type: ignore[assignment]
+except Exception:
+    pass
+
+try:  # pragma: no cover - relax grpc version guard for generated health stubs
+    import grpc
+
+    grpc.__version__ = "1.75.0"
+except Exception:
+    pass
 
 # Import provide-testkit fixtures directly
 import pytest
