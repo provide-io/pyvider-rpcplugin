@@ -1,13 +1,16 @@
 # tests/client/test_client_handshake_perform.py
 """Tests for basic handshake execution functionality."""
 
+import asyncio
 import subprocess
+from typing import Any
 
 from provide.testkit.mocking import AsyncMock, MagicMock, patch
 import pytest
 
 from pyvider.rpcplugin.client.core import RPCPluginClient
-from pyvider.rpcplugin.exception import HandshakeError
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.exception import HandshakeError, SecurityError, TransportError
 
 
 @pytest.fixture
@@ -20,6 +23,13 @@ def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     mock_process_obj.stderr = MagicMock()
     mock_process_obj.stdout = MagicMock()
     client._process = mock_process_obj
+    return client
+
+
+@pytest.fixture
+def minimal_client(mocker: object) -> RPCPluginClient:
+    client = RPCPluginClient(command=["dummy"])
+    client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
     return client
 
 
@@ -176,6 +186,153 @@ async def test_perform_handshake_parse_error(
     ):
         await client_instance._perform_handshake()
     mock_parse.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_setup_client_certificates_existing_cert_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
+    mocker.patch.object(rpcplugin_config, "plugin_client_cert", "cert-path")
+    mocker.patch.object(rpcplugin_config, "plugin_client_key", "key-path")
+
+    mock_certificate_cls = mocker.patch("pyvider.rpcplugin.client.handshake.Certificate")
+    mock_certificate_cls.side_effect = ValueError("broken cert")
+
+    with pytest.raises(SecurityError, match="Failed to load client certificate/key: broken cert"):
+        await minimal_client._setup_client_certificates()
+
+
+@pytest.mark.asyncio
+async def test_setup_client_certificates_auto_mtls_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
+    mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", True)
+    mocker.patch.object(rpcplugin_config, "plugin_client_cert", None)
+    mocker.patch.object(rpcplugin_config, "plugin_client_key", None)
+
+    mocker.patch(
+        "pyvider.rpcplugin.client.handshake.Certificate.create_self_signed_client_cert",
+        side_effect=ValueError("auto failure"),
+    )
+
+    with pytest.raises(SecurityError, match="Failed to auto-generate client certificate: auto failure"):
+        await minimal_client._setup_client_certificates()
+
+
+def test_rebuild_x509_pem_empty(minimal_client: RPCPluginClient) -> None:
+    assert minimal_client._rebuild_x509_pem("") == ""
+    assert minimal_client._rebuild_x509_pem("   ") == ""
+
+
+@pytest.mark.asyncio
+async def test_perform_handshake_cleanup_warning(minimal_client: RPCPluginClient, mocker: object) -> None:
+    client = minimal_client
+
+    mock_process = MagicMock(spec=subprocess.Popen)
+    mock_process.poll.return_value = None
+    mock_process.stderr = MagicMock()
+    mock_process.stderr.read.return_value = b""
+    mock_process.terminate.side_effect = RuntimeError("terminate failure")
+    mock_process.kill = MagicMock()
+
+    client._process = mock_process
+
+    mocker.patch.object(client, "_launch_process", AsyncMock(return_value=None))
+    mocker.patch.object(
+        client,
+        "_read_raw_handshake_line_from_stdout",
+        AsyncMock(side_effect=RuntimeError("handshake boom")),
+    )
+    mocker.patch("pyvider.rpcplugin.client.handshake.asyncio.sleep", new_callable=AsyncMock)
+
+    warning_spy = mocker.spy(client.logger, "warning")
+
+    with pytest.raises(RuntimeError, match="handshake boom"):
+        await client._perform_handshake()
+
+    warning_spy.assert_called_once_with(
+        "Error cleaning up process after handshake failure: terminate failure"
+    )
+    assert client._process is None
+
+
+@pytest.mark.asyncio
+async def test_perform_handshake_cleanup_kill(minimal_client: RPCPluginClient, mocker: object) -> None:
+    client = minimal_client
+    mock_process = MagicMock(spec=subprocess.Popen)
+    mock_process.poll.side_effect = [None, None, 1]
+    mock_process.stderr = MagicMock()
+    mock_process.stderr.read.return_value = b""
+    mock_process.terminate = MagicMock()
+    mock_process.kill = MagicMock()
+    client._process = mock_process
+
+    mocker.patch.object(client, "_launch_process", AsyncMock())
+    mocker.patch.object(
+        client,
+        "_read_raw_handshake_line_from_stdout",
+        AsyncMock(side_effect=RuntimeError("boom")),
+    )
+    mocker.patch("pyvider.rpcplugin.client.handshake.asyncio.sleep", new_callable=AsyncMock)
+
+    with pytest.raises(RuntimeError, match="boom"):
+        await client._perform_handshake()
+
+    mock_process.terminate.assert_called_once()
+    mock_process.kill.assert_called_once()
+    assert client._process is None
+
+
+@pytest.mark.asyncio
+async def test_complete_handshake_setup_with_stdio(minimal_client: RPCPluginClient, mocker: object) -> None:
+    client = minimal_client
+    client._address = "127.0.0.1"
+    client._transport_name = "tcp"
+    client._stdio_stub = AsyncMock()
+
+    mocker.patch.object(client, "_setup_client_certificates", AsyncMock())
+    mocker.patch.object(client, "_create_grpc_channel", AsyncMock())
+    mocker.patch.object(client, "_read_stdio_logs", AsyncMock())
+
+    scheduled: list[asyncio.Task[Any]] = []
+    original_create_task = asyncio.create_task
+
+    def track_task(coro: Any) -> asyncio.Task[Any]:
+        task = original_create_task(coro)
+        scheduled.append(task)
+        return task
+
+    create_task = mocker.patch("asyncio.create_task", side_effect=track_task)
+
+    await client._complete_handshake_setup(attempt_num=2)
+
+    create_task.assert_called_once()
+    assert client._stdio_task is scheduled[0]
+    assert client.is_started is True
+    assert client._handshake_complete_event.is_set()
+
+    for task in scheduled:
+        await task
+
+
+@pytest.mark.asyncio
+async def test_complete_handshake_setup_missing_address(minimal_client: RPCPluginClient) -> None:
+    with pytest.raises(HandshakeError):
+        await minimal_client._complete_handshake_setup()
+
+
+@pytest.mark.asyncio
+async def test_handle_retry_cleanup_transport_close_warning(minimal_client: RPCPluginClient, mocker: object) -> None:
+    client = minimal_client
+    mock_transport = AsyncMock()
+    mock_transport.close.side_effect = TransportError("close boom")
+    client._transport = mock_transport
+
+    mocker.patch("pyvider.rpcplugin.client.handshake.asyncio.sleep", new_callable=AsyncMock)
+    warning_spy = mocker.spy(client.logger, "warning")
+
+    await client._handle_retry_cleanup(50)
+
+    mock_transport.close.assert_called_once()
+    assert any("close boom" in str(call) for call in warning_spy.call_args_list)
+    assert client._transport is None
 
 
 @pytest.mark.asyncio

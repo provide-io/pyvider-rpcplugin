@@ -11,9 +11,8 @@ and parse_list for proper environment variable parsing.
 from __future__ import annotations
 
 from attrs import define
-from provide.foundation.config import RuntimeConfig
+from provide.foundation.config import RuntimeConfig, parse_log_level
 from provide.foundation.config.env import env_field
-from provide.foundation.config.parsers.structured import parse_log_level
 
 from pyvider.rpcplugin.config.validators import validate_protocol_versions_list, validate_transport_list
 from pyvider.rpcplugin.defaults import (
