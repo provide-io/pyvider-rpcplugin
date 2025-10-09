@@ -25,6 +25,7 @@ from google.protobuf import empty_pb2  # Use google.protobuf.empty_pb2
 import grpc  # For gRPC context type hint
 from provide.foundation import logger
 
+from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
     GRPCBrokerServicer,
@@ -209,6 +210,91 @@ class GRPCStdioService(GRPCStdioServicer):
         except Exception as e:
             logger.error(f"🔌📝❌ Error putting line in queue: {e}")
 
+    async def _next_queue_item(self, done: asyncio.Event) -> StdioData | None:
+        if not self._message_queue.empty():
+            try:
+                item = self._message_queue.get_nowait()
+            except asyncio.QueueEmpty:  # pragma: no cover - defensive
+                item = None
+            else:
+                self._message_queue.task_done()
+                if item is _SENTINEL:
+                    logger.debug("🔌📝 StreamStdio: Sentinel received, stopping stream.")
+                    return None
+                logger.debug(
+                    "🔌📝✅ GRPCStdioService: Dequeued item immediately: %s, %r",
+                    item.channel,
+                    item.data[:20],
+                )
+                return item
+
+        get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
+        wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
+
+        try:
+            completed, _ = await asyncio.wait([get_task, wait_task], return_when=asyncio.FIRST_COMPLETED)
+
+            if get_task in completed:
+                item = get_task.result()
+                self._message_queue.task_done()
+                if item is _SENTINEL:
+                    logger.debug("🔌📝 StreamStdio: Sentinel received, stopping stream.")
+                    return None
+                logger.debug(
+                    "🔌📝✅ GRPCStdioService: Dequeued item: %s, %r",
+                    item.channel,
+                    item.data[:20],
+                )
+                return item
+
+            if wait_task in completed and wait_task.result():
+                if not get_task.done():
+                    get_task.cancel()
+                return None
+        finally:
+            if not get_task.done():
+                get_task.cancel()
+            wait_task.cancel()
+
+        return None
+
+    async def _drain_queue(self) -> AsyncIterator[StdioData]:
+        while not self._message_queue.empty():
+            try:
+                item = self._message_queue.get_nowait()
+            except asyncio.QueueEmpty:  # pragma: no cover - defensive
+                break
+            self._message_queue.task_done()
+            if item is _SENTINEL:
+                continue
+            logger.debug(
+                "🔌📝✅ GRPCStdioService: Draining item: %s, %r",
+                item.channel,
+                item.data[:20],
+            )
+            yield item
+
+    async def _stream_items(self, done: asyncio.Event) -> AsyncIterator[StdioData]:
+        while not self._shutdown and not done.is_set():
+            try:
+                item = await self._next_queue_item(done)
+            except Exception as exc:  # pragma: no cover - defensive path for queue errors
+                logger.error("🔌📝❌ Error retrieving stdio item: %s", exc)
+                await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
+                continue
+
+            if item is None:
+                break
+            yield item
+
+        if self._shutdown or not self._message_queue.empty():
+            logger.debug(
+                "🔌📝 GRPCStdioService.StreamStdio: Draining remaining %s items from queue...",
+                self._message_queue.qsize(),
+            )
+            async for remaining in self._drain_queue():
+                yield remaining
+
     async def StreamStdio(
         self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext
     ) -> AsyncIterator[StdioData]:
@@ -217,128 +303,16 @@ class GRPCStdioService(GRPCStdioServicer):
 
         done = asyncio.Event()
 
-        # Revert to simpler signature if ctx not used, to satisfy mypy on callback type
         def on_rpc_done(_: Any) -> None:
-            logger.debug(
-                "🔌📝 GRPCStdioService.StreamStdio.on_rpc_done called (client disconnected or call ended)."
-            )
+            logger.debug("🔌📝 StreamStdio.on_rpc_done called (client disconnected or call ended).")
             done.set()
 
         context.add_done_callback(on_rpc_done)  # type: ignore[arg-type]
 
-        logger.debug(
-            "🔌📝 GRPCStdioService: Entering StreamStdio while loop "
-            f"(shutdown={self._shutdown}, done={done.is_set()})"
-        )
+        async for item in self._stream_items(done):
+            yield item
 
-        get_task: asyncio.Task[StdioData] | None = None
-        done_wait_task: asyncio.Task[bool] | None = None
-
-        while not self._shutdown and not done.is_set():
-            try:
-                get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
-                done_wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
-
-                completed, pending = await asyncio.wait(
-                    [get_task, done_wait_task], return_when=asyncio.FIRST_COMPLETED
-                )
-
-                # Default should_break_loop based on done_wait_task completion
-                should_break_loop = (
-                    done_wait_task in completed and done_wait_task.done() and done_wait_task.result()
-                )
-
-                if get_task in completed:
-                    try:
-                        data_item = get_task.result()  # data_item can now be _SENTINEL
-                        self._message_queue.task_done()
-                        if data_item is _SENTINEL:
-                            logger.debug("🔌📝 StreamStdio: Sentinel received, breaking loop.")
-                            should_break_loop = True  # Crucial for breaking loop
-                        else:
-                            # data_item is StdioData here
-                            logger.debug(
-                                "🔌📝✅ GRPCStdioService: Dequeued item: "
-                                f"{data_item.channel}, {data_item.data[:20]!r}"  # type: ignore[attr-defined]
-                            )
-                            yield data_item  # type: ignore[misc]
-                            await asyncio.sleep(0)
-                    except asyncio.CancelledError:
-                        logger.debug("🔌📝 GRPCStdioService.StreamStdio: get_task was cancelled.")
-                        should_break_loop = True  # Also break if task was cancelled
-                    except Exception as e_get_res:  # Catch other errors from get_task.result()
-                        logger.error(f"🔌📝❌ Error getting result from get_task: {e_get_res}")
-                        should_break_loop = True
-
-                tasks_to_await_cleanup_pending = []
-                for task_to_cancel in pending:
-                    if not task_to_cancel.done():
-                        task_to_cancel.cancel()
-                        tasks_to_await_cleanup_pending.append(task_to_cancel)
-
-                if tasks_to_await_cleanup_pending:
-                    await asyncio.gather(*tasks_to_await_cleanup_pending, return_exceptions=True)
-                    logger.debug(
-                        "🔌📝 GRPCStdioService.StreamStdio: Cleaned up "
-                        f"{len(tasks_to_await_cleanup_pending)} pending tasks."
-                    )
-
-                if should_break_loop:
-                    logger.debug(
-                        "🔌📝 GRPCStdioService.StreamStdio: 'done' event set or task cancelled, exiting loop."
-                    )
-                    break
-            except asyncio.CancelledError:
-                logger.debug("🔌📝🛑 GRPCStdioService.StreamStdio task itself was cancelled.")
-                # Further cleanup of get_task/done_wait_task if they exist
-                # (omitted for brevity as it's similar to below)
-                break
-            except Exception as e:
-                logger.error(
-                    f"🔌📝❌ Error in StreamStdio loop: {e}",
-                    extra={"trace": traceback.format_exc()},
-                )
-                # Further cleanup
-                break
-        # Final cleanup (simplified)
-        all_tasks = [t for t in [get_task, done_wait_task] if t and not t.done()]
-        if all_tasks:
-            for t in all_tasks:
-                t.cancel()
-            await asyncio.gather(*all_tasks, return_exceptions=True)
-
-        logger.debug(
-            "🔌📝🛑 GRPCStdioService.StreamStdio => exited main loop. "
-            f"shutdown={self._shutdown}, done.is_set()={done.is_set()}"
-        )
-
-        if self._shutdown or not self._message_queue.empty():
-            logger.debug(
-                "🔌📝 GRPCStdioService.StreamStdio: Draining remaining "
-                f"{self._message_queue.qsize()} items from queue..."
-            )
-            while not self._message_queue.empty():
-                try:
-                    data_item = self._message_queue.get_nowait()
-                    self._message_queue.task_done()
-                    if data_item is _SENTINEL:  # Skip yielding sentinel during drain
-                        logger.debug("🔌📝 StreamStdio: Sentinel found in drain, skipping.")
-                        continue
-                    logger.debug(
-                        f"🔌📝✅ GRPCStdioService: Draining item: {data_item.channel}, {data_item.data[:20]!r}"  # type: ignore[attr-defined]
-                    )
-                    yield data_item  # type: ignore[misc]
-                    await asyncio.sleep(0)
-                except asyncio.QueueEmpty:  # Should not happen due to outer check but good practice
-                    logger.debug("🔌📝 GRPCStdioService.StreamStdio: Queue empty during drain.")
-                    break
-                except Exception as e_drain:
-                    logger.error(
-                        f"🔌📝❌ Error draining queue: {e_drain}",
-                        extra={"trace": traceback.format_exc()},
-                    )
-                    break
-        logger.debug("🔌📝 GRPCStdioService.StreamStdio: Stream truly ending.")
+        logger.debug("🔌📝 GRPCStdioService.StreamStdio: Stream ending.")
 
     def shutdown(self) -> None:
         # Note: `shutdown` is a reserved keyword in some contexts,
