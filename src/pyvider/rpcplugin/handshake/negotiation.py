@@ -122,6 +122,130 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     )
 
 
+def _buffer_has_complete_handshake(buffer: str) -> str | None:
+    if "|" not in buffer or buffer.count("|") < 5:
+        return None
+    for candidate in buffer.split("\n"):
+        if candidate.count("|") >= 5:
+            return candidate.strip()
+    return buffer.strip() if buffer.count("|") >= 5 else None
+
+
+def _collect_process_stderr(process: subprocess.Popen) -> str:
+    if not process.stderr:
+        return ""
+    try:
+        value = process.stderr.read().decode("utf-8", errors="replace")
+    except Exception as exc:
+        value = f"Error reading stderr: {exc}"
+    return value
+
+
+def _process_has_exited(process: subprocess.Popen, buffer: str) -> None:
+    if process.poll() is None:
+        return
+    stderr_output = _collect_process_stderr(process)
+    truncated = (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
+    logger.error(f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake")
+    raise HandshakeError(
+        message=(
+            f"Plugin process exited prematurely with code {process.returncode} before completing handshake."
+        ),
+        hint=(
+            f"Check plugin logs or stderr for details. Stderr captured: '{truncated}'"
+            if truncated
+            else "Check plugin logs for errors."
+        ),
+        code=process.returncode,
+    )
+
+
+async def _try_read_line(process: subprocess.Popen) -> str | None:
+    if not process.stdout:
+        return None
+    line_bytes = await asyncio.wait_for(
+        asyncio.get_running_loop().run_in_executor(None, process.stdout.readline),
+        timeout=2.0,
+    )
+    if not line_bytes:
+        return None
+    return line_bytes.decode("utf-8", errors="replace").strip()
+
+
+async def _try_read_chunk(process: subprocess.Popen, *, chunk_size: int) -> str | None:
+    if not process.stdout:
+        return None
+    chunk = await asyncio.wait_for(
+        asyncio.get_running_loop().run_in_executor(
+            None,
+            lambda: process.stdout.read(chunk_size),  # type: ignore[union-attr]
+        ),
+        timeout=1.0,
+    )
+    if not chunk:
+        return None
+    return chunk.decode("utf-8", errors="replace")
+
+
+def _process_line_candidate(line: str | None, buffer: str) -> tuple[str | None, str, bool]:
+    if not line:
+        return None, buffer, False
+    logger.debug("🤝📥✅ Read line from stdout: '%s'", line)
+    completed = _buffer_has_complete_handshake(line)
+    if completed:
+        logger.debug("🤝📥✅ Complete handshake response found in line")
+        return completed, buffer, True
+
+    combined_buffer = buffer + line
+    completed = _buffer_has_complete_handshake(combined_buffer)
+    if completed:
+        logger.debug("🤝📥✅ Complete handshake response assembled from buffer")
+        return completed, combined_buffer, True
+    return None, combined_buffer, True
+
+
+async def _process_chunk_candidate(
+    process: subprocess.Popen,
+    buffer: str,
+) -> tuple[str | None, str, bool]:
+    try:
+        chunk = await _try_read_chunk(
+            process,
+            chunk_size=rpcplugin_config.plugin_chunk_size,
+        )
+    except TimeoutError:
+        logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
+        return None, buffer, False
+
+    if not chunk:
+        return None, buffer, False
+
+    new_buffer = buffer + chunk
+    logger.debug("🤝📥✅ Read chunk: %s bytes, buffer now has %s bytes", len(chunk), len(new_buffer))
+    completed = _buffer_has_complete_handshake(new_buffer)
+    if completed:
+        logger.debug("🤝📥✅ Complete handshake response found in buffer after chunk read")
+    return completed, new_buffer, True
+
+
+async def _read_with_fallback(
+    process: subprocess.Popen,
+    buffer: str,
+) -> tuple[str | None, str, bool]:
+    try:
+        line = await _try_read_line(process)
+    except TimeoutError:
+        return await _process_chunk_candidate(process, buffer)
+
+    completed, updated_buffer, had_data = _process_line_candidate(line, buffer)
+    if completed:
+        return completed, updated_buffer, had_data
+    if had_data:
+        return None, updated_buffer, True
+
+    return await _process_chunk_candidate(process, updated_buffer)
+
+
 async def read_handshake_response(process: subprocess.Popen) -> str:
     """
     Robust handshake response reader with multiple strategies to handle
@@ -152,101 +276,20 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
     buffer = ""
 
     while (time.time() - start_time) < timeout:
-        if process.poll() is not None:
-            stderr_output = ""
-            if process.stderr:
-                try:
-                    stderr_output = process.stderr.read().decode("utf-8", errors="replace")
-                except Exception as e_stderr:
-                    stderr_output = f"Error reading stderr: {e_stderr}"
+        _process_has_exited(process, buffer)
 
-            stderr_output_truncated = (
-                (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
-            )
+        completed, buffer, had_data = await _read_with_fallback(process, buffer)
+        if completed:
+            return completed
 
-            logger.error(f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake")
-            raise HandshakeError(
-                message=(
-                    f"Plugin process exited prematurely with code {process.returncode} "
-                    "before completing handshake."
-                ),
-                hint=(
-                    f"Check plugin logs or stderr for details. Stderr captured: '{stderr_output_truncated}'"
-                    if stderr_output_truncated
-                    else "Check plugin logs for errors."
-                ),
-                code=process.returncode,
-            )
+        if not had_data:
+            await asyncio.sleep(DEFAULT_HANDSHAKE_RETRY_WAIT)
+            continue
 
-        try:
-            # Ensure stdout is not None before accessing readline
-            if process.stdout is None:
-                await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)  # Wait briefly if stdout not ready
-                continue
+        if not _buffer_has_complete_handshake(buffer):
+            await asyncio.sleep(DEFAULT_HANDSHAKE_RETRY_WAIT)
 
-            line_bytes = await asyncio.wait_for(
-                asyncio.get_event_loop().run_in_executor(None, process.stdout.readline),
-                timeout=2.0,
-            )
-
-            if line_bytes:
-                line = line_bytes.decode("utf-8", errors="replace").strip()
-                logger.debug(f"🤝📥✅ Read line from stdout: '{line}'")
-
-                if "|" in line and line.count("|") >= 5:
-                    logger.debug("🤝📥✅ Complete handshake response found in line")
-                    return line
-
-                buffer += line
-                if "|" in buffer and buffer.count("|") >= 5:
-                    logger.debug("🤝📥✅ Complete handshake response found in buffer")
-                    return buffer
-
-        except TimeoutError:
-            logger.debug("🤝📥⚠️ Timeout reading line, trying chunk read strategy")
-
-            try:
-                # Ensure stdout is not None before accessing read
-                if process.stdout is None:
-                    await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
-                    continue
-
-                chunk = await asyncio.wait_for(
-                    asyncio.get_event_loop().run_in_executor(
-                        None,
-                        lambda: process.stdout.read(1024),  # type: ignore[union-attr]
-                    ),
-                    timeout=1.0,
-                )
-
-                if chunk:
-                    chunk_str = chunk.decode("utf-8", errors="replace")
-                    buffer += chunk_str
-                    logger.debug(
-                        f"🤝📥✅ Read chunk: {len(chunk_str)} bytes, buffer now has {len(buffer)} bytes"
-                    )
-
-                    if "|" in buffer and buffer.count("|") >= 5:
-                        lines = buffer.split("\n")
-                        for line_in_buf in lines:
-                            if "|" in line_in_buf and line_in_buf.count("|") >= 5:
-                                logger.debug(f"🤝📥✅ Found complete handshake in buffer: {line_in_buf}")
-                                return line_in_buf
-                        # If complete handshake is split across reads but now in buffer
-                        return buffer
-
-            except TimeoutError:
-                logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
-
-        await asyncio.sleep(DEFAULT_HANDSHAKE_RETRY_WAIT)
-
-    stderr_output = ""
-    if process.stderr:
-        try:
-            stderr_output = process.stderr.read().decode("utf-8", errors="replace")
-        except Exception as e_stderr_final:
-            stderr_output = f"Error reading stderr: {e_stderr_final}"
-
+    stderr_output = _collect_process_stderr(process)
     stderr_output_truncated = (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
     raise HandshakeError(
         message=(f"Timed out waiting for handshake response from plugin after {timeout} seconds."),

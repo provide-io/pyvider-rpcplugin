@@ -54,6 +54,111 @@ def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
 
 
+def _split_handshake_response(response: str) -> list[str]:
+    if not isinstance(response, str):
+        raise HandshakeError(
+            message="Handshake response is not a string.",
+            hint="Ensure the plugin process outputs a valid string for handshake.",
+        )
+    parts = response.strip().split("|")
+    logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
+    if not is_valid_handshake_parts(parts):
+        logger.error(
+            "📡❌ Invalid handshake response format. Expected 6 parts with numeric versions.",
+            extra={"parts": parts},
+        )
+        raise HandshakeError(
+            message=(
+                "Invalid handshake format. Expected 6 pipe-separated parts, got "
+                f"{len(parts)}: '{response[:100]}...'"
+            ),
+            hint=("Ensure the plugin's handshake output matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."),
+        )
+    return parts
+
+
+def _parse_versions(parts: list[str]) -> tuple[int, int]:
+    try:
+        return int(parts[0]), int(parts[1])
+    except ValueError as exc:
+        raise HandshakeError(
+            message=(f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."),
+            hint="Core and plugin versions in the handshake string must be integers.",
+        ) from exc
+
+
+def _validate_network(network: str, address: str, original: str) -> None:
+    if network not in ("tcp", "unix"):
+        logger.error("📡❌ Invalid network type in handshake", extra={"network": network})
+        raise HandshakeError(
+            message=f"Invalid network type '{network}' in handshake.",
+            hint="Network type must be 'tcp' or 'unix'.",
+        )
+    if network == "tcp" and not address:
+        logger.error(
+            "📡❌ Empty address received for TCP transport in handshake",
+            extra={"handshake": original},
+        )
+        raise HandshakeError(
+            message="Empty address received in handshake string for TCP transport.",
+            hint="TCP transport requires a valid address (host:port).",
+        )
+
+
+def _prepare_server_cert(raw_part: str) -> str | None:
+    if not raw_part:
+        return None
+    temp_cert = raw_part.replace("\\n", "").replace("\\r", "")
+    return temp_cert.replace("\n", "").replace("\r", "").strip()
+
+
+def _resolve_expected_core_version() -> int:
+    """
+    Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
+    """
+    expected_value = rpcplugin_config.plugin_core_version
+    logger.debug(
+        "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: %s (type: %s)",
+        expected_value,
+        type(expected_value),
+    )
+    if expected_value is None:
+        logger.error(
+            "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1."
+        )
+        return 1
+
+    try:
+        return int(expected_value)
+    except (TypeError, ValueError) as exc:
+        logger.error(
+            "CRITICAL: Could not convert PLUGIN_CORE_VERSION '%s' to int. Falling back to default 1.",
+            expected_value,
+            exc_info=exc,
+        )
+        return 1
+
+
+def _ensure_supported_core_version(core_version: int, expected_version: int) -> None:
+    if core_version != expected_version:
+        logger.error(
+            "🤝 Unsupported handshake version: %s (expected: %s)",
+            core_version,
+            expected_version,
+        )
+        raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_version})")
+
+
+def _apply_certificate_padding(server_cert: str | None) -> str | None:
+    if not server_cert:
+        return None
+    padding = len(server_cert) % 4
+    if padding:
+        logger.debug("📡🔐 Restoring certificate padding for handshake parsing.")
+        server_cert += "=" * (4 - padding)
+    return server_cert
+
+
 def validate_magic_cookie(
     magic_cookie_key: str | None | _SentinelType = _SENTINEL_INSTANCE,
     magic_cookie_value: str | None | _SentinelType = _SENTINEL_INSTANCE,
@@ -292,102 +397,16 @@ def parse_handshake_response(
     """
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
     try:
-        if not isinstance(response, str):
-            raise HandshakeError(
-                message="Handshake response is not a string.",
-                hint="Ensure the plugin process outputs a valid string for handshake.",
-            )
-        parts = response.strip().split("|")
-        logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
-        if not is_valid_handshake_parts(parts):
-            logger.error(
-                "📡❌ Invalid handshake response format. Expected 6 parts with "
-                f"numeric versions, got {len(parts)} parts.",
-                extra={"parts": parts},
-            )
-            raise HandshakeError(
-                message=(
-                    "Invalid handshake format. Expected 6 pipe-separated parts, got "
-                    f"{len(parts)}: '{response[:100]}...'"
-                ),
-                hint=(
-                    "Ensure the plugin's handshake output matches 'CORE_VER|PLUGIN_VER|NET|ADDR|PROTO|CERT'."
-                ),
-            )
-        try:
-            core_version = int(parts[0])
-            plugin_version = int(parts[1])
-        except ValueError as e_ver:
-            raise HandshakeError(
-                message=(f"Invalid version numbers in handshake: '{parts[0]}', '{parts[1]}'."),
-                hint=("Core and plugin versions in the handshake string must be integers."),
-            ) from e_ver
-
+        parts = _split_handshake_response(response)
+        core_version, plugin_version = _parse_versions(parts)
         network = parts[2]
-        if network not in ("tcp", "unix"):
-            logger.error(
-                f"📡❌ Invalid network type in handshake: {network}",
-                extra={"network": network},
-            )
-            raise HandshakeError(
-                message=f"Invalid network type '{network}' in handshake.",
-                hint="Network type must be 'tcp' or 'unix'.",
-            )
         address = parts[3]
-        if network == "tcp" and not address:
-            logger.error(
-                f"📡❌ Empty address received for TCP transport in handshake: {response}",
-                extra={"address": address},
-            )
-            raise HandshakeError(
-                message="Empty address received in handshake string for TCP transport.",
-                hint="TCP transport requires a valid address (host:port).",
-            )
+        _validate_network(network, address, response)
         protocol = parts[4]
-        raw_server_cert_part = parts[5] if parts[5] else None
-        if raw_server_cert_part:
-            temp_cert = raw_server_cert_part.replace("\\n", "").replace("\\r", "")
-            server_cert = temp_cert.replace("\n", "").replace("\r", "").strip()
-        else:
-            server_cert = None
-
-        expected_core_version_from_config = rpcplugin_config.plugin_core_version
-        logger.debug(
-            "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: "
-            f"{expected_core_version_from_config} "
-            f"(type: {type(expected_core_version_from_config)})"
-        )
-
-        if expected_core_version_from_config is None:
-            logger.error(
-                "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. "
-                "Falling back to schema default 1."
-            )
-            expected_core_version_int = 1
-        else:
-            try:
-                expected_core_version_int = int(expected_core_version_from_config)
-            except (ValueError, TypeError) as e:
-                logger.error(
-                    "CRITICAL: Could not convert PLUGIN_CORE_VERSION "
-                    f"'{expected_core_version_from_config}' to int. Error: {e}. "
-                    "Falling back to default 1."
-                )
-                expected_core_version_int = 1
-
-        if core_version != expected_core_version_int:
-            logger.error(
-                f"🤝 Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
-            )
-            raise HandshakeError(
-                f"Unsupported handshake version: {core_version} (expected: {expected_core_version_int})"
-            )
-
-        if server_cert:
-            padding = len(server_cert) % 4
-            if padding:
-                server_cert += "=" * (4 - padding)
-            logger.debug("📡🔐 Restored certificate padding for handshake parsing.")
+        server_cert = _prepare_server_cert(parts[5])
+        expected_core_version_int = _resolve_expected_core_version()
+        _ensure_supported_core_version(core_version, expected_core_version_int)
+        server_cert = _apply_certificate_padding(server_cert)
 
         logger.debug(
             "📡✅ Handshake parsing success: "

@@ -16,6 +16,7 @@ from pathlib import Path
 import socket
 import stat
 import tempfile
+from typing import Any
 import uuid
 
 from attrs import define, field
@@ -144,92 +145,97 @@ class UnixSocketTransport(RPCPluginTransport):
                         f"📞🔍⚠️ Error closing temporary socket in _check_socket_in_use: {e_sock_close}"
                     )
 
+    def _raise_if_running(self) -> None:
+        if self._running:
+            logger.error(f"📞🕹❌ Socket {self.path} is already running")
+            raise TransportError(f"Socket {self.path} is already running")
+
+    async def _ensure_socket_available(self) -> None:
+        if await self._check_socket_in_use():
+            logger.error(f"📞🕹❌ Socket {self.path} is already running")
+            raise TransportError(f"Socket {self.path} is already running")
+
+    def _require_socket_path(self) -> str:
+        if self.path is None:
+            raise RuntimeError(
+                "self.path was not initialized. This should not happen if __attrs_post_init__ ran correctly."
+            )
+        return self.path
+
+    def _ensure_socket_directory(self, socket_path: str) -> None:
+        dir_path = Path(socket_path).parent
+        if dir_path == Path():
+            return
+        try:
+            dir_path.mkdir(parents=True, exist_ok=True)
+            logger.debug(f"📞🕹✅ Created directory: {dir_path}")
+        except (PermissionError, OSError) as exc:
+            logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {exc}")
+            raise TransportError(f"Failed to create Unix socket directory: {exc}") from exc
+
+    async def _remove_stale_socket_file(self, socket_path: str) -> None:
+        try:
+            path_exists = Path(socket_path).exists()
+        except PermissionError as exc:
+            logger.warning(
+                f"📞🕹⚠️ Permission denied checking if socket exists: {exc}. Proceeding with socket creation."
+            )
+            path_exists = False
+
+        if not path_exists:
+            return
+
+        try:
+            Path(socket_path).unlink()
+            logger.debug(f"📞🕹✅ Removed stale socket file: {socket_path}")
+            await asyncio.sleep(0.1)
+        except OSError as exc:
+            if exc.errno != errno.ENOENT:
+                logger.error(f"📞🕹❌ Failed to remove stale socket: {exc}")
+                raise TransportError(f"Failed to remove stale socket: {exc}") from exc
+
+    def _set_socket_permissions(self, socket_path: str) -> None:
+        try:
+            current_mask = os.umask(0)
+            os.umask(current_mask)
+            desired_permissions = 0o660 & ~current_mask
+            Path(socket_path).chmod(desired_permissions)  # nosec B103
+            logger.debug(
+                "📞🕹✅ Set permissions to %s on %s (considering umask %s)",
+                oct(desired_permissions),
+                socket_path,
+                oct(current_mask),
+            )
+        except Exception as exc:
+            logger.warning(
+                f"📞🕹⚠️ Failed to set permissions on {socket_path}: {exc}. Proceeding with default permissions."
+            )
+
+    async def _start_server_at_path(self, socket_path: str) -> str:
+        try:
+            logger.debug(f"📞🕹🚀 Creating Unix socket at {socket_path}")
+            self._server = await asyncio.start_unix_server(self._handle_client, path=socket_path)
+        except OSError as exc:
+            logger.error(f"📞🕹❌ Failed to create Unix socket: {exc}")
+            raise TransportError(f"Failed to create Unix socket: {exc}") from exc
+
+        self._set_socket_permissions(socket_path)
+        self._running = True
+        self.endpoint = socket_path
+        logger.info(f"📞🕹✅ UnixSocketTransport: Endpoint set to {self.endpoint}")
+        logger.debug(f"📞🕹✅ Server listening on {socket_path}")
+        self._server_ready.set()
+        return socket_path
+
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""
         async with self._lock:
-            if self._running:
-                logger.error(f"📞🕹❌ Socket {self.path} is already running")
-                raise TransportError(f"Socket {self.path} is already running")
-
-            # Check if socket file is in use
-            socket_in_use = await self._check_socket_in_use()
-            if socket_in_use:
-                logger.error(f"📞🕹❌ Socket {self.path} is already running")
-                raise TransportError(f"Socket {self.path} is already running")
-
-            if self.path is None:
-                raise RuntimeError(
-                    "self.path was not initialized. This should not happen if "
-                    "__attrs_post_init__ ran correctly."
-                )
-
-            # Create directory if needed
-            dir_path = Path(self.path).parent
-            if dir_path != Path():
-                try:
-                    dir_path.mkdir(parents=True, exist_ok=True)
-                    logger.debug(f"📞🕹✅ Created directory: {dir_path}")
-                except (PermissionError, OSError) as e:
-                    logger.error(f"📞🕹❌ Failed to create directory {dir_path}: {e}")
-                    raise TransportError(f"Failed to create Unix socket directory: {e}") from e
-
-            try:
-                path_exists = Path(self.path).exists()
-            except PermissionError as e:
-                logger.warning(
-                    f"📞🕹⚠️ Permission denied checking if socket exists: {e}. Proceeding with socket creation."
-                )
-                path_exists = False
-
-            if path_exists:
-                try:
-                    Path(self.path).unlink()
-                    logger.debug(f"📞🕹✅ Removed stale socket file: {self.path}")
-                    # Brief pause to ensure file system syncs
-                    await asyncio.sleep(0.1)
-                except OSError as e:
-                    if e.errno != errno.ENOENT:  # Ignore if file doesn't exist
-                        logger.error(f"📞🕹❌ Failed to remove stale socket: {e}")
-                        raise TransportError(f"Failed to remove stale socket: {e}") from e
-
-            try:
-                logger.debug(f"📞🕹🚀 Creating Unix socket at {self.path}")
-                self._server = await asyncio.start_unix_server(self._handle_client, path=self.path)
-
-                # Set permissions for user and group (owner rw, group rw)
-                # This is safer than 0o777 and suitable if client/server share a group.
-                # For broader interop where group sharing isn't guaranteed,
-                # this might be too restrictive.
-                # However, 0o777 is generally too permissive for production.
-                # Acknowledging the "test/interop environments" comment,
-                # 0o660 provides read/write access for owner and group.
-                try:
-                    current_mask = os.umask(0)  # Get current umask, set to 0 temporarily
-                    os.umask(current_mask)  # Restore original umask
-                    desired_permissions = 0o660 & ~current_mask  # Apply umask
-                    Path(self.path).chmod(desired_permissions)  # nosec B103
-                    logger.debug(
-                        f"📞🕹✅ Set permissions to {oct(desired_permissions)} on "
-                        f"{self.path} (considering umask {oct(current_mask)})"
-                    )
-                except Exception as e_chmod:
-                    logger.warning(
-                        f"📞🕹⚠️ Failed to set permissions on {self.path}: {e_chmod}. "
-                        "Proceeding with default permissions."
-                    )
-
-                self._running = True
-                self.endpoint = self.path
-                logger.info(f"📞🕹✅ UnixSocketTransport: Endpoint set to {self.endpoint}")
-                logger.debug(f"📞🕹✅ Server listening on {self.path}")
-                self._server_ready.set()
-                if self.path is None:  # Should be caught by earlier check, but safeguard
-                    raise RuntimeError("self.path became None before returning from listen().")
-                return self.path
-
-            except OSError as e:
-                logger.error(f"📞🕹❌ Failed to create Unix socket: {e}")
-                raise TransportError(f"Failed to create Unix socket: {e}") from e
+            self._raise_if_running()
+            await self._ensure_socket_available()
+            socket_path = self._require_socket_path()
+            self._ensure_socket_directory(socket_path)
+            await self._remove_stale_socket_file(socket_path)
+            return await self._start_server_at_path(socket_path)
 
     async def connect(self, endpoint: str) -> None:
         """
@@ -338,76 +344,57 @@ class UnixSocketTransport(RPCPluginTransport):
             await conn.close()
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
 
+    async def _wait_for_writer_close(self, writer: asyncio.StreamWriter) -> None:
+        logger.debug("📞🔒✍️ Attempting to close writer %r", writer)
+        if hasattr(writer, "wait_closed"):
+            await writer.wait_closed()
+            logger.debug("📞🔒✅ Writer closed successfully")
+        else:
+            logger.debug("📞🔒✍️ Writer %r has no wait_closed method; skipping await.", writer)
+
+    def _abort_transport(self, transport: Any, message: str) -> None:
+        if not transport:
+            logger.debug("📞🔒✍️ %s but transport is None.", message)
+            return
+        if hasattr(transport, "abort") and callable(transport.abort):
+            logger.warning("📞🔒✍️ %s Aborting transport: %r", message, transport)
+            transport.abort()
+        else:
+            logger.debug("📞🔒✍️ Transport %r has no abort method.", transport)
+
+    def _finalize_transport_shutdown(self, transport: Any) -> None:
+        if not transport:
+            logger.debug("📞🔒✍️ writer has no transport attribute in finally.")
+            return
+
+        has_is_closing = hasattr(transport, "is_closing") and callable(transport.is_closing)
+        if has_is_closing and transport.is_closing():
+            logger.debug("📞🔒✍️ Transport already closing in _close_writer: %r", transport)
+            return
+        if has_is_closing:
+            logger.debug("📞🔒✍️ Transport not closing after writer.close(); aborting: %r", transport)
+            self._abort_transport(transport, "Transport not closing after writer.close().")
+            return
+
+        logger.debug("📞🔒✍️ No is_closing, attempting abort for transport: %r", transport)
+        self._abort_transport(transport, "Transport missing is_closing; aborting proactively.")
+
     async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:
         """Close a StreamWriter with proper error handling."""
         if writer is None:
             logger.debug("📞🔒✍️ _close_writer: writer is None, returning.")
             return
 
-        transport_to_abort = None
-        if hasattr(writer, "transport"):
-            transport_to_abort = writer.transport
-
+        transport_to_abort = getattr(writer, "transport", None)
         try:
             logger.debug(f"📞🔒✍️ _close_writer: writer.close() called for {writer!r}")
             writer.close()
-
-            # Add detailed diagnostic logging here
-            logger.debug(f"📞🔒✍️ DIAGNOSTIC: type(writer): {type(writer)}")
-            logger.debug(f"📞🔒✍️ DIAGNOSTIC: repr(writer): {writer!r}")
-            logger.debug(f"📞🔒✍️ DIAGNOSTIC: hasattr(writer, 'wait_closed'): {hasattr(writer, 'wait_closed')}")
-            if hasattr(writer, "wait_closed"):
-                logger.debug(f"📞🔒✍️ DIAGNOSTIC: type(writer.wait_closed): {type(writer.wait_closed)}")
-                logger.debug(f"📞🔒✍️ DIAGNOSTIC: repr(writer.wait_closed): {writer.wait_closed!r}")
-            if hasattr(writer, "is_closing") and callable(writer.is_closing):
-                logger.debug(f"📞🔒✍️ DIAGNOSTIC: writer.is_closing(): {writer.is_closing()}")
-            else:
-                logger.debug("📞🔒✍️ DIAGNOSTIC: writer has no is_closing() method.")
-
-            await writer.wait_closed()
-            logger.debug("📞🔒✅ Writer closed successfully")
-        except Exception as e:
-            logger.error(f"📞🔒⚠️ Error closing writer: {e}", exc_info=True)
-            # If wait_closed() failed, attempt to abort the transport directly
-            # as the normal cleanup might be compromised.
-            if (
-                transport_to_abort
-                and hasattr(transport_to_abort, "abort")
-                and callable(transport_to_abort.abort)
-            ):
-                logger.warning(
-                    "📞🔒✍️ Exception during wait_closed, attempting direct "
-                    f"abort of transport: {transport_to_abort!r}"
-                )
-                transport_to_abort.abort()
+            await self._wait_for_writer_close(writer)
+        except Exception as exc:
+            logger.error(f"📞🔒⚠️ Error closing writer: {exc}", exc_info=True)
+            self._abort_transport(transport_to_abort, "Exception during writer.close().")
         finally:
-            # This existing finally block can act as a final check, though the
-            # direct abort in the except block should handle the primary case.
-            if transport_to_abort:  # transport_to_abort was defined at the start of the method
-                if (
-                    hasattr(transport_to_abort, "is_closing")
-                    and callable(transport_to_abort.is_closing)
-                    and hasattr(transport_to_abort, "abort")
-                    and callable(transport_to_abort.abort)
-                ):
-                    if not transport_to_abort.is_closing():
-                        logger.debug(
-                            "📞🔒✍️ FINALLY: Aggro abort in _close_writer for "
-                            f"transport: {transport_to_abort!r}"
-                        )
-                        transport_to_abort.abort()
-                    else:
-                        logger.debug(
-                            "📞🔒✍️ FINALLY: Transport already closing in "
-                            f"_close_writer: {transport_to_abort!r}"
-                        )
-                elif hasattr(transport_to_abort, "abort") and callable(transport_to_abort.abort):
-                    logger.debug(f"📞🔒✍️ FINALLY: No is_closing, attempting abort: {transport_to_abort!r}")
-                    transport_to_abort.abort()
-                else:
-                    logger.debug(f"📞🔒✍️ FINALLY: Transport {transport_to_abort!r} has no abort method.")
-            else:
-                logger.debug("📞🔒✍️ writer has no transport attribute in finally.")
+            self._finalize_transport_shutdown(transport_to_abort)
 
     async def _close_connections(self) -> None:
         """Close all active connections."""
