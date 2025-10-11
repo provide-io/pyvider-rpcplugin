@@ -10,7 +10,6 @@ from pyvider.rpcplugin.client.core import RPCPluginClient
 
 @pytest.mark.asyncio
 @pytest.mark.slow
-@pytest.mark.skip(reason="Test hangs - needs investigation of async task lifecycle")
 async def test_client_integration(test_client_command, client_cert, async_mock_factory, magic_mock_factory):
     """
     Integration test for RPCPluginClient full lifecycle.
@@ -20,9 +19,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     2. Start client (setup certs, launch process, handshake, create channel)
     3. Use client (read logs, open subchannel, shutdown plugin)
     4. Close client
-
-    NOTE: This test currently hangs during client lifecycle. The issue appears to be related
-    to background tasks not completing properly even with mocked dependencies.
     """
     # Create mocks using provide-testkit factories
     mock_managed_process_class = magic_mock_factory(name="ManagedProcess")
@@ -60,8 +56,8 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         # Mock underlying Popen process
         mock_popen = magic_mock_factory(name="plugin_popen")
         mock_popen.stdout = magic_mock_factory(name="process_stdout")
-        mock_popen.stderr = magic_mock_factory(name="process_stderr")
-        mock_popen.poll.return_value = 0  # Process is already terminated
+        mock_popen.stderr = None  # No stderr to avoid creating the stderr relay task
+        mock_popen.poll.return_value = None  # Process is running
         mock_popen.terminate = magic_mock_factory(name="process_terminate")
         mock_popen.kill = magic_mock_factory(name="process_kill")
         mock_popen.wait = magic_mock_factory(name="process_wait", return_value=0)
@@ -70,8 +66,21 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_managed_process = magic_mock_factory(name="managed_process")
         mock_managed_process.process = mock_popen
         mock_managed_process.pid = 12345
-        mock_managed_process.is_running.return_value = False  # Process already terminated
-        mock_managed_process.terminate_gracefully.return_value = True
+        mock_managed_process.launch = magic_mock_factory(name="launch")
+
+        # Make is_running return True initially, then False after close
+        is_running_state = {"running": True}
+
+        def mock_is_running():
+            return is_running_state["running"]
+
+        mock_managed_process.is_running = mock_is_running
+
+        def mock_terminate_gracefully(timeout=None):
+            is_running_state["running"] = False
+            return True
+
+        mock_managed_process.terminate_gracefully = mock_terminate_gracefully
         mock_managed_process.cleanup = magic_mock_factory(name="cleanup")
         mock_managed_process_class.return_value = mock_managed_process
 
