@@ -335,9 +335,13 @@ async def build_handshake_response(
             span.set_attribute("transport", transport_name)
             span.set_attribute("plugin_version", plugin_version)
             span.set_attribute("has_cert", server_cert is not None)
-            return await _build_handshake_response_impl(plugin_version, transport_name, transport, server_cert, port)
+            return await _build_handshake_response_impl(
+                plugin_version, transport_name, transport, server_cert, port
+            )
     else:
-        return await _build_handshake_response_impl(plugin_version, transport_name, transport, server_cert, port)
+        return await _build_handshake_response_impl(
+            plugin_version, transport_name, transport, server_cert, port
+        )
 
 
 async def _build_handshake_response_impl(
@@ -445,7 +449,9 @@ def parse_handshake_response(
     """
     if _tracer:
         with _tracer.start_as_current_span("rpc.handshake.parse_response") as span:
-            span.set_attribute("response_length", len(response))
+            # Only set response_length if response is a string
+            if isinstance(response, str):
+                span.set_attribute("response_length", len(response))
             return _parse_handshake_response_impl(response, span)
     else:
         return _parse_handshake_response_impl(response, None)
@@ -453,7 +459,7 @@ def parse_handshake_response(
 
 def _parse_handshake_response_impl(
     response: str,
-    span=None,  # Optional span for adding attributes
+    span: object | None = None,  # Optional span for adding attributes
 ) -> tuple[int, int, str, str, str, str | None]:
     """Implementation of handshake response parsing."""
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
