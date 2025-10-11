@@ -16,8 +16,8 @@ def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
     client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
 
-    # Create the underlying Popen mock
-    popen_mock = MagicMock(spec=subprocess.Popen)
+    # Create the underlying Popen mock (don't use spec to avoid Mock spec issues)
+    popen_mock = MagicMock()
     popen_mock.poll.return_value = None
     popen_mock.returncode = None
     popen_mock.stderr = MagicMock()

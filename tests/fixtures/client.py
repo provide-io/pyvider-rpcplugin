@@ -36,8 +36,8 @@ async def client_instance(test_client_command):
 @pytest_asyncio.fixture
 async def mock_process():
     """Mock ManagedProcess wrapper for testing."""
-    # Create the underlying Popen mock
-    popen_mock = MagicMock(spec=subprocess.Popen)
+    # Create the underlying Popen mock (don't use spec since subprocess may be patched)
+    popen_mock = MagicMock()
     popen_mock.stdout = MagicMock()
     popen_mock.stderr = MagicMock()
     popen_mock.poll.return_value = None  # Process is running
