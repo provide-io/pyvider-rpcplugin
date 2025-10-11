@@ -22,7 +22,7 @@ except Exception:
 try:  # pragma: no cover - relax grpc version guard for generated health stubs
     import grpc
 
-    grpc.__version__ = "1.75.0"
+    grpc.__version__ = "1.75.1"
 except Exception:
     pass
 
