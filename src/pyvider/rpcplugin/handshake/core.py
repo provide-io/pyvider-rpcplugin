@@ -17,7 +17,11 @@ from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
+from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.transport.types import TransportT
+
+# Get tracer for handshake operations
+_tracer = get_rpc_tracer()
 
 
 class _SentinelEnum(Enum):  # type: ignore[type-arg]
@@ -183,6 +187,20 @@ def validate_magic_cookie(
     Raises:
         HandshakeError: If cookie validation fails.
     """
+    if _tracer:
+        with _tracer.start_as_current_span("rpc.handshake.validate_cookie") as span:
+            span.set_attribute("component", "handshake")
+            _validate_magic_cookie_impl(magic_cookie_key, magic_cookie_value, magic_cookie)
+    else:
+        _validate_magic_cookie_impl(magic_cookie_key, magic_cookie_value, magic_cookie)
+
+
+def _validate_magic_cookie_impl(
+    magic_cookie_key: str | None | _SentinelType,
+    magic_cookie_value: str | None | _SentinelType,
+    magic_cookie: str | None | _SentinelType,
+) -> None:
+    """Implementation of magic cookie validation."""
     logger.debug("Starting magic cookie validation...")
 
     cookie_key: str | None = (  # type: ignore[assignment]
@@ -312,6 +330,24 @@ async def build_handshake_response(
         TransportError: If an unsupported transport type is given.
         Exception: Propagates exceptions from underlying operations.
     """
+    if _tracer:
+        with _tracer.start_as_current_span("rpc.handshake.build_response") as span:
+            span.set_attribute("transport", transport_name)
+            span.set_attribute("plugin_version", plugin_version)
+            span.set_attribute("has_cert", server_cert is not None)
+            return await _build_handshake_response_impl(plugin_version, transport_name, transport, server_cert, port)
+    else:
+        return await _build_handshake_response_impl(plugin_version, transport_name, transport, server_cert, port)
+
+
+async def _build_handshake_response_impl(
+    plugin_version: int,
+    transport_name: str,
+    transport: TransportT,
+    server_cert: Certificate | None = None,
+    port: int | None = None,
+) -> str:
+    """Implementation of handshake response building."""
     logger.debug("🤝📝🔄 Building handshake response...")
 
     try:
@@ -407,6 +443,19 @@ def parse_handshake_response(
         ValueError: If parts of the handshake string are invalid
                     (e.g., non-integer versions).
     """
+    if _tracer:
+        with _tracer.start_as_current_span("rpc.handshake.parse_response") as span:
+            span.set_attribute("response_length", len(response))
+            return _parse_handshake_response_impl(response, span)
+    else:
+        return _parse_handshake_response_impl(response, None)
+
+
+def _parse_handshake_response_impl(
+    response: str,
+    span=None,  # Optional span for adding attributes
+) -> tuple[int, int, str, str, str, str | None]:
+    """Implementation of handshake response parsing."""
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
     try:
         parts = _split_handshake_response(response)
@@ -419,6 +468,14 @@ def parse_handshake_response(
         expected_core_version_int = _resolve_expected_core_version()
         _ensure_supported_core_version(core_version, expected_core_version_int)
         server_cert = _apply_certificate_padding(server_cert)
+
+        # Add attributes to span if available
+        if span:
+            span.set_attribute("network", network)
+            span.set_attribute("protocol", protocol)
+            span.set_attribute("core_version", core_version)
+            span.set_attribute("plugin_version", plugin_version)
+            span.set_attribute("has_cert", server_cert is not None)
 
         logger.debug(
             "📡✅ Handshake parsing success: "
