@@ -38,7 +38,8 @@
       "Bash(PYTHONPATH=./src ruff check:*)",
       "Bash(chmod:*)",
       "Bash(DEMO_COOKIE=demo123 PYTHONPATH=./src timeout 10s python examples/ch16_telemetry_demo.py)",
-      "Bash(DEMO_COOKIE=demo123 PYTHONPATH=./src timeout 5s python examples/ch16_telemetry_demo.py)"
+      "Bash(DEMO_COOKIE=demo123 PYTHONPATH=./src timeout 5s python examples/ch16_telemetry_demo.py)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],
