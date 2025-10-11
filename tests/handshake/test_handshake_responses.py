@@ -15,7 +15,11 @@ from pyvider.rpcplugin.config import rpcplugin_config
 @pytest.mark.asyncio
 async def test_build_handshake_response_with_tls(mock_server_transport_tcp):
     """Test building handshake response with TLS certificate."""
-    cert = Certificate(generate_keypair=True)
+    cert = Certificate.create_self_signed_server_cert(
+        common_name="test",
+        organization_name="test",
+        validity_days=365,
+    )
     response = await build_handshake_response(
         plugin_version=7,
         transport_name="tcp",

@@ -109,7 +109,11 @@ async def test_build_handshake_response_with_certificate():
         transport = TCPSocketTransport()
 
         # Create a simple certificate
-        cert = Certificate(generate_keypair=True)
+        cert = Certificate.create_self_signed_server_cert(
+            common_name="test",
+            organization_name="test",
+            validity_days=365,
+        )
 
         response = await build_handshake_response(
             plugin_version=7,
@@ -239,7 +243,11 @@ async def test_server_handshake_integration(
 async def test_certificate_handling_in_handshake():
     """Test proper certificate handling in handshake."""
     # Generate a test certificate
-    cert = Certificate(generate_keypair=True)
+    cert = Certificate.create_self_signed_server_cert(
+        common_name="test",
+        organization_name="test",
+        validity_days=365,
+    )
 
     # Build handshake with certificate
     transport = TCPSocketTransport()

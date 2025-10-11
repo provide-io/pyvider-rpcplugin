@@ -54,7 +54,11 @@ def test_rebuild_x509_pem():
 async def test_handshake_certificate_stripping():
     """Test that certificate data is properly stripped of PEM headers in handshake."""
     # Create a test certificate
-    cert = Certificate(generate_keypair=True)
+    cert = Certificate.create_self_signed_server_cert(
+        common_name="test",
+        organization_name="test",
+        validity_days=365,
+    )
 
     # Create a mock transport
     class MockTransport:
