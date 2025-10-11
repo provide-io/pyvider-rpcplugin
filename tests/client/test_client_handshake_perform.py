@@ -50,16 +50,16 @@ async def test_perform_handshake_success(client_instance: RPCPluginClient, mock_
     # Set up mock process with proper stderr that returns bytes
     mock_stderr = MagicMock()
     mock_stderr.readline = MagicMock(return_value=b"")
-    mock_process.stderr = mock_stderr
+    mock_process.process.stderr = mock_stderr
     client_instance._process = None  # So _launch_process will actually launch
 
     with (
-        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process),
+        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process.process),
         patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
-        mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+        mock_process.process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
@@ -75,17 +75,17 @@ async def test_perform_handshake_with_cert(client_instance: RPCPluginClient, moc
     # Set up mock process with proper stderr that returns bytes
     mock_stderr = MagicMock()
     mock_stderr.readline = MagicMock(return_value=b"")
-    mock_process.stderr = mock_stderr
+    mock_process.process.stderr = mock_stderr
     client_instance._process = None  # So _launch_process will actually launch
     sample_cert = "dGVzdA=="
 
     with (
-        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process),
+        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process.process),
         patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
-        mock_process.stdout.readline.return_value = f"1|1|tcp|127.0.0.1:8000|grpc|{sample_cert}\\n".encode()
+        mock_process.process.stdout.readline.return_value = f"1|1|tcp|127.0.0.1:8000|grpc|{sample_cert}\\n".encode()
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
@@ -103,16 +103,16 @@ async def test_perform_handshake_with_unix_transport(
     # Set up mock process with proper stderr that returns bytes
     mock_stderr = MagicMock()
     mock_stderr.readline = MagicMock(return_value=b"")
-    mock_process.stderr = mock_stderr
+    mock_process.process.stderr = mock_stderr
     client_instance._process = None  # So _launch_process will actually launch
 
     with (
-        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process),
+        patch("pyvider.rpcplugin.client.process.subprocess.Popen", return_value=mock_process.process),
         patch("pyvider.rpcplugin.transport.UnixSocketTransport") as mock_transport_class,
     ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
-        mock_process.stdout.readline.return_value = b"1|1|unix|/tmp/test.sock|grpc|\n"
+        mock_process.process.stdout.readline.return_value = b"1|1|unix|/tmp/test.sock|grpc|\n"
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
