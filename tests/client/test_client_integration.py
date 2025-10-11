@@ -148,8 +148,8 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Mock config for mTLS using Foundation patterns
         with patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls", True):
-            # Start client
-            await client.start()
+            # Start client with timeout to prevent hanging
+            await asyncio.wait_for(client.start(), timeout=5.0)
 
             # Verify client initialized correctly
             assert client._process == mock_managed_process
@@ -167,6 +167,9 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Clean up
         await client.close()
+
+        # Give async cleanup tasks time to complete
+        await asyncio.sleep(0.1)
 
         # Verify resources cleaned up
         assert client.grpc_channel is None
