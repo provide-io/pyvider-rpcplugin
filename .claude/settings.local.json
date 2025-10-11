@@ -29,7 +29,8 @@
       "Bash(PYTHONPATH=./src ruff format tests/server/test_server_health_check.py tests/server/test_server_rate_limiting.py tests/transport/test_transport_suite.py tests/fixtures/server.py src/pyvider/rpcplugin/server/network.py)",
       "Bash(source env.sh)",
       "Bash(python:*)",
-      "Bash(.venv/bin/python:*)"
+      "Bash(.venv/bin/python:*)",
+      "Bash(uv pip show:*)"
     ],
     "deny": [],
     "ask": [],
