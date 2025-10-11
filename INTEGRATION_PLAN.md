@@ -4,9 +4,9 @@
 
 ### Phase 1: High Priority Resilience & Instrumentation
 - [x] Add @resilient decorator to handshake operations (handshake/core.py)
-- [ ] Add @retry decorator to gRPC channel creation (client/process.py)
-- [ ] Add timed_block instrumentation to server operations (server/core.py)
-- [ ] Add error_boundary to RPC handlers (protocol/service.py)
+- [x] Add @retry decorator to gRPC channel creation (client/process.py)
+- [x] Add timed_block instrumentation to server operations (server/core.py)
+- [x] Add @resilient decorator to RPC shutdown handler (protocol/service.py)
 - [ ] Run tests to verify all changes work correctly
 - [ ] Final code quality check (ruff + mypy)
 
@@ -60,13 +60,18 @@
 - Add `timed_block` to handshake negotiation
 - Add `timed_block` to transport setup
 
-### 4. RPC Handler Error Boundaries (PENDING)
-**Target**: `src/pyvider/rpcplugin/protocol/service.py`
+### 4. RPC Handler Resilience (COMPLETED)
+**Files Modified**: `src/pyvider/rpcplugin/protocol/service.py`
 
-**Plan**:
-- Add `error_boundary` context managers to RPC call handlers
-- Isolate errors per RPC call
-- Preserve existing error propagation
+**Changes**:
+- Added `@resilient` decorator to `GRPCControllerService.Shutdown()` method
+- Provides automatic error logging for shutdown RPC operations
+- Preserves existing comprehensive error handling in streaming methods
+
+**Benefits**:
+- Consistent error logging across RPC operations
+- Better observability for plugin lifecycle events
+- Maintains existing error handling patterns for streaming RPCs
 
 ## Testing Strategy
 

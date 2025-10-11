@@ -173,15 +173,13 @@ class ClientProcessMixin:
             self.grpc_channel = None
 
     @retry(
-        policy=RetryPolicy(
-            max_retries=3,
-            backoff=BackoffStrategy.EXPONENTIAL,
-            initial_delay=0.1,
-            max_delay=2.0,
-            exponential_base=2.0,
-        ),
-        retry_on=(TransportError, TimeoutError, OSError),
-        context={"operation": "create_grpc_channel", "component": "client"},
+        TransportError,
+        TimeoutError,
+        OSError,
+        max_attempts=3,
+        backoff=BackoffStrategy.EXPONENTIAL,
+        base_delay=0.1,
+        max_delay=2.0,
     )
     async def _create_grpc_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
