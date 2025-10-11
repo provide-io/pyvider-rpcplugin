@@ -11,7 +11,6 @@ stub initialization, and stdio/broker operations.
 from __future__ import annotations
 
 import asyncio
-import os
 from typing import TYPE_CHECKING
 
 from google.protobuf import empty_pb2  # type: ignore[import-untyped]
