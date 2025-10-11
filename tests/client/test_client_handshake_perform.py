@@ -17,12 +17,24 @@ from pyvider.rpcplugin.exception import HandshakeError, SecurityError, Transport
 def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
     client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
-    mock_process_obj = MagicMock(spec=subprocess.Popen)
-    mock_process_obj.poll.return_value = None
-    mock_process_obj.returncode = None
-    mock_process_obj.stderr = MagicMock()
-    mock_process_obj.stdout = MagicMock()
-    client._process = mock_process_obj
+
+    # Create the underlying Popen mock (don't use spec to avoid Mock spec issues)
+    popen_mock = MagicMock()
+    popen_mock.poll.return_value = None
+    popen_mock.returncode = None
+    popen_mock.stderr = MagicMock()
+    popen_mock.stdout = MagicMock()
+
+    # Create the ManagedProcess wrapper mock
+    managed_process = MagicMock()
+    managed_process.process = popen_mock
+    managed_process.is_running.return_value = True
+    managed_process.pid = 12345
+    managed_process.returncode = None
+    managed_process.terminate_gracefully.return_value = True
+    managed_process.cleanup = MagicMock()
+
+    client._process = managed_process
     return client
 
 
@@ -227,14 +239,15 @@ def test_rebuild_x509_pem_empty(minimal_client: RPCPluginClient) -> None:
 async def test_perform_handshake_cleanup_warning(minimal_client: RPCPluginClient, mocker: object) -> None:
     client = minimal_client
 
-    mock_process = MagicMock(spec=subprocess.Popen)
-    mock_process.poll.return_value = None
-    mock_process.stderr = MagicMock()
-    mock_process.stderr.read.return_value = b""
-    mock_process.terminate.side_effect = RuntimeError("terminate failure")
-    mock_process.kill = MagicMock()
+    # Create ManagedProcess mock that raises exception during cleanup
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.side_effect = RuntimeError("terminate failure")
+    managed_process.cleanup = MagicMock()
+    managed_process.process = MagicMock()
+    managed_process.process.stderr = MagicMock()
+    managed_process.process.stderr.read.return_value = b""
 
-    client._process = mock_process
+    client._process = managed_process
 
     mocker.patch.object(client, "_launch_process", AsyncMock(return_value=None))
     mocker.patch.object(
@@ -258,13 +271,16 @@ async def test_perform_handshake_cleanup_warning(minimal_client: RPCPluginClient
 @pytest.mark.asyncio
 async def test_perform_handshake_cleanup_kill(minimal_client: RPCPluginClient, mocker: object) -> None:
     client = minimal_client
-    mock_process = MagicMock(spec=subprocess.Popen)
-    mock_process.poll.side_effect = [None, None, 1]
-    mock_process.stderr = MagicMock()
-    mock_process.stderr.read.return_value = b""
-    mock_process.terminate = MagicMock()
-    mock_process.kill = MagicMock()
-    client._process = mock_process
+
+    # Create ManagedProcess mock
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.return_value = True  # Succeeds
+    managed_process.cleanup = MagicMock()
+    managed_process.process = MagicMock()
+    managed_process.process.stderr = MagicMock()
+    managed_process.process.stderr.read.return_value = b""
+
+    client._process = managed_process
 
     mocker.patch.object(client, "_launch_process", AsyncMock())
     mocker.patch.object(
@@ -277,8 +293,8 @@ async def test_perform_handshake_cleanup_kill(minimal_client: RPCPluginClient, m
     with pytest.raises(RuntimeError, match="boom"):
         await client._perform_handshake()
 
-    mock_process.terminate.assert_called_once()
-    mock_process.kill.assert_called_once()
+    managed_process.terminate_gracefully.assert_called_once_with(timeout=1.0)
+    managed_process.cleanup.assert_called_once()
     assert client._process is None
 
 
