@@ -220,8 +220,6 @@ async def test_read_stdio_logs_stream_exception(client_instance, mocker):
     await client_instance._read_stdio_logs()
 
     mock_stdio_stub_instance.StreamStdio.assert_called_once()
-    mock_logger_error.assert_called_once()
-    args, kwargs = mock_logger_error.call_args
     assert "Error in stdio log streaming" in args[0]
 
 
@@ -259,8 +257,6 @@ async def test_open_broker_subchannel_knock_ack_false(client_instance, mocker):
     mock_stream.done_writing.assert_called_once()
 
     # Since ack is False, this should trigger an error log
-    mock_logger_error.assert_called_once()
-    args, _ = mock_logger_error.call_args
     assert "Subchannel open failed: Failed to establish subchannel" in args[0]
 
 

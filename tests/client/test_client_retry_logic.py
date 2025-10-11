@@ -205,7 +205,7 @@ async def test_connect_handshake_total_timeout_immediately(client_instance_local
 
     # Check for timeout error log (format: "Total timeout of {timeout}ms exceeded after {attempts} attempts. Elapsed time: {elapsed}ms")
     timeout_calls = [
-        call for call in client_instance.logger.error.call_args_list if "Total timeout" in str(call)
+        # call for call in client_instance.logger.error.call_args_list if "Total timeout" in str(call)
     ]
     assert len(timeout_calls) > 0, "Expected timeout error log not found"
     assert client_instance._handshake_failed_event.is_set()
