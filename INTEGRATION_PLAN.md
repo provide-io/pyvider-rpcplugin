@@ -244,3 +244,235 @@ client._process = managed_process
 2. The two-level mock pattern (wrapper → process) is essential for accurate testing
 3. Method signature changes (`poll()` → `is_running()`, `terminate()` → `terminate_gracefully()`) require corresponding test updates
 4. Patching must occur at the import location (`pyvider.rpcplugin.client.process.ManagedProcess`), not the source location
+
+---
+
+## Phase 3 Implementation Details
+
+### Status: 🔄 IN PROGRESS (44% Complete - 8/18 tasks)
+
+Phase 3 adds advanced Foundation features for enterprise-grade observability and extensibility:
+1. **ConfigManager** - Multi-instance configuration management ✅ COMPLETE
+2. **OpenTelemetry** - Distributed tracing and metrics 🔄 IN PROGRESS
+3. **Hub/Registry** - Component discovery and lifecycle management ⏳ PENDING
+
+### 1. ConfigManager Integration ✅ COMPLETE
+
+**Objective**: Enable centralized configuration management for multiple RPC plugin instances
+
+**Files Created**:
+- `src/pyvider/rpcplugin/config/manager.py` (224 lines)
+- `tests/config/test_config_manager.py` (395 lines, 29 tests)
+
+**Files Modified**:
+- `src/pyvider/rpcplugin/config/__init__.py` - Added manager function exports
+
+**API Added**:
+```python
+from pyvider.rpcplugin.config import (
+    register_plugin_config,
+    get_plugin_config,
+    list_plugin_configs,
+    update_plugin_config,
+    export_plugin_config,
+)
+
+# Register multiple configurations
+register_plugin_config("server1", RPCPluginConfig(plugin_server_port=8080))
+register_plugin_config("server2", RPCPluginConfig(plugin_server_port=9000))
+
+# Retrieve later
+config = get_plugin_config("server1")
+```
+
+**Test Coverage**: 100% (33 statements, 0 missed)
+
+**Benefits**:
+- Manage multiple plugin instances (multi-tenant scenarios)
+- Runtime configuration updates with validation
+- Export/import for debugging and persistence
+- Zero breaking changes - fully backward compatible
+
+**Code Quality**: ✅ All checks passed (ruff format + ruff check)
+
+---
+
+### 2. OpenTelemetry Integration 🔄 IN PROGRESS (40% Complete)
+
+**Objective**: Add distributed tracing and performance metrics using Foundation's OTEL integration
+
+#### 2a. Configuration Fields ✅ COMPLETE
+
+**Files Modified**:
+- `src/pyvider/rpcplugin/defaults.py` - Added 11 telemetry defaults
+- `src/pyvider/rpcplugin/config/runtime.py` - Added 11 telemetry config fields
+
+**Configuration Added**:
+```python
+# Telemetry Configuration (all disabled by default)
+plugin_telemetry_enabled: bool = False
+plugin_telemetry_service_name: str = "pyvider-rpcplugin"
+plugin_otel_traces_enabled: bool = False
+plugin_otel_metrics_enabled: bool = False
+plugin_otel_endpoint: str | None = None
+plugin_otel_protocol: str = "grpc"  # or "http"
+plugin_trace_sample_rate: float = 1.0
+```
+
+**Environment Variables**:
+- `PLUGIN_TELEMETRY_ENABLED` - Master telemetry switch
+- `PLUGIN_OTEL_TRACES_ENABLED` - Enable distributed tracing
+- `PLUGIN_OTEL_METRICS_ENABLED` - Enable performance metrics
+- `PLUGIN_OTEL_ENDPOINT` - OTLP collector endpoint
+- `PLUGIN_OTEL_PROTOCOL` - Protocol (grpc/http)
+
+**Backward Compatibility**: ✅ All existing config tests passing
+
+#### 2b. Telemetry Module ⏳ PENDING
+
+**Plan**: Create `src/pyvider/rpcplugin/telemetry.py`
+
+**Approach**: Thin wrapper over Foundation's OTEL integration (not reimplementing!)
+
+**Planned Functions**:
+```python
+def setup_rpc_telemetry(config: RPCPluginConfig) -> None:
+    """Setup telemetry using Foundation's OTEL integration."""
+    # Convert RPCPluginConfig → Foundation TelemetryConfig
+    # Call Foundation's setup_opentelemetry_tracing()
+    # Call Foundation's setup_opentelemetry_metrics()
+
+def get_rpc_tracer() -> Tracer | None:
+    """Get tracer for RPC operations."""
+    return get_otel_tracer("pyvider.rpcplugin")
+
+def get_rpc_meter() -> Meter | None:
+    """Get meter for RPC metrics."""
+    # Use Foundation's meter
+```
+
+#### 2c. Instrumentation ⏳ PENDING
+
+**Critical Operations to Instrument**:
+
+**Tracing** (spans for timing):
+- Handshake protocol (client/server)
+- gRPC channel creation and connection
+- RPC method invocations
+- Transport operations (unix/tcp)
+- Process lifecycle events
+
+**Metrics** (counters/histograms):
+- `rpc.handshake.duration` - Handshake completion time
+- `rpc.handshake.success` / `rpc.handshake.failure` - Success rates
+- `rpc.connection.active` - Active connections count
+- `rpc.message.size` - Message sizes (sent/received)
+- `rpc.call.duration` - RPC call latency
+
+**Example Instrumentation**:
+```python
+# In handshake/core.py
+from pyvider.rpcplugin.telemetry import get_rpc_tracer
+
+tracer = get_rpc_tracer()
+
+async def perform_handshake(self):
+    with tracer.start_as_current_span("rpc.handshake") as span:
+        span.set_attribute("transport", self.transport_type)
+        # ... existing handshake logic
+```
+
+**Files to Instrument**:
+- `src/pyvider/rpcplugin/handshake/core.py`
+- `src/pyvider/rpcplugin/client/process.py`
+- `src/pyvider/rpcplugin/server/core.py`
+- `src/pyvider/rpcplugin/protocol/service.py`
+
+#### 2d. Testing ⏳ PENDING
+
+**Test Strategy**:
+- Mock OTEL dependencies for isolated testing
+- Verify spans created with correct attributes
+- Verify metrics recorded with correct values
+- Test graceful degradation when OTEL unavailable
+- Target: 100% coverage
+
+---
+
+### 3. Hub/Registry Integration ⏳ PENDING
+
+**Objective**: Enable component discovery, registration, and lifecycle management using Foundation's Hub
+
+**Plan**: Create `src/pyvider/rpcplugin/hub.py`
+
+**Components to Register**:
+```python
+from provide.foundation.hub import CoreHub
+
+hub = CoreHub()
+
+# Register factories as discoverable components
+hub.add_component(RPCPluginServer, name="rpc-server", dimension="server")
+hub.add_component(RPCPluginClient, name="rpc-client", dimension="client")
+
+# Register transports
+hub.add_component(UnixTransport, name="unix", dimension="transport")
+hub.add_component(TCPTransport, name="tcp", dimension="transport")
+```
+
+**Entry Point Discovery**:
+```toml
+# pyproject.toml
+[project.entry-points."pyvider.rpcplugin.servers"]
+default = "pyvider.rpcplugin.server:RPCPluginServer"
+
+[project.entry-points."pyvider.rpcplugin.clients"]
+default = "pyvider.rpcplugin.client:RPCPluginClient"
+```
+
+**Lifecycle Hooks**:
+- `initialize()` - Component initialization
+- `cleanup()` - Resource cleanup
+
+**Benefits**:
+- Plugin discovery and extensibility
+- Centralized component management
+- Context manager support for cleanup
+- CLI command registration for debugging
+
+**Estimated Effort**: 2-3 hours
+
+---
+
+### Phase 3 Testing Summary
+
+**Current Test Coverage**:
+- ConfigManager: 100% (29 tests, all passing)
+- Telemetry: 0% (not yet implemented)
+- Hub/Registry: 0% (not yet started)
+
+**Overall Phase 3 Progress**: 44% (8/18 tasks completed)
+
+---
+
+### Phase 3 Code Quality
+
+All completed Phase 3 code passes:
+- ✅ ruff format (code formatting)
+- ✅ ruff check --fix (linting with auto-fixes)
+- ✅ 100% test coverage for completed modules
+- ✅ Zero breaking changes
+
+### Phase 3 Backward Compatibility
+
+✅ **Fully Backward Compatible**:
+- All new features are opt-in (disabled by default)
+- Existing code works unchanged
+- No API modifications to existing functions
+- All existing tests continue to pass
+
+**Design Principles**:
+1. **Additive Only** - Add new modules/functions, don't modify existing APIs
+2. **Opt-in Features** - All Phase 3 features disabled/inactive by default
+3. **Graceful Degradation** - Missing optional dependencies handled cleanly
+4. **Zero-Impact Default** - Without configuration, behavior identical to pre-Phase 3
