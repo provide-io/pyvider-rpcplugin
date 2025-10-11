@@ -203,10 +203,7 @@ class UnixSocketTransport(RPCPluginTransport):
             desired_permissions = 0o660 & ~current_mask
             Path(socket_path).chmod(desired_permissions)  # nosec B103
             logger.debug(
-                "📞🕹✅ Set permissions to %s on %s (considering umask %s)",
-                oct(desired_permissions),
-                socket_path,
-                oct(current_mask),
+                f"📞🕹✅ Set permissions to {oct(desired_permissions)} on {socket_path} (considering umask {oct(current_mask)})"
             )
         except Exception as exc:
             logger.warning(
