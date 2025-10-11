@@ -16,14 +16,16 @@
 - [x] Update type hints for ManagedProcess
 - [x] Establish ManagedProcess mock pattern for tests
 - [x] Fix all test failures (106/111 tests passing, 5 slow tests not run)
-- [ ] Switch to module-specific loggers (get_logger(__name__)) - DEFERRED
+- [ ] Switch to module-specific loggers (get_logger(__name__)) - 🔄 IN PROGRESS (moved to Phase 3)
 
 ### Phase 3: Advanced Features - 🔄 IN PROGRESS
 - [x] Configuration refactoring with ConfigManager
-- [x] Add OpenTelemetry configuration fields
-- [ ] Create OpenTelemetry telemetry module
-- [ ] Instrument critical operations with tracing
-- [ ] Add performance metrics
+- [x] OpenTelemetry library integration (architectural refactoring)
+- [x] Simplify telemetry module (library pattern)
+- [x] Preserve instrumentation (handshake, client, server tracing)
+- [ ] Switch to module-specific loggers (get_logger(__name__))
+- [ ] Update telemetry tests
+- [ ] Update telemetry demo script
 - [ ] Hub/Registry adoption
 
 ## Current Integration Status
@@ -249,7 +251,7 @@ client._process = managed_process
 
 ## Phase 3 Implementation Details
 
-### Status: 🔄 IN PROGRESS (44% Complete - 8/18 tasks)
+### Status: 🔄 IN PROGRESS (68% Complete - 11/16 tasks)
 
 Phase 3 adds advanced Foundation features for enterprise-grade observability and extensibility:
 1. **ConfigManager** - Multi-instance configuration management ✅ COMPLETE
