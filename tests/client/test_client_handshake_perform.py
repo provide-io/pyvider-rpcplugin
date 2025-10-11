@@ -82,7 +82,9 @@ async def test_perform_handshake_with_cert(client_instance: RPCPluginClient, moc
     mock_stderr.readline = MagicMock(return_value=b"")
     mock_process.process.stderr = mock_stderr
     sample_cert = "dGVzdA=="
-    mock_process.process.stdout.readline.return_value = f"1|1|tcp|127.0.0.1:8000|grpc|{sample_cert}\\n".encode()
+    mock_process.process.stdout.readline.return_value = (
+        f"1|1|tcp|127.0.0.1:8000|grpc|{sample_cert}\\n".encode()
+    )
 
     # Set the process but mark it as not yet running to trigger task creation
     mock_process.is_running.return_value = False
@@ -218,14 +220,15 @@ async def test_perform_handshake_parse_error(
 
 
 @pytest.mark.asyncio
-async def test_setup_client_certificates_existing_cert_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
+async def test_setup_client_certificates_existing_cert_failure(
+    minimal_client: RPCPluginClient, mocker: object
+) -> None:
     mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", False)
     mocker.patch.object(rpcplugin_config, "plugin_client_cert", "cert-path")
     mocker.patch.object(rpcplugin_config, "plugin_client_key", "key-path")
 
     mocker.patch(
-        "pyvider.rpcplugin.client.handshake.Certificate.from_pem",
-        side_effect=ValueError("broken cert")
+        "pyvider.rpcplugin.client.handshake.Certificate.from_pem", side_effect=ValueError("broken cert")
     )
 
     with pytest.raises(SecurityError, match="Failed to load client certificate/key: broken cert"):
@@ -233,7 +236,9 @@ async def test_setup_client_certificates_existing_cert_failure(minimal_client: R
 
 
 @pytest.mark.asyncio
-async def test_setup_client_certificates_auto_mtls_failure(minimal_client: RPCPluginClient, mocker: object) -> None:
+async def test_setup_client_certificates_auto_mtls_failure(
+    minimal_client: RPCPluginClient, mocker: object
+) -> None:
     mocker.patch.object(rpcplugin_config, "plugin_auto_mtls", True)
     mocker.patch.object(rpcplugin_config, "plugin_client_cert", None)
     mocker.patch.object(rpcplugin_config, "plugin_client_key", None)
@@ -279,9 +284,7 @@ async def test_perform_handshake_cleanup_warning(minimal_client: RPCPluginClient
     with pytest.raises(RuntimeError, match="handshake boom"):
         await client._perform_handshake()
 
-    warning_spy.assert_called_once_with(
-        "Error cleaning up process after handshake failure: terminate failure"
-    )
+    warning_spy.assert_called_once_with("Error cleaning up process after handshake failure: terminate failure")
     assert client._process is None
 
 
@@ -354,7 +357,9 @@ async def test_complete_handshake_setup_missing_address(minimal_client: RPCPlugi
 
 
 @pytest.mark.asyncio
-async def test_handle_retry_cleanup_transport_close_warning(minimal_client: RPCPluginClient, mocker: object) -> None:
+async def test_handle_retry_cleanup_transport_close_warning(
+    minimal_client: RPCPluginClient, mocker: object
+) -> None:
     client = minimal_client
     mock_transport = AsyncMock()
     mock_transport.close.side_effect = TransportError("close boom")

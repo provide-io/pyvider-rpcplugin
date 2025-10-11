@@ -67,7 +67,9 @@ async def test_launch_process_error(client_instance):
     with patch("pyvider.rpcplugin.client.process.ManagedProcess") as mock_managed_process_class:
         mock_managed_process_class.side_effect = OSError("Failed to launch")
 
-        expected_msg_regex = r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Failed to launch"
+        expected_msg_regex = (
+            r"\[TransportError\] Failed to launch plugin subprocess for command: '.*'. Error: Failed to launch"
+        )
         with pytest.raises(TransportError, match=expected_msg_regex):
             await client_instance._launch_process()
 
