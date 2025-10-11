@@ -299,105 +299,233 @@ config = get_plugin_config("server1")
 
 ---
 
-### 2. OpenTelemetry Integration 🔄 IN PROGRESS (40% Complete)
+### 2. OpenTelemetry Integration ✅ MOSTLY COMPLETE (85% - Architecture Corrected)
 
-**Objective**: Add distributed tracing and performance metrics using Foundation's OTEL integration
+**Objective**: Enable distributed tracing for RPC operations using Foundation's OTEL integration
 
-#### 2a. Configuration Fields ✅ COMPLETE
+#### 🎯 Critical Architectural Decision: Library Identity Pattern
+
+**Problem Discovered**: Initial implementation incorrectly treated pyvider-rpcplugin as a standalone service, setting its own `service.name` in OpenTelemetry. This fragmented observability - traces appeared split between the application's service and a separate "pyvider.rpcplugin" service.
+
+**Root Cause**: Confusion between:
+- **service.name** - OTEL Resource attribute identifying the SERVICE (should be set by application only)
+- **instrumentation.library.name** - Identifies the LIBRARY that created spans (set by `get_tracer("name")`)
+
+**Correct Pattern for Libraries**:
+
+```python
+# ❌ WRONG: Library sets service.name (creates separate service in observability)
+def setup_rpc_telemetry(config: RPCPluginConfig) -> None:
+    telemetry_config = TelemetryConfig(
+        service_name="pyvider.rpcplugin",  # ❌ Fragments observability!
+        ...
+    )
+    setup_opentelemetry_tracing(telemetry_config)
+
+# ✅ CORRECT: Library just gets tracer from app's already-configured provider
+def get_rpc_tracer() -> otel_trace.Tracer | None:
+    """Access already-configured tracer."""
+    return otel_trace.get_tracer(
+        instrumenting_module_name="pyvider.rpcplugin",  # ✅ Library identity only
+        instrumenting_library_version="1.0.0",
+    )
+```
+
+**Application Responsibility**:
+```python
+# Application configures OTEL once with its service name
+from provide.foundation import TelemetryConfig
+from provide.foundation.tracer.otel import setup_opentelemetry_tracing
+
+config = TelemetryConfig(
+    service_name="my-app",  # Application's service identity
+    tracing_enabled=True,
+    ...
+)
+setup_opentelemetry_tracing(config)
+
+# Library just gets tracer - traces appear under "my-app" service
+# with instrumentation.library.name="pyvider.rpcplugin"
+```
+
+**Result**: Unified observability - all traces appear under application's service.name with proper library attribution via instrumentation.library.name.
+
+---
+
+#### 2a. Configuration Fields ✅ REMOVED (Architectural Simplification)
 
 **Files Modified**:
-- `src/pyvider/rpcplugin/defaults.py` - Added 11 telemetry defaults
-- `src/pyvider/rpcplugin/config/runtime.py` - Added 11 telemetry config fields
+- `src/pyvider/rpcplugin/defaults.py` - **Removed** 11 telemetry defaults (lines 123-144)
+- `src/pyvider/rpcplugin/config/runtime.py` - **Removed** 11 telemetry config fields (lines 448-509)
 
-**Configuration Added**:
+**Removed Constants** (no longer needed for library):
 ```python
-# Telemetry Configuration (all disabled by default)
-plugin_telemetry_enabled: bool = False
-plugin_telemetry_service_name: str = "pyvider-rpcplugin"
-plugin_otel_traces_enabled: bool = False
-plugin_otel_metrics_enabled: bool = False
-plugin_otel_endpoint: str | None = None
-plugin_otel_protocol: str = "grpc"  # or "http"
-plugin_trace_sample_rate: float = 1.0
+# ❌ REMOVED - Library doesn't configure OTEL
+DEFAULT_PLUGIN_TELEMETRY_ENABLED = False
+DEFAULT_PLUGIN_TELEMETRY_SERVICE_NAME = "pyvider.rpcplugin"
+DEFAULT_PLUGIN_OTEL_TRACES_ENABLED = False
+DEFAULT_PLUGIN_OTEL_ENDPOINT = None
+# ... (8 more constants removed)
 ```
 
-**Environment Variables**:
-- `PLUGIN_TELEMETRY_ENABLED` - Master telemetry switch
-- `PLUGIN_OTEL_TRACES_ENABLED` - Enable distributed tracing
-- `PLUGIN_OTEL_METRICS_ENABLED` - Enable performance metrics
-- `PLUGIN_OTEL_ENDPOINT` - OTLP collector endpoint
-- `PLUGIN_OTEL_PROTOCOL` - Protocol (grpc/http)
-
-**Backward Compatibility**: ✅ All existing config tests passing
-
-#### 2b. Telemetry Module ⏳ PENDING
-
-**Plan**: Create `src/pyvider/rpcplugin/telemetry.py`
-
-**Approach**: Thin wrapper over Foundation's OTEL integration (not reimplementing!)
-
-**Planned Functions**:
+**Removed Config Fields**:
 ```python
-def setup_rpc_telemetry(config: RPCPluginConfig) -> None:
-    """Setup telemetry using Foundation's OTEL integration."""
-    # Convert RPCPluginConfig → Foundation TelemetryConfig
-    # Call Foundation's setup_opentelemetry_tracing()
-    # Call Foundation's setup_opentelemetry_metrics()
-
-def get_rpc_tracer() -> Tracer | None:
-    """Get tracer for RPC operations."""
-    return get_otel_tracer("pyvider.rpcplugin")
-
-def get_rpc_meter() -> Meter | None:
-    """Get meter for RPC metrics."""
-    # Use Foundation's meter
+# ❌ REMOVED - Application configures OTEL, not library
+plugin_telemetry_enabled: bool
+plugin_telemetry_service_name: str
+plugin_otel_traces_enabled: bool
+plugin_otel_endpoint: str | None
+# ... (8 more fields removed)
 ```
 
-#### 2c. Instrumentation ⏳ PENDING
+**Rationale**: Libraries should NOT have configuration for setting up OpenTelemetry. Applications configure OTEL once; libraries access it.
 
-**Critical Operations to Instrument**:
+---
 
-**Tracing** (spans for timing):
-- Handshake protocol (client/server)
-- gRPC channel creation and connection
-- RPC method invocations
-- Transport operations (unix/tcp)
-- Process lifecycle events
+#### 2b. Telemetry Module ✅ COMPLETE (Simplified to Library Pattern)
 
-**Metrics** (counters/histograms):
-- `rpc.handshake.duration` - Handshake completion time
-- `rpc.handshake.success` / `rpc.handshake.failure` - Success rates
-- `rpc.connection.active` - Active connections count
-- `rpc.message.size` - Message sizes (sent/received)
-- `rpc.call.duration` - RPC call latency
+**File Created**: `src/pyvider/rpcplugin/telemetry.py` (149 lines)
 
-**Example Instrumentation**:
+**Architecture**: Access-only pattern (no setup/configuration)
+
+**Functions Implemented**:
 ```python
-# In handshake/core.py
+def get_rpc_tracer() -> otel_trace.Tracer | None:
+    """Get OpenTelemetry tracer for RPC operations.
+
+    Returns tracer from the already-configured global tracer provider.
+    The application must have configured OpenTelemetry before calling this.
+    """
+    if not _HAS_OTEL:
+        return None
+
+    try:
+        return otel_trace.get_tracer(
+            instrumenting_module_name="pyvider.rpcplugin",
+            instrumenting_library_version="1.0.0",
+        )
+    except Exception:
+        return None
+
+def get_rpc_meter() -> otel_metrics.Meter | None:
+    """Get OpenTelemetry meter for RPC metrics."""
+    # Similar pattern - access only, no setup
+
+def is_telemetry_available() -> bool:
+    """Check if OpenTelemetry SDK is installed."""
+    return _HAS_OTEL
+```
+
+**Key Changes from Original Plan**:
+- ❌ **Removed**: `setup_rpc_telemetry()` - Libraries don't configure OTEL
+- ❌ **Removed**: `_parse_otel_headers()` - No configuration needed
+- ❌ **Removed**: `_require_foundation_otel()` - Simplified error handling
+- ✅ **Kept**: `get_rpc_tracer()` - Access tracer from app's provider
+- ✅ **Kept**: `get_rpc_meter()` - Access meter from app's provider
+- ✅ **Kept**: `is_telemetry_available()` - Feature detection
+
+**Benefits**:
+- Zero observability fragmentation - all traces under app's service.name
+- Simpler code (111 lines removed)
+- Clearer separation of concerns (app configures, library instruments)
+- Graceful degradation when OTEL unavailable
+
+---
+
+#### 2c. Instrumentation ✅ COMPLETE (Architecture Preserved)
+
+**Status**: All instrumentation code already in place and working correctly. The architectural fix ensures traces appear under the correct service.
+
+**Instrumented Operations**:
+
+**Handshake Operations** (`src/pyvider/rpcplugin/handshake/core.py`):
+```python
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 
-tracer = get_rpc_tracer()
+_tracer = get_rpc_tracer()
 
-async def perform_handshake(self):
-    with tracer.start_as_current_span("rpc.handshake") as span:
-        span.set_attribute("transport", self.transport_type)
-        # ... existing handshake logic
+# validate_magic_cookie() - Span: "rpc.handshake.validate_cookie"
+# build_handshake_response() - Span: "rpc.handshake.build_response"
+# parse_handshake_response() - Span: "rpc.handshake.parse_response"
 ```
 
-**Files to Instrument**:
+**Client Operations** (`src/pyvider/rpcplugin/client/process.py`):
+```python
+# _create_grpc_channel() - Span: "rpc.client.create_channel"
+#   Attributes: transport, address
+```
+
+**Server Operations** (`src/pyvider/rpcplugin/server/core.py`):
+```python
+# serve() - Span: "rpc.server.serve"
+#   Attributes: component="server"
+```
+
+**Trace Attributes Set**:
+- `component` - Operation component (handshake, server, client)
+- `transport` - Transport type (unix, tcp)
+- `address` - Connection address
+- `cookie_key` - Magic cookie key used
+
+**Result**: Comprehensive distributed tracing that correctly attributes library operations while appearing under application's service identity.
+
+---
+
+#### 2d. Testing ⏳ IN PROGRESS
+
+**Status**: Tests need updates to remove `setup_rpc_telemetry()` tests
+
+**Test File**: `tests/telemetry/test_telemetry.py` (13 tests total)
+
+**Needed Updates**:
+- ❌ Remove tests for `setup_rpc_telemetry()` (function removed)
+- ❌ Remove tests for `_parse_otel_headers()` (function removed)
+- ✅ Keep tests for `get_rpc_tracer()` (still exists)
+- ✅ Keep tests for `get_rpc_meter()` (still exists)
+- ✅ Keep tests for `is_telemetry_available()` (still exists)
+
+**Demo Script**: `examples/ch16_telemetry_demo.py` needs update to show app-level OTEL config pattern
+
+---
+
+#### 2e. Module Logger Migration 🔄 IN PROGRESS
+
+**Objective**: Switch from global logger to module-specific loggers for better log attribution
+
+**Problem**: Similar to the service.name issue, many files use:
+```python
+from provide.foundation import logger  # ❌ Global logger, no module attribution
+```
+
+**Solution**: Use module-specific loggers:
+```python
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)  # ✅ Module-specific (e.g., "pyvider.rpcplugin.handshake.core")
+```
+
+**Benefits**:
+- Adds `logger_name` field to structured logs for filtering
+- Enables Foundation's emoji prefixes per module
+- Better log attribution and debugging
+- Parallel to instrumentation.library.name for traces
+
+**Files Requiring Updates** (~20 files):
 - `src/pyvider/rpcplugin/handshake/core.py`
-- `src/pyvider/rpcplugin/client/process.py`
+- `src/pyvider/rpcplugin/handshake/negotiation.py`
 - `src/pyvider/rpcplugin/server/core.py`
+- `src/pyvider/rpcplugin/server/network.py`
+- `src/pyvider/rpcplugin/client/core.py`
+- `src/pyvider/rpcplugin/client/connection.py`
+- `src/pyvider/rpcplugin/client/process.py`
 - `src/pyvider/rpcplugin/protocol/service.py`
+- `src/pyvider/rpcplugin/transport/unix/transport.py`
+- `src/pyvider/rpcplugin/transport/tcp.py`
+- (Additional files in transport, config, etc.)
 
-#### 2d. Testing ⏳ PENDING
-
-**Test Strategy**:
-- Mock OTEL dependencies for isolated testing
-- Verify spans created with correct attributes
-- Verify metrics recorded with correct values
-- Test graceful degradation when OTEL unavailable
-- Target: 100% coverage
+**Status**:
+- ✅ `telemetry.py` - Already updated
+- ⏳ Remaining 19 files - Pending
 
 ---
 
@@ -450,10 +578,25 @@ default = "pyvider.rpcplugin.client:RPCPluginClient"
 
 **Current Test Coverage**:
 - ConfigManager: 100% (29 tests, all passing)
-- Telemetry: 0% (not yet implemented)
-- Hub/Registry: 0% (not yet started)
+- Telemetry Module: Needs update (remove setup tests, keep access tests)
+- Instrumentation: ✅ Working (handshake, client, server spans active)
+- Module Loggers: ⏳ Pending (migration in progress)
+- Hub/Registry: ⏳ Not yet started
 
-**Overall Phase 3 Progress**: 44% (8/18 tasks completed)
+**Overall Phase 3 Progress**: 68% (11/16 tasks completed)
+
+**Completed**:
+- ✅ ConfigManager implementation and tests (4 tasks)
+- ✅ Telemetry module simplified (library pattern) (3 tasks)
+- ✅ All instrumentation in place and working (4 tasks)
+
+**In Progress**:
+- 🔄 Telemetry test updates (1 task)
+- 🔄 Module logger migration (1 task)
+
+**Pending**:
+- ⏳ Demo script update (1 task)
+- ⏳ Hub/Registry integration (2 tasks)
 
 ---
 
