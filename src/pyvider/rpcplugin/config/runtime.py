@@ -76,10 +76,10 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_PLUGIN_TELEMETRY_ENABLED,
     DEFAULT_PLUGIN_TELEMETRY_SERVICE_NAME,
     DEFAULT_PLUGIN_TELEMETRY_SERVICE_VERSION,
+    DEFAULT_PLUGIN_TRACE_SAMPLE_RATE,
     DEFAULT_PLUGIN_UI_ENABLED,
     DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
     DEFAULT_SUPPORTED_TRANSPORTS,
-    DEFAULT_TRACE_SAMPLE_RATE,
 )
 
 PLUGIN_PROTOCOL_VERSIONS_FIELD = env_field(
@@ -503,7 +503,7 @@ class RPCPluginConfig(RuntimeConfig):
     )
 
     plugin_trace_sample_rate: float = env_field(
-        default=DEFAULT_TRACE_SAMPLE_RATE,
+        default=DEFAULT_PLUGIN_TRACE_SAMPLE_RATE,
         parser=float,
         env_var="PLUGIN_TRACE_SAMPLE_RATE",
     )
