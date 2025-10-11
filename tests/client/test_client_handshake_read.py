@@ -204,23 +204,6 @@ async def test_perform_handshake_parsing_failure(
 
 
 @pytest.mark.asyncio
-async def test_read_raw_handshake_line_byte_by_byte_success(
-    client_instance_for_retry_tests: RPCPluginClient, mocker: object
-) -> None:
-    client_instance = client_instance_for_retry_tests
-    handshake_str = "1|1|unix|/tmp/test.sock|grpc|"
-
-    # Mock the entire method since the executor complexity is causing hangs
-    async def mock_read_handshake() -> str:
-        return handshake_str
-
-    mocker.patch.object(client_instance, "_read_raw_handshake_line_from_stdout", mock_read_handshake)
-
-    line = await client_instance._read_raw_handshake_line_from_stdout()
-    assert line.strip() == handshake_str
-
-
-@pytest.mark.asyncio
 async def test_read_raw_handshake_line_chunk_strategy_success(
     client_instance_for_retry_tests: RPCPluginClient, mocker: object
 ) -> None:
