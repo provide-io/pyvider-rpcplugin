@@ -15,12 +15,24 @@ from pyvider.rpcplugin.exception import HandshakeError
 def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
     client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
-    mock_process_obj = MagicMock(spec=subprocess.Popen)
-    mock_process_obj.poll.return_value = None
-    mock_process_obj.returncode = None
-    mock_process_obj.stderr = MagicMock()
-    mock_process_obj.stdout = MagicMock()
-    client._process = mock_process_obj
+
+    # Create the underlying Popen mock
+    popen_mock = MagicMock(spec=subprocess.Popen)
+    popen_mock.poll.return_value = None
+    popen_mock.returncode = None
+    popen_mock.stderr = MagicMock()
+    popen_mock.stdout = MagicMock()
+
+    # Create the ManagedProcess wrapper mock
+    managed_process = MagicMock()
+    managed_process.process = popen_mock
+    managed_process.is_running.return_value = True
+    managed_process.pid = 12345
+    managed_process.returncode = None
+    managed_process.terminate_gracefully.return_value = True
+    managed_process.cleanup = MagicMock()
+
+    client._process = managed_process
     return client
 
 
