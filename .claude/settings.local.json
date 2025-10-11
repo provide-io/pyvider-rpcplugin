@@ -31,7 +31,8 @@
       "Bash(python:*)",
       "Bash(.venv/bin/python:*)",
       "Bash(uv pip show:*)",
-      "Bash(pytest:*)"
+      "Bash(pytest:*)",
+      "Bash(PYTHONPATH=./src python:*)"
     ],
     "deny": [],
     "ask": [],
