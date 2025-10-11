@@ -12,15 +12,17 @@ import os
 from typing import Literal, TypeGuard
 
 from attrs import define
-from provide.foundation import logger, resilient
+from provide.foundation import resilient
 from provide.foundation.crypto import Certificate
+from provide.foundation.logger import get_logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.transport.types import TransportT
 
-# Get tracer for handshake operations
+# Module logger and tracer
+logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
 
 
