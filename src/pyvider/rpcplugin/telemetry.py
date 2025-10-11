@@ -159,9 +159,9 @@ def setup_rpc_telemetry(config: RPCPluginConfig) -> None:
         metrics_enabled=config.plugin_otel_metrics_enabled,
         globally_disabled=not config.plugin_telemetry_enabled,
         # OTLP endpoints
+        # Note: Foundation uses otlp_endpoint for both traces and metrics
         otlp_endpoint=config.plugin_otel_endpoint,
         otlp_traces_endpoint=config.plugin_otel_traces_endpoint,
-        otlp_metrics_endpoint=config.plugin_otel_metrics_endpoint,
         # Protocol and headers
         otlp_protocol=config.plugin_otel_protocol,
         otlp_headers=_parse_otel_headers(config.plugin_otel_headers),

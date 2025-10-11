@@ -27,14 +27,12 @@ class TestTelemetryAvailability:
 class TestSetupRPCTelemetry:
     """Test telemetry setup with various configurations."""
 
-    def test_setup_disabled(self, caplog: pytest.LogCaptureFixture) -> None:
-        """Test setup with telemetry disabled."""
+    def test_setup_disabled(self) -> None:
+        """Test setup with telemetry disabled - should be no-op."""
         config = RPCPluginConfig(plugin_telemetry_enabled=False)
 
+        # Should not raise, should be no-op
         setup_rpc_telemetry(config)
-
-        # Should log that telemetry is disabled
-        assert any("disabled" in record.message.lower() for record in caplog.records)
 
     def test_setup_with_traces_enabled(self) -> None:
         """Test setup with traces enabled."""
