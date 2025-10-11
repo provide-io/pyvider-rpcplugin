@@ -87,7 +87,7 @@ class ServerNetworkMixin:
     ) -> Certificate | None:
         if server_cert_conf and server_key_conf:
             try:
-                return Certificate(cert_pem_or_uri=server_cert_conf, key_pem_or_uri=server_key_conf)
+                return Certificate.from_pem(cert_pem=server_cert_conf, key_pem=server_key_conf)
             except Exception as exc:
                 raise SecurityError(f"Failed to load server certificate/key: {exc}") from exc
 
@@ -109,7 +109,7 @@ class ServerNetworkMixin:
         return cert_obj
 
     def _validate_server_certificate_obj(self, cert_obj: Certificate | None) -> Certificate:
-        if not cert_obj or not getattr(cert_obj, "cert", None) or not getattr(cert_obj, "key", None):
+        if not cert_obj or not getattr(cert_obj, "cert_pem", None) or not getattr(cert_obj, "key_pem", None):
             raise SecurityError("Server certificate object is invalid or missing PEM data after processing.")
         return cert_obj
 
@@ -164,8 +164,8 @@ class ServerNetworkMixin:
 
         self._server_cert_obj = self._load_server_certificate(server_cert_conf, server_key_conf, auto_mtls)
         valid_cert = self._validate_server_certificate_obj(self._server_cert_obj)
-        key_bytes = valid_cert.key.encode("utf-8")
-        cert_bytes = valid_cert.cert.encode("utf-8")
+        key_bytes = valid_cert.key_pem.encode("utf-8")
+        cert_bytes = valid_cert.cert_pem.encode("utf-8")
         client_ca_pem_bytes, require_auth = self._load_client_root_certificates(
             auto_mtls,
             client_root_certs_conf,

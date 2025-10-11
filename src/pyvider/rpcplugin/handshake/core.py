@@ -346,7 +346,7 @@ async def build_handshake_response(
 
         if server_cert:
             logger.debug("🤝🔐🔄 Processing server certificate...")
-            cert_lines = server_cert.cert.strip().split("\n")
+            cert_lines = server_cert.cert_pem.strip().split("\n")
             if len(cert_lines) < 3:
                 logger.error(
                     "🤝🔐❌ Server certificate appears to be in an invalid PEM format (too few lines)."

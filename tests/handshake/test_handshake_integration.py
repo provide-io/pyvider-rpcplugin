@@ -269,7 +269,7 @@ async def test_certificate_handling_in_handshake():
 
     # The parsed cert should be a base64-encoded string without PEM headers
     # and should match what we'd get from the original certificate
-    cert_lines = cert.cert.strip().split("\n")
+    cert_lines = cert.cert_pem.strip().split("\n")
     expected_cert_base = "".join(cert_lines[1:-1]).rstrip("=")
 
     # The cert might have padding added during parsing

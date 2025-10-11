@@ -141,7 +141,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
             # Verify client initialized correctly
             assert client._process == mock_process
-            assert client.client_cert == client_cert.cert
+            assert client.client_cert == client_cert.cert_pem
             assert client.grpc_channel == mock_channel
 
         # Test broker subchannel - skip this for now to test other parts

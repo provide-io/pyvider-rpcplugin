@@ -85,7 +85,7 @@ async def test_handshake_certificate_stripping():
     assert "-----END CERTIFICATE-----" not in cert_part
 
     # Get the PEM body directly from the certificate
-    cert_lines = cert.cert.strip().split("\n")
+    cert_lines = cert.cert_pem.strip().split("\n")
     pem_body = "".join(cert_lines[1:-1])  # Strip header and footer
 
     # The cert part should be this PEM body (ignoring potential padding differences)
