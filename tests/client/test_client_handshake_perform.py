@@ -53,12 +53,19 @@ async def test_perform_handshake_success(client_instance: RPCPluginClient, mock_
     mock_process.process.stderr = mock_stderr
     mock_process.process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
 
-    # Set the process directly instead of launching
+    # Set the process but mark it as not yet running to trigger task creation
+    mock_process.is_running.return_value = False
+    mock_process.process.poll.return_value = None
     client_instance._process = mock_process
 
-    with patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class:
+    with (
+        patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class,
+        patch.object(client_instance, "_relay_stderr_background", new_callable=AsyncMock) as mock_relay:
+    ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
+        # After mocking, set is_running to True for the handshake check
+        mock_process.is_running.return_value = True
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
@@ -78,12 +85,19 @@ async def test_perform_handshake_with_cert(client_instance: RPCPluginClient, moc
     sample_cert = "dGVzdA=="
     mock_process.process.stdout.readline.return_value = f"1|1|tcp|127.0.0.1:8000|grpc|{sample_cert}\\n".encode()
 
-    # Set the process directly instead of launching
+    # Set the process but mark it as not yet running to trigger task creation
+    mock_process.is_running.return_value = False
+    mock_process.process.poll.return_value = None
     client_instance._process = mock_process
 
-    with patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class:
+    with (
+        patch("pyvider.rpcplugin.transport.TCPSocketTransport") as mock_transport_class,
+        patch.object(client_instance, "_relay_stderr_background", new_callable=AsyncMock) as mock_relay:
+    ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
+        # After mocking, set is_running to True for the handshake check
+        mock_process.is_running.return_value = True
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
@@ -104,12 +118,19 @@ async def test_perform_handshake_with_unix_transport(
     mock_process.process.stderr = mock_stderr
     mock_process.process.stdout.readline.return_value = b"1|1|unix|/tmp/test.sock|grpc|\n"
 
-    # Set the process directly instead of launching
+    # Set the process but mark it as not yet running to trigger task creation
+    mock_process.is_running.return_value = False
+    mock_process.process.poll.return_value = None
     client_instance._process = mock_process
 
-    with patch("pyvider.rpcplugin.transport.UnixSocketTransport") as mock_transport_class:
+    with (
+        patch("pyvider.rpcplugin.transport.UnixSocketTransport") as mock_transport_class,
+        patch.object(client_instance, "_relay_stderr_background", new_callable=AsyncMock) as mock_relay:
+    ):
         mock_transport_instance = AsyncMock()
         mock_transport_class.return_value = mock_transport_instance
+        # After mocking, set is_running to True for the handshake check
+        mock_process.is_running.return_value = True
         await client_instance._perform_handshake()
         # Should have created stderr relay task
         assert client_instance._stdio_task is not None
