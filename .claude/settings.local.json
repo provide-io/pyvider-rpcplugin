@@ -30,7 +30,8 @@
       "Bash(source env.sh)",
       "Bash(python:*)",
       "Bash(.venv/bin/python:*)",
-      "Bash(uv pip show:*)"
+      "Bash(uv pip show:*)",
+      "Bash(pytest:*)"
     ],
     "deny": [],
     "ask": [],
