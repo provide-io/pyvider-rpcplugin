@@ -344,12 +344,12 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
 
     async def _wait_for_writer_close(self, writer: asyncio.StreamWriter) -> None:
-        logger.debug("📞🔒✍️ Attempting to close writer %r", writer)
+        logger.debug(f"📞🔒✍️ Attempting to close writer {writer!r}")
         if hasattr(writer, "wait_closed"):
             await writer.wait_closed()
             logger.debug("📞🔒✅ Writer closed successfully")
         else:
-            logger.debug("📞🔒✍️ Writer %r has no wait_closed method; skipping await.", writer)
+            logger.debug(f"📞🔒✍️ Writer {writer!r} has no wait_closed method; skipping await.")
 
     def _abort_transport(self, transport: Any, message: str) -> None:
         if not transport:
@@ -359,7 +359,7 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.warning(f"📞🔒✍️ {message} Aborting transport: {transport!r}")
             transport.abort()
         else:
-            logger.debug("📞🔒✍️ Transport %r has no abort method.", transport)
+            logger.debug(f"📞🔒✍️ Transport {transport!r} has no abort method.")
 
     def _finalize_transport_shutdown(self, transport: Any) -> None:
         if not transport:
@@ -368,14 +368,14 @@ class UnixSocketTransport(RPCPluginTransport):
 
         has_is_closing = hasattr(transport, "is_closing") and callable(transport.is_closing)
         if has_is_closing and transport.is_closing():
-            logger.debug("📞🔒✍️ Transport already closing in _close_writer: %r", transport)
+            logger.debug(f"📞🔒✍️ Transport already closing in _close_writer: {transport!r}")
             return
         if has_is_closing:
-            logger.debug("📞🔒✍️ Transport not closing after writer.close(); aborting: %r", transport)
+            logger.debug(f"📞🔒✍️ Transport not closing after writer.close(); aborting: {transport!r}")
             self._abort_transport(transport, "Transport not closing after writer.close().")
             return
 
-        logger.debug("📞🔒✍️ No is_closing, attempting abort for transport: %r", transport)
+        logger.debug(f"📞🔒✍️ No is_closing, attempting abort for transport: {transport!r}")
         self._abort_transport(transport, "Transport missing is_closing; aborting proactively.")
 
     async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:
