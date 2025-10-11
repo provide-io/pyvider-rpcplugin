@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 import grpc
 from provide.foundation import retry
-from provide.foundation.resilience import BackoffStrategy, RetryPolicy
+from provide.foundation.resilience import BackoffStrategy
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
