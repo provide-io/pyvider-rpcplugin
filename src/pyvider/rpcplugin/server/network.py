@@ -108,7 +108,7 @@ class ServerNetworkMixin:
             raise SecurityError(f"Failed to auto-generate server certificate: {exc}") from exc
 
         common_name_val = getattr(cert_obj, "common_name", "Unknown")
-        logger.info("📜🔑🏭 Created new self-signed SERVER certificate for CN=%s", common_name_val)
+        logger.info(f"📜🔑🏭 Created new self-signed SERVER certificate for CN={common_name_val}")
         return cert_obj
 
     def _validate_server_certificate_obj(self, cert_obj: Certificate | None) -> Certificate:
@@ -260,10 +260,10 @@ class ServerNetworkMixin:
     ) -> None:
         if creds:
             port_num = server.add_secure_port(bind_address, creds)
-            logger.info("🔒 Server starting in secure mode on %s (port_num: %s)", bind_address, port_num)
+            logger.info(f"🔒 Server starting in secure mode on {bind_address} (port_num: {port_num})")
         else:
             port_num = server.add_insecure_port(bind_address)
-            logger.info("🔌 Server starting in insecure mode on %s (port_num: %s)", bind_address, port_num)
+            logger.info(f"🔌 Server starting in insecure mode on {bind_address} (port_num: {port_num})")
 
         if isinstance(transport, TCPSocketTransport):
             self._apply_tcp_port_configuration(transport, port_num)

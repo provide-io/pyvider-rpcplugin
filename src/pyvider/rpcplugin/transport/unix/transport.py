@@ -356,10 +356,10 @@ class UnixSocketTransport(RPCPluginTransport):
 
     def _abort_transport(self, transport: Any, message: str) -> None:
         if not transport:
-            logger.debug("📞🔒✍️ %s but transport is None.", message)
+            logger.debug(f"📞🔒✍️ {message} but transport is None.")
             return
         if hasattr(transport, "abort") and callable(transport.abort):
-            logger.warning("📞🔒✍️ %s Aborting transport: %r", message, transport)
+            logger.warning(f"📞🔒✍️ {message} Aborting transport: {transport!r}")
             transport.abort()
         else:
             logger.debug("📞🔒✍️ Transport %r has no abort method.", transport)

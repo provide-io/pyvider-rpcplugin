@@ -279,7 +279,7 @@ class GRPCStdioService(GRPCStdioServicer):
             try:
                 item = await self._next_queue_item(done)
             except Exception as exc:  # pragma: no cover - defensive path for queue errors
-                logger.error("🔌📝❌ Error retrieving stdio item: %s", exc)
+                logger.error(f"🔌📝❌ Error retrieving stdio item: {exc}")
                 await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                 continue
 
