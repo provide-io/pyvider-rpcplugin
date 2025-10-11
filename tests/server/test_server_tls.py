@@ -39,8 +39,10 @@ async def test_generate_server_credentials_failure(
 # 🐍🔌🧪🪄
 
 
-def _make_dummy_cert(common_name: str = "CN") -> Certificate:
-    dummy = Certificate.__new__(Certificate)
+def _make_dummy_cert(common_name: str = "CN"):
+    """Create a mock certificate object for testing."""
+    from unittest.mock import MagicMock
+    dummy = MagicMock(spec=Certificate)
     dummy.cert = "CERT"
     dummy.key = "KEY"
     dummy.common_name = common_name
