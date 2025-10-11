@@ -31,19 +31,12 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     mock_controller_stub_class = magic_mock_factory(name="GRPCControllerStub")
     mock_transport_class = magic_mock_factory(name="TCPSocketTransport")
 
-    # Mock _read_stdio_logs to prevent background task from hanging
-    mock_read_stdio_logs_func = async_mock_factory(name="_read_stdio_logs", return_value=None)
-
     # Mock all external dependencies
     with (
         patch("pyvider.rpcplugin.client.process.ManagedProcess", mock_managed_process_class),
         patch(
             "pyvider.rpcplugin.client.core.RPCPluginClient._read_raw_handshake_line_from_stdout",
             mock_read_handshake_line,
-        ),
-        patch(
-            "pyvider.rpcplugin.client.core.RPCPluginClient._read_stdio_logs",
-            mock_read_stdio_logs_func,
         ),
         patch("pyvider.rpcplugin.client.handshake.Certificate") as mock_cert_class,
         patch("pyvider.rpcplugin.client.core.grpc.aio.insecure_channel", mock_channel_func),
@@ -103,7 +96,8 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_channel_func.return_value = mock_channel
 
         # Mock stubs using provide-testkit
-        mock_stdio_stub = magic_mock_factory(name="stdio_stub")
+        # Set stdio_stub to None to prevent background task creation during testing
+        mock_stdio_stub = None
         mock_broker_stub = magic_mock_factory(name="broker_stub")
         mock_controller_stub = magic_mock_factory(name="controller_stub")
 
@@ -122,7 +116,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             return mock_controller_stub
 
         def mock_stdio_constructor(*args, **kwargs):
-            return mock_stdio_stub
+            return None  # Return None to prevent stdio task creation
 
         def mock_broker_constructor(*args, **kwargs):
             return mock_broker_stub
@@ -130,16 +124,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_stdio_stub_class.side_effect = mock_stdio_constructor
         mock_broker_stub_class.side_effect = mock_broker_constructor
         mock_controller_stub_class.side_effect = mock_controller_constructor
-
-        # Setup mock stdio stream - fix coroutine issue
-        async def mock_stream_stdio(_):
-            log_message = magic_mock_factory(name="log_message")
-            log_message.channel = 1
-            log_message.data = b"log message"
-            yield log_message
-            # Generator completes after yielding one message
-
-        mock_stdio_stub.StreamStdio = lambda _: mock_stream_stdio(_)
 
         # Mock broker call using provide-testkit - proper stream handling
         mock_stream = magic_mock_factory(name="broker_stream")
