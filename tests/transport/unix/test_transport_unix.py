@@ -107,24 +107,22 @@ def test_unix_transport_init_with_relative_path(mocker):
 
 
 @pytest.mark.asyncio
-async def test_check_socket_in_use_stat_oserror(mocker, managed_unix_socket_path): # caplog removed
+async def test_check_socket_in_use_stat_oserror(mocker, managed_unix_socket_path, caplog):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     # Ensure file exists for the first check
     with open(managed_unix_socket_path, 'w') as f: f.write('')
 
     mocker.patch("pathlib.Path.exists", return_value=True) # Ensure this is true for the test
     mock_path_stat = mocker.patch("pathlib.Path.stat", side_effect=OSError("stat failed")) # Keep the mock to ensure it's called
-    mock_logger_warning = mocker.patch("pyvider.rpcplugin.transport.unix.logger.warning")
 
     # Expect it to assume available (False) and log a warning
     assert not await transport._check_socket_in_use() # Function under test
 
     mock_path_stat.assert_called_once() # Verify Path.stat was called
-    mock_logger_warning.assert_called_once()
-    args, _ = mock_logger_warning.call_args
-    assert f"Could not stat {managed_unix_socket_path}" in args[0]
-    assert "stat failed" in args[0] # Exception string is part of the formatted message
-    assert "Assuming available" in args[0]
+
+    # Check that warning was logged using caplog
+    assert any("Could not stat" in record.message and "stat failed" in record.message and "Assuming available" in record.message
+               for record in caplog.records if record.levelname == "WARNING")
     os.unlink(managed_unix_socket_path) # Clean up the file
 
 @pytest.mark.asyncio
@@ -148,13 +146,11 @@ async def test_check_socket_in_use_sock_close_exception(mocker, managed_unix_soc
 
     # This should return True because connect succeeded.
     # The error during sock.close() is logged as a warning but doesn't change the outcome of _check_socket_in_use
-    mock_logger_warning = mocker.patch("pyvider.rpcplugin.transport.unix.logger.warning")
     assert await transport._check_socket_in_use()
 
-    mock_logger_warning.assert_called_once()
-    args, _ = mock_logger_warning.call_args
-    assert "Error closing temporary socket" in args[0]
-    assert "Failed to close test socket" in args[0] # This is the exception message
+    # Check that warning was logged using caplog
+    assert any("Error closing temporary socket" in record.message and "Failed to close test socket" in record.message
+               for record in caplog.records if record.levelname == "WARNING")
 
 @pytest.mark.asyncio
 async def test_check_socket_in_use_connect_other_oserror(mocker, managed_unix_socket_path, caplog):
@@ -172,14 +168,11 @@ async def test_check_socket_in_use_connect_other_oserror(mocker, managed_unix_so
     mocker.patch("pathlib.Path.stat", return_value=mock_stat_result)
 
     # Should assume available (False) and log a warning
-    mock_logger_warning = mocker.patch("pyvider.rpcplugin.transport.unix.logger.warning")
     assert not await transport._check_socket_in_use()
 
-    mock_logger_warning.assert_called_once()
-    args, _ = mock_logger_warning.call_args
-    assert "OSError while connecting" in args[0]
-    assert "Permission denied" in args[0] # This is part of the exception string in the log
-    assert "Assuming available" in args[0]
+    # Check that warning was logged using caplog
+    assert any("OSError while connecting" in record.message and "Permission denied" in record.message and "Assuming available" in record.message
+               for record in caplog.records if record.levelname == "WARNING")
 
 @pytest.mark.asyncio
 async def test_check_socket_in_use_path_is_not_socket(mocker, managed_unix_socket_path):
