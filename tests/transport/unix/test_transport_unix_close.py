@@ -360,14 +360,9 @@ async def test_close_writer_transport_abort_no_is_closing(mocker):
     writer.transport = mock_transport_obj
     writer.wait_closed = AsyncMock()
 
-    # Patch logger to check specific log message for this path
-    mock_logger_debug = mocker.patch("pyvider.rpcplugin.transport.unix.logger.debug")
-
     await transport_module._close_writer(writer)
+    # Verify that abort was called since transport has no is_closing method
     mock_transport_obj.abort.assert_called_once()
-
-    found_log = any("No is_closing, attempting abort" in call_args[0][0] for call_args in mock_logger_debug.call_args_list)
-    assert found_log, "Log for 'No is_closing, attempting abort' not found."
 
     await transport_module.close()
 

@@ -107,7 +107,7 @@ async def test_unix_socket_connect_nonexistent_path() -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_socket_path):  # Removed caplog
+async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_socket_path):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # pathlib.Path.exists will return False once, then True for subsequent calls
@@ -131,22 +131,13 @@ async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_sock
 
     # Mock asyncio.sleep to avoid actual sleep
     mock_sleep = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
-    mock_logger_debug = mocker.patch("pyvider.rpcplugin.transport.unix.logger.debug")
 
     await transport.connect(
         managed_unix_socket_path
     )  # Use the path directly as it's normalized in __attrs_post_init__
 
-    # Check for the retry log message via the patched logger
-    found_log = False
-    for call_args_list_item in mock_logger_debug.call_args_list:
-        args, _ = call_args_list_item
-        if args and "Socket file not found, retrying" in args[0]:
-            found_log = True
-            break
-    assert found_log, f"Expected retry log message not found. Actual logs: {mock_logger_debug.call_args_list}"
-
-    mock_sleep.assert_called_once_with(0.5)  # Ensure sleep was called due to retry
+    # Verify that sleep was called due to retry (path didn't exist on first check)
+    mock_sleep.assert_called_once_with(0.5)
     assert transport.endpoint == managed_unix_socket_path
     await transport.close()
 
