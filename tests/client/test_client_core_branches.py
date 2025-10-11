@@ -109,10 +109,14 @@ async def test_terminate_process_handles_timeout(monkeypatch: pytest.MonkeyPatch
     managed_process.cleanup = MagicMock()
     client._process = managed_process
 
+    # Mock run_in_executor to actually call the function and return its result
+    def mock_run_in_executor(executor, func, *args):
+        future = asyncio.Future()
+        future.set_result(func(*args))
+        return future
+
     loop = MagicMock()
-    first_future = asyncio.Future()
-    first_future.set_result(False)  # terminate_gracefully returns False
-    loop.run_in_executor.return_value = first_future
+    loop.run_in_executor.side_effect = mock_run_in_executor
     monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
 
     await client._terminate_process()
@@ -125,7 +129,7 @@ async def test_terminate_process_handles_timeout(monkeypatch: pytest.MonkeyPatch
 
 
 @pytest.mark.asyncio
-async def test_terminate_process_handles_already_exited() -> None:
+async def test_terminate_process_handles_already_exited(monkeypatch: pytest.MonkeyPatch) -> None:
     client = RPCPluginClient(command=["dummy"])
     client.logger = MagicMock()
 
@@ -134,6 +138,16 @@ async def test_terminate_process_handles_already_exited() -> None:
     managed_process.terminate_gracefully.return_value = True
     managed_process.cleanup = MagicMock()
     client._process = managed_process
+
+    # Mock run_in_executor to actually call the function and return its result
+    def mock_run_in_executor(executor, func, *args):
+        future = asyncio.Future()
+        future.set_result(func(*args))
+        return future
+
+    loop = MagicMock()
+    loop.run_in_executor.side_effect = mock_run_in_executor
+    monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
 
     await client._terminate_process()
 
@@ -152,11 +166,18 @@ async def test_terminate_process_logs_exception(monkeypatch: pytest.MonkeyPatch)
     managed_process.terminate_gracefully.side_effect = RuntimeError("terminate failure")
     client._process = managed_process
 
-    # Mock run_in_executor to propagate the exception
+    # Mock run_in_executor to actually call the function (which will raise)
+    def mock_run_in_executor(executor, func, *args):
+        future = asyncio.Future()
+        try:
+            result = func(*args)
+            future.set_result(result)
+        except Exception as e:
+            future.set_exception(e)
+        return future
+
     loop = MagicMock()
-    future = asyncio.Future()
-    future.set_exception(RuntimeError("terminate failure"))
-    loop.run_in_executor.return_value = future
+    loop.run_in_executor.side_effect = mock_run_in_executor
     monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
 
     await client._terminate_process()
