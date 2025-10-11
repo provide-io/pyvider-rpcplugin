@@ -20,7 +20,9 @@ from typing import Any
 import uuid
 
 from attrs import define, field
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError

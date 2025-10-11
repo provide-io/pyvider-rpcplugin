@@ -18,7 +18,9 @@ from collections.abc import (
 from typing import Any  # Added for __eq__ type hint
 
 from attrs import define, field
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.config import rpcplugin_config
 

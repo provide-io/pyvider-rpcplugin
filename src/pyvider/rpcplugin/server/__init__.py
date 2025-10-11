@@ -10,7 +10,9 @@ including the main `RPCPluginServer` class and network handling components.
 
 # Import additional items from other modules that were previously in server.py
 from grpc.aio import server as GRPCServer
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.handshake import validate_magic_cookie
 from pyvider.rpcplugin.server.core import (

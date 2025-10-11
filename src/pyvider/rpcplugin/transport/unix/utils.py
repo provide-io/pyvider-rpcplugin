@@ -8,7 +8,9 @@ This module provides utility functions for Unix domain socket path
 normalization and other common operations.
 """
 
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def normalize_unix_path(path: str) -> str:

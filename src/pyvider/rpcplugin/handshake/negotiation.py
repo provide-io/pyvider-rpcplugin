@@ -15,7 +15,9 @@ import tempfile
 import time
 from typing import cast
 
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_HANDSHAKE_RETRY_WAIT, DEFAULT_PROCESS_WAIT_TIME

@@ -16,7 +16,9 @@ from typing import (
 )
 
 import grpc
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 """Type definitions for the Pyvider RPC plugin system.
 
