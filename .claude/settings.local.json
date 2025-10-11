@@ -35,7 +35,9 @@
       "Bash(PYTHONPATH=./src python:*)",
       "Bash(uv pip install:*)",
       "Bash(PYTHONPATH=./src ruff format:*)",
-      "Bash(PYTHONPATH=./src ruff check:*)"
+      "Bash(PYTHONPATH=./src ruff check:*)",
+      "Bash(chmod:*)",
+      "Bash(DEMO_COOKIE=demo123 PYTHONPATH=./src timeout 10s python examples/ch16_telemetry_demo.py)"
     ],
     "deny": [],
     "ask": [],
