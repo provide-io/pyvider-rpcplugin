@@ -4,7 +4,6 @@ Tests for OpenTelemetry integration module.
 Tests the telemetry module's thin wrapper over Foundation OTEL.
 """
 
-import pytest
 
 from pyvider.rpcplugin.config import RPCPluginConfig
 from pyvider.rpcplugin.telemetry import (
