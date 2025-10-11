@@ -53,14 +53,18 @@ class TestConfigManager:
         result = get_plugin_config("nonexistent")
         assert result is None
 
-    def test_register_duplicate_config_raises_error(self) -> None:
-        """Test that registering duplicate config raises an error."""
+    def test_register_duplicate_config_replaces(self) -> None:
+        """Test that registering duplicate config replaces the old one."""
         config1 = RPCPluginConfig(plugin_server_port=8080)
         register_plugin_config("server1", config1)
 
+        # Second registration should replace the first
         config2 = RPCPluginConfig(plugin_server_port=9000)
-        with pytest.raises(ValueError, match="already registered"):
-            register_plugin_config("server1", config2)
+        register_plugin_config("server1", config2)
+
+        # Should have the new value
+        retrieved = get_plugin_config("server1")
+        assert retrieved.plugin_server_port == 9000
 
     def test_unregister_plugin_config(self) -> None:
         """Test unregistering a plugin config."""
