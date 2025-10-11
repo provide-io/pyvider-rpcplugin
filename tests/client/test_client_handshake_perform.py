@@ -137,10 +137,10 @@ async def test_perform_handshake_process_exit(
     client_instance: RPCPluginClient, mock_process: MagicMock
 ) -> None:
     client_instance._process = mock_process
-    mock_process.poll.return_value = 1
+    mock_process.is_running.return_value = False  # Process has exited
     mock_process.returncode = 1
-    mock_process.stderr.read.return_value = b"Error during startup"
-    mock_process.stderr.readline.return_value = b""
+    mock_process.process.stderr.read.return_value = b"Error during startup"
+    mock_process.process.stderr.readline.return_value = b""
     with pytest.raises(
         HandshakeError,
         match=r"\[HandshakeError\] Plugin process exited prematurely.*before completing handshake.*",
@@ -153,6 +153,7 @@ async def test_perform_handshake_invalid_format(
     client_instance: RPCPluginClient, mock_process: MagicMock, mocker: object
 ) -> None:
     client_instance._process = mock_process
+    mock_process.process.stderr.read.return_value = b""
 
     # Mock _read_raw_handshake_line_from_stdout to directly return the problematic line
     # This bypasses the internal looping/timeout logic of _read_raw_handshake_line_from_stdout
@@ -180,7 +181,8 @@ async def test_perform_handshake_parse_error(
     client_instance: RPCPluginClient, mock_process: MagicMock
 ) -> None:
     client_instance._process = mock_process
-    mock_process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+    mock_process.process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+    mock_process.process.stderr.read.return_value = b""
     with (
         patch.object(
             client_instance,
@@ -358,7 +360,8 @@ async def test_perform_handshake_invalid_network_type(
     client_instance: RPCPluginClient, mock_process: MagicMock
 ) -> None:
     client_instance._process = mock_process
-    mock_process.stdout.readline.return_value = b"1|1|invalid_net|127.0.0.1:8000|grpc|\n"
+    mock_process.process.stdout.readline.return_value = b"1|1|invalid_net|127.0.0.1:8000|grpc|\n"
+    mock_process.process.stderr.read.return_value = b""
     with (
         patch.object(
             client_instance,
