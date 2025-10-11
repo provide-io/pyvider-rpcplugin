@@ -123,7 +123,9 @@ def _resolve_expected_core_version() -> int:
     Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
     """
     expected_value = rpcplugin_config.plugin_core_version
-    logger.debug(f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_value} (type: {type(expected_value)})")
+    logger.debug(
+        f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_value} (type: {type(expected_value)})"
+    )
     if expected_value is None:
         logger.error(
             "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1."
@@ -133,7 +135,10 @@ def _resolve_expected_core_version() -> int:
     try:
         return int(expected_value)
     except (TypeError, ValueError) as exc:
-        logger.error(f"CRITICAL: Could not convert PLUGIN_CORE_VERSION \'{expected_value}\' to int. Falling back to default 1.", exc_info=exc)
+        logger.error(
+            f"CRITICAL: Could not convert PLUGIN_CORE_VERSION '{expected_value}' to int. Falling back to default 1.",
+            exc_info=exc,
+        )
         return 1
 
 
@@ -265,7 +270,9 @@ def _validate_magic_cookie_impl(
     if cookie_provided_by_caller != expected_value_for_logic:
         logger.error(
             "Magic cookie mismatch.",
-            expected=expected_value_for_logic, received=cookie_provided_by_caller, cookie_key=cookie_key,
+            expected=expected_value_for_logic,
+            received=cookie_provided_by_caller,
+            cookie_key=cookie_key,
         )
         raise HandshakeError(
             message=(
