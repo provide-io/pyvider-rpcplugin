@@ -194,8 +194,10 @@ async def test_setup_client_certificates_existing_cert_failure(minimal_client: R
     mocker.patch.object(rpcplugin_config, "plugin_client_cert", "cert-path")
     mocker.patch.object(rpcplugin_config, "plugin_client_key", "key-path")
 
-    mock_certificate_cls = mocker.patch("pyvider.rpcplugin.client.handshake.Certificate")
-    mock_certificate_cls.side_effect = ValueError("broken cert")
+    mocker.patch(
+        "pyvider.rpcplugin.client.handshake.Certificate.from_pem",
+        side_effect=ValueError("broken cert")
+    )
 
     with pytest.raises(SecurityError, match="Failed to load client certificate/key: broken cert"):
         await minimal_client._setup_client_certificates()
