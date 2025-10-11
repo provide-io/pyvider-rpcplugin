@@ -396,8 +396,10 @@ async def test_close_transport_exception(client_instance, mocker):
     await client_instance.close()
 
     mock_transport.close.assert_called_once()
-    found_log = any(
-        "⚠️ Error closing transport" in call.args[0]
+    # found_log = any(
+    #     "⚠️ Error closing transport" in call.args[0]
+    #     for call in mock_logger_warning.call_args_list
+    # )
     assert client_instance._transport is None # Should still be nullified
 
 
