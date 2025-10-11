@@ -71,7 +71,7 @@ def _split_handshake_response(response: str) -> list[str]:
     if not is_valid_handshake_parts(parts):
         logger.error(
             "📡❌ Invalid handshake response format. Expected 6 parts with numeric versions.",
-            extra={"parts": parts},
+            parts=parts,
         )
         raise HandshakeError(
             message=(
@@ -123,11 +123,7 @@ def _resolve_expected_core_version() -> int:
     Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
     """
     expected_value = rpcplugin_config.plugin_core_version
-    logger.debug(
-        "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: %s (type: %s)",
-        expected_value,
-        type(expected_value),
-    )
+    logger.debug(f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_value} (type: {type(expected_value)})")
     if expected_value is None:
         logger.error(
             "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1."
@@ -137,21 +133,13 @@ def _resolve_expected_core_version() -> int:
     try:
         return int(expected_value)
     except (TypeError, ValueError) as exc:
-        logger.error(
-            "CRITICAL: Could not convert PLUGIN_CORE_VERSION '%s' to int. Falling back to default 1.",
-            expected_value,
-            exc_info=exc,
-        )
+        logger.error(f"CRITICAL: Could not convert PLUGIN_CORE_VERSION \'{expected_value}\' to int. Falling back to default 1.", exc_info=exc)
         return 1
 
 
 def _ensure_supported_core_version(core_version: int, expected_version: int) -> None:
     if core_version != expected_version:
-        logger.error(
-            "🤝 Unsupported handshake version: %s (expected: %s)",
-            core_version,
-            expected_version,
-        )
+        logger.error(f"🤝 Unsupported handshake version: {core_version} (expected: {expected_version})")
         raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_version})")
 
 
@@ -260,7 +248,7 @@ def _validate_magic_cookie_impl(
     if cookie_provided_by_caller is None or cookie_provided_by_caller == "":
         logger.error(
             "Magic cookie not provided by the client.",
-            extra={"cookie_key_expected": cookie_key},
+            cookie_key_expected=cookie_key,
         )
         raise HandshakeError(
             message=(
@@ -277,11 +265,7 @@ def _validate_magic_cookie_impl(
     if cookie_provided_by_caller != expected_value_for_logic:
         logger.error(
             "Magic cookie mismatch.",
-            extra={
-                "expected": expected_value_for_logic,
-                "received": cookie_provided_by_caller,
-                "cookie_key": cookie_key,
-            },
+            expected=expected_value_for_logic, received=cookie_provided_by_caller, cookie_key=cookie_key,
         )
         raise HandshakeError(
             message=(
