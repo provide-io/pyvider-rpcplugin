@@ -115,7 +115,12 @@ async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_sock
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # pathlib.Path.exists will return False once, then True for subsequent calls
-    mocker.patch("pathlib.Path.exists", side_effect=[False, True, True, True])
+    # Use a callable to avoid StopIteration when list is exhausted
+    call_count = {"count": 0}
+    def mock_exists(self):
+        call_count["count"] += 1
+        return call_count["count"] > 1
+    mocker.patch("pathlib.Path.exists", mock_exists)
 
     # Mock stat to succeed after path "appears"
     mock_stat_result = MagicMock()
