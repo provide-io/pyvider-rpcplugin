@@ -18,9 +18,12 @@
 - [x] Fix all test failures (106/111 tests passing, 5 slow tests not run)
 - [ ] Switch to module-specific loggers (get_logger(__name__)) - DEFERRED
 
-### Phase 3: Advanced Features (Future)
-- [ ] Configuration refactoring with ConfigManager
-- [ ] OpenTelemetry integration
+### Phase 3: Advanced Features - 🔄 IN PROGRESS
+- [x] Configuration refactoring with ConfigManager
+- [x] Add OpenTelemetry configuration fields
+- [ ] Create OpenTelemetry telemetry module
+- [ ] Instrument critical operations with tracing
+- [ ] Add performance metrics
 - [ ] Hub/Registry adoption
 
 ## Current Integration Status
