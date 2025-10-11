@@ -51,6 +51,13 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_PLUGIN_MAGIC_COOKIE_KEY,
     DEFAULT_PLUGIN_MAGIC_COOKIE_VALUE,
     DEFAULT_PLUGIN_MTLS_CERT_DIR,
+    DEFAULT_PLUGIN_OTEL_ENDPOINT,
+    DEFAULT_PLUGIN_OTEL_HEADERS,
+    DEFAULT_PLUGIN_OTEL_METRICS_ENABLED,
+    DEFAULT_PLUGIN_OTEL_METRICS_ENDPOINT,
+    DEFAULT_PLUGIN_OTEL_PROTOCOL,
+    DEFAULT_PLUGIN_OTEL_TRACES_ENABLED,
+    DEFAULT_PLUGIN_OTEL_TRACES_ENDPOINT,
     DEFAULT_PLUGIN_PROTOCOL_VERSION,
     DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
     DEFAULT_PLUGIN_RATE_LIMIT_BURST_CAPACITY,
@@ -66,9 +73,13 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH,
     DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX,
     DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH,
+    DEFAULT_PLUGIN_TELEMETRY_ENABLED,
+    DEFAULT_PLUGIN_TELEMETRY_SERVICE_NAME,
+    DEFAULT_PLUGIN_TELEMETRY_SERVICE_VERSION,
     DEFAULT_PLUGIN_UI_ENABLED,
     DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
     DEFAULT_SUPPORTED_TRANSPORTS,
+    DEFAULT_TRACE_SAMPLE_RATE,
 )
 
 PLUGIN_PROTOCOL_VERSIONS_FIELD = env_field(
@@ -432,6 +443,69 @@ class RPCPluginConfig(RuntimeConfig):
         default=DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX,
         parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
         env_var="PLUGIN_SHOW_EMOJI_MATRIX",
+    )
+
+    # =====================================================
+    # Telemetry Configuration (OpenTelemetry)
+    # =====================================================
+
+    plugin_telemetry_enabled: bool = env_field(
+        default=DEFAULT_PLUGIN_TELEMETRY_ENABLED,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_TELEMETRY_ENABLED",
+    )
+
+    plugin_telemetry_service_name: str = env_field(
+        default=DEFAULT_PLUGIN_TELEMETRY_SERVICE_NAME,
+        env_var="PLUGIN_TELEMETRY_SERVICE_NAME",
+    )
+
+    plugin_telemetry_service_version: str | None = env_field(
+        default=DEFAULT_PLUGIN_TELEMETRY_SERVICE_VERSION,
+        env_var="PLUGIN_TELEMETRY_SERVICE_VERSION",
+    )
+
+    plugin_otel_traces_enabled: bool = env_field(
+        default=DEFAULT_PLUGIN_OTEL_TRACES_ENABLED,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_OTEL_TRACES_ENABLED",
+    )
+
+    plugin_otel_metrics_enabled: bool = env_field(
+        default=DEFAULT_PLUGIN_OTEL_METRICS_ENABLED,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_OTEL_METRICS_ENABLED",
+    )
+
+    plugin_otel_endpoint: str | None = env_field(
+        default=DEFAULT_PLUGIN_OTEL_ENDPOINT,
+        env_var="PLUGIN_OTEL_ENDPOINT",
+    )
+
+    plugin_otel_traces_endpoint: str | None = env_field(
+        default=DEFAULT_PLUGIN_OTEL_TRACES_ENDPOINT,
+        env_var="PLUGIN_OTEL_TRACES_ENDPOINT",
+    )
+
+    plugin_otel_metrics_endpoint: str | None = env_field(
+        default=DEFAULT_PLUGIN_OTEL_METRICS_ENDPOINT,
+        env_var="PLUGIN_OTEL_METRICS_ENDPOINT",
+    )
+
+    plugin_otel_protocol: str = env_field(
+        default=DEFAULT_PLUGIN_OTEL_PROTOCOL,
+        env_var="PLUGIN_OTEL_PROTOCOL",
+    )
+
+    plugin_otel_headers: str | None = env_field(
+        default=DEFAULT_PLUGIN_OTEL_HEADERS,
+        env_var="PLUGIN_OTEL_HEADERS",
+    )
+
+    plugin_trace_sample_rate: float = env_field(
+        default=DEFAULT_TRACE_SAMPLE_RATE,
+        parser=float,
+        env_var="PLUGIN_TRACE_SAMPLE_RATE",
     )
 
     # All helper methods have been removed.
