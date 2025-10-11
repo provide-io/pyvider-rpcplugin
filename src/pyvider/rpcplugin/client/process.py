@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING
 
 from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 import grpc
+from provide.foundation import retry
+from provide.foundation.resilience import BackoffStrategy, RetryPolicy
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
@@ -170,12 +172,25 @@ class ClientProcessMixin:
             await self.grpc_channel.close()
             self.grpc_channel = None
 
+    @retry(
+        policy=RetryPolicy(
+            max_retries=3,
+            backoff=BackoffStrategy.EXPONENTIAL,
+            initial_delay=0.1,
+            max_delay=2.0,
+            exponential_base=2.0,
+        ),
+        retry_on=(TransportError, TimeoutError, OSError),
+        context={"operation": "create_grpc_channel", "component": "client"},
+    )
     async def _create_grpc_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Create and configure the gRPC channel for plugin communication.
 
         This method sets up the channel with appropriate credentials and
         connection options based on transport type and security configuration.
+
+        Retry policy: Exponential backoff with 3 attempts for transient connection errors.
         """
         if not self._address or not self._transport_name:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
