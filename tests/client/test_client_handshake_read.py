@@ -14,7 +14,6 @@ from pyvider.rpcplugin.exception import HandshakeError
 @pytest.fixture
 def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
-    client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
 
     # Create the underlying Popen mock (don't use spec to avoid Mock spec issues)
     popen_mock = MagicMock()

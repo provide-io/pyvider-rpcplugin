@@ -102,9 +102,9 @@ class ClientConnection:
             self.writer.write(data)
             await self.writer.drain()
             self.update_metrics(bytes_sent=len(data))
-            logger.debug(f"Sent data to {self.remote_addr}", extra={"bytes": len(data)})
+            logger.debug(f"Sent data to {self.remote_addr}", bytes_count=len(data))
         except OSError as e:
-            logger.error(f"Error sending data to {self.remote_addr}", extra={"error": str(e)})
+            logger.error(f"Error sending data to {self.remote_addr}", error=str(e))
             raise
 
     async def _default_receive(self, size: int | None = None) -> bytes:
@@ -125,10 +125,10 @@ class ClientConnection:
             data = await self.reader.read(buffer_size)
             if data:
                 self.update_metrics(bytes_received=len(data))
-                logger.debug(f"Received data from {self.remote_addr}", extra={"bytes": len(data)})
+                logger.debug(f"Received data from {self.remote_addr}", bytes_count=len(data))
             return data
         except OSError as e:
-            logger.error(f"Error receiving data from {self.remote_addr}", extra={"error": str(e)})
+            logger.error(f"Error receiving data from {self.remote_addr}", error=str(e))
             raise
 
     async def send_data(self, data: bytes) -> None:
@@ -194,7 +194,7 @@ class ClientConnection:
             except Exception as e:
                 logger.error(
                     f"Error while closing connection to {self.remote_addr}",
-                    extra={"error": str(e)},
+                    error=str(e),
                 )
 
     def __del__(self) -> None:

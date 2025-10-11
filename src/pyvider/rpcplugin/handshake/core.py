@@ -95,7 +95,7 @@ def _parse_versions(parts: list[str]) -> tuple[int, int]:
 
 def _validate_network(network: str, address: str, original: str) -> None:
     if network not in ("tcp", "unix"):
-        logger.error("📡❌ Invalid network type in handshake", extra={"network": network})
+        logger.error("📡❌ Invalid network type in handshake", network=network)
         raise HandshakeError(
             message=f"Invalid network type '{network}' in handshake.",
             hint="Network type must be 'tcp' or 'unix'.",
@@ -103,7 +103,7 @@ def _validate_network(network: str, address: str, original: str) -> None:
     if network == "tcp" and not address:
         logger.error(
             "📡❌ Empty address received for TCP transport in handshake",
-            extra={"handshake": original},
+            handshake=original,
         )
         raise HandshakeError(
             message="Empty address received in handshake string for TCP transport.",
@@ -414,7 +414,7 @@ async def _build_handshake_response_impl(
         return handshake_response
 
     except Exception as e:
-        logger.error(f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)})
+        logger.error(f"🤝📝❌ Handshake response build failed: {e}", error=str(e))
         raise HandshakeError(
             message=f"Failed to build handshake response: {e}",
             hint="Review server logs for details on the failure.",
@@ -494,5 +494,5 @@ def _parse_handshake_response_impl(
         return core_version, plugin_version, network, address, protocol, server_cert
 
     except Exception as e:
-        logger.error(f"📡❌ Handshake parsing failed: {e}", extra={"error": str(e)})
+        logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e

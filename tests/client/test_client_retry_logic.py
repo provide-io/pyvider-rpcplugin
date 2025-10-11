@@ -10,7 +10,6 @@ from pyvider.rpcplugin.exception import HandshakeError, TransportError
 @pytest.fixture
 def client_instance_local(mocker):
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
-    client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
     # Spec against subprocess.Popen for mock_process_obj
     mock_process_obj = MagicMock(spec=subprocess.Popen)
     mock_process_obj.poll.return_value = None
