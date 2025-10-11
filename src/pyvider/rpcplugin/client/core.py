@@ -8,6 +8,8 @@ This module contains the main RPCPluginClient class with its attributes,
 initialization, and core lifecycle methods like start, close, and shutdown.
 """
 
+from __future__ import annotations
+
 import asyncio
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
@@ -84,7 +86,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: "ManagedProcess | None" = field(init=False, default=None)  # type: ignore[assignment]
+    _process: ManagedProcess | None = field(init=False, default=None)  # type: ignore[assignment]
     _transport: TransportType | None = field(init=False, default=None)  # type: ignore[assignment]
     _transport_name: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
