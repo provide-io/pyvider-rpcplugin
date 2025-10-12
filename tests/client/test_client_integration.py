@@ -117,7 +117,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             log_message.channel = 1
             log_message.data = b"log message"
             yield log_message
-            await asyncio.sleep(0.1)
+            # Generator completes after yielding one message
 
         mock_stdio_stub.StreamStdio = lambda _: mock_stream_stdio(_)
 
