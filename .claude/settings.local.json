@@ -42,7 +42,8 @@
       "Bash(find:*)",
       "Bash(ruff format:*)",
       "Bash(git checkout:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(PYTHONPATH=./src .venv/bin/python -m pytest:*)"
     ],
     "deny": [],
     "ask": [],
