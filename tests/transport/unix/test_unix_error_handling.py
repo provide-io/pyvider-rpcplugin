@@ -94,6 +94,9 @@ async def test_unix_socket_close_error_handling() -> None:
         # Socket file should still be removed
         assert not os.path.exists(socket_path)
 
+        # Give event loop time to complete cleanup
+        await asyncio.sleep(0.1)
+
 
 @pytest.mark.asyncio
 async def test_unix_socket_path_normalization() -> None:
