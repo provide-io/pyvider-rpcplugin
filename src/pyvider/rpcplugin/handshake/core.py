@@ -12,7 +12,7 @@ import os
 from typing import Literal, TypeGuard
 
 from attrs import define
-from provide.foundation import logger
+from provide.foundation import logger, resilient
 from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -159,6 +159,10 @@ def _apply_certificate_padding(server_cert: str | None) -> str | None:
     return server_cert
 
 
+@resilient(
+    context={"operation": "validate_magic_cookie", "component": "handshake"},
+    log_errors=True,
+)
 def validate_magic_cookie(
     magic_cookie_key: str | None | _SentinelType = _SENTINEL_INSTANCE,
     magic_cookie_value: str | None | _SentinelType = _SENTINEL_INSTANCE,
@@ -273,6 +277,10 @@ def validate_magic_cookie(
     logger.debug("Magic cookie validated successfully.")
 
 
+@resilient(
+    context={"operation": "build_handshake_response", "component": "handshake"},
+    log_errors=True,
+)
 async def build_handshake_response(
     plugin_version: int,
     transport_name: str,
@@ -346,7 +354,7 @@ async def build_handshake_response(
 
         if server_cert:
             logger.debug("🤝🔐🔄 Processing server certificate...")
-            cert_lines = server_cert.cert.strip().split("\n")
+            cert_lines = server_cert.cert_pem.strip().split("\n")
             if len(cert_lines) < 3:
                 logger.error(
                     "🤝🔐❌ Server certificate appears to be in an invalid PEM format (too few lines)."
@@ -371,6 +379,10 @@ async def build_handshake_response(
         ) from e
 
 
+@resilient(
+    context={"operation": "parse_handshake_response", "component": "handshake"},
+    log_errors=True,
+)
 def parse_handshake_response(
     response: str,
 ) -> tuple[int, int, str, str, str, str | None]:

@@ -52,8 +52,8 @@ async def test_setup_client_certificates_with_auto_mtls(client_instance):
     ):
 
         mock_cert_instance = MagicMock()
-        mock_cert_instance.cert = "test-cert"
-        mock_cert_instance.key = "test-key"
+        mock_cert_instance.cert_pem = "test-cert"
+        mock_cert_instance.key_pem = "test-key"
         mock_cert_class.create_self_signed_client_cert.return_value = mock_cert_instance
 
         await client_instance._setup_client_certificates()
@@ -84,15 +84,15 @@ async def test_setup_client_certificates_with_existing_certs(client_instance):
     ):
         # Set up mock to return the expected cert and key values
         mock_cert_instance = MagicMock()
-        mock_cert_instance.cert = "existing-cert"
-        mock_cert_instance.key = "existing-key"
-        mock_cert_class.return_value = mock_cert_instance
+        mock_cert_instance.cert_pem = "existing-cert"
+        mock_cert_instance.key_pem = "existing-key"
+        mock_cert_class.from_pem.return_value = mock_cert_instance
 
         await client_instance._setup_client_certificates()
 
         # Attributes were accessed via patches
 
-        mock_cert_class.assert_called_once_with(cert_pem_or_uri="existing-cert", key_pem_or_uri="existing-key")  # Existing cert should be loaded
+        mock_cert_class.from_pem.assert_called_once_with(cert_pem="existing-cert", key_pem="existing-key")  # Existing cert should be loaded
         assert client_instance.client_cert == "existing-cert"
         assert client_instance.client_key_pem == "existing-key"
 
@@ -125,8 +125,8 @@ async def test_setup_client_certificates_mtls_missing_key(client_instance, mocke
 
     # We need to mock the Certificate class from the correct module
     mock_cert_generated_instance = MagicMock(spec=Certificate)
-    mock_cert_generated_instance.cert = "generated-cert"
-    mock_cert_generated_instance.key = "generated-key"
+    mock_cert_generated_instance.cert_pem = "generated-cert"
+    mock_cert_generated_instance.key_pem = "generated-key"
 
     # Ensure this path matches where Certificate is imported in client/handshake.py
     mock_certificate_class = mocker.patch("pyvider.rpcplugin.client.handshake.Certificate")

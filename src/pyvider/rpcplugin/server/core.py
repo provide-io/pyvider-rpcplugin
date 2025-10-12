@@ -20,7 +20,7 @@ from typing import Any, Generic, TypeVar, cast
 
 from attrs import define, field
 import grpc
-from provide.foundation import logger
+from provide.foundation import logger, timed_block
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -320,17 +320,20 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             self._register_signal_handlers()
 
             # Negotiate handshake and setup transport
-            await self._negotiate_handshake()
+            with timed_block(logger, "handshake_negotiation", component="server"):
+                await self._negotiate_handshake()
 
             # Setup server infrastructure
-            await self._setup_server()
+            with timed_block(logger, "server_setup", component="server"):
+                await self._setup_server()
 
             # Start shutdown file watcher if configured
             if self._shutdown_file_path:
                 self._shutdown_watcher_task = asyncio.create_task(self._watch_shutdown_file())
 
             # Send handshake response to stdout
-            await self._build_and_send_handshake_response()
+            with timed_block(logger, "handshake_response", component="server"):
+                await self._build_and_send_handshake_response()
 
             # Indicate server is ready
             self._serving_event.set()

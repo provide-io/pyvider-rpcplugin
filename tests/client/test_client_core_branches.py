@@ -102,42 +102,57 @@ async def test_close_grpc_channel_handles_error(monkeypatch: pytest.MonkeyPatch)
 async def test_terminate_process_handles_timeout(monkeypatch: pytest.MonkeyPatch) -> None:
     client = RPCPluginClient(command=["dummy"])
     client.logger = MagicMock()
-    process = MagicMock()
-    process.poll.return_value = None
-    process.wait.return_value = None
-    client._process = process
+
+    # Create ManagedProcess mock
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.return_value = False  # Simulate graceful termination failure
+    managed_process.cleanup = MagicMock()
+    client._process = managed_process
+
+    # Mock run_in_executor to actually call the function and return its result
+    def mock_run_in_executor(executor, func, *args):
+        future = asyncio.Future()
+        future.set_result(func(*args))
+        return future
 
     loop = MagicMock()
-    first_future = asyncio.Future()
-    second_future = asyncio.Future()
-    second_future.set_result(None)
-    loop.run_in_executor.side_effect = [first_future, second_future]
+    loop.run_in_executor.side_effect = mock_run_in_executor
     monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
-
-    async def raise_timeout(awaitable: object, timeout: float) -> None:
-        raise TimeoutError()
-
-    monkeypatch.setattr("pyvider.rpcplugin.client.core.asyncio.wait_for", raise_timeout, raising=True)
 
     await client._terminate_process()
 
-    process.kill.assert_called_once()
-    client.logger.warning.assert_any_call("⚠️ Plugin process did not terminate gracefully, killing...")
+    managed_process.terminate_gracefully.assert_called_once_with(5.0)
+    managed_process.cleanup.assert_called_once()
+    client.logger.warning.assert_any_call("⚠️ Plugin process was force-killed.")
     assert client._process is None
 
 
 
 @pytest.mark.asyncio
-async def test_terminate_process_handles_already_exited() -> None:
+async def test_terminate_process_handles_already_exited(monkeypatch: pytest.MonkeyPatch) -> None:
     client = RPCPluginClient(command=["dummy"])
     client.logger = MagicMock()
-    process = MagicMock()
-    process.poll.return_value = 0
-    client._process = process
+
+    # Create ManagedProcess mock that gracefully terminates
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.return_value = True
+    managed_process.cleanup = MagicMock()
+    client._process = managed_process
+
+    # Mock run_in_executor to actually call the function and return its result
+    def mock_run_in_executor(executor, func, *args):
+        future = asyncio.Future()
+        future.set_result(func(*args))
+        return future
+
+    loop = MagicMock()
+    loop.run_in_executor.side_effect = mock_run_in_executor
+    monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
 
     await client._terminate_process()
 
-    client.logger.debug.assert_any_call("✅ Plugin process already terminated.")
+    client.logger.debug.assert_any_call("✅ Plugin process terminated gracefully.")
+    managed_process.cleanup.assert_called_once()
     assert client._process is None
 
 
@@ -145,15 +160,30 @@ async def test_terminate_process_handles_already_exited() -> None:
 async def test_terminate_process_logs_exception(monkeypatch: pytest.MonkeyPatch) -> None:
     client = RPCPluginClient(command=["dummy"])
     client.logger = MagicMock()
-    process = MagicMock()
-    process.poll.return_value = None
-    process.terminate.side_effect = RuntimeError("terminate failure")
-    client._process = process
+
+    # Create ManagedProcess mock that raises exception
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.side_effect = RuntimeError("terminate failure")
+    client._process = managed_process
+
+    # Mock run_in_executor to actually call the function (which will raise)
+    def mock_run_in_executor(executor, func, *args):
+        future = asyncio.Future()
+        try:
+            result = func(*args)
+            future.set_result(result)
+        except Exception as e:
+            future.set_exception(e)
+        return future
+
+    loop = MagicMock()
+    loop.run_in_executor.side_effect = mock_run_in_executor
+    monkeypatch.setattr("asyncio.get_event_loop", lambda: loop, raising=False)
 
     await client._terminate_process()
 
     client.logger.error.assert_any_call(
-        "⚠️ Error sending terminate signal to plugin process: terminate failure",
+        "⚠️ Error terminating plugin process: terminate failure",
         extra={"trace": "terminate failure"},
         exc_info=True,
     )

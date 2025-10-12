@@ -21,7 +21,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     4. Close client
     """
     # Create mocks using provide-testkit factories
-    mock_popen = magic_mock_factory(name="subprocess.Popen")
+    mock_managed_process_class = magic_mock_factory(name="ManagedProcess")
     mock_read_handshake_line = async_mock_factory(
         name="read_handshake_line", return_value="1|1|tcp|127.0.0.1:8000|grpc|"
     )
@@ -33,7 +33,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
     # Mock all external dependencies
     with (
-        patch("pyvider.rpcplugin.client.core.subprocess.Popen", mock_popen),
+        patch("pyvider.rpcplugin.client.process.ManagedProcess", mock_managed_process_class),
         patch(
             "pyvider.rpcplugin.client.core.RPCPluginClient._read_raw_handshake_line_from_stdout",
             mock_read_handshake_line,
@@ -46,15 +46,23 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         patch("pyvider.rpcplugin.transport.TCPSocketTransport", mock_transport_class),
         patch("threading.Thread"),
     ):
-        # Mock process using provide-testkit patterns
-        mock_process = magic_mock_factory(name="plugin_process")
-        mock_process.stdout = magic_mock_factory(name="process_stdout")
-        mock_process.stderr = magic_mock_factory(name="process_stderr")
-        mock_process.poll.return_value = 0  # Process is already terminated
-        mock_process.terminate = magic_mock_factory(name="process_terminate")
-        mock_process.kill = magic_mock_factory(name="process_kill")
-        mock_process.wait = magic_mock_factory(name="process_wait", return_value=0)
-        mock_popen.return_value = mock_process
+        # Mock underlying Popen process
+        mock_popen = magic_mock_factory(name="plugin_popen")
+        mock_popen.stdout = magic_mock_factory(name="process_stdout")
+        mock_popen.stderr = magic_mock_factory(name="process_stderr")
+        mock_popen.poll.return_value = 0  # Process is already terminated
+        mock_popen.terminate = magic_mock_factory(name="process_terminate")
+        mock_popen.kill = magic_mock_factory(name="process_kill")
+        mock_popen.wait = magic_mock_factory(name="process_wait", return_value=0)
+
+        # Mock ManagedProcess wrapper
+        mock_managed_process = magic_mock_factory(name="managed_process")
+        mock_managed_process.process = mock_popen
+        mock_managed_process.pid = 12345
+        mock_managed_process.is_running.return_value = False  # Process already terminated
+        mock_managed_process.terminate_gracefully.return_value = True
+        mock_managed_process.cleanup = magic_mock_factory(name="cleanup")
+        mock_managed_process_class.return_value = mock_managed_process
 
         # Mock certificate to use provide-testkit client_cert fixture
         mock_cert_class.return_value = client_cert
@@ -140,8 +148,8 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             await client.start()
 
             # Verify client initialized correctly
-            assert client._process == mock_process
-            assert client.client_cert == client_cert.cert
+            assert client._process == mock_managed_process
+            assert client.client_cert == client_cert.cert_pem
             assert client.grpc_channel == mock_channel
 
         # Test broker subchannel - skip this for now to test other parts
