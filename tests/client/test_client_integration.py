@@ -61,24 +61,16 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_popen.kill = magic_mock_factory(name="process_kill")
         mock_popen.wait = magic_mock_factory(name="process_wait", return_value=0)
 
-        # Mock ManagedProcess wrapper with proper state management
+        # Mock ManagedProcess wrapper - process already terminated (simpler, no background tasks)
         mock_managed_process = magic_mock_factory(name="managed_process")
         mock_managed_process.process = mock_popen
         mock_managed_process.pid = 12345
-        mock_managed_process.returncode = None
+        mock_managed_process.returncode = 0
         mock_managed_process.launch = magic_mock_factory(name="launch")
 
-        # Use mock with return_value for is_running - simpler and more reliable
-        mock_is_running = magic_mock_factory(name="is_running", return_value=True)
-        mock_managed_process.is_running = mock_is_running
-
-        def mock_terminate_gracefully(timeout=None):
-            # Update is_running to return False after termination
-            mock_is_running.return_value = False
-            mock_managed_process.returncode = 0
-            return True
-
-        mock_managed_process.terminate_gracefully = mock_terminate_gracefully
+        # is_running returns False - process already terminated, no background tasks created
+        mock_managed_process.is_running.return_value = False
+        mock_managed_process.terminate_gracefully.return_value = True
         mock_managed_process.cleanup = magic_mock_factory(name="cleanup")
         mock_managed_process_class.return_value = mock_managed_process
 
