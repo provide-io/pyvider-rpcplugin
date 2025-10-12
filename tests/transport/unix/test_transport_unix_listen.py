@@ -115,6 +115,8 @@ async def test_unix_socket_listen_unlink_file_not_found(
 
 @pytest.mark.asyncio
 async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
+    from provide.testkit.mocking import MagicMock
+
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -126,8 +128,9 @@ async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
     with open(sock_path, "w") as f:
         f.write("stale")
     # Patch asyncio.start_unix_server to return a dummy server.
-    dummy_server = AsyncMock()
-    dummy_server.wait_closed = AsyncMock()
+    dummy_server = MagicMock(spec=asyncio.AbstractServer)
+    dummy_server.close = MagicMock(return_value=None)  # sync
+    dummy_server.wait_closed = AsyncMock(return_value=None)  # async
     monkeypatch.setattr(
         asyncio, "start_unix_server", AsyncMock(return_value=dummy_server)
     )
@@ -135,6 +138,10 @@ async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(os, "chmod", lambda path, mode: None)
     endpoint = await transport.listen()
     assert endpoint == sock_path
+
+    # Clean up
+    await transport.close()
+    await asyncio.sleep(0.1)
 
 
 @pytest.mark.asyncio
@@ -210,6 +217,8 @@ async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
 
 @pytest.mark.asyncio
 async def test_unix_listen_path_no_directory(mocker):
+    from provide.testkit.mocking import MagicMock
+
     socket_name = "socket_in_cwd.sock" # A path without directory separators
     transport = UnixSocketTransport(path=socket_name)
 
@@ -222,7 +231,9 @@ async def test_unix_listen_path_no_directory(mocker):
     mocker.patch("os.unlink", return_value=None)
     mocker.patch("os.chmod", return_value=None)
 
-    mock_server_instance = AsyncMock(spec=asyncio.AbstractServer)
+    mock_server_instance = MagicMock(spec=asyncio.AbstractServer)
+    mock_server_instance.close = MagicMock(return_value=None)  # sync
+    mock_server_instance.wait_closed = AsyncMock(return_value=None)  # async
     mocker.patch("asyncio.start_unix_server", return_value=mock_server_instance)
 
     endpoint = await transport.listen()
@@ -236,6 +247,7 @@ async def test_unix_listen_path_no_directory(mocker):
         except OSError:
              pass # Ignore if it's already gone or other issues during cleanup
     await transport.close()
+    await asyncio.sleep(0.1)
 
 ### 🐍🏗🧪️
 
