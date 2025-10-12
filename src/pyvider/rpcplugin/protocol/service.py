@@ -156,7 +156,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     err_str_inner = f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
                     logger.error(
                         f"🔌📡❌ {err_str_inner}",
-                        extra={"trace": traceback.format_exc()},
+                        trace=traceback.format_exc(),
                     )
                     yield ConnInfo(
                         service_id=sub_id,
@@ -170,7 +170,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                 "Broker stream error from client iterator for sub_id "
                 f"{outer_error_sub_id} (outer loop): {ex_outer}"
             )
-            logger.error(f"🔌📡❌ {err_str_outer}", extra={"trace": traceback.format_exc()})
+            logger.error(f"🔌📡❌ {err_str_outer}", trace=traceback.format_exc())
             try:
                 yield ConnInfo(
                     service_id=0,
@@ -279,7 +279,7 @@ class GRPCStdioService(GRPCStdioServicer):
             try:
                 item = await self._next_queue_item(done)
             except Exception as exc:  # pragma: no cover - defensive path for queue errors
-                logger.error("🔌📝❌ Error retrieving stdio item: %s", exc)
+                logger.error(f"🔌📝❌ Error retrieving stdio item: {exc}")
                 await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                 continue
 

@@ -20,7 +20,8 @@ from typing import Any, Generic, TypeVar, cast
 
 from attrs import define, field
 import grpc
-from provide.foundation import logger, timed_block
+from provide.foundation import timed_block
+from provide.foundation.logger import get_logger
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -36,7 +37,8 @@ from pyvider.rpcplugin.transport.types import (
 # Import the network mixin
 from .network import ServerNetworkMixin
 
-# Get tracer for server operations
+# Module logger and tracer
+logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
 
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)

@@ -12,15 +12,17 @@ import os
 from typing import Literal, TypeGuard
 
 from attrs import define
-from provide.foundation import logger, resilient
+from provide.foundation import resilient
 from provide.foundation.crypto import Certificate
+from provide.foundation.logger import get_logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import HandshakeError, TransportError
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.transport.types import TransportT
 
-# Get tracer for handshake operations
+# Module logger and tracer
+logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
 
 
@@ -69,7 +71,7 @@ def _split_handshake_response(response: str) -> list[str]:
     if not is_valid_handshake_parts(parts):
         logger.error(
             "📡❌ Invalid handshake response format. Expected 6 parts with numeric versions.",
-            extra={"parts": parts},
+            parts=parts,
         )
         raise HandshakeError(
             message=(
@@ -93,7 +95,7 @@ def _parse_versions(parts: list[str]) -> tuple[int, int]:
 
 def _validate_network(network: str, address: str, original: str) -> None:
     if network not in ("tcp", "unix"):
-        logger.error("📡❌ Invalid network type in handshake", extra={"network": network})
+        logger.error("📡❌ Invalid network type in handshake", network=network)
         raise HandshakeError(
             message=f"Invalid network type '{network}' in handshake.",
             hint="Network type must be 'tcp' or 'unix'.",
@@ -101,7 +103,7 @@ def _validate_network(network: str, address: str, original: str) -> None:
     if network == "tcp" and not address:
         logger.error(
             "📡❌ Empty address received for TCP transport in handshake",
-            extra={"handshake": original},
+            handshake=original,
         )
         raise HandshakeError(
             message="Empty address received in handshake string for TCP transport.",
@@ -122,9 +124,7 @@ def _resolve_expected_core_version() -> int:
     """
     expected_value = rpcplugin_config.plugin_core_version
     logger.debug(
-        "📡🔍 Retrieved PLUGIN_CORE_VERSION from config: %s (type: %s)",
-        expected_value,
-        type(expected_value),
+        f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_value} (type: {type(expected_value)})"
     )
     if expected_value is None:
         logger.error(
@@ -136,8 +136,7 @@ def _resolve_expected_core_version() -> int:
         return int(expected_value)
     except (TypeError, ValueError) as exc:
         logger.error(
-            "CRITICAL: Could not convert PLUGIN_CORE_VERSION '%s' to int. Falling back to default 1.",
-            expected_value,
+            f"CRITICAL: Could not convert PLUGIN_CORE_VERSION '{expected_value}' to int. Falling back to default 1.",
             exc_info=exc,
         )
         return 1
@@ -145,11 +144,7 @@ def _resolve_expected_core_version() -> int:
 
 def _ensure_supported_core_version(core_version: int, expected_version: int) -> None:
     if core_version != expected_version:
-        logger.error(
-            "🤝 Unsupported handshake version: %s (expected: %s)",
-            core_version,
-            expected_version,
-        )
+        logger.error(f"🤝 Unsupported handshake version: {core_version} (expected: {expected_version})")
         raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_version})")
 
 
@@ -258,7 +253,7 @@ def _validate_magic_cookie_impl(
     if cookie_provided_by_caller is None or cookie_provided_by_caller == "":
         logger.error(
             "Magic cookie not provided by the client.",
-            extra={"cookie_key_expected": cookie_key},
+            cookie_key_expected=cookie_key,
         )
         raise HandshakeError(
             message=(
@@ -275,11 +270,9 @@ def _validate_magic_cookie_impl(
     if cookie_provided_by_caller != expected_value_for_logic:
         logger.error(
             "Magic cookie mismatch.",
-            extra={
-                "expected": expected_value_for_logic,
-                "received": cookie_provided_by_caller,
-                "cookie_key": cookie_key,
-            },
+            expected=expected_value_for_logic,
+            received=cookie_provided_by_caller,
+            cookie_key=cookie_key,
         )
         raise HandshakeError(
             message=(
@@ -412,7 +405,7 @@ async def _build_handshake_response_impl(
         return handshake_response
 
     except Exception as e:
-        logger.error(f"🤝📝❌ Handshake response build failed: {e}", extra={"error": str(e)})
+        logger.error(f"🤝📝❌ Handshake response build failed: {e}", error=str(e))
         raise HandshakeError(
             message=f"Failed to build handshake response: {e}",
             hint="Review server logs for details on the failure.",
@@ -492,5 +485,5 @@ def _parse_handshake_response_impl(
         return core_version, plugin_version, network, address, protocol, server_cert
 
     except Exception as e:
-        logger.error(f"📡❌ Handshake parsing failed: {e}", extra={"error": str(e)})
+        logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
