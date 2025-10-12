@@ -12,7 +12,9 @@ consistent component creation.
 
 from typing import Any, TypeVar, cast
 
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol, RPCPluginProtocol as BaseRpcAbcProtocol

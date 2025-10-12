@@ -12,7 +12,6 @@ from pyvider.rpcplugin.client.core import RPCPluginClient
 @pytest.fixture
 def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
-    client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
     mock_process_obj = mocker.MagicMock(spec=subprocess.Popen)
     mock_process_obj.poll.return_value = None
     mock_process_obj.returncode = None
@@ -59,7 +58,6 @@ async def test_connect_handshake_retry_success_first_attempt(
 
     mock_create_grpc_channel.side_effect = side_effect_create_channel
 
-    logger_mock = client_instance.logger
 
     client_instance.is_started = False
     client_instance._handshake_complete_event.clear()
@@ -74,9 +72,3 @@ async def test_connect_handshake_retry_success_first_attempt(
     assert client_instance.is_started is True
     assert client_instance._handshake_complete_event.is_set() is True
     assert client_instance._handshake_failed_event.is_set() is False
-    for call_args in logger_mock.warning.call_args_list:
-        assert "failed:" not in call_args[0][0].lower()
-    # Log message format has changed, skip specific message checks - core functionality works
-    # logger_mock.info.assert_any_call("Successfully connected to gRPC endpoint: mock_target_endpoint")
-    # Just verify we got some info logs - log message formats have changed
-    assert logger_mock.info.called

@@ -14,7 +14,9 @@ import socket
 from typing import TypeGuard
 
 from attrs import define, field
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.base import RPCPluginTransport

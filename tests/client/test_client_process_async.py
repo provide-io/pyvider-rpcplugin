@@ -11,7 +11,6 @@ from pyvider.rpcplugin.exception import TransportError
 @pytest.fixture
 def basic_client(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy"])
-    client.logger = mocker.MagicMock(spec=["debug", "error"])
     return client
 
 

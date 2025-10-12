@@ -2,11 +2,15 @@
 """
 Chapter 16: OpenTelemetry Telemetry Demo
 
-This example demonstrates the OpenTelemetry integration in pyvider-rpcplugin.
-It shows how to:
-1. Enable telemetry with correct service_name
-2. Capture distributed traces for RPC operations
-3. Export traces to console or OTLP collector
+This example demonstrates the CORRECT OpenTelemetry pattern for libraries:
+- APPLICATION configures OpenTelemetry (sets service.name)
+- LIBRARY just accesses tracer (gets instrumentation.library.name attribution)
+
+Key Concepts:
+1. Application sets service.name (e.g., "demo-app")
+2. Library gets tracer with instrumentation.library.name ("pyvider.rpcplugin")
+3. All traces appear under application's service with proper library attribution
+4. No observability fragmentation!
 
 Traces are automatically created for:
 - rpc.handshake.validate_cookie
@@ -20,9 +24,9 @@ Usage:
     python examples/ch16_telemetry_demo.py
 
     # With OpenObserve/OTLP export
-    export PLUGIN_TELEMETRY_ENABLED=true
-    export PLUGIN_OTEL_TRACES_ENABLED=true
     export PLUGIN_OTEL_ENDPOINT=http://localhost:5080/api/default
+    export OPENOBSERVE_USER=someuserexample@provide.test
+    export OPENOBSERVE_PASSWORD=password
     python examples/ch16_telemetry_demo.py
 """
 
@@ -38,10 +42,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import contextlib
 
 from pyvider.rpcplugin import RPCPluginServer
-from pyvider.rpcplugin.config import RPCPluginConfig
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerServicer
-from pyvider.rpcplugin.telemetry import is_telemetry_available, setup_rpc_telemetry
+from pyvider.rpcplugin.telemetry import get_rpc_tracer, is_telemetry_available
 
 
 # Simple echo protocol for demo
@@ -94,24 +97,36 @@ async def run_demo() -> None:
         print("   pip install 'provide-foundation[opentelemetry]'\n")
         return
 
-    # Setup telemetry configuration
-    config = RPCPluginConfig(
-        plugin_telemetry_enabled=True,
-        plugin_telemetry_service_name="pyvider.rpcplugin",  # Using dot notation
-        plugin_otel_traces_enabled=True,
-        plugin_otel_metrics_enabled=False,
-        plugin_otel_endpoint=os.getenv("PLUGIN_OTEL_ENDPOINT"),
-        plugin_otel_protocol=os.getenv("PLUGIN_OTEL_PROTOCOL", "grpc"),
+    # Application configures OpenTelemetry (library just accesses it)
+    print("📊 Setting up OpenTelemetry (application-level)...")
+
+    # Import Foundation's telemetry configuration
+    from provide.foundation.logger.config.telemetry import TelemetryConfig
+    from provide.foundation.tracer.otel import setup_opentelemetry_tracing
+
+    # Application sets service name, not the library!
+    telemetry_config = TelemetryConfig(
+        service_name="demo-app",  # ✅ Application's service identity
+        tracing_enabled=True,
+        otlp_endpoint=os.getenv("PLUGIN_OTEL_ENDPOINT", "http://localhost:4317"),
+        otlp_protocol=os.getenv("PLUGIN_OTEL_PROTOCOL", "grpc"),
     )
 
-    # Initialize telemetry
-    print("📊 Initializing telemetry...")
-    print(f"   Service Name: {config.plugin_telemetry_service_name}")
-    print(f"   Traces Enabled: {config.plugin_otel_traces_enabled}")
-    print(f"   OTLP Endpoint: {config.plugin_otel_endpoint or 'console (default)'}")
+    print(f"   Service Name: {telemetry_config.service_name} (application)")
+    print(f"   Traces Enabled: {telemetry_config.tracing_enabled}")
+    print(f"   OTLP Endpoint: {telemetry_config.otlp_endpoint}")
     print()
 
-    setup_rpc_telemetry(config)
+    # Application initializes OpenTelemetry
+    setup_opentelemetry_tracing(telemetry_config)
+
+    # Library gets tracer from app's configuration
+    tracer = get_rpc_tracer()
+    if tracer:
+        print("✅ Library tracer obtained (instrumentation.library.name='pyvider.rpcplugin')")
+    else:
+        print("⚠️  Tracer not available")
+    print()
 
     # Create protocol and server
     protocol = DemoProtocol()
@@ -162,13 +177,19 @@ async def run_demo() -> None:
     print("\n" + "=" * 70)
     print("✨ Demo Complete!")
     print("=" * 70)
-    print("\n📝 To export traces to OpenObserve, set environment variables:")
-    print("   export PLUGIN_TELEMETRY_ENABLED=true")
-    print("   export PLUGIN_OTEL_TRACES_ENABLED=true")
+    print("\n📝 Key Takeaways:")
+    print("   • APPLICATION configures OpenTelemetry (service.name='demo-app')")
+    print("   • LIBRARY just accesses tracer (instrumentation.library.name='pyvider.rpcplugin')")
+    print("   • All traces appear under 'demo-app' with proper library attribution")
+    print()
+    print("📝 To export traces to OpenObserve, set environment variables:")
     print("   export PLUGIN_OTEL_ENDPOINT=http://localhost:5080/api/default")
     print("   export OPENOBSERVE_USER=someuserexample@provide.test")
     print("   export OPENOBSERVE_PASSWORD=password")
-    print("\n🔍 Check your observability backend for traces with service.name='pyvider.rpcplugin'\n")
+    print()
+    print("🔍 Check your observability backend for:")
+    print("   • service.name = 'demo-app' (application identity)")
+    print("   • instrumentation.library.name = 'pyvider.rpcplugin' (library attribution)\n")
 
 
 if __name__ == "__main__":

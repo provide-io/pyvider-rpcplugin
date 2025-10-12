@@ -20,7 +20,9 @@ from typing import Any
 import uuid
 
 from attrs import define, field
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
@@ -201,10 +203,7 @@ class UnixSocketTransport(RPCPluginTransport):
             desired_permissions = 0o660 & ~current_mask
             Path(socket_path).chmod(desired_permissions)  # nosec B103
             logger.debug(
-                "📞🕹✅ Set permissions to %s on %s (considering umask %s)",
-                oct(desired_permissions),
-                socket_path,
-                oct(current_mask),
+                f"📞🕹✅ Set permissions to {oct(desired_permissions)} on {socket_path} (considering umask {oct(current_mask)})"
             )
         except Exception as exc:
             logger.warning(
@@ -345,22 +344,22 @@ class UnixSocketTransport(RPCPluginTransport):
             logger.debug(f"📞🔒✅ Closed connection from {peer_info}")
 
     async def _wait_for_writer_close(self, writer: asyncio.StreamWriter) -> None:
-        logger.debug("📞🔒✍️ Attempting to close writer %r", writer)
+        logger.debug(f"📞🔒✍️ Attempting to close writer {writer!r}")
         if hasattr(writer, "wait_closed"):
             await writer.wait_closed()
             logger.debug("📞🔒✅ Writer closed successfully")
         else:
-            logger.debug("📞🔒✍️ Writer %r has no wait_closed method; skipping await.", writer)
+            logger.debug(f"📞🔒✍️ Writer {writer!r} has no wait_closed method; skipping await.")
 
     def _abort_transport(self, transport: Any, message: str) -> None:
         if not transport:
-            logger.debug("📞🔒✍️ %s but transport is None.", message)
+            logger.debug(f"📞🔒✍️ {message} but transport is None.")
             return
         if hasattr(transport, "abort") and callable(transport.abort):
-            logger.warning("📞🔒✍️ %s Aborting transport: %r", message, transport)
+            logger.warning(f"📞🔒✍️ {message} Aborting transport: {transport!r}")
             transport.abort()
         else:
-            logger.debug("📞🔒✍️ Transport %r has no abort method.", transport)
+            logger.debug(f"📞🔒✍️ Transport {transport!r} has no abort method.")
 
     def _finalize_transport_shutdown(self, transport: Any) -> None:
         if not transport:
@@ -369,14 +368,14 @@ class UnixSocketTransport(RPCPluginTransport):
 
         has_is_closing = hasattr(transport, "is_closing") and callable(transport.is_closing)
         if has_is_closing and transport.is_closing():
-            logger.debug("📞🔒✍️ Transport already closing in _close_writer: %r", transport)
+            logger.debug(f"📞🔒✍️ Transport already closing in _close_writer: {transport!r}")
             return
         if has_is_closing:
-            logger.debug("📞🔒✍️ Transport not closing after writer.close(); aborting: %r", transport)
+            logger.debug(f"📞🔒✍️ Transport not closing after writer.close(); aborting: {transport!r}")
             self._abort_transport(transport, "Transport not closing after writer.close().")
             return
 
-        logger.debug("📞🔒✍️ No is_closing, attempting abort for transport: %r", transport)
+        logger.debug(f"📞🔒✍️ No is_closing, attempting abort for transport: {transport!r}")
         self._abort_transport(transport, "Transport missing is_closing; aborting proactively.")
 
     async def _close_writer(self, writer: asyncio.StreamWriter | None) -> None:

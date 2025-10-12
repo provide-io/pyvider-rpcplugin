@@ -14,7 +14,6 @@ from pyvider.rpcplugin.exception import HandshakeError
 @pytest.fixture
 def client_instance_for_retry_tests(mocker: object) -> RPCPluginClient:
     client = RPCPluginClient(command=["dummy-plugin-cmd"])
-    client.logger = mocker.MagicMock(spec=["info", "warning", "error", "debug"])
 
     # Create the underlying Popen mock (don't use spec to avoid Mock spec issues)
     popen_mock = MagicMock()
@@ -201,23 +200,6 @@ async def test_perform_handshake_parsing_failure(
         match=r"Failed to process handshake response.*Invalid handshake format",
     ):
         await client_instance._perform_handshake()
-
-
-@pytest.mark.asyncio
-async def test_read_raw_handshake_line_byte_by_byte_success(
-    client_instance_for_retry_tests: RPCPluginClient, mocker: object
-) -> None:
-    client_instance = client_instance_for_retry_tests
-    handshake_str = "1|1|unix|/tmp/test.sock|grpc|"
-
-    # Mock the entire method since the executor complexity is causing hangs
-    async def mock_read_handshake() -> str:
-        return handshake_str
-
-    mocker.patch.object(client_instance, "_read_raw_handshake_line_from_stdout", mock_read_handshake)
-
-    line = await client_instance._read_raw_handshake_line_from_stdout()
-    assert line.strip() == handshake_str
 
 
 @pytest.mark.asyncio

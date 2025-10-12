@@ -16,7 +16,9 @@ from typing import TYPE_CHECKING, Any
 
 from attrs import define, field
 import grpc
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin

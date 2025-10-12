@@ -15,7 +15,9 @@ import tempfile
 import time
 from typing import cast
 
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_HANDSHAKE_RETRY_WAIT, DEFAULT_PROCESS_WAIT_TIME
@@ -190,7 +192,7 @@ async def _try_read_chunk(process: subprocess.Popen, *, chunk_size: int) -> str 
 def _process_line_candidate(line: str | None, buffer: str) -> tuple[str | None, str, bool]:
     if not line:
         return None, buffer, False
-    logger.debug("🤝📥✅ Read line from stdout: '%s'", line)
+    logger.debug(f"🤝📥✅ Read line from stdout: '{line}'")
     completed = _buffer_has_complete_handshake(line)
     if completed:
         logger.debug("🤝📥✅ Complete handshake response found in line")
@@ -221,7 +223,7 @@ async def _process_chunk_candidate(
         return None, buffer, False
 
     new_buffer = buffer + chunk
-    logger.debug("🤝📥✅ Read chunk: %s bytes, buffer now has %s bytes", len(chunk), len(new_buffer))
+    logger.debug(f"🤝📥✅ Read chunk: {len(chunk)} bytes, buffer now has {len(new_buffer)} bytes")
     completed = _buffer_has_complete_handshake(new_buffer)
     if completed:
         logger.debug("🤝📥✅ Complete handshake response found in buffer after chunk read")

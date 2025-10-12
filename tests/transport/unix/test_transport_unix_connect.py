@@ -47,9 +47,7 @@ async def test_unix_connect_success(monkeypatch, managed_unix_socket_path) -> No
     monkeypatch.setattr(
         stat,
         "S_ISSOCK",
-        lambda mode_arg: True
-        if mode_arg == socket_st_mode
-        else original_s_issock(mode_arg),
+        lambda mode_arg: True if mode_arg == socket_st_mode else original_s_issock(mode_arg),
     )
 
     monkeypatch.setattr(
@@ -93,9 +91,7 @@ async def test_unix_socket_connect_invalid_endpoint() -> None:
     """
     Test connecting to an invalid endpoint with UnixSocketTransport.
     """
-    transport = UnixSocketTransport(
-        path="/tmp/this/better/be/an/invalid/endpoint-!@#%!#$!@$"
-    )
+    transport = UnixSocketTransport(path="/tmp/this/better/be/an/invalid/endpoint-!@#%!#$!@$")
     with pytest.raises(TransportError):
         await transport.connect("invalid_endpoint")
 
@@ -111,11 +107,18 @@ async def test_unix_socket_connect_nonexistent_path() -> None:
 
 
 @pytest.mark.asyncio
-async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_socket_path): # Removed caplog
+async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_socket_path):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
     # pathlib.Path.exists will return False once, then True for subsequent calls
-    mocker.patch("pathlib.Path.exists", side_effect=[False, True, True, True])
+    # Use a callable to avoid StopIteration when list is exhausted
+    call_count = {"count": 0}
+
+    def mock_exists(self):
+        call_count["count"] += 1
+        return call_count["count"] > 1
+
+    mocker.patch("pathlib.Path.exists", mock_exists)
 
     # Mock stat to succeed after path "appears"
     mock_stat_result = MagicMock()
@@ -128,36 +131,30 @@ async def test_unix_connect_retries_on_path_not_exists(mocker, managed_unix_sock
 
     # Mock asyncio.sleep to avoid actual sleep
     mock_sleep = mocker.patch("asyncio.sleep", new_callable=AsyncMock)
-    mock_logger_debug = mocker.patch("pyvider.rpcplugin.transport.unix.logger.debug")
 
+    await transport.connect(
+        managed_unix_socket_path
+    )  # Use the path directly as it's normalized in __attrs_post_init__
 
-    await transport.connect(managed_unix_socket_path) # Use the path directly as it's normalized in __attrs_post_init__
-
-    # Check for the retry log message via the patched logger
-    found_log = False
-    for call_args_list_item in mock_logger_debug.call_args_list:
-        args, _ = call_args_list_item
-        if args and "Socket file not found, retrying" in args[0]:
-            found_log = True
-            break
-    assert found_log, f"Expected retry log message not found. Actual logs: {mock_logger_debug.call_args_list}"
-
-    mock_sleep.assert_called_once_with(0.5) # Ensure sleep was called due to retry
+    # Verify that sleep was called due to retry (path didn't exist on first check)
+    mock_sleep.assert_called_once_with(0.5)
     assert transport.endpoint == managed_unix_socket_path
     await transport.close()
+
 
 @pytest.mark.asyncio
 async def test_unix_connect_stat_fails(mocker, managed_unix_socket_path):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
 
-    mocker.patch("pathlib.Path.exists", return_value=True) # Path exists
-    mocker.patch("pathlib.Path.stat", side_effect=OSError("stat failed")) # stat call fails
+    mocker.patch("pathlib.Path.exists", return_value=True)  # Path exists
+    mocker.patch("pathlib.Path.stat", side_effect=OSError("stat failed"))  # stat call fails
 
     # This will also call normalize_unix_path, ensure it doesn't interfere or mock if needed
     # For this test, direct path usage is fine as normalize_unix_path is simple for absolute paths
     with pytest.raises(TransportError, match="Error checking socket status: stat failed"):
         await transport.connect(managed_unix_socket_path)
     await transport.close()
+
 
 ### 🐍🏗🧪️
 

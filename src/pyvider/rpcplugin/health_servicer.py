@@ -13,7 +13,9 @@ from collections.abc import AsyncIterator, Callable
 
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
