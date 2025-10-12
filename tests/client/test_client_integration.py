@@ -1,6 +1,8 @@
 # tests/client/test_client_integration.py
 
 import asyncio
+import io
+
 from provide.testkit.mocking import AsyncMock, patch
 
 import pytest
@@ -19,8 +21,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     2. Start client (setup certs, launch process, handshake, create channel)
     3. Use client (read logs, open subchannel, shutdown plugin)
     4. Close client
-
-    ISSUE: This test hangs even in its original unmodified state from git.
     """
     # Create mocks using provide-testkit factories
     mock_managed_process_class = magic_mock_factory(name="ManagedProcess")
@@ -48,31 +48,31 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         patch("pyvider.rpcplugin.transport.TCPSocketTransport", mock_transport_class),
         patch("threading.Thread"),
     ):
-        # Mock underlying Popen process
+        # Mock underlying Popen process with realistic file-like streams
         mock_popen = magic_mock_factory(name="plugin_popen")
-        mock_popen.stdout = magic_mock_factory(name="process_stdout")
-        mock_popen.stderr = None  # No stderr to avoid creating the stderr relay task
+        # Use io.BytesIO for realistic stream behavior with run_in_executor
+        mock_popen.stdout = io.BytesIO(b"1|1|tcp|127.0.0.1:8000|grpc|\n")
+        mock_popen.stderr = io.BytesIO(b"")  # Empty stream signals EOF
         mock_popen.poll.return_value = None  # Process is running
         mock_popen.terminate = magic_mock_factory(name="process_terminate")
         mock_popen.kill = magic_mock_factory(name="process_kill")
         mock_popen.wait = magic_mock_factory(name="process_wait", return_value=0)
 
-        # Mock ManagedProcess wrapper
+        # Mock ManagedProcess wrapper with proper state management
         mock_managed_process = magic_mock_factory(name="managed_process")
         mock_managed_process.process = mock_popen
         mock_managed_process.pid = 12345
+        mock_managed_process.returncode = None
         mock_managed_process.launch = magic_mock_factory(name="launch")
 
-        # Make is_running return True initially, then False after close
-        is_running_state = {"running": True}
-
-        def mock_is_running():
-            return is_running_state["running"]
-
+        # Use mock with return_value for is_running - simpler and more reliable
+        mock_is_running = magic_mock_factory(name="is_running", return_value=True)
         mock_managed_process.is_running = mock_is_running
 
         def mock_terminate_gracefully(timeout=None):
-            is_running_state["running"] = False
+            # Update is_running to return False after termination
+            mock_is_running.return_value = False
+            mock_managed_process.returncode = 0
             return True
 
         mock_managed_process.terminate_gracefully = mock_terminate_gracefully
@@ -97,11 +97,21 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_channel.close = async_mock_factory(name="channel_close")
         mock_channel_func.return_value = mock_channel
 
-        # Mock stubs using provide-testkit
-        # Set stdio_stub to None to prevent background task creation during testing
-        mock_stdio_stub = None
+        # Mock stubs using provide-testkit with proper async generators
+        mock_stdio_stub = magic_mock_factory(name="stdio_stub")
         mock_broker_stub = magic_mock_factory(name="broker_stub")
         mock_controller_stub = magic_mock_factory(name="controller_stub")
+
+        # Create async generator for stdio stream that completes naturally
+        async def mock_stream_stdio(_):
+            """Async generator that yields one message then completes."""
+            log_message = magic_mock_factory(name="log_message")
+            log_message.channel = 1  # STDOUT
+            log_message.data = b"Plugin log message"
+            yield log_message
+            # Generator completes here, allowing the background task to finish
+
+        mock_stdio_stub.StreamStdio = lambda _: mock_stream_stdio(_)
 
         # Mock shutdown using AsyncMock to properly support await
         shutdown_called = False
@@ -118,7 +128,7 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
             return mock_controller_stub
 
         def mock_stdio_constructor(*args, **kwargs):
-            return None  # Return None to prevent stdio task creation
+            return mock_stdio_stub
 
         def mock_broker_constructor(*args, **kwargs):
             return mock_broker_stub
@@ -150,8 +160,8 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Mock config for mTLS using Foundation patterns
         with patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls", True):
-            # Start client with timeout to prevent hanging
-            await asyncio.wait_for(client.start(), timeout=5.0)
+            # Start client
+            await client.start()
 
             # Verify client initialized correctly
             assert client._process == mock_managed_process
@@ -169,9 +179,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Clean up
         await client.close()
-
-        # Give async cleanup tasks time to complete
-        await asyncio.sleep(0.1)
 
         # Verify resources cleaned up
         assert client.grpc_channel is None
