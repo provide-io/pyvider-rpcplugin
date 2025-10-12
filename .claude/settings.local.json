@@ -41,7 +41,8 @@
       "Bash(DEMO_COOKIE=demo123 PYTHONPATH=./src timeout 5s python examples/ch16_telemetry_demo.py)",
       "Bash(find:*)",
       "Bash(ruff format:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": [],
