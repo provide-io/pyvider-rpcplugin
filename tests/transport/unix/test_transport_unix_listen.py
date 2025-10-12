@@ -162,11 +162,16 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_unix_listen_chmod_error(mocker, managed_unix_socket_path):
+    from provide.testkit.mocking import MagicMock
+
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     mocker.patch("os.makedirs", return_value=None)
     mocker.patch("os.unlink", return_value=None)
     # Ensure start_unix_server is mocked to return a valid server object
-    mock_server_instance = AsyncMock(spec=asyncio.AbstractServer)
+    mock_server_instance = MagicMock(spec=asyncio.AbstractServer)
+    # Add proper implementations: close() is sync, wait_closed() is async
+    mock_server_instance.close = MagicMock(return_value=None)
+    mock_server_instance.wait_closed = AsyncMock(return_value=None)
     mocker.patch("asyncio.start_unix_server", return_value=mock_server_instance)
 
     mock_chmod = mocker.patch("os.chmod", side_effect=OSError("chmod failed"))
@@ -180,6 +185,9 @@ async def test_unix_listen_chmod_error(mocker, managed_unix_socket_path):
     # Ensure the server object was stored
     assert transport._server == mock_server_instance
     await transport.close()
+
+    # Give event loop time to complete cleanup
+    await asyncio.sleep(0.1)
 
 @pytest.mark.asyncio
 async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
