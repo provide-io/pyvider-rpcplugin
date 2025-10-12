@@ -305,9 +305,8 @@ def test_parse_handshake_response_generic_exception(mocker):
     mock_logger_error.assert_called_once()
     args, kwargs = mock_logger_error.call_args
     assert "📡❌ Handshake parsing failed: Unexpected parsing error" in args[0]
-    assert (
-        kwargs.get("extra", {}).get("error") == "Unexpected parsing error"
-    )  # Check the 'error' key in 'extra'
+    # Foundation's structured logger passes error directly as a kwarg, not in 'extra'
+    assert kwargs.get("error") == "Unexpected parsing error"
 
 
 @pytest.mark.asyncio
