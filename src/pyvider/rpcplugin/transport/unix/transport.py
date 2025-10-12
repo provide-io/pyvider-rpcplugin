@@ -467,12 +467,14 @@ class UnixSocketTransport(RPCPluginTransport):
         self._closing = True
         self._running = False
 
-        await self._close_connections()
-        await self._close_client_connection()
-        await self._close_server()
-        if self.path:
-            await self._remove_socket_file(self.path)
-
-        self.endpoint = None
-        self._closing = False
-        logger.debug("📞🔒✅ Unix socket transport closed completely")
+        try:
+            await self._close_connections()
+            await self._close_client_connection()
+            await self._close_server()
+            if self.path:
+                await self._remove_socket_file(self.path)
+        finally:
+            # Always reset state even if socket removal fails
+            self.endpoint = None
+            self._closing = False
+            logger.debug("📞🔒✅ Unix socket transport closed completely")
