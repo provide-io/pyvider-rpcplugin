@@ -28,12 +28,16 @@ from pyvider.rpcplugin.exception import ConfigError, TransportError
 from pyvider.rpcplugin.handshake import HandshakeConfig
 from pyvider.rpcplugin.health_servicer import HealthServicer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
+from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
 )
 
 # Import the network mixin
 from .network import ServerNetworkMixin
+
+# Get tracer for server operations
+_tracer = get_rpc_tracer()
 
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
 _HandlerT = TypeVar("_HandlerT")
@@ -313,6 +317,15 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             TransportError: If transport setup fails
             ProtocolError: If handshake or protocol setup fails
         """
+        if _tracer:
+            with _tracer.start_as_current_span("rpc.server.serve") as span:
+                span.set_attribute("component", "server")
+                await self._serve_impl()
+        else:
+            await self._serve_impl()
+
+    async def _serve_impl(self) -> None:
+        """Implementation of server serve logic."""
         logger.info("🚀 Starting RPCPluginServer...")
 
         try:

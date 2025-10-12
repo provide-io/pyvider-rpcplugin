@@ -30,6 +30,10 @@ from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
+from pyvider.rpcplugin.telemetry import get_rpc_tracer
+
+# Get tracer for client process operations
+_tracer = get_rpc_tracer()
 
 if TYPE_CHECKING:
     from pyvider.rpcplugin.client.core import RPCPluginClient
@@ -193,6 +197,16 @@ class ClientProcessMixin:
 
         Retry policy: Exponential backoff with 3 attempts for transient connection errors.
         """
+        if _tracer:
+            with _tracer.start_as_current_span("rpc.client.create_channel") as span:
+                span.set_attribute("transport", self._transport_name or "unknown")
+                span.set_attribute("address", self._address or "unknown")
+                await self._create_grpc_channel_impl()
+        else:
+            await self._create_grpc_channel_impl()
+
+    async def _create_grpc_channel_impl(self: RPCPluginClient) -> None:  # type: ignore[misc]
+        """Implementation of gRPC channel creation."""
         if not self._address or not self._transport_name:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
 
