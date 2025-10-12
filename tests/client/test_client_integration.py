@@ -24,7 +24,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     """
     # Create mocks using provide-testkit factories
     mock_managed_process_class = magic_mock_factory(name="ManagedProcess")
-    mock_launch_process = async_mock_factory(name="launch_process", return_value=None)
     mock_read_handshake_line = async_mock_factory(
         name="read_handshake_line", return_value="1|1|tcp|127.0.0.1:8000|grpc|"
     )
@@ -37,7 +36,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
     # Mock all external dependencies
     with (
         patch("pyvider.rpcplugin.client.process.ManagedProcess", mock_managed_process_class),
-        patch("pyvider.rpcplugin.client.process.ClientProcessMixin._launch_process", mock_launch_process),
         patch(
             "pyvider.rpcplugin.client.handshake.ClientHandshakeMixin._read_raw_handshake_line_from_stdout",
             mock_read_handshake_line,
@@ -150,9 +148,6 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
 
         # Create and configure client
         client = RPCPluginClient(command=test_client_command)
-
-        # Set _process on client since we're bypassing _launch_process
-        client._process = mock_managed_process
 
         # Mock config for mTLS using Foundation patterns
         with patch("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_auto_mtls", True):
