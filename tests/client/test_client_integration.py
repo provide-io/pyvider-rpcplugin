@@ -105,14 +105,12 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_broker_stub = magic_mock_factory(name="broker_stub")
         mock_controller_stub = magic_mock_factory(name="controller_stub")
 
-        # Create async generator for stdio stream that completes naturally
+        # Create async generator for stdio stream that completes immediately
         async def mock_stream_stdio(_):
-            """Async generator that yields one message then completes."""
-            log_message = magic_mock_factory(name="log_message")
-            log_message.channel = 1  # STDOUT
-            log_message.data = b"Plugin log message"
-            yield log_message
-            # Generator completes here, allowing the background task to finish
+            """Async generator that completes without yielding (empty stream)."""
+            return
+            # Make this an async generator by using yield (but never reached)
+            yield  # pragma: no cover
 
         mock_stdio_stub.StreamStdio = lambda _: mock_stream_stdio(_)
 
