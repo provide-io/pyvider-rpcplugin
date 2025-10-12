@@ -52,7 +52,8 @@ async def test_client_integration(test_client_command, client_cert, async_mock_f
         mock_popen = magic_mock_factory(name="plugin_popen")
         # Use io.BytesIO for realistic stream behavior with run_in_executor
         mock_popen.stdout = io.BytesIO(b"1|1|tcp|127.0.0.1:8000|grpc|\n")
-        mock_popen.stderr = io.BytesIO(b"")  # Empty stream signals EOF
+        # Set stderr to None to prevent stderr relay task creation (would loop indefinitely)
+        mock_popen.stderr = None
         mock_popen.poll.return_value = None  # Process is running
         mock_popen.terminate = magic_mock_factory(name="process_terminate")
         mock_popen.kill = magic_mock_factory(name="process_kill")
