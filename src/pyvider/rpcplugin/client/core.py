@@ -8,10 +8,11 @@ This module contains the main RPCPluginClient class with its attributes,
 initialization, and core lifecycle methods like start, close, and shutdown.
 """
 
+from __future__ import annotations
+
 import asyncio
-import subprocess  # nosec B404
 from types import TracebackType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from attrs import define, field
 import grpc
@@ -20,6 +21,9 @@ from provide.foundation import logger
 # Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
+
+if TYPE_CHECKING:
+    from provide.foundation.process import ManagedProcess
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLEANUP_WAIT_TIME,
@@ -82,7 +86,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     config: dict[str, Any] | None = field(default=None)
 
     # Internal fields
-    _process: subprocess.Popen | None = field(init=False, default=None)  # type: ignore[assignment]
+    _process: ManagedProcess | None = field(init=False, default=None)  # type: ignore[assignment]
     _transport: TransportType | None = field(init=False, default=None)  # type: ignore[assignment]
     _transport_name: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
@@ -201,30 +205,23 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             return
 
         try:
-            if self._process.poll() is None:
-                self.logger.debug("🛑 Terminating plugin process...")
-                self._process.terminate()
+            # Use ManagedProcess's built-in graceful termination
+            self.logger.debug("🛑 Terminating plugin process...")
+            terminated = await asyncio.get_event_loop().run_in_executor(
+                None, self._process.terminate_gracefully, 5.0
+            )
 
-                if self._process is not None:
-                    try:
-                        await asyncio.wait_for(
-                            asyncio.get_event_loop().run_in_executor(
-                                None, lambda: self._process.wait(timeout=7) if self._process else None
-                            ),
-                            timeout=5.0,
-                        )
-                        self.logger.debug("✅ Plugin process terminated gracefully.")
-                    except TimeoutError:
-                        self.logger.warning("⚠️ Plugin process did not terminate gracefully, killing...")
-                        if self._process:
-                            self._process.kill()
-                            await asyncio.get_event_loop().run_in_executor(None, self._process.wait)
-                        self.logger.debug("💀 Plugin process killed.")
+            if terminated:
+                self.logger.debug("✅ Plugin process terminated gracefully.")
             else:
-                self.logger.debug("✅ Plugin process already terminated.")
+                self.logger.warning("⚠️ Plugin process was force-killed.")
+
+            # Clean up process resources
+            self._process.cleanup()
+
         except Exception as e:
             self.logger.error(
-                f"⚠️ Error sending terminate signal to plugin process: {e}",
+                f"⚠️ Error terminating plugin process: {e}",
                 extra={"trace": str(e)},
                 exc_info=True,
             )

@@ -188,9 +188,9 @@ class ClientHandshakeMixin:
 
         if client_cert_config and client_key_config:
             try:
-                cert_obj = Certificate(
-                    cert_pem_or_uri=client_cert_config,
-                    key_pem_or_uri=client_key_config,
+                cert_obj = Certificate.from_pem(
+                    cert_pem=client_cert_config,
+                    key_pem=client_key_config,
                 )
                 self.client_cert = cert_obj.cert_pem
                 self.client_key_pem = cert_obj.key_pem
@@ -213,29 +213,27 @@ class ClientHandshakeMixin:
     def _get_stderr_output(self: RPCPluginClient) -> str:  # type: ignore[misc]
         """Get stderr output from process with error handling."""
         stderr_output = ""
-        if self._process and self._process.stderr:
+        if self._process and self._process.process and self._process.process.stderr:
             try:
-                stderr_output = self._process.stderr.read().decode("utf-8", errors="replace")
+                stderr_output = self._process.process.stderr.read().decode("utf-8", errors="replace")
             except Exception as e:
                 stderr_output = f"Error reading stderr: {e}"
         return (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
 
     def _check_process_exit(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """Check if process exited and raise HandshakeError if so."""
-        if self._process and self._process.poll() is not None:
+        if self._process and not self._process.is_running():
             stderr_output = self._get_stderr_output()
-            self.logger.error(
-                f"Plugin process exited with code {self._process.returncode} before handshake completion"
-            )
+            returncode = self._process.returncode
+            self.logger.error(f"Plugin process exited with code {returncode} before handshake completion")
             raise HandshakeError(
-                f"Plugin process exited prematurely with code "
-                f"{self._process.returncode} before completing handshake.",
+                f"Plugin process exited prematurely with code {returncode} before completing handshake.",
                 hint=(
                     f"Check plugin logs or stderr. Stderr: '{stderr_output}'"
                     if stderr_output
                     else "Check plugin logs for errors."
                 ),
-                code=self._process.returncode,
+                code=returncode,
             )
 
     def _is_complete_handshake(self, text: str) -> bool:
@@ -244,12 +242,12 @@ class ClientHandshakeMixin:
 
     async def _try_readline_strategy(self: RPCPluginClient, inner_timeout_s: float) -> str | None:  # type: ignore[misc]
         """Try readline strategy to get handshake data."""
-        if not self._process or not self._process.stdout:
+        if not self._process or not self._process.process or not self._process.process.stdout:
             await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
             return None
 
         line_bytes = await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, self._process.stdout.readline),
+            asyncio.get_event_loop().run_in_executor(None, self._process.process.stdout.readline),
             timeout=inner_timeout_s,
         )
 
@@ -264,15 +262,15 @@ class ClientHandshakeMixin:
 
     async def _try_chunk_strategy(self: RPCPluginClient, buffer: str) -> str | None:  # type: ignore[misc]
         """Try chunk read strategy to get handshake data."""
-        if not self._process or not self._process.stdout:
+        if not self._process or not self._process.process or not self._process.process.stdout:
             await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
             return None
 
         chunk = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._process.stdout.read(rpcplugin_config.plugin_chunk_size)
-                if self._process and self._process.stdout
+                lambda: self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)
+                if self._process and self._process.process and self._process.process.stdout
                 else b"",
             ),
             timeout=DEFAULT_HANDSHAKE_CHUNK_TIMEOUT,
@@ -306,7 +304,7 @@ class ClientHandshakeMixin:
         Raises:
             HandshakeError: If handshake cannot be read or times out
         """
-        if not self._process or not self._process.stdout:
+        if not self._process or not self._process.process or not self._process.process.stdout:
             raise HandshakeError("Plugin process or stdout not available for handshake.")
 
         outer_timeout_ms = rpcplugin_config.plugin_handshake_timeout * 1000
@@ -405,12 +403,9 @@ class ClientHandshakeMixin:
             # Clean up on handshake failure
             if self._process:
                 try:
-                    if self._process.poll() is None:
-                        self._process.terminate()
-                        # Give process a moment to terminate gracefully
-                        await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
-                        if self._process.poll() is None:
-                            self._process.kill()
+                    # Use ManagedProcess's graceful termination with short timeout
+                    self._process.terminate_gracefully(timeout=1.0)
+                    self._process.cleanup()
                 except Exception as cleanup_error:
                     self.logger.warning(f"Error cleaning up process after handshake failure: {cleanup_error}")
                 finally:

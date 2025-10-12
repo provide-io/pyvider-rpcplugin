@@ -15,7 +15,11 @@ from pyvider.rpcplugin.config import rpcplugin_config
 @pytest.mark.asyncio
 async def test_build_handshake_response_with_tls(mock_server_transport_tcp):
     """Test building handshake response with TLS certificate."""
-    cert = Certificate(generate_keypair=True)
+    cert = Certificate.create_self_signed_server_cert(
+        common_name="test",
+        organization_name="test",
+        validity_days=365,
+    )
     response = await build_handshake_response(
         plugin_version=7,
         transport_name="tcp",
@@ -315,8 +319,8 @@ async def test_build_handshake_response_invalid_cert_format(mocker):
     mock_transport.endpoint = None
 
     mock_server_cert = MagicMock(spec=Certificate)
-    # Ensure .cert attribute exists and is a string
-    mock_server_cert.cert = "INVALID\nCERT" # Only 2 lines, will fail len(cert_lines) < 3
+    # Ensure .cert_pem attribute exists and is a string
+    mock_server_cert.cert_pem = "INVALID\nCERT" # Only 2 lines, will fail len(cert_lines) < 3
 
     # Mock rpcplugin_config.get for PLUGIN_CORE_VERSION as it's used by build_handshake_response
     mocker.patch.object(rpcplugin_config, "plugin_core_version", 1) # Assuming core version "1"

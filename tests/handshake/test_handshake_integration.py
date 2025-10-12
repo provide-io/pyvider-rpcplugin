@@ -109,7 +109,11 @@ async def test_build_handshake_response_with_certificate():
         transport = TCPSocketTransport()
 
         # Create a simple certificate
-        cert = Certificate(generate_keypair=True)
+        cert = Certificate.create_self_signed_server_cert(
+            common_name="test",
+            organization_name="test",
+            validity_days=365,
+        )
 
         response = await build_handshake_response(
             plugin_version=7,
@@ -239,7 +243,11 @@ async def test_server_handshake_integration(
 async def test_certificate_handling_in_handshake():
     """Test proper certificate handling in handshake."""
     # Generate a test certificate
-    cert = Certificate(generate_keypair=True)
+    cert = Certificate.create_self_signed_server_cert(
+        common_name="test",
+        organization_name="test",
+        validity_days=365,
+    )
 
     # Build handshake with certificate
     transport = TCPSocketTransport()
@@ -261,7 +269,7 @@ async def test_certificate_handling_in_handshake():
 
     # The parsed cert should be a base64-encoded string without PEM headers
     # and should match what we'd get from the original certificate
-    cert_lines = cert.cert.strip().split("\n")
+    cert_lines = cert.cert_pem.strip().split("\n")
     expected_cert_base = "".join(cert_lines[1:-1]).rstrip("=")
 
     # The cert might have padding added during parsing

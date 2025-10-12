@@ -125,25 +125,23 @@ async def test_close_with_tasks(client_instance):
     client_instance._stdio_task = stdio_task_actual
     client_instance._broker_task = broker_task_actual
 
+    # Create ManagedProcess mock
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully = MagicMock(return_value=True)
+    managed_process.cleanup = MagicMock()
+
     # Patch attributes of client_instance directly
     with (
         patch.object(
             client_instance, "grpc_channel", new_callable=AsyncMock
         ) as local_mock_channel,
         patch.object(
-            client_instance, "_process", new_callable=MagicMock
-        ) as local_mock_process,
+            client_instance, "_process", managed_process
+        ),
         patch.object(
             client_instance, "_transport", new_callable=AsyncMock
         ) as local_mock_transport,
     ):
-        local_mock_process.poll.return_value = (
-            None  # Ensure process doesn't appear exited
-        )
-        # local_mock_channel.close is already an AsyncMock
-        # local_mock_process.terminate and .wait are MagicMocks
-        # local_mock_transport.close is already an AsyncMock
-
         await (
             client_instance.close()
         )  # This will now await actual (though mocked) tasks
@@ -152,7 +150,9 @@ async def test_close_with_tasks(client_instance):
         broker_task_actual.cancel.assert_called_once()
 
         local_mock_channel.close.assert_called_once()
-        local_mock_process.terminate.assert_called_once()
+        # Now check ManagedProcess methods
+        assert managed_process.terminate_gracefully.called
+        managed_process.cleanup.assert_called_once()
         local_mock_transport.close.assert_called_once()
 
     # Assertions on actual task state after client.close() handled them
@@ -166,20 +166,23 @@ async def test_close_with_tasks(client_instance):
 @pytest.mark.asyncio
 async def test_close_with_errors(client_instance):
     """Test closing client when errors occur."""
+    # Create ManagedProcess mock that raises exception
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.side_effect = Exception("Process terminate error")
+    managed_process.cleanup = MagicMock()
+
     with (
         patch.object(
             client_instance, "grpc_channel", new_callable=AsyncMock
         ) as mock_channel,
         patch.object(
-            client_instance, "_process", new_callable=MagicMock
-        ) as mock_process,  # _process is mocked
+            client_instance, "_process", managed_process
+        ),
         patch.object(
             client_instance, "_transport", new_callable=AsyncMock
         ) as mock_transport,
     ):
-        mock_process.poll.return_value = None  # <--- ADD THIS LINE
         mock_channel.close.side_effect = Exception("Channel close error")
-        mock_process.terminate.side_effect = Exception("Process terminate error")
         mock_transport.close.side_effect = Exception("Transport close error")
 
         # Close should handle errors gracefully
@@ -187,7 +190,7 @@ async def test_close_with_errors(client_instance):
 
         # All close methods should be called despite errors
         mock_channel.close.assert_called_once()
-        mock_process.terminate.assert_called_once()
+        assert managed_process.terminate_gracefully.called
         mock_transport.close.assert_called_once()
 
     # Resources should be nullified on the instance by the close method
@@ -200,34 +203,28 @@ async def test_close_with_errors(client_instance):
 async def test_close_process_wait_timeout(
     client_instance,
 ):  # Removed capsys, will patch stderr
-    """Test client close when process.wait() times out."""
-    # Ensure subprocess is imported for TimeoutExpired
-    import subprocess
+    """Test client close when graceful termination times out."""
+    # Create ManagedProcess mock that times out
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.return_value = False  # Indicates force-kill was needed
+    managed_process.cleanup = MagicMock()
 
     with (
         patch.object(
             client_instance, "grpc_channel", new_callable=AsyncMock
         ) as mock_channel,
         patch.object(
-            client_instance, "_process", new_callable=MagicMock
-        ) as mock_process,
+            client_instance, "_process", managed_process
+        ),
         patch.object(
             client_instance, "_transport", new_callable=AsyncMock
         ) as mock_transport,
     ):
-        mock_process.poll.return_value = None
-        mock_process.terminate.return_value = None  # terminate succeeds
-        mock_process.wait.side_effect = subprocess.TimeoutExpired(
-            cmd="test_cmd", timeout=0.1
-        )  # Use actual cmd and timeout
-
         await client_instance.close()
 
         mock_channel.close.assert_called_once()  # Ensure other cleanup still happens
-        mock_process.terminate.assert_called_once()
-        mock_process.wait.assert_called_once_with(
-            timeout=7
-        )  # Check timeout value from client.close()
+        assert managed_process.terminate_gracefully.called
+        managed_process.cleanup.assert_called_once()
         mock_transport.close.assert_called_once()  # Ensure other cleanup still happens
 
         from io import StringIO
@@ -294,41 +291,36 @@ async def test_close_process_wait_timeout(
 
 @pytest.mark.asyncio
 async def test_close_process_terminate_error(client_instance, mocker):
-    """Test client close when _process.terminate() raises an OSError."""
+    """Test client close when terminate_gracefully() raises an exception."""
     mock_channel = mocker.patch.object(
         client_instance, "grpc_channel", new_callable=AsyncMock
     )
-    mock_process = mocker.patch.object(
-        client_instance, "_process", new_callable=MagicMock
+
+    # Create ManagedProcess mock that raises exception
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.side_effect = OSError("Failed to terminate process")
+    managed_process.cleanup = MagicMock()
+
+    mocker.patch.object(
+        client_instance, "_process", managed_process
     )
     mock_transport = mocker.patch.object(
         client_instance, "_transport", new_callable=AsyncMock
     )
 
-    mock_process.poll.return_value = None  # Add this line
-    mock_process.terminate.side_effect = OSError("Failed to terminate process")
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     await client_instance.close()
 
     mock_channel.close.assert_called_once()  # Should still try to close channel
-    mock_process.terminate.assert_called_once()
-    # mock_process.wait should not be called if terminate fails immediately,
-    # but the code calls it in a try block that catches generic Exception, so it might still be called or skipped.
-    # Depending on exact flow, wait might not be called.
-    # Let's verify based on the current structure of close()
-    # If terminate() fails, wait() is still attempted in the original code.
-    # However, if terminate() itself fails, it might be more robust to not proceed to wait() on that process.
-    # For now, testing existing behavior.
-    # mock_process.wait.assert_called_once() # This might fail if terminate error path bypasses wait
-
+    assert managed_process.terminate_gracefully.called
     mock_transport.close.assert_called_once()  # Should still try to close transport
 
-    # Check that the specific error from terminate() was logged
+    # Check that the specific error was logged
     found_terminate_error_log = False
     for call_args in mock_logger_error.call_args_list:
         args, kwargs = call_args
-        if "Error sending terminate signal to plugin process" in args[
+        if "Error terminating plugin process" in args[
             0
         ] and "Failed to terminate process" in kwargs.get("extra", {}).get("trace", ""):
             found_terminate_error_log = True
@@ -342,30 +334,31 @@ async def test_close_process_terminate_error(client_instance, mocker):
 
 @pytest.mark.asyncio
 async def test_close_process_wait_generic_exception(client_instance, mocker):
-    """Test client close when process.wait() raises a generic Exception."""
+    """Test client close when terminate_gracefully() raises a generic Exception."""
     mock_channel = mocker.patch.object(client_instance, "grpc_channel", new_callable=AsyncMock)
-    mock_process = mocker.patch.object(client_instance, "_process", new_callable=MagicMock)
-    mock_transport = mocker.patch.object(client_instance, "_transport", new_callable=AsyncMock)
 
-    mock_process.poll.return_value = None # Process is running
-    mock_process.terminate.return_value = None # Terminate succeeds
-    mock_process.wait.side_effect = Exception("Generic wait error")
+    # Create ManagedProcess mock that raises generic exception
+    managed_process = MagicMock()
+    managed_process.terminate_gracefully.side_effect = Exception("Generic terminate error")
+    managed_process.cleanup = MagicMock()
+
+    mocker.patch.object(client_instance, "_process", managed_process)
+    mock_transport = mocker.patch.object(client_instance, "_transport", new_callable=AsyncMock)
 
     # Mock logger to check for error log
     mock_logger_error = mocker.patch("pyvider.rpcplugin.client.core.logger.error")
 
     await client_instance.close()
 
-    mock_process.terminate.assert_called_once()
-    mock_process.wait.assert_called_once_with(timeout=7)
+    assert managed_process.terminate_gracefully.called
 
-    # Check that the specific error from wait() was logged
+    # Check that the specific error was logged
     found_log = any(
-        "⚠️ Error sending terminate signal to plugin process" in call.args[0] and \
-        "Generic wait error" in call.kwargs.get("extra", {}).get("trace", "")
+        "Error terminating plugin process" in call.args[0] and \
+        "Generic terminate error" in call.kwargs.get("extra", {}).get("trace", "")
         for call in mock_logger_error.call_args_list
     )
-    assert found_log, f"Expected log for generic wait error not found. Log calls: {mock_logger_error.call_args_list}"
+    assert found_log, f"Expected log for generic error not found. Log calls: {mock_logger_error.call_args_list}"
 
     assert client_instance._process is None # Should still be nullified
     mock_channel.close.assert_called_once()

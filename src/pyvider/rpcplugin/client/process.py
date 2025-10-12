@@ -11,12 +11,13 @@ stub initialization, and stdio/broker operations.
 from __future__ import annotations
 
 import asyncio
-import os
-import subprocess  # nosec B404
 from typing import TYPE_CHECKING
 
 from google.protobuf import empty_pb2  # type: ignore[import-untyped]
 import grpc
+from provide.foundation import retry
+from provide.foundation.process import ManagedProcess
+from provide.foundation.resilience import BackoffStrategy
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
@@ -45,24 +46,22 @@ class ClientProcessMixin:
         This method starts the plugin process with the necessary environment
         variables and subprocess configuration for the handshake protocol.
         """
-        if self._process:
-            if self._process.poll() is None:
-                self.logger.warning("Plugin process already running. Skipping launch.")
-                return
-            else:
-                self.logger.debug("Previous plugin process has terminated. Launching new process.")
+        if self._process and self._process.is_running():
+            self.logger.warning("Plugin process already running. Skipping launch.")
+            return
+
+        if self._process and not self._process.is_running():
+            self.logger.debug("Previous plugin process has terminated. Launching new process.")
 
         # Prepare environment variables
-        env = os.environ.copy()
+        env = {
+            "PYTHONUNBUFFERED": "1",  # Set for real-time output
+            rpcplugin_config.plugin_magic_cookie_key: rpcplugin_config.plugin_magic_cookie_value,
+        }
 
-        # Set PYTHONUNBUFFERED for real-time output
-        env["PYTHONUNBUFFERED"] = "1"
-
+        # Add custom environment from config
         if self.config and "env" in self.config:
             env.update(self.config["env"])
-
-        # Add required magic cookie for handshake
-        env[rpcplugin_config.plugin_magic_cookie_key] = rpcplugin_config.plugin_magic_cookie_value
 
         # Add client certificate to environment if available
         if self.client_cert:
@@ -72,19 +71,23 @@ class ClientProcessMixin:
         self.logger.debug(f"Environment includes magic cookie: {rpcplugin_config.plugin_magic_cookie_key}")
 
         try:
-            self._process = subprocess.Popen(
-                self.command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+            # Create ManagedProcess with stderr_relay=False for custom logging
+            self._process = ManagedProcess(
+                command=self.command,
                 env=env,
-                text=False,  # Use bytes for better control over encoding
+                capture_output=True,
+                text_mode=False,  # Use bytes for better control over encoding
+                stderr_relay=False,  # We'll use custom stderr logging
             )
 
-            if self._process is not None:
+            # Launch the process
+            self._process.launch()
+
+            if self._process.pid:
                 self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
 
-                # Start stderr relay task
-                if self._process.stderr:
+                # Start custom stderr relay task that logs instead of writing to sys.stderr
+                if self._process.process and self._process.process.stderr:
                     self._stdio_task = asyncio.create_task(self._relay_stderr_background())
 
         except Exception as e:
@@ -100,15 +103,17 @@ class ClientProcessMixin:
         This helps capture plugin error output for debugging handshake
         and runtime issues.
         """
-        if not self._process or not self._process.stderr:
+        if not self._process or not self._process.process or not self._process.process.stderr:
             self.logger.debug("No process or stderr available for relay")
             return
 
         self.logger.debug("Starting stderr relay task for plugin process")
 
         try:
-            while self._process.poll() is None:
-                line = await asyncio.get_event_loop().run_in_executor(None, self._process.stderr.readline)
+            # Access the underlying Popen process for stderr reading
+            process = self._process.process
+            while self._process.is_running():
+                line = await asyncio.get_event_loop().run_in_executor(None, process.stderr.readline)
                 if not line:
                     await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                     continue
@@ -170,12 +175,23 @@ class ClientProcessMixin:
             await self.grpc_channel.close()
             self.grpc_channel = None
 
+    @retry(
+        TransportError,
+        TimeoutError,
+        OSError,
+        max_attempts=3,
+        backoff=BackoffStrategy.EXPONENTIAL,
+        base_delay=0.1,
+        max_delay=2.0,
+    )
     async def _create_grpc_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
         Create and configure the gRPC channel for plugin communication.
 
         This method sets up the channel with appropriate credentials and
         connection options based on transport type and security configuration.
+
+        Retry policy: Exponential backoff with 3 attempts for transient connection errors.
         """
         if not self._address or not self._transport_name:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
