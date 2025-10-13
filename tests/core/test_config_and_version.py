@@ -20,7 +20,7 @@ from pyvider.rpcplugin.config.validators import (
 def test_get_version_reads_version_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     version_file = tmp_path / "VERSION"
     version_file.write_text("1.2.3\n", encoding="utf-8")
-    monkeypatch.setattr(_version, "_find_project_root", lambda: tmp_path)
+    monkeypatch.setattr(_version, "_find_project_root", lambda start_path: tmp_path)
 
     result = _version.get_version()
 
@@ -28,7 +28,7 @@ def test_get_version_reads_version_file(tmp_path: Path, monkeypatch: pytest.Monk
 
 
 def test_get_version_uses_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(_version, "_find_project_root", lambda: None)
+    monkeypatch.setattr(_version, "_find_project_root", lambda start_path: None)
 
     monkeypatch.setattr("importlib.metadata.version", lambda _: "9.9.9", raising=False)
 
@@ -36,7 +36,7 @@ def test_get_version_uses_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_get_version_defaults_when_metadata_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(_version, "_find_project_root", lambda: None)
+    monkeypatch.setattr(_version, "_find_project_root", lambda start_path: None)
 
     from importlib import metadata as importlib_metadata
 
