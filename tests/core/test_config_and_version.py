@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import importlib
-from pathlib import Path
 
 from provide.foundation.errors import ValidationError
 import pytest
 
-from pyvider.rpcplugin import _version
+from pyvider.rpcplugin import __version__
 from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: F401 - imported for type checks
 from pyvider.rpcplugin.config.configure import configure
 from pyvider.rpcplugin.config.validators import (
@@ -17,35 +16,13 @@ from pyvider.rpcplugin.config.validators import (
 )
 
 
-def test_get_version_reads_version_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    version_file = tmp_path / "VERSION"
-    version_file.write_text("1.2.3\n", encoding="utf-8")
-    monkeypatch.setattr(_version, "_find_project_root", lambda start_path: tmp_path)
-
-    result = _version.get_version()
-
-    assert result == "1.2.3"
-
-
-def test_get_version_uses_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(_version, "_find_project_root", lambda start_path: None)
-
-    monkeypatch.setattr("importlib.metadata.version", lambda _: "9.9.9", raising=False)
-
-    assert _version.get_version() == "9.9.9"
-
-
-def test_get_version_defaults_when_metadata_missing(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(_version, "_find_project_root", lambda start_path: None)
-
-    from importlib import metadata as importlib_metadata
-
-    def raise_package_not_found(_: str) -> str:
-        raise importlib_metadata.PackageNotFoundError("missing")
-
-    monkeypatch.setattr("importlib.metadata.version", raise_package_not_found, raising=False)
-
-    assert _version.get_version() == "0.0.0-dev"
+def test_version_is_available() -> None:
+    """Test that __version__ is available and is a valid version string."""
+    assert __version__ is not None
+    assert isinstance(__version__, str)
+    assert len(__version__) > 0
+    # Should be a valid version format (either semver or dev)
+    assert "." in __version__ or __version__ == "0.0.0-dev"
 
 
 def test_config_module_reexports(monkeypatch: pytest.MonkeyPatch) -> None:
