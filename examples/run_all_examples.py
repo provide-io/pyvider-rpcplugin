@@ -81,7 +81,9 @@ async def run_script(
         success = False
         if expected_to_fail:
             if exit_code != 0:
-                if (expected_stderr_contains and expected_stderr_contains in stderr) or not expected_stderr_contains:
+                if (
+                    expected_stderr_contains and expected_stderr_contains in stderr
+                ) or not expected_stderr_contains:
                     success = True
             else:
                 stderr += "\nERROR: Script was expected to fail but exited with 0."
