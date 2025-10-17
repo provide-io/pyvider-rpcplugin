@@ -5,17 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.0] - 2025-06-09
+## [0.0.1000] - 2025-10-16
 
 ### Added
 - 🎉 **Initial release of pyvider-rpcplugin**
-- 🚀 **High-performance async RPC plugin framework** with full Python 3.13+ support
+- 🚀 **High-performance async RPC plugin framework** with Python 3.11+ support (3.13+ recommended)
 - 🔌 **Dual transport support** - Unix domain sockets and TCP sockets with automatic negotiation
 - 🔒 **Built-in mTLS security** with comprehensive certificate management and validation
 - ⚙️ **Factory functions** for simplified plugin creation (`plugin_server`, `plugin_client`, `plugin_protocol`)
 - 📊 **Production-ready logging** integration with `pyvider.telemetry` for observability
 - 🛠️ **Comprehensive configuration system** supporting environment variables, files (.env, .json, .yaml), and programmatic setup
-- 🎯 **Complete type annotations** with modern Python 3.13+ typing features and `attrs` integration
+- 🎯 **Complete type annotations** with modern Python 3.11+ typing features and `attrs` integration
 - 🧪 **Robust error handling** with custom exception hierarchy and detailed context
 - 📖 **Extensive documentation** with comprehensive examples from quick-start to production patterns
 - 🤖 **GitHub Actions integration** for automated testing and documentation validation
@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Graceful shutdown** with proper resource cleanup and connection termination
 
 ### Developer Experience
-- **Modern Python 3.13+** with complete type annotations and IDE support
+- **Modern Python 3.11+ (3.13+ recommended)** with complete type annotations and IDE support
 - **Rich error messages** with context and recovery suggestions
 - **Comprehensive examples** covering basic usage to production deployment
 - **Integrated logging** with structured output and performance metrics

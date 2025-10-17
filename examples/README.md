@@ -65,7 +65,7 @@ A client-server example demonstrating a true RPC call with a custom protobuf ser
 ## 🏃‍♂️ Running Examples
 
 ### **Prerequisites**
-- Python 3.13+
+- Python 3.11+ (3.13+ recommended)
 - `pyvider-rpcplugin` installed or source available (i.e., run from the project root).
 - `grpcio-tools` for compiling `.proto` files (though pre-generated files are provided for the examples).
 
@@ -142,10 +142,10 @@ If you encounter import errors like `ModuleNotFoundError: No module named 'pyvid
 
 ## 📖 Additional Resources
 
-- **API Reference**: `docs/guide/ch17_api_reference.md` (Chapter 17)
-- **Core Architecture**: `docs/guide/ch16_core_architecture.md` (Chapter 16)
-- **Security (mTLS)**: `docs/guide/ch09_security_mtls.md` (Chapter 9)
-- **Production Configuration & Deployment**: `docs/guide/ch12_production_config.md` (Chapter 12)
+- **API Reference**: [API Documentation](../docs/api/index.md)
+- **Core Architecture**: [Development Architecture Guide](../docs/development/architecture.md)
+- **Security (mTLS)**: [mTLS Security Guide](../docs/guide/security/mtls.md)
+- **Production Configuration & Deployment**: [Production Configuration Guide](../docs/guide/config/production.md)
 
 ## 🤝 Contributing Examples
 

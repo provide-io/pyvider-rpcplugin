@@ -8,8 +8,6 @@ This module contains the main configuration class that uses env_field
 and parse_list for proper environment variable parsing.
 """
 
-from __future__ import annotations
-
 from attrs import define
 from provide.foundation.config import RuntimeConfig, parse_log_level
 from provide.foundation.config.env import env_field

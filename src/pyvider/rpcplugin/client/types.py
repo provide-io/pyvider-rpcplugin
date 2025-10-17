@@ -8,8 +8,6 @@ This module contains type aliases, TypeVars, and Protocols used throughout
 the RPC plugin client components, aiding in static analysis and code clarity.
 """
 
-from __future__ import annotations
-
 from typing import Any, Protocol, TypeAlias, TypeVar
 
 import grpc

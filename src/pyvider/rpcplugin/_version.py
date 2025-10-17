@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from provide.foundation.utils.versioning import get_version
 
 """Version handling for pyvider-rpcplugin.

@@ -7,8 +7,6 @@ Configuration helper functions for the RPC Plugin framework.
 This module provides convenience functions for configuring the RPC plugin system.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 from provide.foundation.logger import logger
