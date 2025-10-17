@@ -11,7 +11,7 @@ Logging uses a three-emoji system:
 
 import asyncio
 import socket
-from typing import TypeGuard
+from typing import Any, TypeGuard
 
 from attrs import define, field
 from provide.foundation.logger import get_logger
@@ -52,7 +52,7 @@ class TCPSocketTransport(RPCPluginTransport):
     _reader: asyncio.StreamReader | None = field(init=False, default=None)
     endpoint: str | None = field(init=False, default=None)
 
-    _connections: set = field(init=False, factory=set)
+    _connections: set[Any] = field(init=False, factory=set)
     _running: bool = field(init=False, default=False)
     _connection_attempts: int = field(init=False, default=0)
     _transport_name: str = "tcp"  # Class attribute identifying the transport type

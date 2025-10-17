@@ -26,12 +26,12 @@ logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
 
 
-class _SentinelEnum(Enum):  # type: ignore[type-arg]
+class _SentinelEnum(Enum):
     NOT_PASSED = auto()
 
 
 _SENTINEL_INSTANCE = _SentinelEnum.NOT_PASSED
-_SentinelType = Literal[_SentinelEnum.NOT_PASSED]  # type: ignore[misc]
+_SentinelType = Literal[_SentinelEnum.NOT_PASSED]
 
 
 @define
@@ -198,7 +198,7 @@ def _validate_magic_cookie_impl(
     """Implementation of magic cookie validation."""
     logger.debug("Starting magic cookie validation...")
 
-    cookie_key: str | None = (  # type: ignore[assignment]
+    cookie_key: str | None = (
         rpcplugin_config.plugin_magic_cookie_key
         if magic_cookie_key is _SENTINEL_INSTANCE
         else magic_cookie_key

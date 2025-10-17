@@ -90,7 +90,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
     async def StartStream(
         self,
         request_iterator: AsyncIterator[ConnInfo],
-        context: grpc.aio.ServicerContext,
+        context: grpc.aio.ServicerContext[ConnInfo, ConnInfo],
     ) -> AsyncIterator[ConnInfo]:
         """
         Handles the bidirectional stream for broker connections.
@@ -296,7 +296,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 yield remaining
 
     async def StreamStdio(
-        self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext
+        self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext[empty_pb2.Empty, StdioData]
     ) -> AsyncIterator[StdioData]:
         """Streams STDOUT/STDERR lines to the caller."""
         logger.debug("🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host.")
@@ -350,7 +350,7 @@ class GRPCControllerService(GRPCControllerServicer):
         context={"operation": "controller_shutdown", "component": "protocol"},
         log_errors=True,
     )
-    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext) -> CEmpty:
+    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext[CEmpty, CEmpty]) -> CEmpty:
         """
         Handles the Shutdown RPC request from the client.
 
