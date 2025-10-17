@@ -8,8 +8,6 @@ This module provides validators for configuration fields that require
 custom validation logic beyond simple type checking.
 """
 
-from __future__ import annotations
-
 from provide.foundation.config import parse_list
 from provide.foundation.errors import ValidationError
 

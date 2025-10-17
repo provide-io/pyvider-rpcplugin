@@ -56,7 +56,7 @@ Dive into the **[User and Developer Guide](./docs/USER_GUIDE.md)** to get starte
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [Chapter 19: Contributing to Pyvider RPCPlugin](./docs/guide/ch19_contributing.md) in the main guide for details.
+We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing.md) for details.
 
 ## 📜 License
 
