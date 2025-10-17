@@ -39,12 +39,12 @@ class EchoClient:
         # should receive, mirroring the client's configuration for clarity.
         self.client_config = {
             "env": {
-                "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
-                "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+                "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.plugin_magic_cookie_key,
+                "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.plugin_magic_cookie_value,
                 "PLUGIN_LOG_LEVEL": rpcplugin_config.plugin_log_level,
                 # Set AUTO_MTLS for server based on client's config for consistency
                 # in example
-                "PLUGIN_AUTO_MTLS": str(rpcplugin_config.auto_mtls_enabled()).lower(),
+                "PLUGIN_AUTO_MTLS": str(rpcplugin_config.plugin_auto_mtls).lower(),
             }
         }
 
