@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from google.protobuf import empty_pb2  # type: ignore[import-untyped]
+from google.protobuf import empty_pb2
 import grpc
 from provide.foundation import retry
 from provide.foundation.process import ManagedProcess

@@ -9,7 +9,10 @@ building, and parsing logic.
 
 from enum import Enum, auto
 import os
-from typing import Literal, TypeGuard
+from typing import TYPE_CHECKING, Literal, TypeGuard
+
+if TYPE_CHECKING:
+    from opentelemetry import trace as otel_trace
 
 from attrs import define
 from provide.foundation import resilient
@@ -452,7 +455,7 @@ def parse_handshake_response(
 
 def _parse_handshake_response_impl(
     response: str,
-    span: object | None = None,  # Optional span for adding attributes
+    span: otel_trace.Span | None = None,  # Optional span for adding attributes
 ) -> tuple[int, int, str, str, str, str | None]:
     """Implementation of handshake response parsing."""
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")

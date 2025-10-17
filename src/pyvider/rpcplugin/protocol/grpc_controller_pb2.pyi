@@ -1,6 +1,6 @@
 from google.protobuf import (
-    descriptor as _descriptor,  # type: ignore[import-untyped]
-    message as _message,  # type: ignore[import-untyped]
+    descriptor as _descriptor,
+    message as _message,
 )
 
 DESCRIPTOR: _descriptor.FileDescriptor
