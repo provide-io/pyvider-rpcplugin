@@ -75,11 +75,11 @@ async def functional_mtls_example() -> None:
         )
 
         # Get PEM strings directly
-        ca_cert_pem = ca_cert_obj.cert
-        client_cert_pem = client_cert_obj.cert
-        client_key_pem = client_cert_obj.key
-        server_cert_pem = server_cert_obj.cert
-        server_key_pem = server_cert_obj.key
+        ca_cert_pem = ca_cert_obj.cert_pem
+        client_cert_pem = client_cert_obj.cert_pem
+        client_key_pem = client_cert_obj.key_pem
+        server_cert_pem = server_cert_obj.cert_pem
+        server_key_pem = server_cert_obj.key_pem
 
         assert client_key_pem is not None, "Client key PEM is None"  # nosec B101
         assert server_key_pem is not None, "Server key PEM is None"  # nosec B101
@@ -114,6 +114,7 @@ async def functional_mtls_example() -> None:
             magic_cookie=client_magic_cookie_value,
             handshake_timeout=30.0,  # Increased timeouts
             connection_timeout=25.0,
+            channel_ready_timeout=25.0,  # Increased from default 10s
         )
         logger.info("🔧 Client-side mTLS configured programmatically using PEM strings via configure().")
 

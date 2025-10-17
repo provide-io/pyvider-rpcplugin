@@ -38,8 +38,8 @@ async def main() -> None:
     # Configure environment for the server subprocess
     client_config = {
         "env": {
-            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.magic_cookie_key(),
-            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.magic_cookie_value(),
+            "PLUGIN_MAGIC_COOKIE_KEY": rpcplugin_config.plugin_magic_cookie_key,
+            "PLUGIN_MAGIC_COOKIE_VALUE": rpcplugin_config.plugin_magic_cookie_value,
             "PLUGIN_LOG_LEVEL": rpcplugin_config.plugin_log_level,  # Use client's log level
             # Explicitly disable mTLS for this example server
             "PLUGIN_AUTO_MTLS": "False",

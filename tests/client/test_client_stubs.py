@@ -16,10 +16,10 @@ from pyvider.rpcplugin.exception import (
 )  # Added TransportError
 
 # Attempt to import StdioData and Empty, but don't fail if not found during this subtask
-from typing import Any, Optional # Added for StdioData typing
+from typing import Any # Added for StdioData typing
 try:
     from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData as ImportedStdioData
-    StdioData: Optional[Any] = ImportedStdioData # Allow StdioData to be None or the class type
+    StdioData: Any | None = ImportedStdioData # Allow StdioData to be None or the class type
 except ImportError:
     StdioData = None
 
