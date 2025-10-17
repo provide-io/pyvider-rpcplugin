@@ -55,18 +55,18 @@ EndpointType: TypeAlias = str
 AddressType: TypeAlias = tuple[str, int]
 
 __all__ = [
-    "RPCPluginTransport",
-    "TCPSocketTransport",
-    "UnixSocketTransport",
-    "TransportT",
-    "TCPSocketT",
-    "UnixSocketT",
-    "TransportType",
-    "ConnectionT",
-    "ReaderT",
-    "WriterT",
-    "EndpointType",
     "AddressType",
+    "ConnectionT",
+    "EndpointType",
+    "RPCPluginTransport",
+    "ReaderT",
+    "TCPSocketT",
+    "TCPSocketTransport",
+    "TransportT",
+    "TransportType",
+    "UnixSocketT",
+    "UnixSocketTransport",
+    "WriterT",
 ]
 
 # 🐍🏗️🔌
