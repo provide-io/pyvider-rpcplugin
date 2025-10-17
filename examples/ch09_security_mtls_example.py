@@ -114,6 +114,7 @@ async def functional_mtls_example() -> None:
             magic_cookie=client_magic_cookie_value,
             handshake_timeout=30.0,  # Increased timeouts
             connection_timeout=25.0,
+            channel_ready_timeout=25.0,  # Increased from default 10s
         )
         logger.info("🔧 Client-side mTLS configured programmatically using PEM strings via configure().")
 
