@@ -46,7 +46,8 @@
       "Bash(PYTHONPATH=./src .venv/bin/python -m pytest:*)",
       "Bash(cat:*)",
       "Bash(ruff check:*)",
-      "Bash(mypy:*)"
+      "Bash(mypy:*)",
+      "Bash(ty check:*)"
     ],
     "deny": [],
     "ask": [],
