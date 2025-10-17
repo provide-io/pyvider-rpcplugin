@@ -18,14 +18,8 @@ from attrs import define, field
 import grpc
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
-# Import mixins for the split functionality
 from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
 from pyvider.rpcplugin.client.process import ClientProcessMixin
-
-if TYPE_CHECKING:
-    from provide.foundation.process import ManagedProcess
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLEANUP_WAIT_TIME,
@@ -35,6 +29,11 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEm
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType
+
+if TYPE_CHECKING:
+    from provide.foundation.process import ManagedProcess
+
+logger = get_logger(__name__)
 
 
 @define
@@ -268,7 +267,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
 
         self.logger.debug("✅ RPCPluginClient closed successfully.")
 
-    async def __aenter__(self) -> "RPCPluginClient":
+    async def __aenter__(self) -> RPCPluginClient:
         """Async context manager entry."""
         await self.start()
         return self

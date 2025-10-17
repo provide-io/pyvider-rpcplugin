@@ -22,12 +22,12 @@ import uuid
 from attrs import define, field
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.unix.utils import normalize_unix_path
+
+logger = get_logger(__name__)
 
 
 @define(frozen=False, slots=True)

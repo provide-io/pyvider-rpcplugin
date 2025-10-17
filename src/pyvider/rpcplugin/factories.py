@@ -14,8 +14,6 @@ from typing import Any, TypeVar, cast
 
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol, RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.server import (
@@ -34,6 +32,8 @@ from pyvider.rpcplugin.types import (
     RPCPluginHandler,  # For plugin_protocol factory
     RPCPluginTransport as RPCPluginTransportType,
 )
+
+logger = get_logger(__name__)
 
 # TypeVar for plugin_protocol factory
 T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol)
