@@ -8,6 +8,8 @@ This module contains handshake-related methods including retry logic,
 certificate setup, handshake parsing, and X.509 certificate processing.
 """
 
+from __future__ import annotations
+
 import asyncio
 import random
 import time

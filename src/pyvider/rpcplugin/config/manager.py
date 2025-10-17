@@ -40,6 +40,8 @@ Note:
     Direct usage of RPCPluginConfig without the manager continues to work unchanged.
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from provide.foundation.config import ConfigManager
