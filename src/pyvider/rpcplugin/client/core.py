@@ -8,6 +8,8 @@ This module contains the main RPCPluginClient class with its attributes,
 initialization, and core lifecycle methods like start, close, and shutdown.
 """
 
+from __future__ import annotations
+
 import asyncio
 from types import TracebackType
 from typing import TYPE_CHECKING, Any

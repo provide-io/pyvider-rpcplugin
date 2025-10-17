@@ -8,6 +8,8 @@ This module handles subprocess launching, gRPC channel creation,
 stub initialization, and stdio/broker operations.
 """
 
+from __future__ import annotations
+
 import asyncio
 from typing import TYPE_CHECKING
 
