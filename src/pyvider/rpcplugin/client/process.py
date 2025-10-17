@@ -117,6 +117,10 @@ class ClientProcessMixin:
             # Access the underlying Popen process for stderr reading
             process = self._process.process
             while self._process.is_running():
+                # Ensure stderr exists before attempting to read
+                if not process.stderr:
+                    self.logger.debug("Process stderr is None, ending relay")
+                    break
                 line = await asyncio.get_event_loop().run_in_executor(None, process.stderr.readline)
                 if not line:
                     await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
