@@ -20,9 +20,9 @@ from typing import Any  # Added for __eq__ type hint
 from attrs import define, field
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
 from pyvider.rpcplugin.config import rpcplugin_config
+
+logger = get_logger(__name__)
 
 # Type aliases for dependency-injected I/O functions using collections.abc
 SendFuncType = AbcCallable[[bytes], Awaitable[None]]

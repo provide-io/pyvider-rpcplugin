@@ -12,8 +12,6 @@ including the main `RPCPluginServer` class and network handling components.
 from grpc.aio import server as GRPCServer
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
 from pyvider.rpcplugin.handshake import validate_magic_cookie
 from pyvider.rpcplugin.server.core import (
     HandlerT,
@@ -26,6 +24,8 @@ from pyvider.rpcplugin.server.core import (
     _TransportT,
 )
 from pyvider.rpcplugin.server.network import ServerNetworkMixin
+
+logger = get_logger(__name__)
 
 __all__ = [
     "GRPCServer",
