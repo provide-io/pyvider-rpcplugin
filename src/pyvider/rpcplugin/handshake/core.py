@@ -7,6 +7,8 @@ This module contains the primary handshake configuration, validation,
 building, and parsing logic.
 """
 
+from __future__ import annotations
+
 from enum import Enum, auto
 import os
 from typing import TYPE_CHECKING, Literal, TypeGuard

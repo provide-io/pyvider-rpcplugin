@@ -8,6 +8,8 @@ This module contains the main RPCPluginServer class with its attributes,
 initialization, configuration, and core server lifecycle methods.
 """
 
+from __future__ import annotations
+
 import asyncio
 from collections.abc import Awaitable, Callable
 import contextlib

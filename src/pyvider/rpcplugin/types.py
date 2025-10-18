@@ -78,13 +78,13 @@ class RPCPluginProtocol(TypeProtocol):
         """
         ...  # pragma: no cover
 
-    async def add_to_server(self, handler: Any, server: Any) -> None:
+    async def add_to_server(self, server: Any, handler: Any) -> None:
         """
         Adds the protocol implementation to the gRPC server.
 
         Args:
-            handler: The handler implementing the RPC methods
             server: The gRPC async server instance
+            handler: The handler implementing the RPC methods
         """
         ...  # pragma: no cover
 
