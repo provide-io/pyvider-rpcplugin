@@ -90,7 +90,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
     async def StartStream(
         self,
         request_iterator: AsyncIterator[ConnInfo],
-        context: grpc.aio.ServicerContext,
+        context: grpc.aio.ServicerContext[ConnInfo, ConnInfo],
     ) -> AsyncIterator[ConnInfo]:
         """
         Handles the bidirectional stream for broker connections.
@@ -226,7 +226,7 @@ class GRPCStdioService(GRPCStdioServicer):
                     item.channel,
                     item.data[:20],
                 )
-                return item
+                return item  # type: ignore[no-any-return]
 
         get_task = asyncio.create_task(self._message_queue.get(), name="StdioGetMessage")
         wait_task = asyncio.create_task(done.wait(), name="StdioDoneWait")
@@ -245,7 +245,7 @@ class GRPCStdioService(GRPCStdioServicer):
                     item.channel,
                     item.data[:20],
                 )
-                return item
+                return item  # type: ignore[no-any-return]
 
             if wait_task in completed and wait_task.result():
                 if not get_task.done():
@@ -296,7 +296,7 @@ class GRPCStdioService(GRPCStdioServicer):
                 yield remaining
 
     async def StreamStdio(
-        self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext
+        self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext[empty_pb2.Empty, StdioData]
     ) -> AsyncIterator[StdioData]:
         """Streams STDOUT/STDERR lines to the caller."""
         logger.debug("🔌📝✅ GRPCStdioService.StreamStdio => started. Streaming lines to host.")
@@ -350,7 +350,7 @@ class GRPCControllerService(GRPCControllerServicer):
         context={"operation": "controller_shutdown", "component": "protocol"},
         log_errors=True,
     )
-    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext) -> CEmpty:
+    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext[CEmpty, CEmpty]) -> CEmpty:
         """
         Handles the Shutdown RPC request from the client.
 
@@ -395,9 +395,9 @@ def register_protocol_service(server: grpc.aio.Server, shutdown_event: asyncio.E
     broker_service = GRPCBrokerService()
     controller_service = GRPCControllerService(shutdown_event, stdio_service)
 
-    add_GRPCStdioServicer_to_server(stdio_service, server)
-    add_GRPCBrokerServicer_to_server(broker_service, server)
-    add_GRPCControllerServicer_to_server(controller_service, server)
+    add_GRPCStdioServicer_to_server(stdio_service, server)  # type: ignore[no-untyped-call]
+    add_GRPCBrokerServicer_to_server(broker_service, server)  # type: ignore[no-untyped-call]
+    add_GRPCControllerServicer_to_server(controller_service, server)  # type: ignore[no-untyped-call]
 
     logger.debug("🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController.")
 

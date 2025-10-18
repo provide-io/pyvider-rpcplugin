@@ -192,6 +192,15 @@ module = [
 ]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+module = [
+    "pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc",
+    "pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc",
+    "pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc",
+    "pyvider.rpcplugin.health_servicer",
+]
+ignore_errors = true
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"

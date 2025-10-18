@@ -98,7 +98,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     target_endpoint: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
     # Generated or loaded client certificate
-    client_cert: str | None = field(init=False, default=None)  # type: ignore[assignment]
+    client_cert: str | None = field(init=False, default=None)
     client_key_pem: str | None = field(init=False, default=None)
 
     # gRPC stubs for the new services

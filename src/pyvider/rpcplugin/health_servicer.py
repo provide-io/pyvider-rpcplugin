@@ -40,7 +40,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         )
 
     async def Check(
-        self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext
+        self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse]
     ) -> health_pb2.HealthCheckResponse:
         """
         Checks the health of the server or a specific service.
@@ -72,7 +72,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN)
 
     async def Watch(
-        self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext
+        self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse]
     ) -> AsyncIterator[health_pb2.HealthCheckResponse]:
         """
         Streams health status updates. This is not implemented in this basic version.
@@ -86,7 +86,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         # This part is unreachable due to abort but makes type checkers happy
         # if they expect a yield for an AsyncIterator.
         if False:  # pylint: disable=using-constant-test
-            yield health_pb2.HealthCheckResponse()  # type: ignore[misc]
+            yield health_pb2.HealthCheckResponse()
 
 
 # 🐍🏗️🔌

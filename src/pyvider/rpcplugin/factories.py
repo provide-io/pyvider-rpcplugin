@@ -36,7 +36,7 @@ from pyvider.rpcplugin.types import (
 logger = get_logger(__name__)
 
 # TypeVar for plugin_protocol factory
-T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol)
+T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol[Any, Any])
 
 
 def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
