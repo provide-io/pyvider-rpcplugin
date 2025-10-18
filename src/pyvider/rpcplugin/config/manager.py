@@ -42,7 +42,7 @@ Note:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from provide.foundation.config import ConfigManager
 
@@ -138,7 +138,7 @@ def list_plugin_configs() -> list[str]:
     return manager.list_configs()
 
 
-def update_plugin_config(name: str, updates: dict[str, object]) -> None:
+def update_plugin_config(name: str, updates: dict[str, Any]) -> None:
     """Update a registered RPC plugin configuration.
 
     Args:
@@ -157,7 +157,7 @@ def update_plugin_config(name: str, updates: dict[str, object]) -> None:
     manager.update(name, updates)
 
 
-def export_plugin_config(name: str, include_sensitive: bool = False) -> dict[str, object]:
+def export_plugin_config(name: str, include_sensitive: bool = False) -> dict[str, Any]:
     """Export a registered configuration as a dictionary.
 
     Args:
@@ -179,7 +179,7 @@ def export_plugin_config(name: str, include_sensitive: bool = False) -> dict[str
     return manager.export(name, include_sensitive)
 
 
-def export_all_plugin_configs(include_sensitive: bool = False) -> dict[str, dict[str, object]]:
+def export_all_plugin_configs(include_sensitive: bool = False) -> dict[str, dict[str, Any]]:
     """Export all registered configurations.
 
     Args:

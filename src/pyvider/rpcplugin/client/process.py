@@ -13,7 +13,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING
 
-from google.protobuf import empty_pb2  # type: ignore[import-untyped]
+from google.protobuf import empty_pb2
 import grpc
 from provide.foundation import retry
 from provide.foundation.process import ManagedProcess
@@ -85,6 +85,7 @@ class ClientProcessMixin:
             )
 
             # Launch the process
+            assert self._process is not None  # Type narrowing for mypy
             self._process.launch()
 
             if self._process.pid:
@@ -117,6 +118,10 @@ class ClientProcessMixin:
             # Access the underlying Popen process for stderr reading
             process = self._process.process
             while self._process.is_running():
+                # Ensure stderr exists before attempting to read
+                if not process.stderr:
+                    self.logger.debug("Process stderr is None, ending relay")
+                    break
                 line = await asyncio.get_event_loop().run_in_executor(None, process.stderr.readline)
                 if not line:
                     await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
@@ -262,9 +267,9 @@ class ClientProcessMixin:
             raise ProtocolError(error_msg)
 
         try:
-            self._stdio_stub = GRPCStdioStub(self.grpc_channel)
-            self._broker_stub = GRPCBrokerStub(self.grpc_channel)
-            self._controller_stub = GRPCControllerStub(self.grpc_channel)
+            self._stdio_stub = GRPCStdioStub(self.grpc_channel)  # type: ignore[no-untyped-call]
+            self._broker_stub = GRPCBrokerStub(self.grpc_channel)  # type: ignore[no-untyped-call]
+            self._controller_stub = GRPCControllerStub(self.grpc_channel)  # type: ignore[no-untyped-call]
 
             # Store in stubs dictionary for backward compatibility
             self._stubs["stdio"] = self._stdio_stub

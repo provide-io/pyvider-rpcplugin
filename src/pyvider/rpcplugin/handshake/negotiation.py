@@ -133,7 +133,7 @@ def _buffer_has_complete_handshake(buffer: str) -> str | None:
     return buffer.strip() if buffer.count("|") >= 5 else None
 
 
-def _collect_process_stderr(process: subprocess.Popen) -> str:
+def _collect_process_stderr(process: subprocess.Popen[bytes]) -> str:
     if not process.stderr:
         return ""
     try:
@@ -143,7 +143,7 @@ def _collect_process_stderr(process: subprocess.Popen) -> str:
     return value
 
 
-def _process_has_exited(process: subprocess.Popen, buffer: str) -> None:
+def _process_has_exited(process: subprocess.Popen[bytes], buffer: str) -> None:
     if process.poll() is None:
         return
     stderr_output = _collect_process_stderr(process)
@@ -162,7 +162,7 @@ def _process_has_exited(process: subprocess.Popen, buffer: str) -> None:
     )
 
 
-async def _try_read_line(process: subprocess.Popen) -> str | None:
+async def _try_read_line(process: subprocess.Popen[bytes]) -> str | None:
     if not process.stdout:
         return None
     line_bytes = await asyncio.wait_for(
@@ -174,7 +174,7 @@ async def _try_read_line(process: subprocess.Popen) -> str | None:
     return line_bytes.decode("utf-8", errors="replace").strip()
 
 
-async def _try_read_chunk(process: subprocess.Popen, *, chunk_size: int) -> str | None:
+async def _try_read_chunk(process: subprocess.Popen[bytes], *, chunk_size: int) -> str | None:
     if not process.stdout:
         return None
     chunk = await asyncio.wait_for(
@@ -207,7 +207,7 @@ def _process_line_candidate(line: str | None, buffer: str) -> tuple[str | None, 
 
 
 async def _process_chunk_candidate(
-    process: subprocess.Popen,
+    process: subprocess.Popen[bytes],
     buffer: str,
 ) -> tuple[str | None, str, bool]:
     try:
@@ -231,7 +231,7 @@ async def _process_chunk_candidate(
 
 
 async def _read_with_fallback(
-    process: subprocess.Popen,
+    process: subprocess.Popen[bytes],
     buffer: str,
 ) -> tuple[str | None, str, bool]:
     try:
@@ -248,7 +248,7 @@ async def _read_with_fallback(
     return await _process_chunk_candidate(process, updated_buffer)
 
 
-async def read_handshake_response(process: subprocess.Popen) -> str:
+async def read_handshake_response(process: subprocess.Popen[bytes]) -> str:
     """
     Robust handshake response reader with multiple strategies to handle
     different Go-Python interop challenges.
@@ -305,7 +305,7 @@ async def read_handshake_response(process: subprocess.Popen) -> str:
 
 
 async def create_stderr_relay(
-    process: subprocess.Popen,
+    process: subprocess.Popen[bytes],
 ) -> asyncio.Task[None] | None:
     """
     Creates a background task that continuously reads and logs stderr from the

@@ -9,7 +9,10 @@ building, and parsing logic.
 
 from enum import Enum, auto
 import os
-from typing import Literal, TypeGuard
+from typing import TYPE_CHECKING, Literal, TypeGuard
+
+if TYPE_CHECKING:
+    from opentelemetry import trace as otel_trace
 
 from attrs import define
 from provide.foundation import resilient
@@ -26,12 +29,12 @@ logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
 
 
-class _SentinelEnum(Enum):  # type: ignore[type-arg]
+class _SentinelEnum(Enum):
     NOT_PASSED = auto()
 
 
 _SENTINEL_INSTANCE = _SentinelEnum.NOT_PASSED
-_SentinelType = Literal[_SentinelEnum.NOT_PASSED]  # type: ignore[misc]
+_SentinelType = Literal[_SentinelEnum.NOT_PASSED]
 
 
 @define
@@ -198,7 +201,7 @@ def _validate_magic_cookie_impl(
     """Implementation of magic cookie validation."""
     logger.debug("Starting magic cookie validation...")
 
-    cookie_key: str | None = (  # type: ignore[assignment]
+    cookie_key: str | None = (
         rpcplugin_config.plugin_magic_cookie_key
         if magic_cookie_key is _SENTINEL_INSTANCE
         else magic_cookie_key
@@ -452,7 +455,7 @@ def parse_handshake_response(
 
 def _parse_handshake_response_impl(
     response: str,
-    span: object | None = None,  # Optional span for adding attributes
+    span: otel_trace.Span | None = None,  # Optional span for adding attributes
 ) -> tuple[int, int, str, str, str, str | None]:
     """Implementation of handshake response parsing."""
     logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")

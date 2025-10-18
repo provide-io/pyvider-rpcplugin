@@ -52,9 +52,9 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
 
     async def intercept_service(
         self,
-        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler]],
+        continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler[Any, Any]]],
         handler_call_details: grpc.HandlerCallDetails,
-    ) -> grpc.RpcMethodHandler:
+    ) -> grpc.RpcMethodHandler[Any, Any]:
         if not await self._limiter.is_allowed():
             raise grpc.aio.AbortError(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
         return await continuation(handler_call_details)

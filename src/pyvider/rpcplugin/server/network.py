@@ -69,7 +69,8 @@ class ServerNetworkMixin:
 
     def _read_client_cert(self) -> str | None:
         """Read client certificate configuration if available."""
-        return self._get_instance_override("PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert)
+        result = self._get_instance_override("PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert)
+        return cast(str | None, result)
 
     def _should_skip_credentials(
         self,
@@ -220,9 +221,9 @@ class ServerNetworkMixin:
         if (
             self.transport is not None
             and isinstance(self.transport, TCPSocketTransport)
-            and getattr(self.transport, "port", 0)
+            and getattr(self.transport, "port", None) is not None
         ):
-            return self.transport.port
+            return cast(int, self.transport.port)
 
         port_conf = self._get_instance_override("PLUGIN_SERVER_PORT", rpcplugin_config.plugin_server_port)
         if port_conf is None:

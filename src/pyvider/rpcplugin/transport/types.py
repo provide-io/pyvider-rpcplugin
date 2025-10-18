@@ -54,6 +54,21 @@ WriterT = TypeVar("WriterT", bound=asyncio.StreamWriter)
 EndpointType: TypeAlias = str
 AddressType: TypeAlias = tuple[str, int]
 
+__all__ = [
+    "AddressType",
+    "ConnectionT",
+    "EndpointType",
+    "RPCPluginTransport",
+    "ReaderT",
+    "TCPSocketT",
+    "TCPSocketTransport",
+    "TransportT",
+    "TransportType",
+    "UnixSocketT",
+    "UnixSocketTransport",
+    "WriterT",
+]
+
 # 🐍🏗️🔌
 
 
