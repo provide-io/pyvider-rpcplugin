@@ -16,10 +16,10 @@ from typing import TypeGuard
 from attrs import define, field
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
 from pyvider.rpcplugin.exception import TransportError
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
+
+logger = get_logger(__name__)
 
 
 def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:

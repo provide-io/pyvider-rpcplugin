@@ -17,12 +17,12 @@ from typing import cast
 
 from provide.foundation.logger import get_logger
 
-logger = get_logger(__name__)
-
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_HANDSHAKE_RETRY_WAIT, DEFAULT_PROCESS_WAIT_TIME
 from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
 from pyvider.rpcplugin.transport.types import TransportT
+
+logger = get_logger(__name__)
 
 
 async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
