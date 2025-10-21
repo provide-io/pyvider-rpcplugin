@@ -22,7 +22,9 @@ except Exception:
 try:  # pragma: no cover - relax grpc version guard for generated health stubs
     import grpc
 
-    grpc.__version__ = "1.75.1"
+    # Updated to match current grpcio version (1.76.0)
+    # This override may no longer be needed but keeping for compatibility
+    grpc.__version__ = "1.76.0"
 except Exception:
     pass
 
