@@ -47,7 +47,9 @@
       "Bash(cat:*)",
       "Bash(ruff check:*)",
       "Bash(mypy:*)",
-      "Bash(ty check:*)"
+      "Bash(ty check:*)",
+      "Bash(.venv/bin/pip:*)",
+      "Bash(uv pip list:*)"
     ],
     "deny": [],
     "ask": [],
