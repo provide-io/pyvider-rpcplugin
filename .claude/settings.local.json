@@ -50,7 +50,8 @@
       "Bash(ty check:*)",
       "Bash(.venv/bin/pip:*)",
       "Bash(uv pip list:*)",
-      "Bash(PYTHONPATH=./src pytest:*)"
+      "Bash(PYTHONPATH=./src pytest:*)",
+      "Bash(pyrefly check:*)"
     ],
     "deny": [],
     "ask": [],
