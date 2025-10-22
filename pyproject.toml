@@ -134,14 +134,10 @@ line-ending = "auto"
 ################################################################################
 
 [tool.coverage.run]
-include = [
-    "src/pyvider/rpcplugin/*"
-]
+source = ["pyvider.rpcplugin"]
 omit = [
     "**/*pb2*.py",
 ]
-
-source = ["pyvider.rpcplugin"]
 branch = true
 
 [tool.coverage.report]
