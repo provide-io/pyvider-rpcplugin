@@ -39,7 +39,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             f"Main app health check: {app_is_healthy_callable()}"
         )
 
-    async def Check(
+    async def Check(  # type: ignore[override]  # pyre-ignore[14]
         self,
         request: health_pb2.HealthCheckRequest,
         context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse],
@@ -73,7 +73,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             # checkers might expect a return.
             return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN)
 
-    async def Watch(
+    async def Watch(  # type: ignore[override]  # pyre-ignore[14]
         self,
         request: health_pb2.HealthCheckRequest,
         context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse],

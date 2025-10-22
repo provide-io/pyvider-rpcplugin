@@ -66,7 +66,7 @@ except ImportError:
     otel_metrics = None  # type: ignore[assignment]
 
 
-def get_rpc_tracer() -> otel_trace.Tracer | None:
+def get_rpc_tracer() -> otel_trace.Tracer | None:  # pyre-ignore[11]
     """Get OpenTelemetry tracer for RPC operations.
 
     Returns tracer from the already-configured global tracer provider.
@@ -95,7 +95,7 @@ def get_rpc_tracer() -> otel_trace.Tracer | None:
         return None
 
 
-def get_rpc_meter() -> otel_metrics.Meter | None:
+def get_rpc_meter() -> otel_metrics.Meter | None:  # pyre-ignore[11]
     """Get OpenTelemetry meter for RPC metrics.
 
     Returns meter from the already-configured global meter provider.

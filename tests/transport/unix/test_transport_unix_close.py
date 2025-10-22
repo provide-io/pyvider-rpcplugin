@@ -339,7 +339,16 @@ async def test_close_writer_transport_abort_not_closing(mocker):
 
 
 @pytest.mark.asyncio
+@pytest.mark.filterwarnings(
+    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning"
+)
 async def test_close_writer_transport_abort_already_closing(mocker):
+    """Test that abort is not called when transport is already closing.
+
+    Note: The filterwarnings decorator suppresses a Python 3.13-specific warning that occurs
+    during asyncio transport cleanup. This is not a bug in our code but rather a change in
+    Python 3.13's asyncio cleanup ordering.
+    """
     transport_module = UnixSocketTransport(path="/tmp/dummy_abort_already_closing.sock")
     writer = AsyncMock(spec=asyncio.StreamWriter)
     mock_transport_obj = MagicMock()
