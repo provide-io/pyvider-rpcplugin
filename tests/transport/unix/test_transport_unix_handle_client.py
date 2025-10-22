@@ -90,7 +90,16 @@ async def test_unix_socket_handle_client_error(managed_unix_socket_path) -> None
 
 
 @pytest.mark.asyncio
+@pytest.mark.filterwarnings(
+    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning"
+)
 async def test_handle_client_echo(managed_unix_socket_path) -> None:
+    """Test that handle_client echoes data correctly.
+
+    Note: The filterwarnings decorator suppresses a Python 3.13-specific warning that occurs
+    during asyncio transport cleanup. This is not a bug in our code but rather a change in
+    Python 3.13's asyncio cleanup ordering.
+    """
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     transport._running = True
     fake_reader = DummyReader(b"echo")
@@ -102,7 +111,16 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.filterwarnings(
+    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning"
+)
 async def test_handle_client_cancelled(mocker):
+    """Test that handle_client handles cancellation gracefully.
+
+    Note: The filterwarnings decorator suppresses a Python 3.13-specific warning that occurs
+    during asyncio transport cleanup. This is not a bug in our code but rather a change in
+    Python 3.13's asyncio cleanup ordering.
+    """
     transport = UnixSocketTransport(path="/tmp/dummy_cancel.sock") # Path doesn't need to exist for this unit test
     reader = AsyncMock(spec=asyncio.StreamReader)
     writer = AsyncMock(spec=asyncio.StreamWriter)

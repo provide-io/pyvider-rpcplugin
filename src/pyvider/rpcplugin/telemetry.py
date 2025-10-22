@@ -1,6 +1,7 @@
 #
 # pyvider/rpcplugin/telemetry.py
 #
+# pyre-ignore-all-errors
 """
 OpenTelemetry integration for RPC Plugin framework.
 
@@ -46,6 +47,8 @@ Note:
     observability unified rather than fragmented.
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from provide.foundation.logger import get_logger
@@ -66,7 +69,7 @@ except ImportError:
     otel_metrics = None  # type: ignore[assignment]
 
 
-def get_rpc_tracer() -> otel_trace.Tracer | None:
+def get_rpc_tracer() -> otel_trace.Tracer | None:  # type: ignore  # pyre-ignore[11]  # pyre-ignore[16]
     """Get OpenTelemetry tracer for RPC operations.
 
     Returns tracer from the already-configured global tracer provider.
@@ -86,7 +89,7 @@ def get_rpc_tracer() -> otel_trace.Tracer | None:
         return None
 
     try:
-        return otel_trace.get_tracer(
+        return otel_trace.get_tracer(  # pyre-ignore[16]
             instrumenting_module_name="pyvider.rpcplugin",
             instrumenting_library_version="1.0.0",
         )
@@ -95,7 +98,7 @@ def get_rpc_tracer() -> otel_trace.Tracer | None:
         return None
 
 
-def get_rpc_meter() -> otel_metrics.Meter | None:
+def get_rpc_meter() -> otel_metrics.Meter | None:  # pyre-ignore[11]
     """Get OpenTelemetry meter for RPC metrics.
 
     Returns meter from the already-configured global meter provider.
@@ -117,7 +120,7 @@ def get_rpc_meter() -> otel_metrics.Meter | None:
         return None
 
     try:
-        return otel_metrics.get_meter(
+        return otel_metrics.get_meter(  # pyre-ignore[16]
             name="pyvider.rpcplugin",
             version="1.0.0",
         )

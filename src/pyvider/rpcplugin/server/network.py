@@ -223,7 +223,7 @@ class ServerNetworkMixin:
             and isinstance(self.transport, TCPSocketTransport)
             and getattr(self.transport, "port", None) is not None
         ):
-            return cast(int, self.transport.port)
+            return self.transport.port
 
         port_conf = self._get_instance_override("PLUGIN_SERVER_PORT", rpcplugin_config.plugin_server_port)
         if port_conf is None:
@@ -232,10 +232,7 @@ class ServerNetworkMixin:
         try:
             return int(port_conf)
         except (ValueError, TypeError):
-            logger.warning(
-                "Could not parse port from PLUGIN_SERVER_PORT='%s'. Assuming ephemeral.",
-                port_conf,
-            )
+            logger.warning(f"Could not parse port from PLUGIN_SERVER_PORT='{port_conf}'. Assuming ephemeral.")
             return 0
 
     def _apply_tcp_port_configuration(self, transport: TCPSocketTransport, port_num: int) -> None:
