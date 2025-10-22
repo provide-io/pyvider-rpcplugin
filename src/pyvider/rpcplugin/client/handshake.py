@@ -269,7 +269,7 @@ class ClientHandshakeMixin:
         chunk = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)
+                lambda: self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)  # type: ignore[arg-type]  # pyre-ignore[6]
                 if self._process and self._process.process and self._process.process.stdout
                 else b"",
             ),

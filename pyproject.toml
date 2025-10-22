@@ -87,6 +87,8 @@ markers = [
 filterwarnings = [
     "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
+    # Python 3.13 asyncio cleanup ordering issue - not a bug in our code
+    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning",
 ]
 
 norecursedirs = [
@@ -133,17 +135,11 @@ line-ending = "auto"
 # coverage
 ################################################################################
 
-[tool.coverage]
-include = [
-    "src/pyvider/rpcplugin/*"
-]
-omit = [
-    "src/pyvider/rpcplugin/protocol/grpc_*",
-    "src/pyvider/rpcplugin/protocol/*_pb2.py",
-    "src/pyvider/rpcplugin/protocol/*_pb2_grpc.py",
-]
-
+[tool.coverage.run]
 source = ["pyvider.rpcplugin"]
+omit = [
+    "**/*pb2*.py",
+]
 branch = true
 
 [tool.coverage.report]
@@ -167,7 +163,12 @@ directory = "cover"  # Annotate files with coverage info
 
 [tool.pyre]
 source_directories = ["src"]
-exclude = ["tests/*", "**/*pb2*.py"]
+exclude = [
+    "tests/*",
+    "**/*pb2.py",       # Generated protobuf Python
+    "**/*pb2.pyi",      # Generated protobuf stubs
+    "**/*pb2_grpc.py"   # Generated gRPC service stubs
+]
 strict = true
 
 ################################################################################

@@ -87,7 +87,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         # We hold subchannel references here.
         self._subchannels: dict[int, SubchannelConnection] = {}
 
-    async def StartStream(
+    async def StartStream(  # type: ignore[override]  # pyre-ignore[14]
         self,
         request_iterator: AsyncIterator[ConnInfo],
         context: grpc.aio.ServicerContext[ConnInfo, ConnInfo],
@@ -107,6 +107,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
             Outgoing `ConnInfo` messages to the client.
         """
         logger.debug("🔌📡🚀 GRPCBrokerService.StartStream => Began broker sub-stream (bidirectional).")
+        incoming: ConnInfo | None = None  # Initialize to avoid unbound variable in exception handler
         try:  # Outer try for iterator errors
             async for incoming in request_iterator:
                 sub_id = incoming.service_id
@@ -165,7 +166,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     # Crucial: process next item, don't fall into ex_outer
                     continue
         except Exception as ex_outer:
-            outer_error_sub_id = getattr(incoming, "service_id", 0) if "incoming" in locals() else 0
+            outer_error_sub_id = getattr(incoming, "service_id", 0) if incoming is not None else 0
             err_str_outer = (
                 "Broker stream error from client iterator for sub_id "
                 f"{outer_error_sub_id} (outer loop): {ex_outer}"
@@ -295,7 +296,7 @@ class GRPCStdioService(GRPCStdioServicer):
             async for remaining in self._drain_queue():
                 yield remaining
 
-    async def StreamStdio(
+    async def StreamStdio(  # type: ignore[override]  # pyre-ignore[14]
         self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext[empty_pb2.Empty, StdioData]
     ) -> AsyncIterator[StdioData]:
         """Streams STDOUT/STDERR lines to the caller."""
@@ -350,7 +351,9 @@ class GRPCControllerService(GRPCControllerServicer):
         context={"operation": "controller_shutdown", "component": "protocol"},
         log_errors=True,
     )
-    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext[CEmpty, CEmpty]) -> CEmpty:
+    async def Shutdown(  # type: ignore[override]  # pyre-ignore[14]
+        self, request: CEmpty, context: grpc.aio.ServicerContext[CEmpty, CEmpty]
+    ) -> CEmpty:
         """
         Handles the Shutdown RPC request from the client.
 

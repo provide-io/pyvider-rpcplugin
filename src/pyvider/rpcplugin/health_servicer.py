@@ -39,8 +39,10 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             f"Main app health check: {app_is_healthy_callable()}"
         )
 
-    async def Check(
-        self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse]
+    async def Check(  # type: ignore[override]  # pyre-ignore[14]
+        self,
+        request: health_pb2.HealthCheckRequest,
+        context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse],
     ) -> health_pb2.HealthCheckResponse:
         """
         Checks the health of the server or a specific service.
@@ -71,8 +73,10 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             # checkers might expect a return.
             return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN)
 
-    async def Watch(
-        self, request: health_pb2.HealthCheckRequest, context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse]
+    async def Watch(  # type: ignore[override]  # pyre-ignore[14]
+        self,
+        request: health_pb2.HealthCheckRequest,
+        context: grpc.aio.ServicerContext[health_pb2.HealthCheckRequest, health_pb2.HealthCheckResponse],
     ) -> AsyncIterator[health_pb2.HealthCheckResponse]:
         """
         Streams health status updates. This is not implemented in this basic version.
