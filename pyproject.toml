@@ -87,6 +87,8 @@ markers = [
 filterwarnings = [
     "ignore:cannot collect test class .* because it has a __init__ constructor:pytest.PytestCollectionWarning",
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
+    # Python 3.13 asyncio cleanup ordering issue - not a bug in our code
+    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning",
 ]
 
 norecursedirs = [
