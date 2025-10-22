@@ -163,9 +163,9 @@ directory = "cover"  # Annotate files with coverage info
 source_directories = ["src"]
 exclude = [
     "tests/*",
-    "**/*pb2*.py",      # Generated protobuf Python
-    "**/*pb2*.pyi",     # Generated protobuf stubs
-    "**/*_pb2_grpc.py"  # Generated gRPC service stubs
+    "**/*pb2.py",       # Generated protobuf Python
+    "**/*pb2.pyi",      # Generated protobuf stubs
+    "**/*pb2_grpc.py"   # Generated gRPC service stubs
 ]
 strict = true
 

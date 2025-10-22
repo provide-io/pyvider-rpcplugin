@@ -86,7 +86,7 @@ def get_rpc_tracer() -> otel_trace.Tracer | None:  # pyre-ignore[11]
         return None
 
     try:
-        return otel_trace.get_tracer(
+        return otel_trace.get_tracer(  # pyre-ignore[16]
             instrumenting_module_name="pyvider.rpcplugin",
             instrumenting_library_version="1.0.0",
         )
@@ -117,7 +117,7 @@ def get_rpc_meter() -> otel_metrics.Meter | None:  # pyre-ignore[11]
         return None
 
     try:
-        return otel_metrics.get_meter(
+        return otel_metrics.get_meter(  # pyre-ignore[16]
             name="pyvider.rpcplugin",
             version="1.0.0",
         )
