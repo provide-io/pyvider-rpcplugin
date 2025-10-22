@@ -138,4 +138,65 @@ async def test_health_service_enabled_and_serving(
             logger.warning(f"Error during test cleanup: {cleanup_error}")
 
 
+@pytest.mark.asyncio
+async def test_health_service_not_serving_when_unhealthy(
+    health_test_config_override, monkeypatch
+) -> None:
+    """Test that health service returns NOT_SERVING when app is unhealthy."""
+    # Small delay to ensure previous test servers are fully cleaned up
+    await asyncio.sleep(0.1)
+    # Ensure the magic cookie environment variable is set for direct server instantiation
+    cookie_key = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
+    monkeypatch.setenv(cookie_key, cookie_value)
+
+    protocol = EchoProtocolImpl()
+    handler = EchoServiceImpl()
+    server = RPCPluginServer(protocol=protocol, handler=handler)
+
+    serve_task = asyncio.create_task(server.serve())
+    try:
+        await server.wait_for_server_ready(timeout=10.0)
+
+        endpoint = server._transport.endpoint
+        assert endpoint, "Could not determine server endpoint for client connection."
+
+        # Use appropriate connection string based on transport type
+        from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+
+        if isinstance(server._transport, UnixSocketTransport):
+            connection_string = f"unix:{endpoint}"
+        else:
+            connection_string = endpoint
+
+        async with grpc.aio.insecure_channel(connection_string) as channel:
+            health_stub = health_pb2_grpc.HealthStub(channel)
+
+            # First verify it's serving
+            health_check_req = health_pb2.HealthCheckRequest(service=EchoProtocolImpl.service_name)
+            response = await health_stub.Check(health_check_req)
+            assert response.status == health_pb2.HealthCheckResponse.SERVING
+
+            # Now trigger shutdown event to make app unhealthy
+            server._shutdown_event.set()
+
+            # Health check should now return NOT_SERVING
+            response_unhealthy = await health_stub.Check(health_check_req)
+            assert response_unhealthy.status == health_pb2.HealthCheckResponse.NOT_SERVING
+
+            # Empty service name should also return NOT_SERVING
+            response_empty_unhealthy = await health_stub.Check(health_pb2.HealthCheckRequest(service=""))
+            assert response_empty_unhealthy.status == health_pb2.HealthCheckResponse.NOT_SERVING
+
+    finally:
+        try:
+            await server.stop()
+            await asyncio.wait_for(serve_task, timeout=5.0)
+        except (TimeoutError, asyncio.CancelledError) as cleanup_error:
+            # Expected cancellation/timeout during cleanup
+            logger.debug(f"Expected cleanup exception: {cleanup_error}")
+        except Exception as cleanup_error:
+            logger.warning(f"Error during test cleanup: {cleanup_error}")
+
+
 # 🐍🔌🧪🪄
