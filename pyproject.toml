@@ -133,7 +133,7 @@ line-ending = "auto"
 # coverage
 ################################################################################
 
-[tool.coverage]
+[tool.coverage.run]
 include = [
     "src/pyvider/rpcplugin/*"
 ]
