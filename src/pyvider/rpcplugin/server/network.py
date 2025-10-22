@@ -232,9 +232,7 @@ class ServerNetworkMixin:
         try:
             return int(port_conf)
         except (ValueError, TypeError):
-            logger.warning(
-                f"Could not parse port from PLUGIN_SERVER_PORT='{port_conf}'. Assuming ephemeral."
-            )
+            logger.warning(f"Could not parse port from PLUGIN_SERVER_PORT='{port_conf}'. Assuming ephemeral.")
             return 0
 
     def _apply_tcp_port_configuration(self, transport: TCPSocketTransport, port_num: int) -> None:
