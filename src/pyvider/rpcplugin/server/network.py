@@ -233,8 +233,7 @@ class ServerNetworkMixin:
             return int(port_conf)
         except (ValueError, TypeError):
             logger.warning(
-                "Could not parse port from PLUGIN_SERVER_PORT='%s'. Assuming ephemeral.",
-                port_conf,
+                f"Could not parse port from PLUGIN_SERVER_PORT='{port_conf}'. Assuming ephemeral."
             )
             return 0
 
