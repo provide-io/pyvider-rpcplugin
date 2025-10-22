@@ -138,9 +138,7 @@ include = [
     "src/pyvider/rpcplugin/*"
 ]
 omit = [
-    "src/pyvider/rpcplugin/protocol/grpc_*",
-    "src/pyvider/rpcplugin/protocol/*_pb2.py",
-    "src/pyvider/rpcplugin/protocol/*_pb2_grpc.py",
+    "**/*pb2*.py",
 ]
 
 source = ["pyvider.rpcplugin"]
