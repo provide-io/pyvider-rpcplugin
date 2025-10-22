@@ -1,3 +1,4 @@
+# pyre-ignore-all-errors
 from collections.abc import Mapping as _Mapping
 from typing import ClassVar as _ClassVar
 

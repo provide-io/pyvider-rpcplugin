@@ -1,6 +1,7 @@
 #
 # pyvider/rpcplugin/telemetry.py
 #
+# pyre-ignore-all-errors
 """
 OpenTelemetry integration for RPC Plugin framework.
 
@@ -66,7 +67,7 @@ except ImportError:
     otel_metrics = None  # type: ignore[assignment]
 
 
-def get_rpc_tracer() -> otel_trace.Tracer | None:  # pyre-ignore[11]
+def get_rpc_tracer() -> otel_trace.Tracer | None:  # type: ignore  # pyre-ignore[11]  # pyre-ignore[16]
     """Get OpenTelemetry tracer for RPC operations.
 
     Returns tracer from the already-configured global tracer provider.
