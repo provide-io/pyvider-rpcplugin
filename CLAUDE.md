@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **IMPORTANT**: This project uses a custom environment setup script instead of standard Python venv.
 
-- Always run `source env.sh` to set up the development environment
+- Always run `uv sync` to set up the development environment
 - The environment uses `uv` for dependency management and creates virtual environments in `workenv/`
 - Do NOT use `.venv` - the project explicitly avoids this in favor of the workenv structure
 - The environment script handles Python version compatibility (requires >=3.11) and will recreate the venv if needed
@@ -15,25 +15,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Environment
 ```bash
-source env.sh          # Set up development environment (ALWAYS run this first)
+uv sync          # Set up development environment (ALWAYS run this first)
 ```
 
 ### Testing
 ```bash
-pytest                 # Run all tests with parallel execution
-pytest tests/          # Run tests in specific directory
-pytest -n auto         # Explicitly run tests in parallel
-pytest -m "not slow"   # Skip slow tests
-pytest -m "not long_running"  # Skip long running tests
-pytest --cov=pyvider.rpcplugin --cov-report=term-missing  # Run with coverage
+uv run pytest                 # Run all tests with parallel execution
+uv run pytest tests/          # Run tests in specific directory
+uv run pytest -n auto         # Explicitly run tests in parallel
+uv run pytest -m "not slow"   # Skip slow tests
+uv run pytest -m "not long_running"  # Skip long running tests
+uv run pytest --cov=pyvider.rpcplugin --cov-report=term-missing  # Run with coverage
 ```
 
 ### Code Quality
 ```bash
-ruff check src tests   # Lint code
-ruff format src tests  # Format code
+uv run ruff check src tests   # Lint code
+uv run ruff format src tests  # Format code
 pyre check            # Type checking (primary type checker)
-mypy src/             # Alternative type checker
+uv run mypy src/             # Alternative type checker
 bandit -r src         # Security analysis
 ```
 
