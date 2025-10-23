@@ -59,7 +59,7 @@ git clone https://github.com/provide-io/pyvider-rpcplugin.git
 cd pyvider-rpcplugin
 
 # Set up development environment using workenv
-source env.sh
+uv sync
 
 # Install development dependencies
 uv pip install -e ".[dev]"

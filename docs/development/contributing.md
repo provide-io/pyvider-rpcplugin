@@ -30,7 +30,7 @@ git remote add upstream https://github.com/provide-io/pyvider-rpcplugin.git
 
 ```bash
 # Source the environment setup (uses workenv/ not .venv)
-source env.sh
+uv sync
 
 # Install development dependencies
 pip install -e ".[dev,test,docs]"
