@@ -52,7 +52,8 @@
       "Bash(uv pip list:*)",
       "Bash(PYTHONPATH=./src pytest:*)",
       "Bash(pyrefly check:*)",
-      "Bash(pyrefly:*)"
+      "Bash(pyrefly:*)",
+      "Bash(mkdocs build)"
     ],
     "deny": [],
     "ask": [],
