@@ -16,16 +16,16 @@ graph TD
     F --> G[Transport Layer]
     G --> H[RPC Plugin Server]
     H --> I[Service Implementation]
-    
+
     subgraph "Client Side"
         B
         C
     end
-    
+
     subgraph "Network Boundary"
         E
     end
-    
+
     subgraph "Server Side"
         G
         H
@@ -50,29 +50,26 @@ graph TD
 The transport layer handles low-level communication between client and server:
 
 ```python
-# src/pyvider/transport/base.py
+# src/pyvider/rpcplugin/transport/base.py
 from abc import ABC, abstractmethod
 import asyncio
 
-class BaseTransport(ABC):
+class RPCPluginTransport(ABC):
     """Abstract base class for all transport implementations."""
-    
-    def __init__(self, config: TransportConfig):
-        self.config = config
-        self._connection = None
-        self._lock = asyncio.Lock()
-    
+
+    endpoint: str | None
+
     @abstractmethod
-    async def connect(self, address: str) -> None:
-        """Establish connection to the specified address."""
-    
+    async def listen(self) -> str:
+        """Start listening and return the endpoint string."""
+
     @abstractmethod
-    async def send(self, data: bytes) -> None:
-        """Send data over the transport."""
-    
+    async def connect(self, endpoint: str) -> None:
+        """Connect to the specified endpoint."""
+
     @abstractmethod
-    async def receive(self) -> bytes:
-        """Receive data from the transport."""
+    async def close(self) -> None:
+        """Close the transport and cleanup resources."""
 ```
 
 #### Transport Implementations
@@ -81,21 +78,37 @@ The framework supports multiple transport mechanisms:
 
 **Unix Socket Transport** - For local communication with high performance:
 ```python
-class UnixSocketTransport(BaseTransport):
-    async def connect(self, socket_path: str) -> None:
-        reader, writer = await asyncio.open_unix_connection(socket_path)
-        self._connection = (reader, writer)
+# src/pyvider/rpcplugin/transport/unix/transport.py
+class UnixSocketTransport(RPCPluginTransport):
+    """Unix domain socket transport for local IPC."""
+
+    def __init__(self, path: str | None = None):
+        self.path = path
+        self._server: asyncio.AbstractServer | None = None
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
+
+    async def listen(self) -> str:
+        """Create Unix socket and start listening."""
+        # Normalizes unix:, unix:/, unix:// prefixes
+        # Sets proper file permissions (0660)
+        # Returns endpoint in format: unix:/path/to/socket
 ```
 
 **TCP Transport** - For network communication with optional TLS:
 ```python
-class TCPTransport(BaseTransport):
-    async def connect(self, address: str) -> None:
-        host, port = address.split(':', 1)
-        reader, writer = await asyncio.open_connection(
-            host, int(port), ssl=self._ssl_context
-        )
-        self._connection = (reader, writer)
+# src/pyvider/rpcplugin/transport/tcp.py
+class TCPSocketTransport(RPCPluginTransport):
+    """TCP socket transport for network IPC."""
+
+    def __init__(self, host: str = "127.0.0.1", port: int = 0):
+        self.host = host
+        self.port = port  # 0 means OS assigns random port
+        self._server: asyncio.AbstractServer | None = None
+
+    async def listen(self) -> str:
+        """Bind to TCP port and start listening."""
+        # Returns endpoint in format: host:port
 ```
 
 ### 2. Protocol Layer
@@ -103,41 +116,60 @@ class TCPTransport(BaseTransport):
 The protocol layer handles message serialization and RPC semantics:
 
 ```python
-# src/pyvider/protocol/base.py
+# src/pyvider/rpcplugin/protocol/base.py
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic
-import asyncio
+from typing import TypeVar, Generic, Any
 
-T = TypeVar('T')
-U = TypeVar('U')
+ServerT = TypeVar('ServerT')
+HandlerT = TypeVar('HandlerT')
 
-class BaseProtocol(ABC, Generic[T, U]):
+class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):
     """Abstract base class for RPC protocols."""
-    
-    def __init__(self, transport: BaseTransport):
-        self.transport = transport
-        self._pending_requests: dict = {}
-    
+
     @abstractmethod
-    async def serialize_request(self, method: str, args: T) -> bytes:
-        """Serialize request for transmission."""
-    
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
+        """Return gRPC descriptors and service name."""
+
     @abstractmethod
-    async def call_method(self, method_name: str, request: T) -> U:
-        """Call remote method."""
+    async def add_to_server(self, server: ServerT, handler: HandlerT) -> None:
+        """Add this protocol's services to the gRPC server."""
 ```
 
-#### Protocol Implementations
+The protocol also defines runtime-checkable interfaces in `types.py`:
 
-**gRPC Protocol** - Production-ready with comprehensive feature set:
 ```python
-class GRPCProtocol(BaseProtocol):
-    async def call_method(self, method_name: str, request: Message) -> Message:
-        method = getattr(self._stub, method_name)
-        try:
-            return await method(request)
-        except grpc.RpcError as e:
-            raise ProtocolError(f"RPC call failed: {e.code()}: {e.details()}")
+# src/pyvider/rpcplugin/types.py
+from typing import Protocol, runtime_checkable
+
+@runtime_checkable
+class RPCPluginProtocol(Protocol):
+    """Runtime-checkable protocol interface."""
+
+    async def get_grpc_descriptors(self) -> tuple[Any, str]: ...
+    async def add_to_server(self, server: Any, handler: Any) -> None: ...
+    async def get_method_type(self, method_name: str) -> str: ...
+```
+
+#### Protocol Services
+
+The framework provides built-in gRPC services:
+
+```python
+# src/pyvider/rpcplugin/protocol/service.py
+class GRPCBrokerService(GRPCBrokerServicer):
+    """Broker service for managing subchannels."""
+
+    async def StartStream(self, request_iterator, context):
+        """Bidirectional stream for broker connections."""
+
+class GRPCStdioService(GRPCStdioServicer):
+    """Service for streaming plugin stdout/stderr."""
+
+class GRPCControllerService(GRPCControllerServicer):
+    """Service for plugin lifecycle control."""
+
+    async def Shutdown(self, request, context):
+        """Gracefully shutdown the plugin."""
 ```
 
 ### 3. Server Architecture
@@ -145,47 +177,79 @@ class GRPCProtocol(BaseProtocol):
 The server provides a high-level interface for implementing RPC services:
 
 ```python
-# src/pyvider/server/server.py
-import asyncio
-import logging
-from grpc.aio import Server, add_insecure_port, add_secure_port
+# src/pyvider/rpcplugin/server/core.py
+from typing import Generic, TypeVar
+import grpc.aio
 
-class RPCPluginServer:
-    """High-level RPC server implementation."""
-    
-    def __init__(self, config: ServerConfig):
-        self.config = config
-        self._server = None
-        self._services: list = []
-        self._interceptors: list = []
-        self._shutdown_event = asyncio.Event()
-    
-    def add_service(self, service) -> None:
-        """Add RPC service to the server."""
-        self._services.append(service)
-    
-    async def start(self) -> None:
-        """Start the RPC server."""
-        self._server = Server(interceptors=self._interceptors)
-        
-        # Register services
-        for service in self._services:
-            add_servicer = getattr(service, 'add_to_server')
-            add_servicer(service, self._server)
-        
-        # Configure port and start
-        if self.config.tls_enabled:
-            credentials = self._create_server_credentials()
-            add_secure_port(self._server, f"{self.config.host}:{self.config.port}", credentials)
-        else:
-            add_insecure_port(self._server, f"{self.config.host}:{self.config.port}")
-        
-        await self._server.start()
-    
-    async def stop(self, grace_period: int = 30) -> None:
-        """Stop the RPC server gracefully."""
-        if self._server:
-            await self._server.stop(grace_period)
+ServerT = TypeVar('ServerT')
+HandlerT = TypeVar('HandlerT')
+TransportT = TypeVar('TransportT')
+
+class RPCPluginServer(ServerNetworkMixin, Generic[ServerT, HandlerT, TransportT]):
+    """
+    High-level RPC server implementation with mixin architecture.
+
+    Uses composition through mixins:
+    - ServerNetworkMixin: Network operations and connection handling
+    - Core server logic in this class
+    """
+
+    def __init__(
+        self,
+        protocol: RPCPluginProtocol[ServerT, HandlerT],
+        handler: HandlerT,
+        transport: TransportT | None = None,
+        config: dict[str, Any] | None = None,
+    ):
+        self.protocol = protocol
+        self.handler = handler
+        self.transport = transport
+        self.config = config or {}
+
+        self._server: ServerT | None = None
+        self._handshake_config: HandshakeConfig | None = None
+        self._health_servicer: HealthServicer | None = None
+        self._rate_limiter: TokenBucketRateLimiter | None = None
+
+    async def serve(self) -> None:
+        """
+        Start the RPC server and handle connections.
+
+        Steps:
+        1. Setup transport (Unix socket or TCP)
+        2. Perform handshake with client
+        3. Create gRPC server with interceptors
+        4. Register protocol services
+        5. Start serving requests
+        """
+
+    async def shutdown(self, grace_period: float | None = None) -> None:
+        """Gracefully shutdown the server."""
+```
+
+#### Rate Limiting Interceptor
+
+```python
+# src/pyvider/rpcplugin/server/core.py
+class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
+    """
+    gRPC interceptor for request rate limiting.
+
+    Uses Foundation's TokenBucketRateLimiter for throttling.
+    """
+
+    def __init__(self, rate_limiter: TokenBucketRateLimiter):
+        self._rate_limiter = rate_limiter
+
+    async def intercept_service(self, continuation, handler_call_details):
+        if not await self._rate_limiter.acquire():
+            # Raise RESOURCE_EXHAUSTED when rate limit exceeded
+            context = handler_call_details.invocation_metadata()
+            await context.abort(
+                grpc.StatusCode.RESOURCE_EXHAUSTED,
+                "Rate limit exceeded"
+            )
+        return await continuation(handler_call_details)
 ```
 
 ### 4. Client Architecture
@@ -193,49 +257,81 @@ class RPCPluginServer:
 The client provides a simplified interface for making RPC calls:
 
 ```python
-# src/pyvider/client/client.py
-import asyncio
-from typing import TypeVar, Generic
-from collections.abc import AsyncIterator
-from grpc.aio import insecure_channel, secure_channel
+# src/pyvider/rpcplugin/client/core.py
+from attrs import define, field
+from typing import Any
 
-T = TypeVar('T')
-U = TypeVar('U')
+@define
+class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
+    """
+    High-level RPC client implementation with mixin architecture.
 
-class RPCPluginClient(Generic[T, U]):
-    """High-level RPC client implementation."""
-    
-    def __init__(self, config: ClientConfig):
-        self.config = config
-        self._channel = None
-        self._stub = None
-        self._retry_policy = RetryPolicy(config.retry_config)
-    
-    async def connect(self) -> None:
-        """Establish connection to RPC server."""
-        target = f"{self.config.host}:{self.config.port}"
-        
-        if self.config.tls_enabled:
-            credentials = self._create_client_credentials()
-            self._channel = secure_channel(target, credentials)
-        else:
-            self._channel = insecure_channel(target)
-        
-        self._stub = self.config.service_stub_class(self._channel)
-    
-    async def call(self, method_name: str, request: T, timeout: float | None = None) -> U:
-        """Make RPC call with retry logic."""
-        async def _make_call() -> U:
-            method = getattr(self._stub, method_name)
-            return await method(request, timeout=timeout)
-        
-        return await self._retry_policy.execute(_make_call)
-    
-    async def stream_call(self, method_name: str, request_iterator: AsyncIterator[T]) -> AsyncIterator[U]:
-        """Make streaming RPC call."""
-        method = getattr(self._stub, method_name)
-        async for response in method(request_iterator):
-            yield response
+    Uses composition through mixins:
+    - ClientHandshakeMixin: Handshake and certificate management
+    - ClientProcessMixin: Process launching and gRPC channel creation
+    """
+
+    command: list[str] = field()
+    config: dict[str, Any] | None = field(default=None)
+
+    # Internal state
+    _process: ManagedProcess | None = field(init=False, default=None)
+    _transport: TransportType | None = field(init=False, default=None)
+    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)
+
+    # Certificate management
+    client_cert: str | None = field(init=False, default=None)
+    client_key_pem: str | None = field(init=False, default=None)
+
+    # gRPC stubs
+    _stdio_stub: GRPCStdioStub | None = field(init=False, default=None)
+    _broker_stub: GRPCBrokerStub | None = field(init=False, default=None)
+    _controller_stub: GRPCControllerStub | None = field(init=False, default=None)
+
+    async def start(self) -> None:
+        """
+        Start the plugin client.
+
+        Steps:
+        1. Launch plugin subprocess
+        2. Perform handshake
+        3. Setup TLS/mTLS if enabled
+        4. Create gRPC channel
+        5. Initialize service stubs
+        """
+
+    async def shutdown_plugin(self) -> None:
+        """Send graceful shutdown signal to plugin."""
+
+    async def close(self) -> None:
+        """Cleanup all resources."""
+```
+
+#### Client Mixins
+
+```python
+# src/pyvider/rpcplugin/client/handshake.py
+class ClientHandshakeMixin:
+    """Mixin for handshake and certificate management."""
+
+    async def _complete_handshake_setup(self) -> None:
+        """Post-handshake setup including TLS certificates."""
+
+    async def _attempt_single_handshake(self) -> HandshakeData:
+        """Perform a single handshake attempt."""
+
+# src/pyvider/rpcplugin/client/process.py
+class ClientProcessMixin:
+    """Mixin for process and gRPC channel management."""
+
+    async def _launch_process(self) -> None:
+        """Launch the plugin subprocess."""
+
+    async def _create_grpc_channel(self) -> None:
+        """Create secure gRPC channel."""
+
+    async def _connect_and_handshake_with_retry(self) -> None:
+        """Connect with retry logic."""
 ```
 
 ### 5. Configuration System
@@ -243,238 +339,270 @@ class RPCPluginClient(Generic[T, U]):
 Centralized configuration management with environment variable support:
 
 ```python
-# src/pyvider/config/schema.py
-from dataclasses import dataclass, field
-from pathlib import Path
+# src/pyvider/rpcplugin/config/runtime.py
+from attrs import define, field
+from provide.foundation.config import RuntimeConfig, env_field
 
-@dataclass
-class TransportConfig:
-    """Transport layer configuration."""
-    type: str = "tcp"  # tcp, unix
-    host: str = "localhost"
-    port: int = 50051
-    socket_path: str | None = None
-    tls_enabled: bool = False
-    cert_file: str | None = None
-    key_file: str | None = None
-    ca_cert_file: str | None = None
+@define(kw_only=True)
+class RPCPluginConfig(RuntimeConfig):
+    """
+    Configuration with Foundation's env_field support.
 
-@dataclass
-class ServerConfig:
-    """Server configuration with environment variable support."""
-    transport: TransportConfig = field(default_factory=TransportConfig)
-    max_workers: int = 10
-    max_connections: int = 1000
-    request_timeout: float = 30.0
-    log_level: str = "INFO"
-    
-    @classmethod 
-    def from_env(cls) -> 'ServerConfig':
-        """Load configuration from PLUGIN_* environment variables."""
-        import os
-        
-        return cls(
-            transport=TransportConfig(
-                host=os.getenv('PLUGIN_HOST', 'localhost'),
-                port=int(os.getenv('PLUGIN_PORT', '50051')),
-                tls_enabled=os.getenv('PLUGIN_TLS_ENABLED', 'false').lower() == 'true',
-                cert_file=os.getenv('PLUGIN_CERT_FILE'),
-                key_file=os.getenv('PLUGIN_KEY_FILE'),
-            ),
-            max_workers=int(os.getenv('PLUGIN_MAX_WORKERS', '10')),
-            log_level=os.getenv('PLUGIN_LOG_LEVEL', 'INFO'),
-        )
+    All configuration values support environment variables
+    with automatic type conversion.
+    """
+
+    # Client configuration
+    plugin_client_max_retries: int = env_field(
+        default=3,
+        env_var="PLUGIN_CLIENT_MAX_RETRIES"
+    )
+    plugin_client_retry_enabled: bool = env_field(
+        default=True,
+        env_var="PLUGIN_CLIENT_RETRY_ENABLED"
+    )
+
+    # Server configuration
+    plugin_server_port: int = env_field(
+        default=0,
+        env_var="PLUGIN_SERVER_PORT"
+    )
+    plugin_server_host: str = env_field(
+        default="127.0.0.1",
+        env_var="PLUGIN_SERVER_HOST"
+    )
+
+    # Protocol configuration
+    plugin_protocol_versions: list[int] = env_field(
+        factory=lambda: [1],
+        env_var="PLUGIN_PROTOCOL_VERSIONS"
+    )
+
+    # Security configuration
+    plugin_auto_mtls: bool = env_field(
+        default=False,
+        env_var="PLUGIN_AUTO_MTLS"
+    )
+    plugin_insecure: bool = env_field(
+        default=False,
+        env_var="PLUGIN_INSECURE"
+    )
+
+    # Rate limiting
+    plugin_rate_limit_enabled: bool = env_field(
+        default=False,
+        env_var="PLUGIN_RATE_LIMIT_ENABLED"
+    )
+    plugin_rate_limit_requests_per_second: float = env_field(
+        default=100.0,
+        env_var="PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND"
+    )
+
+    # Health checks
+    plugin_health_service_enabled: bool = env_field(
+        default=True,
+        env_var="PLUGIN_HEALTH_SERVICE_ENABLED"
+    )
 ```
 
-## Service Implementation Patterns
+#### Configuration Manager
 
-### Basic Service
+Support for multiple plugin configurations:
 
 ```python
-# example_service.py
-import asyncio
-from collections.abc import AsyncIterator
-from pyvider.service import BaseService
-from .generated import service_pb2, service_pb2_grpc
+# src/pyvider/rpcplugin/config/manager.py
+class ConfigManager:
+    """Manage multiple plugin configurations."""
 
-class EchoService(service_pb2_grpc.EchoServiceServicer, BaseService):
-    """Example RPC service implementation."""
-    
-    async def Echo(
-        self, 
-        request: service_pb2.EchoRequest, 
-        context: grpc.aio.ServicerContext
-    ) -> service_pb2.EchoResponse:
-        """Echo the received message back to client."""
-        logger.info(f"Echo request: {request.message}")
-        
-        return service_pb2.EchoResponse(
-            message=request.message,
-            timestamp=time.time()
-        )
-    
-    async def StreamEcho(
+    def register_plugin_config(
         self,
-        request: service_pb2.EchoRequest,
-        context: grpc.aio.ServicerContext
-    ) -> AsyncIterator[service_pb2.EchoResponse]:
-        """Stream echo responses."""
-        for i in range(10):
-            yield service_pb2.EchoResponse(
-                message=f"{request.message} #{i}",
-                timestamp=time.time()
-            )
-            await asyncio.sleep(1)
+        name: str,
+        config: RPCPluginConfig
+    ) -> None:
+        """Register a named configuration."""
+
+    def get_plugin_config(self, name: str) -> RPCPluginConfig:
+        """Retrieve a named configuration."""
 ```
 
-### Database Integration Service
+### 6. Handshake Protocol
+
+The handshake ensures secure plugin communication:
 
 ```python
-# database_service.py
-class DatabaseService(service_pb2_grpc.DatabaseServiceServicer, BaseService):
-    """Database service with connection pooling."""
-    
-    def __init__(self, db_pool):
-        self.db_pool = db_pool
-    
-    async def GetUser(self, request, context) -> service_pb2.GetUserResponse:
-        """Get user from database with error handling."""
-        async with self.db_pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT id, name, email FROM users WHERE id = $1",
-                request.user_id
-            )
-            
-            if not row:
-                context.abort(grpc.StatusCode.NOT_FOUND, "User not found")
-            
-            return service_pb2.GetUserResponse(user=service_pb2.User(**row))
+# src/pyvider/rpcplugin/handshake/core.py
+@define
+class HandshakeConfig:
+    """Configuration for the handshake protocol."""
+
+    magic_cookie_key: str
+    magic_cookie_value: str
+    protocol_versions: list[int]
+    supported_transports: list[str]
+
+def validate_magic_cookie(
+    cookie_key: str,
+    cookie_value: str,
+    env: dict[str, str]
+) -> bool:
+    """Validate the magic cookie for authentication."""
+
+def build_handshake_response(
+    protocol_version: int,
+    transport_name: str,
+    address: str,
+    server_cert: str | None = None
+) -> str:
+    """Build the handshake response string."""
+    # Format: CORE_PROTOCOL_VERSION|<version>|<transport>|<address>|[cert]
 ```
 
-## Error Handling Architecture
-
-### Exception Hierarchy
+### 7. Exception Hierarchy
 
 ```python
-# src/pyvider/exceptions.py
-class RPCPluginError(Exception):
+# src/pyvider/rpcplugin/exception.py
+from provide.foundation.exceptions import FoundationError
+
+class RPCPluginError(FoundationError):
     """Base exception for all RPC Plugin errors."""
-    
-    def __init__(self, message: str, details: dict | None = None):
-        super().__init__(message)
-        self.message = message
-        self.details = details or {}
+
+class ConfigError(RPCPluginError):
+    """Configuration-related errors."""
+
+class HandshakeError(RPCPluginError):
+    """Handshake protocol failures."""
+
+class ProtocolError(RPCPluginError):
+    """Protocol violations."""
 
 class TransportError(RPCPluginError):
     """Transport layer errors."""
-    pass
 
-class ProtocolError(RPCPluginError):
-    """Protocol layer errors."""
-    pass
-
-class ServiceError(RPCPluginError):
-    """Service implementation errors."""
-    pass
-
-class ConfigurationError(RPCPluginError):
-    """Configuration errors."""
-    pass
-
-class AuthenticationError(RPCPluginError):
-    """Authentication failures."""
-    pass
-
-class AuthorizationError(RPCPluginError):
-    """Authorization failures."""
-    pass
+class SecurityError(RPCPluginError):
+    """Security-related errors."""
 ```
 
-### Error Propagation
+## Integration Features
+
+### Health Checking
 
 ```python
-# Error handling middleware
-class ErrorHandlingInterceptor:
-    """Convert Python exceptions to gRPC status codes."""
-    
-    EXCEPTION_MAPPING = {
-        ValidationError: grpc.StatusCode.INVALID_ARGUMENT,
-        AuthenticationError: grpc.StatusCode.UNAUTHENTICATED,
-        AuthorizationError: grpc.StatusCode.PERMISSION_DENIED,
-        NotFoundError: grpc.StatusCode.NOT_FOUND,
-        TimeoutError: grpc.StatusCode.DEADLINE_EXCEEDED,
-        ServiceUnavailableError: grpc.StatusCode.UNAVAILABLE,
-    }
-    
-    async def intercept_service(self, continuation, handler_call_details):
-        try:
-            return await continuation(handler_call_details)
-        except Exception as e:
-            status_code = self.EXCEPTION_MAPPING.get(type(e), grpc.StatusCode.INTERNAL)
-            await handler_call_details.context.abort(status_code, str(e))
+# src/pyvider/rpcplugin/health_servicer.py
+from grpc_health.v1 import health_pb2_grpc
+
+class HealthServicer(health_pb2_grpc.HealthServicer):
+    """
+    gRPC Health Checking Protocol implementation.
+
+    Provides standard health check endpoint for monitoring.
+    """
+
+    async def Check(self, request, context):
+        """Check service health."""
+        if await self._app_is_healthy_callable():
+            return health_pb2.HealthCheckResponse(
+                status=health_pb2.HealthCheckResponse.SERVING
+            )
+        return health_pb2.HealthCheckResponse(
+            status=health_pb2.HealthCheckResponse.NOT_SERVING
+        )
 ```
 
-## Performance Architecture
-
-### Connection Pooling
+### OpenTelemetry Integration
 
 ```python
-# src/pyvider/client/pool.py
-import asyncio
-import time
-from collections import deque
+# src/pyvider/rpcplugin/telemetry.py
+from opentelemetry import trace
 
-class ConnectionPool:
-    """Connection pool for efficient resource management."""
-    
-    def __init__(self, max_size: int = 10, max_idle_time: int = 300):
-        self.max_size = max_size
-        self.max_idle_time = max_idle_time
-        self._pool: deque[tuple[Any, float]] = deque()
-        self._in_use: set = set()
-        self._lock = asyncio.Lock()
-    
-    async def acquire(self) -> Any:
-        """Acquire connection from pool."""
-        async with self._lock:
-            # Try to reuse existing connection
-            while self._pool:
-                conn, last_used = self._pool.popleft()
-                
-                if time.time() - last_used > self.max_idle_time:
-                    await conn.close()
-                    continue
-                
-                if await conn.is_healthy():
-                    self._in_use.add(conn)
-                    return conn
-                else:
-                    await conn.close()
-            
-            # Create new connection if under limit
-            if len(self._in_use) < self.max_size:
-                conn = await self._create_connection()
-                self._in_use.add(conn)
-                return conn
-            
-            # Wait for connection to be available
-            while len(self._in_use) >= self.max_size:
-                await asyncio.sleep(0.1)
-            
-            # Retry acquisition
-            return await self.acquire()
-    
-    async def release(self, conn: Any) -> None:
-        """Release connection back to pool."""
-        async with self._lock:
-            if conn in self._in_use:
-                self._in_use.remove(conn)
-                
-                if await conn.is_healthy():
-                    self._pool.append((conn, time.time()))
-                else:
-                    await conn.close()
+def get_rpc_tracer() -> trace.Tracer:
+    """Get the OpenTelemetry tracer for RPC operations."""
+    return trace.get_tracer(__name__)
 ```
+
+### Factory Functions
+
+```python
+# src/pyvider/rpcplugin/factories.py
+def plugin_server(
+    protocol: RPCPluginProtocol[ServerT, HandlerT],
+    handler: HandlerT,
+    transport: TransportT | None = None
+) -> RPCPluginServer[ServerT, HandlerT, TransportT]:
+    """Factory for creating configured servers."""
+
+def plugin_client(
+    command: list[str],
+    config: dict[str, Any] | None = None
+) -> RPCPluginClient:
+    """Factory for creating configured clients."""
+
+def plugin_protocol(
+    service_name: str | None = None
+) -> RPCPluginProtocol[Any, Any]:
+    """Factory for creating protocol instances."""
+```
+
+## Type System
+
+The framework uses modern Python typing with runtime-checkable protocols:
+
+```python
+# src/pyvider/rpcplugin/types.py
+from typing import Protocol, runtime_checkable, TypeVar, Any
+
+# Type variables for generic components
+ServerT = TypeVar('ServerT')
+HandlerT = TypeVar('HandlerT')
+TransportT = TypeVar('TransportT')
+
+# Type aliases
+GrpcServerType = grpc.aio.Server
+RpcConfigType = dict[str, Any]
+GrpcCredentialsType = grpc.ChannelCredentials | None
+EndpointType = str
+
+# Runtime-checkable protocols
+@runtime_checkable
+class RPCPluginHandler(Protocol):
+    """Base handler interface."""
+
+@runtime_checkable
+class RPCPluginTransport(Protocol):
+    """Transport interface."""
+    endpoint: str | None
+    async def listen(self) -> str: ...
+    async def connect(self, endpoint: str) -> None: ...
+    async def close(self) -> None: ...
+
+# Type guards
+def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
+    """Check if object implements handler protocol."""
+    return isinstance(obj, RPCPluginHandler)
+
+def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
+    """Check if object implements transport protocol."""
+    return isinstance(obj, RPCPluginTransport)
+```
+
+## Performance Considerations
+
+### Connection Management
+
+- **Connection Pooling**: Clients can reuse gRPC channels for multiple calls
+- **Keepalive**: Configurable keepalive settings prevent idle connection drops
+- **Concurrent Streams**: Support for multiple concurrent RPC streams
+
+### Resource Management
+
+- **Graceful Shutdown**: Proper cleanup of resources on shutdown
+- **Process Lifecycle**: Managed subprocess with proper signal handling
+- **Memory Management**: Streaming support for large data transfers
+
+### Rate Limiting
+
+- **Token Bucket**: Configurable rate limiting with burst capacity
+- **Per-Service**: Rate limits can be applied per service or globally
+- **Monitoring**: Integration with metrics for rate limit monitoring
 
 ## Security Architecture
 
@@ -484,79 +612,33 @@ class ConnectionPool:
 sequenceDiagram
     participant C as Client
     participant S as Server
-    participant A as Auth Service
-    
-    C->>S: Connect with mTLS certificate
+
+    C->>S: Launch subprocess with environment
+    S->>S: Validate magic cookie
+    S->>C: Handshake response with endpoint
+    C->>S: Connect to endpoint
+    C->>S: mTLS handshake (if enabled)
     S->>S: Validate client certificate
-    S->>A: Verify certificate against CA
-    A->>S: Certificate valid
     S->>C: Connection established
-    
-    C->>S: RPC request with JWT token
-    S->>S: Validate JWT signature
-    S->>S: Check token expiration
-    S->>S: Authorize based on claims
-    S->>C: RPC response
 ```
 
-### Security Implementation
+### Security Features
 
-```python
-# src/pyvider/security/auth.py
-import jwt
-import time
-from cryptography import x509
-from cryptography.hazmat.primitives import hashes
+1. **Magic Cookie Authentication**: Shared secret for process validation
+2. **mTLS Support**: Mutual TLS with certificate management
+3. **Process Isolation**: Plugins run in separate processes
+4. **Certificate Generation**: Automatic certificate generation when needed
+5. **Secure Defaults**: Security features enabled by default
 
-class SecurityManager:
-    """Centralized security management."""
-    
-    def __init__(self, config: SecurityConfig):
-        self.config = config
-        self._ca_cert = self._load_ca_certificate()
-        self._jwt_secret = config.jwt_secret
-    
-    def validate_certificate(self, cert_der: bytes) -> dict:
-        """Validate client certificate against CA."""
-        try:
-            cert = x509.load_der_x509_certificate(cert_der)
-            
-            # Check if certificate is signed by our CA
-            ca_public_key = self._ca_cert.public_key()
-            ca_public_key.verify(
-                cert.signature,
-                cert.tbs_certificate_bytes,
-                cert.signature_algorithm_oid._name
-            )
-            
-            # Extract certificate information
-            return {
-                'subject': cert.subject.rfc4514_string(),
-                'serial_number': str(cert.serial_number),
-                'valid_from': cert.not_valid_before,
-                'valid_to': cert.not_valid_after,
-            }
-        
-        except Exception as e:
-            raise AuthenticationError(f"Certificate validation failed: {e}")
-    
-    def validate_jwt_token(self, token: str) -> dict:
-        """Validate JWT token."""
-        try:
-            payload = jwt.decode(
-                token,
-                self._jwt_secret,
-                algorithms=['HS256']
-            )
-            
-            # Check expiration
-            if payload.get('exp', 0) < time.time():
-                raise AuthenticationError("Token expired")
-            
-            return payload
-        
-        except jwt.InvalidTokenError as e:
-            raise AuthenticationError(f"Invalid token: {e}")
-```
+## Foundation Framework Integration
+
+The package is built on the Foundation framework, leveraging:
+
+1. **Configuration System**: Type-safe configuration with `RuntimeConfig`
+2. **Structured Logging**: Consistent logging across components
+3. **Process Management**: `ManagedProcess` for subprocess lifecycle
+4. **Cryptography**: X.509 certificate handling
+5. **Rate Limiting**: `TokenBucketRateLimiter` implementation
+6. **Exception Hierarchy**: Extends `FoundationError` for consistency
 
 This architecture provides a robust, scalable foundation for building RPC services with comprehensive security, performance, and reliability features. The modular design allows for easy extension and customization while maintaining clean separation of concerns.

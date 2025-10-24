@@ -82,8 +82,15 @@ plugins:
       separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
       lang:
         - en
-  
+
   - autorefs
+
+  - gen-files:
+      scripts:
+        - docs/reference/gen_ref_pages.py
+
+  - literate-nav:
+      nav_file: SUMMARY.md
 
   - macros:
       include_dir: docs/.shared-theme/data
@@ -291,50 +298,7 @@ nav:
       - Plugin Lifecycle: guide/advanced/lifecycle.md
   
   - API Reference:
-    - api/index.md
-
-    # High-level API modules
-    - Server API: api/server.md
-    - Client API: api/client.md
-    - Protocol API: api/protocol.md
-    - Handshake API: api/handshake.md
-    - Factories API: api/factories.md
-
-    # Detailed API sections
-    - Server Components:
-      - api/server/index.md
-      - RPCPluginServer: api/server/server.md
-      - Health Servicer: api/server/health.md
-      - Rate Limiting: api/server/rate-limiting.md
-
-    - Client Components:
-      - api/client/index.md
-      - RPCPluginClient: api/client/client.md
-      - Connection: api/client/connection.md
-      # Retry Logic: api/client/retry.md  # File does not exist - removed from navigation
-
-    - Transport:
-      - api/transport/index.md
-      - Base Transport: api/transport/base.md
-      - Unix Socket: api/transport/unix.md
-      - TCP Socket: api/transport/tcp.md
-
-    # Individual protocol files commented out - they do not exist (content consolidated in protocol.md)
-    #   - api/protocol/index.md     # File does not exist - content in protocol.md
-    #   - api/protocol/base.md      # File does not exist - content in protocol.md
-    #   - api/protocol/service.md   # File does not exist - content in protocol.md
-    #   - api/protocol/grpc.md      # File does not exist - content in protocol.md
-    
-    - Configuration:
-      - api/config/index.md
-      - Config Schema: api/config/schema.md
-      - Environment Loading: api/config/environment.md
-      # Validation: api/config/validation.md  # File does not exist - removed from navigation
-    
-    - Exceptions:
-      - api/exceptions/index.md
-      # Error Hierarchy: api/exceptions/hierarchy.md  # File does not exist - removed from navigation
-      # Error Handling: api/exceptions/handling.md    # File does not exist - removed from navigation
+    - reference/
   
   - Examples:
     - examples/index.md
