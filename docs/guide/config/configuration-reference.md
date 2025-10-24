@@ -30,7 +30,7 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
 | `plugin_server_port` | `PLUGIN_SERVER_PORT` | `int` | `0` | Server port (0 = dynamic allocation) |
-| `plugin_server_host` | `PLUGIN_SERVER_HOST` | `str` | `"127.0.0.1"` | Server bind address |
+| `plugin_server_host` | `PLUGIN_SERVER_HOST` | `str` | `"localhost"` | Server bind address |
 | `plugin_server_transports` | `PLUGIN_SERVER_TRANSPORTS` | `list[str]` | `["unix", "tcp"]` | Available transport protocols |
 | `plugin_test_mode` | `PLUGIN_TEST_MODE` | `bool` | `False` | Enable test mode features |
 
@@ -45,7 +45,7 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
-| `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` | `bool` | `False` | Enable automatic mTLS setup |
+| `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` | `bool` | `True` | Enable automatic mTLS setup |
 | `plugin_insecure` | `PLUGIN_INSECURE` | `bool` | `False` | Disable all security features (development only) |
 | `plugin_client_cert` | `PLUGIN_CLIENT_CERT` | `str` | `""` | Client certificate (PEM or file:// URL) |
 | `plugin_client_key` | `PLUGIN_CLIENT_KEY` | `str` | `""` | Client private key (PEM or file:// URL) |
@@ -59,7 +59,7 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
-| `plugin_grpc_grace_period` | `PLUGIN_GRPC_GRACE_PERIOD` | `float` | `5.0` | Grace period for graceful shutdown (seconds) |
+| `plugin_grpc_grace_period` | `PLUGIN_GRPC_GRACE_PERIOD` | `float` | `0.5` | Grace period for graceful shutdown (seconds) |
 | `plugin_grpc_keepalive_time` | `PLUGIN_GRPC_KEEPALIVE_TIME` | `int` | `30000` | Keepalive ping interval (milliseconds) |
 | `plugin_grpc_keepalive_timeout` | `PLUGIN_GRPC_KEEPALIVE_TIMEOUT` | `int` | `5000` | Keepalive ping timeout (milliseconds) |
 | `plugin_grpc_max_connection_idle` | `PLUGIN_GRPC_MAX_CONNECTION_IDLE` | `int` | `900000` | Max connection idle time (milliseconds) |
@@ -88,10 +88,10 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
-| `plugin_handshake_timeout` | `PLUGIN_HANDSHAKE_TIMEOUT` | `float` | `30.0` | Handshake timeout (seconds) |
+| `plugin_handshake_timeout` | `PLUGIN_HANDSHAKE_TIMEOUT` | `float` | `10.0` | Handshake timeout (seconds) |
 | `plugin_handshake_protocol_version` | `PLUGIN_HANDSHAKE_PROTOCOL_VERSION` | `int` | `1` | Handshake protocol version |
 | `plugin_magic_cookie_key` | `PLUGIN_MAGIC_COOKIE_KEY` | `str` | `"PLUGIN_MAGIC_COOKIE"` | Magic cookie environment variable name |
-| `plugin_magic_cookie_value` | `PLUGIN_MAGIC_COOKIE_VALUE` | `str` | `""` | Magic cookie value for authentication |
+| `plugin_magic_cookie_value` | `PLUGIN_MAGIC_COOKIE_VALUE` | `str` | `"test_cookie_value"` | Magic cookie value for authentication (testing only) |
 
 ### Logging Configuration
 
