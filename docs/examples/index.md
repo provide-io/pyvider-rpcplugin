@@ -124,6 +124,22 @@ Expected output:
 
 Complete RPC service with Protocol Buffers and custom methods.
 
+!!! note "Simplified vs. Actual Examples"
+    The examples below are **simplified for teaching purposes** to clearly demonstrate core concepts. The actual runnable files in `examples/echo_server.py` and `examples/echo_client.py` include additional production-ready patterns such as:
+
+    - `example_utils.configure_for_example()` for path setup
+    - Detailed environment variable handling
+    - Class-based client implementation with comprehensive error handling
+    - Additional comments and logging
+
+    **To run the actual examples:**
+    ```bash
+    # From project root
+    python examples/echo_client.py
+    ```
+
+    The simplified examples below are perfect for understanding the framework. Use the actual files when you need production-ready patterns.
+
 ### Protocol Definition (`echo.proto`)
 
 ```protobuf

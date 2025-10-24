@@ -2,14 +2,22 @@
 
 This example demonstrates a fundamental client-server RPC interaction using `pyvider-rpcplugin`. It's perfect for learning the basics of plugin development.
 
+!!! note "Documentation vs. Actual Code"
+    This documentation provides **simplified code examples** focused on teaching core concepts. The actual files (`examples/echo_server.py` and `examples/echo_client.py`) contain more production-ready patterns with additional error handling, environment setup, and utility functions.
+
+    **To run the actual working example:**
+    ```bash
+    python examples/echo_client.py
+    ```
+
 ## Overview
 
 The Echo service provides a simple unary RPC pattern:
 - **Unary RPC** - Client sends a message, server echoes it back
 
 This is implemented in two files:
-- `examples/echo_server.py` - Plugin server implementation
-- `examples/echo_client.py` - Client that launches and communicates with the server
+- `examples/echo_server.py` - Plugin server implementation (actual file is more detailed)
+- `examples/echo_client.py` - Client that launches and communicates with the server (actual file uses class-based approach)
 
 ## Service Definition
 
