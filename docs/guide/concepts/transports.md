@@ -242,9 +242,9 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 - **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration with examples for different deployment scenarios
 - **[Production Configuration](../config/production.md)** - Production transport configuration patterns
 
-### API Documentation
-- **[Configuration API Reference](../../api/config/index.md)** - Programmatic transport configuration access and validation
-- **[Server API Reference](../../api/server/index.md)** - Server-side transport implementation details
+### Documentation
+- **[Configuration Reference](../config/configuration-reference.md)** - Transport configuration options
+- **[API Reference](../../reference/index.md)** - Auto-generated API documentation
 
 ## Related Concepts
 

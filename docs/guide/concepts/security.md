@@ -568,8 +568,8 @@ These features would provide comprehensive certificate management, automated sec
 - **[Configuration Guide](../config/index.md)** - Environment-driven security configuration with validation patterns
 - **[Production Configuration](../config/production.md)** - Production-ready security configuration examples
 
-### API Documentation
-- **[Configuration API Reference](../../api/config/index.md)** - Programmatic access to security configuration options
+### Configuration Documentation
+- **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ## Related Concepts
 

@@ -479,7 +479,7 @@ health = await security_health_check()
 ### Security Configuration Resources
 - **[Security Configuration Guide](../config/index.md)** - Environment-driven security configuration with comprehensive examples
 - **[Production Configuration](../config/production.md)** - Production-grade security configuration patterns
-- **[Configuration API Reference](../../api/config/index.md)** - Programmatic security configuration access
+- **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ### Conceptual Foundation
 - **[Security Model Concepts](../concepts/security.md)** - Understand the security architecture and how different layers work together
