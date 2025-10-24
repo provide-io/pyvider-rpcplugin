@@ -56,7 +56,8 @@
       "Bash(mkdocs build)",
       "Bash(curl:*)",
       "Bash(tree:*)",
-      "Bash(mkdocs build:*)"
+      "Bash(mkdocs build:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": [],
