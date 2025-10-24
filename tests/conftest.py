@@ -1,9 +1,4 @@
 # tests/conftest.py
-
-# Register provide-testkit plugins for pytest assertion rewriting
-# This must happen BEFORE any imports from provide.testkit
-pytest_plugins = ["provide.testkit"]
-
 import asyncio
 import os
 
