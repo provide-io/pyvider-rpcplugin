@@ -49,7 +49,7 @@ Configure appropriate network transport and firewall rules:
 ```bash
 # TCP configuration for networked deployments
 export PLUGIN_SERVER_TRANSPORTS='["tcp"]'
-export PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080  # Container/K8s
+export PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080  # All interfaces
 # or
 export PLUGIN_SERVER_ENDPOINT=10.0.1.100:8080  # Specific interface
 
@@ -128,149 +128,11 @@ Enable health services for load balancer and orchestrator integration:
 export PLUGIN_HEALTH_SERVICE_ENABLED=true
 ```
 
-#### Kubernetes Health Check Example
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: plugin-service
-spec:
-  selector:
-    app: plugin
-  ports:
-    - name: grpc
-      port: 8080
-      targetPort: 8080
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: plugin-deployment
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: plugin
-  template:
-    metadata:
-      labels:
-        app: plugin
-    spec:
-      containers:
-      - name: plugin
-        image: my-plugin:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: PLUGIN_SERVER_ENDPOINT
-          value: 0.0.0.0:8080
-        - name: PLUGIN_HEALTH_SERVICE_ENABLED
-          value: true
-        livenessProbe:
-          exec:
-            command:
-            - grpc-health-probe
-            - -addr=localhost:8080
-          initialDelaySeconds: 10
-          periodSeconds: 30
-        readinessProbe:
-          exec:
-            command:
-            - grpc-health-probe
-            - -addr=localhost:8080
-          initialDelaySeconds: 5
-          periodSeconds: 10
-```
-
 ## Deployment Patterns
 
-### Container Deployment
+### Process Management
 
-Dockerfile example for production:
-
-```dockerfile
-FROM python:3.11-slim
-
-# Create non-root user
-RUN groupadd -r plugin && useradd -r -g plugin plugin
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    ca-certificates \
-    grpc-health-probe \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy application
-COPY --chown=plugin:plugin . /app
-WORKDIR /app
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Create directories with proper permissions
-RUN mkdir -p /var/run/plugin /var/log/plugin && \
-    chown plugin:plugin /var/run/plugin /var/log/plugin
-
-# Switch to non-root user
-USER plugin
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD grpc-health-probe -addr=localhost:8080 || exit 1
-
-EXPOSE 8080
-
-CMD ["python", "-m", "my_plugin.server"]
-```
-
-### Docker Compose Production Stack
-
-```yaml
-version: '3.8'
-
-services:
-  plugin:
-    build: .
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-    environment:
-      - PLUGIN_LOG_LEVEL=INFO
-      - PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080
-      - PLUGIN_AUTO_MTLS=true
-      - PLUGIN_HEALTH_SERVICE_ENABLED=true
-      - PLUGIN_RATE_LIMIT_ENABLED=true
-      - PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
-    volumes:
-      - ./certs:/etc/ssl/certs:ro
-      - ./private:/etc/ssl/private:ro
-      - plugin-logs:/var/log/plugin
-    networks:
-      - plugin-network
-    healthcheck:
-      test: ["CMD", "grpc-health-probe", "-addr=localhost:8080"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  # Log aggregation
-  fluent-bit:
-    image: fluent/fluent-bit:latest
-    volumes:
-      - plugin-logs:/var/log/plugin:ro
-      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
-    depends_on:
-      - plugin
-
-volumes:
-  plugin-logs:
-
-networks:
-  plugin-network:
-    driver: bridge
-```
+For production deployments, use a process manager to ensure plugin reliability:
 
 ### Systemd Service
 
