@@ -1,5 +1,14 @@
 # Pyvider RPC Plugin: User and Developer Guide
 
+!!! warning "Deprecated - Use Documentation Home Instead"
+    This page is **deprecated** and will be removed in a future release. It contains only a table of contents with no actual content.
+
+    **Please use the new documentation home instead:**
+
+    ➡️ **[Documentation Home](index.md)** - Complete documentation with tutorials, examples, and guides
+
+    The new documentation home provides the same navigation with additional content, quick start examples, and better organization.
+
 Welcome to the comprehensive guide for Pyvider RPC Plugin. This document serves as the main entry point for accessing all available documentation.
 
 ## Documentation Structure

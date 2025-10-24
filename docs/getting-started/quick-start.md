@@ -38,8 +38,9 @@ from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
 ```
 
-!!! tip "Advanced Foundation Integration"
-    For advanced patterns including configuration management, structured logging, mTLS setup, and rate limiting, see **[Advanced Foundation Integration](../guide/advanced/foundation-integration.md)**.
+!!! tip "Learn More About Foundation"
+    - **[Foundation Overview](../introduction/foundation.md)** - Comprehensive explanation of Foundation's role and capabilities
+    - **[Advanced Foundation Integration](../guide/advanced/foundation-integration.md)** - Production patterns for configuration, mTLS, rate limiting, and more
 
 ## Your First Plugin
 

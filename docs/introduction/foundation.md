@@ -2,6 +2,9 @@
 
 **Path:** [Home](../index.md) → [Introduction](index.md) → Foundation
 
+!!! info "Canonical Foundation Reference"
+    This page is the **canonical reference** for understanding Foundation's role in Pyvider RPC Plugin. Other documentation pages link here for detailed Foundation information.
+
 ## What is Foundation?
 
 Foundation (`provide.foundation`) is a comprehensive infrastructure library that provides enterprise-grade building blocks for Python applications. Pyvider RPC Plugin is built on top of Foundation, inheriting its robust infrastructure automatically.

@@ -4,6 +4,19 @@
 
 Complete production deployment examples for Pyvider RPC Plugin systems, including containerization, orchestration, monitoring, and CI/CD pipelines.
 
+!!! info "Available Examples"
+    **Currently Available:**
+    - ✅ [Core Production Service](service.md) - Complete production-ready plugin service with error handling, health checks, rate limiting, and structured logging
+
+    **Planned Future Examples:**
+    - 📋 Docker Configuration - Multi-stage Dockerfile and compose setups
+    - 📋 Kubernetes Deployment - Full K8s manifests with auto-scaling
+    - 📋 CI/CD Pipeline - GitHub Actions automated deployment
+    - 📋 Monitoring Setup - Prometheus/Grafana observability stack
+    - 📋 Cloud Deployment - Serverless and cloud-native patterns
+
+    For now, the [Core Service example](service.md) provides comprehensive production patterns you can adapt to your deployment platform.
+
 ## Overview
 
 These examples demonstrate battle-tested patterns for deploying plugin systems in production environments with:
@@ -23,14 +36,14 @@ The main production-ready plugin service with all features:
 - Rate limiting and circuit breakers
 - Structured logging with correlation IDs
 
-### [Docker Configuration](docker.md)
+### Docker Configuration _(Coming Soon)_
 Multi-stage Dockerfile and compose configurations:
 - Optimized container images
 - Security hardening
 - Health check integration
 - Development and production variants
 
-### [Kubernetes Deployment](kubernetes.md)
+### Kubernetes Deployment _(Coming Soon)_
 Full Kubernetes manifests for production:
 - Deployment with rolling updates
 - Service discovery and load balancing
@@ -38,14 +51,14 @@ Full Kubernetes manifests for production:
 - Network policies and RBAC
 - HPA for auto-scaling
 
-### [CI/CD Pipeline](cicd.md)
+### CI/CD Pipeline _(Coming Soon)_
 GitHub Actions workflow for automated deployment:
 - Testing and security scanning
 - Container building and registry push
 - Kubernetes deployment
 - Rollback capabilities
 
-### [Monitoring Setup](monitoring.md)
+### Monitoring Setup _(Coming Soon)_
 Observability stack configuration:
 - Prometheus metrics
 - Grafana dashboards
@@ -54,14 +67,16 @@ Observability stack configuration:
 
 ## Quick Start
 
-Choose your deployment target:
+Start with the [Core Production Service](service.md) example, which provides comprehensive patterns you can adapt to your chosen deployment platform:
 
-| Platform | Complexity | Best For |
-|----------|------------|----------|
-| [Docker Compose](docker.md#compose) | Low | Development, small deployments |
-| [Docker Swarm](docker.md#swarm) | Medium | Small to medium production |
-| [Kubernetes](kubernetes.md) | High | Large-scale production |
-| [Cloud Run](cloud.md) | Low | Serverless deployments |
+| Platform | Complexity | Best For | Status |
+|----------|------------|----------|--------|
+| Docker Compose | Low | Development, small deployments | _Coming Soon_ |
+| Docker Swarm | Medium | Small to medium production | _Coming Soon_ |
+| Kubernetes | High | Large-scale production | _Coming Soon_ |
+| Cloud Run | Low | Serverless deployments | _Coming Soon_ |
+
+For now, use the [Core Service](service.md) as a template and adapt it to your deployment needs.
 
 ## Production Checklist
 
@@ -210,10 +225,10 @@ Common issues and solutions:
 
 ## Next Steps
 
-- Review the [complete service implementation](service.md)
-- Set up [Docker deployment](docker.md)
-- Configure [Kubernetes orchestration](kubernetes.md)
-- Implement [monitoring and alerts](monitoring.md)
+1. **Review the [complete service implementation](service.md)** - Production-ready patterns for error handling, health checks, and logging
+2. **Adapt to your platform** - Use the service example as a template for Docker, Kubernetes, or your preferred platform
+3. **Implement monitoring** - Add Prometheus metrics and health check endpoints (examples in service.md)
+4. **Configure security** - Enable mTLS and follow the security checklist above
 
 ---
 
