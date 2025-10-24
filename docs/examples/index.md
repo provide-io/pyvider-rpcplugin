@@ -8,12 +8,6 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 |---------|-------------|------------|
 | [Basic Plugin](#basic-plugin) | Minimal plugin server and client | 🟢 Beginner |
 | [Echo Service](#echo-service) | Complete RPC service with custom methods | 🟢 Beginner |
-| [Secure Plugin](#secure-plugin) | mTLS authentication and encryption | 🟡 Intermediate |
-| [Streaming Data](#streaming-data) | Server and client streaming patterns | 🟡 Intermediate |
-| [Error Recovery](#error-recovery) | Robust error handling and retry logic | 🟡 Intermediate |
-| [Plugin Pool](#plugin-pool) | Connection pooling and load balancing | 🔴 Advanced |
-| [Custom Transport](#custom-transport) | Custom transport implementation | 🔴 Advanced |
-| [Production Setup](#production-setup) | Complete production deployment | 🔴 Advanced |
 
 ## Basic Plugin
 
@@ -344,7 +338,6 @@ For more advanced patterns and production use cases:
 The `examples/` directory contains additional working examples:
 
 - **[Echo Service Examples](echo-basic.md)** - Complete RPC service with streaming patterns (basic, intermediate, and advanced)
-- **[Production Examples](production/index.md)** - Production deployment patterns
 - **Short Examples** (see navigation menu) - Focused 15-30 line examples for specific features
 
 ### Running Examples
