@@ -288,7 +288,6 @@ def plugin_server(
 def plugin_client(
     command: list[str],
     config: dict[str, Any] | None = None,
-    auto_connect: bool = True,
 ) -> RPCPluginClient:
     """
     Factory for creating an RPC plugin client instance.
@@ -303,9 +302,6 @@ def plugin_client(
         config: Optional configuration dictionary for the client.
                Can include settings like retry behavior, timeouts,
                transport preferences, and mTLS configuration.
-        auto_connect: Deprecated. This parameter is ignored as the
-                     connection must be established asynchronously.
-                     Always call client.start() after creation.
 
     Returns:
         An RPCPluginClient instance. You must call the async start()
@@ -363,20 +359,9 @@ def plugin_client(
         subprocess management, stdio/stderr capture, and both Unix
         socket and TCP transports. The handshake protocol ensures
         secure communication via magic cookie validation.
-
-    Warning:
-        The auto_connect parameter is deprecated and will be removed
-        in a future version. Always use await client.start() to
-        establish the connection asynchronously.
     """
     logger.debug(f"🏭 Creating plugin client for command: {command}")
-    client = RPCPluginClient(command=command, config=config or {})
-    if auto_connect:
-        logger.warning(
-            "🏭 auto_connect=True in synchronous factory is misleading. "
-            "Caller should handle async client.start()."
-        )
-    return client
+    return RPCPluginClient(command=command, config=config or {})
 
 
 # 🐍🏗️🔌
