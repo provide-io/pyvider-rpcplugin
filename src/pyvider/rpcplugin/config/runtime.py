@@ -107,16 +107,67 @@ PLUGIN_SUPPORTED_TRANSPORTS_FIELD = env_field(
 @define
 class RPCPluginConfig(RuntimeConfig):
     """
-    Configuration for RPC plugin system.
+    Comprehensive configuration for the RPC plugin system.
 
-    This class provides all configuration settings organized by functional area:
-    - Core settings (protocol versions, magic cookies)
-    - Transport settings (timeouts, buffer sizes, supported transports)
-    - Security settings (mTLS, certificates)
-    - gRPC settings (keepalive, grace periods)
-    - Client settings (retry logic)
-    - Server settings (host, port, paths)
-    - Feature settings (rate limiting, health checks, UI)
+    This configuration class extends Foundation's RuntimeConfig to provide
+    type-safe, environment-aware configuration for all aspects of the RPC
+    plugin framework. All fields support environment variable overrides
+    with automatic type conversion and validation.
+
+    The configuration is organized into functional areas:
+
+    **Core Settings:**
+    - Protocol version negotiation
+    - Magic cookie authentication
+    - Logging configuration
+
+    **Transport Settings:**
+    - Connection and handshake timeouts
+    - Buffer sizes for network I/O
+    - Supported transport mechanisms (Unix, TCP)
+
+    **Security Settings:**
+    - mTLS configuration and auto-generation
+    - Certificate paths and validity periods
+    - Insecure mode for development
+
+    **gRPC Settings:**
+    - Keepalive parameters
+    - Message size limits
+    - Grace periods for shutdown
+
+    **Client Settings:**
+    - Retry logic and backoff strategies
+    - Maximum retry attempts
+    - Transport preferences
+
+    **Server Settings:**
+    - Host and port binding
+    - Unix socket paths
+    - Transport availability
+
+    **Feature Settings:**
+    - Rate limiting with token bucket
+    - Health check service
+    - UI components
+
+    Example:
+        ```python
+        from pyvider.rpcplugin.config import rpcplugin_config
+
+        # Access configuration values
+        if rpcplugin_config.plugin_auto_mtls:
+            print("mTLS is enabled")
+
+        # Modify configuration
+        rpcplugin_config.plugin_log_level = "DEBUG"
+        rpcplugin_config.plugin_rate_limit_enabled = True
+        ```
+
+    Note:
+        All configuration fields can be overridden via environment variables.
+        The env_field decorator ensures proper parsing and validation.
+        Default values are defined in the defaults module for consistency.
     """
 
     # =====================================================
