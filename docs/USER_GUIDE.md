@@ -49,12 +49,17 @@ Welcome to the comprehensive guide for Pyvider RPC Plugin. This document serves 
 *   API documentation is auto-generated - see the navigation menu for the complete API reference
 
 **Examples**
-*   [Echo Service](./examples/echo-service.md)
-*   [File Transfer](./examples/file-transfer.md)
-*   [Microservice Gateway](./examples/microservice-gateway.md)
-*   [Database Plugin](./examples/database-plugin.md)
-*   [Production Setup](./examples/production.md)
-*   [Short Examples](./examples/short/)
+*   Echo Service Examples
+    *   [Basic Echo](./examples/echo-basic.md)
+    *   [Intermediate Patterns](./examples/echo-intermediate.md)
+    *   [Advanced Patterns](./examples/echo-advanced.md)
+*   Short Examples
+    *   [Basic Client](./examples/short/basic-client.md)
+    *   [Basic Server](./examples/short/basic-server.md)
+    *   [Health Check](./examples/short/health-check.md)
+    *   [Rate Limiting](./examples/short/rate-limiting.md)
+    *   [TCP Transport](./examples/short/tcp-transport.md)
+    *   [Custom Protocol](./examples/short/custom-protocol.md)
 
 **Development**
 *   [Architecture](./development/architecture.md)
