@@ -86,17 +86,24 @@ logger.info("Server starting", extra={
 Certificate management handled by Foundation's crypto module:
 
 ```python
-from provide.foundation.crypto import Certificate, PrivateKey
+from provide.foundation.crypto import Certificate
 
-# Foundation manages certificates
-cert = Certificate.load_from_file("/etc/ssl/server.crt")
-key = PrivateKey.load_from_file("/etc/ssl/server.key")
-
-# Pyvider uses them for mTLS
-server = plugin_server(
-    server_cert=cert,
-    server_key=key
+# Load certificate and private key from PEM strings or files
+# Foundation's Certificate object combines both cert and key
+cert = Certificate.from_pem(
+    cert_pem=cert_pem_string,
+    key_pem=key_pem_string
 )
+
+# Or create self-signed certificates for development/testing
+cert = Certificate.create_self_signed_server_cert(
+    common_name="myservice.example.com",
+    organization_name="My Organization",
+    validity_days=365
+)
+
+# Pyvider automatically uses Foundation certificates for mTLS
+# when auto_mtls is enabled via configuration
 ```
 
 ### 4. Rate Limiting
