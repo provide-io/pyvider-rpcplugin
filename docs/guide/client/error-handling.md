@@ -45,8 +45,9 @@ except RPCPluginError as e:
 
 ```python
 try:
-    client = plugin_client(command=["python", "my_plugin.py"])
-    await client.start()
+    async with plugin_client(command=["python", "my_plugin.py"]) as client:
+        await client.start()
+        # Use client...
 except TransportError as e:
     logger.error(f"❌ Connection failed: {e.message}")
     if "port" in str(e).lower():
@@ -389,23 +390,25 @@ class ResilientPluginClient:
 
 ### Resource Cleanup
 
-Always ensure proper cleanup:
+Always ensure proper cleanup using async context manager:
 
 ```python
 async def robust_plugin_usage():
-    """Example of robust plugin resource management."""
-    client = None
+    """Example of robust plugin resource management with async context manager."""
     try:
-        # Setup
-        client = plugin_client(command=["python", "my_plugin.py"])
-        await client.start()
-        
-        # Use plugin
-        stub = MyServiceStub(client.grpc_channel)
-        result = await stub.MyMethod(request)
-        
-        return result
-        
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=["python", "my_plugin.py"]) as client:
+            # Setup
+            await client.start()
+
+            # Use plugin
+            stub = MyServiceStub(client.grpc_channel)
+            result = await stub.MyMethod(request)
+
+            return result
+
+        # Client automatically closed on context exit
+
     except TransportError as e:
         logger.error(f"❌ Transport error: {e}")
         # Maybe try fallback or retry

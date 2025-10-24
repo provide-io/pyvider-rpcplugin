@@ -114,36 +114,34 @@ from provide.foundation import logger
 
 async def main():
     logger.info("🚀 Starting host application...")
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "my_plugin.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    client = None
+
     try:
         logger.info(f"Launching plugin: {' '.join(plugin_command)}")
-        
-        # Create and start client
-        client = plugin_client(command=plugin_command)
-        await client.start()
-        
-        logger.info("✅ Successfully connected to plugin!")
-        logger.info("Plugin is running and ready for RPC calls")
-        
-        # Keep connection alive for demonstration
-        await asyncio.sleep(2)
-        
+
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=plugin_command) as client:
+            # Start the plugin
+            await client.start()
+
+            logger.info("✅ Successfully connected to plugin!")
+            logger.info("Plugin is running and ready for RPC calls")
+
+            # Keep connection alive for demonstration
+            await asyncio.sleep(2)
+
+        # Client automatically closed on context exit
+        logger.info("Shutdown complete")
+
     except RPCPluginError as e:
         logger.error(f"❌ Plugin error: {e.message}")
         if e.hint:
             logger.error(f"Hint: {e.hint}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-    finally:
-        if client:
-            logger.info("Shutting down...")
-            await client.close()
-            logger.info("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())

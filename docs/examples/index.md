@@ -73,37 +73,35 @@ from provide.foundation import logger
 async def main():
     """Main client function."""
     logger.info("🏠 Starting basic client...")
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "basic_plugin.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    client = None
+
     try:
         logger.info("🚀 Launching basic plugin...")
-        
-        # Create and connect to plugin
-        client = plugin_client(command=plugin_command)
-        await client.start()
-        
-        logger.info("✅ Connected to plugin successfully!")
-        logger.info("💡 Plugin is running and ready (no custom RPC methods)")
-        
-        # Keep connection alive briefly
-        await asyncio.sleep(2)
-        logger.info("🎉 Basic example completed!")
-        
+
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=plugin_command) as client:
+            # Start the plugin
+            await client.start()
+
+            logger.info("✅ Connected to plugin successfully!")
+            logger.info("💡 Plugin is running and ready (no custom RPC methods)")
+
+            # Keep connection alive briefly
+            await asyncio.sleep(2)
+            logger.info("🎉 Basic example completed!")
+
+        # Client automatically closed on context exit
+        logger.info("🔌 Shutdown complete")
+
     except RPCPluginError as e:
         logger.error(f"❌ Plugin error: {e.message}")
         if e.hint:
             logger.error(f"💡 Hint: {e.hint}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-    finally:
-        if client:
-            logger.info("🔌 Shutting down...")
-            await client.close()
-            logger.info("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -271,61 +269,59 @@ from echo_pb2_grpc import EchoServiceStub
 async def main():
     """Main client function."""
     logger.info("🏠 Starting Echo client...")
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "echo_server.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    client = None
+
     try:
         logger.info("🚀 Launching Echo plugin...")
-        
-        # Create and connect to plugin
-        client = plugin_client(command=plugin_command)
-        await client.start()
-        
-        logger.info("✅ Connected to Echo plugin!")
-        
-        # Create gRPC stub for making RPC calls
-        stub = EchoServiceStub(client.grpc_channel)
-        
-        # Test messages
-        messages = [
-            ("Hello, Plugin!", 1),
-            ("How are you doing?", 2),  
-            ("This is a test message", 3),
-            ("Goodbye!", 4),
-        ]
-        
-        for message, count in messages:
-            logger.info(f"📨 Sending Echo: '{message}'")
-            
-            # Make Echo RPC call
-            echo_request = EchoRequest(message=message, count=count)
-            echo_response = await stub.Echo(echo_request)
-            
-            logger.info(f"📤 Received: '{echo_response.reply}' (processed: {echo_response.processed_count})")
-            
-            # Make ReverseEcho RPC call
-            logger.info(f"🔄 Sending Reverse Echo: '{message}'")
-            reverse_response = await stub.ReverseEcho(echo_request)
-            
-            logger.info(f"📤 Received: '{reverse_response.reply}' (processed: {reverse_response.processed_count})")
-            logger.info("---")
-        
-        logger.info("🎉 All Echo calls completed successfully!")
-        
+
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=plugin_command) as client:
+            # Start the plugin
+            await client.start()
+
+            logger.info("✅ Connected to Echo plugin!")
+
+            # Create gRPC stub for making RPC calls
+            stub = EchoServiceStub(client.grpc_channel)
+
+            # Test messages
+            messages = [
+                ("Hello, Plugin!", 1),
+                ("How are you doing?", 2),
+                ("This is a test message", 3),
+                ("Goodbye!", 4),
+            ]
+
+            for message, count in messages:
+                logger.info(f"📨 Sending Echo: '{message}'")
+
+                # Make Echo RPC call
+                echo_request = EchoRequest(message=message, count=count)
+                echo_response = await stub.Echo(echo_request)
+
+                logger.info(f"📤 Received: '{echo_response.reply}' (processed: {echo_response.processed_count})")
+
+                # Make ReverseEcho RPC call
+                logger.info(f"🔄 Sending Reverse Echo: '{message}'")
+                reverse_response = await stub.ReverseEcho(echo_request)
+
+                logger.info(f"📤 Received: '{reverse_response.reply}' (processed: {reverse_response.processed_count})")
+                logger.info("---")
+
+            logger.info("🎉 All Echo calls completed successfully!")
+
+        # Client automatically closed on context exit
+        logger.info("🔌 Shutdown complete")
+
     except RPCPluginError as e:
         logger.error(f"❌ Plugin error: {e.message}")
         if e.hint:
             logger.error(f"💡 Hint: {e.hint}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-    finally:
-        if client:
-            logger.info("🔌 Shutting down...")
-            await client.close()
-            logger.info("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())

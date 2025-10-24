@@ -1,6 +1,6 @@
 # Basic Client Example
 
-A minimal client that connects to a plugin server.
+A minimal client that connects to a plugin server using the async context manager pattern.
 
 ```python
 #!/usr/bin/env python3
@@ -9,20 +9,19 @@ import asyncio
 from pyvider.rpcplugin import plugin_client
 
 async def main():
-    client = plugin_client(command=["python", "my_server.py"])
-    
-    try:
+    # Use async context manager for automatic cleanup
+    async with plugin_client(command=["python", "my_server.py"]) as client:
+        # Start the plugin
         await client.start()
         print("Connected to plugin!")
-        
+
+        # Access the gRPC channel
         channel = client.grpc_channel
         if channel:
             print(f"Channel ready: {channel}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        await client.close()
+
+    # Client automatically closed on context exit
+    print("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -31,9 +30,29 @@ if __name__ == "__main__":
 ## Key Points
 
 - `plugin_client()` factory creates a client that handles plugin process management automatically
-- Always call `client.close()` to clean up resources
+- **Use `async with` context manager** for automatic resource cleanup
+- `await client.start()` launches the plugin subprocess and establishes connection
 - Use `client.grpc_channel` to get the gRPC channel for making RPC calls
-- The plugin process is started as a subprocess with the provided command
+- Client is automatically closed when exiting the `async with` block
+
+## Alternative Pattern (Manual Cleanup)
+
+For cases where you need manual control:
+
+```python
+async def main():
+    client = plugin_client(command=["python", "my_server.py"])
+
+    try:
+        await client.start()
+        print("Connected to plugin!")
+        # Use client...
+    finally:
+        await client.close()
+        print("Shutdown complete")
+```
+
+**Note**: The context manager pattern (first example) is recommended as it ensures cleanup even if exceptions occur.
 
 ## Related Examples
 

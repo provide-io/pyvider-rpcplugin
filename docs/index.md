@@ -122,22 +122,26 @@ async def main() -> None:
     # Plugin command - client handles process lifecycle
     plugin_path = Path(__file__).parent / "echo_server.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    # Environment passed automatically via PLUGIN_* variables
+
+    # Use async context manager for automatic cleanup
     async with plugin_client(command=plugin_command) as client:
+        # Start the plugin
+        await client.start()
+
         # Use typed gRPC stub
         from echo_pb2_grpc import EchoServiceStub
         from echo_pb2 import EchoRequest
-        
+
         stub = EchoServiceStub(client.grpc_channel)
         request = EchoRequest(message="Hello, Foundation!")
-        
+
         response = await stub.Echo(request)
         logger.info("Plugin response received", extra={
             "request_message": request.message,
             "response_reply": response.reply,
             "client_id": "echo-client"
         })
+    # Client automatically closed on context exit
 
 if __name__ == "__main__":
     asyncio.run(main())
