@@ -53,7 +53,8 @@
       "Bash(PYTHONPATH=./src pytest:*)",
       "Bash(pyrefly check:*)",
       "Bash(pyrefly:*)",
-      "Bash(mkdocs build)"
+      "Bash(mkdocs build)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": [],
