@@ -59,7 +59,11 @@
       "Bash(mkdocs build:*)",
       "Bash(git mv:*)",
       "Bash(git rm:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(for file in quick_start_client.py security_mtls_example.py transport_options_demo.py telemetry_demo.py)",
+      "Bash(do [ -f \"examples/$file\" ])",
+      "Bash(echo:*)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": [],

@@ -35,11 +35,7 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | `plugin_client_retry_jitter_ms` | `PLUGIN_CLIENT_RETRY_JITTER_MS` | `int` | `50` | Retry jitter in milliseconds |
 | `plugin_client_retry_total_timeout_s` | `PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S` | `float` | `30.0` | Total timeout for all retries (seconds) |
 | `plugin_client_transports` | `PLUGIN_CLIENT_TRANSPORTS` | `list[str]` | `["unix", "tcp"]` | Ordered list of transports to try |
-| `plugin_client_subprocess_timeout` | `PLUGIN_CLIENT_SUBPROCESS_TIMEOUT` | `float` | `30.0` | Timeout for subprocess startup (seconds) |
-| `plugin_client_reattach` | `PLUGIN_CLIENT_REATTACH` | `bool` | `False` | Allow reattaching to existing plugin process |
-| `plugin_client_cmd` | `PLUGIN_CLIENT_CMD` | `str` | `""` | Command to launch plugin (space-separated) |
-| `plugin_min_port` | `PLUGIN_MIN_PORT` | `int` | `10000` | Minimum port for dynamic allocation |
-| `plugin_max_port` | `PLUGIN_MAX_PORT` | `int` | `25000` | Maximum port for dynamic allocation |
+| `plugin_client_root_certs` | `PLUGIN_CLIENT_ROOT_CERTS` | `str` | `""` | Client root CA certificates (PEM format) |
 
 ### Server Configuration
 
@@ -73,28 +69,20 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | `plugin_client_key` | `PLUGIN_CLIENT_KEY` | `str` | `None` | Client private key (PEM or file:// URL) |
 | `plugin_client_cert_file` | `PLUGIN_CLIENT_CERT_FILE` | `str` | `""` | Client certificate file path |
 | `plugin_client_key_file` | `PLUGIN_CLIENT_KEY_FILE` | `str` | `""` | Client private key file path |
-| `plugin_client_root_certs` | `PLUGIN_CLIENT_ROOT_CERTS` | `str` | `""` | Client root certificates |
 | `plugin_server_cert` | `PLUGIN_SERVER_CERT` | `str` | `None` | Server certificate (PEM or file:// URL) |
 | `plugin_server_key` | `PLUGIN_SERVER_KEY` | `str` | `None` | Server private key (PEM or file:// URL) |
-| `plugin_server_root_certs` | `PLUGIN_SERVER_ROOT_CERTS` | `str` | `None` | Server root certificates |
-| `plugin_root_certs_pem` | `PLUGIN_ROOT_CERTS_PEM` | `str` | `""` | Root CA certificates (PEM format) |
+| `plugin_server_root_certs` | `PLUGIN_SERVER_ROOT_CERTS` | `str` | `None` | Server root CA certificates (PEM format) |
 | `plugin_ca_cert` | `PLUGIN_CA_CERT` | `str` | `None` | CA certificate for validation |
-| `plugin_skip_verify` | `PLUGIN_SKIP_VERIFY` | `bool` | `False` | Skip certificate verification (insecure) |
 
 ### gRPC Configuration
 
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
 | `plugin_grpc_grace_period` | `PLUGIN_GRPC_GRACE_PERIOD` | `float` | `0.5` | Grace period for graceful shutdown (seconds) |
-| `plugin_grpc_keepalive_time` | `PLUGIN_GRPC_KEEPALIVE_TIME` | `int` | `30000` | Keepalive ping interval (milliseconds) |
-| `plugin_grpc_keepalive_timeout` | `PLUGIN_GRPC_KEEPALIVE_TIMEOUT` | `int` | `5000` | Keepalive ping timeout (milliseconds) |
-| `plugin_grpc_max_connection_idle` | `PLUGIN_GRPC_MAX_CONNECTION_IDLE` | `int` | `900000` | Max connection idle time (milliseconds) |
-| `plugin_grpc_max_connection_age` | `PLUGIN_GRPC_MAX_CONNECTION_AGE` | `int` | `0` | Max connection age (0 = unlimited) |
-| `plugin_grpc_max_connection_age_grace` | `PLUGIN_GRPC_MAX_CONNECTION_AGE_GRACE` | `int` | `0` | Grace period after max age |
-| `plugin_grpc_permit_without_stream` | `PLUGIN_GRPC_PERMIT_WITHOUT_STREAM` | `bool` | `False` | Allow keepalive pings without active streams |
-| `plugin_grpc_max_concurrent_streams` | `PLUGIN_GRPC_MAX_CONCURRENT_STREAMS` | `int` | `100` | Maximum concurrent streams per connection |
-| `plugin_grpc_max_receive_message_length` | `PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_LENGTH` | `int` | `4194304` | Max receive message size (4MB default) |
-| `plugin_grpc_max_send_message_length` | `PLUGIN_GRPC_MAX_SEND_MESSAGE_LENGTH` | `int` | `4194304` | Max send message size (4MB default) |
+| `plugin_grpc_keepalive_time_ms` | `PLUGIN_GRPC_KEEPALIVE_TIME_MS` | `int` | `30000` | Keepalive ping interval (milliseconds) |
+| `plugin_grpc_keepalive_timeout_ms` | `PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS` | `int` | `5000` | Keepalive ping timeout (milliseconds) |
+| `plugin_grpc_max_receive_message_size` | `PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE` | `int` | `4194304` | Max receive message size (4MB default) |
+| `plugin_grpc_max_send_message_size` | `PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE` | `int` | `4194304` | Max send message size (4MB default) |
 
 ### Health Check Configuration
 
@@ -139,6 +127,7 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
 | `plugin_buffer_size` | `PLUGIN_BUFFER_SIZE` | `int` | `16384` | Buffer size in bytes (16KB) |
+| `plugin_transport_buffer_size` | `PLUGIN_TRANSPORT_BUFFER_SIZE` | `int` | `16384` | Transport layer buffer size in bytes (16KB) |
 | `plugin_chunk_size` | `PLUGIN_CHUNK_SIZE` | `int` | `8192` | Chunk size in bytes (8KB) |
 
 ### Transport Configuration
@@ -152,8 +141,6 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
 | `plugin_log_level` | `PLUGIN_LOG_LEVEL` | `str` | `"INFO"` | Logging level (DEBUG, INFO, WARNING, ERROR) |
-| `plugin_log_format` | `PLUGIN_LOG_FORMAT` | `str` | `"json"` | Log format (json, text) |
-| `plugin_log_grpc` | `PLUGIN_LOG_GRPC` | `bool` | `False` | Enable gRPC internal logging |
 
 ## Usage Examples
 
