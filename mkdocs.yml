@@ -294,6 +294,7 @@ nav:
       - guide/advanced/index.md
       - Custom Protocols: guide/advanced/custom-protocols.md
       - Performance Tuning: guide/advanced/performance.md
+      - Telemetry & Observability: guide/advanced/telemetry.md
       - Middleware: guide/advanced/middleware.md
       - Plugin Lifecycle: guide/advanced/lifecycle.md
   
