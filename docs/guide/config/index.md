@@ -94,47 +94,40 @@ All configuration values are validated when loaded:
 # Type validation happens automatically
 try:
     config = rpcplugin_config
-    timeout = config.handshake_timeout()  # Ensures this is a float
+    timeout = config.plugin_handshake_timeout  # Ensures this is a float
 except ConfigError as e:
     logger.error(f"Invalid configuration: {e.validation_errors}")
     # Handle configuration errors appropriately
 ```
 
-## Configuration Categories
+## Configuration Reference
 
-### Core Communication Settings
+For a complete list of all configuration options with defaults, types, and descriptions, see the **[Configuration Reference](configuration-reference.md)**.
 
-Essential settings for plugin protocol and communication:
+### Most Commonly Used Settings
 
-| Setting | Environment Variable | Type | Default | Description |
-|---------|---------------------|------|---------|-------------|
-| Protocol Version | `PLUGIN_CORE_VERSION` | `int` | `1` | Plugin protocol version for negotiation |
-| Server Transports | `PLUGIN_SERVER_TRANSPORTS` | `list[str]` | `["unix","tcp"]` | Transport types server supports |
-| Client Transports | `PLUGIN_CLIENT_TRANSPORTS` | `list[str]` | `["unix","tcp"]` | Transport types client prefers |
-| Magic Cookie | `PLUGIN_MAGIC_COOKIE_VALUE` | `str` | `"test_cookie_value"` | Authentication secret between client and server |
+Here are the most frequently configured options:
 
-### Connection and Timeout Settings
+**Core Settings:**
+- `PLUGIN_CORE_VERSION` - Protocol version (default: `1`)
+- `PLUGIN_SERVER_TRANSPORTS` - Server transport types (default: `["unix", "tcp"]`)
+- `PLUGIN_MAGIC_COOKIE_VALUE` - Authentication secret (default: `"test_cookie_value"`)
 
-Network and timing configurations:
+**Timeouts:**
+- `PLUGIN_HANDSHAKE_TIMEOUT` - Handshake timeout in seconds (default: `10.0`)
+- `PLUGIN_CONNECTION_TIMEOUT` - Connection timeout in seconds (default: `30.0`)
 
-| Setting | Environment Variable | Type | Default | Description |
-|---------|---------------------|------|---------|-------------|
-| Handshake Timeout | `PLUGIN_HANDSHAKE_TIMEOUT` | `float` | `10.0` | Seconds to wait for handshake completion |
-| Connection Timeout | `PLUGIN_CONNECTION_TIMEOUT` | `float` | `30.0` | Seconds to wait for connection establishment |
-| Server Endpoint | `PLUGIN_SERVER_ENDPOINT` | `str` | `None` | Force specific server endpoint (e.g., "localhost:8080") |
-| Client Endpoint | `PLUGIN_CLIENT_ENDPOINT` | `str` | `None` | Force specific client connection endpoint |
+**Security:**
+- `PLUGIN_AUTO_MTLS` - Enable automatic mTLS (default: `true`)
+- `PLUGIN_SERVER_CERT` - Server TLS certificate path
+- `PLUGIN_SERVER_KEY` - Server TLS private key path
 
-### Security Configuration
+**Performance:**
+- `PLUGIN_RATE_LIMIT_ENABLED` - Enable rate limiting (default: `false`)
+- `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` - Request rate limit (default: `100.0`)
+- `PLUGIN_HEALTH_SERVICE_ENABLED` - Enable health checks (default: `true`)
 
-TLS, mTLS, and authentication settings:
-
-| Setting | Environment Variable | Type | Default | Description |
-|---------|---------------------|------|---------|-------------|
-| Auto mTLS | `PLUGIN_AUTO_MTLS` | `bool` | `true` | Enable automatic mutual TLS |
-| Server Certificate | `PLUGIN_SERVER_CERT` | `str` | `None` | Server TLS certificate (PEM or file path) |
-| Server Private Key | `PLUGIN_SERVER_KEY` | `str` | `None` | Server TLS private key (PEM or file path) |
-| Client Certificate | `PLUGIN_CLIENT_CERT` | `str` | `None` | Client TLS certificate for mTLS |
-| Client Private Key | `PLUGIN_CLIENT_KEY` | `str` | `None` | Client TLS private key for mTLS |
+See **[Configuration Reference](configuration-reference.md)** for all 60+ configuration options
 
 ## Configuration Examples
 
@@ -268,9 +261,8 @@ elif os.getenv('ENVIRONMENT') == 'production':
 
 ## Related Documentation
 
-### API Integration
-- **[Configuration API Reference](../../api/config/index.md)** - Complete API documentation for programmatic configuration access, field definitions, and validation methods
-- **[Configuration Schema Reference](../../api/config/schema.md)** - Detailed schema definitions and field validation rules
+### Complete Configuration Details
+- **[Configuration Reference](configuration-reference.md)** - Complete list of all 60+ configuration options with defaults and types
 
 ### Security Configuration
 - **[Security Implementation Guide](../security/index.md)** - Security-focused configuration patterns including mTLS, certificates, and magic cookies
