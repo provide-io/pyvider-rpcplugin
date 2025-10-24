@@ -293,6 +293,7 @@ nav:
     
     - Advanced Topics:
       - guide/advanced/index.md
+      - Type System: guide/advanced/type-system.md
       - Custom Protocols: guide/advanced/custom-protocols.md
       - Performance Tuning: guide/advanced/performance.md
       - Telemetry & Observability: guide/advanced/telemetry.md
