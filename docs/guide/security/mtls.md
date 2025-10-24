@@ -42,9 +42,12 @@ For production environments with existing PKI:
 ```python
 from provide.foundation.crypto import Certificate
 
-# Load certificates via Foundation
-server_cert = Certificate.load_from_file("server.pem", "server.key")
-ca_cert = Certificate.load_from_file("ca.pem")
+# Load certificates via Foundation using file:// URIs or PEM strings
+server_cert = Certificate.from_pem(
+    cert_pem="file://server.pem",
+    key_pem="file://server.key"
+)
+ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
 
 # Server with manual certificates
 server = plugin_server(
@@ -56,7 +59,10 @@ server = plugin_server(
 )
 
 # Client with certificates
-client_cert = Certificate.load_from_file("client.pem", "client.key")
+client_cert = Certificate.from_pem(
+    cert_pem="file://client.pem",
+    key_pem="file://client.key"
+)
 
 async with plugin_client(
     tls_client_certificate=client_cert,
