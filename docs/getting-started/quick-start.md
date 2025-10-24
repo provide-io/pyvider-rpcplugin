@@ -197,6 +197,37 @@ The handshake is automatic and includes:
 - **Transport Method**: Unix sockets (Linux/macOS) or TCP (Windows)
 - **Connection Info**: How the host should connect to the plugin
 
+### 🔒 Security Defaults
+
+!!! warning "mTLS is Enabled by Default"
+    Pyvider RPC Plugin follows a **security-first design**: `PLUGIN_AUTO_MTLS` defaults to `True`, which means mutual TLS (mTLS) is **automatically enabled** for all connections.
+
+    **For local development/testing**, mTLS may fail if certificates aren't configured. You have two options:
+
+    **Option 1 - Disable mTLS for Development (Quick):**
+    ```python
+    from pyvider.rpcplugin import configure
+
+    configure(auto_mtls=False)  # Disable mTLS for local testing
+    ```
+
+    **Option 2 - Use mTLS with Auto-Generated Certificates (Recommended):**
+    ```python
+    # mTLS works automatically with self-signed certificates
+    # No configuration needed - certificates auto-generated
+    # This is the default behavior and most secure
+    ```
+
+    **For production**, keep `auto_mtls=True` (the default) and optionally provide your own certificates:
+    ```python
+    import os
+    os.environ["PLUGIN_SERVER_CERT"] = "file:///path/to/server.crt"
+    os.environ["PLUGIN_SERVER_KEY"] = "file:///path/to/server.key"
+    # mTLS enabled with your production certificates
+    ```
+
+    📖 **Learn more:** [Security Guide](../guide/security/index.md) | [mTLS Configuration](../guide/security/mtls.md)
+
 ### 🔧 Configuration
 
 Everything works with sensible defaults, but you can customize:
@@ -216,7 +247,7 @@ Now that you have the basics working:
 
 1. **[Build a Real Service](first-plugin.md)** - Create an Echo plugin with custom RPC methods
 2. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
-3. **[Security Setup](../guide/concepts/security.md)** - Enable mTLS for production
+3. **[Security Setup](../guide/concepts/security.md)** - Configure mTLS with production certificates
 4. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
 
 ### 📝 Short Examples

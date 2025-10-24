@@ -66,7 +66,7 @@ from provide.foundation import logger
 # and automatically maps them to the full config names (plugin_auto_mtls, plugin_handshake_timeout)
 configure(
     magic_cookie="my-echo-plugin",  # Sets PLUGIN_MAGIC_COOKIE_VALUE
-    auto_mtls=False,                 # Sets PLUGIN_AUTO_MTLS (enable for production)
+    auto_mtls=False,                 # Sets PLUGIN_AUTO_MTLS=False (disables mTLS for local dev; default is True)
     handshake_timeout=5.0            # Sets PLUGIN_HANDSHAKE_TIMEOUT
 )
 
