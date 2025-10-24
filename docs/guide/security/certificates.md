@@ -2,8 +2,35 @@
 
 X.509 certificate lifecycle management for secure plugin communication using Foundation's comprehensive cryptography utilities.
 
-!!! warning "Documentation Under Review"
-    This page contains several code examples that use outdated Foundation Certificate API patterns. While the Quick Start and Core Components sections have been updated to use the correct API, other sections throughout this document may still reference non-existent methods like `.load_from_file()`, `.save_certificate()`, `.not_after`, etc. Please refer to the corrected examples in the updated sections and cross-reference with [Foundation Integration](../advanced/foundation-integration.md) for accurate API usage.
+!!! warning "Documentation Under Review - Use These Sections"
+    This page is being updated to reflect the correct Foundation Certificate API. **Safe sections to use:**
+
+    ✅ **[Quick Start](#quick-start)** - Correct API for certificate generation and management
+    ✅ **[Core Components](#core-components)** - Correct patterns for generation and validation
+    ✅ **[Foundation Integration Guide](../advanced/foundation-integration.md)** - Comprehensive, production-ready examples
+
+    ⚠️ **Sections with outdated API examples** (being updated):
+    - Certificate Validation (line ~95+) - Uses non-existent `.validate_full()`
+    - Certificate Rotation (line ~109+) - Uses non-existent `CertificateRotator` class
+    - Loading Certificates (lines ~193, 210, 280) - Uses non-existent `.load_from_file()`
+    - Monitoring (line ~258+) - Uses non-existent `CertificateHealthChecker`
+    - Troubleshooting (line ~353+) - Uses non-existent `.subject`, `.not_after`
+
+    **Correct API Reference:**
+    ```python
+    # ✅ CORRECT - Load certificates
+    from provide.foundation.crypto import Certificate
+    cert = Certificate.from_pem(cert_pem="file://path.pem", key_pem="file://key.pem")
+
+    # ✅ CORRECT - Validate
+    if cert.is_valid:  # Property, not method
+        print("Valid")
+
+    # ✅ CORRECT - Save to file
+    from pathlib import Path
+    Path("cert.pem").write_text(cert.cert_pem)
+    Path("key.pem").write_text(cert.key_pem)
+    ```
 
 ## Overview
 
