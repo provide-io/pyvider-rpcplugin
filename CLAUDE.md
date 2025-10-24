@@ -2,14 +2,15 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Project Overview
+
+`pyvider-rpcplugin` is a high-performance, type-safe RPC plugin framework for Python built on gRPC. It provides the communication infrastructure layer for the pyvider ecosystem, implementing a Terraform-compatible plugin protocol with async-first design, mTLS security, and production-ready patterns.
+
 ## Development Environment Setup
 
-**IMPORTANT**: This project uses a custom environment setup script instead of standard Python venv.
-
 - Always run `uv sync` to set up the development environment
-- The environment uses `uv` for dependency management and creates virtual environments in `workenv/`
-- Do NOT use `.venv` - the project explicitly avoids this in favor of the workenv structure
-- The environment script handles Python version compatibility (requires >=3.11) and will recreate the venv if needed
+- The environment uses `uv` for dependency management
+- Python 3.11+ required
 
 ## Common Development Commands
 
@@ -32,15 +33,22 @@ uv run pytest --cov=pyvider.rpcplugin --cov-report=term-missing  # Run with cove
 ```bash
 uv run ruff check src tests   # Lint code
 uv run ruff format src tests  # Format code
-pyre check            # Type checking (primary type checker)
-uv run mypy src/             # Alternative type checker
-bandit -r src         # Security analysis
+pyre check                    # Type checking (primary type checker)
+uv run mypy src/              # Alternative type checker
+bandit -r src                 # Security analysis
 ```
 
 ### Build and Release
 ```bash
 uv sync --all-groups   # Sync all dependencies
-uv build              # Build the package
+uv build               # Build the package
+```
+
+### Documentation
+```bash
+mkdocs serve           # Serve documentation locally (port 8006)
+mkdocs build           # Build documentation
+mkdocs build --strict  # Build with strict error checking
 ```
 
 ## Architecture Overview
@@ -51,8 +59,10 @@ This is a high-performance, type-safe RPC plugin framework for Python built on g
 
 **Transport Layer** (`src/pyvider/rpcplugin/transport/`):
 - `base.py`: Abstract base class `RPCPluginTransport` defining the transport contract
-- `unix.py`: Unix Domain Socket implementation for local IPC
 - `tcp.py`: TCP socket implementation for network IPC
+- `unix/transport.py`: Unix Domain Socket implementation for local IPC
+- `unix/utils.py`: Unix socket utilities
+- `unix/__init__.py`: Unix transport module exports
 - `types.py`: Transport-related type definitions
 
 **Protocol Layer** (`src/pyvider/rpcplugin/protocol/`):
@@ -62,18 +72,31 @@ This is a high-performance, type-safe RPC plugin framework for Python built on g
 - `grpc_*_pb2_grpc.py`: Generated gRPC service stubs
 
 **Client/Server Layer**:
-- `server.py`: `RPCPluginServer` - manages gRPC server lifecycle, handshake, and transport
-- `client/base.py`: `RPCPluginClient` - manages plugin connections and subprocess lifecycle
+- `server/core.py`: `RPCPluginServer` - manages gRPC server lifecycle, handshake, and transport
+- `server/network.py`: Network configuration utilities
+- `client/core.py`: `RPCPluginClient` - manages plugin connections and subprocess lifecycle
 - `client/connection.py`: Connection management utilities
+- `client/handshake.py`: Client-side handshake implementation
+- `client/process.py`: Subprocess management
 - `client/types.py`: Client-specific type definitions
 
+**Handshake Layer** (`src/pyvider/rpcplugin/handshake/`):
+- `core.py`: Secure handshake protocol with magic cookie validation
+- `negotiation.py`: Protocol and transport version negotiation
+
+**Configuration System** (`src/pyvider/rpcplugin/config/`):
+- `configure.py`: Configuration functions and `configure()` API
+- `manager.py`: Configuration manager implementation
+- `runtime.py`: Runtime configuration and `RPCPluginConfig`
+- `validators.py`: Configuration validation logic
+
 **Core Infrastructure**:
-- `handshake.py`: Secure handshake protocol with magic cookie validation
-- `config.py`: Configuration management with `RPCPluginConfig`
 - `factories.py`: Factory functions for common patterns (`plugin_client`, `plugin_server`, etc.)
 - `exception.py`: Comprehensive exception hierarchy
 - `health_servicer.py`: gRPC health check implementation
-- `rate_limiter.py`: Token bucket rate limiting
+- `telemetry.py`: Telemetry and observability integration
+- `defaults.py`: Default configuration values
+- `types.py`: Core type definitions
 
 ### Key Design Patterns
 
@@ -93,29 +116,105 @@ The framework implements a Terraform-compatible plugin protocol:
 5. mTLS certificate exchange
 6. Service registration and RPC communication
 
+## Testing Strategy
+
+### Core Testing Requirements
+
+**CRITICAL**: When testing pyvider-rpcplugin, `provide-testkit` MUST be available and used.
+
+- **provide-testkit dependency**: Required in dev dependencies (already configured)
+- **Foundation reset**: ALWAYS use `reset_foundation_setup_for_testing()` in test fixtures
+- **Async testing**: Use `pytest-asyncio` with `asyncio_mode = "auto"`
+- **Test markers**: Use `slow` and `long_running` markers appropriately
+
+### Standard Testing Pattern
+
+```python
+import pytest
+from provide.testkit import reset_foundation_setup_for_testing
+
+@pytest.fixture(autouse=True)
+def reset_foundation():
+    """Reset Foundation state before each test."""
+    reset_foundation_setup_for_testing()
+```
+
+### Testing Infrastructure
+
+- Comprehensive test suite in `tests/` with structure mirroring `src/`
+- Tests use `pytest` with async support via `pytest-asyncio`
+- Parallel test execution with `pytest-xdist`
+- Coverage tracking with `pytest-cov`
+- Test markers:
+  - `@pytest.mark.slow` - Tests taking significant time
+  - `@pytest.mark.long_running` - Tests taking very long time
+
+## Documentation
+
+### Structure
+
+Documentation is organized using MkDocs with Material theme:
+- `docs/getting-started/` - Installation and quick start guides
+- `docs/guide/` - Comprehensive guides (concepts, server, client, security, config, advanced)
+- `docs/examples/` - Example documentation
+- `docs/reference/` - API reference (auto-generated)
+- `docs/development/` - Contributing, architecture, testing, CI/CD
+
+### Building Documentation
+
+```bash
+# Serve documentation locally
+mkdocs serve
+
+# Build documentation
+mkdocs build
+
+# Build in strict mode (fails on warnings)
+mkdocs build --strict
+```
+
 ## Development Guidelines
 
 ### Type Annotations
 - Use modern Python 3.11+ type syntax: `dict`, `list`, `set` (lowercase)
 - Use union operator `|` instead of `Union`
-- No `__future__` imports needed
+- Use `from __future__ import annotations` for unquoted types (already used in 8+ files)
 - Comprehensive type annotations required (enforced by mypy/pyre)
 
 ### Code Style
-- Ruff formatting with 88-character line length
+- Ruff formatting with 111-character line length
 - No generated protobuf files in linting (`**/*pb2*.py` excluded)
 - Pre-commit hooks enforce code quality
+- Target version: Python 3.11
+
+### Imports
+- Never use relative imports. Only absolute imports always.
+- Import from `pyvider.rpcplugin.*` namespace
+- Example: `from pyvider.rpcplugin.client.core import RPCPluginClient`
+
+### Logging
+- Always use `provide.foundation.logger` - never use `print()` when debugging
+- Import with: `from provide.foundation import logger`
+- Library logs to stderr only
+- Example: `logger.debug("Internal state changed", state=new_state)`
 
 ### Testing
 - Comprehensive test suite in `tests/` with transport-specific subdirectories
 - Async test support with `pytest-asyncio`
 - Coverage reporting configured
 - Markers for `slow` and `long_running` tests
+- Use `provide-testkit` for Foundation integration
 
 ### Security
 - Bandit security analysis on `src/` directory
 - Pre-commit safety checks for dependencies
 - No hardcoded secrets or credentials
-- If it makes sense to be more specific for an exception, then implement that across the tests and the code.
-- never use relative imports. only absolute imports always.
-- never use print when debugging. always use the logger.
+- If it makes sense to be more specific for an exception, implement that across the tests and the code
+
+## Common Issues & Solutions
+
+1. **ModuleNotFoundError for dependencies**: Ensure dependencies are installed with `uv sync`
+2. **Import errors**: Ensure PYTHONPATH includes `src/` (automatically configured in pytest via `pythonpath = ["src"]` in pyproject.toml)
+3. **Type checking with generated protobuf files**: Already excluded in mypy/pyre configuration
+4. **Async event loop conflicts**: Use `pytest-asyncio` fixtures and `asyncio_mode = "auto"`
+5. **Foundation setup issues**: Use `reset_foundation_setup_for_testing()` in test fixtures
