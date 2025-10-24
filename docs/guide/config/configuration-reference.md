@@ -2,6 +2,15 @@
 
 This page provides a comprehensive reference for all configuration options available in `pyvider.rpcplugin`. The framework uses Foundation's configuration system with support for environment variables, type conversion, and validation.
 
+!!! info "Source of Truth"
+    All default values are defined in `src/pyvider/rpcplugin/defaults.py`. If you notice any discrepancies between this documentation and the actual defaults, the code is authoritative. You can verify defaults programmatically:
+
+    ```python
+    from pyvider.rpcplugin import defaults
+    print(f"Server host: {defaults.DEFAULT_PLUGIN_SERVER_HOST}")
+    print(f"Auto mTLS: {defaults.DEFAULT_PLUGIN_AUTO_MTLS}")
+    ```
+
 ## Configuration System Overview
 
 The configuration system is based on the `RPCPluginConfig` class which extends Foundation's `RuntimeConfig`. All settings can be configured through:
