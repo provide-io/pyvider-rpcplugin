@@ -299,7 +299,9 @@ nav:
       - Telemetry & Observability: guide/advanced/telemetry.md
       - Middleware: guide/advanced/middleware.md
       - Plugin Lifecycle: guide/advanced/lifecycle.md
-  
+
+    - Best Practices: guide/best-practices.md
+
   - API Reference:
     - reference/
   

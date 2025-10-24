@@ -684,4 +684,4 @@ Logging performance characteristics:
 - **[Production Setup](production.md)** - Complete production deployment configuration
 - **[Environment Variables](environment.md)** - All configuration options reference
 - **[Rate Limiting](rate-limiting.md)** - Request rate limiting configuration
-- **[Configuration API](../../api/config/index.md)** - Programmatic configuration reference
+- **[Configuration Reference](configuration-reference.md)** - Complete configuration options
