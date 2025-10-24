@@ -73,11 +73,14 @@ print("Foundation integration verified!")
 Pyvider RPC Plugin automatically installs these key dependencies:
 
 ### Core Dependencies
-- **provide.foundation** - Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting
+- **provide-foundation** - Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting
 - **grpcio** - gRPC runtime for Python
-- **grpcio-tools** - Protocol Buffer compiler and tools
-- **attrs** - Modern Python data classes
-- **cryptography** - Additional cryptographic utilities
+- **grpcio-health-checking** - gRPC health checking implementation
+- **protobuf** - Protocol Buffers runtime and serialization
+- **attrs** - Modern Python data classes with excellent typing support
+- **cryptography** - Cryptographic primitives and utilities
+- **structlog** - Structured logging library
+- **google** - Google API core libraries
 
 ### Foundation Integration
 
@@ -111,9 +114,18 @@ While Pyvider RPC Plugin focuses on:
 For development and testing:
 
 ```bash
-# Install with development dependencies
+# Install with test dependencies (includes grpcio-tools for protobuf compilation)
+pip install pyvider-rpcplugin[test]
+
+# Install with full development dependencies
 pip install pyvider-rpcplugin[dev]
 ```
+
+Test dependencies include:
+- **grpcio-tools** - Protocol Buffer compiler and gRPC tools
+- **grpc-stubs** - Type stubs for gRPC
+- **types-grpcio** - Type hints for grpcio
+- **types-protobuf** - Type hints for protobuf
 
 For documentation building:
 
