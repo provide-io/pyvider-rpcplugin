@@ -54,7 +54,8 @@
       "Bash(pyrefly check:*)",
       "Bash(pyrefly:*)",
       "Bash(mkdocs build)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": [],
