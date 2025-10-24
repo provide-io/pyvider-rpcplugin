@@ -64,72 +64,71 @@ logger.info(f"RPC timeout: {rpcplugin_config.plugin_handshake_timeout}")
 Use Foundation's crypto module for dynamic certificate generation:
 
 ```python
-import datetime
 from pathlib import Path
-from provide.foundation.crypto import (
-    Certificate,
-    PrivateKey,
-    generate_self_signed_certificate
-)
+from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.transport import TCPSocketTransport
 
 class CertificateManager:
     """Manages certificates using Foundation's crypto utilities."""
-    
+
     def __init__(self, cert_dir: Path):
         self.cert_dir = cert_dir
         self.cert_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Certificate manager initialized: {cert_dir}")
-    
-    async def ensure_certificates(self) -> tuple[Certificate, PrivateKey]:
+
+    async def ensure_certificates(self) -> Certificate:
         """Ensure valid certificates exist, generating if needed."""
         cert_path = self.cert_dir / "server.crt"
         key_path = self.cert_dir / "server.key"
-        
+
         # Check existing certificates
         if cert_path.exists() and key_path.exists():
             try:
-                cert = Certificate.load_from_file(str(cert_path))
-                key = PrivateKey.load_from_file(str(key_path))
-                
-                # Validate certificate expiry
-                if cert.not_after > datetime.datetime.now():
+                # Load certificate and key from PEM files using file:// URIs
+                cert = Certificate.from_pem(
+                    cert_pem=f"file://{cert_path}",
+                    key_pem=f"file://{key_path}"
+                )
+
+                # Validate certificate
+                if cert.is_valid:
                     logger.info("Using existing valid certificates")
-                    return cert, key
+                    return cert
                 else:
-                    logger.warning("Certificate expired, regenerating")
+                    logger.warning("Certificate invalid, regenerating")
             except Exception as e:
                 logger.warning(f"Error loading certificates: {e}, regenerating")
-        
-        # Generate new certificates
-        logger.info("Generating new self-signed certificates")
-        cert, key = generate_self_signed_certificate(
+
+        # Generate new self-signed certificate
+        logger.info("Generating new self-signed certificate")
+        cert = Certificate.create_self_signed_server_cert(
             common_name="plugin.local",
-            organization="Pyvider RPC Plugin",
+            organization_name="Pyvider RPC Plugin",
             validity_days=365,
-            key_size=2048
+            key_type="ecdsa",  # or "rsa"
+            ecdsa_curve="secp384r1"  # default curve for ECDSA
         )
-        
-        # Save to disk
-        cert.save_to_file(str(cert_path))
-        key.save_to_file(str(key_path))
-        logger.info("New certificates generated and saved")
-        
-        return cert, key
+
+        # Save certificate and key to disk
+        cert_path.write_text(cert.cert_pem)
+        key_path.write_text(cert.key_pem)
+        logger.info("New certificate and key generated and saved")
+
+        return cert
 
 # Usage in plugin server
 async def create_secure_server():
     cert_manager = CertificateManager(Path("/etc/plugin/certs"))
-    cert, key = await cert_manager.ensure_certificates()
-    
+    cert = await cert_manager.ensure_certificates()
+
     # Create secure transport with Foundation-managed certificates
     transport = TCPSocketTransport(
         host="0.0.0.0",
         port=8443
     )
-    
+
     return plugin_server(
         protocol=plugin_protocol(),
         handler=SecureHandler(),
@@ -143,55 +142,55 @@ Implement certificate rotation with Foundation:
 
 ```python
 import asyncio
-import signal
-from datetime import datetime, timedelta
-from provide.foundation.crypto import Certificate, PrivateKey
+from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
 class CertificateRotator:
     """Handles automatic certificate rotation using Foundation."""
-    
+
     def __init__(self, cert_manager: CertificateManager, server):
         self.cert_manager = cert_manager
         self.server = server
         self.rotation_task = None
-        
+
     async def start_rotation(self, check_interval: int = 3600):
         """Start automatic certificate rotation."""
         self.rotation_task = asyncio.create_task(
             self._rotation_loop(check_interval)
         )
         logger.info(f"Certificate rotation started (interval: {check_interval}s)")
-    
+
     async def _rotation_loop(self, interval: int):
         """Check and rotate certificates periodically."""
         while True:
             try:
                 await asyncio.sleep(interval)
-                
-                cert, key = await self.cert_manager.ensure_certificates()
-                days_until_expiry = (cert.not_after - datetime.now()).days
-                
-                if days_until_expiry < 30:
-                    logger.warning(f"Certificate expires in {days_until_expiry} days, rotating")
+
+                cert = await self.cert_manager.ensure_certificates()
+
+                # Check if certificate needs rotation (validity check)
+                if not cert.is_valid:
+                    logger.warning("Certificate is invalid, rotating")
                     await self._rotate_certificates()
                 else:
-                    logger.debug(f"Certificate valid for {days_until_expiry} more days")
-                    
+                    # Note: Certificate class doesn't expose expiry dates directly
+                    # Use is_valid for validity checks or implement custom expiry tracking
+                    logger.debug("Certificate is valid")
+
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Certificate rotation error: {e}", exc_info=True)
-    
+
     async def _rotate_certificates(self):
         """Perform certificate rotation with zero downtime."""
-        # Generate new certificates
-        new_cert, new_key = await self.cert_manager.ensure_certificates()
-        
-        # Update server with new certificates (implementation depends on transport)
-        await self.server.update_certificates(new_cert, new_key)
-        
-        logger.info("Certificates rotated successfully")
+        # Generate new certificate (contains both cert and key)
+        new_cert = await self.cert_manager.ensure_certificates()
+
+        # Update server with new certificate (implementation depends on transport)
+        await self.server.update_certificates(new_cert)
+
+        logger.info("Certificate rotated successfully")
 ```
 
 ## Advanced Rate Limiting
