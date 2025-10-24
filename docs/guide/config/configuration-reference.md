@@ -18,6 +18,13 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 |---------|---------------------|------|---------|-------------|
 | `plugin_client_max_retries` | `PLUGIN_CLIENT_MAX_RETRIES` | `int` | `3` | Maximum number of connection retry attempts |
 | `plugin_client_retry_enabled` | `PLUGIN_CLIENT_RETRY_ENABLED` | `bool` | `True` | Enable automatic retry on connection failure |
+| `plugin_client_retry_delay` | `PLUGIN_CLIENT_RETRY_DELAY` | `float` | `1.0` | Initial retry delay (seconds) |
+| `plugin_client_backoff_multiplier` | `PLUGIN_CLIENT_BACKOFF_MULTIPLIER` | `float` | `2.0` | Exponential backoff multiplier |
+| `plugin_client_max_retry_delay` | `PLUGIN_CLIENT_MAX_RETRY_DELAY` | `float` | `10.0` | Maximum retry delay (seconds) |
+| `plugin_client_initial_backoff_ms` | `PLUGIN_CLIENT_INITIAL_BACKOFF_MS` | `int` | `100` | Initial backoff in milliseconds |
+| `plugin_client_max_backoff_ms` | `PLUGIN_CLIENT_MAX_BACKOFF_MS` | `int` | `5000` | Maximum backoff in milliseconds |
+| `plugin_client_retry_jitter_ms` | `PLUGIN_CLIENT_RETRY_JITTER_MS` | `int` | `50` | Retry jitter in milliseconds |
+| `plugin_client_retry_total_timeout_s` | `PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S` | `float` | `30.0` | Total timeout for all retries (seconds) |
 | `plugin_client_transports` | `PLUGIN_CLIENT_TRANSPORTS` | `list[str]` | `["unix", "tcp"]` | Ordered list of transports to try |
 | `plugin_client_subprocess_timeout` | `PLUGIN_CLIENT_SUBPROCESS_TIMEOUT` | `float` | `30.0` | Timeout for subprocess startup (seconds) |
 | `plugin_client_reattach` | `PLUGIN_CLIENT_REATTACH` | `bool` | `False` | Allow reattaching to existing plugin process |
@@ -32,14 +39,18 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | `plugin_server_port` | `PLUGIN_SERVER_PORT` | `int` | `0` | Server port (0 = dynamic allocation) |
 | `plugin_server_host` | `PLUGIN_SERVER_HOST` | `str` | `"localhost"` | Server bind address |
 | `plugin_server_transports` | `PLUGIN_SERVER_TRANSPORTS` | `list[str]` | `["unix", "tcp"]` | Available transport protocols |
+| `plugin_server_unix_socket_path` | `PLUGIN_SERVER_UNIX_SOCKET_PATH` | `str` | `"/tmp/plugin.sock"` | Unix socket path for server |
+| `plugin_shutdown_file_path` | `PLUGIN_SHUTDOWN_FILE_PATH` | `str` | `""` | File path for shutdown signal |
 | `plugin_test_mode` | `PLUGIN_TEST_MODE` | `bool` | `False` | Enable test mode features |
 
-### Protocol Configuration
+### Core Configuration
 
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
+| `plugin_core_version` | `PLUGIN_CORE_VERSION` | `int` | `1` | Core plugin version |
 | `plugin_protocol_versions` | `PLUGIN_PROTOCOL_VERSIONS` | `list[int]` | `[1]` | Supported protocol versions |
 | `plugin_protocol_version` | `PLUGIN_PROTOCOL_VERSION` | `int` | `1` | Active protocol version |
+| `supported_protocol_versions` | `SUPPORTED_PROTOCOL_VERSIONS` | `list[int]` | `[1, 2, 3, 4, 5, 6, 7]` | All supported protocol versions |
 
 ### Security Configuration
 
@@ -47,12 +58,18 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 |---------|---------------------|------|---------|-------------|
 | `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` | `bool` | `True` | Enable automatic mTLS setup |
 | `plugin_insecure` | `PLUGIN_INSECURE` | `bool` | `False` | Disable all security features (development only) |
-| `plugin_client_cert` | `PLUGIN_CLIENT_CERT` | `str` | `""` | Client certificate (PEM or file:// URL) |
-| `plugin_client_key` | `PLUGIN_CLIENT_KEY` | `str` | `""` | Client private key (PEM or file:// URL) |
-| `plugin_server_cert` | `PLUGIN_SERVER_CERT` | `str` | `""` | Server certificate (PEM or file:// URL) |
-| `plugin_server_key` | `PLUGIN_SERVER_KEY` | `str` | `""` | Server private key (PEM or file:// URL) |
+| `plugin_mtls_cert_dir` | `PLUGIN_MTLS_CERT_DIR` | `str` | `"/tmp/plugin-certs"` | Directory for mTLS certificates |
+| `plugin_cert_validity_days` | `PLUGIN_CERT_VALIDITY_DAYS` | `int` | `365` | Certificate validity period in days |
+| `plugin_client_cert` | `PLUGIN_CLIENT_CERT` | `str` | `None` | Client certificate (PEM or file:// URL) |
+| `plugin_client_key` | `PLUGIN_CLIENT_KEY` | `str` | `None` | Client private key (PEM or file:// URL) |
+| `plugin_client_cert_file` | `PLUGIN_CLIENT_CERT_FILE` | `str` | `""` | Client certificate file path |
+| `plugin_client_key_file` | `PLUGIN_CLIENT_KEY_FILE` | `str` | `""` | Client private key file path |
+| `plugin_client_root_certs` | `PLUGIN_CLIENT_ROOT_CERTS` | `str` | `""` | Client root certificates |
+| `plugin_server_cert` | `PLUGIN_SERVER_CERT` | `str` | `None` | Server certificate (PEM or file:// URL) |
+| `plugin_server_key` | `PLUGIN_SERVER_KEY` | `str` | `None` | Server private key (PEM or file:// URL) |
+| `plugin_server_root_certs` | `PLUGIN_SERVER_ROOT_CERTS` | `str` | `None` | Server root certificates |
 | `plugin_root_certs_pem` | `PLUGIN_ROOT_CERTS_PEM` | `str` | `""` | Root CA certificates (PEM format) |
-| `plugin_ca_cert` | `PLUGIN_CA_CERT` | `str` | `""` | CA certificate for validation |
+| `plugin_ca_cert` | `PLUGIN_CA_CERT` | `str` | `None` | CA certificate for validation |
 | `plugin_skip_verify` | `PLUGIN_SKIP_VERIFY` | `bool` | `False` | Skip certificate verification (insecure) |
 
 ### gRPC Configuration
@@ -84,14 +101,42 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 | `plugin_rate_limit_requests_per_second` | `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` | `float` | `100.0` | Request rate limit |
 | `plugin_rate_limit_burst_capacity` | `PLUGIN_RATE_LIMIT_BURST_CAPACITY` | `int` | `200` | Token bucket burst capacity |
 
-### Handshake Configuration
+### UI and Display Configuration
+
+| Setting | Environment Variable | Type | Default | Description |
+|---------|---------------------|------|---------|-------------|
+| `plugin_ui_enabled` | `PLUGIN_UI_ENABLED` | `bool` | `False` | Enable UI features |
+| `plugin_show_emoji_matrix` | `PLUGIN_SHOW_EMOJI_MATRIX` | `bool` | `False` | Show emoji matrix in output |
+
+### Timeout Configuration
 
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
 | `plugin_handshake_timeout` | `PLUGIN_HANDSHAKE_TIMEOUT` | `float` | `10.0` | Handshake timeout (seconds) |
+| `plugin_connection_timeout` | `PLUGIN_CONNECTION_TIMEOUT` | `float` | `30.0` | Connection timeout (seconds) |
+| `plugin_channel_ready_timeout` | `PLUGIN_CHANNEL_READY_TIMEOUT` | `float` | `10.0` | Channel ready timeout (seconds) |
+| `plugin_server_ready_timeout` | `PLUGIN_SERVER_READY_TIMEOUT` | `float` | `5.0` | Server ready timeout (seconds) |
+
+### Handshake Configuration
+
+| Setting | Environment Variable | Type | Default | Description |
+|---------|---------------------|------|---------|-------------|
 | `plugin_handshake_protocol_version` | `PLUGIN_HANDSHAKE_PROTOCOL_VERSION` | `int` | `1` | Handshake protocol version |
 | `plugin_magic_cookie_key` | `PLUGIN_MAGIC_COOKIE_KEY` | `str` | `"PLUGIN_MAGIC_COOKIE"` | Magic cookie environment variable name |
 | `plugin_magic_cookie_value` | `PLUGIN_MAGIC_COOKIE_VALUE` | `str` | `"test_cookie_value"` | Magic cookie value for authentication (testing only) |
+
+### Buffer Configuration
+
+| Setting | Environment Variable | Type | Default | Description |
+|---------|---------------------|------|---------|-------------|
+| `plugin_buffer_size` | `PLUGIN_BUFFER_SIZE` | `int` | `16384` | Buffer size in bytes (16KB) |
+| `plugin_chunk_size` | `PLUGIN_CHUNK_SIZE` | `int` | `8192` | Chunk size in bytes (8KB) |
+
+### Transport Configuration
+
+| Setting | Environment Variable | Type | Default | Description |
+|---------|---------------------|------|---------|-------------|
+| `plugin_supported_transports` | `PLUGIN_SUPPORTED_TRANSPORTS` | `list[str]` | `["unix", "tcp"]` | All supported transport types |
 
 ### Logging Configuration
 
