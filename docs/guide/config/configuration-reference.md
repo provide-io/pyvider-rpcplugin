@@ -59,6 +59,9 @@ The configuration system is based on the `RPCPluginConfig` class which extends F
 
 ### Security Configuration
 
+!!! info "Security by Default"
+    `PLUGIN_AUTO_MTLS` defaults to `True` for security-first design. For local development and testing, you can disable it with `configure(auto_mtls=False)` or set `PLUGIN_INSECURE=true` in your environment. For production deployments, keep mTLS enabled and provide proper certificates.
+
 | Setting | Environment Variable | Type | Default | Description |
 |---------|---------------------|------|---------|-------------|
 | `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` | `bool` | `True` | Enable automatic mTLS setup |

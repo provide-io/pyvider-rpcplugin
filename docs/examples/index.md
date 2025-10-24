@@ -378,25 +378,35 @@ Examples are organized in a flat structure with descriptive names:
 
 ```
 examples/
-├── quick_start_client.py         # Basic client launching dummy_server.py
-├── dummy_server.py                # Minimal plugin server
-├── echo_client.py                 # Echo service client
-├── echo_server.py                 # Echo service server
-├── e2e_greeter_client.py          # End-to-end greeter client
-├── e2e_greeter_server.py          # End-to-end greeter server
-├── security_mtls_example.py       # mTLS security patterns
-├── transport_options_demo.py      # Transport configuration
-├── telemetry_demo.py              # Telemetry integration
-├── async_patterns_demo.py         # Advanced async patterns
-├── error_handling_demo.py         # Error handling patterns
-├── custom_protocols_demo.py       # Custom protocol concepts
-├── performance_tuning_concepts.py # Performance optimization
-├── production_config_discussion.py # Production deployment
-├── direct_client_connection.py    # Direct connection patterns
-├── proto/                         # Protocol buffer definitions
+├── quick_start_client.py           # Basic client launching dummy_server.py
+├── dummy_server.py                  # Minimal plugin server
+├── echo_client.py                   # Echo service client
+├── echo_server.py                   # Echo service server
+├── e2e_greeter_client.py            # End-to-end greeter client
+├── e2e_greeter_server.py            # End-to-end greeter server
+├── advanced_plugin_example.py       # Advanced plugin patterns
+├── security_mtls_example.py         # mTLS security patterns
+├── transport_options_demo.py        # Transport configuration
+├── telemetry_demo.py                # Telemetry integration
+├── async_patterns_demo.py           # Advanced async patterns
+├── error_handling_demo.py           # Error handling patterns
+├── custom_protocols_demo.py         # Custom protocol concepts
+├── performance_tuning_concepts.py   # Performance optimization
+├── production_config_discussion.py  # Production deployment
+├── direct_client_connection.py      # Direct connection patterns
+├── client_setup_concepts.py         # Client setup patterns
+├── server_setup_concepts.py         # Server setup patterns
+├── short/                           # Short focused examples (15-30 lines)
+│   ├── basic_client.py              # Minimal client connection
+│   ├── basic_server.py              # Simple plugin server
+│   ├── custom_protocol.py           # Custom gRPC service
+│   ├── health_check.py              # Health monitoring
+│   ├── rate_limiting.py             # Request throttling
+│   └── tcp_transport.py             # TCP transport config
+├── proto/                           # Protocol buffer definitions
 │   ├── echo.proto
 │   └── e2e_greeting.proto
-└── README.md                      # Complete examples guide
+└── README.md                        # Complete examples guide
 ```
 
 ### Contributing Examples

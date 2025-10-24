@@ -61,7 +61,9 @@ from pyvider.rpcplugin import plugin_server, configure
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from provide.foundation import logger
 
-# Configure for your environment (simplified parameter names)
+# Configure for your environment
+# Note: configure() accepts simplified parameter names (auto_mtls, handshake_timeout, etc.)
+# and automatically maps them to the full config names (plugin_auto_mtls, plugin_handshake_timeout)
 configure(
     magic_cookie="my-echo-plugin",  # Sets PLUGIN_MAGIC_COOKIE_VALUE
     auto_mtls=False,                 # Sets PLUGIN_AUTO_MTLS (enable for production)
@@ -111,7 +113,8 @@ from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
 from provide.foundation import logger
 
-# Configure client environment (simplified parameter names)
+# Configure client environment
+# Note: configure() accepts simplified parameter names for convenience
 configure(
     magic_cookie="my-echo-plugin",  # Must match server's magic cookie
     handshake_timeout=10.0,          # Sets PLUGIN_HANDSHAKE_TIMEOUT

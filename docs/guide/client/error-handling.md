@@ -81,7 +81,7 @@ except HandshakeError as e:
         logger.error("Verify certificate paths and validity")
 ```
 
-#### `SecurityError` / `CertificateError`
+#### `SecurityError`
 **When it occurs:** Security and certificate-related issues
 
 **Common scenarios:**
@@ -91,7 +91,7 @@ except HandshakeError as e:
 - CA trust issues
 
 ```python
-from pyvider.rpcplugin.exception import CertificateError
+from pyvider.rpcplugin.exception import SecurityError
 
 try:
     configure(
@@ -99,8 +99,8 @@ try:
         server_cert="file:///path/to/cert.pem",
         server_key="file:///path/to/key.pem"
     )
-except CertificateError as e:
-    logger.error(f"🔐 Certificate error: {e.message}")
+except SecurityError as e:
+    logger.error(f"🔐 Security/Certificate error: {e.message}")
     # Check certificate validity
     # openssl x509 -in cert.pem -text -noout
 ```
@@ -446,7 +446,7 @@ def classify_error(error: Exception) -> str:
         return "authentication"
     elif isinstance(error, TransportError):
         return "connectivity"
-    elif isinstance(error, CertificateError):
+    elif isinstance(error, SecurityError):
         return "security"
     elif isinstance(error, grpc.aio.AioRpcError):
         if error.code() == grpc.StatusCode.UNAVAILABLE:
@@ -531,7 +531,7 @@ def get_user_friendly_message(error: Exception) -> str:
         elif "permission denied" in str(error).lower():
             return "Permission denied. Please check file permissions."
     
-    elif isinstance(error, CertificateError):
+    elif isinstance(error, SecurityError):
         return "Security certificate error. Please check SSL/TLS configuration."
     
     elif isinstance(error, grpc.aio.AioRpcError):

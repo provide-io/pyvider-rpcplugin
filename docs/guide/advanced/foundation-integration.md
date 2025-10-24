@@ -67,13 +67,13 @@ Use Foundation's crypto module for dynamic certificate generation:
 import datetime
 from pathlib import Path
 from provide.foundation.crypto import (
-    Certificate, 
-    PrivateKey, 
+    Certificate,
+    PrivateKey,
     generate_self_signed_certificate
 )
 from provide.foundation import logger
 from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.transport import TCPTransport
+from pyvider.rpcplugin.transport import TCPSocketTransport
 
 class CertificateManager:
     """Manages certificates using Foundation's crypto utilities."""
@@ -125,12 +125,9 @@ async def create_secure_server():
     cert, key = await cert_manager.ensure_certificates()
     
     # Create secure transport with Foundation-managed certificates
-    transport = TCPTransport(
+    transport = TCPSocketTransport(
         host="0.0.0.0",
-        port=8443,
-        server_cert=cert,
-        server_key=key,
-        require_client_cert=True
+        port=8443
     )
     
     return plugin_server(
