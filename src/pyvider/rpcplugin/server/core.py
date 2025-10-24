@@ -49,7 +49,49 @@ _TransportT = TypeVar("_TransportT", bound=RPCPluginTransportType)
 
 
 class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
+    """
+    gRPC server interceptor for request rate limiting.
+
+    This interceptor uses a token bucket algorithm to limit the rate of incoming
+    requests. When the rate limit is exceeded, requests are rejected with a
+    RESOURCE_EXHAUSTED status code.
+
+    The interceptor integrates with Foundation's TokenBucketRateLimiter to provide
+    configurable rate limiting with burst capacity support.
+
+    Attributes:
+        _limiter: Token bucket rate limiter instance
+
+    Example:
+        ```python
+        from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+
+        # Create rate limiter: 100 requests per second, burst of 200
+        limiter = TokenBucketRateLimiter(
+            tokens_per_second=100,
+            bucket_size=200
+        )
+
+        # Add interceptor to server
+        interceptor = RateLimitingInterceptor(limiter)
+        server = grpc.aio.Server(interceptors=[interceptor])
+        ```
+
+    Note:
+        The rate limiter is shared across all requests to the server.
+        For per-method or per-client rate limiting, implement a custom
+        interceptor with multiple limiters.
+    """
+
     def __init__(self, limiter: TokenBucketRateLimiter) -> None:
+        """
+        Initialize the rate limiting interceptor.
+
+        Args:
+            limiter: Token bucket rate limiter to use for request throttling.
+                     Controls both the sustained rate (tokens per second) and
+                     burst capacity (bucket size).
+        """
         self._limiter = limiter
 
     async def intercept_service(
@@ -57,6 +99,26 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
         continuation: Callable[[grpc.HandlerCallDetails], Awaitable[grpc.RpcMethodHandler[Any, Any]]],
         handler_call_details: grpc.HandlerCallDetails,
     ) -> grpc.RpcMethodHandler[Any, Any]:
+        """
+        Intercept incoming RPC calls for rate limiting.
+
+        This method is called for each incoming RPC request. It checks if the
+        request can proceed based on the rate limiter's token availability.
+        If tokens are available, the request continues; otherwise, it's rejected.
+
+        Args:
+            continuation: Callable to continue processing the request if allowed.
+            handler_call_details: Details about the incoming RPC call, including
+                                the method name and invocation metadata.
+
+        Returns:
+            The RPC method handler if the request is allowed.
+
+        Raises:
+            grpc.aio.AbortError: With RESOURCE_EXHAUSTED status when rate limit
+                                is exceeded. Clients should implement exponential
+                                backoff when receiving this error.
+        """
         if not await self._limiter.is_allowed():
             raise grpc.aio.AbortError(grpc.StatusCode.RESOURCE_EXHAUSTED, "Rate limit exceeded.")
         return await continuation(handler_call_details)
