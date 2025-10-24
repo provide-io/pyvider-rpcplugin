@@ -253,5 +253,5 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 
 ## Examples and Learning Path
 
-- **[Echo Service Example](../../examples/echo-service.md)** - Transport usage in a complete working service
+- **[Echo Service Examples](../../examples/echo-basic.md)** - Transport usage in complete working service examples
 - **[Basic Server Example](../../examples/short/basic-server.md)** - Simple transport configuration examples

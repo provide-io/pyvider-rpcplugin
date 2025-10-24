@@ -331,44 +331,25 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Future Improvements
+## Additional Resources
 
-### Secure Plugin with mTLS
+For more advanced patterns and production use cases:
 
-A secure plugin implementation with mutual TLS authentication would include:
-
-- Certificate generation and management utilities
-- Automatic certificate rotation and validation  
-- Client and server certificate authentication
-- Encrypted gRPC communication channels
-- Certificate-based authorization policies
-
-This would require implementing:
-- `pyvider.rpcplugin.crypto.Certificate` - Certificate management utilities
-- mTLS configuration options in RPCPluginConfig
-- Certificate validation and rotation logic
-- Integration with PKI infrastructure
-
-### Other Future Examples
-
-Additional examples that would be valuable:
-
-- **Database Plugin**: Persistent state management and connection pooling
-- **Streaming Plugin**: Bi-directional streaming with flow control  
-- **Batch Processing Plugin**: High-throughput data processing patterns
-- **Multi-Service Plugin**: Single plugin exposing multiple gRPC services
+- **[Security Guide](../guide/security/index.md)** - Complete mTLS setup and security patterns
+- **[Advanced Topics](../guide/advanced/index.md)** - Performance tuning, custom protocols, telemetry
+- **[Production Configuration](../guide/config/production.md)** - Deployment best practices
+- **[Server Guide](../guide/server/index.md)** - Server-side patterns and optimization
+- **[Client Guide](../guide/client/index.md)** - Client-side patterns and error handling
 
 ## More Examples
 
 ### Available Examples
 
-The following additional examples are available in the repository:
+The `examples/` directory contains additional working examples:
 
-- **[Echo Service](echo-service.md)** - Complete RPC service with streaming patterns
-- **[Database Plugin](database-plugin.md)** - Production database integration patterns  
-- **[File Transfer](file-transfer.md)** - Streaming file transfer implementation
-- **[Microservice Gateway](microservice-gateway.md)** - Service composition and routing
-- **[Production Setup](production.md)** - Complete production deployment guide
+- **[Echo Service Examples](echo-basic.md)** - Complete RPC service with streaming patterns (basic, intermediate, and advanced)
+- **[Production Examples](production/index.md)** - Production deployment patterns
+- **Short Examples** (see navigation menu) - Focused 15-30 line examples for specific features
 
 ### Running Examples
 
@@ -380,39 +361,46 @@ git clone https://github.com/provide-io/pyvider-rpcplugin.git
 cd pyvider-rpcplugin
 
 # Install dependencies
-pip install -e .
+uv sync
 
-# Run basic example
-python examples/basic/basic_client.py
+# Run quick start example
+python examples/quick_start_client.py
 
-# Run echo service example  
-python examples/echo/echo_client.py
+# Run echo service example
+python examples/echo_client.py
 
-# Run secure example
-python examples/security/secure_client.py
+# Run secure mTLS example
+python examples/security_mtls_example.py
+
+# Run telemetry demo
+python examples/telemetry_demo.py
 ```
 
 ### Example Structure
 
-Each example follows a consistent structure:
+Examples are organized in a flat structure with descriptive names:
 
 ```
 examples/
-├── basic/
-│   ├── basic_client.py      # Host application
-│   ├── basic_plugin.py      # Plugin server
-│   └── README.md            # Example documentation
-├── echo/
-│   ├── echo.proto           # Protocol definition
-│   ├── echo_pb2.py          # Generated messages
-│   ├── echo_pb2_grpc.py     # Generated services
-│   ├── echo_client.py       # Host application
-│   ├── echo_server.py       # Plugin server
-│   └── README.md            # Example documentation
-└── security/
-    ├── secure_client.py     # Secure host application
-    ├── secure_server.py     # Secure plugin server
-    └── README.md            # Security example docs
+├── quick_start_client.py         # Basic client launching dummy_server.py
+├── dummy_server.py                # Minimal plugin server
+├── echo_client.py                 # Echo service client
+├── echo_server.py                 # Echo service server
+├── e2e_greeter_client.py          # End-to-end greeter client
+├── e2e_greeter_server.py          # End-to-end greeter server
+├── security_mtls_example.py       # mTLS security patterns
+├── transport_options_demo.py      # Transport configuration
+├── telemetry_demo.py              # Telemetry integration
+├── async_patterns_demo.py         # Advanced async patterns
+├── error_handling_demo.py         # Error handling patterns
+├── custom_protocols_demo.py       # Custom protocol concepts
+├── performance_tuning_concepts.py # Performance optimization
+├── production_config_discussion.py # Production deployment
+├── direct_client_connection.py    # Direct connection patterns
+├── proto/                         # Protocol buffer definitions
+│   ├── echo.proto
+│   └── e2e_greeting.proto
+└── README.md                      # Complete examples guide
 ```
 
 ### Contributing Examples

@@ -61,11 +61,11 @@ from pyvider.rpcplugin import plugin_server, configure
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from provide.foundation import logger
 
-# Configure for your environment
+# Configure for your environment (simplified parameter names)
 configure(
-    magic_cookie="my-echo-plugin",
-    auto_mtls=False,  # Enable for production
-    handshake_timeout=5.0
+    magic_cookie="my-echo-plugin",  # Sets PLUGIN_MAGIC_COOKIE_VALUE
+    auto_mtls=False,                 # Sets PLUGIN_AUTO_MTLS (enable for production)
+    handshake_timeout=5.0            # Sets PLUGIN_HANDSHAKE_TIMEOUT
 )
 
 class EchoService:
@@ -111,11 +111,10 @@ from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
 from provide.foundation import logger
 
-# Configure client environment
+# Configure client environment (simplified parameter names)
 configure(
-    magic_cookie="my-echo-plugin",
-    handshake_timeout=10.0,
-    connection_timeout=5.0
+    magic_cookie="my-echo-plugin",  # Must match server's magic cookie
+    handshake_timeout=10.0,          # Sets PLUGIN_HANDSHAKE_TIMEOUT
 )
 
 async def main() -> None:
