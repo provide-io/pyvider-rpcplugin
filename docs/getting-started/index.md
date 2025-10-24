@@ -92,7 +92,7 @@ By the end of this guide, you'll be able to:
 **Next Steps After Completion:**
 - **[Security Guide](../guide/security/index.md)** - mTLS, certificates, and authentication patterns
 - **[Production Configuration](../guide/config/production.md)** - Environment-driven configuration for deployment
-- **[API Reference](../api/index.md)** - Complete method documentation and advanced usage
+- **[API Reference](../reference/index.md)** - Complete method documentation and advanced usage
 
 ## Support & Troubleshooting
 
@@ -103,7 +103,7 @@ By the end of this guide, you'll be able to:
 
 **Resources:**
 - 📚 **[User Guide](../guide/index.md)** - Comprehensive concepts and advanced features
-- 🔍 **[API Reference](../api/index.md)** - Complete method documentation with examples
+- 🔍 **[API Reference](../reference/index.md)** - Complete method documentation with examples
 - 💻 **[Working Examples](../examples/index.md)** - Production patterns and real-world implementations
 - 🐛 **[GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)** - Bug reports and feature requests
 

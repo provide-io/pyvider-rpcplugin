@@ -54,7 +54,7 @@ config.validate()
 
 # Access both custom and inherited Foundation config
 logger.info(f"Service: {config.service_name}")
-logger.info(f"RPC timeout: {rpcplugin_config.handshake_timeout()}")
+logger.info(f"RPC timeout: {rpcplugin_config.plugin_handshake_timeout}")
 ```
 
 ## Cryptography & Certificate Management

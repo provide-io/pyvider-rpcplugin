@@ -35,7 +35,7 @@ from pyvider.rpcplugin import configure
 
 # View available transports
 from pyvider.rpcplugin.config import rpcplugin_config
-transports = rpcplugin_config.server_transports()
+transports = rpcplugin_config.plugin_server_transports
 
 # Configure transport preferences
 configure(transports=["tcp"])  # TCP only

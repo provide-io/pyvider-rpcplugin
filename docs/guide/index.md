@@ -115,7 +115,7 @@ Built-in monitoring, logging, rate limiting, and deployment patterns for enterpr
 
 ## Related Documentation
 
-- **[API Reference](../api/index.md)** - Detailed API documentation with examples
+- **[API Reference](../reference/index.md)** - Detailed API documentation with examples
 - **[Examples](../examples/index.md)** - Working code samples and tutorials  
 - **[Development](../development/index.md)** - Contributing, testing, and architecture
 - **[Getting Started](../getting-started/index.md)** - Quick setup and first steps

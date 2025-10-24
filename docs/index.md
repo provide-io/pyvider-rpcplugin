@@ -201,7 +201,7 @@ graph TB
     
     Complete API documentation with examples and code snippets
     
-    [:octicons-arrow-right-24: API Reference](api/index.md)
+    [:octicons-arrow-right-24: API Reference](reference/index.md)
 
 -   :material-code-braces: **Examples**
 

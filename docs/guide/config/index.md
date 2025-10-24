@@ -54,10 +54,10 @@ All configuration uses the `PLUGIN_` prefix and follows a consistent naming conv
 from pyvider.rpcplugin.config import rpcplugin_config
 
 # Access any configuration value with automatic type conversion
-protocol_version: int = rpcplugin_config.protocol_version()
-transports: list[str] = rpcplugin_config.server_transports()
-mtls_enabled: bool = rpcplugin_config.auto_mtls_enabled()
-handshake_timeout: float = rpcplugin_config.handshake_timeout()
+protocol_version: int = rpcplugin_config.plugin_protocol_version
+transports: list[str] = rpcplugin_config.plugin_server_transports
+mtls_enabled: bool = rpcplugin_config.plugin_auto_mtls
+handshake_timeout: float = rpcplugin_config.plugin_handshake_timeout
 ```
 
 ### Programmatic Configuration

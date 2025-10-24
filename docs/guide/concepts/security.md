@@ -32,8 +32,8 @@ A simple but effective first line of defense:
 # Magic cookie is automatically configured
 from pyvider.rpcplugin.config import rpcplugin_config
 
-cookie_key = rpcplugin_config.magic_cookie_key()      # "PLUGIN_MAGIC_COOKIE"
-cookie_value = rpcplugin_config.magic_cookie_value()  # "secure-random-value"
+cookie_key = rpcplugin_config.plugin_magic_cookie_key      # "PLUGIN_MAGIC_COOKIE"
+cookie_value = rpcplugin_config.plugin_magic_cookie_value  # "secure-random-value"
 ```
 
 ### 🔐 Mutual TLS (mTLS)
