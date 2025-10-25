@@ -257,4 +257,4 @@ graph TB
 
 [**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture.md){ .md-button }
 
-**Foundation Users:** See [Foundation Integration Patterns](guide/config/index.md#foundation-integration) for seamless ecosystem integration.
+**Foundation Users:** See [Foundation Integration](introduction/foundation.md) for seamless ecosystem integration.
