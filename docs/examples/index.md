@@ -430,7 +430,7 @@ examples/
 ├── run_all_examples.py              # Script to run all examples
 ├── proto/                           # Protocol Buffer definitions
 │   ├── echo.proto                   # Echo service definition
-│   └── greeter.proto                # Greeter service definition
+│   └── e2e_greeting.proto           # End-to-end greeter service definition
 └── short/                           # Short focused examples (15-30 lines)
     ├── basic_client.py              # Minimal client connection
     ├── basic_server.py              # Minimal server setup

@@ -1,197 +1,68 @@
-# Introduction to Pyvider RPC Plugin
+# Introduction
 
-**Path:** [Home](../index.md) → Introduction
+Welcome to the Pyvider RPC Plugin framework! This section provides an overview of the system architecture and its relationship with the Foundation infrastructure library.
 
 ## What is Pyvider RPC Plugin?
 
-Pyvider RPC Plugin is an enterprise-grade RPC framework for building plugin systems in Python. It enables you to create high-performance, type-safe plugin architectures where plugins run as separate processes and communicate via gRPC.
+**Pyvider RPC Plugin** is a high-performance, type-safe RPC plugin framework for Python built on gRPC. It provides the communication infrastructure layer for the pyvider ecosystem, implementing a Terraform-compatible plugin protocol with:
 
-## Key Concepts
+- **Async-first design** - Built on Python's `asyncio` for maximum concurrency
+- **Security by default** - Automatic mTLS with certificate management
+- **Flexible transports** - Unix domain sockets and TCP with auto-negotiation
+- **Production-ready** - Health checks, rate limiting, and comprehensive error handling
+- **Type safety** - Modern Python 3.11+ type annotations throughout
 
-### Plugin Architecture
+## Foundation Integration
 
-In a plugin system:
-- **Host Application**: Your main program that orchestrates plugins
-- **Plugins**: Separate processes that provide specific functionality
-- **RPC Communication**: Type-safe, high-performance communication between host and plugins
+Pyvider RPC Plugin is built on **Foundation** (`provide.foundation`), a comprehensive infrastructure library that provides:
 
-```
-┌──────────────────┐         RPC          ┌──────────────────┐
-│                  │◄──────────────────────►│                  │
-│  Host Application│                        │     Plugin 1     │
-│                  │◄──────────────────────►│                  │
-└──────────────────┘         RPC          └──────────────────┘
-         │                                           
-         │                  RPC          ┌──────────────────┐
-         └──────────────────────────────►│     Plugin 2     │
-                                         └──────────────────┘
-```
+- **Configuration system** - Type-safe, environment-driven configuration
+- **Structured logging** - Consistent logging across all components
+- **Cryptography** - X.509 certificate management for mTLS
+- **Rate limiting** - Token bucket algorithm implementation
+- **Utilities** - Common patterns and helper functions
 
-### Why Use Plugins?
+This architecture separates concerns:
 
-**Process Isolation**: Plugins run in separate processes, preventing crashes from affecting the host
+- **Foundation** = Infrastructure layer (config, logging, crypto)
+- **Pyvider RPC Plugin** = RPC framework (gRPC, transports, protocols)
+- **Your Plugin** = Business logic
 
-**Language Flexibility**: Write plugins in any language that supports gRPC
+## Documentation Sections
 
-**Hot Reloading**: Update plugins without restarting the host application
+### [Foundation Overview](foundation.md)
 
-**Security**: Plugins can run with different permissions than the host
+Detailed explanation of how Foundation and Pyvider RPC Plugin work together, including:
 
-**Scalability**: Distribute plugins across machines for horizontal scaling
+- The architecture stack and separation of concerns
+- What Foundation provides vs. what Pyvider adds
+- Practical benefits of the integrated approach
+- When to use Foundation directly
 
-## Core Features
+**Read this to understand** the infrastructure foundation that powers the framework.
 
-### 🚀 Performance
-- **Async-native**: Built on asyncio for maximum concurrency
-- **Efficient Transports**: Unix domain sockets for local, TCP for network
-- **Protocol Buffers**: Binary serialization for speed and size
+## Getting Started
 
-### 🔒 Security
-- **mTLS Support**: Mutual TLS authentication built-in
-- **Process Isolation**: Plugins can't crash the host
-- **Magic Cookies**: Handshake authentication for trusted connections
+After understanding the architecture:
 
-### 🛠️ Developer Experience
-- **Type Safety**: Full type hints and IDE support
-- **Foundation Integration**: Enterprise infrastructure included
-- **Simple API**: `plugin_server()` and `plugin_client()` functions
+1. **[Installation](../getting-started/installation.md)** - Set up your development environment
+2. **[Quick Start](../getting-started/quick-start.md)** - Create your first plugin in 5 minutes
+3. **[User Guide](../guide/index.md)** - Comprehensive framework documentation
 
-### 🏗️ Production Ready
-- **Health Checks**: gRPC health checking protocol
-- **Rate Limiting**: Token bucket rate limiting
-- **Structured Logging**: Foundation's logging system
-- **Configuration**: Environment-based configuration
+## Why This Architecture?
 
-## How It Works
+The Foundation + Pyvider approach provides several key benefits:
 
-### 1. Define Your Service
-
-Create a Protocol Buffer definition:
-
-```protobuf
-service MyService {
-    rpc ProcessData(Request) returns (Response);
-}
-```
-
-### 2. Implement the Server
-
-```python
-from pyvider.rpcplugin import plugin_server
-
-class MyHandler:
-    async def ProcessData(self, request, context):
-        # Your business logic
-        return Response(result="processed")
-
-server = plugin_server(
-    protocol=MyProtocol(),
-    handler=MyHandler()
-)
-await server.serve()
-```
-
-### 3. Connect from Client
-
-```python
-from pyvider.rpcplugin import plugin_client
-
-# Client automatically launches and manages plugin
-async with plugin_client(command=["python", "plugin.py"]) as client:
-    response = await client.ProcessData(request)
-```
-
-## Foundation Infrastructure
-
-Pyvider RPC Plugin is built on [Foundation](foundation.md), which provides:
-
-- **Configuration Management**: Type-safe, validated configuration
-- **Structured Logging**: Consistent logging across all components
-- **Cryptography**: Certificate management for mTLS
-- **Rate Limiting**: Protect services from overload
-- **Error Handling**: Consistent error patterns
-
-This means you get enterprise-grade infrastructure automatically, without additional dependencies or configuration.
-
-## Use Cases
-
-### Microservices
-Build service-oriented architectures with independent, scalable services.
-
-### Data Processing Pipelines
-Create modular data processing with specialized plugins for each stage.
-
-### Extension Systems
-Add plugin support to existing applications without major refactoring.
-
-### Multi-Language Systems
-Combine Python host applications with plugins written in Go, Rust, or other languages.
-
-### Security-Sensitive Applications
-Isolate untrusted code in separate processes with limited permissions.
-
-## Comparison with Alternatives
-
-| Feature | Pyvider RPC Plugin | REST APIs | Direct Import | Subprocess |
-|---------|-------------------|-----------|---------------|------------|
-| Type Safety | ✅ Full | ⚠️ Limited | ✅ Full | ❌ None |
-| Performance | ✅ High | ⚠️ Medium | ✅ Highest | ⚠️ Medium |
-| Process Isolation | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes |
-| Cross-Language | ✅ Yes | ✅ Yes | ❌ No | ⚠️ Limited |
-| Hot Reload | ✅ Yes | ✅ Yes | ❌ No | ✅ Yes |
-| Complexity | ⚠️ Medium | ⚠️ Medium | ✅ Low | ❌ High |
-
-## Learning Path
-
-1. **[Foundation Overview](foundation.md)** - Understand the infrastructure layer
-2. **[Architecture](../development/architecture.md)** - Learn the system design
-3. **[Getting Started](../getting-started/index.md)** - Build your first plugin
-4. **[User Guide](../guide/index.md)** - Deep dive into features
-5. **[API Reference](../reference/index.md)** - Detailed documentation
-
-## Quick Example
-
-Here's a complete working example to get you started:
-
-```python
-# server.py
-import asyncio
-from pyvider.rpcplugin import plugin_server, plugin_protocol
-
-class EchoHandler:
-    async def Echo(self, request, context):
-        return {"message": f"Echo: {request.message}"}
-
-async def main():
-    server = plugin_server(
-        protocol=plugin_protocol("EchoService"),
-        handler=EchoHandler()
-    )
-    await server.serve()
-
-asyncio.run(main())
-```
-
-```python
-# client.py
-import asyncio
-from pyvider.rpcplugin import plugin_client
-
-async def main():
-    async with plugin_client(command=["python", "server.py"]) as client:
-        response = await client.Echo(message="Hello!")
-        print(response.message)  # "Echo: Hello!"
-
-asyncio.run(main())
-```
+1. **Reduced Complexity** - Don't reimplement infrastructure patterns
+2. **Ecosystem Consistency** - Unified patterns across all provide.io projects
+3. **Battle-Tested** - Foundation's components are production-proven
+4. **Focus on Business Logic** - Spend time on your service, not infrastructure
 
 ## Next Steps
 
-Ready to dive deeper? Choose your path:
-
-- **Understand the infrastructure**: Continue to [Foundation Overview](foundation.md)
-- **Learn the architecture**: Jump to [Architecture](../development/architecture.md)
-- **Start building**: Go to [Getting Started](../getting-started/index.md)
+- **New to the framework?** Start with [Foundation Overview](foundation.md) to understand the infrastructure
+- **Ready to code?** Jump to [Getting Started](../getting-started/index.md) for installation and tutorials
+- **Building production services?** See the [User Guide](../guide/index.md) for comprehensive patterns
 
 ---
 
