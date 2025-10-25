@@ -286,6 +286,7 @@ nav:
     - Configuration:
       - guide/config/index.md
       - Configuration Reference: guide/config/configuration-reference.md
+      - Config vs Factory Parameters: guide/config/configuration-vs-factory-parameters.md
       - Client Configuration: guide/config/configuration-client.md
       - Server Configuration: guide/config/configuration-server.md
       - Security Configuration: guide/config/configuration-security.md
