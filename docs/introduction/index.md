@@ -144,10 +144,10 @@ Isolate untrusted code in separate processes with limited permissions.
 ## Learning Path
 
 1. **[Foundation Overview](foundation.md)** - Understand the infrastructure layer
-2. **[Architecture](architecture.md)** - Learn the system design
+2. **[Architecture](../development/architecture.md)** - Learn the system design
 3. **[Getting Started](../getting-started/index.md)** - Build your first plugin
 4. **[User Guide](../guide/index.md)** - Deep dive into features
-5. **[API Reference](../api/index.md)** - Detailed documentation
+5. **[API Reference](../reference/index.md)** - Detailed documentation
 
 ## Quick Example
 
@@ -190,7 +190,7 @@ asyncio.run(main())
 Ready to dive deeper? Choose your path:
 
 - **Understand the infrastructure**: Continue to [Foundation Overview](foundation.md)
-- **Learn the architecture**: Jump to [Architecture](architecture.md)
+- **Learn the architecture**: Jump to [Architecture](../development/architecture.md)
 - **Start building**: Go to [Getting Started](../getting-started/index.md)
 
 ---

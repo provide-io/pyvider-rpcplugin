@@ -12,16 +12,18 @@ Get started with Pyvider RPC Plugin by installing it in your Python environment.
 
 ## Installation Options
 
-### Using pip (Recommended)
+### Using uv (Recommended)
 
-```bash
-pip install pyvider-rpcplugin
-```
-
-### Using uv (Fast)
+[uv](https://github.com/astral-sh/uv) is the recommended package manager - it's extremely fast and handles dependencies efficiently:
 
 ```bash
 uv add pyvider-rpcplugin
+```
+
+### Using pip
+
+```bash
+pip install pyvider-rpcplugin
 ```
 
 ### Using Poetry

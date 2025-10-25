@@ -46,12 +46,7 @@ Welcome to the comprehensive guide for Pyvider RPC Plugin. This document serves 
     *   [Lifecycle Management](./guide/advanced/lifecycle.md)
 
 **API Reference**
-*   [Server API](./api/server/index.md)
-*   [Client API](./api/client/index.md)
-*   [Transport API](./api/transport/index.md)
-*   [Configuration API](./api/config/index.md)
-*   [Exception API](./api/exceptions/index.md)
-*   [Factory Functions](./api/factories.md)
+*   API documentation is auto-generated - see the navigation menu for the complete API reference
 
 **Examples**
 *   [Echo Service](./examples/echo-service.md)

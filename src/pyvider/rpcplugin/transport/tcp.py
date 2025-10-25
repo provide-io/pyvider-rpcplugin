@@ -24,8 +24,25 @@ logger = get_logger(__name__)
 
 def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
     """
-    🔌✅🕵️  Validate that a TCP endpoint is of the form 'host:port' with a numeric port.
-    Returns True if valid; otherwise, False.
+    Validate that a TCP endpoint has the correct format.
+
+    A valid TCP endpoint must be in the format 'host:port' where:
+    - host is a non-empty string (can be hostname or IP address)
+    - port is a numeric value
+
+    Args:
+        endpoint: String to validate as a TCP endpoint.
+
+    Returns:
+        TypeGuard[str]: True if the endpoint is valid, False otherwise.
+
+    Example:
+        ```python
+        assert is_valid_tcp_endpoint("127.0.0.1:8080")  # True
+        assert is_valid_tcp_endpoint("localhost:443")    # True
+        assert not is_valid_tcp_endpoint("invalid")      # False
+        assert not is_valid_tcp_endpoint(":8080")        # False
+        ```
     """
     parts = endpoint.split(":")
     if len(parts) != 2:
@@ -39,9 +56,47 @@ def is_valid_tcp_endpoint(endpoint: str) -> TypeGuard[str]:
 @define(frozen=False)
 class TCPSocketTransport(RPCPluginTransport):
     """
-    🔌🚀📝  TCP Socket Transport implementing the Transport interface.
-    Provides methods to listen for connections, connect to a remote endpoint,
-    and close the transport.
+    TCP socket transport for network-based RPC communication.
+
+    This transport implementation provides TCP/IP connectivity for RPC plugins,
+    supporting both server (listen) and client (connect) modes. It's suitable
+    for network communication between processes on the same machine or across
+    a network.
+
+    The transport handles:
+    - Dynamic port allocation (when port=0)
+    - DNS resolution for hostnames
+    - Connection lifecycle management
+    - Graceful shutdown with timeouts
+
+    Attributes:
+        host: IP address or hostname to bind/connect to (default: "127.0.0.1")
+        port: Port number to use (0 for dynamic allocation, default: 0)
+        endpoint: The resolved endpoint string in "host:port" format (set after listen/connect)
+
+    Example:
+        ```python
+        # Server mode with dynamic port
+        transport = TCPSocketTransport()
+        endpoint = await transport.listen()  # Returns "127.0.0.1:45678"
+
+        # Server mode with specific port
+        transport = TCPSocketTransport(host="0.0.0.0", port=8080)
+        endpoint = await transport.listen()  # Returns "0.0.0.0:8080"
+
+        # Client mode
+        transport = TCPSocketTransport()
+        await transport.connect("remote.host:8080")
+
+        # Cleanup
+        await transport.close()
+        ```
+
+    Note:
+        This transport is typically created automatically by the factory functions
+        (plugin_server, plugin_client) rather than instantiated directly.
+        For local IPC on Unix-like systems, prefer UnixSocketTransport for
+        better performance and security.
     """
 
     host: str = field(default="127.0.0.1")

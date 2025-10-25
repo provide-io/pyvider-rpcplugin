@@ -35,7 +35,19 @@ if TYPE_CHECKING:
 
 
 class HandshakeData(NamedTuple):
-    """Represents essential data parsed from the plugin's handshake response."""
+    """
+    Essential data parsed from the plugin's handshake response.
+
+    This tuple contains the core information needed to establish a connection
+    with the plugin server after the handshake protocol completes.
+
+    Attributes:
+        endpoint: The network address where the plugin is listening.
+                 For TCP: "host:port" (e.g., "127.0.0.1:8080")
+                 For Unix: socket path (e.g., "/tmp/plugin.sock")
+        transport_type: The transport protocol negotiated during handshake.
+                       Common values: "tcp", "unix"
+    """
 
     endpoint: str  # The network address (e.g., "host:port" or "/path/to/socket")
     transport_type: str  # The transport protocol (e.g., "tcp", "unix")
@@ -43,10 +55,55 @@ class HandshakeData(NamedTuple):
 
 # Handshake-related methods that will be mixed into RPCPluginClient
 class ClientHandshakeMixin:
-    """Mixin class containing handshake-related methods for RPCPluginClient."""
+    """
+    Mixin providing handshake functionality for RPCPluginClient.
+
+    This mixin implements the client side of the Terraform-compatible plugin
+    handshake protocol. It handles:
+    - Handshake retry logic with exponential backoff
+    - Certificate setup for mTLS connections
+    - Transport negotiation (Unix socket vs TCP)
+    - Protocol version negotiation
+    - X.509 certificate parsing and validation
+
+    The handshake protocol ensures secure plugin communication by:
+    1. Validating magic cookies for authentication
+    2. Negotiating compatible protocol versions
+    3. Establishing transport preferences
+    4. Exchanging TLS certificates when security is enabled
+
+    Note:
+        This is a mixin class and should not be instantiated directly.
+        It's designed to be mixed into RPCPluginClient.
+    """
 
     async def _complete_handshake_setup(self: RPCPluginClient, attempt_num: int | None = None) -> None:  # type: ignore[misc]
-        """Complete the handshake setup including certificates, channel, and stdio."""
+        """
+        Complete the handshake setup after successful negotiation.
+
+        This method performs the final setup steps after the handshake protocol
+        has successfully negotiated the connection parameters. It:
+        1. Validates that critical handshake data was received
+        2. Sets up client certificates for mTLS if enabled
+        3. Creates the gRPC channel with appropriate security
+        4. Starts the stdio log reader if available
+        5. Sets the handshake complete event
+
+        Args:
+            attempt_num: Optional attempt number for logging context.
+                        Used to track retry attempts in log messages.
+
+        Raises:
+            HandshakeError: If critical endpoint data is missing after handshake.
+                          This indicates a protocol violation or bug.
+
+        Side Effects:
+            - Sets self.client_cert and self.client_key_pem if mTLS is enabled
+            - Creates self.grpc_channel with the negotiated endpoint
+            - Starts self._stdio_task for log streaming
+            - Sets self.is_started to True
+            - Sets self._handshake_complete_event
+        """
         if not self._address or not self._transport_name:
             raise HandshakeError(
                 "Handshake completed but critical endpoint data (address/transport_name) not set."

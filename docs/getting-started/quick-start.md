@@ -59,9 +59,9 @@ os.environ.update({
 })
 
 # Configuration automatically loaded
-logger.info(f"Handshake timeout: {rpcplugin_config.handshake_timeout()}")  
-logger.info(f"Transports: {rpcplugin_config.server_transports()}")
-logger.info(f"mTLS: {rpcplugin_config.auto_mtls_enabled()}")
+logger.info(f"Handshake timeout: {rpcplugin_config.plugin_handshake_timeout}")
+logger.info(f"Transports: {rpcplugin_config.plugin_server_transports}")
+logger.info(f"mTLS: {rpcplugin_config.plugin_auto_mtls}")
 ```
 
 ### Structured Logging with Context
@@ -325,9 +325,9 @@ Everything works with sensible defaults, but you can customize:
 from pyvider.rpcplugin.config import rpcplugin_config
 
 # View current configuration
-logger.info(f"Handshake timeout: {rpcplugin_config.handshake_timeout()}")
-logger.info(f"Available transports: {rpcplugin_config.server_transports()}")
-logger.info(f"mTLS enabled: {rpcplugin_config.auto_mtls_enabled()}")
+logger.info(f"Handshake timeout: {rpcplugin_config.plugin_handshake_timeout}")
+logger.info(f"Available transports: {rpcplugin_config.plugin_server_transports}")
+logger.info(f"mTLS enabled: {rpcplugin_config.plugin_auto_mtls}")
 ```
 
 ### 🚀 Next Steps

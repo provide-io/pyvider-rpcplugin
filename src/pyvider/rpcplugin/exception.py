@@ -84,35 +84,190 @@ class RPCPluginError(FoundationError):
 
 
 class ConfigError(RPCPluginError):
-    """Errors related to plugin configuration issues."""
+    """
+    Configuration-related errors in the RPC plugin system.
+
+    Raised when there are issues with plugin configuration, including:
+    - Invalid configuration values
+    - Missing required configuration
+    - Type mismatches in configuration
+    - Environment variable parsing errors
+    - Configuration validation failures
+
+    Example:
+        ```python
+        from pyvider.rpcplugin.exception import ConfigError
+
+        # Raise when required config is missing
+        if not config.get("plugin_magic_cookie_value"):
+            raise ConfigError(
+                "Magic cookie value is required",
+                hint="Set PLUGIN_MAGIC_COOKIE_VALUE environment variable",
+                code="CONFIG_MISSING_COOKIE"
+            )
+
+        # Raise when config value is invalid
+        if port < 0 or port > 65535:
+            raise ConfigError(
+                f"Invalid port number: {port}",
+                hint="Port must be between 0 and 65535",
+                code="CONFIG_INVALID_PORT"
+            )
+        ```
+    """
 
     def _default_code(self) -> str:
         return "RPC_CONFIG_ERROR"
 
 
 class HandshakeError(RPCPluginError):
-    """Errors occurring during the plugin handshake process."""
+    """
+    Handshake protocol errors during plugin initialization.
+
+    Raised when the handshake protocol fails, including:
+    - Magic cookie validation failures
+    - Protocol version negotiation failures
+    - Transport negotiation failures
+    - Certificate exchange errors
+    - Timeout during handshake
+    - Malformed handshake data
+
+    Example:
+        ```python
+        from pyvider.rpcplugin.exception import HandshakeError
+
+        # Raise when magic cookie doesn't match
+        if received_cookie != expected_cookie:
+            raise HandshakeError(
+                "Magic cookie mismatch",
+                hint="Ensure client and server use the same PLUGIN_MAGIC_COOKIE_VALUE",
+                code="HANDSHAKE_COOKIE_MISMATCH"
+            )
+
+        # Raise when no compatible protocol version
+        if not compatible_versions:
+            raise HandshakeError(
+                f"No compatible protocol versions: client={client_versions}, server={server_versions}",
+                hint="Update client or server to support compatible protocol versions",
+                code="HANDSHAKE_VERSION_MISMATCH"
+            )
+        ```
+    """
 
     def _default_code(self) -> str:
         return "RPC_HANDSHAKE_ERROR"
 
 
 class ProtocolError(RPCPluginError):
-    """Errors related to violations of the plugin protocol."""
+    """
+    Protocol violation errors in RPC communication.
+
+    Raised when the plugin protocol is violated, including:
+    - Invalid message format
+    - Unexpected message types
+    - Protocol state violations
+    - Missing required protocol fields
+    - Incompatible protocol operations
+
+    Example:
+        ```python
+        from pyvider.rpcplugin.exception import ProtocolError
+
+        # Raise when message format is invalid
+        if not hasattr(message, 'required_field'):
+            raise ProtocolError(
+                "Protocol message missing required field",
+                hint="Ensure message conforms to protocol specification",
+                code="PROTOCOL_INVALID_MESSAGE"
+            )
+
+        # Raise when protocol state is violated
+        if not self.handshake_complete:
+            raise ProtocolError(
+                "Cannot send data before handshake completion",
+                hint="Wait for handshake to complete before sending messages",
+                code="PROTOCOL_STATE_ERROR"
+            )
+        ```
+    """
 
     def _default_code(self) -> str:
         return "RPC_PROTOCOL_ERROR"
 
 
 class TransportError(RPCPluginError):
-    """Errors related to network transport or communication issues."""
+    """
+    Transport layer errors in plugin communication.
+
+    Raised when transport-level issues occur, including:
+    - Connection failures
+    - Socket errors
+    - Network timeouts
+    - Invalid endpoints
+    - Transport initialization failures
+    - I/O errors during communication
+
+    Example:
+        ```python
+        from pyvider.rpcplugin.exception import TransportError
+
+        # Raise when connection fails
+        try:
+            await transport.connect(endpoint)
+        except ConnectionRefusedError as e:
+            raise TransportError(
+                f"Failed to connect to {endpoint}",
+                hint="Ensure the server is running and the endpoint is correct",
+                code="TRANSPORT_CONNECTION_REFUSED"
+            ) from e
+
+        # Raise when endpoint format is invalid
+        if not is_valid_endpoint(endpoint):
+            raise TransportError(
+                f"Invalid endpoint format: {endpoint}",
+                hint="Use 'host:port' for TCP or 'unix:/path' for Unix sockets",
+                code="TRANSPORT_INVALID_ENDPOINT"
+            )
+        ```
+    """
 
     def _default_code(self) -> str:
         return "RPC_TRANSPORT_ERROR"
 
 
 class SecurityError(RPCPluginError):
-    """Base class for security-related errors within the plugin system."""
+    """
+    Security-related errors in the plugin system.
+
+    Raised when security issues are detected, including:
+    - Certificate validation failures
+    - TLS/mTLS errors
+    - Authentication failures
+    - Authorization violations
+    - Insecure configuration attempts
+    - Certificate generation failures
+
+    Example:
+        ```python
+        from pyvider.rpcplugin.exception import SecurityError
+
+        # Raise when certificate validation fails
+        if not validate_certificate(cert):
+            raise SecurityError(
+                "Certificate validation failed",
+                hint="Check certificate expiration and CA trust chain",
+                code="SECURITY_CERT_INVALID"
+            )
+
+        # Raise when insecure operation is attempted
+        if config.plugin_insecure and config.plugin_auto_mtls:
+            raise SecurityError(
+                "Cannot enable both insecure mode and mTLS",
+                hint="Choose either secure (mTLS) or insecure mode, not both",
+                code="SECURITY_CONFIG_CONFLICT"
+            )
+        ```
+    """
 
     def _default_code(self) -> str:
         return "RPC_SECURITY_ERROR"

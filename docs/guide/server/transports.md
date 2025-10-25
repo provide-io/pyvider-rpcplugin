@@ -599,7 +599,7 @@ def setup_production_transport():
 
 ### Configuration Resources
 - **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration patterns and best practices
-- **[Configuration API Reference](../../api/config/index.md)** - Programmatic transport configuration access and validation methods
+- **[Configuration API Reference](../../reference/pyvider/rpcplugin/config/index.md)** - Programmatic transport configuration access and validation methods
 
 ### Security Integration
 - **[Security Implementation Guide](../security/index.md)** - Complete security setup including transport-level security
