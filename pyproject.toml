@@ -89,6 +89,8 @@ filterwarnings = [
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
     # Python 3.13 asyncio cleanup ordering issue - not a bug in our code
     "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning",
+    # provide-testkit is auto-discovered and loaded before conftest imports - not an issue
+    "ignore:Module already imported so cannot be rewritten; provide:pytest.PytestAssertRewriteWarning",
 ]
 
 norecursedirs = [
