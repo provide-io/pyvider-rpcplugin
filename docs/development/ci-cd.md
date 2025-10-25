@@ -243,87 +243,6 @@ repos:
       - id: check-added-large-files
 ```
 
-## Docker Support
-
-### Multi-stage Dockerfile
-
-```dockerfile
-# Build stage
-FROM python:3.11-slim as builder
-
-WORKDIR /app
-COPY pyproject.toml .
-COPY src/ src/
-
-RUN pip install --upgrade pip build && \
-    python -m build --wheel
-
-# Runtime stage
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copy wheel from builder
-COPY --from=builder /app/dist/*.whl /tmp/
-RUN pip install /tmp/*.whl && rm /tmp/*.whl
-
-# Create non-root user
-RUN useradd -m -U appuser && \
-    chown -R appuser:appuser /app
-USER appuser
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD python -c "import pyvider.rpcplugin; print('healthy')" || exit 1
-
-ENTRYPOINT ["python", "-m", "pyvider.rpcplugin"]
-```
-
-### Docker Compose for Testing
-
-**docker-compose.test.yml**
-```yaml
-version: '3.8'
-
-services:
-  test:
-    build:
-      context: .
-      target: builder
-    command: |
-      sh -c "
-        pip install -e '.[dev,test]' &&
-        pytest --cov=pyvider.rpcplugin
-      "
-    volumes:
-      - .:/app
-      - test-cache:/root/.cache
-
-  integration:
-    build: .
-    depends_on:
-      - test-server
-    environment:
-      PLUGIN_SERVER_HOST: test-server
-      PLUGIN_SERVER_PORT: 50051
-    command: pytest tests/integration/
-
-  test-server:
-    build: .
-    command: python -m pyvider.rpcplugin.server
-    ports:
-      - "50051:50051"
-
-volumes:
-  test-cache:
-```
-
 ## Performance Testing
 
 ### Benchmark Suite
@@ -483,26 +402,6 @@ echo "📦 Push with: git push && git push --tags"
 3. Upload to PyPI using API token
 4. Create GitHub release with artifacts
 
-### Container Registry
-
-**Push to GitHub Container Registry:**
-```yaml
-- name: Login to GitHub Container Registry
-  uses: docker/login-action@v3
-  with:
-    registry: ghcr.io
-    username: ${{ github.actor }}
-    password: ${{ secrets.GITHUB_TOKEN }}
-
-- name: Build and push
-  uses: docker/build-push-action@v5
-  with:
-    push: true
-    tags: |
-      ghcr.io/${{ github.repository }}:latest
-      ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-```
-
 ## Monitoring
 
 ### Status Badges
@@ -532,11 +431,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
-      interval: "weekly"
 ```
 
 ## Best Practices
@@ -548,7 +442,7 @@ updates:
 5. **Performance Monitoring**: Track benchmarks over time
 6. **Semantic Versioning**: Follow semver for releases
 7. **Documentation**: Update docs with code changes
-8. **Container Security**: Scan images for vulnerabilities
+8. **Dependency Updates**: Keep dependencies current and secure
 
 ## See Also
 

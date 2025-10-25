@@ -177,31 +177,6 @@ client_cert = intermediate_ca.generate_client_certificate(
 )
 ```
 
-### Docker Deployment
-
-```dockerfile
-# Dockerfile with mTLS certificates
-FROM python:3.11
-
-# Copy certificates
-COPY certs/ca.pem /etc/ssl/certs/
-COPY certs/server.pem /etc/ssl/certs/
-COPY certs/server.key /etc/ssl/private/
-
-# Set certificate permissions
-RUN chmod 644 /etc/ssl/certs/*.pem && \
-    chmod 600 /etc/ssl/private/*.key
-
-# Configure mTLS
-ENV PLUGIN_AUTO_MTLS=false
-ENV PLUGIN_SERVER_CERT=file:///etc/ssl/certs/server.pem
-ENV PLUGIN_SERVER_KEY=file:///etc/ssl/private/server.key
-ENV PLUGIN_SERVER_ROOT_CERTS=file:///etc/ssl/certs/ca.pem
-
-EXPOSE 8443
-CMD ["python", "my_plugin_server.py"]
-```
-
 ## Certificate Rotation
 
 ### Automatic Rotation
