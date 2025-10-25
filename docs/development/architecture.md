@@ -241,7 +241,7 @@ class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
         self._rate_limiter = rate_limiter
 
     async def intercept_service(self, continuation, handler_call_details):
-        if not await self._rate_limiter.acquire():
+        if not await self._rate_limiter.is_allowed():
             # Raise RESOURCE_EXHAUSTED when rate limit exceeded
             context = handler_call_details.invocation_metadata()
             await context.abort(

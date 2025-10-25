@@ -22,8 +22,8 @@ from pyvider.rpcplugin.config import rpcplugin_config
 # Rate limiter is automatically configured from environment
 if rpcplugin_config.plugin_rate_limit_enabled:
     rate_limiter = TokenBucketRateLimiter(
-        requests_per_second=rpcplugin_config.plugin_rate_limit_requests_per_second,
-        burst_capacity=rpcplugin_config.plugin_rate_limit_burst_capacity
+        refill_rate=rpcplugin_config.plugin_rate_limit_requests_per_second,
+        capacity=rpcplugin_config.plugin_rate_limit_burst_capacity
     )
 ```
 
@@ -47,7 +47,7 @@ Configure specific rate and burst limits:
 # Custom rate limiting configuration
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=50.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100
 ```
 
 ### Configuration Parameters
@@ -56,7 +56,7 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
 |-----------|---------------------|------|---------|-------------|
 | **Enabled** | `PLUGIN_RATE_LIMIT_ENABLED` | `bool` | `false` | Enable/disable rate limiting |
 | **Rate** | `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` | `float` | `100.0` | Average requests per second allowed |
-| **Burst** | `PLUGIN_RATE_LIMIT_BURST_CAPACITY` | `float` | `200.0` | Maximum requests in burst (token bucket size) |
+| **Burst** | `PLUGIN_RATE_LIMIT_BURST_CAPACITY` | `int` | `200` | Maximum requests in burst (token bucket size) |
 
 ## Token Bucket Algorithm
 
@@ -75,7 +75,7 @@ The rate limiter uses a token bucket algorithm with the following behavior:
 ```bash
 # Configuration: 10 RPS, 20 burst capacity
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=10.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=20.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=20
 ```
 
 - **Sustained load**: 10 requests/second are consistently allowed
@@ -84,9 +84,9 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=20.0
 
 #### Scenario 2: Bursty Traffic
 ```bash
-# Configuration: 50 RPS, 200 burst capacity  
+# Configuration: 50 RPS, 200 burst capacity
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=50.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=200.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=200
 ```
 
 - **Initial burst**: 200 requests can be processed immediately
@@ -97,7 +97,7 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=200.0
 ```bash
 # Configuration: 1000 RPS, 2000 burst capacity
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000
 ```
 
 - **High capacity**: Handles 1000 requests/second consistently
@@ -114,7 +114,7 @@ For development, use lenient rate limiting to avoid interrupting testing:
 # Development rate limiting - very permissive
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=5000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=5000
 ```
 
 ### Production Environment
@@ -124,7 +124,7 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=5000.0
 # Typical web API rate limiting
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=100.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=300.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=300
 ```
 
 #### High-Throughput Service
@@ -132,7 +132,7 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=300.0
 # High-throughput microservice
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=1000.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000
 ```
 
 #### Administrative Interface
@@ -140,7 +140,7 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000.0
 # Conservative rate limiting for admin operations
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=10.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=50.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=50
 ```
 
 #### Public API
@@ -148,7 +148,7 @@ export PLUGIN_RATE_LIMIT_BURST_CAPACITY=50.0
 # Public-facing API with abuse protection
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=20.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100
 ```
 
 ## Error Handling
@@ -352,7 +352,7 @@ For high-throughput services:
 # High-performance configuration
 export PLUGIN_RATE_LIMIT_ENABLED=true
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=5000.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=10000.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=10000
 
 # Consider disabling rate limiting for internal services
 export PLUGIN_RATE_LIMIT_ENABLED=false
@@ -370,32 +370,32 @@ from collections import defaultdict
 from time import time
 
 class PerClientRateLimiter:
-    def __init__(self, requests_per_second: float, burst_capacity: float):
-        self.rate = requests_per_second
-        self.capacity = burst_capacity
+    def __init__(self, tokens_per_second: float, bucket_size: float):
+        self.rate = tokens_per_second
+        self.capacity = bucket_size
         self.buckets = defaultdict(lambda: {
-            'tokens': burst_capacity,
+            'tokens': bucket_size,
             'last_update': time()
         })
-    
+
     def allow_request(self, client_id: str) -> bool:
         now = time()
         bucket = self.buckets[client_id]
-        
+
         # Add tokens based on elapsed time
         elapsed = now - bucket['last_update']
         tokens_to_add = elapsed * self.rate
         bucket['tokens'] = min(self.capacity, bucket['tokens'] + tokens_to_add)
         bucket['last_update'] = now
-        
+
         # Check if request is allowed
         if bucket['tokens'] >= 1.0:
             bucket['tokens'] -= 1.0
             return True
         return False
 
-# Usage in your service
-per_client_limiter = PerClientRateLimiter(10.0, 50.0)
+# Usage in your service - 10 requests/second with burst capacity of 50
+per_client_limiter = PerClientRateLimiter(tokens_per_second=10.0, bucket_size=50.0)
 
 async def my_service_method(self, request, context):
     client_id = context.peer()  # or extract from metadata
@@ -464,11 +464,11 @@ asyncio.create_task(adaptive_limiter.update_rate_limits())
 ```bash
 # Before (too restrictive)
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=5.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=10.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=10
 
 # After (more permissive)
 export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=20.0
-export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0
+export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100
 ```
 
 #### 2. Rate Limiting Not Working
