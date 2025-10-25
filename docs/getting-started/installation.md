@@ -96,18 +96,12 @@ from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin import plugin_server, plugin_client
 ```
 
-Foundation handles:
-- **Configuration Management**: Type-safe, validated configuration with multi-source loading
-- **Structured Logging**: Consistent, structured logging across all components  
-- **Cryptography**: X.509 certificate management and TLS operations
-- **Rate Limiting**: Token bucket rate limiting for server protection
-- **Utilities**: Common patterns and helper functions
+!!! tip "Understanding the Architecture"
+    **Foundation** provides infrastructure (config, logging, crypto, utilities)
+    **Pyvider RPC Plugin** provides RPC communication (gRPC, transports, protocols)
+    **Your Plugin** provides business logic
 
-While Pyvider RPC Plugin focuses on:
-- **RPC Protocol**: gRPC-based plugin communication
-- **Transport Management**: Unix sockets and TCP transport handling
-- **Plugin Lifecycle**: Handshake, serving, and shutdown logic
-- **Client Integration**: Plugin discovery and connection management
+    **→ [Complete Foundation Overview](../introduction/foundation.md)** for detailed architecture and practical examples
 
 ### Optional Dependencies
 
