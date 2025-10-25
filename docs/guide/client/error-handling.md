@@ -51,11 +51,12 @@ try:
 except TransportError as e:
     logger.error(f"❌ Connection failed: {e.message}")
     if "port" in str(e).lower():
-        # Try different port
-        configure(tcp_port=0)  # Auto-assign port
+        # Transport errors usually require recreating the server
+        # Port is a factory parameter, not a config option
+        logger.info("Recreate server with: plugin_server(port=0)  # Auto-assign")
     elif "permission" in str(e).lower():
-        # Fix socket permissions
-        configure(unix_socket_permissions=0o666)
+        # Socket permission issues require OS-level fixes
+        logger.info("Fix socket permissions at OS level or recreate with different path")
 ```
 
 #### `HandshakeError`

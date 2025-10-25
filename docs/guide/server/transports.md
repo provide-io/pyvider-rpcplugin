@@ -2,6 +2,14 @@
 
 Optimize transport layers for your plugin servers with Unix sockets, TCP, and mTLS configurations for different deployment scenarios.
 
+!!! info "Configuration vs Factory Parameters"
+    Transport-specific settings like `port`, `host`, and `transport_path` are **factory function parameters**, NOT configuration options.
+
+    - ✅ Use: `plugin_server(port=8080, host="0.0.0.0")`
+    - ❌ Don't: `configure(tcp_port=8080, tcp_host="0.0.0.0")`
+
+    See [Config vs Factory Parameters](../config/configuration-vs-factory-parameters.md) for complete details.
+
 ## Transport Selection
 
 ### Automatic Selection
