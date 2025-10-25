@@ -84,7 +84,10 @@ plugins:
         - en
   
   - autorefs
-  
+
+  - macros:
+      include_dir: ../provide-foundry/shared-theme/data
+
   - mkdocstrings:
       default_handler: python
       handlers:
@@ -188,6 +191,16 @@ markdown_extensions:
       repo_url_shorthand: true
       user: provide-io
       repo: pyvider-rpcplugin
+
+extra_css:
+  - ../provide-foundry/shared-theme/stylesheets/provide-theme.css
+  - ../provide-foundry/shared-theme/stylesheets/termynal.css
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - ../provide-foundry/shared-theme/javascripts/mermaid-init.js
+  - ../provide-foundry/shared-theme/javascripts/termynal.js
+  - ../provide-foundry/shared-theme/javascripts/custom.js
 
 extra:
   version:
