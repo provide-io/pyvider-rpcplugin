@@ -1,5 +1,7 @@
 # Basic Server Example
 
+> **Source Code:** `examples/short/basic_server.py`
+
 A minimal plugin server using factory functions.
 
 ```python

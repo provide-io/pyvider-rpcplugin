@@ -1,5 +1,7 @@
 # Rate Limiting Example
 
+> **Source Code:** `examples/short/rate_limiting.py`
+
 A server with token bucket rate limiting for request throttling.
 
 ```python

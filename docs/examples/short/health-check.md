@@ -1,5 +1,7 @@
 # Health Check Example
 
+> **Source Code:** `examples/short/health_check.py`
+
 A minimal plugin server with health monitoring.
 
 ```python

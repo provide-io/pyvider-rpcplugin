@@ -1,5 +1,7 @@
 # Custom Protocol Example
 
+> **Source Code:** `examples/short/custom_protocol.py`
+
 A server implementing a custom protocol with gRPC service registration.
 
 ```python

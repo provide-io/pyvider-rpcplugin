@@ -1,5 +1,7 @@
 # TCP Transport Example
 
+> **Source Code:** `examples/short/tcp_transport.py`
+
 A plugin server using TCP instead of Unix sockets.
 
 ```python

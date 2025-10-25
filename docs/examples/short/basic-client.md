@@ -1,5 +1,7 @@
 # Basic Client Example
 
+> **Source Code:** `examples/short/basic_client.py`
+
 A minimal client that connects to a plugin server using the async context manager pattern.
 
 ```python
