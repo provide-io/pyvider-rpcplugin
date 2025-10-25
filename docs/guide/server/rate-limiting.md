@@ -114,10 +114,11 @@ if __name__ == "__main__":
 
 ### Custom Rate Limiting
 
-For more control, you can create custom rate limiting interceptors:
+For more control, you can create custom rate limiting interceptors. Note that advanced interceptor usage requires using the `RPCPluginServer` class directly:
 
 ```python
-from pyvider.rpcplugin.server import RateLimitingInterceptor
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.transport import UnixSocketTransport
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 import grpc.aio
 
@@ -145,13 +146,20 @@ class CustomRateLimiter(grpc.aio.ServerInterceptor):
 
         return await continuation(handler_call_details)
 
-# Use custom rate limiter
-server = plugin_server(
+# For advanced interceptor usage, instantiate RPCPluginServer directly
+# Note: plugin_server() factory does not support custom interceptors
+server = RPCPluginServer(
     protocol=protocol,
     handler=handler,
-    config={"interceptors": [CustomRateLimiter()]}
+    transport=UnixSocketTransport()
 )
+
+# Add custom interceptor by accessing the server's internal gRPC server
+# This requires modifying the server after creation
+# For simpler use cases, use environment-based rate limiting instead
 ```
+
+**Note:** The `plugin_server()` factory function doesn't support custom interceptors. For most use cases, the built-in environment-based rate limiting (shown in the Basic example above) is recommended.
 
 ## Client-Side Handling
 

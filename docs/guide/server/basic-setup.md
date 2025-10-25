@@ -56,47 +56,73 @@ if __name__ == "__main__":
 
 ## Environment Configuration
 
+Configure your server using environment variables (recommended) or the `configure()` function:
+
+### Option 1: Environment Variables (Recommended)
+
 ```python
 import os
-from dataclasses import dataclass
-
-from pyvider.rpcplugin import configure
+from pyvider.rpcplugin import plugin_server
 from provide.foundation import logger
-from provide.foundation.config import RuntimeConfig
 
-@dataclass
-class ServerConfig(RuntimeConfig):
-    """Server configuration using Foundation's RuntimeConfig base class."""
-    max_workers: int = int(os.environ.get("PLUGIN_MAX_WORKERS", "10"))
-    timeout: float = float(os.environ.get("PLUGIN_TIMEOUT", "30.0"))
-    transport: str = os.environ.get("PLUGIN_TRANSPORT", "auto")
-    enable_mtls: bool = os.environ.get("PLUGIN_ENABLE_MTLS", "false").lower() == "true"
-    
-    def apply(self):
-        logger.info("Applying server configuration", extra={
-            "max_workers": self.max_workers,
-            "timeout": self.timeout,
-            "transport": self.transport,
-            "mtls_enabled": self.enable_mtls
-        })
-        
-        # Use configure() with explicit params and **kwargs
-        transport_list = [self.transport] if self.transport != "auto" else ["unix", "tcp"]
-        configure(
-            transports=transport_list,  # Explicit parameter
-            auto_mtls=self.enable_mtls,  # Explicit parameter
-            # Additional settings via **kwargs (automatically prefixed with 'plugin_')
-            # max_workers=self.max_workers,  # Would set plugin_max_workers (if exists)
-        )
-        
-        logger.debug("Configuration applied successfully")
+# Set configuration via environment variables
+os.environ.update({
+    "PLUGIN_AUTO_MTLS": "false",
+    "PLUGIN_SERVER_TRANSPORTS": "unix,tcp",
+    "PLUGIN_LOG_LEVEL": "DEBUG",
+    "PLUGIN_HANDSHAKE_TIMEOUT": "30.0"
+})
 
-# Initialize and apply Foundation-based configuration
-config = ServerConfig()
-config.apply()
+# Configuration is automatically loaded from environment
+server = plugin_server(
+    protocol=EchoProtocol(),
+    handler=EchoHandler()
+)
 
-logger.info("Creating plugin server with applied configuration")
-server = plugin_server(protocol=EchoProtocol(), handler=EchoHandler())
+logger.info("Server created with environment configuration")
+```
+
+### Option 2: Using configure()
+
+```python
+from pyvider.rpcplugin import configure, plugin_server
+from provide.foundation import logger
+
+# Configure programmatically
+configure(
+    auto_mtls=False,           # Explicit parameter
+    transports=["unix", "tcp"], # Explicit parameter
+    handshake_timeout=30.0,    # Explicit parameter
+    log_level="DEBUG"          # Via **kwargs: sets plugin_log_level
+)
+
+server = plugin_server(
+    protocol=EchoProtocol(),
+    handler=EchoHandler()
+)
+
+logger.info("Server created with programmatic configuration")
+```
+
+### Option 3: Direct Configuration Access
+
+```python
+from pyvider.rpcplugin import plugin_server
+from pyvider.rpcplugin.config import rpcplugin_config
+from provide.foundation import logger
+
+# Modify configuration directly
+rpcplugin_config.plugin_auto_mtls = False
+rpcplugin_config.plugin_server_transports = ["unix", "tcp"]
+rpcplugin_config.plugin_log_level = "DEBUG"
+rpcplugin_config.plugin_handshake_timeout = 30.0
+
+server = plugin_server(
+    protocol=EchoProtocol(),
+    handler=EchoHandler()
+)
+
+logger.info("Server created with direct configuration")
 ```
 
 ## Graceful Shutdown
@@ -172,28 +198,35 @@ async def main():
 
 ### Development Setup
 ```python
+from pyvider.rpcplugin import configure
+
 def setup_development():
+    """Configure for local development."""
     configure(
-        log_level="DEBUG",
-        enable_reflection=True,
-        auto_mtls=False,
-        transports=["tcp"],
-        tcp_port=0  # Auto-assign
+        auto_mtls=False,              # Disable mTLS for local testing
+        handshake_timeout=30.0,       # Longer timeout for debugging
+        log_level="DEBUG",            # Verbose logging
+        # Use TCP with auto-assigned port for flexibility
+        # Or use Unix sockets (default): transports=["unix"]
     )
 ```
 
 ### Production Setup
 ```python
+from pyvider.rpcplugin import configure
+
 def setup_production():
+    """Configure for production deployment."""
     configure(
-        log_level="INFO",
-        enable_reflection=False,
-        auto_mtls=True,
-        transports=["unix"],
+        auto_mtls=True,               # Enable mTLS security
+        handshake_timeout=10.0,       # Standard timeout
+        log_level="INFO",             # Production logging
         server_cert="file:///etc/ssl/server.pem",
         server_key="file:///etc/ssl/server.key",
-        max_workers=20,
-        compression="gzip"
+        rate_limit_enabled=True,      # Enable rate limiting
+        rate_limit_requests_per_second=1000.0,
+        rate_limit_burst_capacity=2000,
+        health_service_enabled=True,  # Enable health checks
     )
 ```
 
