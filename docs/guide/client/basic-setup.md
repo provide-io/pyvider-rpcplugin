@@ -72,6 +72,20 @@ await manual_client_example()
 !!! important "Configuration Methods"
     The `plugin_client()` factory only accepts `command` and `config` parameters. The `config` dict is used to pass environment variables to the **plugin subprocess**, not to configure the client itself.
 
+    **Configuration Flow:**
+    ```
+    ┌─────────────────────────────┐        ┌─────────────────────────────┐
+    │   Your Process (Client)     │        │  Plugin Subprocess (Server) │
+    ├─────────────────────────────┤        ├─────────────────────────────┤
+    │ Set environment variables:  │        │ Receives environment vars:  │
+    │ - os.environ["PLUGIN_..."]  │        │ - From config={"env": ...}  │
+    │ - PLUGIN_CLIENT_MAX_RETRIES │        │ - PLUGIN_LOG_LEVEL          │
+    │ - PLUGIN_CONNECTION_TIMEOUT │        │ - PLUGIN_AUTO_MTLS          │
+    │                             │        │ - PLUGIN_SERVER_PORT        │
+    │ Configures CLIENT behavior  │  -->   │ Configures SERVER behavior  │
+    └─────────────────────────────┘        └─────────────────────────────┘
+    ```
+
     **To configure the CLIENT:** Set environment variables in your own process
     **To configure the PLUGIN:** Use `config={"env": {...}}`
 
@@ -188,6 +202,14 @@ async def explore_services():
 !!! important "Configuration Method"
     The `plugin_client()` factory only accepts `command` and `config` parameters.
     Configure client behavior via **environment variables** in your process.
+
+    **Two-Level Configuration:**
+    ```
+    Host Process                Plugin Process
+    ============                ==============
+    os.environ["..."]    →      config={"env": {"..."}}
+    (affects client)            (affects plugin server)
+    ```
 
 ### Development Setup
 ```python

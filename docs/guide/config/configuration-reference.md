@@ -90,17 +90,43 @@ rpcplugin_config.plugin_rate_limit_enabled = True
 
 ### Using the configure() Function
 
+!!! info "Understanding configure() Parameters"
+    The `configure()` function has **5 explicit parameters** with type hints and IDE autocomplete:
+
+    - `magic_cookie: str | None`
+    - `protocol_version: int | None`
+    - `transports: list[str] | None`
+    - `auto_mtls: bool | None`
+    - `handshake_timeout: float | None`
+
+    All other settings can be passed via `**kwargs`, which are automatically prefixed with `plugin_` and set on the config object.
+
 ```python
 from pyvider.rpcplugin import configure
 
-# Convenient API (recommended)
+# Using explicit parameters (type-checked, autocomplete-friendly)
 configure(
-    log_level="DEBUG",
-    server_port=8080,
-    rate_limit_enabled=True,
-    rate_limit_requests_per_second=100.0,
-    auto_mtls=True
+    magic_cookie="my-plugin-secret",
+    protocol_version=1,
+    transports=["unix", "tcp"],
+    auto_mtls=True,
+    handshake_timeout=10.0
 )
+
+# Using **kwargs for additional settings (automatically prefixed with 'plugin_')
+configure(
+    magic_cookie="my-plugin-secret",
+    auto_mtls=True,
+    log_level="DEBUG",                    # Sets plugin_log_level
+    server_port=8080,                     # Sets plugin_server_port
+    rate_limit_enabled=True,              # Sets plugin_rate_limit_enabled
+    rate_limit_requests_per_second=100.0  # Sets plugin_rate_limit_requests_per_second
+)
+
+# For better IDE support, you can also set directly on the config object
+from pyvider.rpcplugin.config import rpcplugin_config
+rpcplugin_config.plugin_log_level = "DEBUG"  # Type-checked by your IDE
+rpcplugin_config.plugin_server_port = 8080
 ```
 
 ## Common Configuration Scenarios
@@ -111,12 +137,13 @@ configure(
 from pyvider.rpcplugin import configure
 
 # Fast iteration, minimal security
+# Note: Parameters beyond the 5 explicit ones are passed via **kwargs
 configure(
-    log_level="DEBUG",
-    insecure=True,           # Disable mTLS
-    test_mode=True,
-    client_max_retries=2,    # Fail fast
-    rate_limit_enabled=False # No throttling
+    auto_mtls=False,                 # Explicit param: Disable mTLS for local dev
+    handshake_timeout=30.0,          # Explicit param: Longer timeout for debugging
+    log_level="DEBUG",               # Via **kwargs: Sets plugin_log_level
+    client_max_retries=2,            # Via **kwargs: Fail fast
+    rate_limit_enabled=False         # Via **kwargs: No throttling
 )
 ```
 
