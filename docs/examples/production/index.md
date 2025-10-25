@@ -2,20 +2,18 @@
 
 **Path:** [Home](../../index.md) → [Examples](../index.md) → Production
 
-Complete production deployment examples for Pyvider RPC Plugin systems, including containerization, orchestration, monitoring, and CI/CD pipelines.
+Production-ready patterns for Pyvider RPC Plugin systems, including error handling, monitoring, and deployment strategies.
 
 !!! info "Available Examples"
     **Currently Available:**
     - ✅ [Core Production Service](service.md) - Complete production-ready plugin service with error handling, health checks, rate limiting, and structured logging
 
-    **Planned Future Examples:**
-    - 📋 Docker Configuration - Multi-stage Dockerfile and compose setups
-    - 📋 Kubernetes Deployment - Full K8s manifests with auto-scaling
-    - 📋 CI/CD Pipeline - GitHub Actions automated deployment
-    - 📋 Monitoring Setup - Prometheus/Grafana observability stack
-    - 📋 Cloud Deployment - Serverless and cloud-native patterns
+    **Note on Containerization:**
+    Due to the subprocess-based plugin architecture, containerization requires careful consideration. Plugins must either:
+    - Run as subprocesses within the same container (monolithic approach)
+    - Use `skip_subprocess=True` mode for service-to-service communication (microservices pattern)
 
-    For now, the [Core Service example](service.md) provides comprehensive production patterns you can adapt to your deployment platform.
+    See the [Core Service example](service.md) for production patterns that work regardless of deployment platform.
 
 ## Overview
 
@@ -36,47 +34,15 @@ The main production-ready plugin service with all features:
 - Rate limiting and circuit breakers
 - Structured logging with correlation IDs
 
-### Docker Configuration _(Coming Soon)_
-Multi-stage Dockerfile and compose configurations:
-- Optimized container images
-- Security hardening
-- Health check integration
-- Development and production variants
-
-### Kubernetes Deployment _(Coming Soon)_
-Full Kubernetes manifests for production:
-- Deployment with rolling updates
-- Service discovery and load balancing
-- ConfigMaps and Secrets
-- Network policies and RBAC
-- HPA for auto-scaling
-
-### CI/CD Pipeline _(Coming Soon)_
-GitHub Actions workflow for automated deployment:
-- Testing and security scanning
-- Container building and registry push
-- Kubernetes deployment
-- Rollback capabilities
-
-### Monitoring Setup _(Coming Soon)_
-Observability stack configuration:
-- Prometheus metrics
-- Grafana dashboards
-- Alert rules
-- Health check scripts
 
 ## Quick Start
 
-Start with the [Core Production Service](service.md) example, which provides comprehensive patterns you can adapt to your chosen deployment platform:
-
-| Platform | Complexity | Best For | Status |
-|----------|------------|----------|--------|
-| Docker Compose | Low | Development, small deployments | _Coming Soon_ |
-| Docker Swarm | Medium | Small to medium production | _Coming Soon_ |
-| Kubernetes | High | Large-scale production | _Coming Soon_ |
-| Cloud Run | Low | Serverless deployments | _Coming Soon_ |
-
-For now, use the [Core Service](service.md) as a template and adapt it to your deployment needs.
+Start with the [Core Production Service](service.md) example, which provides comprehensive patterns for:
+- Error handling and recovery
+- Health checks and monitoring
+- Rate limiting and circuit breakers
+- Structured logging with correlation IDs
+- Production-ready configuration management
 
 ## Production Checklist
 
@@ -146,70 +112,32 @@ PLUGIN_METRICS_ENABLED=true
 PLUGIN_TRACING_ENABLED=true
 ```
 
-## Architecture Patterns
-
-### Single Service Deployment
-Best for simple use cases with one plugin type:
-
-```
-┌─────────────┐     ┌─────────────┐
-│   Client    │────▶│   Plugin    │
-└─────────────┘     └─────────────┘
-```
-
-### Multi-Service Architecture
-For complex systems with multiple plugin types:
-
-```
-┌─────────────┐     ┌─────────────┐
-│   Gateway   │────▶│  Plugin A   │
-└─────────────┘     └─────────────┘
-       │            
-       │            ┌─────────────┐
-       └───────────▶│  Plugin B   │
-                    └─────────────┘
-```
-
-### Microservices Pattern
-Full microservices architecture with service mesh:
-
-```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Frontend  │────▶│   Gateway   │────▶│  Plugin A   │
-└─────────────┘     └─────────────┘     └─────────────┘
-                           │             
-                           │             ┌─────────────┐
-                           └────────────▶│  Plugin B   │
-                                        └─────────────┘
-```
-
 ## Performance Considerations
 
-### Resource Allocation
+### Resource Planning
 
-| Component | CPU | Memory | Notes |
-|-----------|-----|--------|-------|
-| Plugin Server | 0.5-2 cores | 256MB-1GB | Depends on workload |
-| Plugin Client | 0.25-1 core | 128MB-512MB | Lighter than server |
-| Database Plugin | 1-4 cores | 512MB-2GB | Connection pool size matters |
-| Gateway | 1-2 cores | 256MB-512MB | Mostly I/O bound |
+Resource requirements depend heavily on workload:
+- **CPU**: Profile your plugin to identify bottlenecks
+- **Memory**: Monitor for leaks, especially with long-running plugins
+- **I/O**: Consider async patterns for I/O-heavy operations
+- **Network**: Use Unix sockets for local IPC when possible
 
-### Scaling Strategies
+### Optimization Strategies
 
-1. **Vertical Scaling**: Increase resources per instance
-2. **Horizontal Scaling**: Add more instances behind load balancer
-3. **Auto-scaling**: Based on CPU, memory, or custom metrics
-4. **Sharding**: Distribute load based on consistent hashing
+1. **Connection pooling**: Reuse connections to reduce handshake overhead
+2. **Async operations**: Leverage asyncio for concurrent request handling
+3. **Caching**: Cache expensive computations when appropriate
+4. **Profiling**: Use cProfile and memory_profiler to identify bottlenecks
 
 ## Security Best Practices
 
-1. **Use mTLS** for all production communication
-2. **Rotate certificates** regularly (30-90 days)
-3. **Store secrets** in dedicated secret management systems
-4. **Implement RBAC** for Kubernetes deployments
-5. **Use network policies** to restrict communication
-6. **Enable audit logging** for compliance
-7. **Scan images** for vulnerabilities in CI/CD
+1. **Use mTLS** for all production communication (default: enabled)
+2. **Rotate certificates** regularly (30-90 days recommended)
+3. **Store secrets** securely - never hardcode magic cookies or certificates in code
+4. **Validate magic cookies** - ensure proper handshake authentication
+5. **Process isolation** - leverage subprocess isolation for plugin sandboxing
+6. **Enable audit logging** for compliance and troubleshooting
+7. **Monitor certificate expiry** - implement alerts before certificates expire
 
 ## Troubleshooting Production Issues
 
@@ -226,9 +154,10 @@ Common issues and solutions:
 ## Next Steps
 
 1. **Review the [complete service implementation](service.md)** - Production-ready patterns for error handling, health checks, and logging
-2. **Adapt to your platform** - Use the service example as a template for Docker, Kubernetes, or your preferred platform
-3. **Implement monitoring** - Add Prometheus metrics and health check endpoints (examples in service.md)
-4. **Configure security** - Enable mTLS and follow the security checklist above
+2. **Configure security** - Enable mTLS and follow the security checklist above
+3. **Implement monitoring** - Add health check endpoints and structured logging
+4. **Performance testing** - Profile and optimize based on your workload
+5. **Deploy incrementally** - Start with a single plugin type, then expand
 
 ---
 
