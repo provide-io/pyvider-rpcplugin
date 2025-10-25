@@ -30,8 +30,8 @@ class EchoClient:
         from pyvider.rpcplugin import rpcplugin_config  # For reading client's config
 
         self.server_script_path = server_script_path
-        # Environment variables for the ch05_echo_server.py subprocess.
-        # These must match what ch05_echo_server.py expects for its handshake.
+        # Environment variables for the echo_server.py subprocess.
+        # These must match what echo_server.py expects for its handshake.
         # The client's `configure_for_example()` sets the client's own config
         # for MAGIC_COOKIE_KEY and MAGIC_COOKIE_VALUE.
         # RPCPluginClient._launch_process will use these to set the env var for the
@@ -114,28 +114,28 @@ async def run_client() -> None:
     # Determine path to the server script relative to this client script,
     # assuming they are both in the 'examples' directory.
     # Path(__file__).parent gives the directory of the current script
-    # (ch07_echo_client.py). So, server_script will point to
-    # examples/ch05_echo_server.py
+    # (echo_client.py). So, server_script will point to
+    # examples/echo_server.py
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "ch05_echo_server.py"  # Updated name
+    server_script_path = current_dir / "echo_server.py"
 
     if not server_script_path.exists():
         # Fallback if running from a different CWD, try to find it
         # from project root perspective
         project_root = Path.cwd()  # Or a more robust way to find project root
-        if not (project_root / "examples" / "ch05_echo_server.py").exists():
+        if not (project_root / "examples" / "echo_server.py").exists():
             # Try one level up if cwd is examples/
             project_root = Path.cwd().parent
-        server_script_path = project_root / "examples" / "ch05_echo_server.py"
+        server_script_path = project_root / "examples" / "echo_server.py"
         if not server_script_path.exists():
             logger.error(
-                f"Could not find ch05_echo_server.py. "
-                f"Tried {current_dir / 'ch05_echo_server.py'} "
+                f"Could not find echo_server.py. "
+                f"Tried {current_dir / 'echo_server.py'} "
                 f"and {server_script_path}"
             )
             return
 
-    logger.info(f"Client (ch07_echo_client.py) will use server script: {server_script_path}")
+    logger.info(f"Client (echo_client.py) will use server script: {server_script_path}")
     client = EchoClient(str(server_script_path))
 
     if not await client.start():

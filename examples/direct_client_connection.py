@@ -39,7 +39,7 @@ from provide.foundation import logger
 
 # Define project_root for SOCKET_COMM_FILE path construction
 project_root = Path(__file__).resolve().parent.parent
-# Path to the file where ch02_dummy_server.py writes its socket path
+# Path to the file where dummy_server.py writes its socket path
 SOCKET_COMM_FILE = project_root / "dummy_server_socket.txt"
 
 
@@ -55,7 +55,7 @@ async def run_direct_client() -> None:
     except FileNotFoundError:
         logger.error(
             f"Socket communication file not found: {SOCKET_COMM_FILE}. Ensure "
-            "ch08_dummy_server.py ran successfully and wrote this file."
+            "dummy_server.py ran successfully and wrote this file."
         )
         print(f"❌ Socket path file not found: {SOCKET_COMM_FILE}. Start server first.")
         return

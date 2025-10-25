@@ -61,12 +61,12 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
     """
     Demonstrates applying parts of a conceptual config to pyvider.rpcplugin.
     This is illustrative; in a real app, this logic would be more robust.
-    This version aligns with the structure shown in the ch12 documentation.
+    This version aligns with the structure shown in the production configuration documentation.
     """
     logger.info("🔧 Applying conceptual config to pyvider.rpcplugin settings (simplified mapping)...")
 
     # Construct settings for pyvider_configure based on the conceptual_config
-    # This matches the simpler structure from the ch12 markdown.
+    # This matches the simpler structure from the production configuration documentation.
     pyvider_settings_to_apply: dict[str, Any] = {
         "auto_mtls": conceptual_config.get("security", {}).get("mtls_enabled", False),
         "server_cert": (f"file://{conceptual_config.get('security', {}).get('server_cert_path', '')}"),

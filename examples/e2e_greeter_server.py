@@ -71,11 +71,11 @@ class E2EGreetingProtocol(RPCPluginProtocol):
 
 # --- Main Server Logic ---
 async def main() -> None:
-    logger.info("Starting E2E Greeting Plugin Server (ch15_e2e_server.py)...")
+    logger.info("Starting E2E Greeting Plugin Server (e2e_greeter_server.py)...")
 
     # example_utils.configure_for_example() called in __main__ will set up defaults
     # like magic cookie key if not set by the launching client.
-    # The client (ch15_e2e_client.py) will set the expected PLUGIN_MAGIC_COOKIE_KEY
+    # The client (e2e_greeter_client.py) will set the expected PLUGIN_MAGIC_COOKIE_KEY
     # and PLUGIN_MAGIC_COOKIE_VALUE in the environment for this server.
 
     handler = GreeterServiceHandler()
@@ -91,7 +91,7 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"E2E Greeting Server execution failed: {e}", exc_info=True)
     finally:
-        logger.info("E2E Greeting Server (ch15_e2e_server.py) shutting down.")
+        logger.info("E2E Greeting Server (e2e_greeter_server.py) shutting down.")
 
 
 if __name__ == "__main__":
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     cookie_value_to_set = rpcplugin_config.magic_cookie_value()
     os.environ[cookie_key_to_set] = cookie_value_to_set
     logger.info(
-        f"Standalone server mode (ch15): Set env var '{cookie_key_to_set}' to "
+        f"Standalone server mode: Set env var '{cookie_key_to_set}' to "
         f"'{cookie_value_to_set}' for self-handshake."
     )
     asyncio.run(main())

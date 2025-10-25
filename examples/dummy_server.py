@@ -27,12 +27,12 @@ from pyvider.rpcplugin.types import (  # noqa: E402
 
 
 async def main() -> None:
-    """Sets up and runs the dummy server for Chapter 2 Quick Start."""
-    logger.info("🚀 ch02_dummy_server.py (Quick Start version): Starting as an executable plugin...")
+    """Sets up and runs the dummy server for Quick Start."""
+    logger.info("🚀 dummy_server.py (Quick Start version): Starting as an executable plugin...")
 
     # `configure_for_example()` called at the module level sets up default
     # configurations, including a default magic cookie key/value and disabling
-    # mTLS by default. The launching client (ch02_quick_start_client.py) is
+    # mTLS by default. The launching client (quick_start_client.py) is
     # expected to set the environment variable matching PLUGIN_MAGIC_COOKIE_KEY
     # with the value from PLUGIN_MAGIC_COOKIE_VALUE from its own configuration.
 
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     import sys
 
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("Usage: ch02_dummy_server.py")
+        print("Usage: dummy_server.py")
         print(__doc__)
         sys.exit(0)
 
