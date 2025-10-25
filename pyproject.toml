@@ -192,6 +192,7 @@ module = [
     "google.protobuf.*",
     "grpc.*",
     "pytest.*",
+    "opentelemetry.*",
 ]
 ignore_missing_imports = true
 
