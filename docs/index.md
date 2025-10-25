@@ -62,10 +62,12 @@ from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from provide.foundation import logger
 
 # Configure for your environment
+# Note: configure() accepts simplified parameter names (auto_mtls, handshake_timeout, etc.)
+# and automatically maps them to the full config names (plugin_auto_mtls, plugin_handshake_timeout)
 configure(
-    magic_cookie="my-echo-plugin",
-    auto_mtls=False,  # Enable for production
-    handshake_timeout=5.0
+    magic_cookie="my-echo-plugin",  # Sets PLUGIN_MAGIC_COOKIE_VALUE
+    auto_mtls=False,                 # Sets PLUGIN_AUTO_MTLS=False (disables mTLS for local dev; default is True)
+    handshake_timeout=5.0            # Sets PLUGIN_HANDSHAKE_TIMEOUT
 )
 
 class EchoService:
@@ -112,10 +114,10 @@ from pyvider.rpcplugin import plugin_client, configure
 from provide.foundation import logger
 
 # Configure client environment
+# Note: configure() accepts simplified parameter names for convenience
 configure(
-    magic_cookie="my-echo-plugin",
-    handshake_timeout=10.0,
-    connection_timeout=5.0
+    magic_cookie="my-echo-plugin",  # Must match server's magic cookie
+    handshake_timeout=10.0,          # Sets PLUGIN_HANDSHAKE_TIMEOUT
 )
 
 async def main() -> None:
@@ -123,22 +125,26 @@ async def main() -> None:
     # Plugin command - client handles process lifecycle
     plugin_path = Path(__file__).parent / "echo_server.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    # Environment passed automatically via PLUGIN_* variables
+
+    # Use async context manager for automatic cleanup
     async with plugin_client(command=plugin_command) as client:
+        # Start the plugin
+        await client.start()
+
         # Use typed gRPC stub
         from echo_pb2_grpc import EchoServiceStub
         from echo_pb2 import EchoRequest
-        
+
         stub = EchoServiceStub(client.grpc_channel)
         request = EchoRequest(message="Hello, Foundation!")
-        
+
         response = await stub.Echo(request)
         logger.info("Plugin response received", extra={
             "request_message": request.message,
             "response_reply": response.reply,
             "client_id": "echo-client"
         })
+    # Client automatically closed on context exit
 
 if __name__ == "__main__":
     asyncio.run(main())

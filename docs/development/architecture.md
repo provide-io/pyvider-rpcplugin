@@ -180,36 +180,35 @@ The server provides a high-level interface for implementing RPC services:
 # src/pyvider/rpcplugin/server/core.py
 from typing import Generic, TypeVar
 import grpc.aio
+from attrs import define, field
 
 ServerT = TypeVar('ServerT')
 HandlerT = TypeVar('HandlerT')
 TransportT = TypeVar('TransportT')
 
-class RPCPluginServer(ServerNetworkMixin, Generic[ServerT, HandlerT, TransportT]):
+@define(slots=False)
+class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin):
     """
     High-level RPC server implementation with mixin architecture.
 
     Uses composition through mixins:
     - ServerNetworkMixin: Network operations and connection handling
     - Core server logic in this class
+
+    Attributes defined using attrs @define decorator with slots=False
+    to allow dynamic attribute assignment from mixins.
     """
 
-    def __init__(
-        self,
-        protocol: RPCPluginProtocol[ServerT, HandlerT],
-        handler: HandlerT,
-        transport: TransportT | None = None,
-        config: dict[str, Any] | None = None,
-    ):
-        self.protocol = protocol
-        self.handler = handler
-        self.transport = transport
-        self.config = config or {}
+    protocol: RPCPluginProtocol[ServerT, HandlerT] = field()
+    handler: HandlerT = field()
+    config: dict[str, Any] | None = field(default=None)
+    transport: TransportT | None = field(default=None)
 
-        self._server: ServerT | None = None
-        self._handshake_config: HandshakeConfig | None = None
-        self._health_servicer: HealthServicer | None = None
-        self._rate_limiter: TokenBucketRateLimiter | None = None
+    # Internal state attributes
+    _server: ServerT | None = field(init=False, default=None)
+    _handshake_config: HandshakeConfig | None = field(init=False, default=None)
+    _health_servicer: HealthServicer | None = field(init=False, default=None)
+    _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
 
     async def serve(self) -> None:
         """

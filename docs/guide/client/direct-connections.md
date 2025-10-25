@@ -276,23 +276,39 @@ result = await lb_client.call("Process", data={"request": "data"})
 ### mTLS Direct Connection
 
 ```python
-from provide.foundation.crypto import Certificate, PrivateKey
+from provide.foundation.crypto import Certificate
 import ssl
+import tempfile
 
 async def secure_direct_connection():
     """Establish mTLS direct connection."""
-    
+
     # Load certificates using Foundation
-    client_cert = Certificate.load_from_file("/etc/ssl/client.pem")
-    client_key = PrivateKey.load_from_file("/etc/ssl/client.key")
-    ca_cert = Certificate.load_from_file("/etc/ssl/ca.pem")
-    
-    # Create SSL context
+    client_cert = Certificate.from_pem(
+        cert_pem="file:///etc/ssl/client.pem",
+        key_pem="file:///etc/ssl/client.key"
+    )
+    ca_cert = Certificate.from_pem(cert_pem="file:///etc/ssl/ca.pem")
+
+    # Create SSL context with certificate PEM strings
+    # Note: ssl.load_cert_chain requires file paths, so write to temp files
     ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-    ssl_context.load_cert_chain(client_cert.path, client_key.path)
-    ssl_context.load_verify_locations(ca_cert.path)
-    ssl_context.check_hostname = True
-    
+
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.pem') as cert_file, \
+         tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.key') as key_file, \
+         tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.pem') as ca_file:
+
+        cert_file.write(client_cert.cert_pem)
+        key_file.write(client_cert.key_pem)
+        ca_file.write(ca_cert.cert_pem)
+        cert_file.flush()
+        key_file.flush()
+        ca_file.flush()
+
+        ssl_context.load_cert_chain(cert_file.name, key_file.name)
+        ssl_context.load_verify_locations(ca_file.name)
+        ssl_context.check_hostname = True
+
     # Connect with mTLS
     client = await plugin_client(
         host="secure.example.com",
@@ -300,7 +316,7 @@ async def secure_direct_connection():
         skip_subprocess=True,
         ssl_context=ssl_context
     )
-    
+
     try:
         response = await client.call("SecureMethod", sensitive_data="...")
         return response

@@ -307,15 +307,11 @@ nav:
   
   - Examples:
     - examples/index.md
-    - Working Examples:
-      - Echo Service: examples/echo-service.md
-      - File Transfer: examples/file-transfer.md
-      - Database Plugin: examples/database-plugin.md
-      - Microservice Gateway: examples/microservice-gateway.md
-      - Production Deployment: examples/production.md
-    - Quick Examples:
-      # Index file missing, but individual examples exist
-      # - examples/short/index.md  # File does not exist - removed from navigation
+    - Echo Service Examples:
+      - Basic Echo: examples/echo-basic.md
+      - Intermediate Patterns: examples/echo-intermediate.md
+      - Advanced Patterns: examples/echo-advanced.md
+    - Short Examples:
       - Basic Client: examples/short/basic-client.md
       - Basic Server: examples/short/basic-server.md
       - Health Check: examples/short/health-check.md

@@ -313,22 +313,22 @@ def plugin_client(
         from pyvider.rpcplugin import plugin_client
 
         async def main():
-            # Create client for a Python plugin
-            client = plugin_client(
+            # Create client for a Python plugin (recommended: use context manager)
+            async with plugin_client(
                 command=["python", "path/to/plugin.py"],
                 config={"PLUGIN_LOG_LEVEL": "DEBUG"}
-            )
+            ) as client:
+                # Launch plugin and establish connection
+                await client.start()
 
-            # Launch plugin and establish connection
-            await client.start()
+                # Use the client's grpc_channel for RPC calls
+                stub = MyServiceStub(client.grpc_channel)
+                response = await stub.ProcessRequest(request)
 
-            # Use the client's grpc_channel for RPC calls
-            stub = MyServiceStub(client.grpc_channel)
-            response = await stub.ProcessRequest(request)
+                # Gracefully shutdown
+                await client.shutdown_plugin()
 
-            # Gracefully shutdown
-            await client.shutdown_plugin()
-            await client.close()
+            # Client automatically closed on context exit
 
         asyncio.run(main())
         ```
@@ -336,7 +336,7 @@ def plugin_client(
     Advanced Example:
         ```python
         # Configure retry behavior and mTLS
-        client = plugin_client(
+        async with plugin_client(
             command=["./my-secure-plugin"],
             config={
                 "PLUGIN_CLIENT_MAX_RETRIES": 5,
@@ -345,13 +345,21 @@ def plugin_client(
                 "PLUGIN_CLIENT_CERT": "file:///path/to/client.crt",
                 "PLUGIN_CLIENT_KEY": "file:///path/to/client.key"
             }
-        )
-
-        # Use as async context manager for automatic cleanup
-        async with client:
+        ) as client:
             await client.start()
             # Use client...
-        # Automatically closed on exit
+        # Automatically closed on context exit
+        ```
+
+    Manual Cleanup (Alternative):
+        ```python
+        # For cases where you need manual control over lifecycle
+        client = plugin_client(command=["python", "plugin.py"])
+        try:
+            await client.start()
+            # Use client...
+        finally:
+            await client.close()
         ```
 
     Note:

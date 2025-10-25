@@ -2,6 +2,36 @@
 
 X.509 certificate lifecycle management for secure plugin communication using Foundation's comprehensive cryptography utilities.
 
+!!! warning "Documentation Under Review - Use These Sections"
+    This page is being updated to reflect the correct Foundation Certificate API. **Safe sections to use:**
+
+    ✅ **[Quick Start](#quick-start)** - Correct API for certificate generation and management
+    ✅ **[Core Components](#core-components)** - Correct patterns for generation and validation
+    ✅ **[Foundation Integration Guide](../advanced/foundation-integration.md)** - Comprehensive, production-ready examples
+
+    ⚠️ **Sections with outdated API examples** (being updated):
+    - Certificate Validation (line ~95+) - Uses non-existent `.validate_full()`
+    - Certificate Rotation (line ~109+) - Uses non-existent `CertificateRotator` class
+    - Loading Certificates (lines ~193, 210, 280) - Uses non-existent `.load_from_file()`
+    - Monitoring (line ~258+) - Uses non-existent `CertificateHealthChecker`
+    - Troubleshooting (line ~353+) - Uses non-existent `.subject`, `.not_after`
+
+    **Correct API Reference:**
+    ```python
+    # ✅ CORRECT - Load certificates
+    from provide.foundation.crypto import Certificate
+    cert = Certificate.from_pem(cert_pem="file://path.pem", key_pem="file://key.pem")
+
+    # ✅ CORRECT - Validate
+    if cert.is_valid:  # Property, not method
+        print("Valid")
+
+    # ✅ CORRECT - Save to file
+    from pathlib import Path
+    Path("cert.pem").write_text(cert.cert_pem)
+    Path("key.pem").write_text(cert.key_pem)
+    ```
+
 ## Overview
 
 Certificate management provides PKI-based authentication and encryption for plugin communication. Foundation handles certificate generation, validation, rotation, and monitoring with production-ready utilities.
@@ -17,34 +47,35 @@ Certificate management provides PKI-based authentication and encryption for plug
 ### Quick Start
 
 ```python
-from provide.foundation.crypto import Certificate, create_self_signed, create_ca
+from pathlib import Path
+from provide.foundation.crypto import Certificate
 import asyncio
 
 async def certificate_basics():
     """Basic certificate operations."""
-    
+
     # Create Certificate Authority
-    ca_cert = create_ca(
+    ca_cert = Certificate.create_ca(
         common_name="Plugin CA",
-        organization="My Company", 
+        organization_name="My Company",
         validity_days=3650
     )
-    
+
     # Generate server certificate
-    server_cert = create_self_signed(
+    server_cert = Certificate.create_self_signed_server_cert(
         common_name="plugin-server.local",
-        organization="My Company",
-        subject_alternative_names=["DNS:localhost", "IP:127.0.0.1"],
+        organization_name="My Company",
+        alt_names=["DNS:localhost", "IP:127.0.0.1"],
         validity_days=365
     )
-    
-    # Save certificates
-    ca_cert.save_certificate("ca.pem")
-    server_cert.save_certificate("server.pem")
-    server_cert.save_private_key("server.key")
-    
-    print(f"✅ CA expires: {ca_cert.not_after}")
-    print(f"✅ Server expires: {server_cert.not_after}")
+
+    # Save certificates (write PEM strings to files)
+    Path("ca.pem").write_text(ca_cert.cert_pem)
+    Path("server.pem").write_text(server_cert.cert_pem)
+    Path("server.key").write_text(server_cert.key_pem)
+
+    print(f"✅ CA valid: {ca_cert.is_valid}, CN: {ca_cert.common_name}")
+    print(f"✅ Server valid: {server_cert.is_valid}, CN: {server_cert.common_name}")
 ```
 
 ## Core Components
@@ -53,23 +84,26 @@ async def certificate_basics():
 Foundation provides utilities for creating CA certificates, server certificates, and client certificates with proper extensions and constraints.
 
 ```python
-from provide.foundation.crypto import Certificate, KeyType, CurveType
+from provide.foundation.crypto import Certificate
 
-# Self-signed certificate
-cert = Certificate.generate_self_signed(
+# Self-signed server certificate
+cert = Certificate.create_self_signed_server_cert(
     common_name="my-plugin",
-    key_type=KeyType.ECDSA,
-    curve=CurveType.SECP384R1,
+    organization_name="My Organization",
+    key_type="ecdsa",
+    ecdsa_curve="secp384r1",
     validity_days=365
 )
 
-# CA-signed certificate  
-ca_cert = Certificate.load_from_file("ca.pem", "ca.key")
-signed_cert = ca_cert.sign_certificate(
-    cert_request,
-    validity_days=90,
-    extended_key_usage=["server_auth", "client_auth"]
+# Certificate Authority
+ca_cert = Certificate.create_ca(
+    common_name="My Plugin CA",
+    organization_name="My Organization",
+    validity_days=3650
 )
+
+# Note: Foundation Certificate class includes both cert and private key
+# Access via: cert.cert_pem and cert.key_pem
 ```
 
 ### 2. **Certificate Validation**
@@ -78,10 +112,11 @@ Comprehensive validation including expiration, signature verification, chain val
 ```python
 from provide.foundation.crypto import Certificate
 
-cert = Certificate.load_from_file("server.pem")
+# Load certificate from file (using file:// URI)
+cert = Certificate.from_pem(cert_pem="file://server.pem")
 
 # Basic validation
-if cert.is_valid():
+if cert.is_valid:
     print("✅ Certificate is valid")
 else:
     print("❌ Certificate validation failed")

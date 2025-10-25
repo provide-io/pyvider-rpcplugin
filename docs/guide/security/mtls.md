@@ -42,9 +42,12 @@ For production environments with existing PKI:
 ```python
 from provide.foundation.crypto import Certificate
 
-# Load certificates via Foundation
-server_cert = Certificate.load_from_file("server.pem", "server.key")
-ca_cert = Certificate.load_from_file("ca.pem")
+# Load certificates via Foundation using file:// URIs or PEM strings
+server_cert = Certificate.from_pem(
+    cert_pem="file://server.pem",
+    key_pem="file://server.key"
+)
+ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
 
 # Server with manual certificates
 server = plugin_server(
@@ -56,7 +59,10 @@ server = plugin_server(
 )
 
 # Client with certificates
-client_cert = Certificate.load_from_file("client.pem", "client.key")
+client_cert = Certificate.from_pem(
+    cert_pem="file://client.pem",
+    key_pem="file://client.key"
+)
 
 async with plugin_client(
     tls_client_certificate=client_cert,
@@ -92,30 +98,33 @@ export PLUGIN_CLIENT_ROOT_CERTS=file:///etc/ssl/certs/ca.pem
 Use Foundation to generate development certificates:
 
 ```python
-from provide.foundation.crypto import create_self_signed, create_ca
+from pathlib import Path
+from provide.foundation.crypto import Certificate
+from provide.foundation import logger
 
 # Create Certificate Authority
-ca_cert = create_ca(
+ca_cert = Certificate.create_ca(
     common_name="Plugin CA",
-    organization="My Company",
+    organization_name="My Company",
     validity_days=3650
 )
 
 # Generate server certificate
-server_cert = create_self_signed(
+server_cert = Certificate.create_self_signed_server_cert(
     common_name="plugin-server.local",
-    organization="My Company",
-    subject_alternative_names=["DNS:localhost", "IP:127.0.0.1"],
+    organization_name="My Company",
+    alt_names=["DNS:localhost", "IP:127.0.0.1"],
     validity_days=365
 )
 
-# Save certificates
-ca_cert.save_certificate("ca.pem")
-server_cert.save_certificate("server.pem")
-server_cert.save_private_key("server.key")
+# Save certificates (write PEM strings to files)
+Path("ca.pem").write_text(ca_cert.cert_pem)
+Path("server.pem").write_text(server_cert.cert_pem)
+Path("server.key").write_text(server_cert.key_pem)
 
-logger.info(f"✅ CA expires: {ca_cert.not_after}")
-logger.info(f"✅ Server expires: {server_cert.not_after}")
+logger.info(f"✅ CA certificate generated: {ca_cert.common_name}")
+logger.info(f"✅ Server certificate generated: {server_cert.common_name}")
+logger.info(f"✅ Certificates are valid: CA={ca_cert.is_valid}, Server={server_cert.is_valid}")
 ```
 
 ## Production Deployment
@@ -197,44 +206,85 @@ CMD ["python", "my_plugin_server.py"]
 
 ### Automatic Rotation
 
-Foundation provides automatic certificate rotation:
+Implement automatic certificate rotation with Foundation:
 
 ```python
-from provide.foundation.crypto import CertificateRotator
+import asyncio
+from pathlib import Path
+from provide.foundation.crypto import Certificate
+from provide.foundation import logger
 
-# Configure automatic rotation
-rotator = CertificateRotator(
-    certificate_path="server.pem",
-    private_key_path="server.key",
-    ca_certificate="ca.pem",
-    renewal_threshold_days=30  # Rotate 30 days before expiry
-)
+async def check_and_rotate_certificates(
+    cert_path: str,
+    key_path: str,
+    ca_cert: Certificate,
+    check_interval: int = 3600
+):
+    """Periodically check and rotate certificates."""
+    while True:
+        await asyncio.sleep(check_interval)
 
-# Check if rotation needed
-if await rotator.needs_rotation():
-    new_cert = await rotator.rotate_certificate()
-    logger.info(f"🔄 Certificate rotated, expires: {new_cert.not_after}")
+        # Load current certificate
+        cert = Certificate.from_pem(
+            cert_pem=f"file://{cert_path}",
+            key_pem=f"file://{key_path}"
+        )
+
+        # Check if rotation needed (based on validity)
+        if not cert.is_valid:
+            logger.warning("Certificate is invalid, rotating now")
+
+            # Generate new certificate
+            new_cert = Certificate.create_self_signed_server_cert(
+                common_name=cert.common_name,
+                organization_name=cert.organization_name,
+                validity_days=90
+            )
+
+            # Save new certificate
+            Path(cert_path).write_text(new_cert.cert_pem)
+            Path(key_path).write_text(new_cert.key_pem)
+
+            logger.info(f"✅ Certificate rotated for {new_cert.common_name}")
 
 # Start rotation service
-await rotator.start_rotation_service()
+asyncio.create_task(check_and_rotate_certificates(
+    "server.pem",
+    "server.key",
+    ca_cert
+))
 ```
 
 ### Manual Rotation
 
 ```python
-# Check certificate expiration
-cert = Certificate.load_from_file("server.pem")
-days_remaining = cert.days_until_expiry()
+from pathlib import Path
+from provide.foundation.crypto import Certificate
+from provide.foundation import logger
 
-if days_remaining <= 30:
-    logger.warning(f"Certificate expires in {days_remaining} days")
-    
+# Load current certificate
+cert = Certificate.from_pem(
+    cert_pem="file://server.pem",
+    key_pem="file://server.key"
+)
+
+# Check validity and rotate if needed
+if not cert.is_valid:
+    logger.warning("Certificate is invalid, rotating")
+
     # Generate new certificate
-    new_cert = ca_cert.renew_certificate(cert, validity_days=90)
-    
-    # Hot-swap certificate in running server
-    await server.update_certificate(new_cert)
-    logger.info("✅ Certificate rotated without downtime")
+    new_cert = Certificate.create_self_signed_server_cert(
+        common_name=cert.common_name,
+        organization_name=cert.organization_name,
+        validity_days=90
+    )
+
+    # Save new certificate
+    Path("server.pem").write_text(new_cert.cert_pem)
+    Path("server.key").write_text(new_cert.key_pem)
+
+    # Note: Hot-swapping requires server restart or custom reload mechanism
+    logger.info("✅ Certificate rotated - restart server to apply")
 ```
 
 ## Validation and Debugging
@@ -243,27 +293,33 @@ if days_remaining <= 30:
 
 ```python
 from provide.foundation.crypto import Certificate
+from provide.foundation import logger
 
-cert = Certificate.load_from_file("server.pem")
+# Load certificate
+cert = Certificate.from_pem(
+    cert_pem="file://server.pem",
+    key_pem="file://server.key"
+)
 
 # Basic validation
-if cert.is_valid():
+if cert.is_valid:
     logger.info("✅ Certificate is valid")
+    logger.info(f"   Common Name: {cert.common_name}")
+    logger.info(f"   Organization: {cert.organization_name}")
 else:
     logger.error("❌ Certificate validation failed")
 
-# Detailed validation
-validation_result = cert.validate_full(
-    ca_certificates=["ca.pem"],
-    check_revocation=True,
-    require_key_usage=["digital_signature", "key_encipherment"]
-)
+# Check certificate against CA (using verify_trust method)
+ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
 
-if validation_result.is_valid:
-    logger.info("✅ Full certificate validation passed")
-else:
-    for error in validation_result.errors:
-        logger.error(f"❌ Validation error: {error}")
+try:
+    # verify_trust checks if cert is signed by CA
+    if cert.verify_trust(ca_cert):
+        logger.info("✅ Certificate trust chain validated")
+    else:
+        logger.error("❌ Certificate trust verification failed")
+except Exception as e:
+    logger.error(f"❌ Trust verification error: {e}")
 ```
 
 ### Connection Debugging
@@ -322,21 +378,23 @@ server = plugin_server(
 ### Monitoring
 
 ```python
-from provide.foundation.crypto import CertificateHealthChecker
+from provide.foundation.crypto import Certificate
+from provide.foundation import logger
 
 # Monitor certificate health
-health_checker = CertificateHealthChecker([
-    "server.pem",
-    "client.pem",
-    "ca.pem"
-])
+cert_paths = ["server.pem", "client.pem", "ca.pem"]
 
-health_status = await health_checker.check_all()
-for cert_path, status in health_status.items():
-    if status.is_healthy:
-        logger.info(f"✅ {cert_path}: {status.days_until_expiry} days remaining")
-    else:
-        logger.error(f"❌ {cert_path}: {status.error}")
+for cert_path in cert_paths:
+    try:
+        cert = Certificate.from_pem(cert_pem=f"file://{cert_path}")
+
+        if cert.is_valid:
+            logger.info(f"✅ {cert_path}: Valid")
+            logger.info(f"   CN: {cert.common_name}")
+        else:
+            logger.error(f"❌ {cert_path}: Invalid certificate")
+    except Exception as e:
+        logger.error(f"❌ {cert_path}: Error loading - {e}")
 ```
 
 ## Common Patterns
@@ -346,18 +404,27 @@ for cert_path, status in health_status.items():
 ```python
 # Development with self-signed certificates
 from provide.foundation.crypto import Certificate
+from pyvider.rpcplugin import plugin_server
 
-dev_certs = Certificate.generate_dev_certificates(
-    ca_common_name="Dev Plugin CA",
-    server_common_name="localhost",
+# Create CA and server certificate for development
+ca_cert = Certificate.create_ca(
+    common_name="Dev Plugin CA",
+    organization_name="Development",
+    validity_days=90
+)
+
+server_cert = Certificate.create_self_signed_server_cert(
+    common_name="localhost",
+    organization_name="Development",
+    alt_names=["DNS:localhost", "IP:127.0.0.1"],
     validity_days=90
 )
 
 server = plugin_server(
     protocol=my_protocol,
     handler=my_handler,
-    tls_certificate=dev_certs.server_cert,
-    tls_ca_certificate=dev_certs.ca_cert
+    tls_certificate=server_cert,
+    tls_ca_certificate=ca_cert
 )
 ```
 
@@ -365,10 +432,19 @@ server = plugin_server(
 
 ```python
 # Staging with intermediate CA
-staging_ca = Certificate.load_from_file("staging-ca.pem", "staging-ca.key")
+from provide.foundation.crypto import Certificate
+from pyvider.rpcplugin import plugin_server
 
-server_cert = staging_ca.generate_server_certificate(
+# Load staging CA
+staging_ca = Certificate.from_pem(
+    cert_pem="file://staging-ca.pem",
+    key_pem="file://staging-ca.key"
+)
+
+# Create server certificate for staging
+server_cert = Certificate.create_self_signed_server_cert(
     common_name="staging-plugin.company.internal",
+    organization_name=staging_ca.organization_name,
     validity_days=30
 )
 
@@ -422,13 +498,17 @@ openssl verify -CAfile ca.pem server.pem
 ```python
 # Enable detailed TLS logging
 import logging
+from provide.foundation.crypto import Certificate
+from provide.foundation import logger
+
 logging.getLogger('grpc').setLevel(logging.DEBUG)
 
 # Check certificate validation
-cert = Certificate.load_from_file("server.pem")
-logger.info(f"Certificate valid until: {cert.not_after}")
-logger.info(f"Subject: {cert.subject}")
-logger.info(f"Issuer: {cert.issuer}")
+cert = Certificate.from_pem(cert_pem="file://server.pem")
+logger.info(f"Certificate valid: {cert.is_valid}")
+logger.info(f"Common Name: {cert.common_name}")
+logger.info(f"Organization: {cert.organization_name}")
+logger.info(f"Certificate type: {cert.key_type}")
 ```
 
 ## Next Steps

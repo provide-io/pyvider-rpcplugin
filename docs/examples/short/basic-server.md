@@ -54,7 +54,7 @@ if __name__ == "__main__":
 - **[Security Model](../../guide/concepts/security.md)** - Understand the plugin security architecture
 
 ### Complete Examples
-- **[Echo Service Example](../echo-service.md)** - Full-featured service with all RPC patterns
+- **[Echo Service Examples](../echo-basic.md)** - Full-featured service examples from basic to advanced
 - **[Configuration Examples](../../guide/config/index.md#configuration-examples)** - Environment-specific configuration patterns
 
 ## Related Examples

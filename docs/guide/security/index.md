@@ -488,13 +488,13 @@ health = await security_health_check()
 ## Examples and Learning Path
 
 ### Hands-On Examples
-- **[Echo Service Example](../../examples/echo-service.md)** - Basic security implementation in a working service
+- **[Echo Service Examples](../../examples/echo-basic.md)** - Security implementation in working service examples
 - **[Basic Server Example](../../examples/short/basic-server.md)** - Simple server setup with security considerations
 
 ### Working Examples
-- **`ch09_security_mtls_example.py`** - Complete mTLS implementation
+- **`security_mtls_example.py`** - Complete mTLS implementation (see `examples/` directory)
 - **Production configuration examples** in each security section
-- **Certificate generation and management scripts**
+- **Certificate generation and management** demonstrated in mTLS examples
 
 ## Next Steps
 

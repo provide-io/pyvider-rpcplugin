@@ -8,12 +8,6 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 |---------|-------------|------------|
 | [Basic Plugin](#basic-plugin) | Minimal plugin server and client | 🟢 Beginner |
 | [Echo Service](#echo-service) | Complete RPC service with custom methods | 🟢 Beginner |
-| [Secure Plugin](#secure-plugin) | mTLS authentication and encryption | 🟡 Intermediate |
-| [Streaming Data](#streaming-data) | Server and client streaming patterns | 🟡 Intermediate |
-| [Error Recovery](#error-recovery) | Robust error handling and retry logic | 🟡 Intermediate |
-| [Plugin Pool](#plugin-pool) | Connection pooling and load balancing | 🔴 Advanced |
-| [Custom Transport](#custom-transport) | Custom transport implementation | 🔴 Advanced |
-| [Production Setup](#production-setup) | Complete production deployment | 🔴 Advanced |
 
 ## Basic Plugin
 
@@ -73,37 +67,35 @@ from provide.foundation import logger
 async def main():
     """Main client function."""
     logger.info("🏠 Starting basic client...")
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "basic_plugin.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    client = None
+
     try:
         logger.info("🚀 Launching basic plugin...")
-        
-        # Create and connect to plugin
-        client = plugin_client(command=plugin_command)
-        await client.start()
-        
-        logger.info("✅ Connected to plugin successfully!")
-        logger.info("💡 Plugin is running and ready (no custom RPC methods)")
-        
-        # Keep connection alive briefly
-        await asyncio.sleep(2)
-        logger.info("🎉 Basic example completed!")
-        
+
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=plugin_command) as client:
+            # Start the plugin
+            await client.start()
+
+            logger.info("✅ Connected to plugin successfully!")
+            logger.info("💡 Plugin is running and ready (no custom RPC methods)")
+
+            # Keep connection alive briefly
+            await asyncio.sleep(2)
+            logger.info("🎉 Basic example completed!")
+
+        # Client automatically closed on context exit
+        logger.info("🔌 Shutdown complete")
+
     except RPCPluginError as e:
         logger.error(f"❌ Plugin error: {e.message}")
         if e.hint:
             logger.error(f"💡 Hint: {e.hint}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-    finally:
-        if client:
-            logger.info("🔌 Shutting down...")
-            await client.close()
-            logger.info("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -131,6 +123,22 @@ Expected output:
 ## Echo Service
 
 Complete RPC service with Protocol Buffers and custom methods.
+
+!!! note "Simplified vs. Actual Examples"
+    The examples below are **simplified for teaching purposes** to clearly demonstrate core concepts. The actual runnable files in `examples/echo_server.py` and `examples/echo_client.py` include additional production-ready patterns such as:
+
+    - `example_utils.configure_for_example()` for path setup
+    - Detailed environment variable handling
+    - Class-based client implementation with comprehensive error handling
+    - Additional comments and logging
+
+    **To run the actual examples:**
+    ```bash
+    # From project root
+    python examples/echo_client.py
+    ```
+
+    The simplified examples below are perfect for understanding the framework. Use the actual files when you need production-ready patterns.
 
 ### Protocol Definition (`echo.proto`)
 
@@ -271,104 +279,82 @@ from echo_pb2_grpc import EchoServiceStub
 async def main():
     """Main client function."""
     logger.info("🏠 Starting Echo client...")
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "echo_server.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    client = None
+
     try:
         logger.info("🚀 Launching Echo plugin...")
-        
-        # Create and connect to plugin
-        client = plugin_client(command=plugin_command)
-        await client.start()
-        
-        logger.info("✅ Connected to Echo plugin!")
-        
-        # Create gRPC stub for making RPC calls
-        stub = EchoServiceStub(client.grpc_channel)
-        
-        # Test messages
-        messages = [
-            ("Hello, Plugin!", 1),
-            ("How are you doing?", 2),  
-            ("This is a test message", 3),
-            ("Goodbye!", 4),
-        ]
-        
-        for message, count in messages:
-            logger.info(f"📨 Sending Echo: '{message}'")
-            
-            # Make Echo RPC call
-            echo_request = EchoRequest(message=message, count=count)
-            echo_response = await stub.Echo(echo_request)
-            
-            logger.info(f"📤 Received: '{echo_response.reply}' (processed: {echo_response.processed_count})")
-            
-            # Make ReverseEcho RPC call
-            logger.info(f"🔄 Sending Reverse Echo: '{message}'")
-            reverse_response = await stub.ReverseEcho(echo_request)
-            
-            logger.info(f"📤 Received: '{reverse_response.reply}' (processed: {reverse_response.processed_count})")
-            logger.info("---")
-        
-        logger.info("🎉 All Echo calls completed successfully!")
-        
+
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=plugin_command) as client:
+            # Start the plugin
+            await client.start()
+
+            logger.info("✅ Connected to Echo plugin!")
+
+            # Create gRPC stub for making RPC calls
+            stub = EchoServiceStub(client.grpc_channel)
+
+            # Test messages
+            messages = [
+                ("Hello, Plugin!", 1),
+                ("How are you doing?", 2),
+                ("This is a test message", 3),
+                ("Goodbye!", 4),
+            ]
+
+            for message, count in messages:
+                logger.info(f"📨 Sending Echo: '{message}'")
+
+                # Make Echo RPC call
+                echo_request = EchoRequest(message=message, count=count)
+                echo_response = await stub.Echo(echo_request)
+
+                logger.info(f"📤 Received: '{echo_response.reply}' (processed: {echo_response.processed_count})")
+
+                # Make ReverseEcho RPC call
+                logger.info(f"🔄 Sending Reverse Echo: '{message}'")
+                reverse_response = await stub.ReverseEcho(echo_request)
+
+                logger.info(f"📤 Received: '{reverse_response.reply}' (processed: {reverse_response.processed_count})")
+                logger.info("---")
+
+            logger.info("🎉 All Echo calls completed successfully!")
+
+        # Client automatically closed on context exit
+        logger.info("🔌 Shutdown complete")
+
     except RPCPluginError as e:
         logger.error(f"❌ Plugin error: {e.message}")
         if e.hint:
             logger.error(f"💡 Hint: {e.hint}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-    finally:
-        if client:
-            logger.info("🔌 Shutting down...")
-            await client.close()
-            logger.info("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Future Improvements
+## Additional Resources
 
-### Secure Plugin with mTLS
+For more advanced patterns and production use cases:
 
-A secure plugin implementation with mutual TLS authentication would include:
-
-- Certificate generation and management utilities
-- Automatic certificate rotation and validation  
-- Client and server certificate authentication
-- Encrypted gRPC communication channels
-- Certificate-based authorization policies
-
-This would require implementing:
-- `pyvider.rpcplugin.crypto.Certificate` - Certificate management utilities
-- mTLS configuration options in RPCPluginConfig
-- Certificate validation and rotation logic
-- Integration with PKI infrastructure
-
-### Other Future Examples
-
-Additional examples that would be valuable:
-
-- **Database Plugin**: Persistent state management and connection pooling
-- **Streaming Plugin**: Bi-directional streaming with flow control  
-- **Batch Processing Plugin**: High-throughput data processing patterns
-- **Multi-Service Plugin**: Single plugin exposing multiple gRPC services
+- **[Security Guide](../guide/security/index.md)** - Complete mTLS setup and security patterns
+- **[Advanced Topics](../guide/advanced/index.md)** - Performance tuning, custom protocols, telemetry
+- **[Production Configuration](../guide/config/production.md)** - Deployment best practices
+- **[Server Guide](../guide/server/index.md)** - Server-side patterns and optimization
+- **[Client Guide](../guide/client/index.md)** - Client-side patterns and error handling
 
 ## More Examples
 
 ### Available Examples
 
-The following additional examples are available in the repository:
+The `examples/` directory contains additional working examples:
 
-- **[Echo Service](echo-service.md)** - Complete RPC service with streaming patterns
-- **[Database Plugin](database-plugin.md)** - Production database integration patterns  
-- **[File Transfer](file-transfer.md)** - Streaming file transfer implementation
-- **[Microservice Gateway](microservice-gateway.md)** - Service composition and routing
-- **[Production Setup](production.md)** - Complete production deployment guide
+- **[Echo Service Examples](echo-basic.md)** - Complete RPC service with streaming patterns (basic, intermediate, and advanced)
+- **Short Examples** (see navigation menu) - Focused 15-30 line examples for specific features
 
 ### Running Examples
 
@@ -380,39 +366,57 @@ git clone https://github.com/provide-io/pyvider-rpcplugin.git
 cd pyvider-rpcplugin
 
 # Install dependencies
-pip install -e .
+uv sync
 
-# Run basic example
-python examples/basic/basic_client.py
+# Run quick start example
+python examples/quick_start_client.py
 
-# Run echo service example  
-python examples/echo/echo_client.py
+# Run echo service example
+python examples/echo_client.py
 
-# Run secure example
-python examples/security/secure_client.py
+# Run secure mTLS example
+python examples/security_mtls_example.py
+
+# Run telemetry demo
+python examples/telemetry_demo.py
 ```
 
 ### Example Structure
 
-Each example follows a consistent structure:
+Examples are organized in a flat structure with descriptive names:
 
 ```
 examples/
-├── basic/
-│   ├── basic_client.py      # Host application
-│   ├── basic_plugin.py      # Plugin server
-│   └── README.md            # Example documentation
-├── echo/
-│   ├── echo.proto           # Protocol definition
-│   ├── echo_pb2.py          # Generated messages
-│   ├── echo_pb2_grpc.py     # Generated services
-│   ├── echo_client.py       # Host application
-│   ├── echo_server.py       # Plugin server
-│   └── README.md            # Example documentation
-└── security/
-    ├── secure_client.py     # Secure host application
-    ├── secure_server.py     # Secure plugin server
-    └── README.md            # Security example docs
+├── quick_start_client.py           # Basic client launching dummy_server.py
+├── dummy_server.py                  # Minimal plugin server
+├── echo_client.py                   # Echo service client (class-based, production-ready)
+├── echo_server.py                   # Echo service server (comprehensive)
+├── e2e_greeter_client.py            # End-to-end greeter client
+├── e2e_greeter_server.py            # End-to-end greeter server
+├── advanced_plugin_example.py       # Advanced plugin patterns
+├── security_mtls_example.py         # mTLS security patterns
+├── transport_options_demo.py        # Transport configuration
+├── telemetry_demo.py                # Telemetry integration
+├── async_patterns_demo.py           # Advanced async patterns
+├── error_handling_demo.py           # Error handling patterns
+├── custom_protocols_demo.py         # Custom protocol concepts
+├── performance_tuning_concepts.py   # Performance optimization
+├── production_config_discussion.py  # Production deployment discussion
+├── direct_client_connection.py      # Direct connection patterns
+├── client_setup_concepts.py         # Client setup patterns
+├── server_setup_concepts.py         # Server setup patterns
+├── example_utils.py                 # Shared utilities for examples
+├── run_all_examples.py              # Script to run all examples
+├── proto/                           # Protocol Buffer definitions
+│   ├── echo.proto                   # Echo service definition
+│   └── greeter.proto                # Greeter service definition
+└── short/                           # Short focused examples (15-30 lines)
+    ├── basic_client.py              # Minimal client connection
+    ├── basic_server.py              # Minimal server setup
+    ├── health_check.py              # Health check implementation
+    ├── rate_limiting.py             # Rate limiting example
+    ├── tcp_transport.py             # TCP transport configuration
+    └── custom_protocol.py           # Custom protocol example
 ```
 
 ### Contributing Examples

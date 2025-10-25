@@ -38,126 +38,9 @@ from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
 ```
 
-## Advanced Foundation Integration Examples
-
-### Configuration with Environment Variables
-
-Foundation's `RuntimeConfig` system automatically loads configuration from environment variables:
-
-```python
-import os
-from provide.foundation.config import RuntimeConfig
-from pyvider.rpcplugin.config import rpcplugin_config
-
-# Set environment variables for advanced configuration
-os.environ.update({
-    "PLUGIN_HANDSHAKE_TIMEOUT": "15.0",
-    "PLUGIN_SERVER_TRANSPORTS": '["unix", "tcp"]',
-    "PLUGIN_AUTO_MTLS": "true",
-    "PLUGIN_MAX_CONCURRENT_STREAMS": "500",
-    "PLUGIN_LOG_LEVEL": "DEBUG"
-})
-
-# Configuration automatically loaded
-logger.info(f"Handshake timeout: {rpcplugin_config.plugin_handshake_timeout}")
-logger.info(f"Transports: {rpcplugin_config.plugin_server_transports}")
-logger.info(f"mTLS: {rpcplugin_config.plugin_auto_mtls}")
-```
-
-### Structured Logging with Context
-
-Foundation's logger supports rich contextual information:
-
-```python
-from provide.foundation import logger
-
-class EnhancedPluginHandler:
-    def __init__(self, plugin_id: str):
-        self.plugin_id = plugin_id
-        logger.info("Plugin handler initialized", extra={
-            "plugin_id": plugin_id,
-            "version": "1.0.0",
-            "capabilities": ["processing", "storage"]
-        })
-    
-    async def process_request(self, request_id: str, data: dict[str, str] | str):
-        with logger.contextualize(request_id=request_id, plugin_id=self.plugin_id):
-            logger.info("Processing request", extra={"data_size": len(str(data))})
-            
-            # Simulate processing
-            await asyncio.sleep(0.1)
-            
-            logger.info("Request processed successfully")
-            return {"status": "completed", "processed_at": time.time()}
-```
-
-### Cryptography Integration for mTLS
-
-Foundation handles certificate management for secure communication:
-
-```python
-import ssl
-from provide.foundation.crypto import Certificate, PrivateKey
-from pyvider.rpcplugin.transport import TCPSocketTransport
-
-# Load certificates using Foundation crypto
-server_cert = Certificate.load_from_file("/etc/ssl/plugin-server.crt")
-server_key = PrivateKey.load_from_file("/etc/ssl/plugin-server.key")
-ca_cert = Certificate.load_from_file("/etc/ssl/ca.crt")
-
-# Create TLS context with Foundation certificates
-ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-ssl_context.load_cert_chain(server_cert.file_path, server_key.file_path)
-ssl_context.load_verify_locations(ca_cert.file_path)
-ssl_context.verify_mode = ssl.CERT_REQUIRED
-
-# Configure transport with Foundation-managed certificates
-transport = TCPSocketTransport(
-    host="0.0.0.0",
-    port=8443,
-    ssl_context=ssl_context
-)
-
-server = plugin_server(
-    protocol=plugin_protocol(),
-    handler=EnhancedPluginHandler("secure-plugin"),
-    transport=transport
-)
-```
-
-### Rate Limiting with Foundation
-
-Use Foundation's token bucket rate limiter to protect your plugin server:
-
-```python
-from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
-from pyvider.rpcplugin import plugin_server
-
-class RateLimitedHandler:
-    def __init__(self):
-        # Foundation's rate limiter: 100 requests per minute
-        self.rate_limiter = TokenBucketRateLimiter(
-            tokens_per_second=100/60,
-            bucket_size=100
-        )
-        logger.info("Rate limiting enabled: 100 req/min")
-    
-    async def handle_request(self, request):
-        if not await self.rate_limiter.acquire():
-            logger.warning("Request rate limited", extra={
-                "bucket_tokens": self.rate_limiter.available_tokens()
-            })
-            raise Exception("Rate limit exceeded")
-        
-        logger.debug("Request approved by rate limiter")
-        return await self.process_request(request)
-
-# Server automatically integrates with Foundation's rate limiter
-server = plugin_server(
-    protocol=plugin_protocol(),
-    handler=RateLimitedHandler()
-)
-```
+!!! tip "Learn More About Foundation"
+    - **[Foundation Overview](../introduction/foundation.md)** - Comprehensive explanation of Foundation's role and capabilities
+    - **[Advanced Foundation Integration](../guide/advanced/foundation-integration.md)** - Production patterns for configuration, mTLS, rate limiting, and more
 
 ## Your First Plugin
 
@@ -232,36 +115,34 @@ from provide.foundation import logger
 
 async def main():
     logger.info("🚀 Starting host application...")
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "my_plugin.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
-    client = None
+
     try:
         logger.info(f"Launching plugin: {' '.join(plugin_command)}")
-        
-        # Create and start client
-        client = plugin_client(command=plugin_command)
-        await client.start()
-        
-        logger.info("✅ Successfully connected to plugin!")
-        logger.info("Plugin is running and ready for RPC calls")
-        
-        # Keep connection alive for demonstration
-        await asyncio.sleep(2)
-        
+
+        # Use async context manager for automatic cleanup
+        async with plugin_client(command=plugin_command) as client:
+            # Start the plugin
+            await client.start()
+
+            logger.info("✅ Successfully connected to plugin!")
+            logger.info("Plugin is running and ready for RPC calls")
+
+            # Keep connection alive for demonstration
+            await asyncio.sleep(2)
+
+        # Client automatically closed on context exit
+        logger.info("Shutdown complete")
+
     except RPCPluginError as e:
         logger.error(f"❌ Plugin error: {e.message}")
         if e.hint:
             logger.error(f"Hint: {e.hint}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}", exc_info=True)
-    finally:
-        if client:
-            logger.info("Shutting down...")
-            await client.close()
-            logger.info("Shutdown complete")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -317,6 +198,37 @@ The handshake is automatic and includes:
 - **Transport Method**: Unix sockets (Linux/macOS) or TCP (Windows)
 - **Connection Info**: How the host should connect to the plugin
 
+### 🔒 Security Defaults
+
+!!! warning "mTLS is Enabled by Default"
+    Pyvider RPC Plugin follows a **security-first design**: `PLUGIN_AUTO_MTLS` defaults to `True`, which means mutual TLS (mTLS) is **automatically enabled** for all connections.
+
+    **For local development/testing**, mTLS may fail if certificates aren't configured. You have two options:
+
+    **Option 1 - Disable mTLS for Development (Quick):**
+    ```python
+    from pyvider.rpcplugin import configure
+
+    configure(auto_mtls=False)  # Disable mTLS for local testing
+    ```
+
+    **Option 2 - Use mTLS with Auto-Generated Certificates (Recommended):**
+    ```python
+    # mTLS works automatically with self-signed certificates
+    # No configuration needed - certificates auto-generated
+    # This is the default behavior and most secure
+    ```
+
+    **For production**, keep `auto_mtls=True` (the default) and optionally provide your own certificates:
+    ```python
+    import os
+    os.environ["PLUGIN_SERVER_CERT"] = "file:///path/to/server.crt"
+    os.environ["PLUGIN_SERVER_KEY"] = "file:///path/to/server.key"
+    # mTLS enabled with your production certificates
+    ```
+
+    📖 **Learn more:** [Security Guide](../guide/security/index.md) | [mTLS Configuration](../guide/security/mtls.md)
+
 ### 🔧 Configuration
 
 Everything works with sensible defaults, but you can customize:
@@ -336,7 +248,7 @@ Now that you have the basics working:
 
 1. **[Build a Real Service](first-plugin.md)** - Create an Echo plugin with custom RPC methods
 2. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
-3. **[Security Setup](../guide/concepts/security.md)** - Enable mTLS for production
+3. **[Security Setup](../guide/concepts/security.md)** - Configure mTLS with production certificates
 4. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
 
 ### 📝 Short Examples
