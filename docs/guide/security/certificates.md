@@ -107,45 +107,87 @@ ca_cert = Certificate.create_ca(
 ```
 
 ### 2. **Certificate Validation**
-Comprehensive validation including expiration, signature verification, chain validation, and revocation checking.
+Comprehensive validation including expiration and signature verification.
 
 ```python
 from provide.foundation.crypto import Certificate
 
 # Load certificate from file (using file:// URI)
-cert = Certificate.from_pem(cert_pem="file://server.pem")
+cert = Certificate.from_pem(
+    cert_pem="file://server.pem",
+    key_pem="file://server.key"
+)
 
-# Basic validation
+# Basic validation - checks certificate validity
 if cert.is_valid:
     print("✅ Certificate is valid")
+    print(f"   Common Name: {cert.common_name}")
+    print(f"   Organization: {cert.organization_name}")
 else:
     print("❌ Certificate validation failed")
 
-# Detailed validation
-validation_result = cert.validate_full(
-    ca_certificates=["ca.pem"],
-    check_revocation=True,
-    require_key_usage=["digital_signature", "key_encipherment"]
-)
+# Verify trust chain with CA certificate
+ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
+try:
+    if cert.verify_trust(ca_cert):
+        print("✅ Certificate trust chain validated")
+    else:
+        print("❌ Trust verification failed")
+except Exception as e:
+    print(f"❌ Error verifying trust: {e}")
 ```
 
 ### 3. **Certificate Rotation**
 Automated certificate renewal with configurable rotation policies and zero-downtime updates.
 
 ```python
-from provide.foundation.crypto import CertificateRotator
+import asyncio
+from pathlib import Path
+from provide.foundation.crypto import Certificate
+from provide.foundation import logger
 
-rotator = CertificateRotator(
-    certificate_path="server.pem",
-    private_key_path="server.key",
-    ca_certificate="ca.pem",
-    renewal_threshold_days=30  # Renew 30 days before expiry
+async def rotate_certificate_if_needed(
+    cert_path: str,
+    key_path: str,
+    ca_cert: Certificate,
+    validity_days: int = 90
+) -> Certificate:
+    """Check and rotate certificate if needed."""
+
+    # Load current certificate
+    cert = Certificate.from_pem(
+        cert_pem=f"file://{cert_path}",
+        key_pem=f"file://{key_path}"
+    )
+
+    # Check if rotation needed
+    if not cert.is_valid:
+        logger.warning("Certificate invalid, rotating now")
+
+        # Generate new certificate
+        new_cert = Certificate.create_self_signed_server_cert(
+            common_name=cert.common_name,
+            organization_name=cert.organization_name,
+            validity_days=validity_days
+        )
+
+        # Save new certificate
+        Path(cert_path).write_text(new_cert.cert_pem)
+        Path(key_path).write_text(new_cert.key_pem)
+
+        logger.info(f"🔄 Certificate rotated for {new_cert.common_name}")
+        return new_cert
+
+    logger.info("Certificate still valid, no rotation needed")
+    return cert
+
+# Usage
+new_cert = await rotate_certificate_if_needed(
+    "server.pem",
+    "server.key",
+    ca_cert,
+    validity_days=90
 )
-
-# Check if rotation needed
-if await rotator.needs_rotation():
-    new_cert = await rotator.rotate_certificate()
-    print(f"🔄 Certificate rotated, expires: {new_cert.not_after}")
 ```
 
 ## Certificate Types
