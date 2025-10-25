@@ -132,9 +132,9 @@ Pyvider RPC Plugin uses [provide.foundation](https://foundation.provide.io) for 
 from pyvider.rpcplugin.config import rpcplugin_config
 
 # Access configuration
-timeout = rpcplugin_config.handshake_timeout()
-transports = rpcplugin_config.server_transports()
-mtls_enabled = rpcplugin_config.auto_mtls_enabled()
+timeout = rpcplugin_config.plugin_handshake_timeout
+transports = rpcplugin_config.plugin_server_transports
+mtls_enabled = rpcplugin_config.plugin_auto_mtls
 ```
 
 Configuration sources (in priority order):

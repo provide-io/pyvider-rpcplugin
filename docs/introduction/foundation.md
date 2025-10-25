@@ -62,8 +62,8 @@ All `PLUGIN_*` environment variables are managed by Foundation's config system:
 from pyvider.rpcplugin.config import rpcplugin_config
 
 # RPCPluginConfig extends Foundation's RuntimeConfig
-timeout = rpcplugin_config.handshake_timeout()  # Type-safe access
-transports = rpcplugin_config.server_transports()  # Validated values
+timeout = rpcplugin_config.plugin_handshake_timeout  # Type-safe access
+transports = rpcplugin_config.plugin_server_transports  # Validated values
 ```
 
 ### 2. Structured Logging
@@ -138,7 +138,7 @@ class MyPlugin:
         logger.info("Plugin initializing")
         
         # Foundation configuration (via Pyvider's extension)
-        self.timeout = rpcplugin_config.handshake_timeout()
+        self.timeout = rpcplugin_config.plugin_handshake_timeout
         
     async def serve(self):
         # Pyvider RPC server
@@ -232,9 +232,9 @@ This separation of concerns means:
 
 Now that you understand the Foundation relationship:
 
-1. Continue to [Architecture Overview](architecture.md) to understand the system design
+1. Continue to [Architecture Overview](../development/architecture.md) to understand the system design
 2. Or jump to [Installation](../getting-started/installation.md) to start building
 
 ---
 
-**Navigation:** [Previous: Introduction](index.md) | [Next: Architecture](architecture.md)
+**Navigation:** [Previous: Introduction](index.md) | [Next: Architecture](../development/architecture.md)

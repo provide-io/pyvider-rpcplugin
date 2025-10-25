@@ -167,8 +167,8 @@ async def main():
 
 if __name__ == "__main__":
     # For standalone testing - set magic cookie
-    cookie_key = rpcplugin_config.magic_cookie_key()
-    cookie_value = rpcplugin_config.magic_cookie_value()
+    cookie_key = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
     os.environ[cookie_key] = cookie_value
     
     asyncio.run(main())

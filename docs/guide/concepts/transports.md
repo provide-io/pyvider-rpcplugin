@@ -35,7 +35,7 @@ from pyvider.rpcplugin import configure
 
 # View available transports
 from pyvider.rpcplugin.config import rpcplugin_config
-transports = rpcplugin_config.server_transports()
+transports = rpcplugin_config.plugin_server_transports
 
 # Configure transport preferences
 configure(transports=["tcp"])  # TCP only
@@ -242,9 +242,9 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 - **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration with examples for different deployment scenarios
 - **[Production Configuration](../config/production.md)** - Production transport configuration patterns
 
-### API Documentation
-- **[Configuration API Reference](../../api/config/index.md)** - Programmatic transport configuration access and validation
-- **[Server API Reference](../../api/server/index.md)** - Server-side transport implementation details
+### Documentation
+- **[Configuration Reference](../config/configuration-reference.md)** - Transport configuration options
+- **[API Reference](../../reference/index.md)** - Auto-generated API documentation
 
 ## Related Concepts
 

@@ -50,8 +50,28 @@ class BrokerError(Exception):
 @define(slots=True)
 class SubchannelConnection:
     """
-    Represents a single 'brokered' subchannel. The go-plugin host
-    can request to open or dial it. We store an ID, connection state, etc.
+    Represents a brokered subchannel for plugin-to-plugin communication.
+
+    In the go-plugin architecture, subchannels allow plugins to establish
+    secondary communication channels for callbacks, additional services,
+    or plugin-to-plugin communication. Each subchannel has a unique ID
+    and network address.
+
+    Attributes:
+        conn_id: Unique identifier for this subchannel connection.
+        address: Network address for the subchannel (format depends on transport).
+        is_open: Whether the subchannel is currently open and available.
+
+    Example:
+        ```python
+        subchannel = SubchannelConnection(
+            conn_id=1,
+            address="127.0.0.1:9000"
+        )
+        await subchannel.open()
+        # Subchannel now ready for communication
+        await subchannel.close()
+        ```
     """
 
     conn_id: int = field()
@@ -59,6 +79,16 @@ class SubchannelConnection:
     is_open: bool = field(default=False, init=False)
 
     async def open(self) -> None:
+        """
+        Open the subchannel for communication.
+
+        This method establishes the subchannel connection and marks it as
+        available for use. In a real implementation, this would involve
+        network setup or IPC channel creation.
+
+        Side Effects:
+            Sets is_open to True after successful opening.
+        """
         logger.debug(
             f"🔌🔍✅ SubchannelConnection.open() => Opening subchannel {self.conn_id} at {self.address}"
         )
@@ -66,6 +96,15 @@ class SubchannelConnection:
         self.is_open = True
 
     async def close(self) -> None:
+        """
+        Close the subchannel and release resources.
+
+        This method closes the subchannel connection and marks it as
+        unavailable. Resources associated with the subchannel are released.
+
+        Side Effects:
+            Sets is_open to False after closing.
+        """
         logger.debug(f"🔌🔒✅ SubchannelConnection.close() => Closing subchannel {self.conn_id}")
         await asyncio.sleep(0.05)
         self.is_open = False

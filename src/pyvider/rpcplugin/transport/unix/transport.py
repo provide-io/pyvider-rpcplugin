@@ -33,25 +33,55 @@ logger = get_logger(__name__)
 @define(frozen=False, slots=True)
 class UnixSocketTransport(RPCPluginTransport):
     """
-    Unix domain socket transport compatible with Go plugin implementation.
+    Unix domain socket transport for local IPC communication.
 
-    This transport implementation handles Unix domain socket communication with
-    specific adaptations for interoperability with HashiCorp's Go-based plugin
-    system. It manages socket creation, permission handling, and cleanup.
+    This transport provides high-performance local inter-process communication
+    using Unix domain sockets. It's the preferred transport for plugin communication
+    on Linux and macOS systems, offering better security and performance than TCP
+    for local connections.
 
-    Key features:
-    - Socket path normalization (supporting unix:, unix:/, unix:// prefixes)
-    - File permission management (0660 for cross-process access)
-    - Proper socket state verification and cleanup
-    - Connection tracking
+    The implementation is compatible with HashiCorp's go-plugin protocol, handling:
+    - Automatic socket path generation when path is None
+    - Path normalization for unix:, unix:/, unix:// prefixes
+    - Proper file permissions (0660) for cross-process access
+    - Socket lifecycle management with cleanup on close
+    - Stale socket detection and removal
+
+    Attributes:
+        path: Unix socket file path. If None, generates temporary path.
+        endpoint: The normalized endpoint string (e.g., "unix:/tmp/plugin.sock")
 
     Example:
         ```python
-        transport = UnixSocketTransport(path="/tmp/plugin.sock")
-        endpoint = await transport.listen()  # Start listening
-        # ... use in server ...
-        await transport.close()  # Clean up resources
+        # Server with auto-generated path
+        transport = UnixSocketTransport()
+        endpoint = await transport.listen()  # Returns "unix:/tmp/pyvider-xxx.sock"
+
+        # Server with specific path
+        transport = UnixSocketTransport(path="/var/run/myplugin.sock")
+        endpoint = await transport.listen()  # Returns "unix:/var/run/myplugin.sock"
+
+        # Client connection
+        transport = UnixSocketTransport()
+        await transport.connect("unix:/tmp/server.sock")
+
+        # Cleanup (removes socket file)
+        await transport.close()
         ```
+
+    Platform Notes:
+        - Linux/macOS: Full support with optimal performance
+        - Windows: Not supported (use TCPSocketTransport instead)
+        - Docker: Ensure socket paths are in shared volumes for cross-container IPC
+
+    Security Notes:
+        - Socket files are created with 0660 permissions (user/group read/write)
+        - Consider socket file location for security (avoid world-writable directories)
+        - Socket files are automatically removed on close()
+
+    Note:
+        This transport is typically created automatically by factory functions
+        (plugin_server, plugin_client) when transport="unix" is specified.
     """
 
     path: str | None = field(default=None)

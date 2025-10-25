@@ -73,7 +73,7 @@ except HandshakeError as e:
     logger.error(f"🤝 Handshake failed: {e.message}")
     if "magic cookie" in str(e).lower():
         # Check magic cookie configuration
-        cookie_key = rpcplugin_config.magic_cookie_key()
+        cookie_key = rpcplugin_config.plugin_magic_cookie_key
         logger.error(f"Expected cookie key: {cookie_key}")
     elif "certificate" in str(e).lower():
         # Check mTLS configuration

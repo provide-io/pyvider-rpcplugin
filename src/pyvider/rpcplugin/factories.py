@@ -41,11 +41,46 @@ T_Proto_fn = TypeVar("T_Proto_fn", bound=RPCPluginProtocol[Any, Any])
 
 def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
     """
-    Creates a basic RPCPluginProtocol.
+    Create a basic RPCPluginProtocol class for testing or simple use cases.
+
+    This factory creates a minimal protocol implementation that can be used
+    when no specific gRPC services are needed. It's useful for:
+    - Testing the plugin framework
+    - Creating placeholder protocols
+    - Demonstrating the protocol interface
+
+    Returns:
+        A class that implements RPCPluginProtocol with minimal functionality.
+        The class can be instantiated with an optional service_name_override.
+
+    Example:
+        ```python
+        # Create the protocol class
+        BasicProtocol = create_basic_protocol()
+
+        # Instantiate with custom service name
+        protocol = BasicProtocol(service_name_override="my.custom.service")
+
+        # Use with a server
+        server = plugin_server(protocol=protocol, handler=handler)
+        ```
+
+    Note:
+        The returned protocol class doesn't register any actual gRPC services.
+        For production use, implement a custom protocol with real services.
     """
 
     class BasicRPCPluginProtocol(RPCPluginProtocol[Any, Any]):
-        """Basic protocol, primarily for structure or testing."""
+        """
+        Basic protocol implementation for testing and simple use cases.
+
+        This protocol provides the minimal interface required by the framework
+        but doesn't register any actual gRPC services. It's primarily used
+        for testing or as a placeholder when no specific protocol is needed.
+
+        Attributes:
+            service_name: The name of the service (default: "pyvider.BasicRPCPluginProtocol")
+        """
 
         service_name: str = "pyvider.BasicRPCPluginProtocol"
 
@@ -87,6 +122,47 @@ def plugin_protocol(
 ) -> PT_co:
     """
     Factory for creating an RPC plugin protocol instance.
+
+    This factory provides a convenient way to instantiate protocol objects
+    with proper configuration. It can either create a custom protocol instance
+    or fall back to a basic protocol for testing.
+
+    Args:
+        protocol_class: Optional custom protocol class to instantiate.
+                       If None, creates a BasicRPCPluginProtocol.
+        handler_class: Optional handler class (currently unused but reserved
+                      for future handler validation).
+        service_name: Optional service name to override the default.
+                     Passed as 'service_name_override' to the protocol.
+        **kwargs: Additional keyword arguments passed to the protocol constructor.
+
+    Returns:
+        An instance of the specified protocol class, or BasicRPCPluginProtocol
+        if no protocol_class was provided.
+
+    Example:
+        ```python
+        # Create a basic protocol with default settings
+        protocol = plugin_protocol()
+
+        # Create a basic protocol with custom service name
+        protocol = plugin_protocol(service_name="my.custom.service")
+
+        # Create an instance of a custom protocol class
+        from my_plugin import MyCustomProtocol
+        protocol = plugin_protocol(
+            protocol_class=MyCustomProtocol,
+            service_name="my.service.v1",
+            custom_option=True
+        )
+
+        # Use the protocol with a server
+        server = plugin_server(protocol=protocol, handler=handler)
+        ```
+
+    Note:
+        When using a custom protocol_class, ensure it accepts 'service_name_override'
+        in its constructor if you want to use the service_name parameter.
     """
     effective_protocol_class: type[PT_co]
     instance_kwargs = kwargs  # Initialize with all extra kwargs
@@ -129,6 +205,66 @@ def plugin_server(
 ) -> RPCPluginServer[_ServerT, ServerHandlerT, _TransportT]:
     """
     Factory for creating an RPC plugin server instance.
+
+    This factory simplifies server creation by handling transport setup
+    and configuration. It supports both Unix socket and TCP transports
+    with sensible defaults for each platform.
+
+    Args:
+        protocol: The protocol instance defining the RPC services.
+                 Usually created with plugin_protocol().
+        handler: The service handler implementing the protocol's methods.
+                This object will handle incoming RPC requests.
+        transport: Transport type to use. Either "unix" (default) or "tcp".
+                  Unix sockets are preferred for local IPC on Linux/macOS.
+        transport_path: For Unix sockets, the socket file path.
+                       If None, a temporary path is generated.
+        host: For TCP transport, the bind address (default: "127.0.0.1").
+        port: For TCP transport, the port number (default: 0 for random).
+        config: Optional configuration dictionary to override defaults.
+               Can include settings like timeouts, buffer sizes, etc.
+
+    Returns:
+        A configured RPCPluginServer instance ready to serve requests.
+        Call the serve() method to start accepting connections.
+
+    Raises:
+        ValueError: If an unsupported transport type is specified.
+
+    Example:
+        ```python
+        import asyncio
+        from pyvider.rpcplugin import plugin_server, plugin_protocol
+
+        class MyHandler:
+            async def process(self, request):
+                return {"result": "processed"}
+
+        async def main():
+            # Create server with Unix socket (default)
+            server = plugin_server(
+                protocol=plugin_protocol(),
+                handler=MyHandler()
+            )
+
+            # Or create TCP server
+            server = plugin_server(
+                protocol=plugin_protocol(),
+                handler=MyHandler(),
+                transport="tcp",
+                port=8080
+            )
+
+            # Start serving
+            await server.serve()
+
+        asyncio.run(main())
+        ```
+
+    Note:
+        The server will automatically handle the handshake protocol,
+        including magic cookie validation and transport negotiation.
+        For production use, consider enabling mTLS via configuration.
     """
     logger.debug(
         f"🏭 Creating plugin server: transport={transport}, path={transport_path}, host={host}, port={port}"
@@ -152,19 +288,80 @@ def plugin_server(
 def plugin_client(
     command: list[str],
     config: dict[str, Any] | None = None,
-    auto_connect: bool = True,
 ) -> RPCPluginClient:
     """
     Factory for creating an RPC plugin client instance.
+
+    This factory creates a client that can launch and communicate with
+    a plugin subprocess. The client handles the complete lifecycle of
+    the plugin process, including launching, handshake, and cleanup.
+
+    Args:
+        command: Command and arguments to launch the plugin process.
+                Example: ["python", "my_plugin.py"] or ["./my-plugin"]
+        config: Optional configuration dictionary for the client.
+               Can include settings like retry behavior, timeouts,
+               transport preferences, and mTLS configuration.
+
+    Returns:
+        An RPCPluginClient instance. You must call the async start()
+        method to launch the plugin and establish connection.
+
+    Example:
+        ```python
+        import asyncio
+        from pyvider.rpcplugin import plugin_client
+
+        async def main():
+            # Create client for a Python plugin
+            client = plugin_client(
+                command=["python", "path/to/plugin.py"],
+                config={"PLUGIN_LOG_LEVEL": "DEBUG"}
+            )
+
+            # Launch plugin and establish connection
+            await client.start()
+
+            # Use the client's grpc_channel for RPC calls
+            stub = MyServiceStub(client.grpc_channel)
+            response = await stub.ProcessRequest(request)
+
+            # Gracefully shutdown
+            await client.shutdown_plugin()
+            await client.close()
+
+        asyncio.run(main())
+        ```
+
+    Advanced Example:
+        ```python
+        # Configure retry behavior and mTLS
+        client = plugin_client(
+            command=["./my-secure-plugin"],
+            config={
+                "PLUGIN_CLIENT_MAX_RETRIES": 5,
+                "PLUGIN_CLIENT_RETRY_ENABLED": True,
+                "PLUGIN_AUTO_MTLS": True,
+                "PLUGIN_CLIENT_CERT": "file:///path/to/client.crt",
+                "PLUGIN_CLIENT_KEY": "file:///path/to/client.key"
+            }
+        )
+
+        # Use as async context manager for automatic cleanup
+        async with client:
+            await client.start()
+            # Use client...
+        # Automatically closed on exit
+        ```
+
+    Note:
+        The client supports automatic retry with exponential backoff,
+        subprocess management, stdio/stderr capture, and both Unix
+        socket and TCP transports. The handshake protocol ensures
+        secure communication via magic cookie validation.
     """
     logger.debug(f"🏭 Creating plugin client for command: {command}")
-    client = RPCPluginClient(command=command, config=config or {})
-    if auto_connect:
-        logger.warning(
-            "🏭 auto_connect=True in synchronous factory is misleading. "
-            "Caller should handle async client.start()."
-        )
-    return client
+    return RPCPluginClient(command=command, config=config or {})
 
 
 # 🐍🏗️🔌
