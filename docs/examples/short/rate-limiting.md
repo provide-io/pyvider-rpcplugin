@@ -1,52 +1,37 @@
 # Rate Limiting Example
 
-> **Source Code:** `examples/short/rate_limiting.py`
+**Complexity**: 🟢 Beginner | **Lines**: ~25 | **Source Code:** `examples/short/rate_limiting.py`
 
-A server with token bucket rate limiting for request throttling.
+A server with automatic rate limiting using token bucket algorithm - protects your service from being overwhelmed by too many requests.
 
 ```python
 #!/usr/bin/env python3
+"""
+Server with rate limiting (25 lines).
+
+Demonstrates enabling request rate limiting.
+"""
 import asyncio
-from pyvider.rpcplugin.factories import plugin_protocol, plugin_server
-from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+from pyvider.rpcplugin import plugin_protocol, plugin_server, configure
 from provide.foundation import logger
 
-class RateLimitedHandler:
-    """Handler with built-in rate limiting."""
-    
-    def __init__(self):
-        # 10 requests per second, burst of 20
-        self.rate_limiter = TokenBucketRateLimiter(
-            tokens_per_second=10.0,
-            bucket_size=20
-        )
-        logger.info("Rate-limited handler initialized", extra={
-            "rps_limit": 10.0,
-            "burst_capacity": 20
-        })
-    
-    async def process_request(self, data: str) -> str:
-        """Rate-limited request processing with Foundation patterns."""
-        if await self.rate_limiter.acquire():
-            logger.debug("Request approved by rate limiter", extra={"data_preview": data[:50]})
-            return f"Processed: {data}"
-        else:
-            logger.warning("Rate limit exceeded", extra={
-                "available_tokens": self.rate_limiter.available_tokens()
-            })
-            raise Exception("Rate limit exceeded")
 
 async def main():
-    # Create handler and server
-    handler = RateLimitedHandler()
-    protocol = plugin_protocol(service_name="RateLimitedPlugin")
+    """Run server with rate limiting."""
+    # Enable rate limiting: 100 requests/sec, burst capacity 200
+    configure(
+        rate_limit_enabled=True,
+        rate_limit_requests_per_second=100.0,
+        rate_limit_burst_capacity=200
+    )
+
+    protocol = plugin_protocol()
+    handler = object()
     server = plugin_server(protocol=protocol, handler=handler)
-    
-    try:
-        logger.info("Starting rate-limited plugin server...")
-        await server.serve()
-    except KeyboardInterrupt:
-        logger.info("Server stopped by user")
+
+    logger.info("Starting server with rate limiting: 100 req/s...")
+    await server.serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -54,11 +39,11 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- Foundation's `TokenBucketRateLimiter` implements async token bucket algorithm
-- `bucket_size` sets burst limit, `tokens_per_second` sets sustained rate  
-- `acquire()` returns `True` if request can proceed (Foundation method)
-- Structured logging provides visibility into rate limiting decisions
-- Rate limiting integrates with Foundation's observability system
+- **`configure(rate_limit_enabled=True)`** enables automatic server-side rate limiting
+- **`rate_limit_requests_per_second`** sets sustained request rate (100 req/s in this example)
+- **`rate_limit_burst_capacity`** allows temporary bursts above sustained rate (200 tokens)
+- **Token bucket algorithm** - uses Foundation's `TokenBucketRateLimiter` under the hood
+- **Automatic rejection** - requests exceeding limits get `RESOURCE_EXHAUSTED` gRPC status
 
 ## Related Examples
 

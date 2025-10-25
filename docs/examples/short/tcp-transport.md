@@ -1,39 +1,37 @@
 # TCP Transport Example
 
-> **Source Code:** `examples/short/tcp_transport.py`
+**Complexity**: 🟢 Beginner | **Lines**: ~20 | **Source Code:** `examples/short/tcp_transport.py`
 
-A plugin server using TCP instead of Unix sockets.
+A plugin server using TCP sockets instead of Unix domain sockets - essential for Windows compatibility and network communication.
 
 ```python
 #!/usr/bin/env python3
-import asyncio
-from pyvider.rpcplugin.factories import plugin_protocol, plugin_server
+"""
+Server with TCP transport (20 lines).
 
-class NetworkHandler:
-    """Handler for TCP-based plugin."""
-    
-    def __init__(self):
-        print("🔌 Network handler initialized")
-    
-    def handle_network_request(self, request: str) -> str:
-        """Process network requests."""
-        return f"Network response: {request}"
+Demonstrates using TCP instead of Unix sockets.
+"""
+import asyncio
+from pyvider.rpcplugin import plugin_protocol, plugin_server
+from provide.foundation import logger
+
 
 async def main():
-    # Create server with TCP transport
-    handler = NetworkHandler()
-    protocol = plugin_protocol(service_name="NetworkPlugin")
+    """Run server with TCP transport."""
+    protocol = plugin_protocol()
+    handler = object()
+
+    # Use TCP transport on port 50051
     server = plugin_server(
-        protocol=protocol, 
-        handler=handler, 
-        transport="tcp"
+        protocol=protocol,
+        handler=handler,
+        transport="tcp",
+        port=50051
     )
-    
-    try:
-        print("🚀 Starting TCP plugin server...")
-        await server.serve()
-    except KeyboardInterrupt:
-        print("🛑 Server stopped")
+
+    logger.info("Starting server with TCP transport on port 50051...")
+    await server.serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -41,10 +39,11 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `transport="tcp"` parameter forces TCP transport
-- Server automatically binds to available TCP port
-- Useful for Windows or network-distributed plugins
-- Client automatically detects transport from handshake
+- **`transport="tcp"`** specifies TCP socket transport instead of Unix domain sockets
+- **`port=50051`** sets the TCP port (use `port=0` for automatic port assignment)
+- **Windows compatibility** - TCP works on all platforms (Unix sockets not available on Windows)
+- **Network communication** - TCP allows plugin communication across network boundaries
+- **Automatic handshake** - client detects TCP endpoint from handshake output
 
 ## Related Examples
 
