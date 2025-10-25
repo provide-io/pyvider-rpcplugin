@@ -20,18 +20,31 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 ### Manual Transport Configuration
 
 ```python
+from pyvider.rpcplugin import configure, plugin_server
+
 # Unix socket only (highest performance)
-configure(
-    transports=["unix"],
-    unix_socket_path="/tmp/my-plugin.sock",
-    unix_socket_permissions=0o600
+# Set global transport preference
+configure(transports=["unix"])
+
+# Create server with specific socket path
+server = plugin_server(
+    protocol=protocol,
+    handler=handler,
+    transport="unix",
+    transport_path="/tmp/my-plugin.sock"  # Factory parameter
 )
 
 # TCP only (cross-platform compatibility)
-configure(
-    transports=["tcp"],
-    tcp_host="127.0.0.1",
-    tcp_port=8080
+# Set global transport preference
+configure(transports=["tcp"])
+
+# Create server with specific host/port
+server = plugin_server(
+    protocol=protocol,
+    handler=handler,
+    transport="tcp",
+    host="127.0.0.1",  # Factory parameter
+    port=8080          # Factory parameter
 )
 
 # TCP with mTLS (secure network communication)
@@ -41,6 +54,14 @@ configure(
     server_cert="file:///etc/ssl/server.pem",
     server_key="file:///etc/ssl/server.key",
     client_cert="file:///etc/ssl/client.pem"
+)
+
+server = plugin_server(
+    protocol=protocol,
+    handler=handler,
+    transport="tcp",
+    host="0.0.0.0",
+    port=8443
 )
 ```
 
