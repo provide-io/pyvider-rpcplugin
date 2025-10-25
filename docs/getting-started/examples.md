@@ -301,17 +301,28 @@ python examples/run_all_examples.py --category=performance
 
 ## Example Structure
 
-Each example follows a consistent structure:
+Examples are organized in a flat directory structure with descriptive names:
 
 ```
 examples/
-├── chXX_example_name.py          # Main example script
-├── proto/                        # Protocol definitions
-│   ├── service.proto
-│   ├── service_pb2.py           # Generated gRPC code
-│   └── service_pb2_grpc.py
-├── README.md                     # Example documentation
-└── requirements.txt              # Dependencies
+├── quick_start_client.py         # Basic client example
+├── dummy_server.py                # Minimal server
+├── echo_server.py                 # Echo service server
+├── echo_client.py                 # Echo service client
+├── e2e_greeter_server.py          # End-to-end greeter server
+├── e2e_greeter_client.py          # End-to-end greeter client
+├── security_mtls_example.py       # mTLS security patterns
+├── transport_options_demo.py      # Transport configuration
+├── [other examples...]
+├── proto/                         # Protocol Buffer definitions
+│   ├── echo.proto                 # Echo service definition
+│   ├── e2e_greeting.proto         # Greeter service definition
+│   ├── *_pb2.py                   # Generated message code
+│   └── *_pb2_grpc.py              # Generated service code
+└── short/                         # Short focused examples (15-30 lines)
+    ├── basic_server.py
+    ├── basic_client.py
+    └── [other short examples...]
 ```
 
 ## Example Categories

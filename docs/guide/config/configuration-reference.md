@@ -26,6 +26,15 @@ This page provides a comprehensive reference for all configuration options avail
     print(f"Auto mTLS: {defaults.DEFAULT_PLUGIN_AUTO_MTLS}")  # True (security by default)
     ```
 
+!!! note "Optional Configuration Fields"
+    Fields with `None` as the default value are **optional**. When set to `None`, the framework uses sensible fallback behavior:
+
+    - **Certificate fields** (`plugin_client_cert`, `plugin_server_cert`, etc.): Auto-generate self-signed certificates when mTLS is enabled
+    - **String fields with empty defaults** (`""`): Feature is disabled or uses system defaults
+    - **Numeric fields**: Always have non-None defaults with documented values
+
+    You only need to set these fields when you want to override the default behavior (e.g., providing production certificates).
+
 ## Configuration System Overview
 
 The configuration system is based on the `RPCPluginConfig` class which extends Foundation's `RuntimeConfig`. All settings can be configured through:

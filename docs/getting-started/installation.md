@@ -115,13 +115,17 @@ For development and testing:
 
 ```bash
 # Install with test dependencies (includes grpcio-tools for protobuf compilation)
+# Using uv (recommended):
+uv sync --group test
+
+# Or using pip with extras:
 pip install "pyvider-rpcplugin[test]"
 
 # Install with full development dependencies (recommended for contributors)
 uv sync --all-groups
 ```
 
-Test dependencies (`[test]` extra) include:
+Test dependencies include:
 - **grpcio-tools** - Protocol Buffer compiler and gRPC tools
 - **grpc-stubs** - Type stubs for gRPC
 - **types-grpcio** - Type hints for grpcio
