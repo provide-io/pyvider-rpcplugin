@@ -86,7 +86,7 @@ plugins:
   - autorefs
 
   - macros:
-      include_dir: ../provide-foundry/shared-theme/data
+      include_dir: docs/.shared-theme/data
 
   - mkdocstrings:
       default_handler: python
@@ -193,14 +193,14 @@ markdown_extensions:
       repo: pyvider-rpcplugin
 
 extra_css:
-  - ../provide-foundry/shared-theme/stylesheets/provide-theme.css
-  - ../provide-foundry/shared-theme/stylesheets/termynal.css
+  - .shared-theme/stylesheets/provide-theme.css
+  - .shared-theme/stylesheets/termynal.css
 
 extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
-  - ../provide-foundry/shared-theme/javascripts/mermaid-init.js
-  - ../provide-foundry/shared-theme/javascripts/termynal.js
-  - ../provide-foundry/shared-theme/javascripts/custom.js
+  - .shared-theme/javascripts/mermaid-init.js
+  - .shared-theme/javascripts/termynal.js
+  - .shared-theme/javascripts/custom.js
 
 extra:
   version:
