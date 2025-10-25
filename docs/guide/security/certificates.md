@@ -81,11 +81,14 @@ Comprehensive validation including expiration and signature verification.
 
 ```python
 from provide.foundation.crypto import Certificate
+from pathlib import Path
 
-# Load certificate from file (using file:// URI)
+# Load certificate from file - read PEM content first
+cert_pem_content = Path("server.pem").read_text()
+key_pem_content = Path("server.key").read_text()
 cert = Certificate.from_pem(
-    cert_pem="file://server.pem",
-    key_pem="file://server.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Basic validation - checks certificate validity
@@ -97,7 +100,8 @@ else:
     print("❌ Certificate validation failed")
 
 # Verify trust chain with CA certificate
-ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
+ca_cert_content = Path("ca.pem").read_text()
+ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 try:
     if cert.verify_trust(ca_cert):
         print("✅ Certificate trust chain validated")
@@ -123,11 +127,14 @@ async def rotate_certificate_if_needed(
     validity_days: int = 90
 ) -> Certificate:
     """Check and rotate certificate if needed."""
+    from pathlib import Path
 
-    # Load current certificate
+    # Load current certificate - read PEM content from files
+    cert_pem_content = Path(cert_path).read_text()
+    key_pem_content = Path(key_path).read_text()
     cert = Certificate.from_pem(
-        cert_pem=f"file://{cert_path}",
-        key_pem=f"file://{key_path}"
+        cert_pem=cert_pem_content,
+        key_pem=key_pem_content
     )
 
     # Check if rotation needed
@@ -230,15 +237,20 @@ client_cert = Certificate.create_self_signed_client_cert(
 
 ### Server Configuration
 ```python
+from pathlib import Path
 from pyvider.rpcplugin import plugin_server
 from provide.foundation.crypto import Certificate
 
-# Load server certificate
+# Load server certificate - read PEM content from files
+cert_pem_content = Path("server.pem").read_text()
+key_pem_content = Path("server.key").read_text()
 cert = Certificate.from_pem(
-    cert_pem="file://server.pem",
-    key_pem="file://server.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
-ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
+
+ca_cert_content = Path("ca.pem").read_text()
+ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 
 server = plugin_server(
     protocol=my_protocol,
@@ -251,15 +263,20 @@ server = plugin_server(
 
 ### Client Configuration
 ```python
+from pathlib import Path
 from pyvider.rpcplugin import plugin_client
 from provide.foundation.crypto import Certificate
 
-# Load client certificate
+# Load client certificate - read PEM content from files
+client_cert_content = Path("client.pem").read_text()
+client_key_content = Path("client.key").read_text()
 client_cert = Certificate.from_pem(
-    cert_pem="file://client.pem",
-    key_pem="file://client.key"
+    cert_pem=client_cert_content,
+    key_pem=client_key_content
 )
-ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
+
+ca_cert_content = Path("ca.pem").read_text()
+ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 
 async with plugin_client(
     command=["python", "secure-plugin.py"],
@@ -286,6 +303,7 @@ export PLUGIN_CERT_ROTATION_DAYS="30"
 
 ### Foundation Configuration
 ```python
+from pathlib import Path
 from provide.foundation.config import RuntimeConfig
 from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -294,11 +312,13 @@ from pyvider.rpcplugin.config import rpcplugin_config
 cert_path = rpcplugin_config.plugin_server_cert()  # Gets path from PLUGIN_SERVER_CERT
 key_path = rpcplugin_config.plugin_server_key()    # Gets path from PLUGIN_SERVER_KEY
 
-# Load certificate using file:// URIs
+# Load certificate - read PEM content from files
 if cert_path and key_path:
+    cert_pem_content = Path(cert_path).read_text()
+    key_pem_content = Path(key_path).read_text()
     cert = Certificate.from_pem(
-        cert_pem=f"file://{cert_path}",
-        key_pem=f"file://{key_path}"
+        cert_pem=cert_pem_content,
+        key_pem=key_pem_content
     )
 else:
     # Auto-generate if not configured
@@ -313,6 +333,7 @@ else:
 
 ### Certificate Health Checks
 ```python
+from pathlib import Path
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
@@ -322,7 +343,9 @@ async def check_certificate_health(cert_paths: list[str]) -> dict[str, bool]:
 
     for cert_path in cert_paths:
         try:
-            cert = Certificate.from_pem(cert_pem=f"file://{cert_path}")
+            # Read PEM content from file
+            cert_content = Path(cert_path).read_text()
+            cert = Certificate.from_pem(cert_pem=cert_content)
 
             if cert.is_valid:
                 logger.info(f"✅ {cert_path}: Valid (CN: {cert.common_name})")
@@ -348,6 +371,7 @@ health_status = await check_certificate_health([
 ### Expiration Monitoring
 ```python
 import asyncio
+from pathlib import Path
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
@@ -355,7 +379,9 @@ from provide.foundation import logger
 async def monitor_certificate_expiry():
     while True:
         try:
-            cert = Certificate.from_pem(cert_pem="file://server.pem")
+            # Read PEM content from file
+            cert_content = Path("server.pem").read_text()
+            cert = Certificate.from_pem(cert_pem=cert_content)
 
             # Check if certificate is still valid
             if not cert.is_valid:
@@ -416,12 +442,16 @@ def load_production_certificates(cert_dir: str) -> tuple[Certificate, Certificat
     key_path = Path(cert_dir) / "server.key"
     ca_path = Path(cert_dir) / "ca.pem"
 
-    # Load certificates
+    # Load certificates - read PEM content from files
+    cert_pem_content = cert_path.read_text()
+    key_pem_content = key_path.read_text()
     server_cert = Certificate.from_pem(
-        cert_pem=f"file://{cert_path}",
-        key_pem=f"file://{key_path}"
+        cert_pem=cert_pem_content,
+        key_pem=key_pem_content
     )
-    ca_cert = Certificate.from_pem(cert_pem=f"file://{ca_path}")
+
+    ca_cert_content = ca_path.read_text()
+    ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 
     # Validate
     if not server_cert.is_valid:
@@ -489,14 +519,18 @@ backup_path = backup_certificates("/etc/ssl/plugin", "/backups/certs")
 
 #### Certificate Validation Errors
 ```python
+from pathlib import Path
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
 # Debug certificate issues
 try:
+    # Read PEM content from files
+    cert_pem_content = Path("server.pem").read_text()
+    key_pem_content = Path("server.key").read_text()
     cert = Certificate.from_pem(
-        cert_pem="file://server.pem",
-        key_pem="file://server.key"
+        cert_pem=cert_pem_content,
+        key_pem=key_pem_content
     )
 
     if not cert.is_valid:

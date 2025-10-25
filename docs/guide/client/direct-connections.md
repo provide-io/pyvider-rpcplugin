@@ -282,13 +282,18 @@ import tempfile
 
 async def secure_direct_connection():
     """Establish mTLS direct connection."""
+    from pathlib import Path
 
-    # Load certificates using Foundation
+    # Load certificates using Foundation - read PEM content from files
+    client_cert_content = Path("/etc/ssl/client.pem").read_text()
+    client_key_content = Path("/etc/ssl/client.key").read_text()
     client_cert = Certificate.from_pem(
-        cert_pem="file:///etc/ssl/client.pem",
-        key_pem="file:///etc/ssl/client.key"
+        cert_pem=client_cert_content,
+        key_pem=client_key_content
     )
-    ca_cert = Certificate.from_pem(cert_pem="file:///etc/ssl/ca.pem")
+
+    ca_cert_content = Path("/etc/ssl/ca.pem").read_text()
+    ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 
     # Create SSL context with certificate PEM strings
     # Note: ssl.load_cert_chain requires file paths, so write to temp files

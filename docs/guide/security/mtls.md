@@ -42,12 +42,19 @@ For production environments with existing PKI:
 ```python
 from provide.foundation.crypto import Certificate
 
-# Load certificates via Foundation using file:// URIs or PEM strings
+# Load certificates via Foundation
+# Note: from_pem() expects PEM content strings, not file paths
+from pathlib import Path
+
+server_cert_content = Path("server.pem").read_text()
+server_key_content = Path("server.key").read_text()
 server_cert = Certificate.from_pem(
-    cert_pem="file://server.pem",
-    key_pem="file://server.key"
+    cert_pem=server_cert_content,
+    key_pem=server_key_content
 )
-ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
+
+ca_cert_content = Path("ca.pem").read_text()
+ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 
 # Server with manual certificates
 server = plugin_server(
@@ -59,9 +66,11 @@ server = plugin_server(
 )
 
 # Client with certificates
+client_cert_content = Path("client.pem").read_text()
+client_key_content = Path("client.key").read_text()
 client_cert = Certificate.from_pem(
-    cert_pem="file://client.pem",
-    key_pem="file://client.key"
+    cert_pem=client_cert_content,
+    key_pem=client_key_content
 )
 
 async with plugin_client(
@@ -269,11 +278,14 @@ if not cert.is_valid:
 ```python
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
+from pathlib import Path
 
-# Load certificate
+# Load certificate - read PEM content from files
+cert_pem_content = Path("server.pem").read_text()
+key_pem_content = Path("server.key").read_text()
 cert = Certificate.from_pem(
-    cert_pem="file://server.pem",
-    key_pem="file://server.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Basic validation
@@ -285,7 +297,8 @@ else:
     logger.error("❌ Certificate validation failed")
 
 # Check certificate against CA (using verify_trust method)
-ca_cert = Certificate.from_pem(cert_pem="file://ca.pem")
+ca_cert_content = Path("ca.pem").read_text()
+ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 
 try:
     # verify_trust checks if cert is signed by CA
@@ -355,13 +368,16 @@ server = plugin_server(
 ```python
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
+from pathlib import Path
 
 # Monitor certificate health
 cert_paths = ["server.pem", "client.pem", "ca.pem"]
 
 for cert_path in cert_paths:
     try:
-        cert = Certificate.from_pem(cert_pem=f"file://{cert_path}")
+        # Read PEM content from file
+        cert_content = Path(cert_path).read_text()
+        cert = Certificate.from_pem(cert_pem=cert_content)
 
         if cert.is_valid:
             logger.info(f"✅ {cert_path}: Valid")
@@ -473,13 +489,15 @@ openssl verify -CAfile ca.pem server.pem
 ```python
 # Enable detailed TLS logging
 import logging
+from pathlib import Path
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
 logging.getLogger('grpc').setLevel(logging.DEBUG)
 
-# Check certificate validation
-cert = Certificate.from_pem(cert_pem="file://server.pem")
+# Check certificate validation - read PEM content from file
+cert_content = Path("server.pem").read_text()
+cert = Certificate.from_pem(cert_pem=cert_content)
 logger.info(f"Certificate valid: {cert.is_valid}")
 logger.info(f"Common Name: {cert.common_name}")
 logger.info(f"Organization: {cert.organization_name}")
