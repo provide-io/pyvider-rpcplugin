@@ -65,3 +65,17 @@ async def main():
 
 - [Full Client Guide](../../guide/client/basic-setup.md)
 - [Error Handling](../../guide/client/error-handling.md)
+## What's Next?
+
+### Next Steps
+
+1. **Make RPC Calls** - Use `client.grpc_channel` to create stubs and call methods
+2. **Handle Errors** - Add try/except for [Error Handling](../../guide/client/error-handling.md)
+3. **Use Context Manager** - Switch to `async with plugin_client()` for automatic cleanup
+4. **Configure Retries** - Tune [Client Configuration](../../guide/config/configuration-client.md)
+
+### Learning Path
+
+- **Beginner:** Try making actual RPC calls with the [Echo Service Examples](../echo-basic.md)
+- **Intermediate:** Learn [Connection Management](../../guide/client/connections.md) patterns
+- **Advanced:** Implement [Custom Retry Logic](../../guide/client/retry-logic.md)
