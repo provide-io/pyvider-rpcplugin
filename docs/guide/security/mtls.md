@@ -506,6 +506,7 @@ logger.info(f"Certificate type: {cert.key_type}")
 
 ## Next Steps
 
+- **[Certificate API Reference](certificate-reference.md)** - Quick reference for Certificate.from_pem() usage
 - **[Certificate Management](certificates.md)** - Detailed certificate operations
 - **[Process Isolation](process-isolation.md)** - Additional security layers
 - **[Production Configuration](../config/production.md)** - Production deployment and security setup

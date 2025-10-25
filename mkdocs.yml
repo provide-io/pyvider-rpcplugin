@@ -284,6 +284,7 @@ nav:
       - guide/security/index.md
       - mTLS Configuration: guide/security/mtls.md
       - Certificate Management: guide/security/certificates.md
+      - Certificate API Reference: guide/security/certificate-reference.md
       - Magic Cookies: guide/security/magic-cookies.md
       - Process Isolation: guide/security/process-isolation.md
     
