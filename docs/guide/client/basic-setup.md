@@ -4,14 +4,28 @@ Learn the fundamentals of creating and configuring plugin clients with comprehen
 
 ## Minimal Client
 
+!!! note "Using gRPC Stubs"
+    The client provides a `grpc_channel` for making RPC calls.
+    You must use generated gRPC stubs - the client doesn't provide automatic service proxies.
+
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_client
+# Import generated gRPC stub
+from calculator_pb2_grpc import CalculatorStub
+from calculator_pb2 import AddRequest
 
 async def main():
     # Simple client with automatic lifecycle management
     async with plugin_client(command=["python", "calculator.py"]) as client:
-        result = await client.calculator.Add(a=5, b=3)
+        await client.start()
+
+        # Create gRPC stub from client's channel
+        stub = CalculatorStub(client.grpc_channel)
+
+        # Make RPC call using stub
+        request = AddRequest(a=5, b=3)
+        result = await stub.Add(request)
         print(f"Result: {result.result}")
 
 if __name__ == "__main__":
@@ -35,8 +49,13 @@ async def manual_client_example():
         await client.start()
         print(" Client connected")
         
-        # Use client
-        result = await client.calculator.Add(a=10, b=5)
+        # Create gRPC stub and use client
+        from calculator_pb2_grpc import CalculatorStub
+        from calculator_pb2 import AddRequest
+
+        stub = CalculatorStub(client.grpc_channel)
+        request = AddRequest(a=10, b=5)
+        result = await stub.Add(request)
         print(f"Calculation: {result.result}")
         
     finally:
@@ -50,46 +69,59 @@ await manual_client_example()
 
 ## Client Configuration
 
-```python
-from pyvider.rpcplugin import plugin_client
+!!! important "Configuration Methods"
+    The `plugin_client()` factory only accepts `command` and `config` parameters. The `config` dict is used to pass environment variables to the **plugin subprocess**, not to configure the client itself.
 
-# Basic configuration
-client = plugin_client(
-    command=["python", "my_plugin.py"],
-    timeout=30.0,                    # Connection timeout
-    max_retries=3,                   # Retry attempts
-    compression="gzip",              # Enable compression
-    max_message_size=4*1024*1024     # 4MB max message size
-)
+    **To configure the CLIENT:** Set environment variables in your own process
+    **To configure the PLUGIN:** Use `config={"env": {...}}`
 
-# Transport-specific configuration
-client = plugin_client(
-    command=["python", "my_plugin.py"],
-    transport="tcp",                 # Force TCP transport
-    tcp_host="127.0.0.1",           # TCP host
-    tcp_port=8080,                  # Specific TCP port
-    enable_mtls=True,               # Enable mTLS security
-    client_cert="client.pem",       # Client certificate
-    client_key="client.key"         # Client private key
-)
-```
+### Configuring Client Behavior
 
-## Environment Configuration
+Set environment variables in your process to configure client behavior:
 
 ```python
 import os
 from pyvider.rpcplugin import plugin_client
 
-# Configure via environment variables
-os.environ.update({
-    "PLUGIN_CLIENT_TIMEOUT": "60.0",
-    "PLUGIN_CLIENT_MAX_RETRIES": "5",
-    "PLUGIN_CLIENT_TRANSPORT": "unix",
-    "PLUGIN_CLIENT_COMPRESSION": "gzip"
-})
+# Configure client retry behavior
+os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = "3"
+os.environ["PLUGIN_CLIENT_RETRY_ENABLED"] = "true"
+os.environ["PLUGIN_CONNECTION_TIMEOUT"] = "30.0"
 
-# Client picks up environment configuration
+# Configure transport preferences
+os.environ["PLUGIN_CLIENT_TRANSPORTS"] = '["tcp", "unix"]'  # JSON list
+
+# Configure gRPC message sizes
+os.environ["PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE"] = str(4*1024*1024)  # 4MB
+os.environ["PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE"] = str(4*1024*1024)
+
+# Configure client-side mTLS
+os.environ["PLUGIN_CLIENT_CERT"] = "file:///path/to/client.crt"
+os.environ["PLUGIN_CLIENT_KEY"] = "file:///path/to/client.key"
+
+# Client automatically picks up these environment variables
 client = plugin_client(command=["python", "my_plugin.py"])
+```
+
+### Configuring Plugin Subprocess
+
+Use the `config` parameter to pass environment variables to the plugin:
+
+```python
+from pyvider.rpcplugin import plugin_client
+
+# Pass environment variables to the plugin subprocess
+client = plugin_client(
+    command=["python", "my_plugin.py"],
+    config={
+        "env": {
+            "PLUGIN_LOG_LEVEL": "DEBUG",
+            "PLUGIN_AUTO_MTLS": "true",
+            "MY_PLUGIN_API_KEY": "secret-key",
+            "PLUGIN_SERVER_PORT": "8080",
+        }
+    }
+)
 ```
 
 ## Error Handling
@@ -122,50 +154,93 @@ async def robust_client():
 
 ## Service Discovery
 
+!!! warning "Conceptual Example"
+    The following example shows conceptual patterns for service discovery.
+    In actual usage, you need to know your service's protocol definition
+    and use the generated gRPC stubs directly.
+
 ```python
+from calculator_pb2_grpc import CalculatorStub
+from calculator_pb2 import AddRequest
+
 async def explore_services():
     async with plugin_client(command=["python", "multi_service.py"]) as client:
-        # List available services
-        services = client.get_available_services()
-        print(f"Available services: {services}")
-        
-        # Check if specific service exists
-        if client.has_service("calculator.Calculator"):
-            result = await client.calculator.Add(a=1, b=2)
-            print(f"Calculator result: {result.result}")
-        
-        # Get service methods
-        if hasattr(client, 'calculator'):
-            methods = client.calculator.get_available_methods()
-            print(f"Calculator methods: {methods}")
+        await client.start()
+
+        # You must know which services are available
+        # based on your .proto files and plugin implementation
+
+        # Create stub for known service
+        stub = CalculatorStub(client.grpc_channel)
+
+        # Make RPC calls using the stub
+        request = AddRequest(a=1, b=2)
+        result = await stub.Add(request)
+        print(f"Calculator result: {result.result}")
+
+        # For multiple services, create multiple stubs
+        # from file_pb2_grpc import FileServiceStub
+        # file_stub = FileServiceStub(client.grpc_channel)
 ```
 
 ## Development vs Production
 
+!!! important "Configuration Method"
+    The `plugin_client()` factory only accepts `command` and `config` parameters.
+    Configure client behavior via **environment variables** in your process.
+
 ### Development Setup
 ```python
+import os
+
 def create_dev_client(command):
+    """Create client configured for development."""
+    # Configure CLIENT behavior via environment variables
+    os.environ["PLUGIN_CONNECTION_TIMEOUT"] = "120.0"  # Long timeout for debugging
+    os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = "1"  # Fewer retries
+    os.environ["PLUGIN_LOG_LEVEL"] = "DEBUG"  # Detailed logging
+    os.environ["PLUGIN_CLIENT_TRANSPORTS"] = '["tcp"]'  # TCP easier to debug
+
+    # Pass environment to plugin subprocess
     return plugin_client(
         command=command,
-        timeout=120.0,      # Long timeout for debugging
-        max_retries=1,      # Fewer retries for faster failure
-        enable_logging=True, # Detailed logging
-        transport="tcp"     # Easier to debug than Unix sockets
+        config={
+            "env": {
+                "PLUGIN_LOG_LEVEL": "DEBUG",
+                "PLUGIN_AUTO_MTLS": "false",  # Disable mTLS for local dev
+            }
+        }
     )
 ```
 
 ### Production Setup
 ```python
+import os
+
 def create_prod_client(command):
+    """Create client configured for production."""
+    # Configure CLIENT behavior via environment variables
+    os.environ["PLUGIN_CONNECTION_TIMEOUT"] = "30.0"
+    os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = "3"
+    os.environ["PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE"] = str(10*1024*1024)  # 10MB
+    os.environ["PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE"] = str(10*1024*1024)
+    os.environ["PLUGIN_GRPC_KEEPALIVE_TIME_MS"] = "30000"
+    os.environ["PLUGIN_CLIENT_TRANSPORTS"] = '["unix", "tcp"]'  # Unix preferred
+
+    # Configure CLIENT mTLS
+    os.environ["PLUGIN_CLIENT_CERT"] = "file:///etc/plugin/client.crt"
+    os.environ["PLUGIN_CLIENT_KEY"] = "file:///etc/plugin/client.key"
+
+    # Pass environment to plugin subprocess
     return plugin_client(
         command=command,
-        timeout=30.0,       # Standard timeout
-        max_retries=3,      # Reasonable retry count
-        compression="gzip", # Enable compression
-        transport="unix",   # Best performance
-        enable_mtls=True,   # Security required
-        max_message_size=10*1024*1024,  # 10MB limit
-        keepalive_time=30.0 # Connection keepalive
+        config={
+            "env": {
+                "PLUGIN_LOG_LEVEL": "INFO",
+                "PLUGIN_AUTO_MTLS": "true",  # Enable mTLS for production
+                "PLUGIN_RATE_LIMIT_ENABLED": "true",
+            }
+        }
     )
 ```
 
@@ -203,50 +278,68 @@ async def multiple_clients_example():
 ## Client Factory Pattern
 
 ```python
-from typing import Any
+import os
 from dataclasses import dataclass
+from pyvider.rpcplugin import plugin_client
 
 @dataclass
 class ClientFactory:
     """Factory for creating configured clients."""
-    
+
     default_timeout: float = 30.0
     default_retries: int = 3
-    enable_compression: bool = True
-    
-    def create_client(self, command: list[str], **overrides) -> plugin_client:
+    log_level: str = "INFO"
+
+    def _configure_client_environment(self):
+        """Configure client behavior via environment variables."""
+        os.environ["PLUGIN_CONNECTION_TIMEOUT"] = str(self.default_timeout)
+        os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = str(self.default_retries)
+        os.environ["PLUGIN_LOG_LEVEL"] = self.log_level
+
+    def create_client(
+        self,
+        command: list[str],
+        plugin_env: dict[str, str] | None = None
+    ) -> plugin_client:
         """Create client with factory defaults."""
-        config = {
-            "command": command,
-            "timeout": self.default_timeout,
-            "max_retries": self.default_retries,
-            "compression": "gzip" if self.enable_compression else None
-        }
-        
-        # Apply overrides
-        config.update(overrides)
-        
-        return plugin_client(**config)
-    
+        self._configure_client_environment()
+
+        return plugin_client(
+            command=command,
+            config={"env": plugin_env or {}}
+        )
+
     def create_calculator_client(self):
-        return self.create_client(["python", "calculator.py"])
-    
+        return self.create_client(
+            ["python", "calculator.py"],
+            plugin_env={"PLUGIN_AUTO_MTLS": "false"}
+        )
+
     def create_file_client(self):
+        # Configure large message sizes for file transfers
+        os.environ["PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE"] = str(50*1024*1024)
+        os.environ["PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE"] = str(50*1024*1024)
+
         return self.create_client(
             ["python", "file_service.py"],
-            max_message_size=50*1024*1024  # Large files
+            plugin_env={"PLUGIN_AUTO_MTLS": "false"}
         )
-    
+
     def create_secure_client(self, command: list[str]):
+        # Configure client-side mTLS
+        os.environ["PLUGIN_CLIENT_CERT"] = "file:///path/to/client.pem"
+        os.environ["PLUGIN_CLIENT_KEY"] = "file:///path/to/client.key"
+
         return self.create_client(
             command,
-            enable_mtls=True,
-            client_cert="client.pem",
-            client_key="client.key"
+            plugin_env={
+                "PLUGIN_AUTO_MTLS": "true",
+                "PLUGIN_SERVER_CERT": "file:///path/to/server.crt",
+            }
         )
 
 # Usage
-factory = ClientFactory()
+factory = ClientFactory(default_timeout=60.0, log_level="DEBUG")
 client = factory.create_calculator_client()
 ```
 

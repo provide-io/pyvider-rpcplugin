@@ -309,10 +309,10 @@ async def test_echo_service_integration():
 
 ## Next Steps
 
-- **[Production Config](production-config-discussion.md)** - Deployment patterns
+- **[Production Config Guide](../guide/config/production.md)** - Deployment patterns
 - **[Security Guide](../guide/security/mtls.md)** - Comprehensive security setup
-- **[Performance Tuning](performance-tuning-concepts.md)** - Optimization techniques
-- **[Telemetry Demo](telemetry-demo.md)** - Observability integration
+- **[Performance Tuning Guide](../guide/advanced/performance.md)** - Optimization techniques
+- **[Advanced Topics](../guide/advanced/index.md)** - Observability and telemetry integration
 
 ## Reference
 

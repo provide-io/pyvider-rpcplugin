@@ -439,17 +439,19 @@ ca_cert = Certificate.create_ca(
 server_cert = Certificate.create_signed_certificate(
     ca_certificate=ca_cert,
     common_name="plugin-server.example.com",
+    organization_name="My Company",
+    validity_days=90,
     alt_names=["localhost", "127.0.0.1"],
-    is_client_cert=False,
-    validity_days=90
+    is_client_cert=False
 )
 
 # Client certificate generation
 client_cert = Certificate.create_signed_certificate(
     ca_certificate=ca_cert,
     common_name="plugin-client.example.com",
-    is_client_cert=True,
-    validity_days=90
+    organization_name="My Company",
+    validity_days=90,
+    is_client_cert=True
 )
 ```
 

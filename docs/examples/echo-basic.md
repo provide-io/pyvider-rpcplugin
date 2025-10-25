@@ -209,8 +209,8 @@ If the client times out:
 
 ### Explore Other Examples
 - **[Direct Connection Example](../guide/client/direct-connections.md)** - Connect to existing server
-- **[Security Example](security-mtls-example.md)** - Add mTLS encryption
-- **[Production Example](production-config-example.md)** - Production-ready configuration
+- **[Security Guide](../guide/security/mtls.md)** - Add mTLS encryption
+- **[Production Configuration](../guide/config/production.md)** - Production-ready configuration
 
 ### Study Core Concepts
 - **[RPC Architecture](../guide/concepts/rpc-architecture.md)** - Understanding the plugin model

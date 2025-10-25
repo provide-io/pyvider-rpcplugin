@@ -152,8 +152,8 @@ To add streaming to your echo service:
 ## Next Steps
 
 - **[Echo Advanced](echo-advanced.md)** - Bidirectional streaming and advanced patterns
-- **[Async Patterns](async-patterns-demo.md)** - Deep dive into asyncio patterns
-- **[Error Handling](error-handling-demo.md)** - Robust error management
+- **[Advanced Topics Guide](../guide/advanced/index.md)** - Deep dive into async patterns and performance
+- **[Error Handling Guide](../guide/client/error-handling.md)** - Robust error management
 
 ## Reference
 

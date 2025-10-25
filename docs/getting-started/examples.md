@@ -10,10 +10,10 @@ The simplest example demonstrating basic server-client communication:
 ```bash
 # Terminal 1: Start echo server
 cd examples/
-python ch05_echo_server.py
+python echo_server.py
 
-# Terminal 2: Connect with echo client  
-python ch07_echo_client.py
+# Terminal 2: Connect with echo client
+python echo_client.py
 ```
 
 **What it demonstrates:**
@@ -22,8 +22,8 @@ python ch07_echo_client.py
 - Error handling and graceful shutdown
 
 **Files:**
-- `ch05_echo_server.py` - Server implementation
-- `ch07_echo_client.py` - Client implementation  
+- `echo_server.py` - Server implementation
+- `echo_client.py` - Client implementation
 - `proto/echo.proto` - Protocol definition
 
 ### End-to-End Greeter
@@ -31,10 +31,10 @@ A complete greeter service showing production patterns:
 
 ```bash
 # Start greeter server
-python examples/ch15_e2e_server.py
+python examples/e2e_greeter_server.py
 
 # Connect with greeter client
-python examples/ch15_e2e_client.py
+python examples/e2e_greeter_client.py
 ```
 
 **What it demonstrates:**
@@ -49,7 +49,7 @@ python examples/ch15_e2e_client.py
 Minimal server for rapid prototyping:
 
 ```python
-# From ch02_dummy_server.py
+# From dummy_server.py
 from pyvider.rpcplugin import plugin_server, plugin_protocol
 
 async def main():
@@ -61,14 +61,14 @@ async def main():
 ```
 
 **Files:**
-- `ch02_dummy_server.py`
-- `ch02_quick_start_client.py`
+- `dummy_server.py`
+- `quick_start_client.py`
 
 ### Transport Configuration
 Examples showing different transport options:
 
 ```python
-# From ch04_transport_options_demo.py
+# From transport_options_demo.py
 # Unix socket transport
 server = plugin_server(
     protocol=protocol,
@@ -79,7 +79,7 @@ server = plugin_server(
 
 # TCP transport
 server = plugin_server(
-    protocol=protocol, 
+    protocol=protocol,
     handler=handler,
     transport="tcp",
     host="127.0.0.1",
@@ -88,7 +88,7 @@ server = plugin_server(
 ```
 
 **File:**
-- `ch04_transport_options_demo.py`
+- `transport_options_demo.py`
 
 ## Advanced Examples
 
@@ -129,17 +129,17 @@ server = plugin_server(protocol=protocol, handler=handler)
 - Certificate rotation patterns
 
 **File:**
-- `ch09_security_mtls_example.py`
+- `security_mtls_example.py`
 
 ### Custom Protocols
 Building custom protocol implementations:
 
 ```python
-# From ch13_custom_protocols_demo.py
+# From custom_protocols_demo.py
 class CustomProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self):
         return my_service_pb2_grpc, "mypackage.MyService"
-    
+
     async def add_to_server(self, server, handler):
         add_MyServiceServicer_to_server(handler, server)
 ```
@@ -151,7 +151,7 @@ class CustomProtocol(RPCPluginProtocol):
 - Method type configuration
 
 **File:**
-- `ch13_custom_protocols_demo.py`
+- `custom_protocols_demo.py`
 
 ## Configuration Examples
 
@@ -159,7 +159,7 @@ class CustomProtocol(RPCPluginProtocol):
 Production-ready configuration patterns:
 
 ```python
-# From ch12_production_config_discussion.py
+# From production_config_discussion.py
 def production_config():
     return {
         "auto_mtls": True,
@@ -178,13 +178,13 @@ def production_config():
 - Monitoring and observability setup
 
 **File:**
-- `ch12_production_config_discussion.py`
+- `production_config_discussion.py`
 
 ### Performance Tuning
 Performance optimization examples:
 
 ```python
-# From ch14_performance_tuning_concepts.py
+# From performance_tuning_concepts.py
 # High-throughput configuration
 configure(
     max_concurrent_rpcs=1000,
@@ -202,7 +202,7 @@ configure(
 - Benchmarking patterns
 
 **File:**
-- `ch14_performance_tuning_concepts.py`
+- `performance_tuning_concepts.py`
 
 ## Error Handling Examples
 
@@ -210,7 +210,7 @@ configure(
 Production-grade error handling patterns:
 
 ```python
-# From ch11_error_handling_demo.py
+# From error_handling_demo.py
 from pyvider.rpcplugin.exception import (
     RPCPluginError, TransportError, HandshakeError
 )
@@ -232,7 +232,7 @@ except TransportError as e:
         "error_type": "transport",
         "recovery_action": "retry_connection"
     })
-    # Handle network connectivity issues  
+    # Handle network connectivity issues
 except RPCPluginError as e:
     logger.error("Plugin error", extra={
         "error": str(e),
@@ -243,7 +243,7 @@ except RPCPluginError as e:
 ```
 
 **File:**
-- `ch11_error_handling_demo.py`
+- `error_handling_demo.py`
 
 ## Async Pattern Examples
 
@@ -251,39 +251,39 @@ except RPCPluginError as e:
 Modern async/await patterns for plugin development:
 
 ```python
-# From ch10_async_patterns_demo.py
+# From async_patterns_demo.py
 from provide.foundation import logger
 import asyncio
 
 async def concurrent_requests():
     client = plugin_client(command=["python", "-m", "my_plugin"])
-    
+
     async with client:
         logger.info("Starting concurrent request processing", extra={
             "item_count": len(items),
             "concurrency_level": "high"
         })
-        
+
         # Concurrent RPC calls with Foundation logging
         tasks = [
             client.process_item(item) for item in items
         ]
-        
+
         with logger.contextualize(operation="concurrent_processing"):
             results = await asyncio.gather(*tasks, return_exceptions=True)
-            
+
             successful_count = sum(1 for r in results if not isinstance(r, Exception))
             logger.info("Concurrent processing completed", extra={
                 "total_items": len(results),
                 "successful": successful_count,
                 "failed": len(results) - successful_count
             })
-            
+
             return results
 ```
 
 **File:**
-- `ch10_async_patterns_demo.py`
+- `async_patterns_demo.py`
 
 ## Running All Examples
 
@@ -318,13 +318,13 @@ examples/
 
 | Category | Examples | Focus |
 |----------|----------|-------|
-| **Basic** | ch02, ch05, ch07 | Getting started, basic patterns |
-| **Transport** | ch04, ch08 | Unix sockets, TCP, direct connections |
-| **Security** | ch09 | mTLS, certificates, authentication |
-| **Advanced** | ch10, ch13, ch14 | Async patterns, custom protocols, performance |
-| **Configuration** | ch12 | Production setup, environment variables |
-| **Error Handling** | ch11 | Exception handling, recovery patterns |
-| **End-to-End** | ch15 | Complete application examples |
+| **Basic** | dummy_server, echo_server, echo_client | Getting started, basic patterns |
+| **Transport** | transport_options_demo, direct_client_connection | Unix sockets, TCP, direct connections |
+| **Security** | security_mtls_example | mTLS, certificates, authentication |
+| **Advanced** | async_patterns_demo, custom_protocols_demo, performance_tuning_concepts | Async patterns, custom protocols, performance |
+| **Configuration** | production_config_discussion | Production setup, environment variables |
+| **Error Handling** | error_handling_demo | Exception handling, recovery patterns |
+| **End-to-End** | e2e_greeter_server, e2e_greeter_client | Complete application examples |
 
 ## Next Steps
 
