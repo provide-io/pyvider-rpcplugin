@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch02_dummy_server.py
+# examples/dummy_server.py
 """
 A minimal RPC plugin server for the Quick Start example.
 It uses the BasicRPCPluginProtocol and a no-op handler.
@@ -43,10 +43,10 @@ async def main() -> None:
     # (e.g., transport type, which defaults to 'unix' then 'tcp').
     server: RPCPluginServer = plugin_server(protocol=protocol, handler=handler)
 
-    # --- Logic for ch08 (direct client connection) START ---
+    # --- Logic for direct client connection START ---
     # Determine if running as main for the special socket path writing behavior
     # or if specific env var PYVIDER_WRITE_SOCKET_PATH is set.
-    # This allows ch08_direct_client_connection.py to work with this server.
+    # This allows direct_client_connection.py to work with this server.
     should_write_socket_path = __name__ == "__main__" or os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true"
     server_task = None
     socket_comm_file = None
@@ -54,7 +54,7 @@ async def main() -> None:
     if should_write_socket_path:
         project_root_for_socket_file = Path(__file__).resolve().parent.parent
         socket_comm_file = project_root_for_socket_file / "dummy_server_socket.txt"
-    # --- Logic for ch08 (direct client connection) END ---
+    # --- Logic for direct client connection END ---
 
     try:
         logger.info(
@@ -71,7 +71,7 @@ async def main() -> None:
 
             if server.transport and server.transport.endpoint and socket_comm_file:
                 if server._transport_name == "unix":
-                    logger.info(f"ch08 skt: {server.transport.endpoint} to {socket_comm_file}")
+                    logger.info(f"Writing socket path: {server.transport.endpoint} to {socket_comm_file}")
                     try:
                         with open(socket_comm_file, "w") as f:
                             f.write(str(server.transport.endpoint))
@@ -123,7 +123,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     # This allows the script to be run directly as a plugin executable
-    # by RPCPluginClient, or for ch08 direct connection example.
+    # by RPCPluginClient, or for the direct connection example.
     import os  # Required for getenv and Path
     from pathlib import Path  # Required for Path
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     )  # For standalone setup
 
     if os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true":
-        # If run for ch08, ensure magic cookie is set for self-handshake
+        # If run for direct connection, ensure magic cookie is set for self-handshake
         cookie_key_to_set_in_env = rpcplugin_config.magic_cookie_key()
         expected_cookie_value = rpcplugin_config.magic_cookie_value()
         env_var_name_for_cookie = "PYVIDER_PLUGIN_MAGIC_COOKIE"  # Default from example_utils
@@ -142,7 +142,7 @@ if __name__ == "__main__":
         os.environ[env_var_name_for_cookie] = expected_cookie_value
         pyvider_core_configure(PLUGIN_MAGIC_COOKIE_KEY=env_var_name_for_cookie)
         logger.info(
-            f"Standalone server mode (for ch08): "
+            f"Standalone server mode (for direct connection): "
             f"Set os.environ['{env_var_name_for_cookie}'] = '{expected_cookie_value}'. "
             f"RPCPlugin configured to use '{env_var_name_for_cookie}' as cookie key."
         )
