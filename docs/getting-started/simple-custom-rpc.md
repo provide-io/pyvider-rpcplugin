@@ -2,6 +2,18 @@
 
 This intermediate tutorial bridges the gap between the [Quick Start](quick-start.md) and the full [Protocol Buffers Plugin](first-plugin.md). Learn how to create custom RPC methods using plain Python before diving into protobuf complexity.
 
+!!! info "Conceptual Tutorial"
+    This is a **conceptual tutorial** designed to teach the principles of RPC plugin development. The example files referenced (`processor_service.py`, `simple_protocol.py`, `simple_server.py`, `simple_client.py`) are **not included in the examples/ directory**.
+
+    **You can:**
+    - Create these files yourself as a learning exercise
+    - Use them as templates for your own custom RPC services
+    - Skip to the [Echo Service Example](../examples/echo-basic.md) for a complete, runnable example using Protocol Buffers
+
+    **For working examples**, see:
+    - [Echo Service](../examples/echo-basic.md) - Complete RPC service with Protocol Buffers
+    - [Examples Overview](../examples/index.md) - All runnable examples
+
 **Navigation:** [Home](../index.md) → [Getting Started](index.md) → Simple Custom RPC
 
 ## What You'll Learn

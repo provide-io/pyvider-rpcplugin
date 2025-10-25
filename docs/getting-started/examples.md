@@ -96,24 +96,26 @@ server = plugin_server(
 Comprehensive security setup with mutual TLS:
 
 ```python
-# From ch09_security_mtls_example.py
+# From security_mtls_example.py
 import os
-from provide.foundation.crypto import Certificate, PrivateKey
+from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
-# Load certificates using Foundation crypto
-server_cert = Certificate.load_from_file("/etc/ssl/server.crt")
-server_key = PrivateKey.load_from_file("/etc/ssl/server.key")
+# Load certificate and key using Foundation crypto (file:// URI or PEM string)
+server_cert = Certificate.from_pem(
+    cert_pem="file:///etc/ssl/server.crt",
+    key_pem="file:///etc/ssl/server.key"
+)
 
 # Configure mTLS with Foundation patterns
 os.environ.update({
     "PLUGIN_AUTO_MTLS": "true",
-    "PLUGIN_SERVER_CERT": str(server_cert.file_path),
-    "PLUGIN_SERVER_KEY": str(server_key.file_path),
+    "PLUGIN_SERVER_CERT": server_cert.cert_pem,
+    "PLUGIN_SERVER_KEY": server_cert.key_pem,
 })
 
 logger.info("mTLS configuration loaded", extra={
-    "cert_path": str(server_cert.file_path),
+    "cert_common_name": server_cert.common_name,
     "auto_mtls": True
 })
 

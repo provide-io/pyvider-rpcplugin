@@ -35,7 +35,7 @@ from uuid import uuid4
 import grpc
 from provide.foundation import logger
 from provide.foundation.config import RuntimeConfig
-from provide.foundation.crypto import Certificate, PrivateKey
+from provide.foundation.crypto import Certificate
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 from pyvider.rpcplugin import plugin_server, configure

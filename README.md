@@ -28,9 +28,9 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 For a comprehensive guide to installing, using, and understanding `pyvider.rpcplugin`, including tutorials, advanced topics, and API references, please see the:
 
-➡️ **[User and Developer Guide](./docs/USER_GUIDE.md)**
+➡️ **[Documentation Home](./docs/index.md)**
 
-This guide provides a book-style walkthrough of the framework.
+Complete documentation with tutorials, examples, API reference, and deployment guides.
 
 ## Overview
 
@@ -52,7 +52,7 @@ uv add pyvider-rpcplugin
 pip install pyvider-rpcplugin
 ```
 
-Dive into the **[User and Developer Guide](./docs/USER_GUIDE.md)** to get started!
+Dive into the **[Documentation](./docs/index.md)** to get started!
 
 ## 🤝 Contributing
 

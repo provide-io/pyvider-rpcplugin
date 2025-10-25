@@ -73,11 +73,14 @@ print("Foundation integration verified!")
 Pyvider RPC Plugin automatically installs these key dependencies:
 
 ### Core Dependencies
-- **provide.foundation** - Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting
+- **provide-foundation** - Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting
 - **grpcio** - gRPC runtime for Python
-- **grpcio-tools** - Protocol Buffer compiler and tools
-- **attrs** - Modern Python data classes
-- **cryptography** - Additional cryptographic utilities
+- **grpcio-health-checking** - gRPC health checking implementation
+- **protobuf** - Protocol Buffers runtime and serialization
+- **attrs** - Modern Python data classes with excellent typing support
+- **cryptography** - Cryptographic primitives and utilities
+- **structlog** - Structured logging library
+- **google** - Google API core libraries
 
 ### Foundation Integration
 
@@ -111,9 +114,22 @@ While Pyvider RPC Plugin focuses on:
 For development and testing:
 
 ```bash
-# Install with development dependencies
-pip install pyvider-rpcplugin[dev]
+# Install with test dependencies (includes grpcio-tools for protobuf compilation)
+pip install "pyvider-rpcplugin[test]"
+
+# Install with full development dependencies (recommended for contributors)
+uv sync --all-groups
 ```
+
+Test dependencies (`[test]` extra) include:
+- **grpcio-tools** - Protocol Buffer compiler and gRPC tools
+- **grpc-stubs** - Type stubs for gRPC
+- **types-grpcio** - Type hints for grpcio
+- **types-protobuf** - Type hints for protobuf
+
+Development dependencies (installed via `uv sync --all-groups`) include:
+- All test dependencies above
+- **provide-testkit** - Testing utilities, type checking, profiling, and build tools
 
 For documentation building:
 
@@ -253,7 +269,7 @@ If you encounter issues:
 
 ### Explore Examples
 - **[Basic Server Example](../examples/short/basic-server.md)** - Minimal server implementation using factory functions
-- **[Echo Service Example](../examples/echo-service.md)** - Complete service with unary, streaming, and bidirectional RPC patterns
+- **[Echo Service Examples](../examples/echo-basic.md)** - Complete service examples from basic to advanced patterns
 
 ### Learn Core Concepts
 - **[Transport Concepts](../guide/concepts/transports.md)** - Understanding Unix sockets, TCP, and transport selection

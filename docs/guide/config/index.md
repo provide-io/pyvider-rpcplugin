@@ -62,29 +62,47 @@ handshake_timeout: float = rpcplugin_config.plugin_handshake_timeout
 
 ### Programmatic Configuration
 
-For dynamic or complex configurations, you can configure values programmatically:
+For dynamic or complex configurations, you can configure values programmatically using the `configure()` function:
 
 ```python
 from pyvider.rpcplugin import configure
 from pyvider.rpcplugin.config import rpcplugin_config
 
-# Set configuration values programmatically
+# Set configuration values using simplified parameter names
 configure(
-    protocol_version=1,
-    server_transports=["unix"],
-    auto_mtls=True,
-    handshake_timeout=30.0,
-    log_level="INFO"
+    magic_cookie="my-secure-cookie",  # Sets plugin_magic_cookie_value
+    protocol_version=1,                # Sets plugin_core_version
+    transports=["unix"],               # Sets both plugin_server_transports and plugin_client_transports
+    auto_mtls=True,                    # Sets plugin_auto_mtls
+    handshake_timeout=30.0,            # Sets plugin_handshake_timeout
 )
 
-# Or update the configuration instance directly
+# Additional options via kwargs (automatically prefixed with "plugin_")
+configure(
+    log_level="INFO",                  # Sets plugin_log_level
+    rate_limit_enabled=True,           # Sets plugin_rate_limit_enabled
+    rate_limit_requests_per_second=100.0,  # Sets plugin_rate_limit_requests_per_second
+)
+
+# Or update the configuration instance directly using full attribute names
 config = rpcplugin_config
-config.update({
-    'rate_limit_enabled': True,
-    'rate_limit_requests_per_second': 100.0,
-    'rate_limit_burst_capacity': 200.0
-})
+config.plugin_rate_limit_enabled = True
+config.plugin_rate_limit_requests_per_second = 100.0
+config.plugin_rate_limit_burst_capacity = 200.0
 ```
+
+#### Parameter Name Mapping
+
+The `configure()` function uses simplified parameter names that map to the underlying configuration attributes:
+
+| `configure()` Parameter | Maps to Configuration Attribute | Environment Variable |
+|------------------------|--------------------------------|---------------------|
+| `magic_cookie` | `plugin_magic_cookie_value` | `PLUGIN_MAGIC_COOKIE_VALUE` |
+| `protocol_version` | `plugin_core_version` | `PLUGIN_CORE_VERSION` |
+| `transports` | `plugin_server_transports` & `plugin_client_transports` | `PLUGIN_SERVER_TRANSPORTS` & `PLUGIN_CLIENT_TRANSPORTS` |
+| `auto_mtls` | `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` |
+| `handshake_timeout` | `plugin_handshake_timeout` | `PLUGIN_HANDSHAKE_TIMEOUT` |
+| `**kwargs` | `plugin_{key}` (auto-prefixed) | `PLUGIN_{KEY}` |
 
 ### Configuration Validation
 
