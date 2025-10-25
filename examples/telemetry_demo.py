@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 16: OpenTelemetry Telemetry Demo
+OpenTelemetry Telemetry Demo
 
 This example demonstrates the CORRECT OpenTelemetry pattern for libraries:
 - APPLICATION configures OpenTelemetry (sets service.name)
