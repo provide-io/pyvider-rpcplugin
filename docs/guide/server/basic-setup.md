@@ -6,8 +6,7 @@ Learn the fundamentals of creating and configuring plugin servers with comprehen
 
 ```python
 import asyncio
-from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin import RPCPluginProtocol
+from pyvider.rpcplugin import plugin_server, RPCPluginProtocol
 from provide.foundation import logger
 
 class EchoProtocol(RPCPluginProtocol):
@@ -223,17 +222,17 @@ class ValidatedServer:
     async def start(self):
         try:
             self.validate_config()
-            
+
             server = plugin_server(
                 protocol=self.protocol,
                 handler=self.handler
             )
-            
-            logging.info("Server starting...")
+
+            logger.info("Server starting...")
             await server.serve()
-            
+
         except Exception as e:
-            logging.error(f"Server failed: {e}")
+            logger.error(f"Server failed: {e}")
             raise
 
 server = ValidatedServer(EchoProtocol(), EchoHandler())

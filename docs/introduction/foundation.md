@@ -269,7 +269,3 @@ Now that you understand the Foundation relationship:
 
 1. Continue to [Architecture Overview](../development/architecture.md) to understand the system design
 2. Or jump to [Installation](../getting-started/installation.md) to start building
-
----
-
-**Navigation:** [Previous: Introduction](index.md) | [Next: Architecture](../development/architecture.md)

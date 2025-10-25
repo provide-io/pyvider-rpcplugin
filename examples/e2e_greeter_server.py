@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch15_e2e_server.py
+# examples/e2e_greeter_server.py
 """
 End-to-End Greeter Plugin Server.
 """

@@ -242,7 +242,11 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  
+
+  - Introduction:
+    - introduction/index.md
+    - Foundation Integration: introduction/foundation.md
+
   - Getting Started:
     - getting-started/index.md
     - Installation: getting-started/installation.md

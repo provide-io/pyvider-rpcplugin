@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch07_echo_client.py
+# examples/echo_client.py
 import asyncio
 import os
 from pathlib import Path

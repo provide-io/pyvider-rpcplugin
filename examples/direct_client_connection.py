@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-# examples/ch08_direct_client_connection.py
+# examples/direct_client_connection.py
 """
 Demonstrates a client connecting directly to an independently running
 pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
 This contrasts with examples that use `plugin_client` to launch the server.
 To run this example:
-1. Start the `ch02_dummy_server.py` first, ensuring it's configured to
+1. Start the `dummy_server.py` first, ensuring it's configured to
    write its socket path. From the project root, run:
    `export PYVIDER_WRITE_SOCKET_PATH="true"`
    `export PLUGIN_MAGIC_COOKIE="pyvider-example-cookie"`
    (if server expects it for standalone)
-   `python examples/ch02_dummy_server.py`
-   The `ch02_dummy_server.py` is adapted to write its socket path to
+   `python examples/dummy_server.py`
+   The `dummy_server.py` is adapted to write its socket path to
    `dummy_server_socket.txt` in the project root when `PYVIDER_WRITE_SOCKET_PATH`
    is true or when run as `__main__`. It also defaults to PLUGIN_AUTO_MTLS=False.
-2. This script (`ch08_direct_client_connection.py`) will automatically read the
+2. This script (`direct_client_connection.py`) will automatically read the
    socket path from `dummy_server_socket.txt`.
-3. Run this script: `python examples/ch08_direct_client_connection.py`
+3. Run this script: `python examples/direct_client_connection.py`
 """
 
 import asyncio

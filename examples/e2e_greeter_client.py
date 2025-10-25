@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# examples/ch15_e2e_client.py
+# examples/e2e_greeter_client.py
 """
 End-to-End Greeter Plugin Client.
-Launches the ch15_e2e_server.py and makes a gRPC call.
+Launches the e2e_greeter_server.py and makes a gRPC call.
 """
 
 import asyncio
@@ -24,10 +24,10 @@ from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
 
 
 async def main() -> None:
-    logger.info("🚀 Starting E2E Greeting Client (ch15_e2e_client.py)")
+    logger.info("🚀 Starting E2E Greeting Client (e2e_greeter_client.py)")
 
     current_dir = Path(__file__).resolve().parent
-    server_script_path = current_dir / "ch15_e2e_server.py"
+    server_script_path = current_dir / "e2e_greeter_server.py"
 
     if not server_script_path.exists():
         logger.error(f"Could not find server script: {server_script_path}")

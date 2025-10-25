@@ -29,27 +29,24 @@ git remote add upstream https://github.com/provide-io/pyvider-rpcplugin.git
 2. **Set Up Development Environment**
 
 ```bash
-# Source the environment setup (uses workenv/ not .venv)
-uv sync
+# Set up development environment with all dependencies
+uv sync --all-groups
 
-# Install development dependencies
-pip install -e ".[dev,test,docs]"
-
-# Install pre-commit hooks
-pre-commit install
+# Verify installation
+uv run pytest --version
 ```
 
 3. **Verify Installation**
 
 ```bash
 # Run tests to ensure everything works
-pytest
+uv run pytest
 
 # Check code formatting
-ruff check .
+uv run ruff check .
 
 # Run type checking
-mypy src/
+uv run pyre check
 ```
 
 ## Development Workflow
@@ -147,16 +144,16 @@ class NewFeature:
 
 ```bash
 # Run all tests
-pytest -v
+uv run pytest -v
 
 # Check code formatting
-ruff check . --fix
+uv run ruff check . --fix
 
 # Run type checking
-mypy src/
+uv run pyre check
 
 # Check test coverage
-pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 ```
 
 ## Code Standards
@@ -201,7 +198,7 @@ def process_data(
 #### Modern Python Features
 
 ```python
-# ✅ Good - Use match statements (Python 3.10+)
+# ✅ Good - Use match statements (Python 3.11+)
 match response_type:
     case "success":
         return handle_success(data)
@@ -454,13 +451,13 @@ git rebase upstream/main
 
 ```bash
 # Run all tests with coverage
-pytest --cov=src --cov-report=term-missing
+uv run pytest --cov=src --cov-report=term-missing
 
 # Check for any regressions
-pytest tests/integration/
+uv run pytest tests/integration/
 
 # Performance regression tests
-pytest tests/performance/ -v
+uv run pytest tests/performance/ -v
 ```
 
 3. **Update documentation**

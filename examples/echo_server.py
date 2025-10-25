@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch05_echo_server.py
+# examples/echo_server.py
 import asyncio
 import os
 from typing import Any, cast
