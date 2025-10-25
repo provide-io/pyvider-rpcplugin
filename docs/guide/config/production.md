@@ -49,13 +49,15 @@ Configure appropriate network transport and firewall rules:
 ```bash
 # TCP configuration for networked deployments
 export PLUGIN_SERVER_TRANSPORTS='["tcp"]'
-export PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080  # All interfaces
+export PLUGIN_SERVER_HOST=0.0.0.0  # All interfaces
+export PLUGIN_SERVER_PORT=8080
 # or
-export PLUGIN_SERVER_ENDPOINT=10.0.1.100:8080  # Specific interface
+export PLUGIN_SERVER_HOST=10.0.1.100  # Specific interface
+export PLUGIN_SERVER_PORT=8080
 
 # Unix socket for same-host deployments (higher security)
 export PLUGIN_SERVER_TRANSPORTS='["unix"]'
-export PLUGIN_SERVER_ENDPOINT=/var/run/plugin/plugin.sock
+export PLUGIN_SERVER_UNIX_SOCKET_PATH=/var/run/plugin/plugin.sock
 ```
 
 ## Performance Configuration

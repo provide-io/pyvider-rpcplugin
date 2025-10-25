@@ -100,8 +100,8 @@ if __name__ == "__main__":
     # configure_for_example() is called at module top, so rpcplugin_config is populated.
     from pyvider.rpcplugin import rpcplugin_config  # Get config after example_utils
 
-    cookie_key_to_set = rpcplugin_config.magic_cookie_key()
-    cookie_value_to_set = rpcplugin_config.magic_cookie_value()
+    cookie_key_to_set = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value_to_set = rpcplugin_config.plugin_magic_cookie_value
     os.environ[cookie_key_to_set] = cookie_value_to_set
     logger.info(
         f"Standalone server mode: Set env var '{cookie_key_to_set}' to "

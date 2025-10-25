@@ -28,29 +28,11 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'`
 
 ### PLUGIN_CLIENT_TRANSPORTS
-- **Type**: `list[str]`  
+- **Type**: `list[str]`
 - **Default**: `["unix", "tcp"]`
 - **Description**: Transport types the client prefers (in priority order)
 - **Valid Values**: JSON array of "unix" and/or "tcp"
 - **Example**: `export PLUGIN_CLIENT_TRANSPORTS='["unix", "tcp"]'`
-
-### PLUGIN_SERVER_ENDPOINT
-- **Type**: `str`
-- **Default**: `None` (auto-select)
-- **Description**: Force server to bind to specific endpoint
-- **Format**: `"host:port"` for TCP, `"/path/to/socket"` for Unix
-- **Example**: 
-  ```bash
-  export PLUGIN_SERVER_ENDPOINT=localhost:8080  # TCP
-  export PLUGIN_SERVER_ENDPOINT=/tmp/plugin.sock  # Unix
-  ```
-
-### PLUGIN_CLIENT_ENDPOINT
-- **Type**: `str`
-- **Default**: `None` (use server's advertised endpoint)
-- **Description**: Force client to connect to specific endpoint
-- **Format**: Same as `PLUGIN_SERVER_ENDPOINT`
-- **Example**: `export PLUGIN_CLIENT_ENDPOINT="production-plugin:8080"`
 
 ## Security and Authentication
 
@@ -281,7 +263,8 @@ PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S=120
 ```bash
 # Container environment with secrets integration
 PLUGIN_LOG_LEVEL=INFO
-PLUGIN_SERVER_ENDPOINT=0.0.0.0:8080
+PLUGIN_SERVER_HOST=0.0.0.0
+PLUGIN_SERVER_PORT=8080
 PLUGIN_AUTO_MTLS=true
 PLUGIN_SERVER_CERT=${SERVER_CERT_PEM}  # From Kubernetes secret
 PLUGIN_SERVER_KEY=${SERVER_KEY_PEM}    # From Kubernetes secret

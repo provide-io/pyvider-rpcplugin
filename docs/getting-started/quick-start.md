@@ -22,6 +22,18 @@ Before diving in, let's understand the key components:
 
     **→ [Understanding Foundation](../introduction/foundation.md)** - Learn how Foundation and Pyvider work together
 
+!!! tip "Tutorial Code vs Production Code"
+    The examples below are **simplified for teaching** to focus on core concepts.
+
+    **For production-ready, runnable code**, see:
+
+    - `examples/dummy_server.py` - Full-featured version of `my_plugin.py`
+    - `examples/quick_start_client.py` - Full-featured version of `host_app.py`
+
+    Run with: `python examples/quick_start_client.py`
+
+    → [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+
 ## Your First Plugin
 
 ### 1. Create the Plugin Server

@@ -309,8 +309,8 @@ from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin.config import rpcplugin_config
 
 # Load certificate from environment-configured paths
-cert_path = rpcplugin_config.plugin_server_cert()  # Gets path from PLUGIN_SERVER_CERT
-key_path = rpcplugin_config.plugin_server_key()    # Gets path from PLUGIN_SERVER_KEY
+cert_path = rpcplugin_config.plugin_server_cert  # Gets path from PLUGIN_SERVER_CERT
+key_path = rpcplugin_config.plugin_server_key    # Gets path from PLUGIN_SERVER_KEY
 
 # Load certificate - read PEM content from files
 if cert_path and key_path:

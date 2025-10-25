@@ -2,6 +2,19 @@
 
 Create a complete Echo plugin with custom RPC methods. This tutorial builds on the [Quick Start](quick-start.md) to show you how to implement a real service with Protocol Buffers and gRPC.
 
+!!! tip "Tutorial Code vs Production Code"
+    This tutorial shows **simplified examples for teaching** purposes.
+
+    **For complete, production-ready implementation**, see:
+
+    - `examples/echo_server.py` - Full Echo server with comprehensive error handling
+    - `examples/echo_client.py` - Full Echo client with production patterns
+    - `examples/proto/echo.proto` - Complete Protocol Buffer definition
+
+    Run with: `python examples/echo_client.py`
+
+    → [Example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+
 ## What You'll Build
 
 An Echo plugin that:

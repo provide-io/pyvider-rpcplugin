@@ -192,6 +192,72 @@ rpcplugin_config.plugin_protocol_version = 999  # Raises ValueError
 rpcplugin_config.plugin_client_transports = ["invalid"]  # Raises ValueError
 ```
 
+## Configuration Instance Patterns
+
+Understanding when to use different RPCPluginConfig instantiation methods:
+
+### Using the Global Singleton (Recommended)
+
+For most use cases, use the pre-configured global instance:
+
+```python
+from pyvider.rpcplugin.config import rpcplugin_config
+
+# ✅ Recommended: Use the global singleton
+# Already initialized with environment variables via .from_env()
+timeout = rpcplugin_config.plugin_handshake_timeout
+port = rpcplugin_config.plugin_server_port
+```
+
+**When to use:**
+- Single plugin instance per process (most common)
+- Configuration from environment variables
+- Working with factory functions (`plugin_server()`, `plugin_client()`)
+
+### Creating Custom Instances with Environment
+
+If you need a fresh instance loaded from environment:
+
+```python
+from pyvider.rpcplugin.config import RPCPluginConfig
+
+# ✅ Load from environment variables
+custom_config = RPCPluginConfig.from_env()
+
+# Configuration is populated from PLUGIN_* environment variables
+assert custom_config.plugin_server_port == int(os.getenv("PLUGIN_SERVER_PORT", "8080"))
+```
+
+**When to use:**
+- Need isolated config that still respects environment
+- Testing scenarios requiring clean config state
+- Custom plugin initialization flows
+
+### Creating Empty Instances
+
+For programmatic configuration without environment variables:
+
+```python
+from pyvider.rpcplugin.config import RPCPluginConfig
+
+# ⚠️  Creates empty config with defaults only
+# Does NOT load environment variables
+manual_config = RPCPluginConfig()
+
+# You must set all required values manually
+manual_config.plugin_server_port = 8080
+manual_config.plugin_magic_cookie_value = "my-secret"
+manual_config.plugin_auto_mtls = True
+```
+
+**When to use:**
+- Multi-instance configurations (see below)
+- Complete programmatic control needed
+- Testing with controlled config state
+
+!!! warning "Empty Instances Don't Load Environment"
+    `RPCPluginConfig()` creates an instance with **default values only**. It does NOT load `PLUGIN_*` environment variables. Use `RPCPluginConfig.from_env()` if you need environment variable support.
+
 ## Multi-Instance Configuration
 
 For running multiple plugin instances with different configurations:

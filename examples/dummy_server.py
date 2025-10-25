@@ -134,8 +134,8 @@ if __name__ == "__main__":
 
     if os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true":
         # If run for direct connection, ensure magic cookie is set for self-handshake
-        cookie_key_to_set_in_env = rpcplugin_config.magic_cookie_key()
-        expected_cookie_value = rpcplugin_config.magic_cookie_value()
+        cookie_key_to_set_in_env = rpcplugin_config.plugin_magic_cookie_key
+        expected_cookie_value = rpcplugin_config.plugin_magic_cookie_value
         env_var_name_for_cookie = "PYVIDER_PLUGIN_MAGIC_COOKIE"  # Default from example_utils
         if cookie_key_to_set_in_env != env_var_name_for_cookie:
             env_var_name_for_cookie = cookie_key_to_set_in_env
