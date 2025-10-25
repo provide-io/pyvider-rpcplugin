@@ -2,36 +2,6 @@
 
 X.509 certificate lifecycle management for secure plugin communication using Foundation's comprehensive cryptography utilities.
 
-!!! warning "Documentation Under Review - Use These Sections"
-    This page is being updated to reflect the correct Foundation Certificate API. **Safe sections to use:**
-
-    ✅ **[Quick Start](#quick-start)** - Correct API for certificate generation and management
-    ✅ **[Core Components](#core-components)** - Correct patterns for generation and validation
-    ✅ **[Foundation Integration Guide](../advanced/foundation-integration.md)** - Comprehensive, production-ready examples
-
-    ⚠️ **Sections with outdated API examples** (being updated):
-    - Certificate Validation (line ~95+) - Uses non-existent `.validate_full()`
-    - Certificate Rotation (line ~109+) - Uses non-existent `CertificateRotator` class
-    - Loading Certificates (lines ~193, 210, 280) - Uses non-existent `.load_from_file()`
-    - Monitoring (line ~258+) - Uses non-existent `CertificateHealthChecker`
-    - Troubleshooting (line ~353+) - Uses non-existent `.subject`, `.not_after`
-
-    **Correct API Reference:**
-    ```python
-    # ✅ CORRECT - Load certificates
-    from provide.foundation.crypto import Certificate
-    cert = Certificate.from_pem(cert_pem="file://path.pem", key_pem="file://key.pem")
-
-    # ✅ CORRECT - Validate
-    if cert.is_valid:  # Property, not method
-        print("Valid")
-
-    # ✅ CORRECT - Save to file
-    from pathlib import Path
-    Path("cert.pem").write_text(cert.cert_pem)
-    Path("key.pem").write_text(cert.key_pem)
-    ```
-
 ## Overview
 
 Certificate management provides PKI-based authentication and encryption for plugin communication. Foundation handles certificate generation, validation, rotation, and monitoring with production-ready utilities.
