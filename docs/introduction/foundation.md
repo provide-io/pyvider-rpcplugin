@@ -186,10 +186,12 @@ Foundation's `RuntimeConfig` provides:
 
 Pyvider extends this with `RPCPluginConfig`:
 ```python
+# Example of how Pyvider extends Foundation's RuntimeConfig
 class RPCPluginConfig(RuntimeConfig):
+    """RPC Plugin configuration extending Foundation's base."""
     plugin_handshake_timeout: float = 10.0
     plugin_server_transports: list[str] = ["unix", "tcp"]
-    # ... RPC-specific configuration
+    # ... Additional RPC-specific configuration fields
 ```
 
 ### Logging System
