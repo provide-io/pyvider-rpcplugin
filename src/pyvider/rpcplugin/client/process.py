@@ -144,15 +144,25 @@ class ClientProcessMixin:
         else:  # TCP
             self.target_endpoint = self._address
 
-    def _get_channel_options(self) -> list[tuple[str, int | bool]]:
+    def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        return [
+        options: list[tuple[str, int | bool | str]] = [
             ("grpc.keepalive_time_ms", rpcplugin_config.plugin_grpc_keepalive_time_ms),
             ("grpc.keepalive_timeout_ms", rpcplugin_config.plugin_grpc_keepalive_timeout_ms),
             ("grpc.keepalive_permit_without_calls", True),
             ("grpc.http2.max_pings_without_data", 0),
             ("grpc.http2.min_ping_interval_without_data_ms", 300000),
         ]
+
+        # CRITICAL: For Unix sockets with TLS, override SSL target name for cert verification
+        # Unix socket addresses (unix:/path/to/socket) don't have hostnames, but TLS
+        # certificates are issued for hostnames (e.g., "localhost"). We need to tell
+        # gRPC which hostname to verify the server certificate against.
+        if self._transport_name == "unix" and self._server_cert:
+            options.append(("grpc.ssl_target_name_override", "localhost"))
+            self.logger.debug("Added SSL target name override 'localhost' for Unix socket + TLS connection")
+
+        return options
 
     def _setup_channel_credentials(self: RPCPluginClient) -> grpc.ChannelCredentials | None:  # type: ignore[misc]
         """Set up channel credentials for TLS/mTLS if certificates are available."""
