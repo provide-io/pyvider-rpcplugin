@@ -202,6 +202,7 @@ markdown_extensions:
 extra_css:
   - .shared-theme/stylesheets/provide-theme.css
   - .shared-theme/stylesheets/termynal.css
+  - stylesheets/extra.css
 
 extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
@@ -213,7 +214,7 @@ extra:
   version:
     provider: mike
     default: latest
-  
+
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/provide-io/pyvider-rpcplugin
@@ -221,11 +222,11 @@ extra:
       link: https://pypi.org/project/pyvider-rpcplugin/
     - icon: fontawesome/solid/globe
       link: https://provide.io
-  
+
   analytics:
     provider: google
     property: G-XXXXXXXXXX
-    
+
   consent:
     title: Cookie consent
     description: >-
@@ -233,12 +234,6 @@ extra:
       as to measure the effectiveness of our documentation and whether users
       find what they're searching for. With your consent, you're helping us to
       make our documentation better.
-
-extra_css:
-  - stylesheets/extra.css
-
-extra_javascript:
-  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
 
 nav:
   - Home: index.md
@@ -291,6 +286,7 @@ nav:
     - Configuration:
       - guide/config/index.md
       - Configuration Reference: guide/config/configuration-reference.md
+      - Config vs Factory Parameters: guide/config/configuration-vs-factory-parameters.md
       - Client Configuration: guide/config/configuration-client.md
       - Server Configuration: guide/config/configuration-server.md
       - Security Configuration: guide/config/configuration-security.md

@@ -90,24 +90,23 @@ Certificate management handled by Foundation's crypto module:
 
 ```python
 from provide.foundation.crypto import Certificate
+
+# Method 1: Load certificate from file:// URI (recommended for environment config)
+cert = Certificate.from_pem(
+    cert_pem="file:///path/to/server.crt",
+    key_pem="file:///path/to/server.key"
+)
+
+# Method 2: Load from PEM content strings
 from pathlib import Path
-
-# Load certificate and private key from PEM files
-# Note: from_pem() expects actual PEM content strings, not file paths
-cert_path = Path("/path/to/server.crt")
-key_path = Path("/path/to/server.key")
-
-# Read the PEM content from files
-cert_pem_content = cert_path.read_text()
-key_pem_content = key_path.read_text()
-
-# Create Certificate object with the PEM content
+cert_pem_content = Path("/path/to/server.crt").read_text()
+key_pem_content = Path("/path/to/server.key").read_text()
 cert = Certificate.from_pem(
     cert_pem=cert_pem_content,
     key_pem=key_pem_content
 )
 
-# Or create self-signed certificates for development/testing
+# Method 3: Create self-signed certificates for development/testing
 cert = Certificate.create_self_signed_server_cert(
     common_name="myservice.example.com",
     organization_name="My Organization",
@@ -127,8 +126,8 @@ from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 # Foundation provides the algorithm
 limiter = TokenBucketRateLimiter(
-    capacity=100.0,
-    refill_rate=50.0
+    tokens_per_second=50.0,
+    bucket_size=100.0
 )
 
 # Use in your plugin handler
@@ -221,19 +220,25 @@ Foundation's crypto provides:
 Powers Pyvider's mTLS:
 ```python
 from provide.foundation.crypto import Certificate
-from pathlib import Path
 
 # Foundation's Certificate class handles cert + key management
-# Read PEM content from files
+
+# Option 1: Use file:// URI (recommended for environment variables)
+cert = Certificate.from_pem(
+    cert_pem="file:///path/to/server.crt",
+    key_pem="file:///path/to/server.key"
+)
+
+# Option 2: Use PEM content strings
+from pathlib import Path
 cert_pem_content = Path("/path/to/server.crt").read_text()
 key_pem_content = Path("/path/to/server.key").read_text()
-
 cert = Certificate.from_pem(
     cert_pem=cert_pem_content,
     key_pem=key_pem_content
 )
 
-# Or create self-signed certificates for development
+# Option 3: Create self-signed certificates for development
 cert = Certificate.create_self_signed_server_cert(
     common_name="myservice.example.com",
     organization_name="My Organization",
