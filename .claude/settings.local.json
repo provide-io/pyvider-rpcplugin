@@ -64,7 +64,9 @@
       "Bash(do [ -f \"examples/$file\" ])",
       "Bash(echo:*)",
       "Bash(done)",
-      "Bash(PYTHONPATH=./src .venv/bin/python:*)"
+      "Bash(PYTHONPATH=./src .venv/bin/python:*)",
+      "Read(//private/tmp/**)",
+      "Bash(uv run pytest:*)"
     ],
     "deny": [],
     "ask": [],
