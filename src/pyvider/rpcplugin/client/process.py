@@ -146,6 +146,10 @@ class ClientProcessMixin:
 
     def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
+        import sys
+        print(f"🔍 _get_channel_options: transport={self._transport_name}, has_cert={self._server_cert is not None}", file=sys.stderr, flush=True)
+        self.logger.debug(f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}")
+
         options: list[tuple[str, int | bool | str]] = [
             ("grpc.keepalive_time_ms", rpcplugin_config.plugin_grpc_keepalive_time_ms),
             ("grpc.keepalive_timeout_ms", rpcplugin_config.plugin_grpc_keepalive_timeout_ms),
@@ -160,7 +164,9 @@ class ClientProcessMixin:
         # gRPC which hostname to verify the server certificate against.
         if self._transport_name == "unix" and self._server_cert:
             options.append(("grpc.ssl_target_name_override", "localhost"))
-            self.logger.info("Added SSL target name override 'localhost' for Unix socket + TLS connection")
+            self.logger.info("✅ Added SSL target name override 'localhost' for Unix socket + TLS connection")
+        else:
+            self.logger.debug(f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}")
 
         return options
 
