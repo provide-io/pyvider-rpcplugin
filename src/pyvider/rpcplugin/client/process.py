@@ -227,14 +227,25 @@ class ClientProcessMixin:
 
     async def _create_grpc_channel_impl(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """Implementation of gRPC channel creation."""
+        import sys
+        sys.stderr.write(f"[CHANNEL DEBUG] _create_grpc_channel_impl called!\n")
+        sys.stderr.flush()
+
         if not self._address or not self._transport_name:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
 
         self._determine_target_endpoint()
+        sys.stderr.write(f"[CHANNEL DEBUG] target_endpoint={self.target_endpoint}\n")
+        sys.stderr.flush()
         self.logger.debug(f"Creating gRPC channel to: {self.target_endpoint}")
 
         credentials = self._setup_channel_credentials()
+        sys.stderr.write(f"[CHANNEL DEBUG] credentials created: {credentials is not None}\n")
+        sys.stderr.flush()
+
         options = self._get_channel_options()
+        sys.stderr.write(f"[CHANNEL DEBUG] options={options}\n")
+        sys.stderr.flush()
 
         try:
             if not self.target_endpoint:
