@@ -2,14 +2,38 @@
 
 This page provides a comprehensive reference for all configuration options available in `pyvider.rpcplugin`. The framework uses Foundation's configuration system with support for environment variables, type conversion, and validation.
 
+!!! warning "Security-First Design: mTLS Enabled by Default"
+    **`PLUGIN_AUTO_MTLS` defaults to `True`** for security-first design. This means mutual TLS (mTLS) is **automatically enabled** for all connections unless explicitly disabled.
+
+    **For local development/testing:**
+    ```python
+    from pyvider.rpcplugin import configure
+    configure(auto_mtls=False)  # Disable mTLS for local testing
+    ```
+
+    **For production:** Keep the default `auto_mtls=True` and provide proper certificates via:
+    - `PLUGIN_SERVER_CERT` and `PLUGIN_SERVER_KEY` (server-side)
+    - `PLUGIN_CLIENT_CERT` and `PLUGIN_CLIENT_KEY` (client-side)
+
+    See [Security Guide](../security/index.md) for complete mTLS setup instructions.
+
 !!! info "Source of Truth"
     All default values are defined in `src/pyvider/rpcplugin/defaults.py`. If you notice any discrepancies between this documentation and the actual defaults, the code is authoritative. You can verify defaults programmatically:
 
     ```python
     from pyvider.rpcplugin import defaults
     print(f"Server host: {defaults.DEFAULT_PLUGIN_SERVER_HOST}")
-    print(f"Auto mTLS: {defaults.DEFAULT_PLUGIN_AUTO_MTLS}")
+    print(f"Auto mTLS: {defaults.DEFAULT_PLUGIN_AUTO_MTLS}")  # True (security by default)
     ```
+
+!!! note "Optional Configuration Fields"
+    Fields with `None` as the default value are **optional**. When set to `None`, the framework uses sensible fallback behavior:
+
+    - **Certificate fields** (`plugin_client_cert`, `plugin_server_cert`, etc.): Auto-generate self-signed certificates when mTLS is enabled
+    - **String fields with empty defaults** (`""`): Feature is disabled or uses system defaults
+    - **Numeric fields**: Always have non-None defaults with documented values
+
+    You only need to set these fields when you want to override the default behavior (e.g., providing production certificates).
 
 ## Configuration System Overview
 

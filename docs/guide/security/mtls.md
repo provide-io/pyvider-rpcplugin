@@ -490,6 +490,6 @@ logger.info(f"Certificate type: {cert.key_type}")
 
 - **[Certificate Management](certificates.md)** - Detailed certificate operations
 - **[Process Isolation](process-isolation.md)** - Additional security layers
-- **[Production Security](../../examples/production.md)** - Complete security setup
+- **[Production Configuration](../config/production.md)** - Production deployment and security setup
 
 For enterprise certificate management and PKI integration, consult Foundation's security documentation and consider professional PKI services.

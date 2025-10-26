@@ -9,6 +9,27 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 | [Basic Plugin](#basic-plugin) | Minimal plugin server and client | 🟢 Beginner |
 | [Echo Service](#echo-service) | Complete RPC service with custom methods | 🟢 Beginner |
 
+## Tutorial Example → Actual File Mapping
+
+!!! tip "Simplified Tutorial Examples vs. Runnable Files"
+    The examples on this page are **simplified for teaching**. Here's how they map to actual runnable files:
+
+| Tutorial Example | Actual File in `examples/` | Notes |
+|------------------|----------------------------|-------|
+| `basic_plugin.py` | `dummy_server.py` | Minimal server with BasicRPCPluginProtocol |
+| `basic_client.py` | `quick_start_client.py` | Client that launches `dummy_server.py` |
+| `echo_server.py` | `echo_server.py` ✓ | Matches! Use the actual file for production patterns |
+| `echo_client.py` | `echo_client.py` ✓ | Matches! Uses class-based implementation |
+| `my_plugin.py` (in docs) | `dummy_server.py` | Generic name used in tutorials |
+| `host_app.py` (in docs) | `quick_start_client.py` | Generic name used in tutorials |
+
+The actual files include:
+- `example_utils.configure_for_example()` for environment setup
+- More comprehensive error handling and logging
+- Production-ready patterns and best practices
+
+**To run:** `python examples/quick_start_client.py` or `python examples/echo_client.py`
+
 ## Basic Plugin
 
 The simplest possible plugin demonstrating core concepts.
@@ -409,7 +430,7 @@ examples/
 ├── run_all_examples.py              # Script to run all examples
 ├── proto/                           # Protocol Buffer definitions
 │   ├── echo.proto                   # Echo service definition
-│   └── greeter.proto                # Greeter service definition
+│   └── e2e_greeting.proto           # End-to-end greeter service definition
 └── short/                           # Short focused examples (15-30 lines)
     ├── basic_client.py              # Minimal client connection
     ├── basic_server.py              # Minimal server setup
