@@ -245,4 +245,65 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
     )
 
 
+def test_get_channel_options_unix_with_tls(client_instance):
+    """Test _get_channel_options() for Unix socket with TLS includes SSL target name override."""
+    client_instance._transport_name = "unix"
+    client_instance._server_cert = "FAKE_CERT_DATA"
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard keepalive options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+    assert ("grpc.keepalive_timeout_ms", 5000) in options
+    assert ("grpc.keepalive_permit_without_calls", True) in options
+
+    # CRITICAL: Verify SSL target name override is added for Unix + TLS
+    assert ("grpc.ssl_target_name_override", "localhost") in options
+
+
+def test_get_channel_options_unix_without_tls(client_instance):
+    """Test _get_channel_options() for Unix socket without TLS does NOT include SSL override."""
+    client_instance._transport_name = "unix"
+    client_instance._server_cert = None  # No TLS
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+
+    # Verify SSL target name override is NOT added (no TLS)
+    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
+    assert not ssl_override_present, "SSL target name override should not be present without TLS"
+
+
+def test_get_channel_options_tcp_with_tls(client_instance):
+    """Test _get_channel_options() for TCP with TLS does NOT include SSL override."""
+    client_instance._transport_name = "tcp"
+    client_instance._server_cert = "FAKE_CERT_DATA"
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+
+    # Verify SSL target name override is NOT added (TCP doesn't need it)
+    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
+    assert not ssl_override_present, "SSL target name override should not be present for TCP"
+
+
+def test_get_channel_options_tcp_without_tls(client_instance):
+    """Test _get_channel_options() for TCP without TLS does NOT include SSL override."""
+    client_instance._transport_name = "tcp"
+    client_instance._server_cert = None
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+
+    # Verify SSL target name override is NOT added
+    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
+    assert not ssl_override_present, "SSL target name override should not be present for TCP without TLS"
+
+
 # 🐍🔌🧪🪄
