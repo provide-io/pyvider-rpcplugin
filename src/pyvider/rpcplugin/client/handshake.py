@@ -458,7 +458,7 @@ class ClientHandshakeMixin:
 
             # Read the raw handshake response
             raw_handshake = await self._read_raw_handshake_line_from_stdout()
-            self.logger.debug(f"Raw handshake received: {raw_handshake}")
+            self.logger.info(f"📋 Raw handshake received: {raw_handshake}")
 
             # Parse the handshake response
             try:
@@ -470,6 +470,7 @@ class ClientHandshakeMixin:
                     protocol,
                     server_cert,
                 ) = parse_handshake_response(raw_handshake)
+                self.logger.info(f"🔍 Parsed server_cert length: {len(server_cert) if server_cert else 0}")
             except Exception as parse_error:
                 raise HandshakeError(
                     f"Failed to process handshake response or establish transport connection: {parse_error}"
