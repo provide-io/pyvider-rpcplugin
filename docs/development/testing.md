@@ -506,14 +506,16 @@ from unittest.mock import patch
 @pytest.fixture
 def test_certificates():
     """Generate test certificates for security testing."""
-    ca_cert = Certificate.create_self_signed_ca(
+    ca_cert = Certificate.create_ca(
         common_name="Test CA",
-        organization_name="Test Org"
+        organization_name="Test Org",
+        validity_days=365
     )
-    
+
     server_cert = Certificate.create_self_signed_server_cert(
         common_name="test-server",
         organization_name="Test Org",
+        validity_days=90,
         alt_names=["localhost", "127.0.0.1"]
     )
     

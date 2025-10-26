@@ -1,45 +1,33 @@
 # Health Check Example
 
-A minimal plugin server with health monitoring.
+**Complexity**: 🟢 Beginner | **Lines**: ~20 | **Source Code:** `examples/short/health_check.py`
+
+A minimal plugin server with gRPC health check service enabled - perfect for production deployments with Kubernetes or other monitoring systems.
 
 ```python
 #!/usr/bin/env python3
-import asyncio
-from pyvider.rpcplugin.factories import plugin_protocol, plugin_server
-from pyvider.rpcplugin.health_servicer import HealthServicer
+"""
+Server with health check enabled (20 lines).
 
-class SimpleHandler:
-    """Handler with health monitoring."""
-    
-    def __init__(self):
-        self.is_healthy = True
-        print("🔌 Handler initialized")
-    
-    def check_health(self) -> bool:
-        """Health check logic."""
-        return self.is_healthy
+Demonstrates enabling the gRPC health check service.
+"""
+import asyncio
+from pyvider.rpcplugin import plugin_protocol, plugin_server, configure
+from provide.foundation import logger
+
 
 async def main():
-    # Create handler and health servicer
-    handler = SimpleHandler()
-    health_servicer = HealthServicer(
-        app_is_healthy_callable=handler.check_health,
-        service_name="SimplePlugin"
-    )
-    
-    # Create protocol and server with health monitoring
-    protocol = plugin_protocol(service_name="SimplePlugin")
-    server = plugin_server(
-        protocol=protocol, 
-        handler=handler,
-        health_servicer=health_servicer
-    )
-    
-    try:
-        print("🚀 Starting plugin server with health checks...")
-        await server.serve()
-    except KeyboardInterrupt:
-        print("🛑 Server stopped")
+    """Run server with health checks."""
+    # Enable health check service
+    configure(health_service_enabled=True)
+
+    protocol = plugin_protocol()
+    handler = object()
+    server = plugin_server(protocol=protocol, handler=handler)
+
+    logger.info("Starting server with health checks enabled...")
+    await server.serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -47,10 +35,10 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `HealthServicer` provides gRPC health check protocol support
-- `app_is_healthy_callable` defines custom health logic
-- Server automatically exposes health check endpoints
-- Health status can be queried by monitoring systems
+- **`configure(health_service_enabled=True)`** enables the gRPC Health Checking Protocol
+- **Automatic health service** - no custom health logic required for basic health checks
+- **Standard gRPC protocol** - compatible with Kubernetes liveness/readiness probes
+- **Production-ready** - health checks are essential for container orchestration
 
 ## Related Examples
 

@@ -1,35 +1,30 @@
 # Basic Server Example
 
-A minimal plugin server using factory functions.
+**Complexity**: 🟢 Beginner | **Lines**: ~15 | **Source Code:** `examples/short/basic_server.py`
+
+A minimal plugin server demonstrating the absolute basics - just 15 lines to create a working RPC plugin server.
 
 ```python
 #!/usr/bin/env python3
+"""
+Minimal plugin server example (15 lines).
+
+Shows the absolute basics of creating a plugin server.
+"""
 import asyncio
 from pyvider.rpcplugin import plugin_protocol, plugin_server
+from provide.foundation import logger
 
-class SimpleHandler:
-    """Basic handler for plugin server."""
-    
-    def __init__(self):
-        print("🔌 Handler initialized")
-    
-    def process_message(self, message: str) -> str:
-        """Example method that could be exposed via gRPC."""
-        return f"Processed: {message}"
 
 async def main():
-    # Create protocol and handler
-    protocol = plugin_protocol(service_name="SimplePlugin")
-    handler = SimpleHandler()
-    
-    # Create server with default transport (Unix socket)
+    """Run minimal plugin server."""
+    protocol = plugin_protocol()  # Basic protocol
+    handler = object()  # Dummy handler
     server = plugin_server(protocol=protocol, handler=handler)
-    
-    try:
-        print("🚀 Starting plugin server...")
-        await server.serve()  # Runs until interrupted
-    except KeyboardInterrupt:
-        print("🛑 Server stopped")
+
+    logger.info("Starting minimal server...")
+    await server.serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -37,10 +32,11 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `plugin_server()` factory creates a fully configured server
-- `plugin_protocol()` creates a basic protocol implementation
-- Server prints handshake info to stdout for client connection
-- Handler contains your business logic
+- **`plugin_protocol()`** creates a basic protocol implementation (no custom RPC methods)
+- **`plugin_server()`** factory creates a fully configured server with sensible defaults
+- **`object()` as handler** - For this minimal example, no custom handler is needed
+- **Foundation `logger`** provides structured logging (not `print()`)
+- **`server.serve()`** handles the entire server lifecycle: transport setup, handshake, and request serving
 
 ## Learning Path
 

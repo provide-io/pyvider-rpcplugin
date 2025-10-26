@@ -205,15 +205,25 @@ Foundation's crypto provides:
 - Certificate generation
 - Certificate validation
 - Key management
-- TLS context creation
+- TLS operations
 
 Powers Pyvider's mTLS:
 ```python
-# Foundation handles the crypto
-ssl_context = foundation_create_ssl_context(cert, key)
+from provide.foundation.crypto import Certificate
 
-# Pyvider uses it for secure transport
-transport = TCPTransport(ssl_context=ssl_context)
+# Foundation's Certificate class handles cert + key management
+cert = Certificate.from_pem(
+    cert_pem="file:///path/to/server.crt",
+    key_pem="file:///path/to/server.key"
+)
+
+# Or create self-signed certificates for development
+cert = Certificate.create_self_signed_server_cert(
+    common_name="myservice.example.com",
+    organization_name="My Organization"
+)
+
+# Pyvider automatically uses these certificates when auto_mtls is enabled
 ```
 
 ## When to Use Foundation Directly

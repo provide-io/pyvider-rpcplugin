@@ -1,52 +1,44 @@
 # Custom Protocol Example
 
-A server implementing a custom protocol with gRPC service registration.
+**Complexity**: 🟡 Intermediate | **Lines**: ~30 | **Source Code:** `examples/short/custom_protocol.py`
+
+A server implementing a custom protocol - shows how to extend `RPCPluginProtocol` for your own gRPC services.
 
 ```python
 #!/usr/bin/env python3
+"""
+Custom protocol example (30 lines).
+
+Shows how to create a custom protocol wrapper.
+"""
 import asyncio
 from typing import Any
-from pyvider.rpcplugin import RPCPluginProtocol
 from pyvider.rpcplugin import plugin_server
+from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from provide.foundation import logger
 
-# Mock gRPC module for demonstration
-class MockGrpcModule:
-    @staticmethod
-    def add_MockServiceServicer_to_server(servicer, server):
-        print(f"Registered {servicer} with server")
 
 class CustomProtocol(RPCPluginProtocol):
     """Custom protocol implementation."""
-    
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:
-        """Return gRPC module and service name."""
-        return MockGrpcModule, "mock.MockService"
-    
-    def get_method_type(self, method_name: str) -> str:
-        """Return RPC method type."""
-        return "unary_unary"
-    
-    async def add_to_server(self, server: Any, handler: Any) -> None:
-        """Register handler with gRPC server."""
-        MockGrpcModule.add_MockServiceServicer_to_server(handler, server)
 
-class CustomHandler:
-    """Handler for custom protocol."""
-    
-    def __init__(self):
-        print("🔌 Custom handler initialized")
+    async def get_grpc_descriptors(self) -> tuple[Any, str]:
+        """Return gRPC descriptors."""
+        return None, "custom.MyService"
+
+    async def add_to_server(self, server: Any, handler: Any) -> None:
+        """Register services with gRPC server."""
+        logger.info("Custom protocol registered")
+
 
 async def main():
-    # Create custom protocol and server
-    handler = CustomHandler()
+    """Run server with custom protocol."""
     protocol = CustomProtocol()
+    handler = object()
     server = plugin_server(protocol=protocol, handler=handler)
-    
-    try:
-        print("🚀 Starting custom protocol server...")
-        await server.serve()
-    except KeyboardInterrupt:
-        print("🛑 Server stopped")
+
+    logger.info("Starting server with custom protocol...")
+    await server.serve()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -54,10 +46,11 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- Extend `RPCPluginProtocol` for custom service registration
-- `get_grpc_descriptors()` provides gRPC module and service name
-- `add_to_server()` handles service registration logic
-- Enables integration with any Protocol Buffer service
+- **Extend `RPCPluginProtocol`** to create custom protocol implementations
+- **`get_grpc_descriptors()`** returns the gRPC module and service name for your Protocol Buffers
+- **`add_to_server()`** registers your custom gRPC servicer with the server
+- **Production pattern** - for real services, implement full Protocol Buffer integration
+- **Foundation logging** - use `logger.info()` for structured logging
 
 ## Related Examples
 

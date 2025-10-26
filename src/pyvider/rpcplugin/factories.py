@@ -299,9 +299,11 @@ def plugin_client(
     Args:
         command: Command and arguments to launch the plugin process.
                 Example: ["python", "my_plugin.py"] or ["./my-plugin"]
-        config: Optional configuration dictionary for the client.
-               Can include settings like retry behavior, timeouts,
-               transport preferences, and mTLS configuration.
+        config: Optional configuration dictionary. Currently only supports
+               passing environment variables to the plugin subprocess via
+               the "env" key: config={"env": {"VAR": "value"}}.
+               To configure client behavior, set environment variables
+               in your own process before creating the client.
 
     Returns:
         An RPCPluginClient instance. You must call the async start()
@@ -316,7 +318,7 @@ def plugin_client(
             # Create client for a Python plugin (recommended: use context manager)
             async with plugin_client(
                 command=["python", "path/to/plugin.py"],
-                config={"PLUGIN_LOG_LEVEL": "DEBUG"}
+                config={"env": {"PLUGIN_LOG_LEVEL": "DEBUG"}}  # Pass env vars to plugin
             ) as client:
                 # Launch plugin and establish connection
                 await client.start()
@@ -335,20 +337,40 @@ def plugin_client(
 
     Advanced Example:
         ```python
-        # Configure retry behavior and mTLS
+        # Configure plugin subprocess environment variables
+        # Note: config dict is used to pass environment variables to the plugin process
         async with plugin_client(
             command=["./my-secure-plugin"],
             config={
-                "PLUGIN_CLIENT_MAX_RETRIES": 5,
-                "PLUGIN_CLIENT_RETRY_ENABLED": True,
-                "PLUGIN_AUTO_MTLS": True,
-                "PLUGIN_CLIENT_CERT": "file:///path/to/client.crt",
-                "PLUGIN_CLIENT_KEY": "file:///path/to/client.key"
+                "env": {
+                    "PLUGIN_LOG_LEVEL": "DEBUG",
+                    "PLUGIN_AUTO_MTLS": "true",
+                    "MY_PLUGIN_API_KEY": "secret-key",
+                }
             }
         ) as client:
             await client.start()
             # Use client...
         # Automatically closed on context exit
+        ```
+
+        # To configure the CLIENT behavior (not the plugin subprocess),
+        # set environment variables in your own process:
+        ```python
+        import os
+
+        # Configure client retry behavior
+        os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = "5"
+        os.environ["PLUGIN_CLIENT_RETRY_ENABLED"] = "true"
+        os.environ["PLUGIN_CONNECTION_TIMEOUT"] = "30.0"
+
+        # Configure client-side mTLS
+        os.environ["PLUGIN_CLIENT_CERT"] = "file:///path/to/client.crt"
+        os.environ["PLUGIN_CLIENT_KEY"] = "file:///path/to/client.key"
+
+        async with plugin_client(command=["./my-secure-plugin"]) as client:
+            await client.start()
+            # Use client...
         ```
 
     Manual Cleanup (Alternative):

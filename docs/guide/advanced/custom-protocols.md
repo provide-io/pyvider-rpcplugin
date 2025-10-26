@@ -398,6 +398,6 @@ class ProtocolMiddleware:
 
 - **[Performance Optimization](performance.md)** - Optimize protocol performance
 - **[Testing Guide](../../development/testing.md)** - Test custom protocols
-- **[Production Deployment](../../examples/production.md)** - Deploy protocols to production
+- **[Production Configuration](../config/production.md)** - Deploy protocols to production
 
 For complex protocol requirements, consider consulting with the Foundation team for architecture guidance and optimization strategies.

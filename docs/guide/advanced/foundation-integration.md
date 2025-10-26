@@ -86,18 +86,18 @@ class CertificateManager:
         # Check existing certificates
         if cert_path.exists() and key_path.exists():
             try:
-                # Load certificate and key from PEM files using file:// URIs
+                # Load certificate and key from PEM files
+                # Read the actual PEM content from files
+                cert_pem_content = cert_path.read_text()
+                key_pem_content = key_path.read_text()
+
                 cert = Certificate.from_pem(
-                    cert_pem=f"file://{cert_path}",
-                    key_pem=f"file://{key_path}"
+                    cert_pem=cert_pem_content,
+                    key_pem=key_pem_content
                 )
 
-                # Validate certificate
-                if cert.is_valid:
-                    logger.info("Using existing valid certificates")
-                    return cert
-                else:
-                    logger.warning("Certificate invalid, regenerating")
+                logger.info("Successfully loaded existing certificates")
+                return cert
             except Exception as e:
                 logger.warning(f"Error loading certificates: {e}, regenerating")
 
@@ -106,9 +106,9 @@ class CertificateManager:
         cert = Certificate.create_self_signed_server_cert(
             common_name="plugin.local",
             organization_name="Pyvider RPC Plugin",
-            validity_days=365,
-            key_type="ecdsa",  # or "rsa"
-            ecdsa_curve="secp384r1"  # default curve for ECDSA
+            validity_days=365,  # Required parameter
+            alt_names=["localhost", "127.0.0.1"],  # Optional: Subject Alternative Names
+            # Optional: key_type="rsa", key_size=2048, ecdsa_curve="secp256r1"
         )
 
         # Save certificate and key to disk
@@ -166,16 +166,10 @@ class CertificateRotator:
             try:
                 await asyncio.sleep(interval)
 
-                cert = await self.cert_manager.ensure_certificates()
-
-                # Check if certificate needs rotation (validity check)
-                if not cert.is_valid:
-                    logger.warning("Certificate is invalid, rotating")
-                    await self._rotate_certificates()
-                else:
-                    # Note: Certificate class doesn't expose expiry dates directly
-                    # Use is_valid for validity checks or implement custom expiry tracking
-                    logger.debug("Certificate is valid")
+                # Regenerate certificates periodically for rotation
+                # In production, you'd implement more sophisticated expiry checking
+                logger.info("Rotating certificates on schedule")
+                await self._rotate_certificates()
 
             except asyncio.CancelledError:
                 break

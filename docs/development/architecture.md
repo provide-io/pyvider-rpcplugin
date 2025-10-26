@@ -379,7 +379,7 @@ class RPCPluginConfig(RuntimeConfig):
 
     # Security configuration
     plugin_auto_mtls: bool = env_field(
-        default=False,
+        default=True,  # Security by default
         env_var="PLUGIN_AUTO_MTLS"
     )
     plugin_insecure: bool = env_field(

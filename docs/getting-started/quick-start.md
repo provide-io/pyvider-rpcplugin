@@ -172,6 +172,19 @@ You should see output like:
 
 🎉 **Congratulations!** You've successfully created and run your first plugin system!
 
+!!! note "Actual Runnable Examples"
+    The simplified examples above (`my_plugin.py`, `host_app.py`) are for teaching. **For working code you can run**, see:
+
+    - **`examples/dummy_server.py`** - Production-ready version of `my_plugin.py`
+    - **`examples/quick_start_client.py`** - Production-ready version of `host_app.py`
+
+    Run them with:
+    ```bash
+    python examples/quick_start_client.py
+    ```
+
+    See [Example File Mapping](../examples/index.md#tutorial-example-actual-file-mapping) for more details.
+
 ## What Just Happened?
 
 1. **Foundation Bootstrap**: Foundation's logging and configuration systems initialized

@@ -1,27 +1,34 @@
 # Basic Client Example
 
-A minimal client that connects to a plugin server using the async context manager pattern.
+**Complexity**: 🟢 Beginner | **Lines**: ~20 | **Source Code:** `examples/short/basic_client.py`
+
+A minimal client that connects to a plugin server - demonstrates the absolute basics of launching and connecting to a plugin subprocess.
 
 ```python
 #!/usr/bin/env python3
-import asyncio
+"""
+Minimal plugin client example (20 lines).
 
+Shows the absolute basics of connecting to a plugin server.
+"""
+import asyncio
+import sys
+from pathlib import Path
 from pyvider.rpcplugin import plugin_client
+from provide.foundation import logger
+
 
 async def main():
-    # Use async context manager for automatic cleanup
-    async with plugin_client(command=["python", "my_server.py"]) as client:
-        # Start the plugin
-        await client.start()
-        print("Connected to plugin!")
+    """Connect to plugin server."""
+    server_path = Path(__file__).parent / "basic_server.py"
+    client = plugin_client(command=[sys.executable, str(server_path)])
 
-        # Access the gRPC channel
-        channel = client.grpc_channel
-        if channel:
-            print(f"Channel ready: {channel}")
+    logger.info("Connecting to server...")
+    await client.start()
+    logger.info(f"Connected! Channel: {client.grpc_channel}")
 
-    # Client automatically closed on context exit
-    print("Shutdown complete")
+    await client.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -29,11 +36,11 @@ if __name__ == "__main__":
 
 ## Key Points
 
-- `plugin_client()` factory creates a client that handles plugin process management automatically
-- **Use `async with` context manager** for automatic resource cleanup
-- `await client.start()` launches the plugin subprocess and establishes connection
-- Use `client.grpc_channel` to get the gRPC channel for making RPC calls
-- Client is automatically closed when exiting the `async with` block
+- **`plugin_client()`** creates a client that handles plugin subprocess lifecycle automatically
+- **`command` parameter** specifies how to launch the plugin server (typically Python interpreter + script path)
+- **`await client.start()`** launches the subprocess, waits for handshake, and establishes gRPC connection
+- **`client.grpc_channel`** provides access to the gRPC channel for making RPC calls
+- **`await client.close()`** gracefully shuts down the plugin subprocess
 
 ## Alternative Pattern (Manual Cleanup)
 
