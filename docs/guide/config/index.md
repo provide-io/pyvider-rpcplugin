@@ -71,7 +71,7 @@ from pyvider.rpcplugin.config import rpcplugin_config
 # Set configuration values using simplified parameter names
 configure(
     magic_cookie="my-secure-cookie",  # Sets plugin_magic_cookie_value
-    protocol_version=1,                # Sets plugin_core_version
+    protocol_version=1,                # Sets plugin_core_version AND plugin_protocol_versions
     transports=["unix"],               # Sets both plugin_server_transports and plugin_client_transports
     auto_mtls=True,                    # Sets plugin_auto_mtls
     handshake_timeout=30.0,            # Sets plugin_handshake_timeout
@@ -98,11 +98,33 @@ The `configure()` function uses simplified parameter names that map to the under
 | `configure()` Parameter | Maps to Configuration Attribute | Environment Variable |
 |------------------------|--------------------------------|---------------------|
 | `magic_cookie` | `plugin_magic_cookie_value` | `PLUGIN_MAGIC_COOKIE_VALUE` |
-| `protocol_version` | `plugin_core_version` | `PLUGIN_CORE_VERSION` |
+| `protocol_version` | `plugin_core_version` & `plugin_protocol_versions` | `PLUGIN_CORE_VERSION` & `PLUGIN_PROTOCOL_VERSIONS` |
 | `transports` | `plugin_server_transports` & `plugin_client_transports` | `PLUGIN_SERVER_TRANSPORTS` & `PLUGIN_CLIENT_TRANSPORTS` |
 | `auto_mtls` | `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` |
 | `handshake_timeout` | `plugin_handshake_timeout` | `PLUGIN_HANDSHAKE_TIMEOUT` |
 | `**kwargs` | `plugin_{key}` (auto-prefixed) | `PLUGIN_{KEY}` |
+
+!!! info "Protocol Version Dual Assignment"
+    Setting `protocol_version` via `configure()` updates **two configuration fields**:
+
+    - `plugin_core_version` - The plugin's primary protocol version
+    - `plugin_protocol_versions` - List of supported versions (set to `[protocol_version]`)
+
+    This ensures backward compatibility while establishing a primary version. For example:
+
+    ```python
+    configure(protocol_version=3)
+    # Results in:
+    # rpcplugin_config.plugin_core_version = 3
+    # rpcplugin_config.plugin_protocol_versions = [3]
+    ```
+
+    To support multiple protocol versions, set `plugin_protocol_versions` directly:
+
+    ```python
+    rpcplugin_config.plugin_protocol_versions = [1, 2, 3]  # Support versions 1-3
+    rpcplugin_config.plugin_core_version = 3  # Primary version is 3
+    ```
 
 ### Configuration Validation
 
@@ -183,7 +205,8 @@ export PLUGIN_HEALTH_SERVICE_ENABLED=true
 
 ```bash
 # Docker/Kubernetes configuration
-export PLUGIN_SERVER_ENDPOINT="0.0.0.0:8080"  # Listen on all interfaces
+export PLUGIN_SERVER_HOST="0.0.0.0"  # Listen on all interfaces
+export PLUGIN_SERVER_PORT=8080
 export PLUGIN_AUTO_MTLS=true
 export PLUGIN_SERVER_CERT="$SERVER_CERT_PEM"  # Direct PEM content
 export PLUGIN_SERVER_KEY="$SERVER_KEY_PEM"    # From secrets

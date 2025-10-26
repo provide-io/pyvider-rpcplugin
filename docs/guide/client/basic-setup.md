@@ -72,6 +72,20 @@ await manual_client_example()
 !!! important "Configuration Methods"
     The `plugin_client()` factory only accepts `command` and `config` parameters. The `config` dict is used to pass environment variables to the **plugin subprocess**, not to configure the client itself.
 
+    **Configuration Flow:**
+    ```
+    ┌─────────────────────────────┐        ┌─────────────────────────────┐
+    │   Your Process (Client)     │        │  Plugin Subprocess (Server) │
+    ├─────────────────────────────┤        ├─────────────────────────────┤
+    │ Set environment variables:  │        │ Receives environment vars:  │
+    │ - os.environ["PLUGIN_..."]  │        │ - From config={"env": ...}  │
+    │ - PLUGIN_CLIENT_MAX_RETRIES │        │ - PLUGIN_LOG_LEVEL          │
+    │ - PLUGIN_CONNECTION_TIMEOUT │        │ - PLUGIN_AUTO_MTLS          │
+    │                             │        │ - PLUGIN_SERVER_PORT        │
+    │ Configures CLIENT behavior  │  -->   │ Configures SERVER behavior  │
+    └─────────────────────────────┘        └─────────────────────────────┘
+    ```
+
     **To configure the CLIENT:** Set environment variables in your own process
     **To configure the PLUGIN:** Use `config={"env": {...}}`
 
@@ -130,26 +144,29 @@ client = plugin_client(
 import grpc
 from pyvider.rpcplugin.exception import RPCPluginError, TransportError
 
-async def robust_client():
+async def robust_client() -> None:
+    """Example of robust error handling in a client."""
     try:
         async with plugin_client(command=["python", "plugin.py"]) as client:
-            result = await client.service.Method(param="value")
-            return result
-            
+            await client.start()
+            # Make RPC calls using gRPC stubs
+            # stub = YourServiceStub(client.grpc_channel)
+            # result = await stub.YourMethod(request)
+
     except TransportError as e:
-        print(f"Connection failed: {e.message}")
+        print(f"❌ Connection failed: {e.message}")
         # Handle connection issues
-        
+
     except grpc.aio.AioRpcError as e:
         if e.code() == grpc.StatusCode.UNAVAILABLE:
-            print("Service unavailable")
+            print("❌ Service unavailable")
         else:
-            print(f"RPC error: {e.code()} - {e.details()}")
-    
+            print(f"❌ RPC error: {e.code()} - {e.details()}")
+
     except RPCPluginError as e:
-        print(f"Plugin error: {e.message}")
+        print(f"❌ Plugin error: {e.message}")
         if e.hint:
-            print(f"Hint: {e.hint}")
+            print(f"💡 Hint: {e.hint}")
 ```
 
 ## Service Discovery
@@ -189,12 +206,27 @@ async def explore_services():
     The `plugin_client()` factory only accepts `command` and `config` parameters.
     Configure client behavior via **environment variables** in your process.
 
+    **Two-Level Configuration:**
+    ```
+    Host Process                Plugin Process
+    ============                ==============
+    os.environ["..."]    →      config={"env": {"..."}}
+    (affects client)            (affects plugin server)
+    ```
+
 ### Development Setup
 ```python
 import os
 
-def create_dev_client(command):
-    """Create client configured for development."""
+def create_dev_client(command: list[str]):
+    """Create client configured for development.
+
+    Args:
+        command: Command list to launch the plugin subprocess
+
+    Returns:
+        Configured RPCPluginClient instance
+    """
     # Configure CLIENT behavior via environment variables
     os.environ["PLUGIN_CONNECTION_TIMEOUT"] = "120.0"  # Long timeout for debugging
     os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = "1"  # Fewer retries
@@ -217,8 +249,15 @@ def create_dev_client(command):
 ```python
 import os
 
-def create_prod_client(command):
-    """Create client configured for production."""
+def create_prod_client(command: list[str]):
+    """Create client configured for production.
+
+    Args:
+        command: Command list to launch the plugin subprocess
+
+    Returns:
+        Configured RPCPluginClient instance for production use
+    """
     # Configure CLIENT behavior via environment variables
     os.environ["PLUGIN_CONNECTION_TIMEOUT"] = "30.0"
     os.environ["PLUGIN_CLIENT_MAX_RETRIES"] = "3"

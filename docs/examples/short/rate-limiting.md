@@ -49,3 +49,17 @@ if __name__ == "__main__":
 
 - [Basic Server](basic-server.md) - Simple server without rate limiting
 - [Full Rate Limiting Guide](../../guide/config/rate-limiting.md)
+## What's Next?
+
+### Next Steps
+
+1. **Tune Limits** - Adjust rates based on your service capacity
+2. **Client Handling** - Implement exponential backoff for RESOURCE_EXHAUSTED errors
+3. **Monitor Rates** - Track rejected requests in your observability system
+4. **Per-Method Limits** - Implement custom rate limiting per RPC method
+
+### Learning Path
+
+- **Beginner:** Combine with [Health Checks](health-check.md) for production readiness
+- **Intermediate:** Learn [Advanced Rate Limiting](../../guide/server/rate-limiting.md) patterns
+- **Advanced:** Implement [Custom Interceptors](../../guide/advanced/interceptors.md)

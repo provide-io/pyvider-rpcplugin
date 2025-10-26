@@ -62,12 +62,16 @@ from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from provide.foundation import logger
 
 # Configure for your environment
-# Note: configure() accepts simplified parameter names (auto_mtls, handshake_timeout, etc.)
-# and automatically maps them to the full config names (plugin_auto_mtls, plugin_handshake_timeout)
+# Note: configure() has 5 explicit parameters (magic_cookie, protocol_version, transports,
+# auto_mtls, handshake_timeout) plus **kwargs for other settings.
+# Via **kwargs, you can pass additional parameters which are automatically prefixed with 'plugin_'
 configure(
-    magic_cookie="my-echo-plugin",  # Sets PLUGIN_MAGIC_COOKIE_VALUE
-    auto_mtls=False,                 # Sets PLUGIN_AUTO_MTLS=False (disables mTLS for local dev; default is True)
-    handshake_timeout=5.0            # Sets PLUGIN_HANDSHAKE_TIMEOUT
+    magic_cookie="my-echo-plugin",  # Explicit param: Sets PLUGIN_MAGIC_COOKIE_VALUE
+    auto_mtls=False,                # Explicit param: Sets PLUGIN_AUTO_MTLS=False (disables mTLS for local dev; default is True)
+    handshake_timeout=5.0           # Explicit param: Sets PLUGIN_HANDSHAKE_TIMEOUT
+    # Additional settings can be passed via **kwargs:
+    # log_level="DEBUG",            # Via **kwargs: Sets plugin_log_level
+    # server_port=8080,             # Via **kwargs: Sets plugin_server_port
 )
 
 class EchoService:
@@ -114,10 +118,10 @@ from pyvider.rpcplugin import plugin_client, configure
 from provide.foundation import logger
 
 # Configure client environment
-# Note: configure() accepts simplified parameter names for convenience
+# Note: configure() has explicit parameters plus **kwargs for additional settings
 configure(
-    magic_cookie="my-echo-plugin",  # Must match server's magic cookie
-    handshake_timeout=10.0,          # Sets PLUGIN_HANDSHAKE_TIMEOUT
+    magic_cookie="my-echo-plugin",  # Explicit param: Must match server's magic cookie
+    handshake_timeout=10.0,          # Explicit param: Sets PLUGIN_HANDSHAKE_TIMEOUT
 )
 
 async def main() -> None:
@@ -253,4 +257,4 @@ graph TB
 
 [**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture.md){ .md-button }
 
-**Foundation Users:** See [Foundation Integration Patterns](guide/config/index.md#foundation-integration) for seamless ecosystem integration.
+**Foundation Users:** See [Foundation Integration](introduction/foundation.md) for seamless ecosystem integration.

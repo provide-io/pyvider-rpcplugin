@@ -44,3 +44,17 @@ if __name__ == "__main__":
 
 - [Basic Server](basic-server.md) - Simple server without health checks
 - [Full Health Guide](../../guide/server/health-checks.md)
+## What's Next?
+
+### Next Steps
+
+1. **Query Health Status** - Test with `grpc_health_probe` or `grpcurl`
+2. **Custom Health Logic** - Implement custom health checks for your service
+3. **Kubernetes Integration** - Configure liveness/readiness probes
+4. **Monitoring Setup** - Integrate with your monitoring system
+
+### Learning Path
+
+- **Beginner:** Add [Rate Limiting](rate-limiting.md) for additional protection
+- **Intermediate:** Learn [Health Check Patterns](../../guide/server/health-checks.md)
+- **Advanced:** Set up [Production Monitoring](../../guide/config/production.md)

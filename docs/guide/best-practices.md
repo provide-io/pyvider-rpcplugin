@@ -78,8 +78,9 @@ from pyvider.rpcplugin.config import rpcplugin_config
 timeout = rpcplugin_config.plugin_handshake_timeout
 transports = rpcplugin_config.plugin_server_transports
 
-# ❌ Wrong: Method calls (not supported)
-# timeout = rpcplugin_config.handshake_timeout()  # AttributeError!
+# ❌ Wrong: Method calls (not supported - will raise AttributeError)
+# timeout = rpcplugin_config.handshake_timeout()
+# AttributeError: 'RPCPluginConfig' object has no attribute 'handshake_timeout'
 ```
 
 ### Use the configure() Helper

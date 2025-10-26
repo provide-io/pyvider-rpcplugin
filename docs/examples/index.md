@@ -245,16 +245,19 @@ class EchoHandler(EchoServiceServicer):
 
 class EchoProtocol(RPCPluginProtocol):
     """Echo service protocol implementation."""
-    
-    async def get_grpc_descriptors(self) -> tuple[Any, str]:
+
+    async def get_grpc_descriptors(self) -> tuple[object, str]:
+        """Return the gRPC module and service name."""
         return echo_pb2_grpc, "echo.EchoService"
-    
+
     def get_method_type(self, method_name: str) -> str:
+        """Return the RPC method type for the given method name."""
         if method_name in ["Echo", "ReverseEcho"]:
             return "unary_unary"
         return "unary_unary"  # Default
-    
-    async def add_to_server(self, server: Any, handler: Any) -> None:
+
+    async def add_to_server(self, server: object, handler: object) -> None:
+        """Register the Echo service with the gRPC server."""
         add_EchoServiceServicer_to_server(handler, server)
         logger.info("✅ Echo service registered")
 

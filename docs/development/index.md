@@ -58,23 +58,15 @@ Common issues and debugging:
 git clone https://github.com/provide-io/pyvider-rpcplugin.git
 cd pyvider-rpcplugin
 
-# Set up development environment using workenv
+# Set up development environment
 uv sync
 
-# Install development dependencies
-uv pip install -e ".[dev]"
-
 # Run tests to verify setup
-pytest tests/
+uv run pytest tests/
 
 # Run linting and type checking
-ruff check src tests
-pyre check
-
-# Run all development checks
-hatch run test:coverage
-hatch run test:lint
-hatch run test:typecheck
+uv run ruff check src tests
+uv run pyre check
 ```
 
 ### Development Workflow
@@ -87,12 +79,12 @@ git checkout -b feature/my-new-feature
 # ... edit code, add tests, update docs ...
 
 # Run comprehensive testing
-pytest tests/ -v --cov=pyvider.rpcplugin
+uv run pytest tests/ -v --cov=pyvider.rpcplugin
 
 # Check code quality
-ruff check src tests
-ruff format src tests
-pyre check
+uv run ruff check src tests
+uv run ruff format src tests
+uv run pyre check
 
 # Commit changes
 git add .
@@ -114,8 +106,8 @@ python examples/run_all_examples.py --category=basic
 python examples/run_all_examples.py --category=security
 
 # Test example manually
-python examples/ch05_echo_server.py &  # Background
-python examples/ch07_echo_client.py   # Foreground
+python examples/echo_server.py &  # Background
+python examples/echo_client.py    # Foreground
 ```
 
 ## Development Tools
@@ -124,25 +116,35 @@ python examples/ch07_echo_client.py   # Foreground
 
 | Tool | Purpose | Command |
 |------|---------|---------|
-| **Ruff** | Linting and formatting | `ruff check src tests` |
-| **Pyre** | Type checking | `pyre check` |
-| **Bandit** | Security analysis | `bandit -r src` |
-| **pytest** | Testing framework | `pytest tests/` |
-| **pytest-cov** | Coverage analysis | `pytest --cov=pyvider.rpcplugin` |
+| **Ruff** | Linting and formatting | `uv run ruff check src tests` |
+| **Pyre** | Type checking | `uv run pyre check` |
+| **Bandit** | Security analysis | `uv run bandit -r src` |
+| **pytest** | Testing framework | `uv run pytest tests/` |
+| **pytest-cov** | Coverage analysis | `uv run pytest --cov=pyvider.rpcplugin` |
 
 ### Development Scripts
 
 ```bash
-# Available development scripts (via hatch)
-hatch run test:test          # Run tests
-hatch run test:coverage      # Run tests with coverage
-hatch run test:lint          # Run linting
-hatch run test:format        # Format code
-hatch run test:typecheck     # Type checking
-hatch run test:security      # Security analysis
+# Run tests
+uv run pytest tests/
+
+# Run tests with coverage
+uv run pytest --cov=pyvider.rpcplugin --cov-report=term-missing
+
+# Run linting
+uv run ruff check src tests
+
+# Format code
+uv run ruff format src tests
+
+# Type checking
+uv run pyre check
+
+# Security analysis
+uv run bandit -r src
 
 # Run all quality checks
-hatch run test:lint && hatch run test:typecheck && hatch run test:security
+uv run ruff check src tests && uv run pyre check && uv run bandit -r src
 ```
 
 ## Project Structure
@@ -234,10 +236,10 @@ The project follows semantic versioning (SemVer):
 
 ```bash
 # Pre-release checks
-pytest tests/ --cov=pyvider.rpcplugin --cov-report=term-missing
-ruff check src tests
-pyre check
-bandit -r src
+uv run pytest tests/ --cov=pyvider.rpcplugin --cov-report=term-missing
+uv run ruff check src tests
+uv run pyre check
+uv run bandit -r src
 
 # Update version and changelog
 # ... edit VERSION file and CHANGELOG.md ...

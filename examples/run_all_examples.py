@@ -107,80 +107,80 @@ async def main() -> None:
 
     scripts_to_run: list[dict[str, Any]] = [
         {  # Was 00_dummy_server.py
-            "file": "ch02_dummy_server.py",
+            "file": "dummy_server.py",
             "args": ["--help"],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was 01_quick_start.py
-            "file": "ch02_quick_start_client.py",
+            "file": "quick_start_client.py",
             "args": [],
             "exp_fail": False,
-            "exp_stderr": None,  # Launches ch02_dummy_server internally
+            "exp_stderr": None,  # Launches dummy_server internally
         },
         {  # Was 02_server_setup.py
-            "file": "ch03_server_setup_concepts.py",
+            "file": "server_setup_concepts.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was 04_transport_options.py
-            "file": "ch04_transport_options_demo.py",
+            "file": "transport_options_demo.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was 03_client_connection.py
-            "file": "ch06_client_setup_concepts.py",
+            "file": "client_setup_concepts.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was new 07_echo_client.py
-            "file": "ch07_echo_client.py",
+            "file": "echo_client.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,  # Client manages server's cookie
         },
-        # ch08_direct_client_connection.py (was 01b) is not run by this script.
+        # direct_client_connection.py is not run by this script.
         {
-            "file": "ch09_security_mtls_example.py",
+            "file": "security_mtls_example.py",
             "args": [],
             "exp_fail": False,  # Was 05
             "exp_stderr": None,  # Client manages server's cookie and mTLS certs
         },
         {  # Was 06_async_patterns.py
-            "file": "ch10_async_patterns_demo.py",
+            "file": "async_patterns_demo.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was original 07_error_handling.py
-            "file": "ch11_error_handling_demo.py",
+            "file": "error_handling_demo.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was 08_production_config.py
-            "file": "ch12_production_config_discussion.py",
+            "file": "production_config_discussion.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was 09_custom_protocols.py
-            "file": "ch13_custom_protocols_demo.py",
+            "file": "custom_protocols_demo.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was 10_performance_tuning.py
-            "file": "ch14_performance_tuning_concepts.py",
+            "file": "performance_tuning_concepts.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,
         },
         {  # Was new 11_e2e_client.py
-            "file": "ch15_e2e_client.py",
+            "file": "e2e_greeter_client.py",
             "args": [],
             "exp_fail": False,
             "exp_stderr": None,  # Client manages server's cookie
