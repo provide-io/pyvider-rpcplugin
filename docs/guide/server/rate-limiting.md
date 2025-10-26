@@ -65,8 +65,8 @@ class RPCPluginServer:
         # Add rate limiting interceptor if enabled
         if rpcplugin_config.plugin_rate_limit_enabled:
             rate_limiter = TokenBucketRateLimiter(
-                tokens_per_second=rpcplugin_config.plugin_rate_limit_requests_per_second,
-                bucket_size=rpcplugin_config.plugin_rate_limit_burst_capacity
+                refill_rate=rpcplugin_config.plugin_rate_limit_requests_per_second,
+                capacity=rpcplugin_config.plugin_rate_limit_burst_capacity
             )
             interceptors.append(RateLimitingInterceptor(rate_limiter))
 
@@ -114,10 +114,11 @@ if __name__ == "__main__":
 
 ### Custom Rate Limiting
 
-For more control, you can create custom rate limiting interceptors:
+For more control, you can create custom rate limiting interceptors. Note that advanced interceptor usage requires using the `RPCPluginServer` class directly:
 
 ```python
-from pyvider.rpcplugin.server import RateLimitingInterceptor
+from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.transport import UnixSocketTransport
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 import grpc.aio
 
@@ -127,16 +128,16 @@ class CustomRateLimiter(grpc.aio.ServerInterceptor):
     def __init__(self):
         # Different limits for different methods
         self.limiters = {
-            "ExpensiveMethod": TokenBucketRateLimiter(5, 10),   # 5 req/s
-            "CheapMethod": TokenBucketRateLimiter(100, 200),    # 100 req/s
-            "default": TokenBucketRateLimiter(50, 100)          # 50 req/s default
+            "ExpensiveMethod": TokenBucketRateLimiter(refill_rate=5.0, capacity=10),      # 5 req/s, burst 10
+            "CheapMethod": TokenBucketRateLimiter(refill_rate=100.0, capacity=200),       # 100 req/s, burst 200
+            "default": TokenBucketRateLimiter(refill_rate=50.0, capacity=100)             # 50 req/s default
         }
 
     async def intercept_service(self, continuation, handler_call_details):
         method_name = handler_call_details.method.split('/')[-1]
         limiter = self.limiters.get(method_name, self.limiters["default"])
 
-        if not await limiter.acquire():
+        if not await limiter.is_allowed():
             context = handler_call_details.invocation_metadata()
             await context.abort(
                 grpc.StatusCode.RESOURCE_EXHAUSTED,
@@ -145,13 +146,20 @@ class CustomRateLimiter(grpc.aio.ServerInterceptor):
 
         return await continuation(handler_call_details)
 
-# Use custom rate limiter
-server = plugin_server(
+# For advanced interceptor usage, instantiate RPCPluginServer directly
+# Note: plugin_server() factory does not support custom interceptors
+server = RPCPluginServer(
     protocol=protocol,
     handler=handler,
-    config={"interceptors": [CustomRateLimiter()]}
+    transport=UnixSocketTransport()
 )
+
+# Add custom interceptor by accessing the server's internal gRPC server
+# This requires modifying the server after creation
+# For simpler use cases, use environment-based rate limiting instead
 ```
+
+**Note:** The `plugin_server()` factory function doesn't support custom interceptors. For most use cases, the built-in environment-based rate limiting (shown in the Basic example above) is recommended.
 
 ## Client-Side Handling
 
@@ -198,13 +206,13 @@ class MonitoredRateLimiter(RateLimitingInterceptor):
     """Rate limiter with monitoring."""
 
     async def intercept_service(self, continuation, handler_call_details):
-        if not await self._rate_limiter.acquire():
+        if not await self._rate_limiter.is_allowed():
             # Log rate limit event
+            # Note: _tokens and _capacity are private attributes
+            # Use get_current_tokens() for token count in production code
             logger.warning(
                 "Rate limit exceeded",
                 method=handler_call_details.method,
-                remaining_tokens=self._rate_limiter.available_tokens,
-                bucket_size=self._rate_limiter.bucket_size
             )
             # ... abort with RESOURCE_EXHAUSTED
 
@@ -227,7 +235,7 @@ rate_limit_counter = meter.create_counter(
 
 class TelemetryRateLimiter(RateLimitingInterceptor):
     async def intercept_service(self, continuation, handler_call_details):
-        if not await self._rate_limiter.acquire():
+        if not await self._rate_limiter.is_allowed():
             # Record metric
             rate_limit_counter.add(1, {
                 "method": handler_call_details.method
