@@ -6,18 +6,19 @@ Learn the fundamentals of creating and configuring plugin servers with comprehen
 
 ```python
 import asyncio
-from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin import RPCPluginProtocol
+from pyvider.rpcplugin import plugin_server, RPCPluginProtocol
 from provide.foundation import logger
 
 class EchoProtocol(RPCPluginProtocol):
-    service_name = "echo.Echo"
-    
+    """Echo service protocol implementation."""
+
     async def get_grpc_descriptors(self):
+        """Return the gRPC module and service name."""
         import echo_pb2_grpc
         return echo_pb2_grpc, "echo.Echo"
-    
+
     async def add_to_server(self, server, handler):
+        """Register the service with the gRPC server."""
         echo_pb2_grpc.add_EchoServicer_to_server(handler, server)
 
 class EchoHandler:
@@ -79,11 +80,13 @@ class ServerConfig(RuntimeConfig):
             "mtls_enabled": self.enable_mtls
         })
         
+        # Use configure() with explicit params and **kwargs
+        transport_list = [self.transport] if self.transport != "auto" else ["unix", "tcp"]
         configure(
-            max_workers=self.max_workers,
-            timeout=self.timeout,
-            transports=[self.transport] if self.transport != "auto" else ["unix", "tcp"],
-            auto_mtls=self.enable_mtls
+            transports=transport_list,  # Explicit parameter
+            auto_mtls=self.enable_mtls,  # Explicit parameter
+            # Additional settings via **kwargs (automatically prefixed with 'plugin_')
+            # max_workers=self.max_workers,  # Would set plugin_max_workers (if exists)
         )
         
         logger.debug("Configuration applied successfully")
@@ -223,17 +226,17 @@ class ValidatedServer:
     async def start(self):
         try:
             self.validate_config()
-            
+
             server = plugin_server(
                 protocol=self.protocol,
                 handler=self.handler
             )
-            
-            logging.info("Server starting...")
+
+            logger.info("Server starting...")
             await server.serve()
-            
+
         except Exception as e:
-            logging.error(f"Server failed: {e}")
+            logger.error(f"Server failed: {e}")
             raise
 
 server = ValidatedServer(EchoProtocol(), EchoHandler())

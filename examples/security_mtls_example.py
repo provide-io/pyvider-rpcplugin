@@ -146,7 +146,7 @@ async def functional_mtls_example() -> None:
 
         # 4. Launch Server and Connect Client
         example_dir = Path(__file__).resolve().parent
-        dummy_server_executable = example_dir / "ch02_dummy_server.py"
+        dummy_server_executable = example_dir / "dummy_server.py"
         dummy_server_command = [sys.executable, str(dummy_server_executable)]
 
         client: RPCPluginClient | None = None

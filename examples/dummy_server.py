@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch02_dummy_server.py
+# examples/dummy_server.py
 """
 A minimal RPC plugin server for the Quick Start example.
 It uses the BasicRPCPluginProtocol and a no-op handler.
@@ -27,12 +27,12 @@ from pyvider.rpcplugin.types import (  # noqa: E402
 
 
 async def main() -> None:
-    """Sets up and runs the dummy server for Chapter 2 Quick Start."""
-    logger.info("🚀 ch02_dummy_server.py (Quick Start version): Starting as an executable plugin...")
+    """Sets up and runs the dummy server for Quick Start."""
+    logger.info("🚀 dummy_server.py (Quick Start version): Starting as an executable plugin...")
 
     # `configure_for_example()` called at the module level sets up default
     # configurations, including a default magic cookie key/value and disabling
-    # mTLS by default. The launching client (ch02_quick_start_client.py) is
+    # mTLS by default. The launching client (quick_start_client.py) is
     # expected to set the environment variable matching PLUGIN_MAGIC_COOKIE_KEY
     # with the value from PLUGIN_MAGIC_COOKIE_VALUE from its own configuration.
 
@@ -43,10 +43,10 @@ async def main() -> None:
     # (e.g., transport type, which defaults to 'unix' then 'tcp').
     server: RPCPluginServer = plugin_server(protocol=protocol, handler=handler)
 
-    # --- Logic for ch08 (direct client connection) START ---
+    # --- Logic for direct client connection START ---
     # Determine if running as main for the special socket path writing behavior
     # or if specific env var PYVIDER_WRITE_SOCKET_PATH is set.
-    # This allows ch08_direct_client_connection.py to work with this server.
+    # This allows direct_client_connection.py to work with this server.
     should_write_socket_path = __name__ == "__main__" or os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true"
     server_task = None
     socket_comm_file = None
@@ -54,7 +54,7 @@ async def main() -> None:
     if should_write_socket_path:
         project_root_for_socket_file = Path(__file__).resolve().parent.parent
         socket_comm_file = project_root_for_socket_file / "dummy_server_socket.txt"
-    # --- Logic for ch08 (direct client connection) END ---
+    # --- Logic for direct client connection END ---
 
     try:
         logger.info(
@@ -71,7 +71,7 @@ async def main() -> None:
 
             if server.transport and server.transport.endpoint and socket_comm_file:
                 if server._transport_name == "unix":
-                    logger.info(f"ch08 skt: {server.transport.endpoint} to {socket_comm_file}")
+                    logger.info(f"Writing socket path: {server.transport.endpoint} to {socket_comm_file}")
                     try:
                         with open(socket_comm_file, "w") as f:
                             f.write(str(server.transport.endpoint))
@@ -123,7 +123,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     # This allows the script to be run directly as a plugin executable
-    # by RPCPluginClient, or for ch08 direct connection example.
+    # by RPCPluginClient, or for the direct connection example.
     import os  # Required for getenv and Path
     from pathlib import Path  # Required for Path
 
@@ -133,16 +133,16 @@ if __name__ == "__main__":
     )  # For standalone setup
 
     if os.getenv("PYVIDER_WRITE_SOCKET_PATH") == "true":
-        # If run for ch08, ensure magic cookie is set for self-handshake
-        cookie_key_to_set_in_env = rpcplugin_config.magic_cookie_key()
-        expected_cookie_value = rpcplugin_config.magic_cookie_value()
+        # If run for direct connection, ensure magic cookie is set for self-handshake
+        cookie_key_to_set_in_env = rpcplugin_config.plugin_magic_cookie_key
+        expected_cookie_value = rpcplugin_config.plugin_magic_cookie_value
         env_var_name_for_cookie = "PYVIDER_PLUGIN_MAGIC_COOKIE"  # Default from example_utils
         if cookie_key_to_set_in_env != env_var_name_for_cookie:
             env_var_name_for_cookie = cookie_key_to_set_in_env
         os.environ[env_var_name_for_cookie] = expected_cookie_value
         pyvider_core_configure(PLUGIN_MAGIC_COOKIE_KEY=env_var_name_for_cookie)
         logger.info(
-            f"Standalone server mode (for ch08): "
+            f"Standalone server mode (for direct connection): "
             f"Set os.environ['{env_var_name_for_cookie}'] = '{expected_cookie_value}'. "
             f"RPCPlugin configured to use '{env_var_name_for_cookie}' as cookie key."
         )
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     import sys
 
     if "--help" in sys.argv or "-h" in sys.argv:
-        print("Usage: ch02_dummy_server.py")
+        print("Usage: dummy_server.py")
         print(__doc__)
         sys.exit(0)
 

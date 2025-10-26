@@ -98,13 +98,18 @@ Comprehensive security setup with mutual TLS:
 ```python
 # From security_mtls_example.py
 import os
+from pathlib import Path
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
-# Load certificate and key using Foundation crypto (file:// URI or PEM string)
+# Load certificate and key PEM content from files
+# Note: from_pem() expects PEM string content, not file paths
+cert_pem_content = Path("/etc/ssl/server.crt").read_text()
+key_pem_content = Path("/etc/ssl/server.key").read_text()
+
 server_cert = Certificate.from_pem(
-    cert_pem="file:///etc/ssl/server.crt",
-    key_pem="file:///etc/ssl/server.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Configure mTLS with Foundation patterns

@@ -49,3 +49,17 @@ if __name__ == "__main__":
 
 - [Basic Server](basic-server.md) - Default Unix socket transport
 - [Transport Guide](../../guide/concepts/transports.md)
+## What's Next?
+
+### Next Steps
+
+1. **Add mTLS** - Secure TCP connections with [Security Configuration](../../guide/config/configuration-security.md)
+2. **Network Discovery** - Implement service discovery for network plugins
+3. **Firewall Rules** - Configure firewall for TCP port
+4. **Load Balancing** - Set up load balancing for multiple server instances
+
+### Learning Path
+
+- **Beginner:** Try [Basic Server](basic-server.md) with Unix sockets for comparison
+- **Intermediate:** Learn [Transport Selection](../../guide/concepts/transports.md) strategies
+- **Advanced:** Implement [Multi-Transport Support](../../guide/server/transports.md)

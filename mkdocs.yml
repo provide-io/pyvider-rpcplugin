@@ -242,7 +242,11 @@ extra_javascript:
 
 nav:
   - Home: index.md
-  
+
+  - Introduction:
+    - introduction/index.md
+    - Foundation Integration: introduction/foundation.md
+
   - Getting Started:
     - getting-started/index.md
     - Installation: getting-started/installation.md
@@ -280,12 +284,17 @@ nav:
       - guide/security/index.md
       - mTLS Configuration: guide/security/mtls.md
       - Certificate Management: guide/security/certificates.md
+      - Certificate API Reference: guide/security/certificate-reference.md
       - Magic Cookies: guide/security/magic-cookies.md
       - Process Isolation: guide/security/process-isolation.md
     
     - Configuration:
       - guide/config/index.md
       - Configuration Reference: guide/config/configuration-reference.md
+      - Client Configuration: guide/config/configuration-client.md
+      - Server Configuration: guide/config/configuration-server.md
+      - Security Configuration: guide/config/configuration-security.md
+      - Advanced Configuration: guide/config/configuration-advanced.md
       - Environment Variables: guide/config/environment.md
       - Production Setup: guide/config/production.md
       - Rate Limiting: guide/config/rate-limiting.md

@@ -2,11 +2,33 @@
 
 Master advanced plugin development techniques for building high-performance, extensible, and production-ready plugin systems. Learn custom protocols, performance optimization, middleware patterns, and lifecycle management.
 
+!!! warning "Conceptual Examples - Not Current Implementation"
+    **IMPORTANT:** The code examples on this page use **conceptual APIs** that represent future planned features and architectural patterns. These modules and classes **do not currently exist** in pyvider-rpcplugin:
+
+    - `pyvider.rpcplugin.advanced` - Planned advanced features module
+    - `pyvider.rpcplugin.patterns` - Planned microservices patterns
+    - `pyvider.rpcplugin.events` - Planned event-driven architecture
+    - `pyvider.rpcplugin.composition` - Planned plugin composition
+    - `pyvider.rpcplugin.testing` - Planned testing utilities
+
+    These examples serve as:
+
+    - **Design documentation** showing intended architecture
+    - **Future roadmap** illustrating planned capabilities
+    - **Conceptual patterns** for building advanced systems today using current APIs
+
+    For **working code examples**, see the individual topic pages linked below, which use actual current APIs.
+
 ## Overview
 
 Advanced topics in Pyvider RPC Plugin development focus on customization, optimization, and sophisticated architectural patterns. These techniques enable you to build enterprise-grade plugin systems that can scale and adapt to complex requirements.
 
+### Conceptual Architecture Example
+
 ```python
+# NOTE: This is a CONCEPTUAL example showing planned future APIs
+# These imports DO NOT currently exist - see warning above
+
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.advanced import (
     CustomProtocol, PerformanceProfiler, MiddlewareStack, LifecycleManager
@@ -181,6 +203,7 @@ Manage complex plugin lifecycles and orchestration:
 ### Microservices Integration
 
 ```python
+# NOTE: CONCEPTUAL example - pyvider.rpcplugin.patterns module does not exist yet
 from pyvider.rpcplugin.patterns import MicroservicePlugin, ServiceMesh
 
 class OrderManagementService(MicroservicePlugin):
@@ -251,6 +274,7 @@ await service_mesh.deploy_service(OrderManagementService())
 ### Event-Driven Architecture
 
 ```python
+# NOTE: CONCEPTUAL example - pyvider.rpcplugin.events module does not exist yet
 from pyvider.rpcplugin.events import EventBus, EventHandler, Event
 
 class OrderCreated(Event):
@@ -341,6 +365,7 @@ async def create_order(order_request):
 ### Plugin Composition Patterns
 
 ```python
+# NOTE: CONCEPTUAL example - pyvider.rpcplugin.composition module does not exist yet
 from pyvider.rpcplugin.composition import PluginComposer, CompositionStrategy
 
 class DataProcessingPipeline:
@@ -414,6 +439,7 @@ processed_data = await pipeline.process_data({
 ### Advanced Testing Strategies
 
 ```python
+# NOTE: CONCEPTUAL example - pyvider.rpcplugin.testing module does not exist yet
 import pytest
 from pyvider.rpcplugin.testing import (
     PluginTestCase, MockPlugin, PerformanceTest, IntegrationTest

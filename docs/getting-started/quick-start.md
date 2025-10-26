@@ -17,30 +17,22 @@ Before diving in, let's understand the key components:
 - **🤝 Handshake**: Secure connection establishment with magic cookie authentication
 - **🏗️ Foundation**: Companion library providing logging, configuration, cryptography, and utilities
 
-### Foundation Integration
+!!! info "Built on Foundation"
+    Pyvider RPC Plugin is built on **Foundation** (`provide.foundation`), which provides infrastructure for logging, configuration, cryptography, and utilities. This means you get enterprise-grade patterns out of the box.
 
-Pyvider RPC Plugin is built on Foundation's infrastructure. Foundation provides:
+    **→ [Understanding Foundation](../introduction/foundation.md)** - Learn how Foundation and Pyvider work together
 
-- **Configuration System**: Type-safe configuration with `RuntimeConfig`
-- **Structured Logging**: Consistent logging across all components
-- **Cryptography**: X.509 certificate management for mTLS
-- **Rate Limiting**: Token bucket rate limiting for servers
-- **Error Handling**: Standardized exception handling
+!!! tip "Tutorial Code vs Production Code"
+    The examples below are **simplified for teaching** to focus on core concepts.
 
-```python
-# Foundation imports you'll commonly use
-from provide.foundation import logger
-from provide.foundation.config import RuntimeConfig
-from provide.foundation.crypto import Certificate
-from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
+    **For production-ready, runnable code**, see:
 
-from pyvider.rpcplugin import plugin_server, plugin_client
-from pyvider.rpcplugin.config import rpcplugin_config
-```
+    - `examples/dummy_server.py` - Full-featured version of `my_plugin.py`
+    - `examples/quick_start_client.py` - Full-featured version of `host_app.py`
 
-!!! tip "Learn More About Foundation"
-    - **[Foundation Overview](../introduction/foundation.md)** - Comprehensive explanation of Foundation's role and capabilities
-    - **[Advanced Foundation Integration](../guide/advanced/foundation-integration.md)** - Production patterns for configuration, mTLS, rate limiting, and more
+    Run with: `python examples/quick_start_client.py`
+
+    → [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
 
 ## Your First Plugin
 
@@ -194,12 +186,14 @@ You should see output like:
 5. **Communication**: Both processes are now connected via RPC (ready for method calls)
 6. **Cleanup**: Host gracefully shut down the connection and plugin process
 
-### Foundation's Role
+### The Role of Foundation
 
-- **Logging**: All log messages use Foundation's structured logging format
-- **Configuration**: Environment variables automatically loaded via Foundation's config system
-- **Transport**: Connection management follows Foundation's patterns
-- **Error Handling**: Exceptions use Foundation's standardized error types
+Foundation handles infrastructure concerns automatically:
+- **Logging**: Structured output with `logger.info()`
+- **Configuration**: Environment variable management
+- **Error Handling**: Standardized exception types
+
+**→ [Foundation Architecture](../introduction/foundation.md)** explains the complete separation of concerns between Foundation (infrastructure), Pyvider (RPC), and your business logic.
 
 ## Key Concepts
 

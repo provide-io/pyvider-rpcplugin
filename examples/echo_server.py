@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch05_echo_server.py
+# examples/echo_server.py
 import asyncio
 import os
 from typing import Any, cast
@@ -50,7 +50,7 @@ class EchoProtocol(RPCPluginProtocol):
 
 # --- Main Server Logic ---
 async def main() -> None:
-    logger.info("Starting Echo Plugin Server (ch05_echo_server.py)...")
+    logger.info("Starting Echo Plugin Server (echo_server.py)...")
 
     # Basic env setup for standalone run, mimicking what a client might set.
     # In a real plugin scenario, these are set by the host application.
@@ -90,7 +90,7 @@ async def main() -> None:
     except Exception as e:
         logger.error(f"Server execution failed: {e}", exc_info=True)
     finally:
-        logger.info("Echo server (ch05_echo_server.py) shutting down.")
+        logger.info("Echo server (echo_server.py) shutting down.")
         # server.stop() is called within RPCPluginServer.serve()'s finally block.
 
 
@@ -105,11 +105,11 @@ if __name__ == "__main__":
         # named by PLUGIN_MAGIC_COOKIE_KEY gets this value.
         from pyvider.rpcplugin import rpcplugin_config  # Get config after example_utils
 
-        cookie_key_to_set = rpcplugin_config.magic_cookie_key()
-        cookie_value_to_set = rpcplugin_config.magic_cookie_value()
+        cookie_key_to_set = rpcplugin_config.plugin_magic_cookie_key
+        cookie_value_to_set = rpcplugin_config.plugin_magic_cookie_value
         os.environ[cookie_key_to_set] = cookie_value_to_set
         logger.info(
-            f"Standalone server mode (ch05): Set env var '{cookie_key_to_set}' to "
+            f"Standalone server mode: Set env var '{cookie_key_to_set}' to "
             f"'{cookie_value_to_set}' for self-handshake."
         )
 

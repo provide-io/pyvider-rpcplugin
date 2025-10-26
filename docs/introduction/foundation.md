@@ -90,12 +90,21 @@ Certificate management handled by Foundation's crypto module:
 
 ```python
 from provide.foundation.crypto import Certificate
+from pathlib import Path
 
-# Load certificate and private key from PEM strings or files
-# Foundation's Certificate object combines both cert and key
+# Load certificate and private key from PEM files
+# Note: from_pem() expects actual PEM content strings, not file paths
+cert_path = Path("/path/to/server.crt")
+key_path = Path("/path/to/server.key")
+
+# Read the PEM content from files
+cert_pem_content = cert_path.read_text()
+key_pem_content = key_path.read_text()
+
+# Create Certificate object with the PEM content
 cert = Certificate.from_pem(
-    cert_pem=cert_pem_string,
-    key_pem=key_pem_string
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Or create self-signed certificates for development/testing
@@ -177,10 +186,12 @@ Foundation's `RuntimeConfig` provides:
 
 Pyvider extends this with `RPCPluginConfig`:
 ```python
+# Example of how Pyvider extends Foundation's RuntimeConfig
 class RPCPluginConfig(RuntimeConfig):
+    """RPC Plugin configuration extending Foundation's base."""
     plugin_handshake_timeout: float = 10.0
     plugin_server_transports: list[str] = ["unix", "tcp"]
-    # ... RPC-specific configuration
+    # ... Additional RPC-specific configuration fields
 ```
 
 ### Logging System
@@ -210,17 +221,23 @@ Foundation's crypto provides:
 Powers Pyvider's mTLS:
 ```python
 from provide.foundation.crypto import Certificate
+from pathlib import Path
 
 # Foundation's Certificate class handles cert + key management
+# Read PEM content from files
+cert_pem_content = Path("/path/to/server.crt").read_text()
+key_pem_content = Path("/path/to/server.key").read_text()
+
 cert = Certificate.from_pem(
-    cert_pem="file:///path/to/server.crt",
-    key_pem="file:///path/to/server.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Or create self-signed certificates for development
 cert = Certificate.create_self_signed_server_cert(
     common_name="myservice.example.com",
-    organization_name="My Organization"
+    organization_name="My Organization",
+    validity_days=365
 )
 
 # Pyvider automatically uses these certificates when auto_mtls is enabled
@@ -254,7 +271,3 @@ Now that you understand the Foundation relationship:
 
 1. Continue to [Architecture Overview](../development/architecture.md) to understand the system design
 2. Or jump to [Installation](../getting-started/installation.md) to start building
-
----
-
-**Navigation:** [Previous: Introduction](index.md) | [Next: Architecture](../development/architecture.md)

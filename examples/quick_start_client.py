@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# examples/ch02_quick_start_client.py
+# examples/quick_start_client.py
 """
 Quick Start Example - Client launching an executable plugin server.
 """
@@ -25,7 +25,7 @@ from pyvider.rpcplugin.exception import RPCPluginError  # noqa: E402
 async def main() -> None:
     logger.info("🚀 Starting Quick Start Example (Client Launching Plugin)")
     example_dir = Path(__file__).resolve().parent
-    dummy_server_executable = example_dir / "ch02_dummy_server.py"
+    dummy_server_executable = example_dir / "dummy_server.py"
 
     if not dummy_server_executable.exists():  # Good practice check
         logger.error(f"Dummy server executable not found at: {dummy_server_executable}")

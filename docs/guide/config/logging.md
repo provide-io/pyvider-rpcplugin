@@ -200,7 +200,7 @@ The logging system automatically includes contextual information:
 
 ### Custom Context
 
-Add custom context to log messages:
+Add custom context to log messages using the `extra` parameter:
 
 ```python
 from provide.foundation import logger
@@ -208,16 +208,24 @@ from provide.foundation import logger
 # Add context to specific log message
 logger.info("Processing user request", extra={
     "user_id": "user_12345",
-    "operation": "data_processing", 
+    "operation": "data_processing",
     "batch_size": 100,
     "priority": "high"
 })
 
-# Use context manager for multiple log messages
-with logger.context(user_id="user_12345", session_id="sess_67890"):
-    logger.info("Starting user session")
-    logger.debug("Loading user preferences")
-    logger.info("Session initialized successfully")
+# For multiple related log messages, include consistent context
+logger.info("Starting user session", extra={
+    "user_id": "user_12345",
+    "session_id": "sess_67890"
+})
+logger.debug("Loading user preferences", extra={
+    "user_id": "user_12345",
+    "session_id": "sess_67890"
+})
+logger.info("Session initialized successfully", extra={
+    "user_id": "user_12345",
+    "session_id": "sess_67890"
+})
 ```
 
 ## Integration Examples
@@ -414,25 +422,30 @@ export PLUGIN_SHOW_EMOJI_MATRIX=true
 
 ### Debugging Specific Components
 
-Enable targeted debugging:
+Enable targeted debugging by adding context to log messages:
 
 ```python
 from provide.foundation import logger
 
-# Foundation handles logger configuration - use Foundation's contextualize patterns
-with logger.contextualize(component="transport"):
-    logger.debug("Transport-specific debug logging enabled")
-    
-with logger.contextualize(component="security"):
-    logger.debug("Security-specific debug logging enabled")
-    
-with logger.contextualize(component="handshake"):
-    logger.info("Handshake logging at INFO level")
+# Add context using the 'extra' parameter
+logger.debug("Transport-specific debug logging enabled", extra={
+    "component": "transport"
+})
 
-# Use Foundation's logging context for connection
-with logger.contextualize(connection_type="unix", socket_path="/tmp/plugin.sock"):
-    logger.debug("Attempting connection with full context")
-    await client.connect("unix:/tmp/plugin.sock")
+logger.debug("Security-specific debug logging enabled", extra={
+    "component": "security"
+})
+
+logger.info("Handshake logging at INFO level", extra={
+    "component": "handshake"
+})
+
+# Add connection context to debug messages
+logger.debug("Attempting connection with full context", extra={
+    "connection_type": "unix",
+    "socket_path": "/tmp/plugin.sock"
+})
+await client.connect("unix:/tmp/plugin.sock")
 ```
 
 ### Request Tracing
@@ -447,49 +460,50 @@ class TracingMiddleware:
     async def intercept_request(self, request, context, handler):
         # Generate trace ID
         trace_id = str(uuid.uuid4())
-        
-        # Add to context
-        with logger.context(trace_id=trace_id):
-            logger.debug("Request started", extra={
-                "method": context.method,
-                "peer": context.peer(),
-                "headers": dict(context.invocation_metadata())
+
+        # Add trace_id to all log messages
+        logger.debug("Request started", extra={
+            "trace_id": trace_id,
+            "method": context.method,
+            "peer": context.peer(),
+            "headers": dict(context.invocation_metadata())
+        })
+
+        try:
+            response = await handler(request, context)
+            logger.debug("Request completed successfully", extra={
+                "trace_id": trace_id
             })
-            
-            try:
-                response = await handler(request, context)
-                logger.debug("Request completed successfully")
-                return response
-            except Exception as e:
-                logger.error("Request failed", extra={"error": str(e)})
-                raise
+            return response
+        except Exception as e:
+            logger.error("Request failed", extra={
+                "trace_id": trace_id,
+                "error": str(e)
+            })
+            raise
 ```
 
 ## Log Rotation and Management
 
 ### File-Based Logging
 
-Configure log rotation for file output:
+!!! note "Log File Configuration"
+    Pyvider RPC Plugin uses Foundation's structured logging to stderr by default.
+    For file-based logging, use Python's standard logging configuration or external
+    tools like logrotate (see system-level example below).
 
 ```python
 from provide.foundation import logger
-from provide.foundation.config import RuntimeConfig
 
-# Foundation handles log rotation and formatting automatically
-# Configure through environment variables or RuntimeConfig
-config = RuntimeConfig()
-log_config = {
-    "log_file": "/var/log/plugin/plugin.log",
-    "log_level": "INFO",
-    "log_format": "json",  # Foundation supports 'json' and 'console' formats
-    "log_rotation": {
-        "max_bytes": 100 * 1024 * 1024,  # 100MB
-        "backup_count": 10
-    }
-}
+# Foundation handles structured logging to stderr
+# To redirect to a file, use shell redirection or Python's logging handlers
+logger.info("Application starting", extra={
+    "version": "1.0.0",
+    "environment": "production"
+})
 
-# Foundation automatically configures structured logging
-logger.info("Log rotation configured through Foundation", extra=log_config)
+# For production deployments, use system-level log rotation (see logrotate example below)
+# or configure Python's RotatingFileHandler if needed
 ```
 
 ### Logrotate Configuration
@@ -639,13 +653,13 @@ groups:
 
 #### No Log Output
 ```bash
-# Check log level configuration using Foundation patterns
+# Check log level configuration
 export PLUGIN_LOG_LEVEL=DEBUG
-export PLUGIN_LOG_FORMAT=json
-export PLUGIN_LOG_FILE=/var/log/plugin/plugin.log
 
-# Verify Foundation logger configuration
+# Verify Foundation logger is working
 python -c "from provide.foundation import logger; logger.info('Foundation logging test', extra={'test_key': 'test_value'})"
+
+# Logs go to stderr by default - make sure stderr is not being suppressed
 ```
 
 #### Log Format Issues

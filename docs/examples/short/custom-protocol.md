@@ -56,3 +56,17 @@ if __name__ == "__main__":
 
 - [Basic Server](basic-server.md) - Using default protocol
 - [Custom Protocol Guide](../../guide/advanced/custom-protocols.md)
+## What's Next?
+
+### Next Steps
+
+1. **Define Service** - Create `.proto` file with your RPC service definition
+2. **Generate Code** - Use `grpc_tools.protoc` to generate Python code
+3. **Implement Handler** - Create servicer class implementing your RPC methods
+4. **Complete Integration** - Wire up protocol, handler, and server
+
+### Learning Path
+
+- **Beginner:** Start with [Echo Service Example](../echo-basic.md) for complete pattern
+- **Intermediate:** Learn [Protocol Development](../../guide/advanced/custom-protocols.md)
+- **Advanced:** Implement [Streaming RPCs](../../guide/advanced/streaming.md)

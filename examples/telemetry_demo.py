@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Chapter 16: OpenTelemetry Telemetry Demo
+OpenTelemetry Telemetry Demo
 
 This example demonstrates the CORRECT OpenTelemetry pattern for libraries:
 - APPLICATION configures OpenTelemetry (sets service.name)
@@ -21,13 +21,13 @@ Traces are automatically created for:
 
 Usage:
     # Console traces (default)
-    python examples/ch16_telemetry_demo.py
+    python examples/telemetry_demo.py
 
     # With OpenObserve/OTLP export
     export PLUGIN_OTEL_ENDPOINT=http://localhost:5080/api/default
     export OPENOBSERVE_USER=someuserexample@provide.test
     export OPENOBSERVE_PASSWORD=password
-    python examples/ch16_telemetry_demo.py
+    python examples/telemetry_demo.py
 """
 
 import asyncio

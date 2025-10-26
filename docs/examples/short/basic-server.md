@@ -57,3 +57,17 @@ if __name__ == "__main__":
 
 - [Full Server Guide](../../guide/server/basic-setup.md)
 - [Custom Protocols](../../guide/advanced/custom-protocols.md)
+## What's Next?
+
+### Next Steps
+
+1. **Add Custom Logic** - Replace `object()` handler with your service implementation
+2. **Try Basic Client** - Connect to this server with [Basic Client Example](basic-client.md)
+3. **Enable Features** - Add [Health Checks](health-check.md) or [Rate Limiting](rate-limiting.md)
+4. **Go Production** - Learn about [Security Configuration](../../guide/config/configuration-security.md)
+
+### Learning Path
+
+- **Beginner:** [Health Check Example](health-check.md) → Add monitoring
+- **Intermediate:** [Custom Protocol Example](custom-protocol.md) → Add your RPC methods
+- **Advanced:** [Complete Echo Service](../echo-basic.md) → Full service example
