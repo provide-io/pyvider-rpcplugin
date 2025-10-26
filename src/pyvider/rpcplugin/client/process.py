@@ -158,9 +158,12 @@ class ClientProcessMixin:
         # Unix socket addresses (unix:/path/to/socket) don't have hostnames, but TLS
         # certificates are issued for hostnames (e.g., "localhost"). We need to tell
         # gRPC which hostname to verify the server certificate against.
-        print(f"[DEBUG] _get_channel_options: transport={self._transport_name}, server_cert={self._server_cert is not None}")
+        import sys
+        sys.stderr.write(f"[STDERR DEBUG] _get_channel_options: transport={self._transport_name}, server_cert={self._server_cert is not None}\n")
+        sys.stderr.flush()
         if self._transport_name == "unix" and self._server_cert:
-            print("[DEBUG] Adding SSL target name override!")
+            sys.stderr.write("[STDERR DEBUG] Adding SSL target name override!\n")
+            sys.stderr.flush()
             options.append(("grpc.ssl_target_name_override", "localhost"))
             self.logger.info("✅ Added SSL target name override 'localhost' for Unix socket + TLS connection")
 
