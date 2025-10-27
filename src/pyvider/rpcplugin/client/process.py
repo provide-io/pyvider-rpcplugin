@@ -146,8 +146,6 @@ class ClientProcessMixin:
 
     def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        import sys
-        print(f"🔍 _get_channel_options: transport={self._transport_name}, has_cert={self._server_cert is not None}", file=sys.stderr, flush=True)
         self.logger.debug(f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}")
 
         options: list[tuple[str, int | bool | str]] = [
