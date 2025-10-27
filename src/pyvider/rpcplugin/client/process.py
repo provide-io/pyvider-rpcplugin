@@ -144,15 +144,30 @@ class ClientProcessMixin:
         else:  # TCP
             self.target_endpoint = self._address
 
-    def _get_channel_options(self) -> list[tuple[str, int | bool]]:
+    def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        return [
+        options: list[tuple[str, int | bool | str]] = [
             ("grpc.keepalive_time_ms", rpcplugin_config.plugin_grpc_keepalive_time_ms),
             ("grpc.keepalive_timeout_ms", rpcplugin_config.plugin_grpc_keepalive_timeout_ms),
             ("grpc.keepalive_permit_without_calls", True),
             ("grpc.http2.max_pings_without_data", 0),
             ("grpc.http2.min_ping_interval_without_data_ms", 300000),
         ]
+
+        # CRITICAL: For Unix sockets with TLS, override SSL target name for cert verification
+        # Unix socket addresses (unix:/path/to/socket) don't have hostnames, but TLS
+        # certificates are issued for hostnames (e.g., "localhost"). We need to tell
+        # gRPC which hostname to verify the server certificate against.
+        import sys
+        sys.stderr.write(f"[STDERR DEBUG] _get_channel_options: transport={self._transport_name}, server_cert={self._server_cert is not None}\n")
+        sys.stderr.flush()
+        if self._transport_name == "unix" and self._server_cert:
+            sys.stderr.write("[STDERR DEBUG] Adding SSL target name override!\n")
+            sys.stderr.flush()
+            options.append(("grpc.ssl_target_name_override", "localhost"))
+            self.logger.info("✅ Added SSL target name override 'localhost' for Unix socket + TLS connection")
+
+        return options
 
     def _setup_channel_credentials(self: RPCPluginClient) -> grpc.ChannelCredentials | None:  # type: ignore[misc]
         """Set up channel credentials for TLS/mTLS if certificates are available."""
@@ -212,14 +227,25 @@ class ClientProcessMixin:
 
     async def _create_grpc_channel_impl(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """Implementation of gRPC channel creation."""
+        import sys
+        sys.stderr.write(f"[CHANNEL DEBUG] _create_grpc_channel_impl called!\n")
+        sys.stderr.flush()
+
         if not self._address or not self._transport_name:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
 
         self._determine_target_endpoint()
+        sys.stderr.write(f"[CHANNEL DEBUG] target_endpoint={self.target_endpoint}\n")
+        sys.stderr.flush()
         self.logger.debug(f"Creating gRPC channel to: {self.target_endpoint}")
 
         credentials = self._setup_channel_credentials()
+        sys.stderr.write(f"[CHANNEL DEBUG] credentials created: {credentials is not None}\n")
+        sys.stderr.flush()
+
         options = self._get_channel_options()
+        sys.stderr.write(f"[CHANNEL DEBUG] options={options}\n")
+        sys.stderr.flush()
 
         try:
             if not self.target_endpoint:
