@@ -1,7 +1,6 @@
 # tests/client/test_client_grpc.py
 
 from provide.testkit.mocking import ANY, AsyncMock, MagicMock, patch
-
 import pytest
 
 from pyvider.rpcplugin.exception import TransportError  # Added import
@@ -12,7 +11,7 @@ from pyvider.rpcplugin.transport import (
 
 
 @pytest.mark.asyncio
-async def test_rebuild_x509_pem(client_instance):
+async def test_rebuild_x509_pem(client_instance) -> None:
     """Test rebuilding X.509 certificate to PEM format."""
     # Test with raw base64 data (no headers)
     raw_cert = "MIIEpAIBADANBgkqhkiG9w0BAQEFAASCBJYwggSSAgEAAoIBAQDBj08sp"
@@ -32,7 +31,7 @@ async def test_rebuild_x509_pem(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_with_tls(client_instance):
+async def test_create_grpc_channel_with_tls(client_instance) -> None:
     """Test creating a gRPC channel with TLS."""
     # Setup
     client_instance._transport = MagicMock()
@@ -64,7 +63,7 @@ async def test_create_grpc_channel_with_tls(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_with_mtls(client_instance, mocker):
+async def test_create_grpc_channel_with_mtls(client_instance, mocker) -> None:
     """Test creating a gRPC channel with mutual TLS."""
     # Setup instance attributes that _setup_client_certificates would normally set
     # based on config, or that are set before _create_grpc_channel is called.
@@ -117,7 +116,7 @@ async def test_create_grpc_channel_with_mtls(client_instance, mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_insecure(client_instance):
+async def test_create_grpc_channel_insecure(client_instance) -> None:
     """Test creating an insecure gRPC channel."""
     # Setup
     client_instance._transport = MagicMock()
@@ -141,7 +140,7 @@ async def test_create_grpc_channel_insecure(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_unix_socket(client_instance):
+async def test_create_grpc_channel_unix_socket(client_instance) -> None:
     """Test creating a gRPC channel for Unix socket transport."""
     # Setup
     client_instance._transport = AsyncMock(spec=UnixSocketTransport)  # Changed to use spec
@@ -161,7 +160,7 @@ async def test_create_grpc_channel_unix_socket(client_instance):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
+async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker) -> None:
     """Test channel ready timeout for Unix socket."""
     client_instance._transport = mocker.MagicMock(spec=UnixSocketTransport)
     client_instance._transport_name = "unix"
@@ -190,7 +189,7 @@ async def test_create_grpc_channel_ready_timeout_unix(client_instance, mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
+async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker) -> None:
     """Test channel ready timeout for TCP socket."""
     client_instance._transport = mocker.MagicMock(spec=TCPSocketTransport)  # Mock TCP transport
     client_instance._transport_name = "tcp"
@@ -218,7 +217,7 @@ async def test_create_grpc_channel_ready_timeout_tcp(client_instance, mocker):
 
 
 @pytest.mark.asyncio
-async def test_create_grpc_channel_ready_generic_exception(client_instance, mocker):
+async def test_create_grpc_channel_ready_generic_exception(client_instance, mocker) -> None:
     """Test generic exception during channel_ready."""
     client_instance._transport = mocker.MagicMock(spec=TCPSocketTransport)
     client_instance._transport_name = "tcp"
@@ -243,6 +242,67 @@ async def test_create_grpc_channel_ready_generic_exception(client_instance, mock
     mock_logger_error.assert_any_call(
         "Failed to create gRPC channel to 127.0.0.1:12345: Other connection issue", exc_info=True
     )
+
+
+def test_get_channel_options_unix_with_tls(client_instance) -> None:
+    """Test _get_channel_options() for Unix socket with TLS includes SSL target name override."""
+    client_instance._transport_name = "unix"
+    client_instance._server_cert = "FAKE_CERT_DATA"
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard keepalive options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+    assert ("grpc.keepalive_timeout_ms", 5000) in options
+    assert ("grpc.keepalive_permit_without_calls", True) in options
+
+    # CRITICAL: Verify SSL target name override is added for Unix + TLS
+    assert ("grpc.ssl_target_name_override", "localhost") in options
+
+
+def test_get_channel_options_unix_without_tls(client_instance) -> None:
+    """Test _get_channel_options() for Unix socket without TLS does NOT include SSL override."""
+    client_instance._transport_name = "unix"
+    client_instance._server_cert = None  # No TLS
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+
+    # Verify SSL target name override is NOT added (no TLS)
+    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
+    assert not ssl_override_present, "SSL target name override should not be present without TLS"
+
+
+def test_get_channel_options_tcp_with_tls(client_instance) -> None:
+    """Test _get_channel_options() for TCP with TLS does NOT include SSL override."""
+    client_instance._transport_name = "tcp"
+    client_instance._server_cert = "FAKE_CERT_DATA"
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+
+    # Verify SSL target name override is NOT added (TCP doesn't need it)
+    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
+    assert not ssl_override_present, "SSL target name override should not be present for TCP"
+
+
+def test_get_channel_options_tcp_without_tls(client_instance) -> None:
+    """Test _get_channel_options() for TCP without TLS does NOT include SSL override."""
+    client_instance._transport_name = "tcp"
+    client_instance._server_cert = None
+
+    options = client_instance._get_channel_options()
+
+    # Verify standard options are present
+    assert ("grpc.keepalive_time_ms", 30000) in options
+
+    # Verify SSL target name override is NOT added
+    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
+    assert not ssl_override_present, "SSL target name override should not be present for TCP without TLS"
 
 
 # 🐍🔌🧪🪄
