@@ -1,4 +1,9 @@
-# tests/transport/test_transport_base.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 
@@ -80,3 +85,5 @@ async def test_abstract_transport_methods() -> None:
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

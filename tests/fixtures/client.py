@@ -1,4 +1,9 @@
-# tests/client/conftest.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest_asyncio
 import subprocess
@@ -99,3 +104,5 @@ async def test_client_command():
 ### 🐍🏗🧪️
 
 # 🐍🔌🖥️🪄
+
+# 📞🔌🔚

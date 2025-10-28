@@ -1,4 +1,9 @@
-# tests/handshake/test_handshake_certificate.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 
@@ -119,3 +124,5 @@ async def test_handshake_with_invalid_certificate():
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

@@ -1,3 +1,8 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests covering version handling and configuration helpers."""
 
 from __future__ import annotations
@@ -120,3 +125,5 @@ def test_validate_transport_list_success() -> None:
 def test_validate_transport_list_invalid_entry() -> None:
     with pytest.raises(ValidationError, match="Invalid transport 'bogus'"):
         validate_transport_list(["bogus"])
+
+# 📞🔌🔚

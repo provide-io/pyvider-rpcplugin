@@ -1,4 +1,8 @@
-# tests/core/test_types_handler_protocol_transport.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for handler, protocol, and transport type validation."""
 
 from provide.testkit.mocking import MagicMock
@@ -107,3 +111,5 @@ def test_is_valid_transport_false(mocker: object) -> None:
     mock_logger_debug.assert_called_once_with(
         "🧰🔍✅ Checking if object implements RPCPluginTransport protocol"
     )
+
+# 📞🔌🔚

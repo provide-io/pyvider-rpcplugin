@@ -1,4 +1,9 @@
-# tests/server/test_server_transport.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 from provide.testkit.mocking import patch
 import pytest
@@ -110,3 +115,5 @@ async def test_setup_server_add_port_failure(
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

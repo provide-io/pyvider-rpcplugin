@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/handshake/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """RPC Plugin handshake functionality.
 
 This package provides handshake configuration, validation, building, parsing,
@@ -41,3 +43,5 @@ __all__ = [
     "read_handshake_response",
     "validate_magic_cookie",
 ]
+
+# 📞🔌🔚

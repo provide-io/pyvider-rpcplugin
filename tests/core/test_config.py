@@ -1,4 +1,7 @@
-# tests/core/test_config.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 
 """
 Foundation-based configuration tests for RPC Plugin.
@@ -186,3 +189,5 @@ class TestGlobalConfigInstance:
 
 
 # 🐍🔌🧪✨ Foundation-powered tests
+
+# 📞🔌🔚

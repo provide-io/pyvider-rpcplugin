@@ -1,4 +1,9 @@
-# tests/fixtures/dummy.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 import asyncio
@@ -90,4 +95,4 @@ def dummy_reader() -> DummyReader:
 
 ### 🐍🏗🧪️
 
-# 🐍🔌📄🪄
+# 📞🔌🔚

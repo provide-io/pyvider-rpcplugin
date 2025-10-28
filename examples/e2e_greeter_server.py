@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-# examples/e2e_greeter_server.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """
 End-to-End Greeter Plugin Server.
 """
@@ -109,4 +112,4 @@ if __name__ == "__main__":
     )
     asyncio.run(main())
 
-# 🐍🔌📄🪄
+# 📞🔌🔚

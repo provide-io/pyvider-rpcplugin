@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """
 Server with rate limiting (25 lines).
 
 Demonstrates enabling request rate limiting.
 """
+
 import asyncio
 from pyvider.rpcplugin import plugin_protocol, plugin_server, configure
 from provide.foundation import logger
@@ -28,3 +33,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 📞🔌🔚

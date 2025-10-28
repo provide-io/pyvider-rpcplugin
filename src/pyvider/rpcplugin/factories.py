@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/factories.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """
 Factory functions for creating Pyvider RPC plugin components.
 
@@ -393,8 +395,4 @@ def plugin_client(
     logger.debug(f"🏭 Creating plugin client for command: {command}")
     return RPCPluginClient(command=command, config=config or {})
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

@@ -1,4 +1,8 @@
-# tests/protocol/test_service_broker.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for broker service and subchannel functionality."""
 
 from provide.testkit.mocking import MagicMock
@@ -260,3 +264,5 @@ async def test_broker_exception_handling_subchannel_open_fails(
         assert 3 not in broker_service._subchannels
     finally:
         service_module.SubchannelConnection = original_class
+
+# 📞🔌🔚

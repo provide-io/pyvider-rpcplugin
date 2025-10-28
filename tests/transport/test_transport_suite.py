@@ -1,7 +1,9 @@
 #
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# tests/test_transport_suite.py
-#
+
+"""TODO: Add module docstring."""
 
 import asyncio
 import contextlib
@@ -382,3 +384,5 @@ async def test_transport_error_scenarios_consolidated(
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚
