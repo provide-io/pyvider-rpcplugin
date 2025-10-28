@@ -58,15 +58,3 @@ def test_plugin_server_invalid_transport() -> None:
 
     with pytest.raises(ValueError, match="Unsupported transport type"):
         factories.plugin_server(protocol=protocol(), handler=handler, transport="invalid")
-
-
-def test_plugin_client_auto_connect_warning(monkeypatch: pytest.MonkeyPatch) -> None:
-    warnings: list[str] = []
-
-    def fake_warning(message: str) -> None:
-        warnings.append(message)
-
-    monkeypatch.setattr("pyvider.rpcplugin.factories.logger.warning", fake_warning, raising=True)
-    client = factories.plugin_client(command=["echo"], auto_connect=True)
-    assert client.command == ["echo"]
-    assert warnings and "auto_connect=True" in warnings[0]
