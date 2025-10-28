@@ -1,3 +1,10 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import asyncio
 from collections.abc import Iterator
 
@@ -217,3 +224,5 @@ async def test_context_manager_exit_logs_warning(monkeypatch: pytest.MonkeyPatch
     #     "⚠️ Error during shutdown in context manager: shutdown failure", exc_info=True
     # )
     client.close.assert_awaited()
+
+# 📞🔌🔚

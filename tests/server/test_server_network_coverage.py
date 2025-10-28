@@ -1,3 +1,8 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """
 Tests for server/network.py to improve code coverage.
 
@@ -203,3 +208,5 @@ async def test_build_and_send_handshake_response_no_transport(mocker):
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

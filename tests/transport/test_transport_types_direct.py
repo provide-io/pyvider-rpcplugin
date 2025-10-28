@@ -1,4 +1,9 @@
-# tests/transport/test_transport_types_direct.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 from typing import Protocol, runtime_checkable  # Keep existing typing imports
 
@@ -64,3 +69,5 @@ def test_transport_type() -> None:
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

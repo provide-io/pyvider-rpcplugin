@@ -1,4 +1,9 @@
-# tests/transport/unix/test_transport_unix_close.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import os
 import pytest
@@ -404,3 +409,5 @@ async def test_close_writer_transport_no_abort_method(mocker):
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

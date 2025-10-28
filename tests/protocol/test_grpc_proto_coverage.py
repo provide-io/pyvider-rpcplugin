@@ -1,4 +1,9 @@
-# tests/protocol/test_grpc_proto_coverage.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 from provide.testkit.mocking import MagicMock, patch
@@ -113,3 +118,5 @@ def test_grpc_add_handlers_to_server() -> None:
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

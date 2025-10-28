@@ -1,3 +1,10 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import os
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
@@ -161,3 +168,5 @@ logger.info("--- Type Conversion Test: PASSED ---")
 logger.info("Finished environment variable precedence and type conversion tests.")
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

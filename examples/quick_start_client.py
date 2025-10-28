@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-# examples/quick_start_client.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """
 Quick Start Example - Client launching an executable plugin server.
 """
@@ -69,3 +72,5 @@ if __name__ == "__main__":
     asyncio.run(main())
 
 # 🐍🔌🖥️🪄
+
+# 📞🔌🔚

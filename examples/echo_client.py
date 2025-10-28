@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-# examples/echo_client.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import asyncio
 import os
 from pathlib import Path
@@ -170,3 +175,5 @@ if __name__ == "__main__":
     asyncio.run(run_client())
 
 # 🐍🔌🖥️🪄
+
+# 📞🔌🔚

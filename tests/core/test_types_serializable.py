@@ -1,4 +1,8 @@
-# tests/core/test_types_serializable.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for serializable type validation."""
 
 import inspect
@@ -148,3 +152,5 @@ def test_is_valid_serializable_false_incorrect_signature(mocker: object) -> None
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2
+
+# 📞🔌🔚

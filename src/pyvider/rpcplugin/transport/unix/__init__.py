@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/transport/unix/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """
 Unix Domain Socket Transport Package.
 
@@ -21,4 +23,4 @@ __all__ = [
     "normalize_unix_path",
 ]
 
-# 🐍🏗️🔌
+# 📞🔌🔚

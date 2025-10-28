@@ -1,4 +1,9 @@
-# tests/fixtures/__init__.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 from tests.fixtures.client import (
     client_command,
@@ -100,4 +105,4 @@ __all__ = [
     "server_instance",
 ]
 
-# 🐍🔌📄🪄
+# 📞🔌🔚

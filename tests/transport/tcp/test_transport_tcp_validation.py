@@ -1,4 +1,9 @@
-# tests/transport/tcp/test_transport_tcp_validation.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 
@@ -72,3 +77,5 @@ def test_is_valid_tcp_endpoint_empty_host_specific():
 
 
 # 🐍🔌🧪🪄
+
+# 📞🔌🔚

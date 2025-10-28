@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/config/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """
 Configuration management for the RPC Plugin framework.
 
@@ -50,3 +52,5 @@ __all__ = [
     "unregister_plugin_config",
     "update_plugin_config",
 ]
+
+# 📞🔌🔚
