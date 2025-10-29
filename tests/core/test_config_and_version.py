@@ -9,13 +9,10 @@ from __future__ import annotations
 
 import importlib
 
-from provide.foundation.utils.versioning import get_version
-
-__version__ = get_version("pyvider-rpcplugin")
-
 from provide.foundation.errors import ValidationError
 import pytest
 
+from pyvider.rpcplugin import __version__
 from pyvider.rpcplugin.config import RPCPluginConfig  # noqa: F401 - imported for type checks
 from pyvider.rpcplugin.config.configure import configure
 from pyvider.rpcplugin.config.validators import (

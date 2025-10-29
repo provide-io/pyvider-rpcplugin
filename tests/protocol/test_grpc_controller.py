@@ -113,10 +113,4 @@ async def test_controller_experimental_api() -> None:
         )
         mock_unary_unary.assert_called_once()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

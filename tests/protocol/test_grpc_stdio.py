@@ -124,10 +124,4 @@ async def test_stdio_experimental_api() -> None:
         )
         mock_unary_stream.assert_called_once()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

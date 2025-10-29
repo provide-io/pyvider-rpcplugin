@@ -122,7 +122,4 @@ async def test_handshake_with_invalid_certificate():
             server_cert=InvalidCert(),
         )
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

@@ -174,6 +174,4 @@ if __name__ == "__main__":
     os.environ["PYTHONIOENCODING"] = "UTF-8"
     asyncio.run(run_client())
 
-# 🐍🔌🖥️🪄
-
 # 📞🔌🔚

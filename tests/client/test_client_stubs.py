@@ -284,7 +284,4 @@ async def test_shutdown_plugin_rpc_error(client_instance, mocker):
     # The RpcError is logged as debug, not error, so no logger.error call expected
     mock_logger_error.assert_not_called()
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

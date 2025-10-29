@@ -283,10 +283,4 @@ async def test_certificate_handling_in_handshake():
     # Clean up
     await transport.close()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

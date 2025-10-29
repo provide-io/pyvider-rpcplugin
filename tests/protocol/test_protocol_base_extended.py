@@ -78,10 +78,4 @@ async def test_concrete_protocol_add_to_server() -> None:
     # Should not raise any exceptions
     await protocol.add_to_server(server_mock, handler_mock)
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

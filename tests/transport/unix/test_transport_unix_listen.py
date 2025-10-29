@@ -254,9 +254,4 @@ async def test_unix_listen_path_no_directory(mocker):
     await transport.close()
     await asyncio.sleep(0.1)
 
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

@@ -189,7 +189,4 @@ class DummyHandler:
         dummy_handler_logger.info("DummyHandler: NoOp called (generally not expected in basic examples)")
         return {}
 
-
-# 🐍🛠️
-
 # 📞🔌🔚

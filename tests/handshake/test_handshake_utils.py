@@ -72,10 +72,4 @@ def test_handshake_config_attrs():
     assert config.protocol_versions == [1, 2, 3]
     assert config.supported_transports == ["tcp", "unix"]
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

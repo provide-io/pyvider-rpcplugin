@@ -187,7 +187,4 @@ class TestGlobalConfigInstance:
         assert fresh_config.plugin_handshake_timeout == 10.0
         assert fresh_config.plugin_protocol_versions == [1]
 
-
-# 🐍🔌🧪✨ Foundation-powered tests
-
 # 📞🔌🔚

@@ -92,7 +92,4 @@ def dummy_reader() -> DummyReader:
     # Default dummy reader returns "test data".
     return DummyReader(b"test data")
 
-
-### 🐍🏗🧪️
-
 # 📞🔌🔚

@@ -404,10 +404,4 @@ async def test_close_writer_transport_no_abort_method(mocker):
     # No abort call expected because hasattr(mock_transport_obj, 'abort') will be false
     await transport_module.close()
 
-
-# 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

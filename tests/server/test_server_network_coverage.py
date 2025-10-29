@@ -206,7 +206,4 @@ async def test_build_and_send_handshake_response_no_transport(mocker):
     with pytest.raises(TransportError, match="Transport is None before building handshake response"):
         await server._build_and_send_handshake_response()
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

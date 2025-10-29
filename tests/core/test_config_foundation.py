@@ -217,7 +217,4 @@ class TestGlobalConfigInstance:
         assert config1.plugin_magic_cookie_value == config2.plugin_magic_cookie_value
         assert config1.plugin_handshake_timeout == config2.plugin_handshake_timeout
 
-
-# 🐍🔌🧪✨ Foundation-powered tests
-
 # 📞🔌🔚

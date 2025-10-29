@@ -10,8 +10,10 @@ Demonstrates using TCP instead of Unix sockets.
 """
 
 import asyncio
-from pyvider.rpcplugin import plugin_protocol, plugin_server
+
 from provide.foundation import logger
+
+from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 
 async def main():

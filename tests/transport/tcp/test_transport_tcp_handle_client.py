@@ -141,10 +141,4 @@ async def test_handle_client_reader_generic_exception():
     writer.close.assert_called_once()
     writer.wait_closed.assert_called_once()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

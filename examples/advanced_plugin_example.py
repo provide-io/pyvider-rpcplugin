@@ -23,18 +23,17 @@ import asyncio
 import os
 from typing import Any, Protocol, runtime_checkable
 
-import grpc.aio
 from attrs import define, field
+import grpc.aio
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from provide.foundation import logger
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
-from pyvider.rpcplugin import plugin_server, plugin_protocol
+from pyvider.rpcplugin import plugin_protocol, plugin_server
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.types import RPCPluginHandler
-
 
 # Configure environment for advanced features
 os.environ.update({

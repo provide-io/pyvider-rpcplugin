@@ -246,10 +246,4 @@ def test_normalize_unix_path_with_prefix():
     assert normalize_unix_path("unix://") == "/"  # Added test case
     assert normalize_unix_path("unix:/") == "/"  # Added test case
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

@@ -442,7 +442,4 @@ async def test_aexit_shutdown_plugin_exception(client_instance, mocker):
     # For now, we are just checking if the methods are called.
     # If this passes, then we re-introduce the side_effect and log check.
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

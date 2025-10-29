@@ -41,7 +41,6 @@ async def test_generate_server_credentials_failure(
         server._generate_server_credentials()
 
 
-# 🐍🔌🧪🪄
 
 
 def _make_dummy_cert(common_name: str = "CN"):

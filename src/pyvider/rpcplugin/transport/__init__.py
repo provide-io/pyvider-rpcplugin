@@ -32,8 +32,4 @@ __all__ = [
     "UnixSocketTransport",
 ]
 
-
-
-# 🐍🔌🚀🪄
-
 # 📞🔌🔚

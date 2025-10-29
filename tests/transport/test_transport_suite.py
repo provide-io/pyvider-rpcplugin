@@ -379,10 +379,4 @@ async def test_transport_error_scenarios_consolidated(
         # because it doesn't try to acquire the port if it's only determining an endpoint string.
         pass
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

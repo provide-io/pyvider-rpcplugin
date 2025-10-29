@@ -84,9 +84,4 @@ class RPCPluginTransport(abc.ABC):
         """
         ...
 
-
-
-
-# 🐍🔌🏛️🪄
-
 # 📞🔌🔚
