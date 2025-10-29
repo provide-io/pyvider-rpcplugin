@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/config/runtime.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """
 Core RPCPluginConfig class implementation using Foundation framework.
 
@@ -488,3 +490,5 @@ class RPCPluginConfig(RuntimeConfig):
     # - config.plugin_magic_cookie_key instead of config.magic_cookie_key()
     # - config.plugin_handshake_timeout instead of config.handshake_timeout()
     # - etc.
+
+# 📞🔌🔚

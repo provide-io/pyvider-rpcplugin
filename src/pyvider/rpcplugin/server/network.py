@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/server/network.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """
 Network setup, handshake, and credential handling for RPC plugin servers.
 
@@ -345,3 +347,5 @@ class ServerNetworkMixin:
         )
         sys.stdout.buffer.write(f"{response}\n".encode())
         sys.stdout.buffer.flush()
+
+# 📞🔌🔚

@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/transport/unix/utils.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """
 Unix Domain Socket utilities and helper functions.
 
@@ -41,3 +43,5 @@ def normalize_unix_path(path: str) -> str:
 
     logger.debug(f"📞🔍✅ * Normalized Unix path: {path}")
     return path
+
+# 📞🔌🔚
