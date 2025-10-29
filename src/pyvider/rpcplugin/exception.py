@@ -271,4 +271,5 @@ class SecurityError(RPCPluginError):
     def _default_code(self) -> str:
         return "RPC_SECURITY_ERROR"
 
+
 # 📞🔌🔚
