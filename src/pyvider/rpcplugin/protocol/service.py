@@ -1,5 +1,6 @@
 #
-# pyvider/rpcplugin/protocol/service.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 """
 gRPC Service Implementations for Pyvider RPC Plugin.
@@ -443,8 +444,4 @@ def register_protocol_service(server: grpc.aio.Server, shutdown_event: asyncio.E
 
     logger.debug("🔌 ProtocolService => Registered GRPCStdio, GRPCBroker, GRPCController.")
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

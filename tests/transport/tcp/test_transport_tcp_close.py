@@ -1,5 +1,7 @@
-# tests/transport/tcp/test_transport_tcp_close.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 from provide.testkit.mocking import AsyncMock, MagicMock
 
@@ -234,8 +236,4 @@ async def test_close_server_wait_closed_generic_exception(mocker):
     mock_server.wait_closed.assert_called_once()
     assert transport._server is None
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

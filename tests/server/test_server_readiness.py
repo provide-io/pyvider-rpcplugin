@@ -1,3 +1,7 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import asyncio
 from provide.testkit.mocking import AsyncMock, MagicMock, patch
@@ -85,5 +89,4 @@ async def test_wait_for_server_ready_tcp_connect_fails(mocker):
     with pytest.raises(TransportError, match="Server readiness check failed: Connection failed"):
         await server.wait_for_server_ready(timeout=0.1)
 
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

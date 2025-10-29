@@ -1,5 +1,7 @@
-# tests/transport/test_transport_base.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
@@ -75,8 +77,4 @@ async def test_abstract_transport_methods() -> None:
     with pytest.raises(TypeError):
         IncompleteTransport()  # type: ignore[abstract]
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

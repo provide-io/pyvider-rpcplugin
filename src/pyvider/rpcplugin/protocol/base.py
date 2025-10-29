@@ -1,5 +1,6 @@
 #
-# pyvider/rpcplugin/protocol/base.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 """
 Base Definitions for RPC Plugin Protocols.
@@ -39,8 +40,4 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
         """
         pass
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌🏛️🪄
+# 📞🔌🔚

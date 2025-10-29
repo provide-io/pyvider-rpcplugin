@@ -43,14 +43,13 @@ from __future__ import annotations
 
 from typing import (
     Any,
-    Optional,
 )
 
-from provide_foundation.config import ConfigManager
+from provide.foundation.config import ConfigManager
 
 from pyvider.rpcplugin.config.runtime import RPCPluginConfig
 
-_plugin_config_manager: Optional[ConfigManager] = None
+_plugin_config_manager: ConfigManager | None = None
 
 
 def get_plugin_config_manager() -> ConfigManager:

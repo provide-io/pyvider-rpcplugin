@@ -1,5 +1,7 @@
-# tests/transport/unix/test_transport_unix_connect.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 import os
 import stat  # Added import
@@ -155,8 +157,4 @@ async def test_unix_connect_stat_fails(mocker, managed_unix_socket_path):
         await transport.connect(managed_unix_socket_path)
     await transport.close()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚
