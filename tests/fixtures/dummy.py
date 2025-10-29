@@ -1,5 +1,7 @@
-# tests/fixtures/dummy.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import asyncio
 from provide.testkit.mocking import MagicMock, AsyncMock  # Ensure AsyncMock is imported
@@ -87,7 +89,4 @@ def dummy_reader() -> DummyReader:
     # Default dummy reader returns "test data".
     return DummyReader(b"test data")
 
-
-### 🐍🏗🧪️
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

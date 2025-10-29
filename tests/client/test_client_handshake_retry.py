@@ -1,4 +1,7 @@
-# tests/client/test_client_handshake_retry.py
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 """Tests for handshake retry logic and complex scenarios."""
 
 import subprocess
@@ -72,3 +75,5 @@ async def test_connect_handshake_retry_success_first_attempt(
     assert client_instance.is_started is True
     assert client_instance._handshake_complete_event.is_set() is True
     assert client_instance._handshake_failed_event.is_set() is False
+
+# 📞🔌🔚

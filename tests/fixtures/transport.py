@@ -1,5 +1,7 @@
-# tests/fixtures/transport.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import pytest_asyncio
 
@@ -312,7 +314,4 @@ async def managed_unix_socket_path(
 #     # Force cleanup of transport resources
 #     await asyncio.sleep(0.1)  # Allow any pending cleanups
 
-
-### 🐍🏗🧪️
-
-# 🐍🔌📄🪄
+# 📞🔌🔚
