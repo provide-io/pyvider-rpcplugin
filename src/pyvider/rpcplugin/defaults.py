@@ -1,14 +1,12 @@
 #
-# pyvider/rpcplugin/defaults.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Default configuration values for the RPC plugin system.
+"""Default configuration values for the RPC plugin system.
 
 This module centralizes all default values to avoid inline defaults
-throughout the codebase, following project conventions.
-"""
+throughout the codebase, following project conventions."""
 
-# Protocol version defaults
 DEFAULT_SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 DEFAULT_PLUGIN_PROTOCOL_VERSIONS = [1]
 
@@ -118,3 +116,5 @@ DEFAULT_PLUGIN_RATE_LIMIT_BURST_CAPACITY = 200
 DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED = True
 DEFAULT_PLUGIN_UI_ENABLED = False
 DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX = False
+
+# 📞🔌🔚

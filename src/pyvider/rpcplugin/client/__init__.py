@@ -1,8 +1,9 @@
 #
-# pyvider/rpcplugin/client/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Pyvider RPC Plugin Client Package.
+
+"""Pyvider RPC Plugin Client Package.
 
 This package provides the core components for creating RPC plugin clients,
 including the main `RPCPluginClient` class, connection handling, and associated types.
@@ -28,7 +29,4 @@ __all__ = [
     "SecureRpcClientT",
 ]
 
-# 🐍🏗️🔌
-
-
-# 🐍🔌🚀🪄
+# 📞🔌🔚

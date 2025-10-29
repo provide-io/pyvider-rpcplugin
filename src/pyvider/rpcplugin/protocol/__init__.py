@@ -1,8 +1,8 @@
 #
-# pyvider/rpcplugin/protocol/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Pyvider RPC Plugin Protocol Package.
+"""Pyvider RPC Plugin Protocol Package.
 
 This package defines the base RPC plugin protocol interface and re-exports
 key components from the gRPC generated protocol code (services, servicers,
@@ -49,8 +49,4 @@ __all__ = [
 
 __all__ = list(sorted(set(__all__)))
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌🚀🪄
+# 📞🔌🔚
