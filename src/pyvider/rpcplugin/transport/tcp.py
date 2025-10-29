@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/transport/tcp.py
 #
-
 """pyvider.rpcplugin.transport.tcp
 --------------------------------
 TCP Socket Transport implementation using asyncio.
@@ -353,4 +351,8 @@ class TCPSocketTransport(RPCPluginTransport):
         self.endpoint = None
         logger.debug("🔌🔒✅: TCP socket transport closed completely")
 
-# 📞🔌🔚
+
+# 🐍🏗️🔌
+
+
+# 🐍🔌📄🪄
