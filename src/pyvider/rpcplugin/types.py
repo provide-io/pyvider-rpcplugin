@@ -1,18 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/types.py
 #
-
-"""Type definitions for the Pyvider RPC plugin system.
-
-This module provides Protocol classes, TypeVars, and type aliases that define
-the interfaces and contracts used throughout the pyvider.rpcplugin package.
-These types enable static type checking and clear API boundaries.
-
-For most users, these types are used only in type annotations. Advanced users
-implementing custom protocol handlers will need to implement the Protocol
-interfaces defined here.
-"""
 
 from __future__ import annotations
 
@@ -31,13 +19,21 @@ from typing import (
 import grpc
 from provide.foundation.logger import get_logger
 
-from pyvider.rpcplugin.config.runtime import RPCPluginConfig
-
 logger = get_logger(__name__)
 
+"""Type definitions for the Pyvider RPC plugin system.
+
+This module provides Protocol classes, TypeVars, and type aliases that define
+the interfaces and contracts used throughout the pyvider.rpcplugin package.
+These types enable static type checking and clear API boundaries.
+
+For most users, these types are used only in type annotations. Advanced users
+implementing custom protocol handlers will need to implement the Protocol
+interfaces defined here.
+"""
 
 if TYPE_CHECKING:
-    pass  # For TypeVar bound
+    from .config import RPCPluginConfig  # For TypeVar bound
 
 
 # Core TypeVars for generic type parameters
@@ -427,4 +423,8 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
     logger.debug("🧰🔍✅ Checking if object implements RPCPluginTransport protocol")
     return isinstance(obj, RPCPluginTransport)
 
-# 📞🔌🔚
+
+# 🐍🏗️🔌
+
+
+# 🐍🔌📄🪄

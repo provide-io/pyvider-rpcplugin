@@ -1,7 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+# tests/core/test_config_foundation.py
 
 """
 Foundation-based tests for RPC Plugin configuration.
@@ -217,4 +214,5 @@ class TestGlobalConfigInstance:
         assert config1.plugin_magic_cookie_value == config2.plugin_magic_cookie_value
         assert config1.plugin_handshake_timeout == config2.plugin_handshake_timeout
 
-# 📞🔌🔚
+
+# 🐍🔌🧪✨ Foundation-powered tests

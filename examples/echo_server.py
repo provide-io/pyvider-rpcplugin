@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
-
+# examples/echo_server.py
 import asyncio
 import os
 from typing import Any, cast
@@ -122,4 +117,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:  # pragma: no cover
         logger.info("Server stopped by user.")
 
-# 📞🔌🔚
+# 🐍🔌📄🪄

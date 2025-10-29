@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/client/test_client_grpc.py
 
 from provide.testkit.mocking import ANY, AsyncMock, MagicMock, patch
 import pytest
@@ -309,4 +304,5 @@ def test_get_channel_options_tcp_without_tls(client_instance) -> None:
     ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
     assert not ssl_override_present, "SSL target name override should not be present for TCP without TLS"
 
-# 📞🔌🔚
+
+# 🐍🔌🧪🪄

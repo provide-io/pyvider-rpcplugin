@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
+# examples/direct_client_connection.py
 """
 Demonstrates a client connecting directly to an independently running
 pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
@@ -143,4 +140,4 @@ async def run_direct_client() -> None:
 if __name__ == "__main__":
     asyncio.run(run_direct_client())
 
-# 📞🔌🔚
+# 🐍🔌🖥️🪄

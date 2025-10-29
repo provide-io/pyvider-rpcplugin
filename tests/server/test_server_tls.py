@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# pyvider/rpcplugin/tests/server/test_server_tls.py
 
 from provide.foundation.crypto import Certificate
 import pytest
@@ -41,6 +36,7 @@ async def test_generate_server_credentials_failure(
         server._generate_server_credentials()
 
 
+# 🐍🔌🧪🪄
 
 
 def _make_dummy_cert(common_name: str = "CN"):
@@ -124,5 +120,3 @@ def test_generate_server_credentials_warn_when_missing_root(
     warning_spy.assert_any_call(
         "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. Client certs will not be required/verified."
     )
-
-# 📞🔌🔚

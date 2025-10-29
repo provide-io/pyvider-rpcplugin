@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """
 Utility functions for pyvider-rpcplugin examples.
 Provides consistent path resolution and environment setup.
@@ -189,4 +185,7 @@ class DummyHandler:
         dummy_handler_logger.info("DummyHandler: NoOp called (generally not expected in basic examples)")
         return {}
 
-# 📞🔌🔚
+
+# 🐍🛠️
+
+# 🐍🔌📄🪄

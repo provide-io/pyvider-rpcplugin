@@ -1,9 +1,7 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
 #
-
-"""TODO: Add module docstring."""
+# tests/test_transport_suite.py
+#
 
 import asyncio
 import contextlib
@@ -379,4 +377,8 @@ async def test_transport_error_scenarios_consolidated(
         # because it doesn't try to acquire the port if it's only determining an endpoint string.
         pass
 
-# 📞🔌🔚
+
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

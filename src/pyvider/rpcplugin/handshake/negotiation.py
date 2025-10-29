@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/handshake/negotiation.py
 #
-
 """Transport and protocol negotiation for the RPC plugin handshake.
 
 This module handles transport negotiation, protocol version negotiation,
@@ -351,5 +349,3 @@ async def create_stderr_relay(
     relay_task = asyncio.create_task(_stderr_reader())
     logger.debug("🤝📤✅ Created stderr relay task")
     return relay_task
-
-# 📞🔌🔚

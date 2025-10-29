@@ -1,7 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+# tests/core/test_config.py
 
 """
 Foundation-based configuration tests for RPC Plugin.
@@ -187,4 +184,5 @@ class TestGlobalConfigInstance:
         assert fresh_config.plugin_handshake_timeout == 10.0
         assert fresh_config.plugin_protocol_versions == [1]
 
-# 📞🔌🔚
+
+# 🐍🔌🧪✨ Foundation-powered tests

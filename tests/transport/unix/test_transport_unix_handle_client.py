@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_transport_unix_handle_client.py
 
 import asyncio
 import os
@@ -172,4 +167,5 @@ async def test_handle_client_cancelled(mocker):
 
 ################################################################################
 
-# 📞🔌🔚
+
+# 🐍🔌🧪🪄

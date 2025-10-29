@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_unix_concurrent_connections.py
 
 import asyncio
 import os
@@ -274,4 +269,5 @@ async def test_unix_socket_multiple_clients_data_transfer() -> None:
             if server:  # If server is not None (i.e. wasn't cleanly closed in try)
                 await server.close()
 
-# 📞🔌🔚
+
+# 🐍🔌🧪🪄

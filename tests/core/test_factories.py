@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/rpcplugin/test_factories.py
 
 import pytest
 from attrs import define
@@ -279,6 +274,7 @@ def test_plugin_client_basic(mock_rpc_client_cls):
     mock_rpc_client_cls.assert_called_once_with(command=server_command, config=client_config)
     assert client is mock_rpc_client_cls.return_value
 
+
 @patch("pyvider.rpcplugin.factories.RPCPluginClient")
 def test_plugin_client_none_config(mock_rpc_client_cls):
     """Test plugin_client with None config defaults to empty dict."""
@@ -295,4 +291,7 @@ def test_plugin_client_none_config(mock_rpc_client_cls):
 # or within the RPCPluginClient itself if it were to do such checks.
 # For now, removing them as the factory's responsibility changed.
 
-# 📞🔌🔚
+# 🐍🧪🏭
+
+
+# 🐍🔌🧪🪄

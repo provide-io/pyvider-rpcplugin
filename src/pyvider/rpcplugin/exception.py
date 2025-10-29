@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/exception.py
 #
-
 """
 Custom Exception Types for Pyvider RPC Plugin.
 
@@ -274,4 +272,8 @@ class SecurityError(RPCPluginError):
     def _default_code(self) -> str:
         return "RPC_SECURITY_ERROR"
 
-# 📞🔌🔚
+
+# 🐍🏗️🔌
+
+
+# 🐍🔌⚠️🪄

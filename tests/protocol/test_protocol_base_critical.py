@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_protocol_base_critical.py
 
 import pytest
 from provide.testkit.mocking import MagicMock
@@ -39,4 +34,8 @@ def test_abstract_methods_must_be_implemented() -> None:
     assert "add_to_server" in error_message
     assert "get_grpc_descriptors" not in error_message
 
-# 📞🔌🔚
+
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

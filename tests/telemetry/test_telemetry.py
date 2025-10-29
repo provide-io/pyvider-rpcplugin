@@ -1,8 +1,3 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """
 Tests for OpenTelemetry integration module.
 
@@ -120,5 +115,3 @@ class TestTelemetryImportError:
             assert is_telemetry_available() is False
             assert get_rpc_tracer() is None
             assert get_rpc_meter() is None
-
-# 📞🔌🔚
