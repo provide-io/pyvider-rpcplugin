@@ -274,42 +274,31 @@ def test_plugin_client_basic(mock_rpc_client_cls):
     server_command = ["/fake/server"]
     client_config = {"some_config": "value"}
 
-    client = plugin_client(command=server_command, config=client_config, auto_connect=False)
+    client = plugin_client(command=server_command, config=client_config)
 
     mock_rpc_client_cls.assert_called_once_with(command=server_command, config=client_config)
     assert client is mock_rpc_client_cls.return_value
 
 
 @patch("pyvider.rpcplugin.factories.RPCPluginClient")
-def test_plugin_client_with_options_and_auto_connect_warning(mock_rpc_client_cls):
-    """Test plugin_client with auto_connect=True issues a warning."""
+def test_plugin_client_with_custom_config(mock_rpc_client_cls):
+    """Test plugin_client with custom config options."""
     server_command = ["/fake/server_exec"]
     custom_config = {"VAR": "val", "timeout": 5.0, "extra_option": "test_val"}
 
     mock_client_instance = MagicMock(spec=RPCPluginClient)
     mock_rpc_client_cls.return_value = mock_client_instance
 
-    with patch("pyvider.rpcplugin.factories.logger.warning") as mock_logger_warning:
-        client = plugin_client(
-            command=server_command,
-            config=custom_config,
-            auto_connect=True,  # This should trigger the warning
-        )
+    client = plugin_client(
+        command=server_command,
+        config=custom_config,
+    )
 
-        mock_rpc_client_cls.assert_called_once_with(
-            command=server_command,
-            config=custom_config,
-        )
-        assert client is mock_client_instance
-        # Check that our specific warning was called (there may be other warnings)
-        expected_warning = (
-            "🏭 auto_connect=True in synchronous factory is misleading. "
-            "Caller should handle async client.start()."
-        )
-        warning_calls = [call.args[0] for call in mock_logger_warning.call_args_list]
-        assert expected_warning in warning_calls, f"Expected warning not found in: {warning_calls}"
-        # client.start() should not be called by the factory itself anymore
-        mock_client_instance.start.assert_not_called()
+    mock_rpc_client_cls.assert_called_once_with(
+        command=server_command,
+        config=custom_config,
+    )
+    assert client is mock_client_instance
 
 
 @patch("pyvider.rpcplugin.factories.RPCPluginClient")
@@ -317,7 +306,7 @@ def test_plugin_client_none_config(mock_rpc_client_cls):
     """Test plugin_client with None config defaults to empty dict."""
     command = ["/path/to/executable"]
 
-    client = plugin_client(command=command, config=None, auto_connect=False)
+    client = plugin_client(command=command, config=None)
 
     mock_rpc_client_cls.assert_called_once_with(command=command, config={})
     assert client is mock_rpc_client_cls.return_value
