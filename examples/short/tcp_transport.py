@@ -4,9 +4,12 @@ Server with TCP transport (20 lines).
 
 Demonstrates using TCP instead of Unix sockets.
 """
+
 import asyncio
-from pyvider.rpcplugin import plugin_protocol, plugin_server
+
 from provide.foundation import logger
+
+from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 
 async def main():
@@ -15,12 +18,7 @@ async def main():
     handler = object()
 
     # Use TCP transport on port 50051
-    server = plugin_server(
-        protocol=protocol,
-        handler=handler,
-        transport="tcp",
-        port=50051
-    )
+    server = plugin_server(protocol=protocol, handler=handler, transport="tcp", port=50051)
 
     logger.info("Starting server with TCP transport on port 50051...")
     await server.serve()

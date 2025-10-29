@@ -19,40 +19,37 @@ import asyncio
 import os
 from typing import Any, Protocol, runtime_checkable
 
-import grpc.aio
 from attrs import define, field
+import grpc.aio
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 from provide.foundation import logger
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
-from pyvider.rpcplugin import plugin_server, plugin_protocol
+from pyvider.rpcplugin import plugin_protocol, plugin_server
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.types import RPCPluginHandler
 
-
 # Configure environment for advanced features
-os.environ.update({
-    # Enable rate limiting
-    "PLUGIN_RATE_LIMIT_ENABLED": "true",
-    "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": "100",
-    "PLUGIN_RATE_LIMIT_BURST_CAPACITY": "200",
-
-    # Enable health checks
-    "PLUGIN_HEALTH_SERVICE_ENABLED": "true",
-
-    # Configure logging
-    "PLUGIN_LOG_LEVEL": "INFO",
-    "PLUGIN_LOG_FORMAT": "json",
-
-    # Security settings (for production, use real certificates)
-    "PLUGIN_AUTO_MTLS": "false",  # Set to true with proper certs in production
-
-    # gRPC configuration
-    "PLUGIN_GRPC_MAX_CONCURRENT_STREAMS": "500",
-    "PLUGIN_GRPC_KEEPALIVE_TIME": "30000",
-})
+os.environ.update(
+    {
+        # Enable rate limiting
+        "PLUGIN_RATE_LIMIT_ENABLED": "true",
+        "PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND": "100",
+        "PLUGIN_RATE_LIMIT_BURST_CAPACITY": "200",
+        # Enable health checks
+        "PLUGIN_HEALTH_SERVICE_ENABLED": "true",
+        # Configure logging
+        "PLUGIN_LOG_LEVEL": "INFO",
+        "PLUGIN_LOG_FORMAT": "json",
+        # Security settings (for production, use real certificates)
+        "PLUGIN_AUTO_MTLS": "false",  # Set to true with proper certs in production
+        # gRPC configuration
+        "PLUGIN_GRPC_MAX_CONCURRENT_STREAMS": "500",
+        "PLUGIN_GRPC_KEEPALIVE_TIME": "30000",
+    }
+)
 
 
 # Type-safe protocol definition
@@ -89,10 +86,7 @@ class AdvancedHandler:
     def __attrs_post_init__(self) -> None:
         """Initialize handler components."""
         # Custom rate limiter for expensive operations
-        self.rate_limiter = TokenBucketRateLimiter(
-            tokens_per_second=10,
-            bucket_size=20
-        )
+        self.rate_limiter = TokenBucketRateLimiter(tokens_per_second=10, bucket_size=20)
 
         # Initialize metrics
         self.metrics = {
@@ -105,13 +99,11 @@ class AdvancedHandler:
             "Advanced handler initialized",
             handler_name=self.name,
             rate_limit_tps=10,
-            features=["telemetry", "rate_limiting", "health_checks"]
+            features=["telemetry", "rate_limiting", "health_checks"],
         )
 
     async def process_request(
-        self,
-        request: dict[str, Any],
-        context: grpc.aio.ServicerContext
+        self, request: dict[str, Any], context: grpc.aio.ServicerContext
     ) -> dict[str, Any]:
         """
         Process incoming request with full telemetry and rate limiting.
@@ -127,10 +119,7 @@ class AdvancedHandler:
             grpc.RpcError: On processing errors
         """
         # Start trace span
-        with self.tracer.start_as_current_span(
-            "process_request",
-            kind=trace.SpanKind.SERVER
-        ) as span:
+        with self.tracer.start_as_current_span("process_request", kind=trace.SpanKind.SERVER) as span:
             # Add trace attributes
             span.set_attribute("handler.name", self.name)
             span.set_attribute("request.id", request.get("id", "unknown"))
@@ -145,10 +134,7 @@ class AdvancedHandler:
                 # Validate request
                 if not await self._validate_request(request):
                     span.set_status(Status(StatusCode.ERROR, "Invalid request"))
-                    await context.abort(
-                        grpc.StatusCode.INVALID_ARGUMENT,
-                        "Request validation failed"
-                    )
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Request validation failed")
 
                 # Check rate limit for expensive operations
                 if request.get("expensive", False):
@@ -159,12 +145,12 @@ class AdvancedHandler:
                         logger.warning(
                             "Rate limit exceeded for expensive operation",
                             client_id=client_id,
-                            remaining_tokens=self.rate_limiter.available_tokens
+                            remaining_tokens=self.rate_limiter.available_tokens,
                         )
 
                         await context.abort(
                             grpc.StatusCode.RESOURCE_EXHAUSTED,
-                            "Rate limit exceeded for expensive operations. Please retry with backoff."
+                            "Rate limit exceeded for expensive operations. Please retry with backoff.",
                         )
 
                 # Process the request
@@ -178,8 +164,8 @@ class AdvancedHandler:
                     "Request processed successfully",
                     request_id=request.get("id"),
                     client_id=client_id,
-                    trace_id=format(span.get_span_context().trace_id, '032x'),
-                    processing_time_ms=result.get("processing_time_ms")
+                    trace_id=format(span.get_span_context().trace_id, "032x"),
+                    processing_time_ms=result.get("processing_time_ms"),
                 )
 
                 span.set_status(Status(StatusCode.OK))
@@ -200,21 +186,15 @@ class AdvancedHandler:
                     error_type=type(e).__name__,
                     request_id=request.get("id"),
                     client_id=client_id,
-                    trace_id=format(span.get_span_context().trace_id, '032x'),
-                    exc_info=True
+                    trace_id=format(span.get_span_context().trace_id, "032x"),
+                    exc_info=True,
                 )
 
                 # Return appropriate gRPC error
                 if isinstance(e, ValueError):
-                    await context.abort(
-                        grpc.StatusCode.INVALID_ARGUMENT,
-                        str(e)
-                    )
+                    await context.abort(grpc.StatusCode.INVALID_ARGUMENT, str(e))
                 else:
-                    await context.abort(
-                        grpc.StatusCode.INTERNAL,
-                        "Internal processing error"
-                    )
+                    await context.abort(grpc.StatusCode.INTERNAL, "Internal processing error")
 
     async def _validate_request(self, request: dict[str, Any]) -> bool:
         """
@@ -244,11 +224,7 @@ class AdvancedHandler:
             span.set_attribute("validation.result", "valid")
             return True
 
-    async def _do_processing(
-        self,
-        request: dict[str, Any],
-        parent_span: trace.Span
-    ) -> dict[str, Any]:
+    async def _do_processing(self, request: dict[str, Any], parent_span: trace.Span) -> dict[str, Any]:
         """
         Perform actual processing with nested tracing.
 
@@ -260,11 +236,11 @@ class AdvancedHandler:
             Processing result
         """
         import time
+
         start_time = time.time()
 
         with self.tracer.start_as_current_span(
-            "do_processing",
-            context=trace.set_span_in_context(parent_span)
+            "do_processing", context=trace.set_span_in_context(parent_span)
         ) as span:
             span.set_attribute("processing.type", request.get("type", "default"))
 
@@ -292,7 +268,7 @@ class AdvancedHandler:
                 "processed_data": f"Processed: {request['data']}",
                 "processing_time_ms": processing_time_ms,
                 "handler": self.name,
-                "metrics": dict(self.metrics)  # Include current metrics
+                "metrics": dict(self.metrics),  # Include current metrics
             }
 
     async def _compute_operation(self, data: Any) -> None:
@@ -328,7 +304,7 @@ class AdvancedHandler:
                 "rate_limiting_enabled": rpcplugin_config.plugin_rate_limit_enabled,
                 "health_checks_enabled": rpcplugin_config.plugin_health_service_enabled,
                 "log_level": rpcplugin_config.plugin_log_level,
-            }
+            },
         }
 
 
@@ -341,7 +317,7 @@ async def main():
             "health_checks": rpcplugin_config.plugin_health_service_enabled,
             "telemetry": True,
             "type_safety": True,
-        }
+        },
     )
 
     try:
@@ -354,10 +330,7 @@ async def main():
             logger.warning("Handler doesn't fully implement RPCPluginHandler protocol")
 
         # Create and start server
-        server = plugin_server(
-            protocol=protocol,
-            handler=handler
-        )
+        server = plugin_server(protocol=protocol, handler=handler)
 
         logger.info(
             "Advanced plugin server ready",
@@ -366,7 +339,7 @@ async def main():
                 "enabled": rpcplugin_config.plugin_rate_limit_enabled,
                 "requests_per_second": rpcplugin_config.plugin_rate_limit_requests_per_second,
                 "burst_capacity": rpcplugin_config.plugin_rate_limit_burst_capacity,
-            }
+            },
         )
 
         # Start serving
@@ -375,12 +348,7 @@ async def main():
     except KeyboardInterrupt:
         logger.info("Server stopped by user")
     except Exception as e:
-        logger.error(
-            "Server failed to start",
-            error=str(e),
-            error_type=type(e).__name__,
-            exc_info=True
-        )
+        logger.error("Server failed to start", error=str(e), error_type=type(e).__name__, exc_info=True)
         raise
 
 
