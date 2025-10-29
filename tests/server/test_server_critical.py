@@ -95,10 +95,4 @@ async def test_controller_delayed_shutdown_windows_line212() -> None:
         mock_sleep.assert_called_once()
         mock_exit.assert_called_once_with(0)
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

@@ -10,8 +10,10 @@ Shows the absolute basics of creating a plugin server.
 """
 
 import asyncio
-from pyvider.rpcplugin import plugin_protocol, plugin_server
+
 from provide.foundation import logger
+
+from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 
 async def main():

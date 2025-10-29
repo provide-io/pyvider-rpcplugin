@@ -270,7 +270,4 @@ def test_validate_magic_cookie_explicit_none_empty_key(monkeypatch) -> None:
             magic_cookie_key="key", magic_cookie_value="val", magic_cookie=""
         )
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

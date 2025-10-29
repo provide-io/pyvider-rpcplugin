@@ -205,7 +205,4 @@ async def test_health_service_not_serving_when_unhealthy(
         except Exception as cleanup_error:
             logger.warning(f"Error during test cleanup: {cleanup_error}")
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

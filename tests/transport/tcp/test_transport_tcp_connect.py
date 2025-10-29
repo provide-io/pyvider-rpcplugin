@@ -190,9 +190,4 @@ async def test_listen_already_running_and_endpoint_set(mocker):
     socket_spy.assert_not_called() # Ensure no new socket was created
     await transport.close() # Clean up transport
 
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

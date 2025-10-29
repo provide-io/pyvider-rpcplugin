@@ -329,9 +329,4 @@ async def test_read_handshake_stdout_becomes_none(mocker):
         await read_handshake_response(mock_process)
     assert mock_process.stdout is None
 
-# 🐍🏗️🤝
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

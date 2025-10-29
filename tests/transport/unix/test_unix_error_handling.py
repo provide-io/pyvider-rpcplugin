@@ -143,10 +143,4 @@ async def test_unix_socket_connect_timeout() -> None:
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)
 
-
-# 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

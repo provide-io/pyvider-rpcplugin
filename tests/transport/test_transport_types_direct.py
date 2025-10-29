@@ -64,10 +64,4 @@ def test_transport_type() -> None:
     # so focusing on static type checking and basic runtime assignability is preferred.
     pass  # Test passes if MyPy is satisfied and runtime calls don't fail
 
-
-# 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

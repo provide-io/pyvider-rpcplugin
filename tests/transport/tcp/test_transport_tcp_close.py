@@ -239,10 +239,4 @@ async def test_close_server_wait_closed_generic_exception(mocker):
     mock_server.wait_closed.assert_called_once()
     assert transport._server is None
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

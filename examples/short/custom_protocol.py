@@ -11,9 +11,11 @@ Shows how to create a custom protocol wrapper.
 
 import asyncio
 from typing import Any
+
+from provide.foundation import logger
+
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
 
 
 class CustomProtocol(RPCPluginProtocol):

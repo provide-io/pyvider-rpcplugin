@@ -131,7 +131,4 @@ def reset_rpcplugin_config_singleton():
     # Foundation config loads fresh from environment each time
     # No singleton cleanup needed
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

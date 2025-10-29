@@ -72,10 +72,4 @@ def test_is_valid_tcp_endpoint_empty_host_specific():
     """Test specifically for an empty host part."""
     assert not is_valid_tcp_endpoint(":1234")
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

@@ -113,7 +113,4 @@ async def test_setup_server_add_port_failure(
         with pytest.raises(TransportError, match=expected_match):
             await server._setup_server()
 
-
-# 🐍🔌🧪🪄
-
 # 📞🔌🔚

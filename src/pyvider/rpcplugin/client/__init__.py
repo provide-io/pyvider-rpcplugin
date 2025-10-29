@@ -30,8 +30,4 @@ __all__ = [
     "SecureRpcClientT",
 ]
 
-
-
-# 🐍🔌🚀🪄
-
 # 📞🔌🔚

@@ -10,8 +10,10 @@ Demonstrates enabling request rate limiting.
 """
 
 import asyncio
-from pyvider.rpcplugin import plugin_protocol, plugin_server, configure
+
 from provide.foundation import logger
+
+from pyvider.rpcplugin import configure, plugin_protocol, plugin_server
 
 
 async def main():
