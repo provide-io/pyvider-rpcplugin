@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/config/validators.py
 #
-
 """
 Validation functions for RPC Plugin configuration values.
 
@@ -72,5 +70,3 @@ def validate_transport_list(value: str | list[str]) -> list[str]:
                 f"Invalid transport '{transport}'. Must be one of: {DEFAULT_SUPPORTED_TRANSPORTS}"
             )
     return str_list
-
-# 📞🔌🔚

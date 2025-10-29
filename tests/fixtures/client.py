@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/client/conftest.py
 
 import pytest_asyncio
 import subprocess
@@ -100,4 +95,7 @@ async def test_client_command():
     """Test command to launch the plugin process."""
     return ["python", "-m", "dummy_plugin"]
 
-# 📞🔌🔚
+
+### 🐍🏗🧪️
+
+# 🐍🔌🖥️🪄

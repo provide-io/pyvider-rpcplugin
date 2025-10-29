@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/transport/unix/transport.py
 #
-
 """
 Unix Domain Socket Transport Implementation.
 
@@ -510,5 +508,3 @@ class UnixSocketTransport(RPCPluginTransport):
             self.endpoint = None
             self._closing = False
             logger.debug("📞🔒✅ Unix socket transport closed completely")
-
-# 📞🔌🔚

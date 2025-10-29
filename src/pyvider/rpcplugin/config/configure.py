@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/config/configure.py
 #
-
 """
 Configuration helper functions for the RPC Plugin framework.
 
@@ -72,5 +70,3 @@ def configure(
 
     except Exception as e:
         raise ConfigError(f"Failed to configure RPC plugin: {e}") from e
-
-# 📞🔌🔚

@@ -1,8 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
+# tests/core/test_types_connection_client.py
 """Tests for connection and secure RPC client type validation."""
 
 import inspect
@@ -413,5 +409,3 @@ def test_is_valid_secure_rpc_client_false_not_async(mocker: object) -> None:
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2
-
-# 📞🔌🔚

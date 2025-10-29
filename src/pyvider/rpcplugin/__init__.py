@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/__init__.py
 #
-
 """
 Pyvider RPC Plugin Package.
 
@@ -10,9 +8,7 @@ This package exports the main classes and exceptions for the Pyvider RPC Plugin 
 making them available for direct import from `pyvider.rpcplugin`.
 """
 
-from provide.foundation.utils.versioning import get_version
-__version__ = get_version("pyvider-rpcplugin", caller_file=__file__)
-
+from pyvider.rpcplugin._version import __version__
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
@@ -56,4 +52,7 @@ __all__ = [
     "rpcplugin_config",
 ]
 
-# 📞🔌🔚
+# 🐍🏗️🔌
+
+
+# 🐍🔌🚀🪄

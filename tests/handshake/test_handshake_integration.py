@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/handshake/test_handshake_integration.py
 
 import asyncio
 import io
@@ -283,4 +278,8 @@ async def test_certificate_handling_in_handshake():
     # Clean up
     await transport.close()
 
-# 📞🔌🔚
+
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

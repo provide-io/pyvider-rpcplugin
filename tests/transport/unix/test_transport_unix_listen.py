@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_transport_unix_listen.py
 
 import asyncio
 import os
@@ -254,4 +249,7 @@ async def test_unix_listen_path_no_directory(mocker):
     await transport.close()
     await asyncio.sleep(0.1)
 
-# 📞🔌🔚
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

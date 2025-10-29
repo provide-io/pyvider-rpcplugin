@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/client/connection.py
 #
-
 """
 Client Connection Management.
 
@@ -217,4 +215,8 @@ class ClientConnection:
             return NotImplemented
         return id(self) == id(other)
 
-# 📞🔌🔚
+
+# 🐍🏗️🔌
+
+
+# 🐍🔌📄🪄

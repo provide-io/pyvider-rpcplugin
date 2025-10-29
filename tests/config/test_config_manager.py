@@ -1,8 +1,3 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """
 Tests for configuration manager integration.
 
@@ -402,5 +397,3 @@ class TestConfigManagerIntegration:
         assert "test" not in list_plugin_configs()
         assert get_plugin_config("test") is None
         assert len(export_all_plugin_configs()) == 0
-
-# 📞🔌🔚

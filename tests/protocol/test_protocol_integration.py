@@ -1,9 +1,4 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_protocol_integration.py
 
 import asyncio
 import pytest
@@ -461,4 +456,8 @@ async def test_controller_shutdown_with_timeout_consolidated(
             except Exception as e:
                 pytest.fail(f"Controller shutdown test failed: {e}")
 
-# 📞🔌🔚
+
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

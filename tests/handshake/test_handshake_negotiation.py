@@ -1,9 +1,5 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+# pyvider/rpcplugin/tests/handshake/test_handshake_negotiate.py
 
-"""TODO: Add module docstring."""
 
 import pytest
 
@@ -140,4 +136,5 @@ async def test_negotiate_transport_prefers_unix() -> None:
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
-# 📞🔌🔚
+
+# 🐍🔌🧪🪄
