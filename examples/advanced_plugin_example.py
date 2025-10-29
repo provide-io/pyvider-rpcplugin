@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""
-Advanced RPC Plugin Example
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Advanced RPC Plugin Example
 
 Demonstrates:
 - Rate limiting with token bucket
@@ -12,8 +14,7 @@ Demonstrates:
 - Structured logging with Foundation
 
 This example shows a production-ready plugin implementation
-with all advanced features enabled.
-"""
+with all advanced features enabled."""
 
 import asyncio
 import os
@@ -355,3 +356,5 @@ async def main():
 if __name__ == "__main__":
     # Run the advanced plugin
     asyncio.run(main())
+
+# 📞🔌🔚

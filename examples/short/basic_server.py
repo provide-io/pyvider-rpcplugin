@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""
-Minimal plugin server example (15 lines).
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Minimal plugin server example (15 lines).
 
-Shows the absolute basics of creating a plugin server.
-"""
+Shows the absolute basics of creating a plugin server."""
 
 import asyncio
 
@@ -24,3 +25,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 📞🔌🔚

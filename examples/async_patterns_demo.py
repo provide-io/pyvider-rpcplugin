@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Advanced Async Patterns - Best practices for async RPC operations.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Advanced Async Patterns - Best practices for async RPC operations."""
 
 import asyncio
 from collections.abc import AsyncGenerator
@@ -122,6 +123,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍⚡
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

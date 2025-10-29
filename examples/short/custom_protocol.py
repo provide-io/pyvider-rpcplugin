@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""
-Custom protocol example (30 lines).
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Custom protocol example (30 lines).
 
-Shows how to create a custom protocol wrapper.
-"""
+Shows how to create a custom protocol wrapper."""
 
 import asyncio
 from typing import Any
@@ -38,3 +39,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 📞🔌🔚

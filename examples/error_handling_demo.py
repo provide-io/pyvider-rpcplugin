@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Error Handling - Robust error management patterns.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Error Handling - Robust error management patterns."""
 
 import asyncio
 from collections.abc import (  # For circuit breaker and attempt_primary_service
@@ -150,6 +151,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍⚠️
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

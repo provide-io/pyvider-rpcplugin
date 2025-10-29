@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-# examples/direct_client_connection.py
-"""
-Demonstrates a client connecting directly to an independently running
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Demonstrates a client connecting directly to an independently running
 pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
 This contrasts with examples that use `plugin_client` to launch the server.
@@ -17,8 +18,7 @@ To run this example:
    is true or when run as `__main__`. It also defaults to PLUGIN_AUTO_MTLS=False.
 2. This script (`direct_client_connection.py`) will automatically read the
    socket path from `dummy_server_socket.txt`.
-3. Run this script: `python examples/direct_client_connection.py`
-"""
+3. Run this script: `python examples/direct_client_connection.py`"""
 
 import asyncio
 from pathlib import Path
@@ -140,4 +140,4 @@ async def run_direct_client() -> None:
 if __name__ == "__main__":
     asyncio.run(run_direct_client())
 
-# 🐍🔌🖥️🪄
+# 📞🔌🔚
