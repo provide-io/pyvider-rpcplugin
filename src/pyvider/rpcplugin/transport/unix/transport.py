@@ -1,13 +1,12 @@
 #
-# pyvider/rpcplugin/transport/unix/transport.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Unix Domain Socket Transport Implementation.
+"""Unix Domain Socket Transport Implementation.
 
 This module provides the `UnixSocketTransport` class, an implementation of the
 `RPCPluginTransport` interface for communication over Unix domain sockets.
-It includes logic for socket creation, connection handling, and robust cleanup.
-"""
+It includes logic for socket creation, connection handling, and robust cleanup."""
 
 import asyncio
 import errno
@@ -508,3 +507,5 @@ class UnixSocketTransport(RPCPluginTransport):
             self.endpoint = None
             self._closing = False
             logger.debug("📞🔒✅ Unix socket transport closed completely")
+
+# 📞🔌🔚

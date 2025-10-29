@@ -1,13 +1,13 @@
 #
-# pyvider/rpcplugin/transport/tcp.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 """pyvider.rpcplugin.transport.tcp
 --------------------------------
 TCP Socket Transport implementation using asyncio.
 Uses Python 3.11+ features such as TypeGuard and structural pattern matching.
 Logging uses a three-emoji system:
-  [Component][Action][Result] - e.g. "🔌🚀✅" means Transport starting successfully.
-"""
+  [Component][Action][Result] - e.g. "🔌🚀✅" means Transport starting successfully."""
 
 import asyncio
 import socket
@@ -351,8 +351,4 @@ class TCPSocketTransport(RPCPluginTransport):
         self.endpoint = None
         logger.debug("🔌🔒✅: TCP socket transport closed completely")
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

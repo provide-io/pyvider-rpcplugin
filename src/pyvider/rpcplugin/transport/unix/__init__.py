@@ -1,12 +1,11 @@
 #
-# pyvider/rpcplugin/transport/unix/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Unix Domain Socket Transport Package.
+"""Unix Domain Socket Transport Package.
 
 This package provides Unix domain socket transport implementation and utilities
-for the Pyvider RPC Plugin system.
-"""
+for the Pyvider RPC Plugin system."""
 
 from provide.foundation.logger import get_logger
 
@@ -21,4 +20,4 @@ __all__ = [
     "normalize_unix_path",
 ]
 
-# 🐍🏗️🔌
+# 📞🔌🔚

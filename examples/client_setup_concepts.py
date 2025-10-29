@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Client Connection Examples - Various client implementation patterns.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Client Connection Examples - Various client implementation patterns."""
 
 import asyncio
 
@@ -87,6 +88,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔗
-
-# 🐍🔌🖥️🪄
+# 📞🔌🔚

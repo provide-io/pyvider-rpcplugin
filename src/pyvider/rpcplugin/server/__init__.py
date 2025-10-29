@@ -1,14 +1,12 @@
 #
-# pyvider/rpcplugin/server/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Pyvider RPC Plugin Server Package.
+"""Pyvider RPC Plugin Server Package.
 
 This package provides the core components for creating RPC plugin servers,
-including the main `RPCPluginServer` class and network handling components.
-"""
+including the main `RPCPluginServer` class and network handling components."""
 
-# Import additional items from other modules that were previously in server.py
 from grpc.aio import server as GRPCServer
 from provide.foundation.logger import get_logger
 
@@ -42,4 +40,4 @@ __all__ = [
     "validate_magic_cookie",
 ]
 
-# 🐍🏗️🔌
+# 📞🔌🔚
