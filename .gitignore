@@ -414,3 +414,4 @@ build
 # Synced theme files (source: provide-foundry/shared-theme/)
 docs/.shared-theme/
 *.key
+bf-*.txt
