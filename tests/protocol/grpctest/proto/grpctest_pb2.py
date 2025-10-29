@@ -56,5 +56,3 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_PINGPONG']._serialized_start=741
   _globals['_PINGPONG']._serialized_end=808
 # @@protoc_insertion_point(module_scope)
-
-# 🐍🔌🧪🪄
