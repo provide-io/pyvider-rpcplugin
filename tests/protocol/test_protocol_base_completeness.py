@@ -1,5 +1,7 @@
-# tests/protocol/test_protocol_base_completeness.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 from typing import Any
 from provide.testkit.mocking import MagicMock
@@ -63,8 +65,4 @@ async def test_complete_implementation_methods() -> None:
     mock_handler = MagicMock()
     await protocol.add_to_server(mock_server, mock_handler)
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚
