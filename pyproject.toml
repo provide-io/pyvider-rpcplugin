@@ -40,34 +40,6 @@ dev = [
 docs = [
     "provide-testkit[docs]",
 ]
-################################################################################
-# hatch
-################################################################################
-
-[tool.hatch.envs.default]
-dependencies = []
-
-[tool.hatch.envs.test.scripts]
-test = "pytest {args:tests}"
-coverage = "pytest --cov=pyvider.rpcplugin --cov-report=term-missing"
-lint = "ruff check src tests"
-format = "ruff format src tests"
-typecheck = "pyre check"
-security = "bandit -r src"
-
-[tool.hatch.envs.default.scripts]
-test = "pytest -n auto"
-run = "python3"
-
-[tool.hatch.metadata.targets.wheel]
-packages = [
-    { include = "pyvider.rpcplugin", from = "src" }
-]
-
-################################################################################
-# pytest
-################################################################################
-
 [tool.pytest.ini_options]
 log_cli = true
 # log_cli_level = "DEBUG"
