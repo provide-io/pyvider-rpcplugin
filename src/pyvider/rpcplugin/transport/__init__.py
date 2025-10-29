@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/transport/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """Transport Layer for Pyvider RPC Plugin
 ======================================
 
@@ -30,7 +32,8 @@ __all__ = [
     "UnixSocketTransport",
 ]
 
-# 🐍🏗️🔌
 
 
 # 🐍🔌🚀🪄
+
+# 📞🔌🔚

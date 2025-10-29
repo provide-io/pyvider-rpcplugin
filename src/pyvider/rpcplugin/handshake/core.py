@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/handshake/core.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """Core handshake functionality for the RPC plugin system.
 
 This module contains the primary handshake configuration, validation,
@@ -492,3 +494,5 @@ def _parse_handshake_response_impl(
     except Exception as e:
         logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
+
+# 📞🔌🔚
