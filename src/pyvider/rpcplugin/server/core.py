@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/server/core.py
 #
-
 """
 Core RPCPluginServer class definition and lifecycle management.
 
@@ -470,5 +468,3 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             sys.exit(0)
 
         logger.info("✅ RPCPluginServer stopped")
-
-# 📞🔌🔚

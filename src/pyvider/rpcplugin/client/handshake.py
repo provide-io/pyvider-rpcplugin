@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/client/handshake.py
 #
-
 """
 Client handshake functionality for RPC plugin connections.
 
@@ -537,5 +535,3 @@ class ClientHandshakeMixin:
         pem_cert += "-----END CERTIFICATE-----"
 
         return pem_cert
-
-# 📞🔌🔚

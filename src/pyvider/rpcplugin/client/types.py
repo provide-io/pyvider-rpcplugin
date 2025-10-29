@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/client/types.py
 #
-
 """
 Type Definitions for Pyvider RPC Plugin Client.
 
@@ -38,4 +36,8 @@ class SecureRpcClientT(Protocol):
     async def _create_grpc_channel(self) -> None: ...
     async def close(self) -> None: ...
 
-# 📞🔌🔚
+
+# 🐍🏗️🔌
+
+
+# 🐍🔌📄🪄

@@ -1,8 +1,6 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/client/process.py
 #
-
 """
 Process management and gRPC operations for RPC plugin clients.
 
@@ -384,5 +382,3 @@ class ClientProcessMixin:
             raise ProtocolError(f"gRPC error opening broker subchannel {sub_id}: {e}") from e
         except Exception as e:
             raise ProtocolError(f"Error opening broker subchannel {sub_id}: {e}") from e
-
-# 📞🔌🔚

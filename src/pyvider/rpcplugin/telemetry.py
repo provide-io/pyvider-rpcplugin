@@ -1,8 +1,7 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/telemetry.py
 #
-
+# pyre-ignore-all-errors
 """
 OpenTelemetry integration for RPC Plugin framework.
 
@@ -148,5 +147,3 @@ __all__ = [
     "get_rpc_tracer",
     "is_telemetry_available",
 ]
-
-# 📞🔌🔚
