@@ -58,6 +58,7 @@ async def streaming_example() -> None:
     # 'async for' iterates over an asynchronous generator or iterable.
     # It awaits the next item from the stream.
     async for item in mock_data_stream():
+        logger.info(f"  ✅ Received: {item}")
 
 
 async def timeout_and_retry_example() -> None:
@@ -102,7 +103,6 @@ async def timeout_and_retry_example() -> None:
             await asyncio.sleep(delay)
 
 
-
 async def main() -> None:
     """Run async pattern examples."""
     logger.info("🚀 Advanced Async Patterns Examples")
@@ -112,7 +112,6 @@ async def main() -> None:
     await streaming_example()
     await asyncio.sleep(0.5)
     await timeout_and_retry_example()
-
 
 
 if __name__ == "__main__":
