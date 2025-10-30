@@ -1,5 +1,6 @@
 #
-# pyvider/rpcplugin/health_servicer.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 """
 gRPC Health Checking Servicer Implementation.
@@ -158,8 +159,4 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         if False:  # pylint: disable=using-constant-test
             yield health_pb2.HealthCheckResponse()
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

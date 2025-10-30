@@ -1,5 +1,7 @@
-# tests/transport/test_transport_types_direct.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 from typing import Protocol, runtime_checkable  # Keep existing typing imports
 
 from pyvider.rpcplugin.transport.types import TransportType
@@ -59,8 +61,4 @@ def test_transport_type() -> None:
     # so focusing on static type checking and basic runtime assignability is preferred.
     pass  # Test passes if MyPy is satisfied and runtime calls don't fail
 
-
-# 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

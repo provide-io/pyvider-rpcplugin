@@ -1,5 +1,7 @@
-# tests/client/test_client_lifecycle.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import asyncio  # Make sure asyncio is imported
 from provide.testkit.mocking import patch, MagicMock, AsyncMock
@@ -437,5 +439,4 @@ async def test_aexit_shutdown_plugin_exception(client_instance, mocker):
     # For now, we are just checking if the methods are called.
     # If this passes, then we re-introduce the side_effect and log check.
 
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

@@ -1,3 +1,7 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 """
 Tests for server/core.py to improve code coverage.
 
@@ -334,5 +338,4 @@ def temp_unix_socket_path():
     if os.path.exists(path):
         os.unlink(path)
 
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

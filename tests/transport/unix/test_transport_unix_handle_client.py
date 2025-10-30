@@ -1,5 +1,7 @@
-# tests/transport/unix/test_transport_unix_handle_client.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 import os
 import pytest
@@ -167,5 +169,4 @@ async def test_handle_client_cancelled(mocker):
 
 ################################################################################
 
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

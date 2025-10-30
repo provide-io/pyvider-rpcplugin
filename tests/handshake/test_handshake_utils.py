@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-# tests/handshake/test_handshake_utils.py
-
-
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
     is_valid_handshake_parts,
@@ -69,8 +69,4 @@ def test_handshake_config_attrs():
     assert config.protocol_versions == [1, 2, 3]
     assert config.supported_transports == ["tcp", "unix"]
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚
