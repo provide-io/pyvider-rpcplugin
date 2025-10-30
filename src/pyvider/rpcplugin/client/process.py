@@ -146,7 +146,9 @@ class ClientProcessMixin:
 
     def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        self.logger.debug(f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}")
+        self.logger.debug(
+            f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"
+        )
 
         options: list[tuple[str, int | bool | str]] = [
             ("grpc.keepalive_time_ms", rpcplugin_config.plugin_grpc_keepalive_time_ms),
@@ -164,7 +166,9 @@ class ClientProcessMixin:
             options.append(("grpc.ssl_target_name_override", "localhost"))
             self.logger.info("✅ Added SSL target name override 'localhost' for Unix socket + TLS connection")
         else:
-            self.logger.debug(f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}")
+            self.logger.debug(
+                f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"
+            )
 
         return options
 

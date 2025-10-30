@@ -4,11 +4,14 @@ Minimal plugin client example (20 lines).
 
 Shows the absolute basics of connecting to a plugin server.
 """
+
 import asyncio
-import sys
 from pathlib import Path
-from pyvider.rpcplugin import plugin_client
+import sys
+
 from provide.foundation import logger
+
+from pyvider.rpcplugin import plugin_client
 
 
 async def main():
