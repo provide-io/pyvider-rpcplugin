@@ -1,11 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
 #
-
-"""TODO: Add module docstring."""
-
-# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -14,7 +7,7 @@
 --------------------------------
 TCP Socket Transport implementation using asyncio.
 Uses Python 3.11+ features such as TypeGuard and structural pattern matching.
-Logging uses a three-emoji system:
+"""
 
 import asyncio
 import socket
