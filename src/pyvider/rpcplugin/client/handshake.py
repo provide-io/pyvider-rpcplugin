@@ -273,9 +273,7 @@ class ClientHandshakeMixin:
                 }
                 normalized_curve = curve_map.get(curve_name.lower(), curve_name)
 
-                self.logger.debug(
-                    f"Generating auto-mTLS client certificate with curve: {normalized_curve}"
-                )
+                self.logger.debug(f"Generating auto-mTLS client certificate with curve: {normalized_curve}")
 
                 cert_obj = Certificate.create_self_signed_client_cert(
                     common_name="pyvider.rpcplugin.autogen.client",
@@ -286,9 +284,7 @@ class ClientHandshakeMixin:
                 )
                 self.client_cert = cert_obj.cert_pem
                 self.client_key_pem = cert_obj.key_pem
-                self.logger.debug(
-                    f"Generated auto-mTLS client certificate with {normalized_curve} curve."
-                )
+                self.logger.debug(f"Generated auto-mTLS client certificate with {normalized_curve} curve.")
             except Exception as e:
                 raise SecurityError(f"Failed to auto-generate client certificate: {e}") from e
 
