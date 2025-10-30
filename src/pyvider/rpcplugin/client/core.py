@@ -1,11 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
 #
-
-"""TODO: Add module docstring."""
-
-# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -215,6 +208,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             )
 
             if terminated:
+                self.logger.debug("✅ Plugin process terminated gracefully.")
             else:
                 self.logger.warning("⚠️ Plugin process was force-killed.")
 
