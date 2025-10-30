@@ -1,14 +1,13 @@
 #
-# pyvider/rpcplugin/transport/base.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Base Abstract Class for RPC Plugin Transports.
+"""Base Abstract Class for RPC Plugin Transports.
 
 This module defines `RPCPluginTransport`, an abstract base class (ABC)
 that outlines the contract for all transport implementations within the
 Pyvider RPC Plugin system. Concrete transport classes (e.g., for TCP or Unix sockets)
-must inherit from this class and implement its abstract methods.
-"""
+must inherit from this class and implement its abstract methods."""
 
 import abc
 
@@ -82,8 +81,4 @@ class RPCPluginTransport(abc.ABC):
         """
         ...
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌🏛️🪄
+# 📞🔌🔚

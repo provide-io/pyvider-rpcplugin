@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""
-Server with TCP transport (20 lines).
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Server with TCP transport (20 lines).
 
-Demonstrates using TCP instead of Unix sockets.
-"""
+Demonstrates using TCP instead of Unix sockets."""
 
 import asyncio
 
@@ -26,3 +27,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# 📞🔌🔚

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Transport Options - Unix socket vs TCP configuration comparison.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Transport Options - Unix socket vs TCP configuration comparison."""
 
 import asyncio
 from pathlib import Path
@@ -66,6 +67,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🚚
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

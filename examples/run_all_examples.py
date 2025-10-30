@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-# examples/run_all_examples.py
-"""
-Runs all relevant Python example scripts and checks for unexpected failures.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Runs all relevant Python example scripts and checks for unexpected failures."""
 
 import asyncio
 import os
@@ -235,4 +235,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔌📄🪄
+# 📞🔌🔚

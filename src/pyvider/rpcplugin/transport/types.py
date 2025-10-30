@@ -1,5 +1,6 @@
 #
-# pyvider/rpcplugin/transport/types.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 """Type definitions for the Pyvider RPC plugin transport system.
 
@@ -16,8 +17,7 @@ Usage:
 
     def setup_server(transport: TransportT) -> None:
         # Type-safe transport handling
-        ...
-"""
+        ..."""
 
 import asyncio
 from typing import Protocol, TypeAlias, TypeVar
@@ -69,7 +69,4 @@ __all__ = [
     "WriterT",
 ]
 
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

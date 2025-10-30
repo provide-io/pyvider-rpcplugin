@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""
-OpenTelemetry Telemetry Demo
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""OpenTelemetry Telemetry Demo
 
 This example demonstrates the CORRECT OpenTelemetry pattern for libraries:
 - APPLICATION configures OpenTelemetry (sets service.name)
@@ -27,8 +29,7 @@ Usage:
     export PLUGIN_OTEL_ENDPOINT=http://localhost:5080/api/default
     export OPENOBSERVE_USER=someuserexample@provide.test
     export OPENOBSERVE_PASSWORD=password
-    python examples/telemetry_demo.py
-"""
+    python examples/telemetry_demo.py"""
 
 import asyncio
 import os
@@ -203,3 +204,5 @@ if __name__ == "__main__":
 
         traceback.print_exc()
         sys.exit(1)
+
+# 📞🔌🔚

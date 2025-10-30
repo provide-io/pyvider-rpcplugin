@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Custom Protocols - Custom protocol definitions and middleware patterns.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Custom Protocols - Custom protocol definitions and middleware patterns."""
 
 import asyncio
 from collections.abc import (  # For CustomProtocol
@@ -183,6 +184,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔧
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

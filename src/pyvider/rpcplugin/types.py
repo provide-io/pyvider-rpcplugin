@@ -1,6 +1,8 @@
 #
-# pyvider/rpcplugin/types.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+"""TODO: Add module docstring."""
 
 from __future__ import annotations
 
@@ -423,8 +425,4 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
     logger.debug("🧰🔍✅ Checking if object implements RPCPluginTransport protocol")
     return isinstance(obj, RPCPluginTransport)
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 📞🔌🔚
