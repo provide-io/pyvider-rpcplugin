@@ -1,9 +1,9 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-"""
-OpenTelemetry integration for RPC Plugin framework.
+
+"""OpenTelemetry integration for RPC Plugin framework.
 
 This module provides access to OpenTelemetry tracing for RPC operations.
 
@@ -44,8 +44,7 @@ Note:
     via instrumentation.library.name="pyvider.rpcplugin".
 
     All traces will appear under the application's service.name, making
-    observability unified rather than fragmented.
-"""
+    observability unified rather than fragmented."""
 
 from __future__ import annotations
 
@@ -148,4 +147,4 @@ __all__ = [
     "is_telemetry_available",
 ]
 
-# 📞🔌🔚
+# 🔌📞🔚

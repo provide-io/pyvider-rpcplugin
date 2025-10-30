@@ -1,7 +1,8 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Network setup, handshake, and credential handling for RPC plugin servers.
 
 This module contains the ServerNetworkMixin with methods for handling
@@ -260,7 +261,6 @@ class ServerNetworkMixin:
             logger.info(f"🔒 Server starting in secure mode on {bind_address} (port_num: {port_num})")
         else:
             port_num = server.add_insecure_port(bind_address)
-            logger.info(f"🔌 Server starting in insecure mode on {bind_address} (port_num: {port_num})")
 
         if isinstance(transport, TCPSocketTransport):
             self._apply_tcp_port_configuration(transport, port_num)
@@ -345,5 +345,4 @@ class ServerNetworkMixin:
         sys.stdout.buffer.write(f"{response}\n".encode())
         sys.stdout.buffer.flush()
 
-
-# 📞🔌🔚
+# 🔌📞🔚

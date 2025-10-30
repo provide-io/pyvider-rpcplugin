@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """End-to-End Greeter Plugin Client.
 Launches the e2e_greeter_server.py and makes a gRPC call."""
 
@@ -58,13 +59,11 @@ async def main() -> None:
             logger.error("Client connected but gRPC channel is not available.")
             return
 
-        logger.info("✅ Client connected to E2E Greeting server successfully!")
 
         # Create a stub and make an RPC call
         stub = e2e_greeting_pb2_grpc.GreeterStub(client.grpc_channel)
         request_pb = e2e_greeting_pb2.GreetingRequest(name="Real E2E User")
 
-        logger.info(f"📞 Calling Greet method with name: '{request_pb.name}'...")
         response_pb = await stub.Greet(request_pb, timeout=10.0)
 
         logger.info(f"💬 Server replied: '{response_pb.message}'")
@@ -95,4 +94,4 @@ if __name__ == "__main__":
 
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🔌📞🔚

@@ -1,12 +1,12 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/client/process.py
-#
-"""
-Process management and gRPC operations for RPC plugin clients.
+
+"""Process management and gRPC operations for RPC plugin clients.
 
 This module handles subprocess launching, gRPC channel creation,
-stub initialization, and stdio/broker operations.
-"""
+stub initialization, and stdio/broker operations."""
 
 from __future__ import annotations
 
@@ -164,7 +164,6 @@ class ClientProcessMixin:
         # gRPC which hostname to verify the server certificate against.
         if self._transport_name == "unix" and self._server_cert:
             options.append(("grpc.ssl_target_name_override", "localhost"))
-            self.logger.info("✅ Added SSL target name override 'localhost' for Unix socket + TLS connection")
         else:
             self.logger.debug(
                 f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"
@@ -386,3 +385,5 @@ class ClientProcessMixin:
             raise ProtocolError(f"gRPC error opening broker subchannel {sub_id}: {e}") from e
         except Exception as e:
             raise ProtocolError(f"Error opening broker subchannel {sub_id}: {e}") from e
+
+# 🔌📞🔚

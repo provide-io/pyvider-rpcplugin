@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import asyncio
 import socket # Added import
 
@@ -187,4 +190,4 @@ async def test_listen_already_running_and_endpoint_set(mocker):
     socket_spy.assert_not_called() # Ensure no new socket was created
     await transport.close() # Clean up transport
 
-# 📞🔌🔚
+# 🔌📞🔚

@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Server Setup Examples - Various server configuration patterns."""
 
 import asyncio
@@ -45,7 +46,6 @@ class BasicProtocol(RPCPluginProtocol):
         # The service_name is derived from get_grpc_descriptors.
         _, service_name = await self.get_grpc_descriptors()
         logger.info(
-            f"🔌 Service '{service_name}' (conceptual) would be "
             f"registered with handler: {type(handler).__name__}"
         )
 
@@ -87,13 +87,11 @@ async def tcp_server_example() -> RPCPluginServer:
 
     # Log the configured endpoint
     endpoint_info = server.transport.endpoint if server.transport else "No transport"
-    logger.info(f"✅ TCP server configured: {endpoint_info}")
     return server
 
 
 async def unix_server_example() -> RPCPluginServer:
     """Example: Unix socket server configuration."""
-    logger.info("🔌 Unix Socket Server Configuration Example")
 
     import os
     import tempfile
@@ -117,7 +115,6 @@ async def unix_server_example() -> RPCPluginServer:
 
     # Log the configured endpoint
     endpoint_info = server.transport.endpoint if server.transport else "No transport"
-    logger.info(f"✅ Unix socket server configured: {endpoint_info}")
     return server
 
 
@@ -131,10 +128,9 @@ async def main() -> None:
     # Unix socket example
     await unix_server_example()
 
-    logger.info("✅ All server setup examples completed")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🔌📞🔚

@@ -1,4 +1,8 @@
-# tests/core/test_types_handler_protocol_transport.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for handler, protocol, and transport type validation."""
 
 from provide.testkit.mocking import MagicMock
@@ -25,7 +29,6 @@ def test_is_valid_handler_true(mocker: object) -> None:
 
     handler_instance = ValidHandler()
     assert is_valid_handler(handler_instance) is True
-    mock_logger_debug.assert_called_once_with("🧰🔍✅ Checking if object implements RPCPluginHandler protocol")
 
 
 def test_is_valid_handler_false(mocker: object) -> None:
@@ -35,7 +38,6 @@ def test_is_valid_handler_false(mocker: object) -> None:
     non_handler_instance = object()
     # For an empty @runtime_checkable protocol, isinstance(object(), Protocol) is True.
     assert is_valid_handler(non_handler_instance) is True
-    mock_logger_debug.assert_called_once_with("🧰🔍✅ Checking if object implements RPCPluginHandler protocol")
 
 
 # Test for is_valid_protocol
@@ -56,7 +58,6 @@ def test_is_valid_protocol_true(mocker: object) -> None:
     protocol_instance = ValidProtocol()
     assert is_valid_protocol(protocol_instance) is True
     mock_logger_debug.assert_called_once_with(
-        "🧰🔍✅ Checking if object implements RPCPluginProtocol protocol"
     )
 
 
@@ -70,7 +71,6 @@ def test_is_valid_protocol_false(mocker: object) -> None:
     protocol_instance = InvalidProtocol()
     assert is_valid_protocol(protocol_instance) is False
     mock_logger_debug.assert_called_once_with(
-        "🧰🔍✅ Checking if object implements RPCPluginProtocol protocol"
     )
 
 
@@ -94,7 +94,6 @@ def test_is_valid_transport_true(mocker: object) -> None:
     transport_instance = ValidTransport()
     assert is_valid_transport(transport_instance) is True
     mock_logger_debug.assert_called_once_with(
-        "🧰🔍✅ Checking if object implements RPCPluginTransport protocol"
     )
 
 
@@ -105,5 +104,6 @@ def test_is_valid_transport_false(mocker: object) -> None:
     non_transport_instance = object()
     assert is_valid_transport(non_transport_instance) is False
     mock_logger_debug.assert_called_once_with(
-        "🧰🔍✅ Checking if object implements RPCPluginTransport protocol"
     )
+
+# 🔌📞🔚

@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Security and mTLS Configuration - Functional Example.
 This example demonstrates a working mTLS setup between a client and a server
 plugin launched as a subprocess."""
@@ -116,7 +117,6 @@ async def functional_mtls_example() -> None:
             connection_timeout=25.0,
             channel_ready_timeout=25.0,  # Increased from default 10s
         )
-        logger.info("🔧 Client-side mTLS configured programmatically using PEM strings via configure().")
 
         # No need to set os.environ for client-side certs if configure() is
         # respected and not reset before client use. The main issue is ensuring
@@ -155,10 +155,8 @@ async def functional_mtls_example() -> None:
             client = plugin_client(command=dummy_server_command, config={"env": server_env_vars})
 
             await client.start()
-            logger.info("✅ Successfully connected to mTLS-enabled server!")
 
             if client._controller_stub:  # Accessing private member for example check
-                logger.info("✅ Controller stub available, basic connection seems okay.")
             else:
                 logger.error("❌ Controller stub not available after connect.")
 
@@ -170,9 +168,7 @@ async def functional_mtls_example() -> None:
             logger.error(f"❌ An unexpected error occurred: {e}", exc_info=True)
         finally:
             if client:
-                logger.info("🔌 Shutting down client and mTLS-enabled server...")
                 await client.close()
-                logger.info("🔌 Client and server shut down.")
 
     finally:
         # 5. Cleanup
@@ -201,4 +197,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🔌📞🔚

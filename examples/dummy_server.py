@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """A minimal RPC plugin server for the Quick Start example.
 It uses the BasicRPCPluginProtocol and a no-op handler.
 Prints its handshake string to stdout upon successful startup."""
@@ -156,4 +157,4 @@ if __name__ == "__main__":
 
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🔌📞🔚

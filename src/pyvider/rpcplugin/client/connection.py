@@ -1,14 +1,14 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/client/connection.py
-#
-"""
-Client Connection Management.
+
+"""Client Connection Management.
 
 This module defines the `ClientConnection` class, responsible for managing
 the state and I/O operations of a single client connection within the
 Pyvider RPC Plugin system. It includes metrics tracking and supports
-dependency injection for I/O functions to facilitate testing.
-"""
+dependency injection for I/O functions to facilitate testing."""
 
 import asyncio
 from collections.abc import (
@@ -215,8 +215,4 @@ class ClientConnection:
             return NotImplemented
         return id(self) == id(other)
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 🔌📞🔚

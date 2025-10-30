@@ -1,4 +1,10 @@
-# tests/core/test_defaults_validation.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import pytest
 import os
 from pyvider.rpcplugin.config import (
@@ -154,5 +160,4 @@ def test_foundation_field_validation_integration():
     
     logger.info("Foundation field validation integration: OK")
 
-
-# 🐍🔌🧪🪄
+# 🔌📞🔚

@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import pytest
 
 from pyvider.rpcplugin.handshake import HandshakeConfig
@@ -33,4 +36,4 @@ def invalid_handshake_config() -> HandshakeConfig:
         supported_transports=["invalid_transport"],
     )
 
-# 📞🔌🔚
+# 🔌📞🔚

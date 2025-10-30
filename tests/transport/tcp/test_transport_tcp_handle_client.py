@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import asyncio
 from provide.testkit.mocking import AsyncMock
 
@@ -138,4 +141,4 @@ async def test_handle_client_reader_generic_exception():
     writer.close.assert_called_once()
     writer.wait_closed.assert_called_once()
 
-# 📞🔌🔚
+# 🔌📞🔚

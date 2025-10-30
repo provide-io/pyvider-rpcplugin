@@ -1,11 +1,19 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/handshake/negotiation.py
+
+"""TODO: Add module docstring."""
+
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
+
 """Transport and protocol negotiation for the RPC plugin handshake.
 
 This module handles transport negotiation, protocol version negotiation,
-and I/O operations for handshake processes.
-"""
+and I/O operations for handshake processes."""
 
 import asyncio
 import os
@@ -104,7 +112,6 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     supported_versions_config = rpcplugin_config.supported_protocol_versions
     for version in sorted(server_versions, reverse=True):
         if version in supported_versions_config:
-            logger.info(f"🤝✅ Selected protocol version: {version}")
             return version
 
     logger.error(
@@ -192,16 +199,13 @@ async def _try_read_chunk(process: subprocess.Popen[bytes], *, chunk_size: int) 
 def _process_line_candidate(line: str | None, buffer: str) -> tuple[str | None, str, bool]:
     if not line:
         return None, buffer, False
-    logger.debug(f"🤝📥✅ Read line from stdout: '{line}'")
     completed = _buffer_has_complete_handshake(line)
     if completed:
-        logger.debug("🤝📥✅ Complete handshake response found in line")
         return completed, buffer, True
 
     combined_buffer = buffer + line
     completed = _buffer_has_complete_handshake(combined_buffer)
     if completed:
-        logger.debug("🤝📥✅ Complete handshake response assembled from buffer")
         return completed, combined_buffer, True
     return None, combined_buffer, True
 
@@ -223,10 +227,8 @@ async def _process_chunk_candidate(
         return None, buffer, False
 
     new_buffer = buffer + chunk
-    logger.debug(f"🤝📥✅ Read chunk: {len(chunk)} bytes, buffer now has {len(new_buffer)} bytes")
     completed = _buffer_has_complete_handshake(new_buffer)
     if completed:
-        logger.debug("🤝📥✅ Complete handshake response found in buffer after chunk read")
     return completed, new_buffer, True
 
 
@@ -347,5 +349,6 @@ async def create_stderr_relay(
         logger.debug("🤝📤🛑 Stderr relay task ended")
 
     relay_task = asyncio.create_task(_stderr_reader())
-    logger.debug("🤝📤✅ Created stderr relay task")
     return relay_task
+
+# 🔌📞🔚

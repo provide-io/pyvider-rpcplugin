@@ -10,7 +10,6 @@ from pathlib import Path
 import sys
 
 # The exact footer to be used
-FOOTER = "# 📞🔌🔚"
 
 # The placeholder docstring for modules without one
 PLACEHOLDER_DOCSTRING = '"""TODO: Add module docstring."""'
@@ -85,7 +84,6 @@ def conform_file(file_path: str | Path) -> None:
         body = "\n".join(body_lines).strip()
 
         # Remove old footers
-        body = "\n".join(line for line in body.splitlines() if "🔚" not in line and "🐍" not in line and "🏗️" not in line).strip()
 
         # Construct the new header
         header_lines = []
@@ -119,3 +117,5 @@ if __name__ == "__main__":
 
     for file_path in sys.argv[1:]:
         conform_file(file_path)
+
+# 🔌📞🔚

@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """TODO: Add module docstring."""
 
 import asyncio
@@ -173,4 +174,4 @@ if __name__ == "__main__":
     os.environ["PYTHONIOENCODING"] = "UTF-8"
     asyncio.run(run_client())
 
-# 📞🔌🔚
+# 🔌📞🔚

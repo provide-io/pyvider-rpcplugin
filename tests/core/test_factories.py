@@ -1,4 +1,9 @@
-# tests/rpcplugin/test_factories.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 from attrs import define
@@ -291,7 +296,4 @@ def test_plugin_client_none_config(mock_rpc_client_cls):
 # or within the RPCPluginClient itself if it were to do such checks.
 # For now, removing them as the factory's responsibility changed.
 
-# 🐍🧪🏭
-
-
-# 🐍🔌🧪🪄
+# 🔌📞🔚

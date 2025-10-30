@@ -1,15 +1,14 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-"""
-Factory functions for creating Pyvider RPC plugin components.
+
+"""Factory functions for creating Pyvider RPC plugin components.
 
 This module provides convenient factory functions for instantiating core
 components of the Pyvider RPC Plugin system, such as clients, servers,
 and protocols. These factories encapsulate common setup logic and promote
-consistent component creation.
-"""
+consistent component creation."""
 
 from typing import Any, TypeVar, cast
 
@@ -394,5 +393,4 @@ def plugin_client(
     logger.debug(f"🏭 Creating plugin client for command: {command}")
     return RPCPluginClient(command=command, config=config or {})
 
-
-# 📞🔌🔚
+# 🔌📞🔚
