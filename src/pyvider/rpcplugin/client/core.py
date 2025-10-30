@@ -169,6 +169,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 self.logger.warning("⚠️ No controller stub available for shutdown signal.")
         except grpc.RpcError as e:
             # Expected behavior when plugin shuts down immediately
+            pass
         except Exception as e:
             self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
@@ -187,6 +188,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 try:
                     await task
                 except asyncio.CancelledError:
+                    pass  # Expected when cancelling tasks
                 except Exception as e:
                     self.logger.warning(f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True)
 
