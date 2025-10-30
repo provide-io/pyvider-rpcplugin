@@ -176,13 +176,16 @@ class TCPSocketTransport(RPCPluginTransport):
                 writer.write(data)
                 await writer.drain()
         except asyncio.IncompleteReadError as e:
+            pass  # Connection closed during read
         except Exception as e:
+            logger.warning(f"⚠️ Error during connection: {e}", exc_info=True)
         finally:
             try:
                 if not writer.is_closing():
                     writer.close()
                 await writer.wait_closed()
             except Exception as e:
+                pass  # Ignore errors during cleanup
 
     async def connect(self, endpoint: str) -> None:
         """
