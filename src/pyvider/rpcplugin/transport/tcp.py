@@ -129,7 +129,6 @@ class TCPSocketTransport(RPCPluginTransport):
                     return self.endpoint
                 raise TransportError("TCP transport is already configured with an endpoint but it's None.")
 
-
             if self.port == 0:
                 # Find an ephemeral port
                 try:
@@ -137,8 +136,7 @@ class TCPSocketTransport(RPCPluginTransport):
                     temp_sock.bind((self.host, 0))
                     self.port = temp_sock.getsockname()[1]
                     temp_sock.close()
-                    logger.info(
-                    )
+                    logger.info()
                 except OSError as e:
                     raise TransportError(f"Failed to find an ephemeral port: {e}") from e
 
@@ -150,9 +148,7 @@ class TCPSocketTransport(RPCPluginTransport):
             # self._server remains None as gRPC will handle the actual server lifecycle.
             self._server = None
 
-            logger.info(
-                f"(Host: {self.host}, Port: {self.port})"
-            )
+            logger.info(f"(Host: {self.host}, Port: {self.port})")
             return self.endpoint
 
     async def _handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -175,7 +171,7 @@ class TCPSocketTransport(RPCPluginTransport):
                     break
                 writer.write(data)
                 await writer.drain()
-        except asyncio.IncompleteReadError as e:
+        except asyncio.IncompleteReadError:
             pass  # Connection closed during read
         except Exception as e:
             logger.warning(f"⚠️ Error during connection: {e}", exc_info=True)
@@ -184,7 +180,7 @@ class TCPSocketTransport(RPCPluginTransport):
                 if not writer.is_closing():
                     writer.close()
                 await writer.wait_closed()
-            except Exception as e:
+            except Exception:
                 pass  # Ignore errors during cleanup
 
     async def connect(self, endpoint: str) -> None:
@@ -255,8 +251,7 @@ class TCPSocketTransport(RPCPluginTransport):
             # await writer.wait_closed() can hang.
             await asyncio.wait_for(writer.wait_closed(), timeout=5.0)
         except TimeoutError:
-            logger.warning(
-            )
+            logger.warning()
             # If timeout occurs, also attempt to abort the transport
             if (
                 transport_to_abort
@@ -264,15 +259,14 @@ class TCPSocketTransport(RPCPluginTransport):
                 and callable(transport_to_abort.abort)
             ):
                 transport_to_abort.abort()
-        except Exception as e:
+        except Exception:
             # If any other exception occurs, also attempt to abort
             if (
                 transport_to_abort
                 and hasattr(transport_to_abort, "abort")
                 and callable(transport_to_abort.abort)
             ):
-                logger.warning(
-                )
+                logger.warning()
                 transport_to_abort.abort()
 
     async def close(self) -> None:
@@ -288,7 +282,8 @@ class TCPSocketTransport(RPCPluginTransport):
             if self._writer:
                 try:
                     await self._close_writer(self._writer)
-                except Exception as e:
+                except Exception:
+                    pass  # Empty except block
                 finally:
                     self._writer = None
                     self._reader = None
@@ -304,11 +299,11 @@ class TCPSocketTransport(RPCPluginTransport):
                     if server_was_serving:
                         await asyncio.wait_for(self._server.wait_closed(), timeout=5.0)
                     else:  # If it wasn't serving, log that no action was needed.
+                        pass
                 except TimeoutError:
-                    logger.warning(
-                        f"{self.endpoint if self.endpoint else 'unknown'}"
-                    )
-                except Exception as e:
+                    logger.warning(f"{self.endpoint if self.endpoint else 'unknown'}")
+                except Exception:
+                    pass  # Empty except block
                 finally:
                     self._server = None
 
@@ -317,5 +312,6 @@ class TCPSocketTransport(RPCPluginTransport):
             self._running = False
 
         self.endpoint = None
+
 
 # 🔌📞🔚

@@ -39,4 +39,5 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
         """
         pass
 
+
 # 🔌📞🔚

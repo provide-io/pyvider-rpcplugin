@@ -386,4 +386,5 @@ class ClientProcessMixin:
         except Exception as e:
             raise ProtocolError(f"Error opening broker subchannel {sub_id}: {e}") from e
 
+
 # 🔌📞🔚

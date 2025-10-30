@@ -1,11 +1,11 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 
 """TODO: Add module docstring."""
 
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -229,6 +229,7 @@ async def _process_chunk_candidate(
     new_buffer = buffer + chunk
     completed = _buffer_has_complete_handshake(new_buffer)
     if completed:
+        return completed, new_buffer, True
     return completed, new_buffer, True
 
 
@@ -350,5 +351,6 @@ async def create_stderr_relay(
 
     relay_task = asyncio.create_task(_stderr_reader())
     return relay_task
+
 
 # 🔌📞🔚

@@ -160,7 +160,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 self.logger.debug("📤 Shutdown signal sent to plugin.")
             else:
                 self.logger.warning("⚠️ No controller stub available for shutdown signal.")
-        except grpc.RpcError as e:
+        except grpc.RpcError:
             # Expected behavior when plugin shuts down immediately
             pass
         except Exception as e:
@@ -259,7 +259,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         await self._close_transport()
         self._reset_state()
 
-
     async def __aenter__(self) -> RPCPluginClient:
         """Async context manager entry."""
         await self.start()
@@ -278,5 +277,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             self.logger.warning(f"⚠️ Error during shutdown in context manager: {e}", exc_info=True)
         finally:
             await self.close()
+
 
 # 🔌📞🔚

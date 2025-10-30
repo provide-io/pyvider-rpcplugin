@@ -485,4 +485,5 @@ def _parse_handshake_response_impl(
         logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
 
+
 # 🔌📞🔚

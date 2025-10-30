@@ -71,4 +71,5 @@ def validate_transport_list(value: str | list[str]) -> list[str]:
             )
     return str_list
 
+
 # 🔌📞🔚
