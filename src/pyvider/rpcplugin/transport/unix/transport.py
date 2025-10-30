@@ -508,4 +508,5 @@ class UnixSocketTransport(RPCPluginTransport):
             self._closing = False
             logger.debug("📞🔒✅ Unix socket transport closed completely")
 
+
 # 📞🔌🔚
