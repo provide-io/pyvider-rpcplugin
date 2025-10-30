@@ -1,5 +1,6 @@
 #
-# pyvider/rpcplugin/transport/__init__.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 """Transport Layer for Pyvider RPC Plugin
 ======================================
@@ -17,8 +18,7 @@ The transport layer is responsible for:
 1. Listening for connections (server-side)
 2. Connecting to endpoints (client-side)
 3. Managing connection lifecycle and cleanup
-4. Ensuring Go-Python interoperability
-"""
+4. Ensuring Go-Python interoperability"""
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.tcp import TCPSocketTransport
@@ -30,7 +30,4 @@ __all__ = [
     "UnixSocketTransport",
 ]
 
-# 🐍🏗️🔌
-
-
-# 🐍🔌🚀🪄
+# 📞🔌🔚

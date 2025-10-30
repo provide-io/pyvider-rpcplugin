@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Performance Tuning - Performance benchmarking and optimization patterns.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Performance Tuning - Performance benchmarking and optimization patterns."""
 
 import asyncio
 from collections.abc import Generator  # Added for create_generator
@@ -194,6 +195,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍📈
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

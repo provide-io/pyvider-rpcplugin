@@ -1,8 +1,8 @@
 #
-# pyvider/rpcplugin/exception.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Custom Exception Types for Pyvider RPC Plugin.
+"""Custom Exception Types for Pyvider RPC Plugin.
 
 This module defines a hierarchy of custom exceptions used throughout the
 Pyvider RPC Plugin system. These exceptions provide more specific error
@@ -11,8 +11,7 @@ handling.
 
 The base exception is `RPCPluginError`, from which all other plugin-specific
 exceptions inherit. This allows for broad catching of plugin-related errors
-while still enabling fine-grained handling of specific error conditions.
-"""
+while still enabling fine-grained handling of specific error conditions."""
 
 from typing import Any
 
@@ -272,8 +271,4 @@ class SecurityError(RPCPluginError):
     def _default_code(self) -> str:
         return "RPC_SECURITY_ERROR"
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌⚠️🪄
+# 📞🔌🔚

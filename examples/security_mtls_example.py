@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""
-Security and mTLS Configuration - Functional Example.
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Security and mTLS Configuration - Functional Example.
 This example demonstrates a working mTLS setup between a client and a server
-plugin launched as a subprocess.
-"""
+plugin launched as a subprocess."""
 
 import asyncio
 import os
@@ -30,7 +31,6 @@ configure_for_example(clear_env=True)
 
 async def functional_mtls_example() -> None:
     """Functional example of mTLS configuration and operation."""
-    logger.info("🔒🐍 Functional mTLS Configuration Example")
 
     temp_dir_obj = tempfile.TemporaryDirectory(prefix="pyvider_mtls_example_")
     temp_dir_path = Path(temp_dir_obj.name)
@@ -201,6 +201,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔒✨
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""
-Utility functions for pyvider-rpcplugin examples.
-Provides consistent path resolution and environment setup.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Utility functions for pyvider-rpcplugin examples.
+Provides consistent path resolution and environment setup."""
 
 import logging
 import os
@@ -72,7 +73,6 @@ def configure_for_example(clear_env: bool = False) -> None:
     # Configure basic logging
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s [%(levelname)-7s] %(name)s: 🐍 %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
@@ -185,7 +185,4 @@ class DummyHandler:
         dummy_handler_logger.info("DummyHandler: NoOp called (generally not expected in basic examples)")
         return {}
 
-
-# 🐍🛠️
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

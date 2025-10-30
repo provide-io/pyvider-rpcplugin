@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""
-Server Setup Examples - Various server configuration patterns.
-"""
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+"""Server Setup Examples - Various server configuration patterns."""
 
 import asyncio
 from typing import Any  # Moved to top, tuple is built-in for 3.9+ for this usage.
@@ -136,6 +137,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍⚙️
-
-# 🐍🔌📄🪄
+# 📞🔌🔚
