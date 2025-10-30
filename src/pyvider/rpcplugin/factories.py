@@ -394,4 +394,5 @@ def plugin_client(
     logger.debug(f"🏭 Creating plugin client for command: {command}")
     return RPCPluginClient(command=command, config=config or {})
 
+
 # 📞🔌🔚
