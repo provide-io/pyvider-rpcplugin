@@ -1,3 +1,7 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 import subprocess
 
@@ -61,3 +65,5 @@ async def test_launch_process_failure(basic_client: RPCPluginClient, mocker: obj
     mocker.patch("pyvider.rpcplugin.client.process.ManagedProcess", side_effect=RuntimeError("start fail"))
     with pytest.raises(TransportError, match="start fail"):
         await basic_client._launch_process()
+
+# 📞🔌🔚

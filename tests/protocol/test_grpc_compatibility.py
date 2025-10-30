@@ -1,5 +1,7 @@
-# tests/protocol/test_grpc_compatibility.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import importlib
 from provide.testkit.mocking import patch, MagicMock
@@ -61,8 +63,4 @@ def test_version_compatibility_check() -> None:
         # Should not raise
         importlib.reload(grpc_broker_pb2_grpc)
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

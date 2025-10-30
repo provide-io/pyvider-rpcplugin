@@ -1,9 +1,7 @@
-# tests/transport/tcp/test_transport_tcp_handle_client.py
-
-
-# test_tcp_handle_client_called REMOVED - Incompatible with new listen()
-# test_tcp_handle_client_direct REMOVED - Incompatible with new listen()
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 from provide.testkit.mocking import AsyncMock
 
@@ -140,8 +138,4 @@ async def test_handle_client_reader_generic_exception():
     writer.close.assert_called_once()
     writer.wait_closed.assert_called_once()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

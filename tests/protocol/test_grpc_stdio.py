@@ -1,5 +1,7 @@
-# tests/protocol/test_grpc_stdio.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import importlib
 import os  # Added import
@@ -119,8 +121,4 @@ async def test_stdio_experimental_api() -> None:
         )
         mock_unary_stream.assert_called_once()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 📞🔌🔚

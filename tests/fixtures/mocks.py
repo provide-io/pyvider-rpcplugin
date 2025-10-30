@@ -1,6 +1,7 @@
-# tests/fixtures/mocks.py
-
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 import os
 
@@ -244,4 +245,4 @@ async def server_with_mocks(
         with suppress(Exception):
             await server.stop()
 
-# 🐍🔌📄🪄
+# 📞🔌🔚

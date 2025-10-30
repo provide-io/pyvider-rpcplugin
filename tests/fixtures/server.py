@@ -1,5 +1,7 @@
-# tests/fixtures/server.py
-
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import pytest
 import pytest_asyncio
 
@@ -82,7 +84,4 @@ async def server_instance(
         # which is used by the unix_transport fixture, which mock_server_transport might be.
         # No need to check transport_name or os.path.exists here.
 
-
-### 🐍🏗🧪️
-
-# 🐍🔌📄🪄
+# 📞🔌🔚

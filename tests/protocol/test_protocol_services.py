@@ -1,3 +1,7 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 import asyncio
 from typing import Any, AsyncIterator
 
@@ -109,3 +113,5 @@ async def test_stdio_service_stream(monkeypatch) -> None:
 
     assert collected[0].channel == StdioData.STDOUT
     assert collected[1].channel == StdioData.STDERR
+
+# 📞🔌🔚

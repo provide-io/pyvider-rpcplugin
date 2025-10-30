@@ -1,8 +1,8 @@
 #
-# pyvider/rpcplugin/config/manager.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-RPC Plugin Configuration Manager.
+"""RPC Plugin Configuration Manager.
 
 Provides centralized configuration management for multiple RPC plugin instances
 using Foundation's ConfigManager. This enables:
@@ -37,25 +37,23 @@ Examples:
 
 Note:
     This module is completely optional and backward compatible.
-    Direct usage of RPCPluginConfig without the manager continues to work unchanged.
-"""
+    Direct usage of RPCPluginConfig without the manager continues to work unchanged."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import (
+    Any,
+)
 
 from provide.foundation.config import ConfigManager
 
-if TYPE_CHECKING:
-    from pyvider.rpcplugin.config.runtime import RPCPluginConfig
+from pyvider.rpcplugin.config.runtime import RPCPluginConfig
 
-# Global configuration manager for RPC plugins
 _plugin_config_manager: ConfigManager | None = None
 
 
 def get_plugin_config_manager() -> ConfigManager:
-    """Get or create the global RPC plugin configuration manager.
-
+    """Get the singleton ConfigManager instance for RPC plugins.
     Returns:
         ConfigManager instance for RPC plugin configurations
 
@@ -222,3 +220,5 @@ __all__ = [
     "unregister_plugin_config",
     "update_plugin_config",
 ]
+
+# 📞🔌🔚
