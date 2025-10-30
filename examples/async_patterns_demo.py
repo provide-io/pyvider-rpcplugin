@@ -38,6 +38,7 @@ async def concurrent_requests_example() -> None:
     results = await asyncio.gather(*tasks)
 
     for result in results:
+        logger.info(f"  ✅ {result}")
 
 
 async def streaming_example() -> None:

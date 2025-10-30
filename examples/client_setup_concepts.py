@@ -66,10 +66,10 @@ async def error_handling_example() -> None:
         logger.error(f"🤝 Handshake error: {e}")
         # Handle authentication/handshake errors
     except RPCPluginError as e:  # Catching the base plugin error
+        logger.error(f"🔌 Plugin error: {e}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         # Handle other errors
-
 
 
 async def main() -> None:
@@ -78,7 +78,6 @@ async def main() -> None:
 
     await basic_client_example()
     await error_handling_example()
-
 
 
 if __name__ == "__main__":

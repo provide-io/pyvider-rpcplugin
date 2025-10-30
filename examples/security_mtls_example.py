@@ -157,6 +157,7 @@ async def functional_mtls_example() -> None:
             await client.start()
 
             if client._controller_stub:  # Accessing private member for example check
+                logger.info("✅ Controller stub is available. mTLS handshake successful!")
             else:
                 logger.error("❌ Controller stub not available after connect.")
 
