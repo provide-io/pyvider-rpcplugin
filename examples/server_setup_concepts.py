@@ -45,9 +45,7 @@ class BasicProtocol(RPCPluginProtocol):
         # your_pb2_grpc.add_YourServiceServicer_to_server(handler, server)
         # The service_name is derived from get_grpc_descriptors.
         _, service_name = await self.get_grpc_descriptors()
-        logger.info(
-            f"registered with handler: {type(handler).__name__}"
-        )
+        logger.info(f"registered with handler: {type(handler).__name__}")
 
 
 class BasicHandler:
@@ -127,7 +125,6 @@ async def main() -> None:
 
     # Unix socket example
     await unix_server_example()
-
 
 
 if __name__ == "__main__":

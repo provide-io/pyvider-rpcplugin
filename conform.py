@@ -14,6 +14,7 @@ import sys
 # The placeholder docstring for modules without one
 PLACEHOLDER_DOCSTRING = '"""TODO: Add module docstring."""'
 
+
 def get_module_docstring(source: str) -> str | None:
     """
     Safely extracts the module-level docstring from Python source code.
@@ -30,6 +31,7 @@ def get_module_docstring(source: str) -> str | None:
     except (SyntaxError, ValueError):
         # Handle cases with invalid Python syntax or other parsing issues gracefully
         return None
+
 
 def conform_file(file_path: str | Path) -> None:
     """
@@ -77,8 +79,12 @@ def conform_file(file_path: str | Path) -> None:
                 break
 
         # If the file is only comments and docstrings, handle it
-        if body_start_index == 0 and all(line.strip().startswith("#") or not line.strip() for line in lines if '"""' not in line and "'''" not in line):
-             body_start_index = len(lines)
+        if body_start_index == 0 and all(
+            line.strip().startswith("#") or not line.strip()
+            for line in lines
+            if '"""' not in line and "'''" not in line
+        ):
+            body_start_index = len(lines)
 
         body_lines = lines[body_start_index:]
         body = "\n".join(body_lines).strip()
@@ -92,12 +98,14 @@ def conform_file(file_path: str | Path) -> None:
         else:
             header_lines.append("# ")
 
-        header_lines.extend([
-            "# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.",
-            "# SPDX-License-Identifier: Apache-2.0",
-            "#",
-            "",
-        ])
+        header_lines.extend(
+            [
+                "# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.",
+                "# SPDX-License-Identifier: Apache-2.0",
+                "#",
+                "",
+            ]
+        )
         header = "\n".join(header_lines)
 
         # Assemble the new content
@@ -109,6 +117,7 @@ def conform_file(file_path: str | Path) -> None:
 
     except Exception as e:
         print(f"Error processing file {file_path}: {e}", file=sys.stderr)
+
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
