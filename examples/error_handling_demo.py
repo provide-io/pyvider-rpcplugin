@@ -61,17 +61,16 @@ async def graceful_degradation_example() -> None:
         await asyncio.sleep(0.1)
         return "Fallback service response"
 
-    result: str  # Explicit type annotation
     try:
         logger.info("🎯 Attempting primary service")
-        result = await attempt_primary_service()  # This line won't be reached due to Never
+        await attempt_primary_service()  # This line won't be reached due to Never
     except TransportError as e:
         logger.warning(f"⚠️  Primary service failed: {e}")
         logger.info("🔄 Falling back to secondary service")
         await fallback_service()
 
 
-async def circuit_breaker_example() -> None:
+async def circuit_breaker_example() -> None:  # noqa: C901
     """Example: Circuit breaker pattern."""
 
     class SimpleCircuitBreaker:

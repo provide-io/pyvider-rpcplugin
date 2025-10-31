@@ -30,7 +30,7 @@ from pyvider.rpcplugin import (
 configure_for_example(clear_env=True)
 
 
-async def functional_mtls_example() -> None:
+async def functional_mtls_example() -> None:  # noqa: C901
     """Functional example of mTLS configuration and operation."""
 
     temp_dir_obj = tempfile.TemporaryDirectory(prefix="pyvider_mtls_example_")

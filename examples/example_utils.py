@@ -56,7 +56,7 @@ def clear_plugin_env_vars() -> None:
             del os.environ[var]
 
 
-def configure_for_example(clear_env: bool = False) -> None:
+def configure_for_example(clear_env: bool = False) -> None:  # noqa: C901
     """
     Configure environment for example execution.
 

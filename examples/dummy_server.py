@@ -27,7 +27,7 @@ from pyvider.rpcplugin.types import (  # noqa: E402
 )
 
 
-async def main() -> None:
+async def main() -> None:  # noqa: C901
     """Sets up and runs the dummy server for Quick Start."""
     logger.info("🚀 dummy_server.py (Quick Start version): Starting as an executable plugin...")
 

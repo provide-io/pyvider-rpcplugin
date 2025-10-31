@@ -6,6 +6,8 @@
 """Server Setup Examples - Various server configuration patterns."""
 
 import asyncio
+from pathlib import Path
+import tempfile
 from typing import Any  # Moved to top, tuple is built-in for 3.9+ for this usage.
 
 from example_utils import (  # type: ignore[import-not-found]
@@ -89,7 +91,6 @@ async def tcp_server_example() -> RPCPluginServer:
 async def unix_server_example() -> RPCPluginServer:
     """Example: Unix socket server configuration."""
 
-    import tempfile
     from typing import cast
 
     # Import for type casting
