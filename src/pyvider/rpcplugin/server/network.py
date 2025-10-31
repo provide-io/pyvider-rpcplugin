@@ -99,7 +99,9 @@ class ServerNetworkMixin:
             return None
 
         # Read TLS configuration from config system (which reads from environment)
-        tls_key_type_raw = self._get_instance_override("PLUGIN_TLS_KEY_TYPE", rpcplugin_config.plugin_tls_key_type)
+        tls_key_type_raw = self._get_instance_override(
+            "PLUGIN_TLS_KEY_TYPE", rpcplugin_config.plugin_tls_key_type
+        )
         tls_curve = self._get_instance_override("PLUGIN_TLS_CURVE", rpcplugin_config.plugin_tls_curve)
         tls_key_size = self._get_instance_override("PLUGIN_TLS_KEY_SIZE", rpcplugin_config.plugin_tls_key_size)
 
