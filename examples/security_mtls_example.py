@@ -92,12 +92,9 @@ async def functional_mtls_example() -> None:
             temp_dir_path / "ca_for_server_to_verify_client.crt"
         )  # Server uses this to verify client
 
-        with open(server_cert_file_path, "w") as f:
-            f.write(server_cert_pem)
-        with open(server_key_file_path, "w") as f:
-            f.write(server_key_pem)
-        with open(ca_cert_file_path, "w") as f:  # This CA is for server to verify client
-            f.write(ca_cert_pem)
+        server_cert_file_path.write_text(server_cert_pem)
+        server_key_file_path.write_text(server_key_pem)
+        ca_cert_file_path.write_text(ca_cert_pem)  # This CA is for server to verify client
         logger.info(f"🔑 Server-related certificates saved to {temp_dir_path}")
 
         # 2. Configure Client-Side mTLS (for this script's RPCPluginClient instance)

@@ -32,6 +32,7 @@ def print_section(title: str) -> None:
 
 
 def print_result(script_name: str, success: bool, stdout: str, stderr: str, exit_code: int) -> None:
+    status = "✓ PASSED" if success else "✗ FAILED"
     print(f"\n--- {script_name} --- {status} ---")
     if stdout:
         print("--- STDOUT ---")
@@ -58,7 +59,7 @@ async def run_script(
         args = []
     effective_cwd: Path = cwd if cwd is not None else project_root
 
-    command = [sys.executable, str(script_path)] + args
+    command = [sys.executable, str(script_path), *args]
     process = None
     env = os.environ.copy()
     # Removed automatic magic cookie setup from here,
@@ -218,7 +219,7 @@ async def main() -> None:
 
     print_section("Summary")
     all_passed_count = 0
-    for name, success, _, _, _ in results:
+    for _name, success, _, _, _ in results:
         if success:
             all_passed_count += 1
 

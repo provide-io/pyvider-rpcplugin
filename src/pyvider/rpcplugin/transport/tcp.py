@@ -163,7 +163,7 @@ class TCPSocketTransport(RPCPluginTransport):
             reader: The `asyncio.StreamReader` for reading data from the client.
             writer: The `asyncio.StreamWriter` for writing data to the client.
         """
-        client_info = writer.get_extra_info("peername")
+        _client_info = writer.get_extra_info("peername")
         try:
             while True:
                 data = await reader.read(100)
@@ -251,7 +251,7 @@ class TCPSocketTransport(RPCPluginTransport):
             # await writer.wait_closed() can hang.
             await asyncio.wait_for(writer.wait_closed(), timeout=5.0)
         except TimeoutError:
-            logger.warning()
+            logger.warning("Timeout waiting for writer to close")
             # If timeout occurs, also attempt to abort the transport
             if (
                 transport_to_abort
@@ -259,14 +259,14 @@ class TCPSocketTransport(RPCPluginTransport):
                 and callable(transport_to_abort.abort)
             ):
                 transport_to_abort.abort()
-        except Exception:
+        except Exception as e:
             # If any other exception occurs, also attempt to abort
             if (
                 transport_to_abort
                 and hasattr(transport_to_abort, "abort")
                 and callable(transport_to_abort.abort)
             ):
-                logger.warning()
+                logger.warning("Error closing writer, aborting transport", error=str(e))
                 transport_to_abort.abort()
 
     async def close(self) -> None:
@@ -301,7 +301,8 @@ class TCPSocketTransport(RPCPluginTransport):
                     else:  # If it wasn't serving, log that no action was needed.
                         pass
                 except TimeoutError:
-                    logger.warning(f"{self.endpoint if self.endpoint else 'unknown'}")
+                    endpoint_str = self.endpoint if self.endpoint else "unknown"
+                    logger.warning(f"Timeout closing TCP server endpoint {endpoint_str}")
                 except Exception:
                     pass  # Empty except block
                 finally:

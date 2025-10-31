@@ -14,7 +14,7 @@ from provide.foundation import logger
 from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 
-async def main():
+async def main() -> None:
     """Run minimal plugin server."""
     protocol = plugin_protocol()  # Basic protocol
     handler = object()  # Dummy handler

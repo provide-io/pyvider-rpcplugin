@@ -14,7 +14,7 @@ from provide.foundation import logger
 from pyvider.rpcplugin import configure, plugin_protocol, plugin_server
 
 
-async def main():
+async def main() -> None:
     """Run server with health checks."""
     # Enable health check service
     configure(health_service_enabled=True)

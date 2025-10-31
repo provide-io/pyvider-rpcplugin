@@ -68,7 +68,7 @@ async def graceful_degradation_example() -> None:
     except TransportError as e:
         logger.warning(f"⚠️  Primary service failed: {e}")
         logger.info("🔄 Falling back to secondary service")
-        result = await fallback_service()
+        await fallback_service()
 
 
 async def circuit_breaker_example() -> None:
@@ -121,7 +121,7 @@ async def circuit_breaker_example() -> None:
     # Test circuit breaker
     for i in range(10):
         try:
-            result = await circuit_breaker.call(unreliable_service)
+            await circuit_breaker.call(unreliable_service)
         except TransportError as e:
             logger.warning(f"⚠️  Call {i + 1}: {e}")
 

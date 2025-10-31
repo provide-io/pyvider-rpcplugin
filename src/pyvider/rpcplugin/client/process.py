@@ -146,8 +146,8 @@ class ClientProcessMixin:
 
     def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        self.logger.debug(
-            f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"
+        self.logger.debug(  # type: ignore[attr-defined]
+            f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
         )
 
         options: list[tuple[str, int | bool | str]] = [
@@ -162,11 +162,11 @@ class ClientProcessMixin:
         # Unix socket addresses (unix:/path/to/socket) don't have hostnames, but TLS
         # certificates are issued for hostnames (e.g., "localhost"). We need to tell
         # gRPC which hostname to verify the server certificate against.
-        if self._transport_name == "unix" and self._server_cert:
+        if self._transport_name == "unix" and self._server_cert:  # type: ignore[attr-defined]
             options.append(("grpc.ssl_target_name_override", "localhost"))
         else:
-            self.logger.debug(
-                f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"
+            self.logger.debug(  # type: ignore[attr-defined]
+                f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
             )
 
         return options

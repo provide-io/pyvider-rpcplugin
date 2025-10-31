@@ -67,7 +67,8 @@
       "Bash(PYTHONPATH=./src .venv/bin/python:*)",
       "Read(//private/tmp/**)",
       "Bash(uv run pytest:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(PYTHONPATH=./src mypy src)"
     ],
     "deny": [],
     "ask": [],
