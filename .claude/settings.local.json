@@ -69,7 +69,9 @@
       "Bash(uv run pytest:*)",
       "Bash(git log:*)",
       "Bash(PYTHONPATH=./src mypy src)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": [],
