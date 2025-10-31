@@ -71,7 +71,9 @@
       "Bash(PYTHONPATH=./src mypy src)",
       "Bash(rm:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(uv run ruff check:*)",
+      "Bash(uv run mypy:*)"
     ],
     "deny": [],
     "ask": [],
