@@ -76,7 +76,8 @@
       "Bash(uv run mypy:*)",
       "Bash(source .venv/bin/activate)",
       "Bash(coverage report:*)",
-      "Bash(bandit:*)"
+      "Bash(bandit:*)",
+      "Bash(git check-ignore:*)"
     ],
     "deny": [],
     "ask": [],
