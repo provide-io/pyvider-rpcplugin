@@ -98,28 +98,28 @@ class ServerNetworkMixin:
         if not auto_mtls:
             return None
 
-        # Read TLS configuration from environment (set by client for server subprocess)
-        import os
-
-        tls_key_type = os.getenv("TLS_KEY_TYPE", "ecdsa").lower()
-        tls_curve = os.getenv("TLS_CURVE", "secp384r1")
-        tls_key_size_str = os.getenv("TLS_KEY_SIZE", "2048")
-
-        # Parse key size with fallback
-        try:
-            tls_key_size = int(tls_key_size_str)
-        except ValueError:
-            logger.warning(f"Invalid TLS_KEY_SIZE '{tls_key_size_str}', using default 2048")
-            tls_key_size = 2048
+        # Read TLS configuration from config system (which reads from environment)
+        tls_key_type_raw = self._get_instance_override("PLUGIN_TLS_KEY_TYPE", rpcplugin_config.plugin_tls_key_type)
+        tls_curve = self._get_instance_override("PLUGIN_TLS_CURVE", rpcplugin_config.plugin_tls_curve)
+        tls_key_size = self._get_instance_override("PLUGIN_TLS_KEY_SIZE", rpcplugin_config.plugin_tls_key_size)
 
         # Normalize key type (ec → ecdsa, rsa → rsa)
+        tls_key_type = str(tls_key_type_raw).lower()
         if tls_key_type in ("ec", "ecdsa"):
             tls_key_type = "ecdsa"
         elif tls_key_type == "rsa":
             tls_key_type = "rsa"
         else:
-            logger.warning(f"Unknown TLS_KEY_TYPE '{tls_key_type}', defaulting to 'ecdsa'")
+            logger.warning(f"Unknown PLUGIN_TLS_KEY_TYPE '{tls_key_type}', defaulting to 'ecdsa'")
             tls_key_type = "ecdsa"
+
+        # Ensure key_size is int
+        if not isinstance(tls_key_size, int):
+            try:
+                tls_key_size = int(tls_key_size)
+            except (ValueError, TypeError):
+                logger.warning(f"Invalid PLUGIN_TLS_KEY_SIZE '{tls_key_size}', using default 2048")
+                tls_key_size = 2048
 
         logger.info(
             f"Server auto-generating certificate: key_type={tls_key_type}, "
