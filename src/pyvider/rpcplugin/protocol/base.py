@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -38,5 +38,6 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
             handler: The handler implementing the RPC methods for this protocol.
         """
         pass
+
 
 # 🔌📞🔚

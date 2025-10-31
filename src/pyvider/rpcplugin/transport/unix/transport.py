@@ -1,11 +1,11 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 
 """TODO: Add module docstring."""
 
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -138,9 +138,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             mode = Path(self.path).stat().st_mode
             if not stat.S_ISSOCK(mode):
-                logger.debug(
-                    f"(mode: {oct(mode)}). Considering available."
-                )
+                logger.debug(f"(mode: {oct(mode)}). Considering available.")
                 return False
         except OSError as e:
             # Failed to stat path (e.g., permissions, or it disappeared)
@@ -156,8 +154,7 @@ class UnixSocketTransport(RPCPluginTransport):
             return True
         except (ConnectionRefusedError, FileNotFoundError):
             # Connection refused or socket file disappeared: it's available
-            logger.debug(
-            )
+            logger.debug()
             return False
         except OSError as e:
             # Other OSErrors (e.g., timeout, permission issues during connect)
@@ -169,8 +166,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 try:
                     sock.close()
                 except Exception as e_sock_close:
-                    logger.warning(
-                    )
+                    logger.warning()
 
     def _raise_if_running(self) -> None:
         if self._running:
@@ -200,8 +196,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             path_exists = Path(socket_path).exists()
         except PermissionError as exc:
-            logger.warning(
-            )
+            logger.warning()
             path_exists = False
 
         if not path_exists:
@@ -220,11 +215,9 @@ class UnixSocketTransport(RPCPluginTransport):
             os.umask(current_mask)
             desired_permissions = 0o660 & ~current_mask
             Path(socket_path).chmod(desired_permissions)  # nosec B103
-            logger.debug(
-            )
+            logger.debug()
         except Exception as exc:
-            logger.warning(
-            )
+            logger.warning()
 
     async def _start_server_at_path(self, socket_path: str) -> str:
         try:
@@ -273,7 +266,6 @@ class UnixSocketTransport(RPCPluginTransport):
         # Normalize endpoint path
         endpoint = normalize_unix_path(endpoint)
 
-
         # Verify socket file exists with retries
         retries = 3
         for attempt in range(retries):
@@ -320,8 +312,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             async with self._lock:
                 self._connections.add(conn)
-                logger.debug(
-                )
+                logger.debug()
 
             while self._running and not conn.is_closed:
                 data = await conn.receive_data()
@@ -331,7 +322,9 @@ class UnixSocketTransport(RPCPluginTransport):
                 await conn.send_data(data)  # echo
 
         except asyncio.CancelledError:
+            pass  # Empty except block
         except Exception as e:
+            pass  # Empty except block
         finally:
             async with self._lock:
                 if conn in self._connections:
@@ -342,6 +335,7 @@ class UnixSocketTransport(RPCPluginTransport):
         if hasattr(writer, "wait_closed"):
             await writer.wait_closed()
         else:
+            pass  # Empty block
 
     def _abort_transport(self, transport: Any, message: str) -> None:
         if not transport:
@@ -349,6 +343,7 @@ class UnixSocketTransport(RPCPluginTransport):
         if hasattr(transport, "abort") and callable(transport.abort):
             transport.abort()
         else:
+            pass  # Empty block
 
     def _finalize_transport_shutdown(self, transport: Any) -> None:
         if not transport:
@@ -400,6 +395,7 @@ class UnixSocketTransport(RPCPluginTransport):
                 self._server.close()
                 await self._server.wait_closed()
             except Exception as e:
+                pass  # Empty except block
             finally:
                 self._server = None
 
@@ -451,5 +447,6 @@ class UnixSocketTransport(RPCPluginTransport):
             # Always reset state even if socket removal fails
             self.endpoint = None
             self._closing = False
+
 
 # 🔌📞🔚

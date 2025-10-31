@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -465,5 +465,6 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if self._exit_on_stop and not os.environ.get("PYTEST_CURRENT_TEST"):
             logger.info("⚡ Exiting process...")
             sys.exit(0)
+
 
 # 🔌📞🔚
