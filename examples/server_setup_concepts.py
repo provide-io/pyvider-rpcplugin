@@ -89,7 +89,6 @@ async def tcp_server_example() -> RPCPluginServer:
 async def unix_server_example() -> RPCPluginServer:
     """Example: Unix socket server configuration."""
 
-    import os
     import tempfile
     from typing import cast
 
