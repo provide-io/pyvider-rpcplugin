@@ -1,14 +1,13 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-"""
-gRPC Health Checking Servicer Implementation.
+
+"""gRPC Health Checking Servicer Implementation.
 
 This module provides a `HealthServicer` class that implements the standard
 gRPC Health Checking Protocol, allowing clients to query the health status
-of the plugin server or specific services within it.
-"""
+of the plugin server or specific services within it."""
 
 from collections.abc import AsyncIterator, Callable
 
@@ -159,5 +158,4 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         if False:  # pylint: disable=using-constant-test
             yield health_pb2.HealthCheckResponse()
 
-
-# 📞🔌🔚
+# 🔌📞🔚

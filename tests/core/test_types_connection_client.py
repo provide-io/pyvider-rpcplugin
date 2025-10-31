@@ -1,4 +1,8 @@
-# tests/core/test_types_connection_client.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for connection and secure RPC client type validation."""
 
 import inspect
@@ -154,7 +158,6 @@ def test_is_valid_connection_true(mocker: object) -> None:
     instance = ValidConnection()
     assert is_valid_connection(instance) is True
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
         mocker.call("ConnectionT: All structural and signature checks passed."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -177,7 +180,6 @@ def test_is_valid_connection_false_missing_method(mocker: object) -> None:
     instance = InvalidConnectionMissing()
     assert is_valid_connection(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
         mocker.call("ConnectionT: Method close is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -203,7 +205,6 @@ def test_is_valid_connection_false_send_data_signature(mocker: object) -> None:
 
     # Verify key log messages were made
     mock_logger_debug.assert_any_call(
-        "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
     )
 
     # Check for the specific failure log related to send_data signature
@@ -239,7 +240,6 @@ def test_is_valid_connection_false_receive_data_signature(mocker: object) -> Non
     assert is_valid_connection(instance) is False  # Main assertion
 
     mock_logger_debug.assert_any_call(
-        "🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"
     )
 
     specific_failure_log_made = False
@@ -273,7 +273,6 @@ def test_is_valid_connection_false_close_signature(mocker: object) -> None:
     instance = InvalidConnectionCloseSig()
     assert is_valid_connection(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
         mocker.call("ConnectionT: close signature incorrect. Expected 0 params, got 1."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -297,7 +296,6 @@ def test_is_valid_connection_false_not_async(mocker: object) -> None:
     instance = InvalidConnectionNotAsync()
     assert is_valid_connection(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)"),
         mocker.call("ConnectionT: Method send_data is not async as expected."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -325,7 +323,6 @@ def test_is_valid_secure_rpc_client_true(mocker: object) -> None:
     instance = ValidSecureRpcClient()
     assert is_valid_secure_rpc_client(instance) is True
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
         mocker.call("SecureRpcClientT: All structural and signature checks passed."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -350,7 +347,6 @@ def test_is_valid_secure_rpc_client_false_missing_method(mocker: object) -> None
     instance = InvalidSecureRpcClientMissing()
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
         mocker.call("SecureRpcClientT: Method _create_grpc_channel is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -377,7 +373,6 @@ def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker: ob
     instance = InvalidSecureRpcClientSig()
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
         mocker.call("SecureRpcClientT: _perform_handshake signature incorrect. Expected 0 params, got 1."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
@@ -404,8 +399,9 @@ def test_is_valid_secure_rpc_client_false_not_async(mocker: object) -> None:
     instance = InvalidSecureRpcClientNotAsync()
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
-        mocker.call("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)"),
         mocker.call("SecureRpcClientT: Method _setup_tls is not async as expected."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 2
+
+# 🔌📞🔚

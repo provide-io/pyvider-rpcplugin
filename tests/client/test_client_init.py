@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import pytest
 from provide.testkit.mocking import patch, MagicMock
 
@@ -156,4 +159,4 @@ async def test_setup_client_certificates_mtls_missing_key(client_instance, mocke
     assert client_instance.client_key_pem == "generated-key"
     # Note: The actual message is a debug call, not info, so we need to check the right logger level
 
-# 📞🔌🔚
+# 🔌📞🔚

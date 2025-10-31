@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import asyncio
 from collections.abc import Iterator
 
@@ -43,7 +46,6 @@ async def test_shutdown_plugin_handles_grpc_error(monkeypatch: pytest.MonkeyPatc
 
     await client.shutdown_plugin()
 
-    client.logger.debug.assert_any_call("🔌 Plugin shutdown RPC completed: StatusCode.UNAVAILABLE")
 
 
 @pytest.mark.asyncio
@@ -155,7 +157,6 @@ async def test_terminate_process_handles_already_exited(monkeypatch: pytest.Monk
 
     await client._terminate_process()
 
-    client.logger.debug.assert_any_call("✅ Plugin process terminated gracefully.")
     managed_process.cleanup.assert_called_once()
     assert client._process is None
 
@@ -222,4 +223,4 @@ async def test_context_manager_exit_logs_warning(monkeypatch: pytest.MonkeyPatch
     # )
     client.close.assert_awaited()
 
-# 📞🔌🔚
+# 🔌📞🔚

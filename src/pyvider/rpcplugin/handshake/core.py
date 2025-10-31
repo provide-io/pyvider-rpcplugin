@@ -1,11 +1,12 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/handshake/core.py
-#
+
 """Core handshake functionality for the RPC plugin system.
 
 This module contains the primary handshake configuration, validation,
-building, and parsing logic.
-"""
+building, and parsing logic."""
 
 from __future__ import annotations
 
@@ -42,7 +43,6 @@ _SentinelType = Literal[_SentinelEnum.NOT_PASSED]
 @define
 class HandshakeConfig:
     """
-    ⚙️🔧✅ Represents the configuration for the RPC plugin handshake.
 
     Attributes:
       magic_cookie_key: The expected environment key for the handshake cookie.
@@ -59,7 +59,6 @@ class HandshakeConfig:
 
 def is_valid_handshake_parts(parts: list[str]) -> TypeGuard[list[str]]:
     """
-    🔍✅ TypeGuard: Verifies the handshake response format.
     Ensures it contains exactly 6 parts and the first two parts are digits.
     """
     return len(parts) == 6 and parts[0].isdigit() and parts[1].isdigit()
@@ -305,7 +304,6 @@ async def build_handshake_response(
     port: int | None = None,
 ) -> str:
     """
-    🤝📝✅ Constructs the handshake response string in the format:
     CORE_VERSION|PLUGIN_VERSION|NETWORK|ADDRESS|PROTOCOL|TLS_CERT
 
     Note: For TCP transport, the ADDRESS `127.0.0.1` is standard for same-host
@@ -363,16 +361,13 @@ async def _build_handshake_response_impl(
                     ),
                 )
             endpoint = f"127.0.0.1:{port}"
-            logger.debug(f"🤝📝✅ TCP endpoint set: {endpoint}")
 
         elif transport_name == "unix":
             if hasattr(transport, "_running") and transport._running and transport.endpoint:
-                logger.debug(f"🤝📝✅ Using existing Unix transport endpoint: {transport.endpoint}")
                 endpoint = transport.endpoint
             else:
                 logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
                 endpoint = await transport.listen()
-                logger.debug(f"🤝📝✅ Unix transport endpoint received: {endpoint}")
         else:
             logger.error(f"🤝📝❌ Unsupported transport type for handshake response: {transport_name}")
             raise TransportError(
@@ -403,10 +398,8 @@ async def _build_handshake_response_impl(
                 )
             cert_body = "".join(cert_lines[1:-1]).rstrip("=")
             response_parts[-1] = cert_body
-            logger.debug("🤝🔐✅ Certificate data added to response.")
 
         handshake_response = "|".join(response_parts)
-        logger.debug(f"🤝📝✅ Handshake response successfully built: {handshake_response}")
         return handshake_response
 
     except Exception as e:
@@ -482,7 +475,6 @@ def _parse_handshake_response_impl(
             span.set_attribute("has_cert", server_cert is not None)
 
         logger.debug(
-            "📡✅ Handshake parsing success: "
             f"core_version={core_version}, plugin_version={plugin_version}, "
             f"network={network}, address={address}, protocol={protocol}, "
             f"server_cert={'present' if server_cert else 'none'}"
@@ -492,3 +484,5 @@ def _parse_handshake_response_impl(
     except Exception as e:
         logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
+
+# 🔌📞🔚

@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import subprocess  # Import subprocess
 from provide.testkit.mocking import AsyncMock, MagicMock
 
@@ -447,4 +450,4 @@ async def test_connect_handshake_retry_success_first_attempt(client_instance_loc
     await client._connect_and_handshake_with_retry()
     client._attempt_single_handshake.assert_awaited_once()
 
-# 📞🔌🔚
+# 🔌📞🔚

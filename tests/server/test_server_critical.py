@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import asyncio
 import signal
 import pytest
@@ -92,4 +95,4 @@ async def test_controller_delayed_shutdown_windows_line212() -> None:
         mock_sleep.assert_called_once()
         mock_exit.assert_called_once_with(0)
 
-# 📞🔌🔚
+# 🔌📞🔚

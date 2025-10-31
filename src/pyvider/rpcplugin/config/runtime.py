@@ -1,12 +1,12 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/config/runtime.py
-#
-"""
-Core RPCPluginConfig class implementation using Foundation framework.
+
+"""Core RPCPluginConfig class implementation using Foundation framework.
 
 This module contains the main configuration class that uses env_field
-and parse_list for proper environment variable parsing.
-"""
+and parse_list for proper environment variable parsing."""
 
 from attrs import define
 from provide.foundation.config import RuntimeConfig, parse_log_level
@@ -488,3 +488,5 @@ class RPCPluginConfig(RuntimeConfig):
     # - config.plugin_magic_cookie_key instead of config.magic_cookie_key()
     # - config.plugin_handshake_timeout instead of config.handshake_timeout()
     # - etc.
+
+# 🔌📞🔚

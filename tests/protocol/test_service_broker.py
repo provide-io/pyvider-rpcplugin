@@ -1,7 +1,8 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Tests for broker service and subchannel functionality."""
 
 from provide.testkit.mocking import MagicMock
@@ -264,4 +265,4 @@ async def test_broker_exception_handling_subchannel_open_fails(
     finally:
         service_module.SubchannelConnection = original_class
 
-# 📞🔌🔚
+# 🔌📞🔚

@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Advanced Async Patterns - Best practices for async RPC operations."""
 
 import asyncio
@@ -37,8 +38,6 @@ async def concurrent_requests_example() -> None:
     results = await asyncio.gather(*tasks)
 
     for result in results:
-        logger.info(f"✅ Received: {result}")
-    logger.info("✅ Concurrent requests example completed")
 
 
 async def streaming_example() -> None:
@@ -58,8 +57,6 @@ async def streaming_example() -> None:
     # 'async for' iterates over an asynchronous generator or iterable.
     # It awaits the next item from the stream.
     async for item in mock_data_stream():
-        logger.info(f"  📦 Client received: {item}")
-    logger.info("✅ Streaming example completed")
 
 
 async def timeout_and_retry_example() -> None:
@@ -85,7 +82,6 @@ async def timeout_and_retry_example() -> None:
             # asyncio.wait_for adds a timeout to an awaitable. If the operation
             # takes longer than 1.0 second, it raises asyncio.TimeoutError.
             result = await asyncio.wait_for(unreliable_operation(current_attempt), timeout=1.0)
-            logger.info(f"✅ {result}")
             break  # Success, exit retry loop
         except TimeoutError:
             logger.warning(f"⏰ Operation attempt {current_attempt} timed out.")
@@ -104,7 +100,6 @@ async def timeout_and_retry_example() -> None:
             logger.info(f"😴 Waiting {delay:.2f}s before next retry...")
             await asyncio.sleep(delay)
 
-    logger.info("✅ Timeout and retry example completed")
 
 
 async def main() -> None:
@@ -117,10 +112,9 @@ async def main() -> None:
     await asyncio.sleep(0.5)
     await timeout_and_retry_example()
 
-    logger.info("✅ All async pattern examples completed")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🔌📞🔚

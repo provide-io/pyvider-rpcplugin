@@ -1,7 +1,8 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Unix Domain Socket utilities and helper functions.
 
 This module provides utility functions for Unix domain socket path
@@ -22,7 +23,6 @@ def normalize_unix_path(path: str) -> str:
 
     Returns a clean path suitable for socket operations.
     """
-    logger.debug(f"📞🔍🚀 * Normalizing Unix path: {path}")
 
     # Handle unix: prefix formats
     if path.startswith("unix:"):
@@ -38,8 +38,6 @@ def normalize_unix_path(path: str) -> str:
         pass
     # Relative paths remain unchanged
 
-    logger.debug(f"📞🔍✅ * Normalized Unix path: {path}")
     return path
 
-
-# 📞🔌🔚
+# 🔌📞🔚
