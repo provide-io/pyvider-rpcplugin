@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import asyncio
 import pytest
 import pytest_asyncio
@@ -139,4 +142,4 @@ async def test_pingpong_rpc(pingpong_stub: PingPongStub) -> None:
     resp = await pingpong_stub.Ping(req)
     assert resp.msg == "pong"
 
-# 📞🔌🔚
+# 🔌📞🔚

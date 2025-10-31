@@ -1,8 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Client and server classes corresponding to protobuf-defined services."""
+
 import grpc
 import warnings
 
@@ -102,4 +104,4 @@ class EchoService(object):
             metadata,
             _registered_method=True)
 
-# 📞🔌🔚
+# 🔌📞🔚

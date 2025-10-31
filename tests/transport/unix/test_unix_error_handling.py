@@ -2,6 +2,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import asyncio
 import os
 import tempfile
@@ -140,4 +143,4 @@ async def test_unix_socket_connect_timeout() -> None:
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)
 
-# 📞🔌🔚
+# 🔌📞🔚

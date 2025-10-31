@@ -1,7 +1,8 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """This script conforms all Python files in the repository to a specific header and footer protocol."""
 
 import ast
@@ -138,4 +139,4 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-# 📞🔌🔚
+# 🔌📞🔚

@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Error Handling - Robust error management patterns."""
 
 import asyncio
@@ -46,7 +47,6 @@ async def exception_hierarchy_demo() -> None:
         except RPCPluginError as e:
             logger.info(f"🔍 Caught: {e}")
 
-    logger.info("✅ Exception hierarchy demo completed")
 
 
 async def graceful_degradation_example() -> None:
@@ -71,13 +71,10 @@ async def graceful_degradation_example() -> None:
         logger.info("🔄 Falling back to secondary service")
         result = await fallback_service()
 
-    logger.info(f"✅ Final result: {result}")
-    logger.info("✅ Graceful degradation example completed")
 
 
 async def circuit_breaker_example() -> None:
     """Example: Circuit breaker pattern."""
-    logger.info("🔌 Circuit Breaker Example")
 
     class SimpleCircuitBreaker:
         def __init__(self, failure_threshold: int = 3, recovery_timeout: int = 5) -> None:
@@ -103,7 +100,6 @@ async def circuit_breaker_example() -> None:
                 if self.state == "HALF_OPEN":
                     self.state = "CLOSED"
                     self.failure_count = 0
-                    logger.info("✅ Circuit breaker: CLOSED")
                 return result
             except Exception as e:
                 self.failure_count += 1
@@ -128,13 +124,11 @@ async def circuit_breaker_example() -> None:
     for i in range(10):
         try:
             result = await circuit_breaker.call(unreliable_service)
-            logger.info(f"✅ Call {i + 1}: {result}")
         except TransportError as e:
             logger.warning(f"⚠️  Call {i + 1}: {e}")
 
         await asyncio.sleep(0.1)
 
-    logger.info("✅ Circuit breaker example completed")
 
 
 async def main() -> None:
@@ -145,10 +139,9 @@ async def main() -> None:
     await graceful_degradation_example()
     await circuit_breaker_example()
 
-    logger.info("✅ All error handling examples completed")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🔌📞🔚

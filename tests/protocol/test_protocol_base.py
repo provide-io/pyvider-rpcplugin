@@ -1,7 +1,10 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
 import pytest
 from provide.testkit.mocking import MagicMock
 
@@ -40,4 +43,4 @@ async def test_protocol_add_to_server() -> None:
     await protocol.add_to_server(mock_server, mock_handler) # Corrected param order
     # Since our implementation is empty, we just verify it doesn't raise an exception
 
-# 📞🔌🔚
+# 🔌📞🔚

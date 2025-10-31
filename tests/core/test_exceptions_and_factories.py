@@ -1,3 +1,8 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests covering exception formatting and factory utilities."""
 
 from __future__ import annotations
@@ -58,3 +63,5 @@ def test_plugin_server_invalid_transport() -> None:
 
     with pytest.raises(ValueError, match="Unsupported transport type"):
         factories.plugin_server(protocol=protocol(), handler=handler, transport="invalid")
+
+# 🔌📞🔚

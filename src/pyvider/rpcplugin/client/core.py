@@ -1,12 +1,19 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/client/core.py
+
+"""TODO: Add module docstring."""
+
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-"""
-Core RPCPluginClient class definition and lifecycle management.
+
+"""Core RPCPluginClient class definition and lifecycle management.
 
 This module contains the main RPCPluginClient class with its attributes,
-initialization, and core lifecycle methods like start, close, and shutdown.
-"""
+initialization, and core lifecycle methods like start, close, and shutdown."""
 
 from __future__ import annotations
 
@@ -122,7 +129,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         Initialize client state after attributes are set.
         """
         self.logger = logger
-        self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
 
     async def start(self) -> None:
         """
@@ -141,7 +147,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         try:
             await self._connect_and_handshake_with_retry()
             self.is_started = True
-            self.logger.info("✅ RPCPluginClient started successfully.")
         except Exception as e:
             self.logger.error(f"❌ Failed to start RPCPluginClient: {e}")
             self._handshake_failed_event.set()
@@ -158,14 +163,12 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         """
         try:
             if self._controller_stub:
-                self.logger.debug("🔌 Sending shutdown signal to plugin...")
                 await self._controller_stub.Shutdown(ControllerEmpty())
                 self.logger.debug("📤 Shutdown signal sent to plugin.")
             else:
                 self.logger.warning("⚠️ No controller stub available for shutdown signal.")
         except grpc.RpcError as e:
             # Expected behavior when plugin shuts down immediately
-            self.logger.debug(f"🔌 Plugin shutdown RPC completed: {e.code()}")
         except Exception as e:
             self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
@@ -184,7 +187,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 try:
                     await task
                 except asyncio.CancelledError:
-                    self.logger.debug(f"✅ {task_name.title()} task cancelled.")
                 except Exception as e:
                     self.logger.warning(f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True)
 
@@ -192,9 +194,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         """Close the gRPC channel with error handling."""
         if self.grpc_channel:
             try:
-                self.logger.debug("🔌 Closing gRPC channel...")
                 await self.grpc_channel.close(grace=rpcplugin_config.plugin_grpc_grace_period)
-                self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
                 self.logger.warning(f"⚠️ Error closing gRPC channel: {e}", exc_info=True)
             finally:
@@ -213,7 +213,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             )
 
             if terminated:
-                self.logger.debug("✅ Plugin process terminated gracefully.")
             else:
                 self.logger.warning("⚠️ Plugin process was force-killed.")
 
@@ -235,7 +234,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             try:
                 self.logger.debug("🚪 Closing transport...")
                 await self._transport.close()
-                self.logger.debug("✅ Transport closed.")
             except Exception as e:
                 self.logger.warning(f"⚠️ Error closing transport: {e}", exc_info=True)
             finally:
@@ -265,7 +263,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         await self._close_transport()
         self._reset_state()
 
-        self.logger.debug("✅ RPCPluginClient closed successfully.")
 
     async def __aenter__(self) -> RPCPluginClient:
         """Async context manager entry."""
@@ -285,3 +282,5 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             self.logger.warning(f"⚠️ Error during shutdown in context manager: {e}", exc_info=True)
         finally:
             await self.close()
+
+# 🔌📞🔚

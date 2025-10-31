@@ -1,12 +1,12 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyvider/rpcplugin/client/types.py
-#
-"""
-Type Definitions for Pyvider RPC Plugin Client.
+
+"""Type Definitions for Pyvider RPC Plugin Client.
 
 This module contains type aliases, TypeVars, and Protocols used throughout
-the RPC plugin client components, aiding in static analysis and code clarity.
-"""
+the RPC plugin client components, aiding in static analysis and code clarity."""
 
 from typing import Any, Protocol, TypeAlias, TypeVar
 
@@ -36,8 +36,4 @@ class SecureRpcClientT(Protocol):
     async def _create_grpc_channel(self) -> None: ...
     async def close(self) -> None: ...
 
-
-# 🐍🏗️🔌
-
-
-# 🐍🔌📄🪄
+# 🔌📞🔚
