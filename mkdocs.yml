@@ -1,3 +1,7 @@
+# Inherit shared configuration from provide-foundry
+INHERIT: ../provide-foundry/base-mkdocs.yml
+
+# Project-Specific Configuration
 site_name: Pyvider RPC Plugin Documentation
 site_description: High-performance, type-safe RPC plugin framework for Python with built-in security, async support, and production-ready patterns
 site_author: provide.io
@@ -5,17 +9,18 @@ site_url: https://rpcplugin.provide.io
 repo_url: https://github.com/provide-io/pyvider-rpcplugin
 repo_name: provide-io/pyvider-rpcplugin
 edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2024-2025 provide.io
 
 # Development server configuration
 dev_addr: '127.0.0.1:8006'
-copyright: Copyright &copy; 2024-2025 provide.io
 
+# Project-specific theme overrides
 theme:
-  name: material
-  language: en
-  
+  font:
+    text: Inter
+    code: Fira Code
   palette:
-    # Light mode
+    # Light mode - custom colors for pyvider-rpcplugin
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: black
@@ -23,8 +28,7 @@ theme:
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    
-    # Dark mode
+    # Dark mode - custom colors for pyvider-rpcplugin
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
@@ -32,184 +36,41 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
-  
-  font:
-    text: Inter
-    code: Fira Code
-  
   features:
-    # Navigation
-    - navigation.instant
-    - navigation.instant.prefetch
-    - navigation.instant.progress
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - navigation.sections
-    - navigation.expand
-    - navigation.prune
-    - navigation.path
-    - navigation.indexes
-    - navigation.top
-    - navigation.footer
-    
-    # Table of contents
-    - toc.follow
-    - toc.integrate
-    
-    # Search
-    - search.suggest
-    - search.highlight
-    - search.share
-    
-    # Content
-    - content.code.copy
-    - content.code.select
-    - content.code.annotate
-    - content.tabs.link
-    - content.tooltips
-    - content.action.edit
-    - content.action.view
-    
-    # Header
-    - header.autohide
-    
-    # Announce
-    - announce.dismiss
+    - navigation.prune  # Additional feature specific to this project
 
+# Project-specific plugins (in addition to base plugins)
 plugins:
-  - search:
-      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
-      lang:
-        - en
-
-  - autorefs
-
   - gen-files:
       scripts:
         - docs/reference/gen_ref_pages.py
-
   - literate-nav:
       nav_file: SUMMARY.md
-
-  - macros:
-      include_dir: docs/.shared-theme/data
-
+  - section-index
+  - tags
   - mkdocstrings:
-      default_handler: python
       handlers:
         python:
-          paths: [src]
           options:
-            docstring_style: google
-            show_source: true
-            show_root_heading: true
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
-            show_signature_annotations: true
-            show_bases: true
-            merge_init_into_class: true
-            separate_signature: true
-            
-            # Member display
-            show_bases: true
-            show_inheritance_diagram: false
+            # Override mkdocstrings options specific to this project
             show_if_no_docstring: true
             inherited_members: false
-            members_order: source
             group_by_category: true
-            show_category_heading: true
-            
-            # Signatures
-            show_signature_annotations: true
-            signature_crossrefs: true
-            separate_signature: false
-            
-            # Headings and navigation
             heading_level: 2
-            show_symbol_type_heading: true
-            show_symbol_type_toc: true
-            
-            # Filtering
+            separate_signature: false
             filters:
               - "!^_"  # Hide private members
-              - "!^__.*__$"  # Hide special methods except in special cases
-            
-            # Cross-references
-            merge_init_into_class: true
-  
-  - section-index
-  
-  - tags
-  
+              - "!^__.*__$"  # Hide special methods
 
+# Project-specific markdown extensions
 markdown_extensions:
-  # Python Markdown
-  - abbr
-  - admonition
-  - attr_list
-  - def_list
-  - footnotes
-  - md_in_html
-  - toc:
-      permalink: true
-      toc_depth: 3
-  - tables
-  - meta
-  
-  # Python Markdown Extensions
-  - pymdownx.arithmatex:
-      generic: true
-  - pymdownx.betterem:
-      smart_enable: all
-  - pymdownx.caret
-  - pymdownx.mark
-  - pymdownx.tilde
-  - pymdownx.details
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
-  - pymdownx.highlight:
-      anchor_linenums: true
-      line_spans: __span
-      pygments_lang_class: true
-      use_pygments: true
-      auto_title: true
-      linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.keys
-  - pymdownx.smartsymbols
-  - pymdownx.snippets:
-      check_paths: true
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-  - pymdownx.tabbed:
-      alternate_style: true
-      combine_header_slug: true
-  - pymdownx.tasklist:
-      custom_checkbox: true
-  - pymdownx.critic:
-      mode: view
   - pymdownx.magiclink:
       normalize_issue_symbols: true
       repo_url_shorthand: true
       user: provide-io
       repo: pyvider-rpcplugin
 
-extra_css:
-  - .shared-theme/stylesheets/provide-theme.css
-  - .shared-theme/stylesheets/termynal.css
-  - stylesheets/extra.css
-
-extra_javascript:
-  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
-  - .shared-theme/javascripts/mermaid-init.js
-  - .shared-theme/javascripts/termynal.js
-  - .shared-theme/javascripts/custom.js
-
+# Project-specific extra configuration
 extra:
   version:
     provider: mike
@@ -234,6 +95,12 @@ extra:
       as to measure the effectiveness of our documentation and whether users
       find what they're searching for. With your consent, you're helping us to
       make our documentation better.
+
+# Watch configuration
+watch:
+  - src/pyvider
+  - docs
+  - mkdocs.yml
 
 nav:
   - Home: index.md
