@@ -45,7 +45,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pytest tests/ \
-            --cov=src/pyvider_rpcplugin \
+            --cov=pyvider.rpcplugin \
             --cov-report=xml \
             --cov-report=term \
             -n auto \

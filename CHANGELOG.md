@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- 🔄 Migrated from local `_version.py` to use `get_version()` from provide-foundation for consistent version handling across provide-io projects
+- 📝 Added comprehensive module docstrings to core source files (`pyvider/__init__.py`, `pyvider.rpcplugin.types`)
+- 📚 Added educational docstrings to example files for improved user guidance
+- 🔧 Updated pre-commit hook versions (ruff: v0.8.0, mypy: v1.13.0, bandit: 1.8.0)
+
+### Fixed
+- 🐛 Fixed CI workflow coverage reporting path (`--cov=pyvider.rpcplugin` instead of `--cov=src/pyvider_rpcplugin`)
+- 📋 Added `coverage.json` to .gitignore to prevent test artifacts from being committed
+- 🧹 Removed duplicate file splitting artifacts (chunk files and python_files.txt)
+
+### Improved
+- ✨ Enhanced code quality with proper module documentation throughout the codebase
+- 🎯 Cleaner module-level lazy loading for version information
+
 ## [0.0.1000] - 2025-10-16
 
 ### Added
