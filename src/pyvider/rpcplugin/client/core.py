@@ -1,11 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
 #
-
-"""TODO: Add module docstring."""
-
-# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -167,8 +160,9 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 self.logger.debug("📤 Shutdown signal sent to plugin.")
             else:
                 self.logger.warning("⚠️ No controller stub available for shutdown signal.")
-        except grpc.RpcError as e:
+        except grpc.RpcError:
             # Expected behavior when plugin shuts down immediately
+            pass
         except Exception as e:
             self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
@@ -187,6 +181,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 try:
                     await task
                 except asyncio.CancelledError:
+                    pass  # Expected when cancelling tasks
                 except Exception as e:
                     self.logger.warning(f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True)
 
@@ -213,6 +208,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             )
 
             if terminated:
+                self.logger.debug("✅ Plugin process terminated gracefully.")
             else:
                 self.logger.warning("⚠️ Plugin process was force-killed.")
 
@@ -263,7 +259,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         await self._close_transport()
         self._reset_state()
 
-
     async def __aenter__(self) -> RPCPluginClient:
         """Async context manager entry."""
         await self.start()
@@ -282,5 +277,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             self.logger.warning(f"⚠️ Error during shutdown in context manager: {e}", exc_info=True)
         finally:
             await self.close()
+
 
 # 🔌📞🔚

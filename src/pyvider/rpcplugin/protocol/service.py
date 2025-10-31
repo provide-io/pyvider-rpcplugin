@@ -1,11 +1,11 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 
 """TODO: Add module docstring."""
 
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -96,8 +96,7 @@ class SubchannelConnection:
         Side Effects:
             Sets is_open to True after successful opening.
         """
-        logger.debug(
-        )
+        logger.debug()
         await asyncio.sleep(0.05)  # simulate
         self.is_open = True
 
@@ -155,10 +154,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
             async for incoming in request_iterator:
                 sub_id = incoming.service_id
                 try:  # Inner try for processing each item
-                    logger.debug(
-                        f"{sub_id}, network='{incoming.network}', "
-                        f"address='{incoming.address}'"
-                    )
+                    logger.debug(f"{sub_id}, network='{incoming.network}', address='{incoming.address}'")
 
                     if incoming.knock.knock:  # Request to open/ensure channel
                         if sub_id in self._subchannels and self._subchannels[sub_id].is_open:
@@ -214,9 +210,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_outer),
                 )
             except Exception as e_yield_fail:
-                logger.error(
-                )
-
+                logger.error()
 
 
 _SENTINEL = object()  # Module-level sentinel
@@ -243,6 +237,7 @@ class GRPCStdioService(GRPCStdioServicer):
             data = StdioData(channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line)
             await self._message_queue.put(data)
         except Exception as e:
+            pass  # Empty block
 
     async def _next_queue_item(self, done: asyncio.Event) -> StdioData | None:
         if not self._message_queue.empty():
@@ -337,7 +332,6 @@ class GRPCStdioService(GRPCStdioServicer):
         async for item in self._stream_items(done):
             yield item
 
-
     def shutdown(self) -> None:
         # Note: `shutdown` is a reserved keyword in some contexts,
         # but here it's a method name.
@@ -346,8 +340,7 @@ class GRPCStdioService(GRPCStdioServicer):
         try:
             self._message_queue.put_nowait(_SENTINEL)
         except asyncio.QueueFull:  # pragma: no cover
-            logger.warning(
-            )
+            logger.warning()
 
 
 class GRPCControllerService(GRPCControllerServicer):
@@ -420,5 +413,6 @@ def register_protocol_service(server: grpc.aio.Server, shutdown_event: asyncio.E
     add_GRPCStdioServicer_to_server(stdio_service, server)  # type: ignore[no-untyped-call]
     add_GRPCBrokerServicer_to_server(broker_service, server)  # type: ignore[no-untyped-call]
     add_GRPCControllerServicer_to_server(controller_service, server)  # type: ignore[no-untyped-call]
+
 
 # 🔌📞🔚
