@@ -42,7 +42,6 @@ async def unix_transport_demo() -> None:
 
     transport = UnixSocketTransport(path=socket_path)
 
-
     # Cleanup
     Path(socket_path).unlink(missing_ok=True)
 
@@ -56,7 +55,6 @@ async def main() -> None:
 
     logger.info("💡 Transport Selection Guidelines:")
     logger.info("  🌐 TCP: Network communication, multiple hosts")
-
 
 
 if __name__ == "__main__":

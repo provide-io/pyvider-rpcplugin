@@ -166,7 +166,6 @@ async def protocol_composition_example() -> None:
     await protocol_c.add_to_server(None, CustomHandler())
 
 
-
 async def main() -> None:
     """Run custom protocol examples."""
     logger.info("🚀 Custom Protocol Examples")

@@ -170,7 +170,6 @@ async def memory_optimization_example() -> None:
     logger.info(f"💰 Memory savings: {memory_savings:,} bytes ({memory_savings / list_size * 100:.1f}%)")
 
 
-
 async def main() -> None:
     """Run performance tuning examples."""
     logger.info("🚀 Performance Tuning Examples")
@@ -184,7 +183,6 @@ async def main() -> None:
     logger.info("  💾 Use generators for large datasets to save memory")
     logger.info("  ⏱️  Profile your application to identify bottlenecks")
     logger.info("  📊 Monitor key metrics in production")
-
 
 
 if __name__ == "__main__":

@@ -59,7 +59,6 @@ async def main() -> None:
             logger.error("Client connected but gRPC channel is not available.")
             return
 
-
         # Create a stub and make an RPC call
         stub = e2e_greeting_pb2_grpc.GreeterStub(client.grpc_channel)
         request_pb = e2e_greeting_pb2.GreetingRequest(name="Real E2E User")

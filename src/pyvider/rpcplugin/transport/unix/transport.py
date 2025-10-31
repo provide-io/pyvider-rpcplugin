@@ -128,7 +128,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
         try:
             path_exists = Path(self.path).exists()
-        except PermissionError as e:
+        except PermissionError:
             return False
 
         if not path_exists:
@@ -140,7 +140,7 @@ class UnixSocketTransport(RPCPluginTransport):
             if not stat.S_ISSOCK(mode):
                 logger.debug(f"(mode: {oct(mode)}). Considering available.")
                 return False
-        except OSError as e:
+        except OSError:
             # Failed to stat path (e.g., permissions, or it disappeared)
             return False
 
@@ -156,7 +156,7 @@ class UnixSocketTransport(RPCPluginTransport):
             # Connection refused or socket file disappeared: it's available
             logger.debug()
             return False
-        except OSError as e:
+        except OSError:
             # Other OSErrors (e.g., timeout, permission issues during connect)
             # If we can't connect for any other OSError, assume it's not actively
             # listening in a way that would conflict.
@@ -165,7 +165,7 @@ class UnixSocketTransport(RPCPluginTransport):
             if sock:
                 try:
                     sock.close()
-                except Exception as e_sock_close:
+                except Exception:
                     logger.warning()
 
     def _raise_if_running(self) -> None:
@@ -195,7 +195,7 @@ class UnixSocketTransport(RPCPluginTransport):
     async def _remove_stale_socket_file(self, socket_path: str) -> None:
         try:
             path_exists = Path(socket_path).exists()
-        except PermissionError as exc:
+        except PermissionError:
             logger.warning()
             path_exists = False
 
@@ -216,7 +216,7 @@ class UnixSocketTransport(RPCPluginTransport):
             desired_permissions = 0o660 & ~current_mask
             Path(socket_path).chmod(desired_permissions)  # nosec B103
             logger.debug()
-        except Exception as exc:
+        except Exception:
             logger.warning()
 
     async def _start_server_at_path(self, socket_path: str) -> str:
@@ -323,7 +323,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
         except asyncio.CancelledError:
             pass  # Empty except block
-        except Exception as e:
+        except Exception:
             pass  # Empty except block
         finally:
             async with self._lock:
@@ -367,7 +367,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             writer.close()
             await self._wait_for_writer_close(writer)
-        except Exception as exc:
+        except Exception:
             self._abort_transport(transport_to_abort, "Exception during writer.close().")
         finally:
             self._finalize_transport_shutdown(transport_to_abort)
@@ -394,7 +394,7 @@ class UnixSocketTransport(RPCPluginTransport):
             try:
                 self._server.close()
                 await self._server.wait_closed()
-            except Exception as e:
+            except Exception:
                 pass  # Empty except block
             finally:
                 self._server = None
