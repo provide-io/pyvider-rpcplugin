@@ -68,7 +68,8 @@
       "Read(//private/tmp/**)",
       "Bash(uv run pytest:*)",
       "Bash(git log:*)",
-      "Bash(PYTHONPATH=./src mypy src)"
+      "Bash(PYTHONPATH=./src mypy src)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": [],
