@@ -73,7 +73,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(uv run ruff check:*)",
-      "Bash(uv run mypy:*)"
+      "Bash(uv run mypy:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(coverage report:*)"
     ],
     "deny": [],
     "ask": [],
