@@ -124,6 +124,7 @@ async def run_demo() -> None:
     # Library gets tracer from app's configuration
     tracer = get_rpc_tracer()
     if tracer:
+        print("✅ Tracer initialized and ready")
     else:
         print("⚠️  Tracer not available")
     print()

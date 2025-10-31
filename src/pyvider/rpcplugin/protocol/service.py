@@ -209,7 +209,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     service_id=0,
                     knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_outer),
                 )
-            except Exception as e_yield_fail:
+            except Exception:
                 logger.error()
 
 
@@ -236,7 +236,7 @@ class GRPCStdioService(GRPCStdioServicer):
         try:
             data = StdioData(channel=StdioData.STDERR if is_stderr else StdioData.STDOUT, data=line)
             await self._message_queue.put(data)
-        except Exception as e:
+        except Exception:
             pass  # Empty block
 
     async def _next_queue_item(self, done: asyncio.Event) -> StdioData | None:
@@ -302,7 +302,7 @@ class GRPCStdioService(GRPCStdioServicer):
         while not self._shutdown and not done.is_set():
             try:
                 item = await self._next_queue_item(done)
-            except Exception as exc:  # pragma: no cover - defensive path for queue errors
+            except Exception:  # pragma: no cover - defensive path for queue errors
                 await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
                 continue
 

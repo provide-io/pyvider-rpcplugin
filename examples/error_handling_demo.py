@@ -48,7 +48,6 @@ async def exception_hierarchy_demo() -> None:
             logger.info(f"🔍 Caught: {e}")
 
 
-
 async def graceful_degradation_example() -> None:
     """Example: Graceful degradation patterns."""
     logger.info("🛡️  Graceful Degradation Example")
@@ -70,7 +69,6 @@ async def graceful_degradation_example() -> None:
         logger.warning(f"⚠️  Primary service failed: {e}")
         logger.info("🔄 Falling back to secondary service")
         result = await fallback_service()
-
 
 
 async def circuit_breaker_example() -> None:
@@ -130,7 +128,6 @@ async def circuit_breaker_example() -> None:
         await asyncio.sleep(0.1)
 
 
-
 async def main() -> None:
     """Run error handling examples."""
     logger.info("🚀 Error Handling Examples")
@@ -138,7 +135,6 @@ async def main() -> None:
     await exception_hierarchy_demo()
     await graceful_degradation_example()
     await circuit_breaker_example()
-
 
 
 if __name__ == "__main__":

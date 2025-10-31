@@ -57,7 +57,6 @@ async def production_server_config() -> None:
     logger.info(json.dumps(config, indent=2))
 
 
-
 async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) -> None:
     """
     Demonstrates applying parts of a conceptual config to pyvider.rpcplugin.
@@ -118,7 +117,6 @@ async def apply_conceptual_config_to_pyvider(conceptual_config: dict[str, Any]) 
     logger.info("  Called pyvider.rpcplugin.configure() with mapped settings.")
 
 
-
 async def environment_configuration() -> None:
     """Example: Environment-based configuration."""
 
@@ -134,7 +132,6 @@ async def environment_configuration() -> None:
 
     for key, value in env_config.items():
         logger.info(f"  {key}: {value}")
-
 
 
 async def deployment_checklist() -> None:
@@ -156,7 +153,6 @@ async def deployment_checklist() -> None:
 
     for item in checklist:
         logger.info(f"  {item}")
-
 
 
 async def main() -> None:
@@ -196,7 +192,6 @@ async def main() -> None:
     await apply_conceptual_config_to_pyvider(conceptual_config_data)
     await environment_configuration()
     await deployment_checklist()
-
 
 
 if __name__ == "__main__":
