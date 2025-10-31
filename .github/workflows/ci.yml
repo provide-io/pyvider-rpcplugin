@@ -97,7 +97,7 @@ jobs:
       - name: 🔒 Type check with MyPy
         run: |
           source .venv/bin/activate
-          mypy src/ --ignore-missing-imports || true
+          mypy src/ --ignore-missing-imports
       
       - name: 🔒 Security check with Bandit
         run: |

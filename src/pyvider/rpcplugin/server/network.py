@@ -246,7 +246,7 @@ class ServerNetworkMixin:
 
         self._port = port_num
         transport.port = port_num
-        current_host = transport.host if transport.host else "0.0.0.0"
+        current_host = transport.host if transport.host else "0.0.0.0"  # nosec B104 - intentional for plugin server launched with explicit transport config
         transport.endpoint = f"{current_host}:{port_num}"
 
     def _configure_port_binding(
