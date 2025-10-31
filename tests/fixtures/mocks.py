@@ -119,8 +119,8 @@ async def mock_server_transport(
         try:
             await transport.close()
         except Exception as e:
-        # Short sleep to help ensure resources are released, especially sockets.
-        await asyncio.sleep(0.1)
+            # Short sleep to help ensure resources are released, especially sockets.
+            await asyncio.sleep(0.1)
     else:
         logger.warning(
         )
@@ -176,6 +176,7 @@ async def mock_server_transport_unix(managed_unix_socket_path) -> AsyncGenerator
                 logger.debug(
                 )
         except Exception as e:
+            logger.warning(f"Error during Unix transport cleanup: {e}")
 
 
 # @pytest_asyncio.fixture(scope="module", autouse=True)
