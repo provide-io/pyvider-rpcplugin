@@ -238,25 +238,14 @@ class ClientProcessMixin:
         credentials = self._setup_channel_credentials()
         options = self._get_channel_options()
 
-        # DEBUG: Log channel creation details
-        self.logger.info(f"🔍 DEBUG: Creating channel to '{self.target_endpoint}'")
-        self.logger.info(f"🔍 DEBUG: Transport: {self._transport_name}")
-        self.logger.info(f"🔍 DEBUG: Has credentials: {credentials is not None}")
-        self.logger.info(f"🔍 DEBUG: Has server_cert: {self._server_cert is not None}")
-        self.logger.info(f"🔍 DEBUG: Channel options: {options}")
-
         try:
             if not self.target_endpoint:
                 raise TransportError("Target endpoint must be set before creating gRPC channel")
 
             if credentials:
-                self.logger.info(f"🔍 DEBUG: Using secure_channel()")
                 self.grpc_channel = grpc.aio.secure_channel(self.target_endpoint, credentials, options=options)
             else:
-                self.logger.info(f"🔍 DEBUG: Using insecure_channel()")
                 self.grpc_channel = grpc.aio.insecure_channel(self.target_endpoint, options=options)
-
-            self.logger.info(f"🔍 DEBUG: Channel created, waiting for ready...")
 
             if self.grpc_channel is not None:
                 await asyncio.wait_for(
