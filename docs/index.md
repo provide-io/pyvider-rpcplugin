@@ -6,6 +6,18 @@ Build high-performance, type-safe plugin systems with Foundation integration, se
 
 **Part of the [provide.foundation](https://foundation.provide.io) ecosystem** - seamlessly integrates with Foundation's configuration, logging, and development toolchain for consistent, unified application architecture.
 
+---
+
+## Part of the provide.io Ecosystem
+
+This project is part of a larger ecosystem of tools for Python and Terraform development.
+
+**[View Ecosystem Overview →](https://docs.provide.io/provide-foundation/ecosystem/)**
+
+Understand how provide-foundation, pyvider, flavorpack, and other projects work together.
+
+---
+
 ## ✨ Key Features
 
 ### ⚡ **Performance-First**
