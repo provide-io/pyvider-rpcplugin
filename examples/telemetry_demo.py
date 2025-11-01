@@ -34,12 +34,14 @@ Usage:
 
 import asyncio
 import os
+from pathlib import Path
 import sys
+from typing import Any
 
 from provide.foundation import logger
 
 # Add src to path for local development
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import contextlib
 
@@ -53,15 +55,7 @@ from pyvider.rpcplugin.telemetry import get_rpc_tracer, is_telemetry_available
 class DemoProtocol(RPCPluginProtocol):
     """Simple protocol for telemetry demo."""
 
-    def create_server(self) -> tuple:
-        """Create gRPC server and handler."""
-        import grpc.aio
-
-        server = grpc.aio.server()
-        handler = DemoHandler()
-        return server, handler
-
-    def add_to_server(self, server, handler) -> None:
+    def add_to_server(self, server: Any, handler: Any) -> None:
         """Add service to server."""
         from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
             add_GRPCControllerServicer_to_server,
@@ -69,7 +63,7 @@ class DemoProtocol(RPCPluginProtocol):
 
         add_GRPCControllerServicer_to_server(handler, server)
 
-    def get_grpc_descriptors(self):
+    async def get_grpc_descriptors(self) -> Any:
         """Get gRPC service descriptors."""
         from pyvider.rpcplugin.protocol import grpc_controller_pb2
 
@@ -79,7 +73,7 @@ class DemoProtocol(RPCPluginProtocol):
 class DemoHandler(GRPCControllerServicer):
     """Simple handler for demo."""
 
-    async def Shutdown(self, request, context):
+    async def Shutdown(self, request: Any, context: Any) -> Any:
         """Handle shutdown."""
         from google.protobuf.empty_pb2 import Empty
 

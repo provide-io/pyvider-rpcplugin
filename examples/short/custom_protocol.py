@@ -28,7 +28,7 @@ class CustomProtocol(RPCPluginProtocol):
         logger.info("Custom protocol registered")
 
 
-async def main():
+async def main() -> None:
     """Run server with custom protocol."""
     protocol = CustomProtocol()
     handler = object()

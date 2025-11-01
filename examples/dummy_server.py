@@ -27,7 +27,7 @@ from pyvider.rpcplugin.types import (  # noqa: E402
 )
 
 
-async def main() -> None:
+async def main() -> None:  # noqa: C901
     """Sets up and runs the dummy server for Quick Start."""
     logger.info("🚀 dummy_server.py (Quick Start version): Starting as an executable plugin...")
 
@@ -74,8 +74,7 @@ async def main() -> None:
                 if server._transport_name == "unix":
                     logger.info(f"Writing socket path: {server.transport.endpoint} to {socket_comm_file}")
                     try:
-                        with open(socket_comm_file, "w") as f:
-                            f.write(str(server.transport.endpoint))
+                        Path(socket_comm_file).write_text(str(server.transport.endpoint))
                     except OSError as e:
                         logger.error(f"Failed to write socket path: {e}")
                 else:

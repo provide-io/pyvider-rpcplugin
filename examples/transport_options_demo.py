@@ -40,7 +40,7 @@ async def unix_transport_demo() -> None:
     with tempfile.NamedTemporaryFile(suffix=".sock", delete=False) as tmp:
         socket_path = tmp.name
 
-    transport = UnixSocketTransport(path=socket_path)
+    _transport = UnixSocketTransport(path=socket_path)
 
     # Cleanup
     Path(socket_path).unlink(missing_ok=True)

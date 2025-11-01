@@ -83,7 +83,7 @@ async def timeout_and_retry_example() -> None:
         try:
             # asyncio.wait_for adds a timeout to an awaitable. If the operation
             # takes longer than 1.0 second, it raises asyncio.TimeoutError.
-            result = await asyncio.wait_for(unreliable_operation(current_attempt), timeout=1.0)
+            await asyncio.wait_for(unreliable_operation(current_attempt), timeout=1.0)
             break  # Success, exit retry loop
         except TimeoutError:
             logger.warning(f"⏰ Operation attempt {current_attempt} timed out.")

@@ -104,8 +104,7 @@ async def mock_server_transport(
         yield transport
     elif transport_name == "unix":
         # Use the path from managed_unix_socket_path fixture
-        logger.debug(
-        )
+        logger.debug("Creating Unix socket transport", path=managed_unix_socket_path)
         transport = UnixSocketTransport(path=managed_unix_socket_path) # This is compatible with RPCPluginTransport
         yield transport
     else:
@@ -114,16 +113,14 @@ async def mock_server_transport(
 
     # Cleanup is handled after yield returns for the specific yielded transport
     if transport: # transport is now RPCPluginTransport | None
-        logger.debug(
-        )
+        logger.debug("Closing transport in fixture cleanup")
         try:
             await transport.close()
         except Exception as e:
             # Short sleep to help ensure resources are released, especially sockets.
             await asyncio.sleep(0.1)
     else:
-        logger.warning(
-        )
+        logger.warning("No transport to clean up")
 
 
 @pytest_asyncio.fixture
@@ -173,8 +170,7 @@ async def mock_server_transport_unix(managed_unix_socket_path) -> AsyncGenerator
             if os.path.exists(managed_unix_socket_path):
                 os.chmod(managed_unix_socket_path, 0o770) # Removed problematic comment
                 os.unlink(managed_unix_socket_path)
-                logger.debug(
-                )
+                logger.debug("Cleaned up Unix transport socket", path=managed_unix_socket_path)
         except Exception as e:
             logger.warning(f"Error during Unix transport cleanup: {e}")
 

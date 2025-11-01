@@ -57,7 +57,7 @@ class CustomProtocol(RPCPluginProtocol):
         factory_name = (
             middleware_factory.__name__ if hasattr(middleware_factory, "__name__") else str(middleware_factory)
         )
-        logger.info(f"➕ Added middleware factory: {factory_name}")
+        logger.info(f"+ Added middleware factory: {factory_name}")
 
     def _apply_middleware(self, handler: Any) -> Any:
         """Apply middleware stack to handler."""

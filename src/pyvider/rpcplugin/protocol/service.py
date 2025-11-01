@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
-
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """gRPC Service Implementations for Pyvider RPC Plugin.
 
 This module provides the Python implementations for the standard gRPC services
@@ -96,7 +89,7 @@ class SubchannelConnection:
         Side Effects:
             Sets is_open to True after successful opening.
         """
-        logger.debug()
+        logger.debug("Opening subchannel", conn_id=self.conn_id, address=self.address)
         await asyncio.sleep(0.05)  # simulate
         self.is_open = True
 
@@ -130,7 +123,7 @@ class GRPCBrokerService(GRPCBrokerServicer):
         # We hold subchannel references here.
         self._subchannels: dict[int, SubchannelConnection] = {}
 
-    async def StartStream(  # type: ignore[override]  # pyre-ignore[14]
+    async def StartStream(
         self,
         request_iterator: AsyncIterator[ConnInfo],
         context: grpc.aio.ServicerContext[ConnInfo, ConnInfo],
@@ -154,7 +147,12 @@ class GRPCBrokerService(GRPCBrokerServicer):
             async for incoming in request_iterator:
                 sub_id = incoming.service_id
                 try:  # Inner try for processing each item
-                    logger.debug(f"{sub_id}, network='{incoming.network}', address='{incoming.address}'")
+                    logger.debug(
+                        "Broker received subchannel request",
+                        sub_id=sub_id,
+                        network=incoming.network,
+                        address=incoming.address,
+                    )
 
                     if incoming.knock.knock:  # Request to open/ensure channel
                         if sub_id in self._subchannels and self._subchannels[sub_id].is_open:
@@ -190,6 +188,9 @@ class GRPCBrokerService(GRPCBrokerServicer):
                 except Exception as ex_inner:
                     err_str_inner = f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
                     logger.error(
+                        "Broker error processing subchannel item",
+                        sub_id=sub_id,
+                        error=str(ex_inner),
                         trace=traceback.format_exc(),
                     )
                     yield ConnInfo(
@@ -209,8 +210,8 @@ class GRPCBrokerService(GRPCBrokerServicer):
                     service_id=0,
                     knock=ConnInfo.Knock(knock=False, ack=False, error=err_str_outer),
                 )
-            except Exception:
-                logger.error()
+            except Exception as ex_yield:
+                logger.error("Failed to yield broker error response", error=str(ex_yield))
 
 
 _SENTINEL = object()  # Module-level sentinel
@@ -250,8 +251,9 @@ class GRPCStdioService(GRPCStdioServicer):
                 if item is _SENTINEL:
                     return None
                 logger.debug(
-                    item.channel,
-                    item.data[:20],
+                    "Stdio queue item retrieved (fast path)",
+                    channel=item.channel,
+                    data_preview=item.data[:20],
                 )
                 return item  # type: ignore[no-any-return]
 
@@ -267,8 +269,9 @@ class GRPCStdioService(GRPCStdioServicer):
                 if item is _SENTINEL:
                     return None
                 logger.debug(
-                    item.channel,
-                    item.data[:20],
+                    "Stdio queue item retrieved (async path)",
+                    channel=item.channel,
+                    data_preview=item.data[:20],
                 )
                 return item  # type: ignore[no-any-return]
 
@@ -293,8 +296,9 @@ class GRPCStdioService(GRPCStdioServicer):
             if item is _SENTINEL:
                 continue
             logger.debug(
-                item.channel,
-                item.data[:20],
+                "Stdio queue item drained",
+                channel=item.channel,
+                data_preview=item.data[:20],
             )
             yield item
 
@@ -312,12 +316,13 @@ class GRPCStdioService(GRPCStdioServicer):
 
         if self._shutdown or not self._message_queue.empty():
             logger.debug(
-                self._message_queue.qsize(),
+                "Draining stdio queue",
+                queue_size=self._message_queue.qsize(),
             )
             async for remaining in self._drain_queue():
                 yield remaining
 
-    async def StreamStdio(  # type: ignore[override]  # pyre-ignore[14]
+    async def StreamStdio(
         self, request: empty_pb2.Empty, context: grpc.aio.ServicerContext[empty_pb2.Empty, StdioData]
     ) -> AsyncIterator[StdioData]:
         """Streams STDOUT/STDERR lines to the caller."""
@@ -340,7 +345,7 @@ class GRPCStdioService(GRPCStdioServicer):
         try:
             self._message_queue.put_nowait(_SENTINEL)
         except asyncio.QueueFull:  # pragma: no cover
-            logger.warning()
+            logger.warning("Message queue full during shutdown, cannot add sentinel")
 
 
 class GRPCControllerService(GRPCControllerServicer):
@@ -364,9 +369,7 @@ class GRPCControllerService(GRPCControllerServicer):
         context={"operation": "controller_shutdown", "component": "protocol"},
         log_errors=True,
     )
-    async def Shutdown(  # type: ignore[override]  # pyre-ignore[14]
-        self, request: CEmpty, context: grpc.aio.ServicerContext[CEmpty, CEmpty]
-    ) -> CEmpty:
+    async def Shutdown(self, request: CEmpty, context: grpc.aio.ServicerContext[CEmpty, CEmpty]) -> CEmpty:
         """
         Handles the Shutdown RPC request from the client.
 

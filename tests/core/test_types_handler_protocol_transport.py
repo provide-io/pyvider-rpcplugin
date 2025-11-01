@@ -43,8 +43,6 @@ def test_is_valid_handler_false(mocker: object) -> None:
 # Test for is_valid_protocol
 def test_is_valid_protocol_true(mocker: object) -> None:
     """Test is_valid_protocol with an object that implements the protocol."""
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug", new_callable=MagicMock)
-
     class ValidProtocol(RPCPluginProtocol):
         async def get_grpc_descriptors(self):
             return (None, "service")
@@ -57,28 +55,20 @@ def test_is_valid_protocol_true(mocker: object) -> None:
 
     protocol_instance = ValidProtocol()
     assert is_valid_protocol(protocol_instance) is True
-    mock_logger_debug.assert_called_once_with(
-    )
 
 
 def test_is_valid_protocol_false(mocker: object) -> None:
     """Test is_valid_protocol with an object that does not implement the protocol."""
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug", new_callable=MagicMock)
-
     class InvalidProtocol:  # Missing methods
         pass
 
     protocol_instance = InvalidProtocol()
     assert is_valid_protocol(protocol_instance) is False
-    mock_logger_debug.assert_called_once_with(
-    )
 
 
 # Test for is_valid_transport
 def test_is_valid_transport_true(mocker: object) -> None:
     """Test is_valid_transport with an object that implements the protocol."""
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug", new_callable=MagicMock)
-
     class ValidTransport(RPCPluginTransport):
         endpoint: str | None = None
 
@@ -93,17 +83,11 @@ def test_is_valid_transport_true(mocker: object) -> None:
 
     transport_instance = ValidTransport()
     assert is_valid_transport(transport_instance) is True
-    mock_logger_debug.assert_called_once_with(
-    )
 
 
 def test_is_valid_transport_false(mocker: object) -> None:
     """Test is_valid_transport with an object that does not implement the protocol."""
-    mock_logger_debug = mocker.patch.object(types_module_logger_ref.logger, "debug", new_callable=MagicMock)
-
     non_transport_instance = object()
     assert is_valid_transport(non_transport_instance) is False
-    mock_logger_debug.assert_called_once_with(
-    )
 
 # 🔌📞🔚

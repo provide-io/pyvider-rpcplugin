@@ -223,7 +223,7 @@ class ServerNetworkMixin:
             and isinstance(self.transport, TCPSocketTransport)
             and getattr(self.transport, "port", None) is not None
         ):
-            return self.transport.port
+            return int(self.transport.port)
 
         port_conf = self._get_instance_override("PLUGIN_SERVER_PORT", rpcplugin_config.plugin_server_port)
         if port_conf is None:
