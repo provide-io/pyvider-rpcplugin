@@ -50,13 +50,13 @@ def clear_plugin_env_vars() -> None:
     Clear any existing plugin environment variables that might interfere with
     examples.
     """
-    plugin_vars = [k for k in os.environ.keys() if k.startswith("PLUGIN_")]
+    plugin_vars = [k for k in os.environ if k.startswith("PLUGIN_")]
     for var in plugin_vars:
         if var in os.environ:  # Check if var actually exists before deleting
             del os.environ[var]
 
 
-def configure_for_example(clear_env: bool = False) -> None:
+def configure_for_example(clear_env: bool = False) -> None:  # noqa: C901
     """
     Configure environment for example execution.
 

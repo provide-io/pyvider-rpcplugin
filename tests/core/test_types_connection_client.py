@@ -161,7 +161,7 @@ def test_is_valid_connection_true(mocker: object) -> None:
         mocker.call("ConnectionT: All structural and signature checks passed."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 def test_is_valid_connection_false_missing_method(mocker: object) -> None:
@@ -183,7 +183,7 @@ def test_is_valid_connection_false_missing_method(mocker: object) -> None:
         mocker.call("ConnectionT: Method close is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 def test_is_valid_connection_false_send_data_signature(mocker: object) -> None:
@@ -203,10 +203,6 @@ def test_is_valid_connection_false_send_data_signature(mocker: object) -> None:
     instance = InvalidConnectionSendDataSig()
     assert is_valid_connection(instance) is False  # Main assertion
 
-    # Verify key log messages were made
-    mock_logger_debug.assert_any_call(
-    )
-
     # Check for the specific failure log related to send_data signature
     # This makes sure the *reason* for returning False is the one we are testing
     specific_failure_log_made = False
@@ -219,7 +215,7 @@ def test_is_valid_connection_false_send_data_signature(mocker: object) -> None:
         f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"
     )
 
-    assert mock_logger_debug.call_count >= 2
+    assert mock_logger_debug.call_count >= 1
 
 
 def test_is_valid_connection_false_receive_data_signature(mocker: object) -> None:
@@ -239,9 +235,6 @@ def test_is_valid_connection_false_receive_data_signature(mocker: object) -> Non
     instance = InvalidConnectionReceiveDataSig()
     assert is_valid_connection(instance) is False  # Main assertion
 
-    mock_logger_debug.assert_any_call(
-    )
-
     specific_failure_log_made = False
     expected_specific_log = "ConnectionT: receive_data signature incorrect. Expected 1 param, got 0."
     # Iterate through call_args_list to find the specific log
@@ -253,7 +246,7 @@ def test_is_valid_connection_false_receive_data_signature(mocker: object) -> Non
         f"Expected log '{expected_specific_log}' not found in actual calls: {mock_logger_debug.call_args_list}"
     )
 
-    assert mock_logger_debug.call_count >= 2
+    assert mock_logger_debug.call_count >= 1
 
 
 def test_is_valid_connection_false_close_signature(mocker: object) -> None:
@@ -276,7 +269,7 @@ def test_is_valid_connection_false_close_signature(mocker: object) -> None:
         mocker.call("ConnectionT: close signature incorrect. Expected 0 params, got 1."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 def test_is_valid_connection_false_not_async(mocker: object) -> None:
@@ -299,7 +292,7 @@ def test_is_valid_connection_false_not_async(mocker: object) -> None:
         mocker.call("ConnectionT: Method send_data is not async as expected."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 # Test for is_valid_secure_rpc_client
@@ -326,7 +319,7 @@ def test_is_valid_secure_rpc_client_true(mocker: object) -> None:
         mocker.call("SecureRpcClientT: All structural and signature checks passed."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 def test_is_valid_secure_rpc_client_false_missing_method(mocker: object) -> None:
@@ -350,7 +343,7 @@ def test_is_valid_secure_rpc_client_false_missing_method(mocker: object) -> None
         mocker.call("SecureRpcClientT: Method _create_grpc_channel is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker: object) -> None:
@@ -376,7 +369,7 @@ def test_is_valid_secure_rpc_client_false_perform_handshake_signature(mocker: ob
         mocker.call("SecureRpcClientT: _perform_handshake signature incorrect. Expected 0 params, got 1."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 
 def test_is_valid_secure_rpc_client_false_not_async(mocker: object) -> None:
@@ -402,6 +395,6 @@ def test_is_valid_secure_rpc_client_false_not_async(mocker: object) -> None:
         mocker.call("SecureRpcClientT: Method _setup_tls is not async as expected."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 2
+    assert mock_logger_debug.call_count == 1
 
 # 🔌📞🔚

@@ -87,7 +87,7 @@ async def connection_pooling_example() -> None:
 
         tasks.append(use_connection(i))
 
-    results = await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
     monitor.end_timer("connection_test")
 
     monitor.report()

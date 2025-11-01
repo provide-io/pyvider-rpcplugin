@@ -247,8 +247,7 @@ async def managed_unix_socket_path(
 
     socket_path = str(socket_path_obj)
 
-    logger.debug(
-    )
+    logger.debug("Managed Unix socket path created", socket_path=socket_path, base=log_base_path_info)
 
     # Ensure the path does not exist before yielding (defensive)
     if os.path.exists(socket_path):
@@ -264,8 +263,7 @@ async def managed_unix_socket_path(
             # Depending on strictness, could raise an error here or let the test proceed.
 
     async def finalizer():
-        logger.debug(
-        )  # Existing + emphasis
+        logger.debug("Starting socket finalizer", socket_path=socket_path)
         await asyncio.sleep(0.05)
         if os.path.exists(socket_path):  # socket_path_obj should be used here
             try:
@@ -283,8 +281,7 @@ async def managed_unix_socket_path(
             )
 
     async def finalizer_coro(): # Renamed to avoid confusion if we bring back old finalizer name
-        logger.debug(
-        )
+        logger.debug("Starting async socket finalizer", socket_path=socket_path)
         await asyncio.sleep(0.05) # Keep the sleep, it might be generally helpful
         if os.path.exists(socket_path):
             try:

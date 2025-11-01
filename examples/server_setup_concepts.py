@@ -6,6 +6,8 @@
 """Server Setup Examples - Various server configuration patterns."""
 
 import asyncio
+from pathlib import Path
+import tempfile
 from typing import Any  # Moved to top, tuple is built-in for 3.9+ for this usage.
 
 from example_utils import (  # type: ignore[import-not-found]
@@ -44,7 +46,7 @@ class BasicProtocol(RPCPluginProtocol):
         # For a real service, this would typically call a function like:
         # your_pb2_grpc.add_YourServiceServicer_to_server(handler, server)
         # The service_name is derived from get_grpc_descriptors.
-        _, service_name = await self.get_grpc_descriptors()
+        _, _service_name = await self.get_grpc_descriptors()
         logger.info(f"registered with handler: {type(handler).__name__}")
 
 
@@ -83,23 +85,19 @@ async def tcp_server_example() -> RPCPluginServer:
         config={"APP_MAX_WORKERS": 4},  # Using APP_ prefix for clarity
     )
 
-    # Log the configured endpoint
-    endpoint_info = server.transport.endpoint if server.transport else "No transport"
     return server
 
 
 async def unix_server_example() -> RPCPluginServer:
     """Example: Unix socket server configuration."""
 
-    import os
-    import tempfile
     from typing import cast
 
     # Import for type casting
     from pyvider.rpcplugin.types import RPCPluginProtocol as TypesRPCPluginProtocol
 
     # Use tempfile for a safer temporary socket path
-    socket_path = os.path.join(tempfile.gettempdir(), "pyvider_example.sock")
+    socket_path = str(Path(tempfile.gettempdir()) / "pyvider_example.sock")
 
     proto_instance_unix: RPCPluginProtocol = BasicProtocol()
     server: RPCPluginServer = plugin_server(
@@ -111,8 +109,6 @@ async def unix_server_example() -> RPCPluginServer:
         config={"APP_MAX_WORKERS": 2},  # Using APP_ prefix for clarity
     )
 
-    # Log the configured endpoint
-    endpoint_info = server.transport.endpoint if server.transport else "No transport"
     return server
 
 

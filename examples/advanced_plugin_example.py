@@ -139,21 +139,20 @@ class AdvancedHandler:
                     await context.abort(grpc.StatusCode.INVALID_ARGUMENT, "Request validation failed")
 
                 # Check rate limit for expensive operations
-                if request.get("expensive", False):
-                    if not await self.rate_limiter.acquire():
-                        self.metrics["requests_rate_limited"] += 1
-                        span.set_status(Status(StatusCode.ERROR, "Rate limited"))
+                if request.get("expensive", False) and not await self.rate_limiter.acquire():
+                    self.metrics["requests_rate_limited"] += 1
+                    span.set_status(Status(StatusCode.ERROR, "Rate limited"))
 
-                        logger.warning(
-                            "Rate limit exceeded for expensive operation",
-                            client_id=client_id,
-                            remaining_tokens=self.rate_limiter.available_tokens,
-                        )
+                    logger.warning(
+                        "Rate limit exceeded for expensive operation",
+                        client_id=client_id,
+                        remaining_tokens=self.rate_limiter.available_tokens,
+                    )
 
-                        await context.abort(
-                            grpc.StatusCode.RESOURCE_EXHAUSTED,
-                            "Rate limit exceeded for expensive operations. Please retry with backoff.",
-                        )
+                    await context.abort(
+                        grpc.StatusCode.RESOURCE_EXHAUSTED,
+                        "Rate limit exceeded for expensive operations. Please retry with backoff.",
+                    )
 
                 # Process the request
                 result = await self._do_processing(request, span)
@@ -310,7 +309,7 @@ class AdvancedHandler:
         }
 
 
-async def main():
+async def main() -> None:
     """Main entry point for the advanced plugin."""
     logger.info(
         "Starting advanced RPC plugin server",

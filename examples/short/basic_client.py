@@ -16,7 +16,7 @@ from provide.foundation import logger
 from pyvider.rpcplugin import plugin_client
 
 
-async def main():
+async def main() -> None:
     """Connect to plugin server."""
     server_path = Path(__file__).parent / "basic_server.py"
     client = plugin_client(command=[sys.executable, str(server_path)])

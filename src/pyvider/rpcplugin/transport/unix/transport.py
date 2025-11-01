@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
-
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """Unix Domain Socket Transport Implementation.
 
 This module provides the `UnixSocketTransport` class, an implementation of the
@@ -260,9 +253,6 @@ class UnixSocketTransport(RPCPluginTransport):
             TransportError: If the socket file doesn't exist or connection fails
             TimeoutError: If the connection attempt times out
         """
-        # Save original endpoint for logging
-        orig_endpoint = endpoint
-
         # Normalize endpoint path
         endpoint = normalize_unix_path(endpoint)
 
