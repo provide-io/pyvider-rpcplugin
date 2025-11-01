@@ -64,9 +64,6 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH,
     DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX,
     DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH,
-    DEFAULT_PLUGIN_TLS_CURVE,
-    DEFAULT_PLUGIN_TLS_KEY_SIZE,
-    DEFAULT_PLUGIN_TLS_KEY_TYPE,
     DEFAULT_PLUGIN_UI_ENABLED,
     DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
     DEFAULT_SUPPORTED_TRANSPORTS,
@@ -297,22 +294,6 @@ class RPCPluginConfig(RuntimeConfig):
         default=DEFAULT_PLUGIN_CERT_VALIDITY_DAYS,
         parser=int,
         env_var="PLUGIN_CERT_VALIDITY_DAYS",
-    )
-
-    plugin_tls_key_type: str = env_field(
-        default=DEFAULT_PLUGIN_TLS_KEY_TYPE,
-        env_var="PLUGIN_TLS_KEY_TYPE",
-    )
-
-    plugin_tls_curve: str = env_field(
-        default=DEFAULT_PLUGIN_TLS_CURVE,
-        env_var="PLUGIN_TLS_CURVE",
-    )
-
-    plugin_tls_key_size: int = env_field(
-        default=DEFAULT_PLUGIN_TLS_KEY_SIZE,
-        parser=int,
-        env_var="PLUGIN_TLS_KEY_SIZE",
     )
 
     plugin_server_cert: str | None = env_field(
