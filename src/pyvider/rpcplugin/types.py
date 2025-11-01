@@ -3,7 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
+"""Type definitions for the Pyvider RPC plugin system.
+
+This module provides Protocol classes, TypeVars, and type aliases that define
+the interfaces and contracts used throughout the pyvider.rpcplugin package.
+These types enable static type checking and clear API boundaries.
+
+For most users, these types are used only in type annotations. Advanced users
+implementing custom protocol handlers will need to implement the Protocol
+interfaces defined here.
+"""
 
 from __future__ import annotations
 
@@ -23,17 +32,6 @@ import grpc
 from provide.foundation.logger import get_logger
 
 logger = get_logger(__name__)
-
-"""Type definitions for the Pyvider RPC plugin system.
-
-This module provides Protocol classes, TypeVars, and type aliases that define
-the interfaces and contracts used throughout the pyvider.rpcplugin package.
-These types enable static type checking and clear API boundaries.
-
-For most users, these types are used only in type annotations. Advanced users
-implementing custom protocol handlers will need to implement the Protocol
-interfaces defined here.
-"""
 
 if TYPE_CHECKING:
     from .config import RPCPluginConfig  # For TypeVar bound

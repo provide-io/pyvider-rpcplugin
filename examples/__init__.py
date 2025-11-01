@@ -3,6 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
+"""Examples demonstrating pyvider-rpcplugin usage patterns.
+
+This package contains runnable examples showing how to use pyvider-rpcplugin
+to build RPC plugin servers and clients, with various configurations and
+patterns such as basic communication, mTLS security, and error handling."""
 
 # 🔌📞🔚

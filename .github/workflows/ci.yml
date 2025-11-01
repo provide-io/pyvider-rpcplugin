@@ -45,7 +45,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pytest tests/ \
-            --cov=src/pyvider_rpcplugin \
+            --cov=pyvider.rpcplugin \
             --cov-report=xml \
             --cov-report=term \
             -n auto \
@@ -97,7 +97,7 @@ jobs:
       - name: 🔒 Type check with MyPy
         run: |
           source .venv/bin/activate
-          mypy src/ --ignore-missing-imports || true
+          mypy src/ --ignore-missing-imports
       
       - name: 🔒 Security check with Bandit
         run: |

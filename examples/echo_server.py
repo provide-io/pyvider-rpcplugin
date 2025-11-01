@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
+"""Echo server example demonstrating basic RPC plugin server usage.
+
+This example shows how to create a simple RPC plugin server that implements
+the echo service, handling client requests and responding with echoed data.
+It demonstrates the minimal setup needed to launch a functioning plugin server."""
 
 import asyncio
 import os
