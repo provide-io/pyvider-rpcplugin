@@ -77,6 +77,7 @@ def setup_environment(monkeypatch):
     rpcplugin_config._instance = None
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_build_handshake_response_unix(monkeypatch):
     """Test building handshake response with Unix transport."""
@@ -105,6 +106,7 @@ async def test_build_handshake_response_unix(monkeypatch):
         await transport.close()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_build_handshake_response_with_certificate():
     """Test building handshake response with a certificate."""
@@ -142,6 +144,7 @@ async def test_build_handshake_response_with_certificate():
         await transport.close()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_full_handshake_cycle():
     """Test a complete handshake cycle with building and parsing."""
@@ -176,6 +179,7 @@ async def test_full_handshake_cycle():
         await transport.close()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_server_handshake_integration(
     setup_environment, mock_protocol, mock_handler, managed_unix_socket_path, mocker
@@ -244,6 +248,7 @@ async def test_server_handshake_integration(
             await server.stop()
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_certificate_handling_in_handshake():
     """Test proper certificate handling in handshake."""
