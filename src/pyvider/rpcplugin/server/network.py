@@ -126,7 +126,7 @@ class ServerNetworkMixin:
             return None, False
 
         if not client_root_certs_conf:
-            logger.warning(
+            logger.info(
                 "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. "
                 "Client certs will not be required/verified."
             )
