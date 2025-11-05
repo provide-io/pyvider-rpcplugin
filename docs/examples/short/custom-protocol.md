@@ -69,4 +69,3 @@ if __name__ == "__main__":
 
 - **Beginner:** Start with [Echo Service Example](../echo-basic.md) for complete pattern
 - **Intermediate:** Learn [Protocol Development](../../guide/advanced/custom-protocols.md)
-- **Advanced:** Implement [Streaming RPCs](../../guide/advanced/streaming.md)
