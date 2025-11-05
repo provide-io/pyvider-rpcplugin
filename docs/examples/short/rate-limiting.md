@@ -62,4 +62,3 @@ if __name__ == "__main__":
 
 - **Beginner:** Combine with [Health Checks](health-check.md) for production readiness
 - **Intermediate:** Learn [Advanced Rate Limiting](../../guide/server/rate-limiting.md) patterns
-- **Advanced:** Implement [Custom Interceptors](../../guide/advanced/interceptors.md)
