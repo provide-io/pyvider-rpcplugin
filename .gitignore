@@ -416,3 +416,6 @@ build
 docs/.shared-theme/
 *.key
 bf-*.txt
+
+# Extracted provide.io tooling artifacts
+.provide/
