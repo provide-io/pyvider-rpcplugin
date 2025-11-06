@@ -79,20 +79,20 @@ The documentation is generated directly from the source code, ensuring it stays 
 
 ### Most Common Classes
 
-- [RPCPluginClient](pyvider/rpcplugin/client/core.md#RPCPluginClient) - Main client class
-- [RPCPluginServer](pyvider/rpcplugin/server/core.md#RPCPluginServer) - Main server class
-- [RPCPluginConfig](pyvider/rpcplugin/config/runtime.md#RPCPluginConfig) - Configuration class
-- [RPCPluginProtocol](pyvider/rpcplugin/protocol/base.md#RPCPluginProtocol) - Protocol base class
+- [RPCPluginClient](pyvider/rpcplugin/client/core.md#pyvider.rpcplugin.client.core.RPCPluginClient) - Main client class
+- [RPCPluginServer](pyvider/rpcplugin/server/core.md#pyvider.rpcplugin.server.core.RPCPluginServer) - Main server class
+- [RPCPluginConfig](pyvider/rpcplugin/config/runtime.md#pyvider.rpcplugin.config.runtime.RPCPluginConfig) - Configuration class
+- [RPCPluginProtocol](pyvider/rpcplugin/protocol/base.md#pyvider.rpcplugin.protocol.base.RPCPluginProtocol) - Protocol base class
 
 ### Factory Functions
 
-- [plugin_client()](pyvider/rpcplugin/factories.md#plugin_client) - Create configured clients
-- [plugin_server()](pyvider/rpcplugin/factories.md#plugin_server) - Create configured servers
-- [plugin_protocol()](pyvider/rpcplugin/factories.md#plugin_protocol) - Create protocol instances
+- [plugin_client()](pyvider/rpcplugin/factories.md#pyvider.rpcplugin.factories.plugin_client) - Create configured clients
+- [plugin_server()](pyvider/rpcplugin/factories.md#pyvider.rpcplugin.factories.plugin_server) - Create configured servers
+- [plugin_protocol()](pyvider/rpcplugin/factories.md#pyvider.rpcplugin.factories.plugin_protocol) - Create protocol instances
 
 ### Exceptions
 
-- [RPCPluginError](pyvider/rpcplugin/exception.md#RPCPluginError) - Base exception
-- [HandshakeError](pyvider/rpcplugin/exception.md#HandshakeError) - Handshake failures
-- [TransportError](pyvider/rpcplugin/exception.md#TransportError) - Transport issues
-- [ProtocolError](pyvider/rpcplugin/exception.md#ProtocolError) - Protocol violations
+- [RPCPluginError](pyvider/rpcplugin/exception.md#pyvider.rpcplugin.exception.RPCPluginError) - Base exception
+- [HandshakeError](pyvider/rpcplugin/exception.md#pyvider.rpcplugin.exception.HandshakeError) - Handshake failures
+- [TransportError](pyvider/rpcplugin/exception.md#pyvider.rpcplugin.exception.TransportError) - Transport issues
+- [ProtocolError](pyvider/rpcplugin/exception.md#pyvider.rpcplugin.exception.ProtocolError) - Protocol violations
