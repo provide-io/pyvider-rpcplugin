@@ -624,7 +624,7 @@ class DocumentedProtocol(RPCPluginProtocol):
 
 ## Next Steps
 
-- **[RPC Architecture](rpc-architecture.md)** - Understanding the complete RPC system
-- **[Handshake Process](handshake.md)** - Connection establishment and protocol negotiation
-- **[Server Development](../server/index.md)** - Implementing servers with custom protocols
-- **[Custom Protocols](../advanced/custom-protocols.md)** - Advanced protocol development patterns
+- **[RPC Architecture](rpc-architecture/)** - Understanding the complete RPC system
+- **[Handshake Process](handshake/)** - Connection establishment and protocol negotiation
+- **[Server Development](../server/index/)** - Implementing servers with custom protocols
+- **[Custom Protocols](../advanced/custom-protocols/)** - Advanced protocol development patterns

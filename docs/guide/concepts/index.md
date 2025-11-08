@@ -185,7 +185,7 @@ Now that you understand the core concepts, dive deeper into specific areas:
     
     Deep dive into the plugin architecture and communication patterns
     
-    [:octicons-arrow-right-24: Learn Architecture](rpc-architecture.md)
+    [:octicons-arrow-right-24: Learn Architecture](rpc-architecture/)
 
 -   :material-swap-horizontal: **Transports**
     
@@ -193,7 +193,7 @@ Now that you understand the core concepts, dive deeper into specific areas:
     
     Understanding Unix sockets vs TCP and when to use each
     
-    [:octicons-arrow-right-24: Explore Transports](transports.md)
+    [:octicons-arrow-right-24: Explore Transports](transports/)
 
 -   :material-api: **Protocols**
     
@@ -201,7 +201,7 @@ Now that you understand the core concepts, dive deeper into specific areas:
     
     How to define and implement RPC protocols with gRPC
     
-    [:octicons-arrow-right-24: Define Protocols](protocols.md)
+    [:octicons-arrow-right-24: Define Protocols](protocols/)
 
 -   :material-shield-check: **Security Model**
     
@@ -209,11 +209,11 @@ Now that you understand the core concepts, dive deeper into specific areas:
     
     Comprehensive security including mTLS, magic cookies, and isolation
     
-    [:octicons-arrow-right-24: Secure Plugins](security.md)
+    [:octicons-arrow-right-24: Secure Plugins](security/)
 
 </div>
 
 Or jump to practical implementation:
 
-- **[Server Development](../server/index.md)** - Build your first plugin server
-- **[Client Development](../client/index.md)** - Connect to and manage plugins
+- **[Server Development](../server/index/)** - Build your first plugin server
+- **[Client Development](../client/index/)** - Connect to and manage plugins

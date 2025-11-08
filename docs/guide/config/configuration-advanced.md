@@ -447,9 +447,9 @@ export PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE=8388608  # 8MB
 
 ## Related Topics
 
-- **[Configuration Reference](configuration-reference.md)** - All configuration options
-- **[Client Configuration](configuration-client.md)** - Client-side settings
-- **[Server Configuration](configuration-server.md)** - Server-side settings
-- **[Security Configuration](configuration-security.md)** - mTLS and certificates
-- **[Performance Tuning](../advanced/performance.md)** - Performance optimization
-- **[Protocol Development](../advanced/custom-protocols.md)** - Custom protocol versions
+- **[Configuration Reference](configuration-reference/)** - All configuration options
+- **[Client Configuration](configuration-client/)** - Client-side settings
+- **[Server Configuration](configuration-server/)** - Server-side settings
+- **[Security Configuration](configuration-security/)** - mTLS and certificates
+- **[Performance Tuning](../advanced/performance/)** - Performance optimization
+- **[Protocol Development](../advanced/custom-protocols/)** - Custom protocol versions

@@ -14,4 +14,4 @@ Browse the modules using the navigation on the left, or use the search function 
 - **config**: Configuration management
 - **factories**: Factory functions for common patterns
 
-For detailed usage examples, see the [Examples](../examples/index.md) section.
+For detailed usage examples, see the [Examples](../examples/index/) section.

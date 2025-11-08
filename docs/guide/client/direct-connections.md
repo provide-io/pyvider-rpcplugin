@@ -571,7 +571,7 @@ async def test_direct_connection(mock_direct_server):
 
 ## See Also
 
-- [Client Configuration](index.md)
-- [Connection Management](connections.md)
-- [Retry Logic](retry-logic.md)
-- [Security Guide](../security/index.md)
+- [Client Configuration](index/)
+- [Connection Management](connections/)
+- [Retry Logic](retry-logic/)
+- [Security Guide](../security/index/)

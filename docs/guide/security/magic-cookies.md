@@ -269,7 +269,7 @@ isolator = ProcessIsolator(
 
 ## Next Steps
 
-- **[mTLS Configuration](mtls.md)** - Certificate-based authentication for network communication
-- **[Process Isolation](process-isolation.md)** - Secure plugin sandboxing
-- **[Certificate Management](certificates.md)** - PKI for advanced security scenarios
-- **[Security Overview](index.md)** - Complete security architecture guide
+- **[mTLS Configuration](mtls/)** - Certificate-based authentication for network communication
+- **[Process Isolation](process-isolation/)** - Secure plugin sandboxing
+- **[Certificate Management](certificates/)** - PKI for advanced security scenarios
+- **[Security Overview](index/)** - Complete security architecture guide

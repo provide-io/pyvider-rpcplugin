@@ -264,9 +264,9 @@ configure(
 
 ## Related Topics
 
-- **[Configuration Reference](configuration-reference.md)** - All configuration options
-- **[Server Configuration](configuration-server.md)** - Server-side settings
-- **[Security Configuration](configuration-security.md)** - mTLS and certificates
-- **[Connection Management](../client/connections.md)** - Client connection patterns
-- **[Error Handling](../client/error-handling.md)** - Handling connection failures
-- **[Retry Logic](../client/retry-logic.md)** - Advanced retry strategies
+- **[Configuration Reference](configuration-reference/)** - All configuration options
+- **[Server Configuration](configuration-server/)** - Server-side settings
+- **[Security Configuration](configuration-security/)** - mTLS and certificates
+- **[Connection Management](../client/connections/)** - Client connection patterns
+- **[Error Handling](../client/error-handling/)** - Handling connection failures
+- **[Retry Logic](../client/retry-logic/)** - Advanced retry strategies

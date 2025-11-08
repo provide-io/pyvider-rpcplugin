@@ -584,7 +584,7 @@ server = (
 
 ## Related Topics
 
-- [API Reference](../../reference/index.md) - Complete API with type annotations
-- [Architecture](../../development/architecture.md) - System design with types
-- [Testing](../../development/testing.md) - Type testing strategies
-- [Configuration Reference](../config/configuration-reference.md) - Typed configuration
+- [API Reference](../../reference/index/) - Complete API with type annotations
+- [Architecture](../../development/architecture/) - System design with types
+- [Testing](../../development/testing/) - Type testing strategies
+- [Configuration Reference](../config/configuration-reference/) - Typed configuration

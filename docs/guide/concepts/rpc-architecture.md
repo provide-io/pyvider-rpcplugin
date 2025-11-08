@@ -564,7 +564,7 @@ gRPC provides built-in metrics and tracing:
 
 ## Next Steps
 
-- **[Protocols](protocols.md)** - Protocol definition and implementation patterns
-- **[Handshake Process](handshake.md)** - Connection establishment and negotiation
-- **[Transports](transports.md)** - Transport layer implementation details
-- **[Security Model](security.md)** - Security architecture and patterns
+- **[Protocols](protocols/)** - Protocol definition and implementation patterns
+- **[Handshake Process](handshake/)** - Connection establishment and negotiation
+- **[Transports](transports/)** - Transport layer implementation details
+- **[Security Model](security/)** - Security architecture and patterns

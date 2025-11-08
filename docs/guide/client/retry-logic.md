@@ -432,7 +432,7 @@ if timeout_stats.average_timeout > acceptable_threshold:
 
 ## Next Steps
 
-- **[Connection Management](connections.md)** - Advanced connection handling
-- **[Error Handling](error-handling.md)** - Comprehensive error strategies
-- **[Direct Connections](direct-connections.md)** - Low-level client patterns
-- **[Client Configuration](basic-setup.md)** - Client setup and configuration
+- **[Connection Management](connections/)** - Advanced connection handling
+- **[Error Handling](error-handling/)** - Comprehensive error strategies
+- **[Direct Connections](direct-connections/)** - Low-level client patterns
+- **[Client Configuration](basic-setup/)** - Client setup and configuration

@@ -365,11 +365,11 @@ if __name__ == "__main__":
 
 For more advanced patterns and production use cases:
 
-- **[Security Guide](../guide/security/index.md)** - Complete mTLS setup and security patterns
-- **[Advanced Topics](../guide/advanced/index.md)** - Performance tuning, custom protocols, telemetry
-- **[Production Configuration](../guide/config/production.md)** - Deployment best practices
-- **[Server Guide](../guide/server/index.md)** - Server-side patterns and optimization
-- **[Client Guide](../guide/client/index.md)** - Client-side patterns and error handling
+- **[Security Guide](../guide/security/index/)** - Complete mTLS setup and security patterns
+- **[Advanced Topics](../guide/advanced/index/)** - Performance tuning, custom protocols, telemetry
+- **[Production Configuration](../guide/config/production/)** - Deployment best practices
+- **[Server Guide](../guide/server/index/)** - Server-side patterns and optimization
+- **[Client Guide](../guide/client/index/)** - Client-side patterns and error handling
 
 ## More Examples
 
@@ -377,7 +377,7 @@ For more advanced patterns and production use cases:
 
 The `examples/` directory contains additional working examples:
 
-- **[Echo Service Examples](echo-basic.md)** - Complete RPC service with streaming patterns (basic, intermediate, and advanced)
+- **[Echo Service Examples](echo-basic/)** - Complete RPC service with streaming patterns (basic, intermediate, and advanced)
 - **Short Examples** (see navigation menu) - Focused 15-30 line examples for specific features
 
 ### Running Examples
@@ -457,7 +457,7 @@ We welcome contributions of new examples! Please:
 
 If you have questions about the examples:
 
-- Check the [User Guide](../guide/index.md) for detailed concepts
-- Review the [API Reference](../reference/index.md) for technical details
+- Check the [User Guide](../guide/index/) for detailed concepts
+- Review the [API Reference](../reference/index/) for technical details
 - Report issues on [GitHub](https://github.com/provide-io/pyvider-rpcplugin/issues)
 - Join discussions in [GitHub Discussions](https://github.com/provide-io/pyvider-rpcplugin/discussions)

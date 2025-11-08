@@ -193,7 +193,7 @@ from pyvider.rpcplugin import configure
 configure(health_service_enabled=True)
 ```
 
-The health service implements the [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking.md), compatible with:
+The health service implements the [gRPC Health Checking Protocol](https://github.com/grpc/grpc/blob/master/doc/health-checking/), compatible with:
 
 - Kubernetes liveness/readiness probes
 - Load balancers
@@ -393,9 +393,9 @@ configure(health_service_enabled=True)
 
 ## Related Topics
 
-- **[Configuration Reference](configuration-reference.md)** - All configuration options
-- **[Client Configuration](configuration-client.md)** - Client-side settings
-- **[Security Configuration](configuration-security.md)** - mTLS and certificates
-- **[Server Development](../server/index.md)** - Server implementation patterns
-- **[Health Checks](../server/health-checks.md)** - Health check implementation
-- **[Rate Limiting Guide](../server/rate-limiting.md)** - Advanced rate limiting
+- **[Configuration Reference](configuration-reference/)** - All configuration options
+- **[Client Configuration](configuration-client/)** - Client-side settings
+- **[Security Configuration](configuration-security/)** - mTLS and certificates
+- **[Server Development](../server/index/)** - Server implementation patterns
+- **[Health Checks](../server/health-checks/)** - Health check implementation
+- **[Rate Limiting Guide](../server/rate-limiting/)** - Advanced rate limiting

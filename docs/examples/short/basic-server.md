@@ -41,33 +41,33 @@ if __name__ == "__main__":
 ## Learning Path
 
 ### Next Steps for Development
-- **[Server Development Guide](../../guide/server/index.md)** - Complete guide to building production-ready plugin servers
-- **[Configuration Guide](../../guide/config/index.md)** - Environment-driven configuration setup and best practices
-- **[Security Implementation](../../guide/security/index.md)** - Add mTLS, authentication, and secure communication
+- **[Server Development Guide](../../guide/server/index/)** - Complete guide to building production-ready plugin servers
+- **[Configuration Guide](../../guide/config/index/)** - Environment-driven configuration setup and best practices
+- **[Security Implementation](../../guide/security/index/)** - Add mTLS, authentication, and secure communication
 
 ### Understanding the Framework
-- **[Transport Concepts](../../guide/concepts/transports.md)** - Learn about Unix sockets, TCP, and transport selection
-- **[Security Model](../../guide/concepts/security.md)** - Understand the plugin security architecture
+- **[Transport Concepts](../../guide/concepts/transports/)** - Learn about Unix sockets, TCP, and transport selection
+- **[Security Model](../../guide/concepts/security/)** - Understand the plugin security architecture
 
 ### Complete Examples
-- **[Echo Service Examples](../echo-basic.md)** - Full-featured service examples from basic to advanced
+- **[Echo Service Examples](../echo-basic/)** - Full-featured service examples from basic to advanced
 - **[Configuration Examples](../../guide/config/index.md#configuration-examples)** - Environment-specific configuration patterns
 
 ## Related Examples
 
-- [Full Server Guide](../../guide/server/basic-setup.md)
-- [Custom Protocols](../../guide/advanced/custom-protocols.md)
+- [Full Server Guide](../../guide/server/basic-setup/)
+- [Custom Protocols](../../guide/advanced/custom-protocols/)
 ## What's Next?
 
 ### Next Steps
 
 1. **Add Custom Logic** - Replace `object()` handler with your service implementation
-2. **Try Basic Client** - Connect to this server with [Basic Client Example](basic-client.md)
-3. **Enable Features** - Add [Health Checks](health-check.md) or [Rate Limiting](rate-limiting.md)
-4. **Go Production** - Learn about [Security Configuration](../../guide/config/configuration-security.md)
+2. **Try Basic Client** - Connect to this server with [Basic Client Example](basic-client/)
+3. **Enable Features** - Add [Health Checks](health-check/) or [Rate Limiting](rate-limiting/)
+4. **Go Production** - Learn about [Security Configuration](../../guide/config/configuration-security/)
 
 ### Learning Path
 
-- **Beginner:** [Health Check Example](health-check.md) → Add monitoring
-- **Intermediate:** [Custom Protocol Example](custom-protocol.md) → Add your RPC methods
-- **Advanced:** [Complete Echo Service](../echo-basic.md) → Full service example
+- **Beginner:** [Health Check Example](health-check/) → Add monitoring
+- **Intermediate:** [Custom Protocol Example](custom-protocol/) → Add your RPC methods
+- **Advanced:** [Complete Echo Service](../echo-basic/) → Full service example

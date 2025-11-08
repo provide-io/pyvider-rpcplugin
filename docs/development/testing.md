@@ -677,8 +677,8 @@ def test_config_validation():
 
 ## Related Documentation
 
-- [Configuration](../reference/pyvider/rpcplugin/config/index.md) - Configuration testing patterns
-- [Exception Handling](../reference/pyvider/rpcplugin/exception.md) - Testing error conditions
-- [Server API](../reference/pyvider/rpcplugin/server/core.md) - Server testing specifics
-- [Client API](../reference/pyvider/rpcplugin/client/core.md) - Client testing specifics
-- [Transport Layer](../reference/pyvider/rpcplugin/transport/index.md) - Transport testing details
+- [Configuration](../reference/pyvider/rpcplugin/config/index/) - Configuration testing patterns
+- [Exception Handling](../reference/pyvider/rpcplugin/exception/) - Testing error conditions
+- [Server API](../reference/pyvider/rpcplugin/server/core/) - Server testing specifics
+- [Client API](../reference/pyvider/rpcplugin/client/core/) - Client testing specifics
+- [Transport Layer](../reference/pyvider/rpcplugin/transport/index/) - Transport testing details

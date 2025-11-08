@@ -1,6 +1,6 @@
 # Foundation: The Infrastructure Layer
 
-**Path:** [Home](../index.md) → [Introduction](index.md) → Foundation
+**Path:** [Home](../index/) → [Introduction](index/) → Foundation
 
 !!! info "Canonical Foundation Reference"
     This page is the **canonical reference** for understanding Foundation's role in Pyvider RPC Plugin. Other documentation pages link here for detailed Foundation information.
@@ -274,5 +274,5 @@ This separation of concerns means:
 
 Now that you understand the Foundation relationship:
 
-1. Continue to [Architecture Overview](../development/architecture.md) to understand the system design
-2. Or jump to [Installation](../getting-started/installation.md) to start building
+1. Continue to [Architecture Overview](../development/architecture/) to understand the system design
+2. Or jump to [Installation](../getting-started/installation/) to start building

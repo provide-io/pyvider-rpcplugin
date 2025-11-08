@@ -47,19 +47,19 @@ if __name__ == "__main__":
 
 ## Related Examples
 
-- [Basic Server](basic-server.md) - Default Unix socket transport
-- [Transport Guide](../../guide/concepts/transports.md)
+- [Basic Server](basic-server/) - Default Unix socket transport
+- [Transport Guide](../../guide/concepts/transports/)
 ## What's Next?
 
 ### Next Steps
 
-1. **Add mTLS** - Secure TCP connections with [Security Configuration](../../guide/config/configuration-security.md)
+1. **Add mTLS** - Secure TCP connections with [Security Configuration](../../guide/config/configuration-security/)
 2. **Network Discovery** - Implement service discovery for network plugins
 3. **Firewall Rules** - Configure firewall for TCP port
 4. **Load Balancing** - Set up load balancing for multiple server instances
 
 ### Learning Path
 
-- **Beginner:** Try [Basic Server](basic-server.md) with Unix sockets for comparison
-- **Intermediate:** Learn [Transport Selection](../../guide/concepts/transports.md) strategies
-- **Advanced:** Implement [Multi-Transport Support](../../guide/server/transports.md)
+- **Beginner:** Try [Basic Server](basic-server/) with Unix sockets for comparison
+- **Intermediate:** Learn [Transport Selection](../../guide/concepts/transports/) strategies
+- **Advanced:** Implement [Multi-Transport Support](../../guide/server/transports/)

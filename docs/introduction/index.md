@@ -30,7 +30,7 @@ This architecture separates concerns:
 
 ## Documentation Sections
 
-### [Foundation Overview](foundation.md)
+### [Foundation Overview](foundation/)
 
 Detailed explanation of how Foundation and Pyvider RPC Plugin work together, including:
 
@@ -45,9 +45,9 @@ Detailed explanation of how Foundation and Pyvider RPC Plugin work together, inc
 
 After understanding the architecture:
 
-1. **[Installation](../getting-started/installation.md)** - Set up your development environment
-2. **[Quick Start](../getting-started/quick-start.md)** - Create your first plugin in 5 minutes
-3. **[User Guide](../guide/index.md)** - Comprehensive framework documentation
+1. **[Installation](../getting-started/installation/)** - Set up your development environment
+2. **[Quick Start](../getting-started/quick-start/)** - Create your first plugin in 5 minutes
+3. **[User Guide](../guide/index/)** - Comprehensive framework documentation
 
 ## Why This Architecture?
 
@@ -60,10 +60,10 @@ The Foundation + Pyvider approach provides several key benefits:
 
 ## Next Steps
 
-- **New to the framework?** Start with [Foundation Overview](foundation.md) to understand the infrastructure
-- **Ready to code?** Jump to [Getting Started](../getting-started/index.md) for installation and tutorials
-- **Building production services?** See the [User Guide](../guide/index.md) for comprehensive patterns
+- **New to the framework?** Start with [Foundation Overview](foundation/) to understand the infrastructure
+- **Ready to code?** Jump to [Getting Started](../getting-started/index/) for installation and tutorials
+- **Building production services?** See the [User Guide](../guide/index/) for comprehensive patterns
 
 ---
 
-**Navigation:** [Home](../index.md) | [Next: Foundation](foundation.md)
+**Navigation:** [Home](../index/) | [Next: Foundation](foundation/)
