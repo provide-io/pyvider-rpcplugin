@@ -172,7 +172,8 @@ class HealthMonitoredClient:
                 print(f"=� Health check OK (latency: {latency:.1f}ms)")
             
         except Exception as e:
-            print(f"d=% Health check failed: {e}")
+            print(f"d
+=% Health check failed: {e}")
             await self._reconnect()
     
     async def _reconnect(self):
@@ -732,6 +733,6 @@ await stateful_connection_example()
 
 ## Next Steps
 
-- **[Direct Connections](direct-connections.md)** - Connect to existing servers
-- **[Retry Logic](retry-logic.md)** - Build resilient error handling
-- **[Basic Setup](basic-setup.md)** - Review fundamentals
+- **[Direct Connections](direct-connections/)** - Connect to existing servers
+- **[Retry Logic](retry-logic/)** - Build resilient error handling
+- **[Basic Setup](basic-setup/)** - Review fundamentals

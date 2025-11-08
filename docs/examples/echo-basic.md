@@ -204,18 +204,18 @@ If the client times out:
 ## Next Steps
 
 ### Learn More Patterns
-- **[Echo Intermediate](echo-intermediate.md)** - Add streaming RPC patterns
-- **[Echo Advanced](echo-advanced.md)** - Bidirectional streaming, error handling, monitoring
+- **[Echo Intermediate](echo-intermediate/)** - Add streaming RPC patterns
+- **[Echo Advanced](echo-advanced/)** - Bidirectional streaming, error handling, monitoring
 
 ### Explore Other Examples
-- **[Direct Connection Example](../guide/client/direct-connections.md)** - Connect to existing server
-- **[Security Guide](../guide/security/mtls.md)** - Add mTLS encryption
-- **[Production Configuration](../guide/config/production.md)** - Production-ready configuration
+- **[Direct Connection Example](../guide/client/direct-connections/)** - Connect to existing server
+- **[Security Guide](../guide/security/mtls/)** - Add mTLS encryption
+- **[Production Configuration](../guide/config/production/)** - Production-ready configuration
 
 ### Study Core Concepts
-- **[RPC Architecture](../guide/concepts/rpc-architecture.md)** - Understanding the plugin model
-- **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
-- **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
+- **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
+- **[Transport Configuration](../guide/concepts/transports/)** - Unix sockets vs TCP
+- **[Security Model](../guide/concepts/security/)** - Authentication and encryption
 
 ## Source Code
 

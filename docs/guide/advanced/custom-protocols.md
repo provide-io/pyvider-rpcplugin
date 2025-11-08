@@ -396,8 +396,8 @@ class ProtocolMiddleware:
 
 ## Next Steps
 
-- **[Performance Optimization](performance.md)** - Optimize protocol performance
-- **[Testing Guide](../../development/testing.md)** - Test custom protocols
-- **[Production Configuration](../config/production.md)** - Deploy protocols to production
+- **[Performance Optimization](performance/)** - Optimize protocol performance
+- **[Testing Guide](../../development/testing/)** - Test custom protocols
+- **[Production Configuration](../config/production/)** - Deploy protocols to production
 
 For complex protocol requirements, consider consulting with the Foundation team for architecture guidance and optimization strategies.

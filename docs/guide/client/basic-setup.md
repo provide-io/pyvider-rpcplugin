@@ -416,6 +416,6 @@ async def test_client_error_handling():
 
 ## Next Steps
 
-- **[Connection Management](connections.md)** - Master connection lifecycle
-- **[Direct Connections](direct-connections.md)** - Connect to existing servers  
-- **[Retry Logic](retry-logic.md)** - Build resilient clients
+- **[Connection Management](connections/)** - Master connection lifecycle
+- **[Direct Connections](direct-connections/)** - Connect to existing servers  
+- **[Retry Logic](retry-logic/)** - Build resilient clients

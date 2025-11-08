@@ -404,9 +404,9 @@ print(os.environ.get("PLUGIN_MAGIC_COOKIE"))
 
 ## Related Topics
 
-- **[Configuration Reference](configuration-reference.md)** - All configuration options
-- **[Client Configuration](configuration-client.md)** - Client-side settings
-- **[Server Configuration](configuration-server.md)** - Server-side settings
-- **[Security Guide](../security/index.md)** - Complete security implementation
-- **[mTLS Setup](../security/mtls.md)** - Step-by-step mTLS guide
-- **[Certificate Management](../security/certificates.md)** - Advanced certificate topics
+- **[Configuration Reference](configuration-reference/)** - All configuration options
+- **[Client Configuration](configuration-client/)** - Client-side settings
+- **[Server Configuration](configuration-server/)** - Server-side settings
+- **[Security Guide](../security/index/)** - Complete security implementation
+- **[mTLS Setup](../security/mtls/)** - Step-by-step mTLS guide
+- **[Certificate Management](../security/certificates/)** - Advanced certificate topics

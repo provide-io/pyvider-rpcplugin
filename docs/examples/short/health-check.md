@@ -42,8 +42,8 @@ if __name__ == "__main__":
 
 ## Related Examples
 
-- [Basic Server](basic-server.md) - Simple server without health checks
-- [Full Health Guide](../../guide/server/health-checks.md)
+- [Basic Server](basic-server/) - Simple server without health checks
+- [Full Health Guide](../../guide/server/health-checks/)
 ## What's Next?
 
 ### Next Steps
@@ -55,6 +55,6 @@ if __name__ == "__main__":
 
 ### Learning Path
 
-- **Beginner:** Add [Rate Limiting](rate-limiting.md) for additional protection
-- **Intermediate:** Learn [Health Check Patterns](../../guide/server/health-checks.md)
-- **Advanced:** Set up [Production Monitoring](../../guide/config/production.md)
+- **Beginner:** Add [Rate Limiting](rate-limiting/) for additional protection
+- **Intermediate:** Learn [Health Check Patterns](../../guide/server/health-checks/)
+- **Advanced:** Set up [Production Monitoring](../../guide/config/production/)

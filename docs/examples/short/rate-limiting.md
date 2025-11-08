@@ -47,8 +47,8 @@ if __name__ == "__main__":
 
 ## Related Examples
 
-- [Basic Server](basic-server.md) - Simple server without rate limiting
-- [Full Rate Limiting Guide](../../guide/config/rate-limiting.md)
+- [Basic Server](basic-server/) - Simple server without rate limiting
+- [Full Rate Limiting Guide](../../guide/config/rate-limiting/)
 ## What's Next?
 
 ### Next Steps
@@ -60,5 +60,5 @@ if __name__ == "__main__":
 
 ### Learning Path
 
-- **Beginner:** Combine with [Health Checks](health-check.md) for production readiness
-- **Intermediate:** Learn [Advanced Rate Limiting](../../guide/server/rate-limiting.md) patterns
+- **Beginner:** Combine with [Health Checks](health-check/) for production readiness
+- **Intermediate:** Learn [Advanced Rate Limiting](../../guide/server/rate-limiting/) patterns

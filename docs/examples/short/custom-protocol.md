@@ -54,8 +54,8 @@ if __name__ == "__main__":
 
 ## Related Examples
 
-- [Basic Server](basic-server.md) - Using default protocol
-- [Custom Protocol Guide](../../guide/advanced/custom-protocols.md)
+- [Basic Server](basic-server/) - Using default protocol
+- [Custom Protocol Guide](../../guide/advanced/custom-protocols/)
 ## What's Next?
 
 ### Next Steps
@@ -67,5 +67,5 @@ if __name__ == "__main__":
 
 ### Learning Path
 
-- **Beginner:** Start with [Echo Service Example](../echo-basic.md) for complete pattern
-- **Intermediate:** Learn [Protocol Development](../../guide/advanced/custom-protocols.md)
+- **Beginner:** Start with [Echo Service Example](../echo-basic/) for complete pattern
+- **Intermediate:** Learn [Protocol Development](../../guide/advanced/custom-protocols/)

@@ -1,6 +1,6 @@
 # Advanced Echo Service - Production Patterns
 
-This guide demonstrates advanced patterns for building production-ready RPC services, extending the [Basic](echo-basic.md) and [Intermediate](echo-intermediate.md) echo examples.
+This guide demonstrates advanced patterns for building production-ready RPC services, extending the [Basic](echo-basic/) and [Intermediate](echo-intermediate/) echo examples.
 
 ## Bidirectional Streaming
 
@@ -309,13 +309,13 @@ async def test_echo_service_integration():
 
 ## Next Steps
 
-- **[Production Config Guide](../guide/config/production.md)** - Deployment patterns
-- **[Security Guide](../guide/security/mtls.md)** - Comprehensive security setup
-- **[Performance Tuning Guide](../guide/advanced/performance.md)** - Optimization techniques
-- **[Advanced Topics](../guide/advanced/index.md)** - Observability and telemetry integration
+- **[Production Config Guide](../guide/config/production/)** - Deployment patterns
+- **[Security Guide](../guide/security/mtls/)** - Comprehensive security setup
+- **[Performance Tuning Guide](../guide/advanced/performance/)** - Optimization techniques
+- **[Advanced Topics](../guide/advanced/index/)** - Observability and telemetry integration
 
 ## Reference
 
-- **Basic Example**: [Echo Basic](echo-basic.md)
-- **Intermediate Patterns**: [Echo Intermediate](echo-intermediate.md)
+- **Basic Example**: [Echo Basic](echo-basic/)
+- **Intermediate Patterns**: [Echo Intermediate](echo-intermediate/)
 - **Source Code**: `examples/echo_server.py`, `examples/echo_client.py`

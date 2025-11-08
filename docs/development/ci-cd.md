@@ -446,7 +446,7 @@ updates:
 
 ## See Also
 
-- [Contributing Guide](contributing.md)
-- [Testing Guide](testing.md)
-- [Architecture](architecture.md)
-<!-- - [Release Process](../RELEASING.md) -->
+- [Contributing Guide](contributing/)
+- [Testing Guide](testing/)
+- [Architecture](architecture/)
+<!-- - [Release Process](../RELEASING/) -->

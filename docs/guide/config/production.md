@@ -412,7 +412,7 @@ except Exception as e:
 
 ## Next Steps
 
-- **[Rate Limiting](rate-limiting.md)** - Detailed rate limiting configuration and tuning
-- **[Logging Configuration](logging.md)** - Structured logging and observability setup
-- **[Environment Variables](environment.md)** - Complete configuration reference
-- **[Configuration Reference](configuration-reference.md)** - Complete configuration options
+- **[Rate Limiting](rate-limiting/)** - Detailed rate limiting configuration and tuning
+- **[Logging Configuration](logging/)** - Structured logging and observability setup
+- **[Environment Variables](environment/)** - Complete configuration reference
+- **[Configuration Reference](configuration-reference/)** - Complete configuration options

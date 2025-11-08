@@ -1,6 +1,6 @@
 # Intermediate Echo Service - Streaming Patterns
 
-This guide shows how to extend the [Basic Echo Service](echo-basic.md) with streaming RPC patterns.
+This guide shows how to extend the [Basic Echo Service](echo-basic/) with streaming RPC patterns.
 
 ## Overview
 
@@ -151,12 +151,12 @@ To add streaming to your echo service:
 
 ## Next Steps
 
-- **[Echo Advanced](echo-advanced.md)** - Bidirectional streaming and advanced patterns
-- **[Advanced Topics Guide](../guide/advanced/index.md)** - Deep dive into async patterns and performance
-- **[Error Handling Guide](../guide/client/error-handling.md)** - Robust error management
+- **[Echo Advanced](echo-advanced/)** - Bidirectional streaming and advanced patterns
+- **[Advanced Topics Guide](../guide/advanced/index/)** - Deep dive into async patterns and performance
+- **[Error Handling Guide](../guide/client/error-handling/)** - Robust error management
 
 ## Reference
 
-- **Basic Example**: [Echo Basic](echo-basic.md)
+- **Basic Example**: [Echo Basic](echo-basic/)
 - **Source Code**: `examples/echo_server.py`, `examples/echo_client.py`
 - **gRPC Streaming**: [gRPC Python Documentation](https://grpc.io/docs/languages/python/basics/#streaming-rpcs)

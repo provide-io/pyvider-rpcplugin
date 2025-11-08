@@ -103,28 +103,28 @@ await lifecycle_demo.demonstrate_lifecycle()
 
 ## Client Development Sections
 
-### 📝 [Basic Client Setup](basic-setup.md)
+### 📝 [Basic Client Setup](basic-setup/)
 Learn the fundamentals of creating and configuring plugin clients:
 - Client initialization and configuration
 - Environment setup and validation
 - Basic error handling patterns
 - Development vs production setup
 
-### 🔗 [Connection Management](connections.md)
+### 🔗 [Connection Management](connections/)
 Master connection lifecycle and management:
 - Connection establishment and teardown
 - Connection pooling and reuse
 - Health monitoring and reconnection
 - Concurrent connection handling
 
-### 🎯 [Direct Connections](direct-connections.md)
+### 🎯 [Direct Connections](direct-connections/)
 Connect to existing plugin processes:
 - Direct TCP/Unix socket connections
 - Service registry integration
 - Load balancing across multiple servers
 - Connection discovery patterns
 
-### 🔄 [Retry Logic](retry-logic.md)
+### 🔄 [Retry Logic](retry-logic/)
 Implement resilient error handling and retry patterns:
 - Exponential backoff retry strategies
 - Circuit breaker patterns
@@ -523,9 +523,9 @@ client = config.create_client(["python", "my_plugin.py"])
 
 Ready to dive deeper into client development? Choose your path:
 
-1. **New to Plugin Clients?** Start with [Basic Client Setup](basic-setup.md)
-2. **Need Connection Management?** Check out [Connection Management](connections.md)  
-3. **Working with Existing Servers?** Explore [Direct Connections](direct-connections.md)
-4. **Building Resilient Clients?** Review [Retry Logic](retry-logic.md)
+1. **New to Plugin Clients?** Start with [Basic Client Setup](basic-setup/)
+2. **Need Connection Management?** Check out [Connection Management](connections/)  
+3. **Working with Existing Servers?** Explore [Direct Connections](direct-connections/)
+4. **Building Resilient Clients?** Review [Retry Logic](retry-logic/)
 
 Each section provides practical examples, error handling patterns, and production-ready implementations for building robust plugin clients.

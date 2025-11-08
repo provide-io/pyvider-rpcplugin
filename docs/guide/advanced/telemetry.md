@@ -489,7 +489,7 @@ error_message = f"Operation failed [trace_id={format(span.get_span_context().tra
 
 ## Related Topics
 
-- [Performance Tuning](performance.md) - Optimize service performance
-- [Health Checks](../server/health-checks.md) - Monitor service health
-- [Logging Configuration](../config/logging.md) - Configure structured logging
-- [Production Setup](../config/production.md) - Production deployment guide
+- [Performance Tuning](performance/) - Optimize service performance
+- [Health Checks](../server/health-checks/) - Monitor service health
+- [Logging Configuration](../config/logging/) - Configure structured logging
+- [Production Setup](../config/production/) - Production deployment guide

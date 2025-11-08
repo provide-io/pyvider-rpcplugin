@@ -695,7 +695,7 @@ Logging performance characteristics:
 
 ## Next Steps
 
-- **[Production Setup](production.md)** - Complete production deployment configuration
-- **[Environment Variables](environment.md)** - All configuration options reference
-- **[Rate Limiting](rate-limiting.md)** - Request rate limiting configuration
-- **[Configuration Reference](configuration-reference.md)** - Complete configuration options
+- **[Production Setup](production/)** - Complete production deployment configuration
+- **[Environment Variables](environment/)** - All configuration options reference
+- **[Rate Limiting](rate-limiting/)** - Request rate limiting configuration
+- **[Configuration Reference](configuration-reference/)** - Complete configuration options

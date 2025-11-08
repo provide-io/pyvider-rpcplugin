@@ -14,35 +14,35 @@ The development documentation covers:
 
 ## Development Sections
 
-### 🤝 [Contributing](contributing.md)
+### 🤝 [Contributing](contributing/)
 Guidelines for contributing to the project:
 - Code contribution workflow
 - Documentation standards
 - Issue reporting and feature requests
 - Code review process
 
-### 🏗️ [Architecture](architecture.md)
+### 🏗️ [Architecture](architecture/)
 Internal system architecture and design:
 - Component architecture overview
 - Plugin protocol design
 - Transport layer implementation
 - Security architecture
 
-### 🧪 [Testing](testing.md)
+### 🧪 [Testing](testing/)
 Comprehensive testing documentation:
 - Testing framework and patterns
 - Unit and integration testing
 - Mock implementations and fixtures
 - Performance and security testing
 
-### ⚙️ [CI/CD](ci-cd.md)
+### ⚙️ [CI/CD](ci-cd/)
 Continuous integration and deployment:
 - Build and test pipelines
 - Automated testing and validation
 - Release process and versioning
 - Deployment strategies
 
-### 🔧 [Troubleshooting](troubleshooting.md)
+### 🔧 [Troubleshooting](troubleshooting/)
 Common issues and debugging:
 - Connection and handshake problems
 - Configuration issues
@@ -272,9 +272,9 @@ For development-specific questions:
 
 ## Next Steps
 
-1. **[Read Contributing Guidelines](contributing.md)** - Understand contribution process
-2. **[Study Architecture](architecture.md)** - Learn internal system design
-3. **[Review Testing](testing.md)** - Understand testing framework
-4. **[Check Troubleshooting](troubleshooting.md)** - Common development issues
+1. **[Read Contributing Guidelines](contributing/)** - Understand contribution process
+2. **[Study Architecture](architecture/)** - Learn internal system design
+3. **[Review Testing](testing/)** - Understand testing framework
+4. **[Check Troubleshooting](troubleshooting/)** - Common development issues
 
-Ready to contribute? Start with the [Contributing Guide](contributing.md) and explore the codebase!
+Ready to contribute? Start with the [Contributing Guide](contributing/) and explore the codebase!

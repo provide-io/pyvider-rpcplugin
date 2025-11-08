@@ -413,6 +413,6 @@ def load_certificate_safely(
 
 ### Related Documentation
 
-- **[mTLS Configuration](mtls.md)** - Complete mTLS setup guide
-- **[Certificate Management](certificates.md)** - Detailed certificate operations
-- **[Security Best Practices](../security/index.md)** - Production security patterns
+- **[mTLS Configuration](mtls/)** - Complete mTLS setup guide
+- **[Certificate Management](certificates/)** - Detailed certificate operations
+- **[Security Best Practices](../security/index/)** - Production security patterns

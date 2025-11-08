@@ -526,7 +526,7 @@ Debug logs will show:
 
 ## Next Steps
 
-- **[Production Setup](production.md)** - Complete production configuration guide
-- **[Logging Configuration](logging.md)** - Observability and monitoring setup
-- **[Environment Variables](environment.md)** - Complete configuration reference
-- **[API Reference](../../reference/index.md)** - Auto-generated API documentation
+- **[Production Setup](production/)** - Complete production configuration guide
+- **[Logging Configuration](logging/)** - Observability and monitoring setup
+- **[Environment Variables](environment/)** - Complete configuration reference
+- **[API Reference](../../reference/index/)** - Auto-generated API documentation
