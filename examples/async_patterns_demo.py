@@ -3,13 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
-
-#!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """Advanced Async Patterns - Best practices for async RPC operations."""
 
 import asyncio
@@ -45,6 +38,7 @@ async def concurrent_requests_example() -> None:
     results = await asyncio.gather(*tasks)
 
     for result in results:
+        logger.info(f"  Result: {result}")
 
 
 async def streaming_example() -> None:
@@ -64,6 +58,7 @@ async def streaming_example() -> None:
     # 'async for' iterates over an asynchronous generator or iterable.
     # It awaits the next item from the stream.
     async for item in mock_data_stream():
+        logger.info(f"  Received: {item}")
 
 
 async def timeout_and_retry_example() -> None:

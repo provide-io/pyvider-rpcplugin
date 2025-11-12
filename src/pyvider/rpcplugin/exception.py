@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -271,5 +271,6 @@ class SecurityError(RPCPluginError):
 
     def _default_code(self) -> str:
         return "RPC_SECURITY_ERROR"
+
 
 # 🐍🔌📞🔚

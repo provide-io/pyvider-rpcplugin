@@ -14,27 +14,28 @@
 This example demonstrates a working mTLS setup between a client and a server
 plugin launched as a subprocess."""
 
-import asyncio
-import os
-from pathlib import Path
-import sys
-import tempfile
+import asyncio  # noqa: E402
+import os  # noqa: E402
+from pathlib import Path  # noqa: E402
+import sys  # noqa: E402
+import tempfile  # noqa: E402
 
 # First-party imports (project-specific)
-from example_utils import configure_for_example  # type: ignore[import-not-found]
-from provide.foundation import logger
-from provide.foundation.crypto import Certificate
+from example_utils import configure_for_example  # type: ignore[import-not-found]  # noqa: E402
 
-from pyvider.rpcplugin import (
+# Apply base configuration for examples (paths, logging)
+# Client context, clear its own env before specific mTLS config.
+configure_for_example(clear_env=True)
+
+from provide.foundation import logger  # noqa: E402
+from provide.foundation.crypto import Certificate  # noqa: E402
+
+from pyvider.rpcplugin import (  # noqa: E402
     RPCPluginClient,
     RPCPluginError,
     configure,
     plugin_client,
 )
-
-# Apply base configuration for examples (paths, logging)
-# Client context, clear its own env before specific mTLS config.
-configure_for_example(clear_env=True)
 
 
 async def functional_mtls_example() -> None:  # noqa: C901
@@ -161,6 +162,7 @@ async def functional_mtls_example() -> None:  # noqa: C901
             await client.start()
 
             if client._controller_stub:  # Accessing private member for example check
+                logger.info("✅ mTLS handshake successful, controller stub available.")
             else:
                 logger.error("❌ Controller stub not available after connect.")
 

@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -413,5 +413,6 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
         True if the object implements RPCPluginTransport, False otherwise
     """
     return isinstance(obj, RPCPluginTransport)
+
 
 # 🐍🔌📞🔚
