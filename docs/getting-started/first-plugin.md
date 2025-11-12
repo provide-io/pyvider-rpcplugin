@@ -13,7 +13,7 @@ Create a complete Echo plugin with custom RPC methods. This tutorial builds on t
 
     Run with: `python examples/echo_client.py`
 
-    → [Example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+    → [Example file mapping](../examples/index/#tutorial-example-actual-file-mapping)
 
 ## What You'll Build
 
