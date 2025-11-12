@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -416,5 +416,6 @@ def register_protocol_service(server: grpc.aio.Server, shutdown_event: asyncio.E
     add_GRPCStdioServicer_to_server(stdio_service, server)  # type: ignore[no-untyped-call]
     add_GRPCBrokerServicer_to_server(broker_service, server)  # type: ignore[no-untyped-call]
     add_GRPCControllerServicer_to_server(controller_service, server)  # type: ignore[no-untyped-call]
+
 
 # 🐍🔌📞🔚
