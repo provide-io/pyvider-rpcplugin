@@ -46,7 +46,7 @@ uv build               # Build the package
 
 ### Documentation
 ```bash
-mkdocs serve           # Serve documentation locally (port 8006)
+mkdocs serve           # Serve documentation locally (port 11006)
 mkdocs build           # Build documentation
 mkdocs build --strict  # Build with strict error checking
 ```
