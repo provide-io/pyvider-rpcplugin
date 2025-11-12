@@ -175,7 +175,8 @@ nav:
     - Best Practices: guide/best-practices.md
 
   - API Reference:
-    - reference/
+    - reference/index.md
+    - Glossary: reference/glossary.md
   
   - Examples:
     - examples/index.md
