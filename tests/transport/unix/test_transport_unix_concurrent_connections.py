@@ -274,4 +274,4 @@ async def test_unix_socket_multiple_clients_data_transfer() -> None:
             if server:  # If server is not None (i.e. wasn't cleanly closed in try)
                 await server.close()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

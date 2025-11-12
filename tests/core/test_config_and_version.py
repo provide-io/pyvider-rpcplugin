@@ -126,4 +126,4 @@ def test_validate_transport_list_invalid_entry() -> None:
     with pytest.raises(ValidationError, match="Invalid transport 'bogus'"):
         validate_transport_list(["bogus"])
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -1,4 +1,4 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -73,5 +73,4 @@ def __getattr__(name: str) -> str:
         return get_version("pyvider-rpcplugin", caller_file=__file__)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -401,4 +401,4 @@ class TestConfigManagerIntegration:
         assert get_plugin_config("test") is None
         assert len(export_all_plugin_configs()) == 0
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

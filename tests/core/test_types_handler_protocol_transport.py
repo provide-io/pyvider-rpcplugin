@@ -90,4 +90,4 @@ def test_is_valid_transport_false(mocker: object) -> None:
     non_transport_instance = object()
     assert is_valid_transport(non_transport_instance) is False
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

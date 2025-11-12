@@ -39,4 +39,4 @@ def test_abstract_methods_must_be_implemented() -> None:
     assert "add_to_server" in error_message
     assert "get_grpc_descriptors" not in error_message
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

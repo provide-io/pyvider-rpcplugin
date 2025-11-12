@@ -450,4 +450,4 @@ async def test_connect_handshake_retry_success_first_attempt(client_instance_loc
     await client._connect_and_handshake_with_retry()
     client._attempt_single_handshake.assert_awaited_once()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

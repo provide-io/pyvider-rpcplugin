@@ -119,4 +119,4 @@ class TestTelemetryImportError:
             assert get_rpc_tracer() is None
             assert get_rpc_meter() is None
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

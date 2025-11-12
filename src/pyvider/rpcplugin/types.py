@@ -1,4 +1,4 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -11,8 +11,7 @@ These types enable static type checking and clear API boundaries.
 
 For most users, these types are used only in type annotations. Advanced users
 implementing custom protocol handlers will need to implement the Protocol
-interfaces defined here.
-"""
+interfaces defined here."""
 
 from __future__ import annotations
 
@@ -415,5 +414,4 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
     """
     return isinstance(obj, RPCPluginTransport)
 
-
-# 🔌📞🔚
+# 🐍🔌📞🔚

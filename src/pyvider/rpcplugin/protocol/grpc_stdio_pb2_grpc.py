@@ -116,4 +116,4 @@ class GRPCStdio(object):
             metadata,
             _registered_method=True)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

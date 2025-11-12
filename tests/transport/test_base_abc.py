@@ -39,4 +39,4 @@ def test_transport_base_abstract_methods() -> None:
 
     assert "close" in str(excinfo.value)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

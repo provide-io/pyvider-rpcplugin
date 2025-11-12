@@ -217,4 +217,4 @@ async def test_controller_multiple_shutdown_calls(
         # Delayed shutdown should be called for each shutdown request
         assert mock_delayed_shutdown.call_count >= 1
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

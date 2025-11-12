@@ -1,4 +1,4 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -386,5 +386,4 @@ class ClientProcessMixin:
         except Exception as e:
             raise ProtocolError(f"Error opening broker subchannel {sub_id}: {e}") from e
 
-
-# 🔌📞🔚
+# 🐍🔌📞🔚

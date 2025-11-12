@@ -1,4 +1,4 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -489,5 +489,4 @@ class RPCPluginConfig(RuntimeConfig):
     # - config.plugin_handshake_timeout instead of config.handshake_timeout()
     # - etc.
 
-
-# 🔌📞🔚
+# 🐍🔌📞🔚

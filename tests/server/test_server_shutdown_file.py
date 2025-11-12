@@ -103,4 +103,4 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, temp_unix_
             with contextlib.suppress(asyncio.CancelledError):
                 await serve_task
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

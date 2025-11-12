@@ -467,4 +467,4 @@ async def test_controller_shutdown_with_timeout_consolidated(
             except Exception as e:
                 pytest.fail(f"Controller shutdown test failed: {e}")
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

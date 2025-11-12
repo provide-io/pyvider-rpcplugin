@@ -66,4 +66,4 @@ def test_version_compatibility_check() -> None:
         # Should not raise
         importlib.reload(grpc_broker_pb2_grpc)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

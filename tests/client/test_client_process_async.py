@@ -69,4 +69,4 @@ async def test_launch_process_failure(basic_client: RPCPluginClient, mocker: obj
     with pytest.raises(TransportError, match="start fail"):
         await basic_client._launch_process()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

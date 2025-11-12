@@ -36,4 +36,4 @@ def invalid_handshake_config() -> HandshakeConfig:
         supported_transports=["invalid_transport"],
     )
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -1,4 +1,4 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -6,8 +6,7 @@
 """pyvider.rpcplugin.transport.tcp
 --------------------------------
 TCP Socket Transport implementation using asyncio.
-Uses Python 3.11+ features such as TypeGuard and structural pattern matching.
-"""
+Uses Python 3.11+ features such as TypeGuard and structural pattern matching."""
 
 import asyncio
 import socket
@@ -314,5 +313,4 @@ class TCPSocketTransport(RPCPluginTransport):
 
         self.endpoint = None
 
-
-# 🔌📞🔚
+# 🐍🔌📞🔚
