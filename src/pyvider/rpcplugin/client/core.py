@@ -1,9 +1,7 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
-"""TODO: Add module docstring."""
 
 """Core RPCPluginClient class definition and lifecycle management.
 
@@ -210,6 +208,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             )
 
             if terminated:
+                self.logger.debug("✅ Plugin process terminated gracefully.")
             else:
                 self.logger.warning("⚠️ Plugin process was force-killed.")
 
@@ -278,5 +277,6 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             self.logger.warning(f"⚠️ Error during shutdown in context manager: {e}", exc_info=True)
         finally:
             await self.close()
+
 
 # 🐍🔌📞🔚
