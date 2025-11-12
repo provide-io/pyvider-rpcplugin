@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
 ### Complete Examples
 - **[Echo Service Examples](../echo-basic/)** - Full-featured service examples from basic to advanced
-- **[Configuration Examples](../../guide/config/index.md#configuration-examples)** - Environment-specific configuration patterns
+- **[Configuration Examples](../../guide/config/index/#configuration-examples)** - Environment-specific configuration patterns
 
 ## Related Examples
 

@@ -32,7 +32,7 @@ Before diving in, let's understand the key components:
 
     Run with: `python examples/quick_start_client.py`
 
-    → [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+    → [Complete example file mapping](../examples/index/#tutorial-example-actual-file-mapping)
 
 ## Your First Plugin
 
@@ -175,7 +175,7 @@ You should see output like:
     python examples/quick_start_client.py
     ```
 
-    See [Example File Mapping](../examples/index.md#tutorial-example-actual-file-mapping) for more details.
+    See [Example File Mapping](../examples/index/#tutorial-example-actual-file-mapping) for more details.
 
 ## What Just Happened?
 
