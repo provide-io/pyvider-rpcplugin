@@ -391,4 +391,4 @@ async def test_try_chunk_strategy_detect_complete(
     result = await client._try_chunk_strategy(buffer)
     assert result == "1|1|tcp|127.0.0.1:9000|grpc|"
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

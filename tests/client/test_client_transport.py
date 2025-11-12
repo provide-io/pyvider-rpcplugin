@@ -144,4 +144,4 @@ async def test_launch_process_generic_error(client_instance):
         with pytest.raises(TransportError, match=expected_msg_regex):
             await client_instance._launch_process()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -265,4 +265,4 @@ async def test_broker_exception_handling_subchannel_open_fails(
     finally:
         service_module.SubchannelConnection = original_class
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

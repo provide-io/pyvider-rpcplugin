@@ -125,4 +125,4 @@ def test_generate_server_credentials_info_when_missing_root(
         "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. Client certs will not be required/verified."
     )
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

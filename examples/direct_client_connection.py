@@ -139,4 +139,4 @@ async def run_direct_client() -> None:
 if __name__ == "__main__":
     asyncio.run(run_direct_client())
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

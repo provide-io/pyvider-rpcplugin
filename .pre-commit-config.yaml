@@ -37,3 +37,19 @@ repos:
     rev: v1.3.3
     hooks:
       - id: python-safety-dependencies-check
+
+  - repo: local
+    hooks:
+      - id: provide-conform
+        name: provide-conform
+        entry: provide-conform
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: provide-config-check
+        name: provide-config-check
+        entry: provide-config-check
+        language: system
+        files: pyproject\.toml$
+        pass_filenames: true

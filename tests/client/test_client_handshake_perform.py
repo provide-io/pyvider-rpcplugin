@@ -402,4 +402,4 @@ async def test_perform_handshake_invalid_network_type(
         await client_instance._perform_handshake()
     mock_parse.assert_called_once()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

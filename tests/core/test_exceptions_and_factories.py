@@ -64,4 +64,4 @@ def test_plugin_server_invalid_transport() -> None:
     with pytest.raises(ValueError, match="Unsupported transport type"):
         factories.plugin_server(protocol=protocol(), handler=handler, transport="invalid")
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

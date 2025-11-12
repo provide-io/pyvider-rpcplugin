@@ -227,4 +227,4 @@ async def test_stdio_service_backpressure(stdio_service: GRPCStdioService) -> No
         # If queue has limits, exception handling should be graceful
         pass
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -80,4 +80,4 @@ async def test_abstract_transport_methods() -> None:
     with pytest.raises(TypeError):
         IncompleteTransport()  # type: ignore[abstract]
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

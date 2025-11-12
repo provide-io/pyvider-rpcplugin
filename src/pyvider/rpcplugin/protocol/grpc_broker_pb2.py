@@ -40,4 +40,4 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GRPCBROKER']._serialized_end=254
 # @@protoc_insertion_point(module_scope)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

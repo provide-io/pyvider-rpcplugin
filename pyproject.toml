@@ -34,12 +34,17 @@ test = [
 
 [dependency-groups]
 dev = [
+    "provide-cicd",
     "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]",
     "pyvider-rpcplugin[test]",
 ]
 docs = [
     "provide-testkit[docs]",
 ]
+
+[tool.uv.sources]
+provide-cicd = { path = "../ci-tooling", editable = true }
+
 [tool.pytest.ini_options]
 log_cli = true
 # log_cli_level = "DEBUG"

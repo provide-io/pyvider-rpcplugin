@@ -160,4 +160,4 @@ async def test_unix_connect_stat_fails(mocker, managed_unix_socket_path):
         await transport.connect(managed_unix_socket_path)
     await transport.close()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

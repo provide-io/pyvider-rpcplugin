@@ -140,4 +140,4 @@ async def test_negotiate_transport_prefers_unix() -> None:
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -3,6 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+"""TODO: Add module docstring."""
+
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Client Connection Examples - Various client implementation patterns."""
 
 import asyncio
@@ -66,7 +73,6 @@ async def error_handling_example() -> None:
         logger.error(f"🤝 Handshake error: {e}")
         # Handle authentication/handshake errors
     except RPCPluginError as e:  # Catching the base plugin error
-        logger.error(f"🔌 Plugin error: {e}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         # Handle other errors
@@ -83,4 +89,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

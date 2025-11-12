@@ -77,4 +77,4 @@ async def test_serve_setup_server_raises_exception(
 
     server.stop.assert_called_once()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -1,4 +1,4 @@
-#
+# 
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -345,5 +345,4 @@ class ServerNetworkMixin:
         sys.stdout.buffer.write(f"{response}\n".encode())
         sys.stdout.buffer.flush()
 
-
-# 🔌📞🔚
+# 🐍🔌📞🔚

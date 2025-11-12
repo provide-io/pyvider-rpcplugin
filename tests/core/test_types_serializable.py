@@ -150,4 +150,4 @@ def test_is_valid_serializable_false_incorrect_signature(mocker: object) -> None
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 1
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

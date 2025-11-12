@@ -223,4 +223,4 @@ async def test_del_warning() -> None:
             f"Actual calls: {mock_log_warning.call_args_list}"
         )
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

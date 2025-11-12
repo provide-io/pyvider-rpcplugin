@@ -77,4 +77,4 @@ async def test_connect_handshake_retry_success_first_attempt(
     assert client_instance._handshake_complete_event.is_set() is True
     assert client_instance._handshake_failed_event.is_set() is False
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

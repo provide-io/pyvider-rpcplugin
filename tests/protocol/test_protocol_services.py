@@ -117,4 +117,4 @@ async def test_stdio_service_stream(monkeypatch) -> None:
     assert collected[0].channel == StdioData.STDOUT
     assert collected[1].channel == StdioData.STDERR
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

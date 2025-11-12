@@ -100,4 +100,4 @@ async def test_client_command():
     """Test command to launch the plugin process."""
     return ["python", "-m", "dummy_plugin"]
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

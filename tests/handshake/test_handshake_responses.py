@@ -344,4 +344,4 @@ def test_parse_handshake_response_invalid_network(mocker):
     with pytest.raises(HandshakeError, match="Invalid network type 'invalidnet' in handshake."):
         parse_handshake_response(response_str)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

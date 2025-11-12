@@ -309,4 +309,4 @@ def test_get_channel_options_tcp_without_tls(client_instance) -> None:
     ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
     assert not ssl_override_present, "SSL target name override should not be present for TCP without TLS"
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

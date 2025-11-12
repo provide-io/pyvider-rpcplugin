@@ -142,4 +142,4 @@ async def test_pingpong_rpc(pingpong_stub: PingPongStub) -> None:
     resp = await pingpong_stub.Ping(req)
     assert resp.msg == "pong"
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

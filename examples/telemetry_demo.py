@@ -3,6 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+"""TODO: Add module docstring."""
+
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """OpenTelemetry Telemetry Demo
 
 This example demonstrates the CORRECT OpenTelemetry pattern for libraries:
@@ -118,7 +125,6 @@ async def run_demo() -> None:
     # Library gets tracer from app's configuration
     tracer = get_rpc_tracer()
     if tracer:
-        print("✅ Tracer initialized and ready")
     else:
         print("⚠️  Tracer not available")
     print()
@@ -198,4 +204,4 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

@@ -346,4 +346,4 @@ class PingPong(object):
             metadata,
             _registered_method=True)
 
-# 🔌📞🔚
+# 🐍🔌📞🔚

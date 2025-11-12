@@ -223,4 +223,4 @@ async def test_context_manager_exit_logs_warning(monkeypatch: pytest.MonkeyPatch
     # )
     client.close.assert_awaited()
 
-# 🔌📞🔚
+# 🐍🔌📞🔚
