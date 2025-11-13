@@ -1,14 +1,9 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_service_critical.py
 
 import asyncio
 import signal
 import pytest
-from provide.testkit.mocking import AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 
 from pyvider.rpcplugin.protocol.service import GRPCStdioService, GRPCControllerService
 
@@ -95,4 +90,5 @@ async def test_controller_delayed_shutdown_windows_line212() -> None:
         mock_sleep.assert_called_once()
         mock_exit.assert_called_once_with(0)
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️

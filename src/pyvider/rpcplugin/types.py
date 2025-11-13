@@ -1,7 +1,27 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# src/pyvider/rpcplugin/types.py
 #
+
+from __future__ import annotations
+
+import asyncio
+import inspect
+from collections.abc import Awaitable
+from collections.abc import Callable as AbcCallable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    TypeGuard,
+    TypeVar,
+    runtime_checkable,
+)
+from typing import (
+    Protocol as TypeProtocol,
+)
+
+import grpc
+
+from pyvider.telemetry import logger
 
 """Type definitions for the Pyvider RPC plugin system.
 
@@ -11,35 +31,17 @@ These types enable static type checking and clear API boundaries.
 
 For most users, these types are used only in type annotations. Advanced users
 implementing custom protocol handlers will need to implement the Protocol
-interfaces defined here."""
-
-from __future__ import annotations
-
-import asyncio
-from collections.abc import Awaitable, Callable as AbcCallable
-import inspect
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Protocol as TypeProtocol,
-    TypeGuard,
-    TypeVar,
-    runtime_checkable,
-)
-
-import grpc
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+interfaces defined here.
+"""
 
 if TYPE_CHECKING:
     from .config import RPCPluginConfig  # For TypeVar bound
 
 
 # Core TypeVars for generic type parameters
-HandlerT = TypeVar("HandlerT", bound="RPCPluginHandler")  # pragma: no cover
-ProtocolT = TypeVar("ProtocolT", bound="RPCPluginProtocol")  # pragma: no cover
-TransportT = TypeVar("TransportT", bound="RPCPluginTransport")  # pragma: no cover
+HandlerT = TypeVar("HandlerT", bound="RPCPluginHandler")
+ProtocolT = TypeVar("ProtocolT", bound="RPCPluginProtocol")
+TransportT = TypeVar("TransportT", bound="RPCPluginTransport")
 ServerT = TypeVar("ServerT", bound="grpc.aio.Server")
 ConfigT = TypeVar("ConfigT", bound="RPCPluginConfig")
 ResultT = TypeVar("ResultT")
@@ -76,17 +78,17 @@ class RPCPluginProtocol(TypeProtocol):
         Returns:
             Tuple containing the protobuf descriptor module and service name string.
         """
-        ...  # pragma: no cover
+        ...
 
-    async def add_to_server(self, server: Any, handler: Any) -> None:
+    async def add_to_server(self, handler: Any, server: Any) -> None:
         """
         Adds the protocol implementation to the gRPC server.
 
         Args:
-            server: The gRPC async server instance
             handler: The handler implementing the RPC methods
+            server: The gRPC async server instance
         """
-        ...  # pragma: no cover
+        ...
 
     def get_method_type(self, method_name: str) -> str:
         """
@@ -98,7 +100,7 @@ class RPCPluginProtocol(TypeProtocol):
         Returns:
             String representing the method type (e.g., "unary_unary", "stream_stream")
         """
-        ...  # pragma: no cover
+        ...
 
 
 @runtime_checkable
@@ -120,7 +122,7 @@ class RPCPluginTransport(TypeProtocol):
             String representation of the endpoint (e.g., "unix:/tmp/socket" or
             "127.0.0.1:50051")
         """
-        ...  # pragma: no cover
+        ...
 
     async def connect(self, endpoint: str) -> None:
         """
@@ -129,13 +131,13 @@ class RPCPluginTransport(TypeProtocol):
         Args:
             endpoint: The endpoint to connect to
         """
-        ...  # pragma: no cover
+        ...
 
     async def close(self) -> None:
         """
         Close the transport and clean up resources.
         """
-        ...  # pragma: no cover
+        ...
 
 
 @runtime_checkable
@@ -154,7 +156,7 @@ class SerializableT(TypeProtocol):
         Returns:
             Dictionary representation of the object
         """
-        ...  # pragma: no cover
+        ...
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SerializableT:
@@ -167,10 +169,15 @@ class SerializableT(TypeProtocol):
         Returns:
             New instance of the class
         """
-        ...  # pragma: no cover
+        ...
 
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
+    logger.debug(
+        "🧰🔍✅ Checking if object implements SerializableT protocol "
+        "(manual runtime checks)"
+    )
+
     # Check to_dict method
     if not hasattr(obj, "to_dict"):
         logger.debug("SerializableT: Method to_dict is missing.")
@@ -234,7 +241,7 @@ class ConnectionT(TypeProtocol):
         Args:
             data: Bytes to send
         """
-        ...  # pragma: no cover
+        ...
 
     async def receive_data(self, size: int = 16384) -> bytes:
         """
@@ -246,16 +253,21 @@ class ConnectionT(TypeProtocol):
         Returns:
             Received data as bytes
         """
-        ...  # pragma: no cover
+        ...
 
     async def close(self) -> None:
         """
         Close the connection and clean up resources.
         """
-        ...  # pragma: no cover
+        ...
 
 
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
+    logger.debug(
+        "🧰🔍✅ Checking if object implements ConnectionT protocol "
+        "(manual runtime checks)"
+    )
+
     methods_spec = {
         "send_data": {"params": 1, "is_async": True},
         "receive_data": {"params": 1, "is_async": True},
@@ -292,22 +304,24 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     logger.debug("ConnectionT: All structural and signature checks passed.")
     return True
 
-    # Type aliases for gRPC Clients
 
-
-GrpcServerType = grpc.aio.Server  # pragma: no cover
-RpcConfigType = dict[str, Any]  # pragma: no cover
-GrpcCredentialsType = (  # pragma: no cover
+# Type aliases for gRPC Clients
+GrpcChannelType = (
+    grpc.aio.Channel | grpc.Channel
+)  # Represents gRPC sync or async channel
+GrpcServerType = grpc.aio.Server  # Represents gRPC async server type
+RpcConfigType = dict[str, Any]  # Configuration dictionary type
+GrpcCredentialsType = (
     grpc.ChannelCredentials | None
 )  # gRPC channel credentials, possibly None
-EndpointType = str  # pragma: no cover
-AddressType = tuple[str, int]  # pragma: no cover
+EndpointType = str  # Represents an endpoint string
+AddressType = tuple[str, int]  # Represents a host-port address tuple
 
 # I/O function type aliases using collections.abc
-SendFuncType = AbcCallable[  # pragma: no cover
+SendFuncType = AbcCallable[
     [bytes], Awaitable[None]
 ]  # Type for a function that sends bytes
-ReceiveFuncType = AbcCallable[  # pragma: no cover
+ReceiveFuncType = AbcCallable[
     [int], Awaitable[bytes]
 ]  # Type for a function that receives bytes
 
@@ -323,22 +337,27 @@ class SecureRpcClientT(TypeProtocol):
 
     async def _perform_handshake(self) -> None:
         """Perform the handshake negotiation with the server."""
-        ...  # pragma: no cover
+        ...
 
     async def _setup_tls(self) -> None:
         """Set up TLS credentials for secure communication."""
-        ...  # pragma: no cover
+        ...
 
     async def _create_grpc_channel(self) -> None:
         """Create a secure gRPC channel to the server."""
-        ...  # pragma: no cover
+        ...
 
     async def close(self) -> None:
         """Close the client connection and clean up resources."""
-        ...  # pragma: no cover
+        ...
 
 
 def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
+    logger.debug(
+        "🧰🔍✅ Checking if object implements SecureRpcClientT protocol "
+        "(manual runtime checks)"
+    )
+
     methods_spec = {
         "_perform_handshake": {"params": 0, "is_async": True},
         "_setup_tls": {"params": 0, "is_async": True},
@@ -357,7 +376,9 @@ def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
             return False
 
         if spec["is_async"] and not asyncio.iscoroutinefunction(method):
-            logger.debug(f"SecureRpcClientT: Method {method_name} is not async as expected.")
+            logger.debug(
+                f"SecureRpcClientT: Method {method_name} is not async as expected."
+            )
             return False
 
         try:
@@ -369,7 +390,9 @@ def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
                 )
                 return False
         except (TypeError, ValueError):
-            logger.debug(f"SecureRpcClientT: Could not inspect {method_name} signature.")
+            logger.debug(
+                f"SecureRpcClientT: Could not inspect {method_name} signature."
+            )
             return False
 
     logger.debug("SecureRpcClientT: All structural and signature checks passed.")
@@ -386,6 +409,7 @@ def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
     Returns:
         True if the object implements RPCPluginHandler, False otherwise
     """
+    logger.debug("🧰🔍✅ Checking if object implements RPCPluginHandler protocol")
     return isinstance(obj, RPCPluginHandler)
 
 
@@ -399,6 +423,7 @@ def is_valid_protocol(obj: Any) -> TypeGuard[RPCPluginProtocol]:
     Returns:
         True if the object implements RPCPluginProtocol, False otherwise
     """
+    logger.debug("🧰🔍✅ Checking if object implements RPCPluginProtocol protocol")
     return isinstance(obj, RPCPluginProtocol)
 
 
@@ -412,7 +437,8 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
     Returns:
         True if the object implements RPCPluginTransport, False otherwise
     """
+    logger.debug("🧰🔍✅ Checking if object implements RPCPluginTransport protocol")
     return isinstance(obj, RPCPluginTransport)
 
 
-# 🐍🔌📞🔚
+# 🐍🏗️🔌

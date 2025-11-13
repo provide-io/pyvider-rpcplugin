@@ -1,17 +1,12 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_transport_unix_handle_client.py
 
 import asyncio
 import os
 import pytest
-from provide.testkit.mocking import AsyncMock, MagicMock # Added
+from unittest.mock import AsyncMock, MagicMock # Added
 
-from provide.foundation import logger
-from pyvider.rpcplugin.transport.unix.transport import UnixSocketTransport
+from pyvider.telemetry import logger
+from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 
 # Fixtures will be available via tests.fixtures through conftest.py
 # from tests.fixtures.transport import managed_unix_socket_path
@@ -95,16 +90,7 @@ async def test_unix_socket_handle_client_error(managed_unix_socket_path) -> None
 
 
 @pytest.mark.asyncio
-@pytest.mark.filterwarnings(
-    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning"
-)
 async def test_handle_client_echo(managed_unix_socket_path) -> None:
-    """Test that handle_client echoes data correctly.
-
-    Note: The filterwarnings decorator suppresses a Python 3.13-specific warning that occurs
-    during asyncio transport cleanup. This is not a bug in our code but rather a change in
-    Python 3.13's asyncio cleanup ordering.
-    """
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     transport._running = True
     fake_reader = DummyReader(b"echo")
@@ -116,16 +102,7 @@ async def test_handle_client_echo(managed_unix_socket_path) -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.filterwarnings(
-    "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning"
-)
 async def test_handle_client_cancelled(mocker):
-    """Test that handle_client handles cancellation gracefully.
-
-    Note: The filterwarnings decorator suppresses a Python 3.13-specific warning that occurs
-    during asyncio transport cleanup. This is not a bug in our code but rather a change in
-    Python 3.13's asyncio cleanup ordering.
-    """
     transport = UnixSocketTransport(path="/tmp/dummy_cancel.sock") # Path doesn't need to exist for this unit test
     reader = AsyncMock(spec=asyncio.StreamReader)
     writer = AsyncMock(spec=asyncio.StreamWriter)
@@ -171,5 +148,3 @@ async def test_handle_client_cancelled(mocker):
     # For now, focus on cancellation handling and cleanup calls.
 
 ################################################################################
-
-# 🐍🔌📞🔚

@@ -1,12 +1,11 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+# tests/transport/tcp/test_transport_tcp_handle_client.py
 
-"""TODO: Add module docstring."""
+
+# test_tcp_handle_client_called REMOVED - Incompatible with new listen()
+# test_tcp_handle_client_direct REMOVED - Incompatible with new listen()
 
 import asyncio
-from provide.testkit.mocking import AsyncMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -141,4 +140,5 @@ async def test_handle_client_reader_generic_exception():
     writer.close.assert_called_once()
     writer.wait_closed.assert_called_once()
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️
