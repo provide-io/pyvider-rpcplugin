@@ -1,12 +1,9 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""Pyvider RPC Plugin Package.
+"""
+Pyvider RPC Plugin Package.
 
 This package exports the main classes and exceptions for the Pyvider RPC Plugin system,
-making them available for direct import from `pyvider.rpcplugin`."""
+making them available for direct import from `pyvider.rpcplugin`.
+"""
 
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import (
@@ -15,6 +12,7 @@ from pyvider.rpcplugin.config import (
     rpcplugin_config,
 )
 from pyvider.rpcplugin.exception import (
+    CertificateError,
     ConfigError,
     HandshakeError,
     ProtocolError,
@@ -32,46 +30,27 @@ from pyvider.rpcplugin.protocol import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
 
 __all__ = [
+    # Core Classes
+    "RPCPluginClient",
+    "RPCPluginServer",
+    "RPCPluginProtocol",
+    # Factory Functions
+    "plugin_client",
+    "plugin_server",
+    "plugin_protocol",
+    "create_basic_protocol",
+    # Configuration
+    "RPCPluginConfig",
+    "rpcplugin_config",
+    "configure",
+    # Exceptions
+    "RPCPluginError",
     "ConfigError",
     "HandshakeError",
     "ProtocolError",
-    "RPCPluginClient",
-    "RPCPluginConfig",
-    "RPCPluginError",
-    "RPCPluginProtocol",
-    "RPCPluginServer",
-    "SecurityError",
     "TransportError",
-    "__version__",
-    "configure",
-    "create_basic_protocol",
-    "plugin_client",
-    "plugin_protocol",
-    "plugin_server",
-    "rpcplugin_config",
+    "SecurityError",
+    "CertificateError",
 ]
 
-
-def __getattr__(name: str) -> str:
-    """Support lazy loading of __version__.
-
-    This reduces initial import overhead by deferring version loading
-    until first access.
-
-    Args:
-        name: Attribute name to lazy-load
-
-    Returns:
-        The attribute value
-
-    Raises:
-        AttributeError: If the attribute is not found
-    """
-    if name == "__version__":
-        from provide.foundation.utils.versioning import get_version
-
-        return get_version("pyvider-rpcplugin", caller_file=__file__)
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-
-# 🐍🔌📞🔚
+# 🐍🏗️🔌

@@ -1,22 +1,15 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+"""
+Utility functions for pyvider-rpcplugin examples.
+Provides consistent path resolution and environment setup.
+"""
 
-"""Utility functions for pyvider-rpcplugin examples.
-Provides consistent path resolution and environment setup."""
-
-import logging
 import os
-from pathlib import Path
 import sys
-from typing import Any, cast  # For DummyHandler type hint
-
-import grpc  # For DummyHandler type hint
-from provide.foundation import logger as dummy_handler_logger
+from pathlib import Path
 
 from pyvider.rpcplugin import configure as pyvider_configure
-from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.config import CONFIG_SCHEMA, rpcplugin_config
 
 
 def setup_example_environment() -> Path:
@@ -37,11 +30,6 @@ def setup_example_environment() -> Path:
     if str(project_root) not in sys.path:
         sys.path.insert(0, str(project_root))
 
-    # Add examples/proto to sys.path for generated protobuf files
-    examples_proto_path = examples_dir / "proto"
-    if examples_proto_path.is_dir() and str(examples_proto_path) not in sys.path:
-        sys.path.insert(0, str(examples_proto_path))
-
     return project_root
 
 
@@ -50,73 +38,62 @@ def clear_plugin_env_vars() -> None:
     Clear any existing plugin environment variables that might interfere with
     examples.
     """
-    plugin_vars = [k for k in os.environ if k.startswith("PLUGIN_")]
+    plugin_vars = [k for k in os.environ.keys() if k.startswith("PLUGIN_")]
     for var in plugin_vars:
         if var in os.environ:  # Check if var actually exists before deleting
             del os.environ[var]
 
 
-def configure_for_example(clear_env: bool = False) -> None:  # noqa: C901
-    """
-    Configure environment for example execution.
-
-    Args:
-        clear_env: If True, clears existing PLUGIN_* environment variables.
-                   Should typically be True for client examples that launch servers,
-                   and False for server examples that expect env vars from a client.
-    """
-    if clear_env:
-        # Clear any existing PLUGIN_* env vars to ensure examples run in a clean state
-        clear_plugin_env_vars()
+def configure_for_example() -> None:
+    """Configure environment for example execution."""
+    # Clear any existing PLUGIN_* env vars to ensure examples run in a clean state
+    clear_plugin_env_vars()
 
     setup_example_environment()
 
     # Configure basic logging
+    import logging
+    from typing import cast  # Added for cast
+
     logging.basicConfig(
         level=logging.INFO,
+        format="%(asctime)s [%(levelname)-7s] %(name)s: 🐍 %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
+    # Import configure from the library (already at top)
     try:
+        # Set some safe defaults for examples if not already set by environment.
+        # This helps examples run consistently without requiring extensive env setup.
+        # We use specific keys to avoid accidentally overriding user-set complex
+        # configs.
         example_defaults = {
             "PLUGIN_AUTO_MTLS": False,
             "PLUGIN_MAGIC_COOKIE_KEY": "PYVIDER_PLUGIN_MAGIC_COOKIE",
             "PLUGIN_MAGIC_COOKIE_VALUE": "pyvider-example-cookie",
             "PLUGIN_LOG_LEVEL": "INFO",
-            "PLUGIN_HANDSHAKE_TIMEOUT": 5.0,
-            "PLUGIN_CONNECTION_TIMEOUT": 5.0,
+            "PLUGIN_HANDSHAKE_TIMEOUT": 15.0,
+            "PLUGIN_CONNECTION_TIMEOUT": 10.0,
         }
 
         config_to_apply_programmatically = {}
-        # Map environment variable keys to direct attributes
-        key_to_attr = {
-            "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
-            "PLUGIN_LOG_LEVEL": "plugin_log_level",
-            "PLUGIN_HANDSHAKE_TIMEOUT": "plugin_handshake_timeout",
-            "PLUGIN_CONNECTION_TIMEOUT": "plugin_connection_timeout",
-        }
-
         for key, example_value in example_defaults.items():
-            attr_name = key_to_attr.get(key)
-            if not attr_name:
-                continue
-            current_val = getattr(rpcplugin_config, attr_name)
+            current_val = rpcplugin_config.get(key)
+            # Use the imported CONFIG_SCHEMA
+            schema_default = CONFIG_SCHEMA.get(key, {}).get("default")
 
-            # Apply example defaults based on current values
-            if key == "PLUGIN_AUTO_MTLS":
-                if current_val is True or current_val is None:
-                    config_to_apply_programmatically[key] = example_value
-            elif key == "PLUGIN_LOG_LEVEL":
-                # Always apply for log level examples
+            # Apply if current value is the schema default, or if key isn't in
+            # schema (custom for example), or if it's a log level we want to enforce.
+            if current_val == schema_default or key == "PLUGIN_LOG_LEVEL":
                 config_to_apply_programmatically[key] = example_value
-            elif attr_name and hasattr(rpcplugin_config, attr_name):
-                # For other attributes, compare with Foundation defaults
-                fresh_config = rpcplugin_config.__class__.from_env()
-                default_val = getattr(fresh_config, attr_name)
-                if current_val == default_val:
-                    config_to_apply_programmatically[key] = example_value
+            elif key == "PLUGIN_AUTO_MTLS" and current_val is None:
+                config_to_apply_programmatically[key] = example_value
 
+        # Call pyvider_configure with specific keyword arguments that match its
+        # signature
         if config_to_apply_programmatically:
+            # Prepare arguments for pyvider_configure, mapping PLUGIN_ prefixed keys
+            # to the function's parameter names.
             mapped_args = {}
             other_kwargs = {}
 
@@ -124,20 +101,30 @@ def configure_for_example(clear_env: bool = False) -> None:  # noqa: C901
                 if key == "PLUGIN_AUTO_MTLS":
                     mapped_args["auto_mtls"] = value
                 elif key == "PLUGIN_MAGIC_COOKIE_VALUE":
+                    # This sets both value and fallback
                     mapped_args["magic_cookie"] = value
                 elif key == "PLUGIN_HANDSHAKE_TIMEOUT":
                     mapped_args["handshake_timeout"] = value
                 elif key == "PLUGIN_CONNECTION_TIMEOUT":
                     mapped_args["connection_timeout"] = value
+                # Add other direct mappings if configure() signature expands
                 else:
+                    # Collect remaining PLUGIN_ prefixed keys for **kwargs
                     other_kwargs[key] = value
 
+            # Only call if there's something to configure
             if mapped_args or other_kwargs:
+                # Ensure types for explicitly named arguments or pass None
                 mc_val = mapped_args.get("magic_cookie")
                 am_val = mapped_args.get("auto_mtls")
+                # Cast to expected types from Any, as .get() returns Any
+                # Values in example_defaults are already correctly typed (bool, float)
                 ht_val = cast(float | None, mapped_args.get("handshake_timeout"))
                 ct_val = cast(float | None, mapped_args.get("connection_timeout"))
 
+                # Filter other_kwargs to only include keys not explicitly handled
+                # and that are actual PLUGIN_ prefixed keys from example_defaults
+                # that configure() would expect in its **kwargs.
                 explicitly_handled_plugin_keys = [
                     "PLUGIN_AUTO_MTLS",
                     "PLUGIN_MAGIC_COOKIE_VALUE",
@@ -147,16 +134,26 @@ def configure_for_example(clear_env: bool = False) -> None:  # noqa: C901
                 final_other_kwargs = {
                     k: v
                     for k, v in other_kwargs.items()
-                    if k not in explicitly_handled_plugin_keys and k.startswith("PLUGIN_")
+                    if k not in explicitly_handled_plugin_keys
+                    and k.startswith("PLUGIN_")
                 }
 
                 pyvider_configure(
                     magic_cookie=str(mc_val) if mc_val is not None else None,
                     auto_mtls=bool(am_val) if am_val is not None else None,
-                    handshake_timeout=ht_val,
-                    connection_timeout=ct_val,
+                    handshake_timeout=ht_val,  # Now correctly float | None
+                    connection_timeout=ct_val,  # Now correctly float | None
+                    # protocol_version, transports not in example_defaults
+                    # server_cert, server_key, etc. not in example_defaults
+                    # The type: ignore below is for **kwargs, which can be hard for mypy
                     **final_other_kwargs,  # type: ignore[arg-type]
                 )
+                # Example log:
+                # logging.info(
+                #   f"Applied example default configurations. "
+                #   f"Mapped: {mapped_args}, Others: {final_other_kwargs}"
+                # )
+
     except ImportError:
         logging.error(
             "Failed to import pyvider.rpcplugin.configure. "
@@ -175,16 +172,4 @@ def get_example_port(base_port: int = 50051) -> int:
         return s.getsockname()[1]
 
 
-class DummyHandler:
-    """
-    A basic handler for dummy servers in examples.
-    It typically doesn't implement any custom RPC methods that are called by clients,
-    primarily serving to allow the server to complete its handshake and start.
-    """
-
-    async def NoOp(self, request: Any, context: grpc.aio.ServicerContext) -> Any:
-        dummy_handler_logger.info("DummyHandler: NoOp called (generally not expected in basic examples)")
-        return {}
-
-
-# 🐍🔌📞🔚
+# 🐍🛠️

@@ -1,14 +1,9 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_transport_unix_listen.py
 
 import asyncio
 import os
 import tempfile
-from provide.testkit.mocking import AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -120,8 +115,6 @@ async def test_unix_socket_listen_unlink_file_not_found(
 
 @pytest.mark.asyncio
 async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
-    from provide.testkit.mocking import MagicMock
-
     # Test that listen() cleans up a stale file and creates a server.
     sock_path = str(tmp_path / "test.sock")
     transport = UnixSocketTransport(path=sock_path)
@@ -133,9 +126,8 @@ async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
     with open(sock_path, "w") as f:
         f.write("stale")
     # Patch asyncio.start_unix_server to return a dummy server.
-    dummy_server = MagicMock(spec=asyncio.AbstractServer)
-    dummy_server.close = MagicMock(return_value=None)  # sync
-    dummy_server.wait_closed = AsyncMock(return_value=None)  # async
+    dummy_server = AsyncMock()
+    dummy_server.wait_closed = AsyncMock()
     monkeypatch.setattr(
         asyncio, "start_unix_server", AsyncMock(return_value=dummy_server)
     )
@@ -143,10 +135,6 @@ async def test_unix_listen_success(monkeypatch, tmp_path) -> None:
     monkeypatch.setattr(os, "chmod", lambda path, mode: None)
     endpoint = await transport.listen()
     assert endpoint == sock_path
-
-    # Clean up
-    await transport.close()
-    await asyncio.sleep(0.1)
 
 
 @pytest.mark.asyncio
@@ -174,16 +162,11 @@ async def test_unix_listen_stale_file_error(monkeypatch, tmp_path) -> None:
 
 @pytest.mark.asyncio
 async def test_unix_listen_chmod_error(mocker, managed_unix_socket_path):
-    from provide.testkit.mocking import MagicMock
-
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     mocker.patch("os.makedirs", return_value=None)
     mocker.patch("os.unlink", return_value=None)
     # Ensure start_unix_server is mocked to return a valid server object
-    mock_server_instance = MagicMock(spec=asyncio.AbstractServer)
-    # Add proper implementations: close() is sync, wait_closed() is async
-    mock_server_instance.close = MagicMock(return_value=None)
-    mock_server_instance.wait_closed = AsyncMock(return_value=None)
+    mock_server_instance = AsyncMock(spec=asyncio.AbstractServer)
     mocker.patch("asyncio.start_unix_server", return_value=mock_server_instance)
 
     mock_chmod = mocker.patch("os.chmod", side_effect=OSError("chmod failed"))
@@ -198,17 +181,12 @@ async def test_unix_listen_chmod_error(mocker, managed_unix_socket_path):
     assert transport._server == mock_server_instance
     await transport.close()
 
-    # Give event loop time to complete cleanup
-    await asyncio.sleep(0.1)
-
 @pytest.mark.asyncio
 async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
     transport = UnixSocketTransport(path=managed_unix_socket_path)
     mocker.patch("os.makedirs", return_value=None)
     mocker.patch("os.unlink", return_value=None) # Assume unlink works if file exists
     mocker.patch("os.chmod", return_value=None) # Assume chmod works
-    # Prevent destructor noise from asyncio selector transports when the server setup fails.
-    mocker.patch("asyncio.selector_events._SelectorTransport.__del__", lambda self: None)
     mocker.patch("asyncio.start_unix_server", side_effect=OSError("start_unix_server failed"))
 
     with pytest.raises(TransportError, match="Failed to create Unix socket: start_unix_server failed"):
@@ -222,8 +200,6 @@ async def test_unix_listen_start_server_error(mocker, managed_unix_socket_path):
 
 @pytest.mark.asyncio
 async def test_unix_listen_path_no_directory(mocker):
-    from provide.testkit.mocking import MagicMock
-
     socket_name = "socket_in_cwd.sock" # A path without directory separators
     transport = UnixSocketTransport(path=socket_name)
 
@@ -236,9 +212,7 @@ async def test_unix_listen_path_no_directory(mocker):
     mocker.patch("os.unlink", return_value=None)
     mocker.patch("os.chmod", return_value=None)
 
-    mock_server_instance = MagicMock(spec=asyncio.AbstractServer)
-    mock_server_instance.close = MagicMock(return_value=None)  # sync
-    mock_server_instance.wait_closed = AsyncMock(return_value=None)  # async
+    mock_server_instance = AsyncMock(spec=asyncio.AbstractServer)
     mocker.patch("asyncio.start_unix_server", return_value=mock_server_instance)
 
     endpoint = await transport.listen()
@@ -252,6 +226,5 @@ async def test_unix_listen_path_no_directory(mocker):
         except OSError:
              pass # Ignore if it's already gone or other issues during cleanup
     await transport.close()
-    await asyncio.sleep(0.1)
 
-# 🐍🔌📞🔚
+### 🐍🏗🧪️

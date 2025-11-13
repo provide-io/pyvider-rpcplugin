@@ -126,6 +126,3 @@ if [ -n "${ECDSA_CURVE}" ]; then
 fi
 
 echo "All certificates generated in ${CERT_DIR}."
-
-
-# 🐍🔌📄🪄

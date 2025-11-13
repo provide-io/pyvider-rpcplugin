@@ -1,13 +1,8 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/handshake/test_handshake_certificate.py
 
 import pytest
 
-from provide.foundation.crypto import Certificate
+from pyvider.rpcplugin.crypto.certificate import Certificate
 from pyvider.rpcplugin.handshake import build_handshake_response
 from pyvider.rpcplugin.exception import HandshakeError  # Added import
 
@@ -59,11 +54,7 @@ def test_rebuild_x509_pem():
 async def test_handshake_certificate_stripping():
     """Test that certificate data is properly stripped of PEM headers in handshake."""
     # Create a test certificate
-    cert = Certificate.create_self_signed_server_cert(
-        common_name="test",
-        organization_name="test",
-        validity_days=365,
-    )
+    cert = Certificate(generate_keypair=True)
 
     # Create a mock transport
     class MockTransport:
@@ -90,7 +81,7 @@ async def test_handshake_certificate_stripping():
     assert "-----END CERTIFICATE-----" not in cert_part
 
     # Get the PEM body directly from the certificate
-    cert_lines = cert.cert_pem.strip().split("\n")
+    cert_lines = cert.cert.strip().split("\n")
     pem_body = "".join(cert_lines[1:-1])  # Strip header and footer
 
     # The cert part should be this PEM body (ignoring potential padding differences)
@@ -113,7 +104,10 @@ async def test_handshake_with_invalid_certificate():
 
     transport = MockTransport()
 
-    expected_msg_regex = r".*Failed to build handshake response.*'InvalidCert'.*'cert_pem'.*RPC_HANDSHAKE_ERROR"
+    expected_msg_regex = (
+        r"\[HandshakeError\] Failed to build handshake response: "
+        r"\[HandshakeError\] Invalid server certificate format provided for handshake response.*"
+    )
     with pytest.raises(HandshakeError, match=expected_msg_regex):
         await build_handshake_response(
             plugin_version=7,
@@ -121,5 +115,3 @@ async def test_handshake_with_invalid_certificate():
             transport=transport,
             server_cert=InvalidCert(),
         )
-
-# 🐍🔌📞🔚

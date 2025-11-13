@@ -1,13 +1,8 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/fixtures/dummy.py
 
 import pytest
 import asyncio
-from provide.testkit.mocking import MagicMock, AsyncMock  # Ensure AsyncMock is imported
+from unittest.mock import MagicMock, AsyncMock  # Ensure AsyncMock is imported
 
 
 class DummyReader:
@@ -55,7 +50,7 @@ class DummyGRPCServer:
     """A dummy replacement for grpc.aio.Server."""
 
     def __init__(self) -> None:
-        # from provide.testkit.mocking import MagicMock, AsyncMock # Already imported at top
+        # from unittest.mock import MagicMock, AsyncMock # Already imported at top
         self.ports: list[str] = []
         self.add_generic_rpc_handlers = MagicMock()
         self.add_registered_method_handlers = MagicMock()  # Added this
@@ -80,6 +75,27 @@ class DummyGRPCServer:
     #     pass
 
 
+# A dummy asynchronous GRPC server to simulate grpc.aio.Server behavior.
+class DummyAioServer:
+    async def start(self) -> None:
+        pass
+
+    async def stop(self, grace) -> None:
+        # Simulate asynchronous shutdown delay.
+        await asyncio.sleep(0.01)
+
+    async def wait_closed(self) -> None:
+        await asyncio.sleep(0.01)
+
+    def __del__(self) -> None:
+        # In __del__, try to get the event loop;
+        # if it is closed, simply pass to avoid raising an exception.
+        try:
+            asyncio.get_event_loop()
+        except RuntimeError:
+            pass
+
+
 # Fixtures for DummyReader and DummyWriter.
 # -------------------------------------------------------------------
 @pytest.fixture
@@ -92,4 +108,5 @@ def dummy_reader() -> DummyReader:
     # Default dummy reader returns "test data".
     return DummyReader(b"test data")
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️

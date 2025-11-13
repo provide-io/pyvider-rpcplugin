@@ -1,14 +1,9 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_grpc_broker.py
 
 import pytest
 import os  # Added import
 import grpc
-from provide.testkit.mocking import patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 from pyvider.rpcplugin.protocol import (
     grpc_broker_pb2,
@@ -125,4 +120,5 @@ async def test_broker_experimental_api() -> None:
         )
         mock_stream_stream.assert_called_once()
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️

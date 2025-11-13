@@ -1,9 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_unix_concurrent_connections.py
 
 import asyncio
 import os
@@ -12,7 +7,7 @@ import tempfile
 import pytest
 
 from pyvider.rpcplugin.transport import UnixSocketTransport
-from provide.foundation import logger
+from pyvider.telemetry import logger
 
 
 @pytest.mark.asyncio
@@ -273,5 +268,3 @@ async def test_unix_socket_multiple_clients_data_transfer() -> None:
                     logger.error(f"Error closing a client_obj during finally: {e}")
             if server:  # If server is not None (i.e. wasn't cleanly closed in try)
                 await server.close()
-
-# 🐍🔌📞🔚
