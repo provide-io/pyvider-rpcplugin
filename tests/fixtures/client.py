@@ -1,10 +1,16 @@
-# tests/client/conftest.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest_asyncio
+import subprocess
 import sys
-from unittest.mock import AsyncMock, MagicMock, patch
+from provide.testkit.mocking import AsyncMock, MagicMock, patch
 
-from pyvider.rpcplugin.client.base import RPCPluginClient
+from pyvider.rpcplugin.client.core import RPCPluginClient
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 
 
@@ -34,16 +40,27 @@ async def client_instance(test_client_command):
 
 @pytest_asyncio.fixture
 async def mock_process():
-    """Mock subprocess.Popen instance for testing."""
-    process = MagicMock()
-    process.stdout = MagicMock()
-    process.stderr = MagicMock()
-    process.poll.return_value = None  # Process is running
+    """Mock ManagedProcess wrapper for testing."""
+    # Create the underlying Popen mock (don't use spec since subprocess may be patched)
+    popen_mock = MagicMock()
+    popen_mock.stdout = MagicMock()
+    popen_mock.stderr = MagicMock()
+    popen_mock.poll.return_value = None  # Process is running
+    popen_mock.returncode = None
 
     # Set up stdout to return a valid handshake response
-    process.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
+    popen_mock.stdout.readline.return_value = b"1|1|tcp|127.0.0.1:8000|grpc|\n"
 
-    return process
+    # Create the ManagedProcess wrapper mock
+    managed_process = MagicMock()
+    managed_process.process = popen_mock
+    managed_process.is_running.return_value = True
+    managed_process.pid = 12345
+    managed_process.returncode = None
+    managed_process.terminate_gracefully.return_value = True
+    managed_process.cleanup = MagicMock()
+
+    return managed_process
 
 
 @pytest_asyncio.fixture
@@ -83,5 +100,4 @@ async def test_client_command():
     """Test command to launch the plugin process."""
     return ["python", "-m", "dummy_plugin"]
 
-
-### 🐍🏗🧪️
+# 🐍🔌📞🔚

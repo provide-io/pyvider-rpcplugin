@@ -1,7 +1,12 @@
-# tests/protocol/test_protocol_base_extended.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
-from unittest.mock import MagicMock
+from provide.testkit.mocking import MagicMock
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.types import ServerT, HandlerT
@@ -73,5 +78,4 @@ async def test_concrete_protocol_add_to_server() -> None:
     # Should not raise any exceptions
     await protocol.add_to_server(server_mock, handler_mock)
 
-
-### 🐍🏗🧪️
+# 🐍🔌📞🔚

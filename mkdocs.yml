@@ -1,0 +1,195 @@
+# Inherit shared configuration from provide-foundry
+INHERIT: .provide/foundry/base-mkdocs.yml
+
+# Project-Specific Configuration
+site_name: pyvider-rpcplugin
+site_description: High-performance, type-safe RPC plugin framework for Python with built-in security, async support, and production-ready patterns
+site_author: provide.io
+site_url: https://rpcplugin.provide.io
+repo_url: https://github.com/provide-io/pyvider-rpcplugin
+repo_name: provide-io/pyvider-rpcplugin
+edit_uri: edit/main/docs/
+copyright: ©2024-2025 provide.io llc<br/>🛠️ with 💚 and 🦝 on 🌎
+
+# Development server configuration
+dev_addr: '127.0.0.1:11006'
+
+# Project-specific theme overrides
+theme:
+  font:
+    text: Inter
+    code: Fira Code
+  palette:
+    # Light mode - custom colors for pyvider-rpcplugin
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode - custom colors for pyvider-rpcplugin
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.prune  # Additional feature specific to this project
+
+# Project-specific plugins (in addition to base plugins)
+# Temporarily disabled for Phase 3 verification
+# plugins:
+#   - gen-files:
+#       scripts:
+#         - scripts/mkdocs_gen_ref_pages.py
+#   - literate-nav:
+#       nav_file: SUMMARY.md
+#   - section-index
+#   - tags
+#   - mkdocstrings:
+#       handlers:
+#         python:
+#           options:
+#             # Override mkdocstrings options specific to this project
+#             show_if_no_docstring: true
+#             inherited_members: false
+#             group_by_category: true
+#             heading_level: 2
+#             separate_signature: false
+#             filters:
+#               - "!^_"  # Hide private members
+#               - "!^__.*__$"  # Hide special methods
+
+# Project-specific markdown extensions
+markdown_extensions:
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: provide-io
+      repo: pyvider-rpcplugin
+
+# Project-specific extra configuration
+extra:
+  version:
+    provider: mike
+    default: latest
+
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/provide-io/pyvider-rpcplugin
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/pyvider-rpcplugin/
+    - icon: fontawesome/solid/globe
+      link: https://provide.io
+
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX
+
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they're searching for. With your consent, you're helping us to
+      make our documentation better.
+
+# Watch configuration
+watch:
+  - src/pyvider
+  - docs
+  - mkdocs.yml
+
+nav:
+  - Home: index.md
+
+  - Introduction:
+    - introduction/index.md
+    - Foundation Integration: introduction/foundation.md
+
+  - Getting Started:
+    - getting-started/index.md
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+    - Your First Plugin: getting-started/first-plugin.md
+    - Examples Overview: getting-started/examples.md
+  
+  - User Guide:
+    - guide/index.md
+    - Core Concepts:
+      - guide/concepts/index.md
+      - RPC Architecture: guide/concepts/rpc-architecture.md
+      - Transports: guide/concepts/transports.md
+      - Protocols: guide/concepts/protocols.md
+      - Handshake Process: guide/concepts/handshake.md
+      - Security Model: guide/concepts/security.md
+    
+    - Server Development:
+      - guide/server/index.md
+      - Basic Server Setup: guide/server/basic-setup.md
+      - Service Implementation: guide/server/services.md
+      - Transport Configuration: guide/server/transports.md
+      - Async Patterns: guide/server/async-patterns.md
+      - Health Checks: guide/server/health-checks.md
+    
+    - Client Development:
+      - guide/client/index.md
+      - Client Development Guide: guide/client/client-guide.md
+      - Connection Resilience: guide/client/resilience.md
+      - Direct Connections: guide/client/direct-connections.md
+    
+    - Security:
+      - guide/security/index.md
+      - mTLS Configuration: guide/security/mtls.md
+      - Certificate Management: guide/security/certificates.md
+      - Certificate API Reference: guide/security/certificate-reference.md
+      - Magic Cookies: guide/security/magic-cookies.md
+      - Process Isolation: guide/security/process-isolation.md
+    
+    - Configuration:
+      - guide/config/index.md
+      - Configuration Reference: guide/config/configuration-reference.md
+      - Config vs Factory Parameters: guide/config/configuration-vs-factory-parameters.md
+      - Configuration Guide: guide/config/configuration-guide.md
+      - Advanced Configuration: guide/config/advanced.md
+      - Environment Variables: guide/config/environment.md
+      - Logging Configuration: guide/config/logging.md
+    
+    - Advanced Topics:
+      - guide/advanced/index.md
+      - Observability & Performance: guide/advanced/observability.md
+      - Type System & Custom Protocols: guide/advanced/customization.md
+      - Plugin Lifecycle: guide/advanced/lifecycle.md
+      - Middleware: guide/advanced/middleware.md
+      - Foundation Integration: guide/advanced/foundation-integration.md
+
+    - Best Practices: guide/best-practices.md
+
+  - API Reference:
+    - reference/index.md
+    - Glossary: reference/glossary.md
+  
+  - Examples:
+    - examples/index.md
+    - Quick Start: examples/quick-start.md
+    - Echo Service: examples/echo-example.md
+  
+  - Development:
+    - development/index.md
+    - Contributing Guide: development/contributing-guide.md
+    - Architecture: development/architecture.md
+    - Testing: development/testing.md
+    - Troubleshooting: development/troubleshooting.md
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+
+watch:
+  - src/pyvider
+  - docs
+  - mkdocs.yml
