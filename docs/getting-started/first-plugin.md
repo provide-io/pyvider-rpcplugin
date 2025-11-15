@@ -63,7 +63,7 @@ Compile the `.proto` file to generate Python classes:
 
 ```bash
 # Install grpcio-tools if needed
-pip install grpcio-tools
+uv add --group dev grpcio-tools
 
 # Generate Python files
 python -m grpc_tools.protoc \
@@ -389,7 +389,7 @@ touch echo_service/__init__.py
 ### Protocol Compilation Issues
 ```bash
 # Install/upgrade protobuf compiler
-pip install --upgrade grpcio-tools
+uv add --group dev grpcio-tools
 
 # Check protoc version
 python -m grpc_tools.protoc --version
