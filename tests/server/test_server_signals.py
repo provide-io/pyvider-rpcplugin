@@ -1,14 +1,7 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
-
 import asyncio
 import pytest
 import contextlib
-from provide.testkit.mocking import AsyncMock, patch
+from unittest.mock import AsyncMock, patch
 
 from pyvider.rpcplugin.server import RPCPluginServer
 
@@ -49,5 +42,3 @@ async def test_register_signal_handlers_suppresses_errors(
 
     # Assert that the exception logger was NOT called, as the error is suppressed.
     mocked_logger_exception.assert_not_called()
-
-# 🐍🔌📞🔚

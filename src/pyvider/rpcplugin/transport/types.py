@@ -1,8 +1,3 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
 """Type definitions for the Pyvider RPC plugin transport system.
 
 This module provides Protocol classes, TypeVars, and type aliases that define
@@ -18,10 +13,11 @@ Usage:
 
     def setup_server(transport: TransportT) -> None:
         # Type-safe transport handling
-        ..."""
+        ...
+"""
 
 import asyncio
-from typing import Protocol, TypeAlias, TypeVar
+from typing import Protocol, TypeVar
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 from pyvider.rpcplugin.transport.tcp import TCPSocketTransport
@@ -30,11 +26,15 @@ from pyvider.rpcplugin.transport.unix import UnixSocketTransport
 TransportT = TypeVar(
     "TransportT", bound=RPCPluginTransport
 )  # Generic type for any RPCPluginTransport implementation
-TCPSocketT = TypeVar("TCPSocketT", bound=TCPSocketTransport)  # Generic type for TCPSocketTransport
-UnixSocketT = TypeVar("UnixSocketT", bound=UnixSocketTransport)  # Generic type for UnixSocketTransport
+TCPSocketT = TypeVar(
+    "TCPSocketT", bound=TCPSocketTransport
+)  # Generic type for TCPSocketTransport
+UnixSocketT = TypeVar(
+    "UnixSocketT", bound=UnixSocketTransport
+)  # Generic type for UnixSocketTransport
 
 # Simplified TransportType alias, as TCPSocketT and UnixSocketT are already specific.
-TransportType: TypeAlias = (
+type TransportType = (
     TCPSocketTransport | UnixSocketTransport
 )  # Represents either a TCP or Unix socket transport
 
@@ -52,22 +52,7 @@ ReaderT = TypeVar("ReaderT", bound=asyncio.StreamReader)
 WriterT = TypeVar("WriterT", bound=asyncio.StreamWriter)
 
 # Transport Aliases
-EndpointType: TypeAlias = str
-AddressType: TypeAlias = tuple[str, int]
+type EndpointType = str
+type AddressType = tuple[str, int]
 
-__all__ = [
-    "AddressType",
-    "ConnectionT",
-    "EndpointType",
-    "RPCPluginTransport",
-    "ReaderT",
-    "TCPSocketT",
-    "TCPSocketTransport",
-    "TransportT",
-    "TransportType",
-    "UnixSocketT",
-    "UnixSocketTransport",
-    "WriterT",
-]
-
-# 🐍🔌📞🔚
+# 🐍🏗️🔌

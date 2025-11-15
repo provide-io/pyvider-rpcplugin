@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_unix_error_handling.py
 
 import asyncio
 import os
 import tempfile
-from provide.testkit.mocking import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock
 
 import pytest
 
@@ -98,9 +94,6 @@ async def test_unix_socket_close_error_handling() -> None:
         # Socket file should still be removed
         assert not os.path.exists(socket_path)
 
-        # Give event loop time to complete cleanup
-        await asyncio.sleep(0.1)
-
 
 @pytest.mark.asyncio
 async def test_unix_socket_path_normalization() -> None:
@@ -143,4 +136,5 @@ async def test_unix_socket_connect_timeout() -> None:
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)
 
-# 🐍🔌📞🔚
+
+# 🐍🏗🧪️

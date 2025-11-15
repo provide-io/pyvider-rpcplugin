@@ -1,9 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/test_base_abc.py
 
 import pytest
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
@@ -39,4 +34,5 @@ def test_transport_base_abstract_methods() -> None:
 
     assert "close" in str(excinfo.value)
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️
