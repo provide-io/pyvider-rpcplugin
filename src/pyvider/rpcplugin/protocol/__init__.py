@@ -1,10 +1,13 @@
-"""
-Pyvider RPC Plugin Protocol Package.
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""Pyvider RPC Plugin Protocol Package.
 
 This package defines the base RPC plugin protocol interface and re-exports
 key components from the gRPC generated protocol code (services, servicers,
-and registration functions) for use by clients and servers.
-"""
+and registration functions) for use by clients and servers."""
 
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import (
@@ -28,23 +31,22 @@ from pyvider.rpcplugin.protocol.service import (
 )
 
 __all__ = [
-    "RPCPluginProtocol",
-    "register_protocol_service",
     "GRPCBroker",
+    "GRPCBrokerService",
     "GRPCBrokerServicer",
-    "add_GRPCBrokerServicer_to_server",
     "GRPCController",
     "GRPCControllerServicer",
-    "add_GRPCControllerServicer_to_server",
-    "add_GRPCStdioServicer_to_server",
-    "add_GRPCBrokerServicer_to_server",
-    "add_GRPCControllerServicer_to_server",
     "GRPCStdio",
     "GRPCStdioServicer",
-    "GRPCBrokerService",
+    "RPCPluginProtocol",
+    "add_GRPCBrokerServicer_to_server",
+    "add_GRPCBrokerServicer_to_server",
+    "add_GRPCControllerServicer_to_server",
+    "add_GRPCControllerServicer_to_server",
+    "add_GRPCStdioServicer_to_server",
+    "register_protocol_service",
 ]
 
 __all__ = list(sorted(set(__all__)))
 
-
-# 🐍🏗️🔌
+# 🐍🔌📞🔚

@@ -129,6 +129,7 @@ htmlcov/
 .nox/
 .coverage
 .coverage.*
+coverage.json
 .cache
 nosetests.xml
 coverage.xml
@@ -209,6 +210,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.secrets
 env/
 venv/
 ENV/
@@ -395,6 +397,10 @@ result.json*.bf.txt
 .testmondata
 *.bf.txt
 
+# Temporary socket files and dumps
+dummy_server_socket.txt
+*.sock
+
 # Ignore protobuf generated files
 *_pb2.py
 *_pb2_grpc.py
@@ -403,3 +409,13 @@ result.json*.bf.txt
 # examples/kvproto/
 bin/
 code.sh
+workenv/
+build
+
+# Synced theme files (source: provide-foundry/shared-theme/)
+docs/.shared-theme/
+*.key
+bf-*.txt
+
+# Extracted provide.io tooling artifacts
+.provide/

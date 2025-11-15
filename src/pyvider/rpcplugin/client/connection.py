@@ -1,28 +1,28 @@
 #
-# src/pyvider/rpcplugin/client/connection.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 
-"""
-Client Connection Management.
+"""Client Connection Management.
 
 This module defines the `ClientConnection` class, responsible for managing
 the state and I/O operations of a single client connection within the
 Pyvider RPC Plugin system. It includes metrics tracking and supports
-dependency injection for I/O functions to facilitate testing.
-"""
+dependency injection for I/O functions to facilitate testing."""
 
 import asyncio
 from collections.abc import (
     Awaitable,
-)
-from collections.abc import (
     Callable as AbcCallable,
 )
 from typing import Any  # Added for __eq__ type hint
 
 from attrs import define, field
+from provide.foundation.logger import get_logger
 
-from pyvider.telemetry import logger
+from pyvider.rpcplugin.config import rpcplugin_config
+
+logger = get_logger(__name__)
 
 # Type aliases for dependency-injected I/O functions using collections.abc
 SendFuncType = AbcCallable[[bytes], Awaitable[None]]
@@ -102,14 +102,12 @@ class ClientConnection:
             self.writer.write(data)
             await self.writer.drain()
             self.update_metrics(bytes_sent=len(data))
-            logger.debug(f"Sent data to {self.remote_addr}", extra={"bytes": len(data)})
+            logger.debug(f"Sent data to {self.remote_addr}", bytes_count=len(data))
         except OSError as e:
-            logger.error(
-                f"Error sending data to {self.remote_addr}", extra={"error": str(e)}
-            )
+            logger.error(f"Error sending data to {self.remote_addr}", error=str(e))
             raise
 
-    async def _default_receive(self, size: int = 16384) -> bytes:
+    async def _default_receive(self, size: int | None = None) -> bytes:
         """
         Default receive function: reads data from the reader and updates metrics.
 
@@ -123,17 +121,14 @@ class ClientConnection:
             OSError: If an error occurs during receiving.
         """
         try:
-            data = await self.reader.read(size)
+            buffer_size = size if size is not None else rpcplugin_config.plugin_buffer_size
+            data = await self.reader.read(buffer_size)
             if data:
                 self.update_metrics(bytes_received=len(data))
-                logger.debug(
-                    f"Received data from {self.remote_addr}", extra={"bytes": len(data)}
-                )
+                logger.debug(f"Received data from {self.remote_addr}", bytes_count=len(data))
             return data
         except OSError as e:
-            logger.error(
-                f"Error receiving data from {self.remote_addr}", extra={"error": str(e)}
-            )
+            logger.error(f"Error receiving data from {self.remote_addr}", error=str(e))
             raise
 
     async def send_data(self, data: bytes) -> None:
@@ -151,12 +146,11 @@ class ClientConnection:
         if self.send_func is None:
             # This should ideally not be reached if __attrs_post_init__ ran.
             raise RuntimeError(
-                "send_func was not initialized. This should not happen if "
-                "__attrs_post_init__ ran correctly."
+                "send_func was not initialized. This should not happen if __attrs_post_init__ ran correctly."
             )
         await self.send_func(data)
 
-    async def receive_data(self, size: int = 16384) -> bytes:
+    async def receive_data(self, size: int | None = None) -> bytes:
         """
         Receive data from the connection using the injected receive_func.
 
@@ -177,7 +171,8 @@ class ClientConnection:
                 "receive_func was not initialized. This should not happen if "
                 "__attrs_post_init__ ran correctly."
             )
-        return await self.receive_func(size)
+        buffer_size = size if size is not None else rpcplugin_config.plugin_buffer_size
+        return await self.receive_func(buffer_size)
 
     async def close(self) -> None:
         """
@@ -199,7 +194,7 @@ class ClientConnection:
             except Exception as e:
                 logger.error(
                     f"Error while closing connection to {self.remote_addr}",
-                    extra={"error": str(e)},
+                    error=str(e),
                 )
 
     def __del__(self) -> None:
@@ -221,4 +216,4 @@ class ClientConnection:
         return id(self) == id(other)
 
 
-# 🐍🏗️🔌
+# 🐍🔌📞🔚
