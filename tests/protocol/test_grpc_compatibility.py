@@ -1,13 +1,8 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_grpc_compatibility.py
 
 import pytest
 import importlib
-from provide.testkit.mocking import patch, MagicMock
+from unittest.mock import patch, MagicMock
 
 from pyvider.rpcplugin.protocol import (
     grpc_broker_pb2_grpc,
@@ -16,7 +11,7 @@ from pyvider.rpcplugin.protocol import (
 )
 
 
-def test_add_servicers_to_server() -> None:
+async def test_add_servicers_to_server() -> None:
     """Test the add_*Servicer_to_server functions."""
     # Mock a server
     mock_server = MagicMock()
@@ -40,7 +35,7 @@ def test_add_servicers_to_server() -> None:
     assert mock_server.add_registered_method_handlers.call_count == 3
 
 
-def test_experimental_api() -> None:
+async def test_experimental_api() -> None:
     """Test the experimental API methods in the grpc_*_pb2_grpc modules."""
     # Just verify these objects exist and have the right methods
     assert hasattr(grpc_broker_pb2_grpc, "GRPCBroker")
@@ -53,7 +48,7 @@ def test_experimental_api() -> None:
     assert hasattr(grpc_stdio_pb2_grpc.GRPCStdio, "StreamStdio")
 
 
-def test_version_compatibility_check() -> None:
+async def test_version_compatibility_check() -> None:
     """Test the version compatibility check code in the grpc modules."""
     # We'll simulate a version mismatch by patching first_version_is_lower
     with patch("grpc._utilities.first_version_is_lower", return_value=True):
@@ -66,4 +61,5 @@ def test_version_compatibility_check() -> None:
         # Should not raise
         importlib.reload(grpc_broker_pb2_grpc)
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️

@@ -1,15 +1,10 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# pyvider/rpcplugin/tests/transport/test_connection.py
 
 import asyncio
 import gc
 
 import pytest
-from provide.testkit.mocking import patch
+from unittest.mock import patch
 
 
 from pyvider.rpcplugin.client.connection import ClientConnection
@@ -128,31 +123,6 @@ async def test_receive_data_oserror(monkeypatch, connection) -> None:
 
 
 @pytest.mark.asyncio
-async def test_send_data_without_send_func_set(connection) -> None:
-    connection.send_func = None
-    with pytest.raises(RuntimeError, match="send_func was not initialized"):
-        await connection.send_data(b"data")
-
-
-@pytest.mark.asyncio
-async def test_receive_data_without_receive_func_set(connection) -> None:
-    connection.receive_func = None
-    with pytest.raises(RuntimeError, match="receive_func was not initialized"):
-        await connection.receive_data()
-
-
-def test_client_connection_equality_and_hash(connection) -> None:
-    other_reader = DummyReader()
-    other_writer = DummyWriter()
-    other = ClientConnection(reader=other_reader, writer=other_writer, remote_addr="127.0.0.1")  # type: ignore[arg-type]
-
-    assert connection == connection
-    assert connection != other
-    assert connection.__eq__("not-a-connection") is NotImplemented  # type: ignore[arg-type]
-    assert isinstance(hash(connection), int)
-
-
-@pytest.mark.asyncio
 async def test_close_normal(connection, dummy_writer) -> None:
     # Ensure close() properly marks connection as closed and calls writer.close().
     connection._closed = False
@@ -192,9 +162,9 @@ async def test_del_warning() -> None:
     remote_addr = conn.remote_addr
 
     # Patch the logger.warning specifically in the module where ClientConnection uses it.
-    # ClientConnection.py does: from provide.foundation import logger
+    # ClientConnection.py does: from pyvider.telemetry import logger
     # So the target is 'pyvider.rpcplugin.client.connection.logger.warning'.
-    from provide.testkit.mocking import MagicMock
+    from unittest.mock import MagicMock
 
     with patch(
         "pyvider.rpcplugin.client.connection.logger.warning", new_callable=MagicMock
@@ -222,5 +192,3 @@ async def test_del_warning() -> None:
             f"Expected warning message '{expected_message}' not found in logger calls. "
             f"Actual calls: {mock_log_warning.call_args_list}"
         )
-
-# 🐍🔌📞🔚

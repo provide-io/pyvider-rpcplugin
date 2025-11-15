@@ -1,26 +1,38 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""Type Definitions for Pyvider RPC Plugin Client.
+"""
+Type Definitions for Pyvider RPC Plugin Client.
 
 This module contains type aliases, TypeVars, and Protocols used throughout
-the RPC plugin client components, aiding in static analysis and code clarity."""
+the RPC plugin client components, aiding in static analysis and code clarity.
+"""
 
-from typing import Any, Protocol, TypeAlias, TypeVar
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from .base import RPCPluginClient
+    from .connection import ClientConnection
 
 import grpc
 
 # Generic TypeVars
-ClientT = TypeVar("ClientT")  # Represents an RPCPluginClient instance type
+ClientT = TypeVar(
+    "ClientT", bound="RPCPluginClient"
+)  # Represents an RPCPluginClient instance type
+ConnectionT = TypeVar(
+    "ConnectionT", bound="ClientConnection"
+)  # Represents a ClientConnection instance type
 
 # Type Aliases for gRPC Clients
-GrpcChannelType: TypeAlias = grpc.aio.Channel | grpc.Channel  # Represents gRPC channel types (async or sync)
-RpcConfigType: TypeAlias = dict[str, Any]  # Represents the structure for RPC configuration dictionaries
+type GrpcChannelType = (
+    grpc.aio.Channel | grpc.Channel
+)  # Represents gRPC channel types (async or sync)
+type RpcConfigType = dict[
+    str, Any
+]  # Represents the structure for RPC configuration dictionaries
 
 # gRPC Credentials Type (used for TLS setup)
-GrpcCredentialsType: TypeAlias = (
+type GrpcCredentialsType = (
     grpc.ChannelCredentials | None
 )  # Represents gRPC channel credentials, possibly None
 
@@ -37,4 +49,4 @@ class SecureRpcClientT(Protocol):
     async def close(self) -> None: ...
 
 
-# 🐍🔌📞🔚
+# 🐍🏗️🔌

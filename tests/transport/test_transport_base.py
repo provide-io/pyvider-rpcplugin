@@ -1,16 +1,11 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/test_transport_base.py
 
 import pytest
 
 from pyvider.rpcplugin.transport.base import RPCPluginTransport
 
 
-class MockTransport(RPCPluginTransport):
+class TestTransport(RPCPluginTransport):
     """Concrete implementation of RPCPluginTransport for testing."""
 
     def __init__(self, endpoint=None) -> None:
@@ -33,17 +28,17 @@ class MockTransport(RPCPluginTransport):
 
 def test_transport_init() -> None:
     """Test transport initialization."""
-    transport = MockTransport()
+    transport = TestTransport()
     assert transport.endpoint is None
 
-    transport = MockTransport(endpoint="test://preset")
+    transport = TestTransport(endpoint="test://preset")
     assert transport.endpoint == "test://preset"
 
 
 @pytest.mark.asyncio
 async def test_transport_listen() -> None:
     """Test transport listen method."""
-    transport = MockTransport()
+    transport = TestTransport()
     endpoint = await transport.listen()
 
     assert transport._listen_called
@@ -53,7 +48,7 @@ async def test_transport_listen() -> None:
 @pytest.mark.asyncio
 async def test_transport_connect() -> None:
     """Test transport connect method."""
-    transport = MockTransport()
+    transport = TestTransport()
     await transport.connect("test://target")
 
     assert transport._connect_called
@@ -63,7 +58,7 @@ async def test_transport_connect() -> None:
 @pytest.mark.asyncio
 async def test_transport_close() -> None:
     """Test transport close method."""
-    transport = MockTransport()
+    transport = TestTransport()
     await transport.close()
 
     assert transport._close_called
@@ -80,4 +75,5 @@ async def test_abstract_transport_methods() -> None:
     with pytest.raises(TypeError):
         IncompleteTransport()  # type: ignore[abstract]
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️

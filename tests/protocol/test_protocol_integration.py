@@ -1,16 +1,11 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_protocol_integration.py
 
 import asyncio
 import pytest
 import pytest_asyncio
 import attr  # Added import
 
-from provide.testkit.mocking import patch, AsyncMock
+from unittest.mock import patch, AsyncMock
 
 import grpc
 from google.protobuf.empty_pb2 import Empty
@@ -42,7 +37,7 @@ from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
 
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
-from provide.foundation import logger
+from pyvider.telemetry import logger
 from typing import AsyncGenerator # Added import
 
 
@@ -105,7 +100,6 @@ async def grpc_channel(grpc_server_output: ServerFixtureOutput):  # Changed fixt
 # Removed old test_stdio_integration; test_stdio_integration_consolidated is preferred.
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_stdio_integration_consolidated(
     grpc_server_output: ServerFixtureOutput, grpc_channel
@@ -205,7 +199,6 @@ async def test_stdio_integration_consolidated(
 # Removed old test_broker_integration; other broker tests are more specific or comprehensive.
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_broker_start_stream_error_handling(
     grpc_server_output: ServerFixtureOutput, grpc_channel
@@ -241,7 +234,6 @@ async def test_broker_start_stream_error_handling(
     await stream.done_writing()
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_broker_cancellation_consolidated(
     grpc_server_output: ServerFixtureOutput, grpc_channel
@@ -296,7 +288,6 @@ async def test_broker_cancellation_consolidated(
 # Removed old test_controller_integration; test_controller_shutdown_with_timeout_consolidated is preferred.
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_stdio_early_client_disconnect_consolidated(
     grpc_server_output: ServerFixtureOutput,
@@ -353,7 +344,6 @@ async def test_stdio_early_client_disconnect_consolidated(
         await temp_channel.close()
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_broker_multiple_clients_consolidated(
     grpc_server_output: ServerFixtureOutput, grpc_channel
@@ -420,7 +410,6 @@ async def test_broker_multiple_clients_consolidated(
         assert (i + 1) in broker_service._subchannels
 
 
-@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_controller_shutdown_with_timeout_consolidated(
     grpc_server_output: ServerFixtureOutput, grpc_channel
@@ -467,4 +456,5 @@ async def test_controller_shutdown_with_timeout_consolidated(
             except Exception as e:
                 pytest.fail(f"Controller shutdown test failed: {e}")
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️

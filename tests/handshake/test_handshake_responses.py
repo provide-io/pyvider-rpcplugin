@@ -1,19 +1,13 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
-
+# tests/handshake/test_handshake_responses.py
 import pytest
-from provide.testkit.mocking import patch, MagicMock, AsyncMock  # Added AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock  # Added AsyncMock
 from pyvider.rpcplugin.transport import UnixSocketTransport # Added import
 
 from pyvider.rpcplugin.handshake import (
     build_handshake_response,
     parse_handshake_response,
 )
-from provide.foundation.crypto import Certificate
+from pyvider.rpcplugin.crypto import Certificate
 from pyvider.rpcplugin.exception import HandshakeError
 from pyvider.rpcplugin.config import rpcplugin_config
 
@@ -21,11 +15,7 @@ from pyvider.rpcplugin.config import rpcplugin_config
 @pytest.mark.asyncio
 async def test_build_handshake_response_with_tls(mock_server_transport_tcp):
     """Test building handshake response with TLS certificate."""
-    cert = Certificate.create_self_signed_server_cert(
-        common_name="test",
-        organization_name="test",
-        validity_days=365,
-    )
+    cert = Certificate(generate_keypair=True)
     response = await build_handshake_response(
         plugin_version=7,
         transport_name="tcp",
@@ -94,7 +84,8 @@ def test_parse_handshake_response_with_tls():
     cert_data = "FAKECERTDATA"
     response_str = f"1|7|tcp|127.0.0.1:12345|grpc|{cert_data}"
 
-    with patch.object(rpcplugin_config, "plugin_core_version", 1):
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
+        mock_get_config.return_value = 1
 
         core_version, plugin_version, network, address, protocol, server_cert = (
             parse_handshake_response(response_str)
@@ -110,7 +101,8 @@ def test_parse_handshake_response_with_tls():
 def test_parse_handshake_response_without_tls():
     """Test parsing a handshake response without a TLS certificate."""
     response_str = "1|7|unix|/tmp/test.sock|grpc|"
-    with patch.object(rpcplugin_config, "plugin_core_version", 1):
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
+        mock_get_config.return_value = 1
 
         core_version, plugin_version, network, address, protocol, server_cert = (
             parse_handshake_response(response_str)
@@ -136,14 +128,16 @@ def test_parse_handshake_response_invalid_format():
 def test_parse_handshake_response_missing_fields():
     """Test parsing a handshake response with missing fields (empty strings)."""
     response_str = "1|7|||grpc|"  # Empty network and address
-    with patch.object(rpcplugin_config, "plugin_core_version", 1):
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
+        mock_get_config.return_value = 1
         with pytest.raises(
             HandshakeError, match="Invalid network type '' in handshake."
         ):
             parse_handshake_response(response_str)
 
     response_str_empty_addr = "1|7|tcp||grpc|"
-    with patch.object(rpcplugin_config, "plugin_core_version", 1):
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
+        mock_get_config.return_value = 1
         with pytest.raises(
             HandshakeError, match="Empty address received in handshake string."
         ):
@@ -171,9 +165,13 @@ def test_parse_handshake_response_excessive_fields():
 
 def test_parse_handshake_response_invalid_protocol_version() -> None:
     """Test parsing a handshake response with an invalid protocol version."""
-    with patch.object(rpcplugin_config, "plugin_core_version", 1):
+    with patch.object(rpcplugin_config, "get") as mock_get_config:
         # Scenario 1: Core protocol version mismatch (e.g., plugin sends 2, client expects 1)
         response_diff_core = "2|7|tcp|127.0.0.1:12345|grpc|"
+        # Configure the mock to return '1' when 'PLUGIN_CORE_VERSION' is fetched.
+        mock_get_config.side_effect = (
+            lambda key, default=None: 1 if key == "PLUGIN_CORE_VERSION" else default
+        )
         # The parse_handshake_response function wraps the specific error.
         # The specific error is "Unsupported handshake version: 2 (expected: 1)".
         # The current regex in the code for this part is correct for matching the specific part.
@@ -190,7 +188,7 @@ def test_parse_handshake_response_invalid_protocol_version() -> None:
         # and then "Invalid handshake format" is raised. The test should check for the raised error.
         # The actual raised error due to `is_valid_handshake_parts` returning False for "abc" is:
         # "[HandshakeError] Failed to parse handshake response: [HandshakeError] Invalid handshake format. Expected 6 pipe-separated parts, got 6: 'abc|7|tcp..."
-        expected_regex_bad_core_final = r".*Failed to parse handshake response.*Invalid handshake format.*"
+        expected_regex_bad_core_final = r"\[HandshakeError\] Failed to parse handshake response: \[HandshakeError\] Invalid handshake format.*Expected 6 pipe-separated parts, got 6: 'abc\|7\|tcp"
 
         with pytest.raises(HandshakeError, match=expected_regex_bad_core_final):
             parse_handshake_response(response_bad_core_ver)
@@ -219,7 +217,7 @@ async def test_build_handshake_response_unix_transport_already_running(mocker):
     mock_transport._running = True
     mock_transport.endpoint = "/tmp/existing.sock"
 
-    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1)
+    mocker.patch.object(rpcplugin_config, "get", return_value="1")
 
     response = await build_handshake_response(
         plugin_version=7,
@@ -237,7 +235,7 @@ async def test_build_handshake_response_generic_exception(mocker):
     mock_transport = AsyncMock()
     mock_transport.listen = AsyncMock(side_effect=Exception("Underlying listen error"))
 
-    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1)
+    mocker.patch.object(rpcplugin_config, "get", return_value="1")
 
     with pytest.raises(
         HandshakeError,
@@ -267,7 +265,7 @@ def test_parse_handshake_response_not_string(response_input, error_msg_part):
 
 @pytest.mark.parametrize(
     "config_core_version, expected_parsed_core_version_or_error",
-    [(1, 1), (2, 2), (3, 3)],  # Foundation config only accepts integers
+    [(None, 1), ("abc", 1), ("2", 2), (3, 3)],
 )
 def test_parse_handshake_core_version_config_issues(
     config_core_version, expected_parsed_core_version_or_error, mocker
@@ -277,8 +275,14 @@ def test_parse_handshake_core_version_config_issues(
 
     response_str = f"{handshake_line_core_version}|7|tcp|127.0.0.1:1234|grpc|"
 
-    # Mock the plugin_core_version attribute directly
-    mocker.patch.object(rpcplugin_config, "plugin_core_version", config_core_version)
+    mock_get = mocker.patch.object(rpcplugin_config, "get")
+
+    def side_effect_func(key, default=None):
+        if key == "PLUGIN_CORE_VERSION":
+            return config_core_version
+        return default
+
+    mock_get.side_effect = side_effect_func
 
     if isinstance(expected_parsed_core_version_or_error, type) and issubclass(
         expected_parsed_core_version_or_error, Exception
@@ -297,22 +301,23 @@ def test_parse_handshake_core_version_config_issues(
 
 def test_parse_handshake_response_generic_exception(mocker):
     """Test that a generic exception during parsing is caught and wrapped."""
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.core.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
 
     mock_response_str = mocker.MagicMock(spec=str)
     mock_response_str.strip.return_value.split.side_effect = Exception(
         "Unexpected parsing error"
     )
 
-    expected_regex = r".*Failed to parse handshake response.*Unexpected parsing error.*"
+    expected_regex = r"\[HandshakeError\] Failed to parse handshake response: Unexpected parsing error\Z"
     with pytest.raises(HandshakeError, match=expected_regex):
         parse_handshake_response(mock_response_str)
 
     mock_logger_error.assert_called_once()
     args, kwargs = mock_logger_error.call_args
     assert "📡❌ Handshake parsing failed: Unexpected parsing error" in args[0]
-    # Foundation's structured logger passes error directly as a kwarg, not in 'extra'
-    assert kwargs.get("error") == "Unexpected parsing error"
+    assert (
+        kwargs.get("extra", {}).get("error") == "Unexpected parsing error"
+    )  # Check the 'error' key in 'extra'
 
 
 @pytest.mark.asyncio
@@ -324,11 +329,11 @@ async def test_build_handshake_response_invalid_cert_format(mocker):
     mock_transport.endpoint = None
 
     mock_server_cert = MagicMock(spec=Certificate)
-    # Ensure .cert_pem attribute exists and is a string
-    mock_server_cert.cert_pem = "INVALID\nCERT" # Only 2 lines, will fail len(cert_lines) < 3
+    # Ensure .cert attribute exists and is a string
+    mock_server_cert.cert = "INVALID\nCERT" # Only 2 lines, will fail len(cert_lines) < 3
 
     # Mock rpcplugin_config.get for PLUGIN_CORE_VERSION as it's used by build_handshake_response
-    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1) # Assuming core version "1"
+    mocker.patch.object(rpcplugin_config, "get", return_value="1") # Assuming core version "1"
 
     with pytest.raises(HandshakeError, match="Invalid server certificate format"):
         await build_handshake_response(
@@ -340,8 +345,8 @@ async def test_build_handshake_response_invalid_cert_format(mocker):
 
 def test_parse_handshake_response_invalid_network(mocker):
     response_str = "1|1|invalidnet|127.0.0.1:12345|grpc|"
-    mocker.patch.object(rpcplugin_config, "plugin_core_version", 1) # Mock core version check
+    mocker.patch.object(rpcplugin_config, "get", return_value="1") # Mock core version check
     with pytest.raises(HandshakeError, match="Invalid network type 'invalidnet' in handshake."):
         parse_handshake_response(response_str)
 
-# 🐍🔌📞🔚
+# 🐍🏗️🤝
