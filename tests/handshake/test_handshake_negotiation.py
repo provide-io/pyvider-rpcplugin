@@ -1,5 +1,9 @@
-# pyvider/rpcplugin/tests/handshake/test_handshake_negotiate.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 
+"""TODO: Add module docstring."""
 
 import pytest
 
@@ -10,7 +14,6 @@ from pyvider.rpcplugin.handshake import (
 )
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.transport.base import RPCPluginTransport # Added import
-from typing import List # Added import
 
 
 # Test for Protocol Version Negotiation
@@ -18,7 +21,7 @@ from typing import List # Added import
 async def test_negotiate_protocol_version_valid() -> None:
     """Test successful protocol version negotiation."""
     SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
-    server_versions: List[int] = [1, 2, 3, 4, 5, 6, 7]  # Server supports these versions
+    server_versions: list[int] = [1, 2, 3, 4, 5, 6, 7]  # Server supports these versions
     negotiated_version = negotiate_protocol_version(server_versions)
     assert negotiated_version in SUPPORTED_PROTOCOL_VERSIONS
     assert negotiated_version == max(
@@ -66,7 +69,7 @@ async def test_negotiate_transport_valid_unix() -> None:
     assert isinstance(transport, UnixSocketTransport)
 
 
-from unittest.mock import patch # Added for the new tests
+from provide.testkit.mocking import patch # Added for the new tests
 import tempfile # Added for the new tests
 
 @pytest.mark.asyncio
@@ -95,7 +98,7 @@ async def test_negotiate_transport_exception_handling():
 async def test_negotiate_transport_tempfile_exception(mocker):
     """Test that an exception during tempfile.gettempdir is handled."""
     mocker.patch("tempfile.gettempdir", side_effect=OSError("Disk full"))
-    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.logger.error")
+    mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
 
     with pytest.raises(
         TransportError,
@@ -136,3 +139,5 @@ async def test_negotiate_transport_prefers_unix() -> None:
     transport: RPCPluginTransport = transport_instance # Type annotation
     assert transport_name == "unix"
     assert isinstance(transport, UnixSocketTransport)
+
+# 🐍🔌📞🔚

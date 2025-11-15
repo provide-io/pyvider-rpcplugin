@@ -1,11 +1,17 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import os
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
     rpcplugin_config,
     configure,
-    CONFIG_SCHEMA,
 )
-from pyvider.telemetry import logger
+from provide.foundation import logger
 
 # Backup original environment variables that might be modified by tests
 ORIGINAL_ENV_BACKUP = {}
@@ -31,22 +37,22 @@ def restore_env_vars(keys_to_restore):
 
 
 def reinit_config():
-    """Just re-initializes RPCPluginConfig, assuming os.environ is already set as desired."""
-    RPCPluginConfig._instance = None
-    return RPCPluginConfig.instance()
+    """Creates a fresh RPCPluginConfig from current environment."""
+    # Foundation config doesn't use singleton pattern
+    return RPCPluginConfig.from_env()
 
 
 def clear_all_known_plugin_env_vars():
-    """Clears all environment variables that correspond to CONFIG_SCHEMA keys."""
+    """Clears all environment variables that start with PLUGIN_."""
     cleared_keys = []
-    # Make sure CONFIG_SCHEMA is available (it's imported)
-    for key in CONFIG_SCHEMA.keys():
-        if key in os.environ:
-            # Backup before deleting if not already backed up for this session
-            if key not in ORIGINAL_ENV_BACKUP:
-                ORIGINAL_ENV_BACKUP[key] = os.environ[key]
-            del os.environ[key]
-            cleared_keys.append(key)
+    # Clear all PLUGIN_ environment variables
+    plugin_keys = [key for key in os.environ.keys() if key.startswith("PLUGIN_")]
+    for key in plugin_keys:
+        # Backup before deleting if not already backed up for this session
+        if key not in ORIGINAL_ENV_BACKUP:
+            ORIGINAL_ENV_BACKUP[key] = os.environ[key]
+        del os.environ[key]
+        cleared_keys.append(key)
     if cleared_keys:
         logger.debug(
             f"Cleared known PLUGIN_ environment variables: {', '.join(cleared_keys)}"
@@ -58,7 +64,8 @@ logger.info("--- Testing configure() precedence over environment variables ---")
 env_var_key = "PLUGIN_HANDSHAKE_TIMEOUT"
 env_var_val_str = "25.5"
 configure_val = 15.0
-schema_default_val = float(CONFIG_SCHEMA[env_var_key]["default"])
+# Get default value from Foundation config field definition
+schema_default_val = 10.0  # Default for PLUGIN_HANDSHAKE_TIMEOUT from RPCPluginConfig
 
 # Backup the state of env_var_key if it exists from a parent environment
 backup_env_vars([env_var_key])
@@ -71,7 +78,7 @@ logger.debug(f"Set {env_var_key}={os.environ[env_var_key]} in environment for te
 
 # 2. Initialize config and verify it reflects the environment variable
 config = reinit_config()
-loaded_env_val = config.handshake_timeout()
+loaded_env_val = config.plugin_handshake_timeout
 assert loaded_env_val == float(env_var_val_str), (
     f"Config should reflect env var. Expected {float(env_var_val_str)}, got {loaded_env_val}"
 )
@@ -84,7 +91,7 @@ logger.debug(f"Calling configure({short_name_for_configure}={configure_val})")
 configure(handshake_timeout=configure_val)
 
 # rpcplugin_config is the global singleton instance, which configure() updates
-updated_config_val = rpcplugin_config.handshake_timeout()
+updated_config_val = rpcplugin_config.plugin_handshake_timeout
 assert updated_config_val == configure_val, (
     f"configure() should override env var. Expected {configure_val}, got {updated_config_val}"
 )
@@ -122,7 +129,7 @@ clear_all_known_plugin_env_vars()  # Ensure no other vars interfere
 os.environ[key_auto_mtls] = "false"
 logger.debug(f"Set {key_auto_mtls}={os.environ[key_auto_mtls]} in environment.")
 config = reinit_config()
-actual_auto_mtls = config.auto_mtls_enabled()
+actual_auto_mtls = config.plugin_auto_mtls
 assert actual_auto_mtls is False, (
     f"{key_auto_mtls} type conversion failed. Expected False, got {actual_auto_mtls}"
 )
@@ -144,7 +151,7 @@ logger.debug(
 )
 config = reinit_config()
 expected_list_int = [2, 3, 4]
-actual_list_int = config.get(key_protocol_versions)
+actual_list_int = config.plugin_protocol_versions
 assert actual_list_int == expected_list_int, (
     f"{key_protocol_versions} type conversion failed. Expected {expected_list_int}, got {actual_list_int}"
 )
@@ -159,3 +166,5 @@ reinit_config()
 
 logger.info("--- Type Conversion Test: PASSED ---")
 logger.info("Finished environment variable precedence and type conversion tests.")
+
+# 🐍🔌📞🔚

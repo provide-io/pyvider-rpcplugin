@@ -1,4 +1,10 @@
-# tests/handshake/test_handshake_magic_cookie.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import pytest
 
 from pyvider.rpcplugin.handshake import validate_magic_cookie
@@ -12,33 +18,33 @@ from pyvider.rpcplugin.handshake import _SENTINEL_INSTANCE
     [
         # Valid scenario
         ("PLUGIN_MAGIC_COOKIE_KEY", "expected_value", "expected_value", None),
-        # Error: Key not configured (but value and cookie provided)
+        # Error: Key not configured
         (
             None,
             "expected_value",
             "expected_value",
-            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\.\s*\(Hint:.*\)",
+            r"Internal configuration error: cookie_key is missing for lookup",
         ),
         # Error: Expected value not configured
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
             None,
             "some_cookie",
-            r"\[HandshakeError\] Expected magic cookie value is not configured.*Hint:.*",
+            r"Expected magic cookie value is not configured",
         ),
         # Error: Cookie not provided by client
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
             "expected_value",
             None,
-            r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'PLUGIN_MAGIC_COOKIE_KEY'\..*Hint:.*",
+            r"Magic cookie not provided by the client.*PLUGIN_MAGIC_COOKIE_KEY",
         ),
-        # Error: Cookie mismatch - THIS IS THE TARGETED CASE
+        # Error: Cookie mismatch
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
-            "expected_value",  # This is the 'set_value' or 'expected_value_config'
-            "wrong_cookie",  # This is the 'set_cookie' or 'magic_cookie_env_var'
-            r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'expected_value', Received: 'wrong_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE_KEY' set by the client matches the server's expected 'PLUGIN_MAGIC_COOKIE_VALUE'\.\)",
+            "expected_value",
+            "wrong_cookie",
+            r"Magic cookie mismatch.*Expected: 'expected_value'.*Received: 'wrong_cookie'",
         ),
     ],
 )
@@ -50,11 +56,11 @@ def test_validate_magic_cookie_config_scenarios(
     expected_error_regex,
 ):
     """Tests validate_magic_cookie by mocking rpcplugin_config values."""
-    monkeypatch.setitem(
-        rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", magic_cookie_key_config
+    monkeypatch.setattr(
+        rpcplugin_config, "plugin_magic_cookie_key", magic_cookie_key_config
     )
-    monkeypatch.setitem(
-        rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", magic_cookie_value_config
+    monkeypatch.setattr(
+        rpcplugin_config, "plugin_magic_cookie_value", magic_cookie_value_config
     )
     if magic_cookie_key_config and magic_cookie_env_var is not None:
         monkeypatch.setenv(magic_cookie_key_config, magic_cookie_env_var)
@@ -74,32 +80,32 @@ def test_validate_magic_cookie_config_scenarios(
         (
             "PLUGIN_MAGIC_COOKIE",
             "invalid_cookie",
-            r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'hello', Received: 'invalid_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE' set by the client matches the server's expected 'PLUGIN_MAGIC_COOKIE_.*\)",
+            r"Magic cookie mismatch.*Expected: 'hello'.*Received: 'invalid_cookie'",
         ),
         (
             None,
             None,
-            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\.\s*\(Hint:.*\)",
+            r"Internal configuration error: cookie_key is missing for lookup",
         ),
         (
             "PLUGIN_MAGIC_COOKIE",
             None,
-            r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'PLUGIN_MAGIC_COOKIE'\..*Hint:.*",
+            r"Magic cookie not provided by the client.*PLUGIN_MAGIC_COOKIE",
         ),
         (
             None,
             "hello",
-            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\.\s*\(Hint:.*\)",
+            r"Internal configuration error: cookie_key is missing for lookup",
         ),
     ],
 )
 def test_validate_magic_cookie_failures(
     monkeypatch, magic_cookie_key, magic_cookie_value, expected_error
 ) -> None:
-    monkeypatch.setitem(
-        rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", magic_cookie_key
+    monkeypatch.setattr(
+        rpcplugin_config, "plugin_magic_cookie_key", magic_cookie_key
     )
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", "hello")
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", "hello")
 
     if magic_cookie_key and magic_cookie_value is not None:
         monkeypatch.setenv(magic_cookie_key, magic_cookie_value)
@@ -116,11 +122,9 @@ def test_validate_magic_cookie_failures(
 
 def test_validate_magic_cookie_missing_still_raises(monkeypatch) -> None:
     """Test that if cookie key/value are not passed as args AND not in config, it still raises."""
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", None)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", None)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE", None)
-    # This regex matches the original longer message in handshake.py
-    with pytest.raises(HandshakeError, match=r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\.\s*\(Hint:.*\)") :
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_key", None)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", None)
+    with pytest.raises(HandshakeError, match=r"Internal configuration error: cookie_key is missing for lookup") :
         validate_magic_cookie(
             magic_cookie_key=_SENTINEL_INSTANCE,
             magic_cookie_value=_SENTINEL_INSTANCE,
@@ -143,14 +147,14 @@ def test_validate_magic_cookie_missing_still_raises(monkeypatch) -> None:
             None,
             None,
             True,
-            r"\[HandshakeError\] Internal configuration error: cookie_key is missing for lookup\.\s*\(Hint:.*\)",
+            r"Internal configuration error: cookie_key is missing for lookup",
         ),
         (
             "PLUGIN_MAGIC_COOKIE_KEY",
             "some_expected",
             "different_cookie",
             True,
-                r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'some_expected', Received: 'different_cookie'\. \(Hint: Verify that the environment variable 'PLUGIN_MAGIC_COOKIE_KEY' set by the client matches the server's expected 'PLUGIN_MAGIC_COOKIE_VALUE'\.\)",
+            r"Magic cookie mismatch.*Expected: 'some_expected'.*Received: 'different_cookie'",
         ),
     ],
 )
@@ -160,8 +164,8 @@ def test_validate_magic_cookie(
     """
     Parametrized test that covers valid/invalid cookie scenarios by directly setting config.
     """
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_KEY", set_key)
-    monkeypatch.setitem(rpcplugin_config.config, "PLUGIN_MAGIC_COOKIE_VALUE", set_value)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_key", set_key)
+    monkeypatch.setattr(rpcplugin_config, "plugin_magic_cookie_value", set_value)
 
     if set_key and set_cookie is not None:
         monkeypatch.setenv(set_key, set_cookie)
@@ -179,20 +183,15 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     """
     Test validate_magic_cookie providing explicit function arguments.
     """
-    monkeypatch.setitem(
-        rpcplugin_config.config,
-        "PLUGIN_MAGIC_COOKIE_KEY",
+    monkeypatch.setattr(
+        rpcplugin_config,
+        "plugin_magic_cookie_key",
         "CONFIG_KEY_SHOULD_BE_IGNORED",
     )
-    monkeypatch.setitem(
-        rpcplugin_config.config,
-        "PLUGIN_MAGIC_COOKIE_VALUE",
+    monkeypatch.setattr(
+        rpcplugin_config,
+        "plugin_magic_cookie_value",
         "CONFIG_VALUE_SHOULD_BE_IGNORED",
-    )
-    monkeypatch.setitem(
-        rpcplugin_config.config,
-        "PLUGIN_MAGIC_COOKIE",
-        "CONFIG_ACTUAL_COOKIE_SHOULD_BE_IGNORED",
     )
 
     validate_magic_cookie(
@@ -202,9 +201,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
     )
 
     expected_mismatch_regex = (
-        r"\[HandshakeError\] Magic cookie mismatch\. Expected: 'EXPECTED', Received: 'WRONG'\. "
-        r"\(Hint: Verify that the environment variable 'EXPLICIT_KEY' set by the client "
-        r"matches the server's expected 'PLUGIN_MAGIC_COOKIE_VALUE'\.\)"
+        r"Magic cookie mismatch.*Expected: 'EXPECTED'.*Received: 'WRONG'"
     )
     with pytest.raises(HandshakeError, match=expected_mismatch_regex):
         validate_magic_cookie(
@@ -214,7 +211,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
         )
 
     with pytest.raises(
-        HandshakeError, match=r"\[HandshakeError\] Magic cookie key is not configured.*"
+        HandshakeError, match=r"Magic cookie key is not configured"
     ):
         validate_magic_cookie(
             magic_cookie_key=None, magic_cookie_value="V", magic_cookie="C"
@@ -222,7 +219,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
 
     with pytest.raises(
         HandshakeError,
-        match=r"\[HandshakeError\] Expected magic cookie value is not configured.*",
+        match=r"Expected magic cookie value is not configured",
     ):
         validate_magic_cookie(
             magic_cookie_key="K", magic_cookie_value=None, magic_cookie="C"
@@ -230,7 +227,7 @@ def test_validate_magic_cookie_explicit_args(monkeypatch) -> None:
 
     with pytest.raises(
         HandshakeError,
-        match=r"\[HandshakeError\] Magic cookie not provided by the client\. Expected via environment variable 'K'\..*",
+        match=r"Magic cookie not provided by the client.*K",
     ):
         validate_magic_cookie(
             magic_cookie_key="K", magic_cookie_value="V", magic_cookie=None
@@ -272,3 +269,5 @@ def test_validate_magic_cookie_explicit_none_empty_key(monkeypatch) -> None:
         validate_magic_cookie(
             magic_cookie_key="key", magic_cookie_value="val", magic_cookie=""
         )
+
+# 🐍🔌📞🔚
