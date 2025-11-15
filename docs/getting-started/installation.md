@@ -23,17 +23,11 @@ If you're using pyvider-rpcplugin in your project, add it to your dependencies:
 
 **Using uv (Recommended):**
 ```bash
+# Add to your project
 uv add pyvider-rpcplugin
-```
 
-**Using pip:**
-```bash
-pip install pyvider-rpcplugin
-```
-
-**Using Poetry:**
-```bash
-poetry add pyvider-rpcplugin
+# Or sync from pyproject.toml
+uv sync
 ```
 
 **In your `pyproject.toml`:**
@@ -277,9 +271,6 @@ For development and testing:
 # Using uv (recommended):
 uv sync --group test
 
-# Or using pip with extras:
-pip install "pyvider-rpcplugin[test]"
-
 # Install with full development dependencies (recommended for contributors)
 uv sync --all-groups
 ```
@@ -298,7 +289,7 @@ For documentation building:
 
 ```bash
 # Install with docs dependencies
-pip install pyvider-rpcplugin[docs]
+uv sync --group docs
 ```
 
 ## Troubleshooting
@@ -312,8 +303,9 @@ pip install pyvider-rpcplugin[docs]
 This usually means the installation failed. Try:
 
 ```bash
-pip install --upgrade pip
-pip install pyvider-rpcplugin --force-reinstall
+uv add pyvider-rpcplugin
+# Or if already in pyproject.toml
+uv sync
 ```
 
 #### Protocol Buffer Compiler Missing
@@ -339,8 +331,9 @@ Download from [Protocol Buffers releases](https://github.com/protocolbuffers/pro
 If you have conflicting versions of grpcio or other dependencies:
 
 ```bash
-pip install pyvider-rpcplugin --force-reinstall --no-deps
-pip install grpcio grpcio-tools  # Install compatible versions
+# Remove and re-add to resolve conflicts
+uv remove pyvider-rpcplugin
+uv add pyvider-rpcplugin
 ```
 
 #### Foundation Setup Issues
@@ -375,8 +368,7 @@ If you encounter issues:
 
 1. **Check the logs** - Foundation provides detailed error messages
 2. **Verify Python version** - Ensure you're using Python 3.11+
-3. **Update pip** - `pip install --upgrade pip`
-4. **Check [Troubleshooting Guide](../development/troubleshooting/)** - Common issues and solutions
+3. **Check [Troubleshooting Guide](../development/troubleshooting/)** - Common issues and solutions
 5. **Report issues** - [GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)
 
 ## Next Steps

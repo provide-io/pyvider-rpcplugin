@@ -5,7 +5,7 @@ Get up and running with Pyvider RPC Plugin in 5 minutes. This guide demonstrates
 ## Prerequisites
 
 - Python 3.11+ installed
-- Pyvider RPC Plugin installed (`pip install pyvider-rpcplugin`)
+- Pyvider RPC Plugin installed (`uv add pyvider-rpcplugin` or `uv sync`)
 
 ## Core Components
 
@@ -287,8 +287,9 @@ chmod +x my_plugin.py
 ### Import Errors
 ```bash
 # Ensure pyvider-rpcplugin is installed
-pip list | grep pyvider
-pip install --upgrade pyvider-rpcplugin
+uv add pyvider-rpcplugin
+# Or if already in pyproject.toml
+uv sync
 ```
 
 Ready to build something more substantial? Let's create your [First Plugin](first-plugin/) with custom RPC methods!
