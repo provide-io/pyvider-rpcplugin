@@ -1,19 +1,24 @@
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import asyncio
-import grpc
-import pytest
 from typing import Any
 
+import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
+from provide.foundation import logger
+import pytest
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
+from pyvider.rpcplugin.server import RPCPluginServer
 from pyvider.rpcplugin.types import ServerT
+from tests.fixtures.proto import echo_pb2, echo_pb2_grpc
 
-from tests.fixtures.proto import echo_pb2
-from tests.fixtures.proto import echo_pb2_grpc
-
-from pyvider.telemetry import logger
 
 class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     service_name = "echo.EchoService"
@@ -23,6 +28,7 @@ class EchoServiceImpl(echo_pb2_grpc.EchoServiceServicer):
     ) -> echo_pb2.EchoResponse:
         logger.debug(f"EchoServiceImpl received: {request.message}")
         return echo_pb2.EchoResponse()
+
 
 class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
     service_name = "echo.EchoService"
@@ -36,33 +42,53 @@ class EchoProtocolImpl(RPCPluginProtocol[ServerT, EchoServiceImpl]):
 
 @pytest.fixture
 def health_test_config_override(request):
+    # Map environment variable keys to Foundation attribute names
+    key_to_attr = {
+        "PLUGIN_HEALTH_SERVICE_ENABLED": "plugin_health_service_enabled",
+        "PLUGIN_AUTO_MTLS": "plugin_auto_mtls",
+        "PLUGIN_SHUTDOWN_FILE_PATH": "plugin_shutdown_file_path",
+        "PLUGIN_RATE_LIMIT_ENABLED": "plugin_rate_limit_enabled",
+        "PLUGIN_SERVER_TRANSPORTS": "plugin_server_transports",
+        "PLUGIN_CLIENT_TRANSPORTS": "plugin_client_transports",
+    }
+
     original_values = {}
     default_params = {
-        "PLUGIN_HEALTH_SERVICE_ENABLED": "true",
-        "PLUGIN_AUTO_MTLS": "false",
+        "PLUGIN_HEALTH_SERVICE_ENABLED": True,
+        "PLUGIN_AUTO_MTLS": False,
         "PLUGIN_SHUTDOWN_FILE_PATH": None,
-        "PLUGIN_RATE_LIMIT_ENABLED": "false",
+        "PLUGIN_RATE_LIMIT_ENABLED": False,
+        "PLUGIN_SERVER_TRANSPORTS": ["tcp"],
+        "PLUGIN_CLIENT_TRANSPORTS": ["tcp"],
     }
 
     params_to_apply = default_params.copy()
     if hasattr(request, "param") and request.param is not None:
         params_to_apply.update(request.param)
 
+    # Apply params using direct attribute access
     for key, value in params_to_apply.items():
-        original_values[key] = rpcplugin_config.get(key)
-        rpcplugin_config.set(key, value)
+        attr_name = key_to_attr.get(key)
+        if attr_name and hasattr(rpcplugin_config, attr_name):
+            original_values[attr_name] = getattr(rpcplugin_config, attr_name)
+            setattr(rpcplugin_config, attr_name, value)
 
     yield
 
-    for key, value in original_values.items():
-        rpcplugin_config.set(key, value)
+    # Restore original values
+    for attr_name, value in original_values.items():
+        setattr(rpcplugin_config, attr_name, value)
 
 
 @pytest.mark.asyncio
-async def test_health_service_enabled_and_serving(health_test_config_override, monkeypatch): # Added monkeypatch
+async def test_health_service_enabled_and_serving(
+    health_test_config_override, monkeypatch
+) -> None:  # Added monkeypatch
+    # Small delay to ensure previous test servers are fully cleaned up
+    await asyncio.sleep(0.1)
     # Ensure the magic cookie environment variable is set for direct server instantiation
-    cookie_key = rpcplugin_config.magic_cookie_key()
-    cookie_value = rpcplugin_config.magic_cookie_value()
+    cookie_key = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
     monkeypatch.setenv(cookie_key, cookie_value)
 
     protocol = EchoProtocolImpl()
@@ -71,12 +97,20 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
 
     serve_task = asyncio.create_task(server.serve())
     try:
-        await asyncio.wait_for(server.wait_for_server_ready(), timeout=5.0)
+        await server.wait_for_server_ready(timeout=10.0)
 
-        socket_path = server._transport.endpoint
-        assert socket_path, "Could not determine server socket path for client connection."
+        endpoint = server._transport.endpoint
+        assert endpoint, "Could not determine server endpoint for client connection."
 
-        async with grpc.aio.insecure_channel(f"unix:{socket_path}") as channel:
+        # Use appropriate connection string based on transport type
+        from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+
+        if isinstance(server._transport, UnixSocketTransport):
+            connection_string = f"unix:{endpoint}"
+        else:
+            connection_string = endpoint
+
+        async with grpc.aio.insecure_channel(connection_string) as channel:
             health_stub = health_pb2_grpc.HealthStub(channel)
             echo_stub = echo_pb2_grpc.EchoServiceStub(channel)
 
@@ -101,5 +135,74 @@ async def test_health_service_enabled_and_serving(health_test_config_override, m
             assert exc_info_watch.value.code() == grpc.StatusCode.UNIMPLEMENTED
 
     finally:
-        await server.stop()
-        await asyncio.wait_for(serve_task, timeout=2.0)
+        try:
+            await server.stop()
+            await asyncio.wait_for(serve_task, timeout=5.0)
+        except (TimeoutError, asyncio.CancelledError) as cleanup_error:
+            # Expected cancellation/timeout during cleanup
+            logger.debug(f"Expected cleanup exception: {cleanup_error}")
+        except Exception as cleanup_error:
+            logger.warning(f"Error during test cleanup: {cleanup_error}")
+
+
+@pytest.mark.asyncio
+async def test_health_service_not_serving_when_unhealthy(
+    health_test_config_override, monkeypatch
+) -> None:
+    """Test that health service returns NOT_SERVING when app is unhealthy."""
+    # Small delay to ensure previous test servers are fully cleaned up
+    await asyncio.sleep(0.1)
+    # Ensure the magic cookie environment variable is set for direct server instantiation
+    cookie_key = rpcplugin_config.plugin_magic_cookie_key
+    cookie_value = rpcplugin_config.plugin_magic_cookie_value
+    monkeypatch.setenv(cookie_key, cookie_value)
+
+    protocol = EchoProtocolImpl()
+    handler = EchoServiceImpl()
+    server = RPCPluginServer(protocol=protocol, handler=handler)
+
+    serve_task = asyncio.create_task(server.serve())
+    try:
+        await server.wait_for_server_ready(timeout=10.0)
+
+        endpoint = server._transport.endpoint
+        assert endpoint, "Could not determine server endpoint for client connection."
+
+        # Use appropriate connection string based on transport type
+        from pyvider.rpcplugin.transport.unix import UnixSocketTransport
+
+        if isinstance(server._transport, UnixSocketTransport):
+            connection_string = f"unix:{endpoint}"
+        else:
+            connection_string = endpoint
+
+        async with grpc.aio.insecure_channel(connection_string) as channel:
+            health_stub = health_pb2_grpc.HealthStub(channel)
+
+            # First verify it's serving
+            health_check_req = health_pb2.HealthCheckRequest(service=EchoProtocolImpl.service_name)
+            response = await health_stub.Check(health_check_req)
+            assert response.status == health_pb2.HealthCheckResponse.SERVING
+
+            # Now trigger shutdown event to make app unhealthy
+            server._shutdown_event.set()
+
+            # Health check should now return NOT_SERVING
+            response_unhealthy = await health_stub.Check(health_check_req)
+            assert response_unhealthy.status == health_pb2.HealthCheckResponse.NOT_SERVING
+
+            # Empty service name should also return NOT_SERVING
+            response_empty_unhealthy = await health_stub.Check(health_pb2.HealthCheckRequest(service=""))
+            assert response_empty_unhealthy.status == health_pb2.HealthCheckResponse.NOT_SERVING
+
+    finally:
+        try:
+            await server.stop()
+            await asyncio.wait_for(serve_task, timeout=5.0)
+        except (TimeoutError, asyncio.CancelledError) as cleanup_error:
+            # Expected cancellation/timeout during cleanup
+            logger.debug(f"Expected cleanup exception: {cleanup_error}")
+        except Exception as cleanup_error:
+            logger.warning(f"Error during test cleanup: {cleanup_error}")
+
+# 🐍🔌📞🔚

@@ -1,7 +1,12 @@
-# tests/protocol/test_grpc_proto_coverage.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
-from unittest.mock import MagicMock, patch
+from provide.testkit.mocking import MagicMock, patch
 import importlib
 import os  # Added import
 
@@ -108,5 +113,4 @@ def test_grpc_add_handlers_to_server() -> None:
     assert mock_server.add_generic_rpc_handlers.call_count == 3
     assert mock_server.add_registered_method_handlers.call_count == 3
 
-
-### 🐍🏗🧪️
+# 🐍🔌📞🔚

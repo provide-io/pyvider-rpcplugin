@@ -1,10 +1,15 @@
-# tests/protocol/test_grpc_stdio.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 import importlib
 import os  # Added import
 import grpc
-from unittest.mock import patch, MagicMock
+from provide.testkit.mocking import patch, MagicMock
 
 from pyvider.rpcplugin.protocol import (
     grpc_stdio_pb2,
@@ -119,5 +124,4 @@ async def test_stdio_experimental_api() -> None:
         )
         mock_unary_stream.assert_called_once()
 
-
-### 🐍🏗🧪️
+# 🐍🔌📞🔚
