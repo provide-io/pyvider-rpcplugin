@@ -121,10 +121,9 @@ nav:
     - guide/index.md
     - Core Concepts:
       - guide/concepts/index.md
-      - RPC Architecture: guide/concepts/rpc-architecture.md
+      - RPC Architecture & Handshake: guide/concepts/architecture-and-handshake.md
       - Transports: guide/concepts/transports.md
       - Protocols: guide/concepts/protocols.md
-      - Handshake Process: guide/concepts/handshake.md
       - Security Model: guide/concepts/security.md
     
     - Server Development:
