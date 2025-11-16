@@ -63,14 +63,6 @@ theme:
 #               - "!^_"  # Hide private members
 #               - "!^__.*__$"  # Hide special methods
 
-# Project-specific markdown extensions
-markdown_extensions:
-  - pymdownx.magiclink:
-      normalize_issue_symbols: true
-      repo_url_shorthand: true
-      user: provide-io
-      repo: pyvider-rpcplugin
-
 # Project-specific extra configuration
 extra:
   version:
