@@ -13,6 +13,12 @@ authors = [
     { name = "Tim Perkins", email = "code@tim.life" }
 ]
 
+[project.urls]
+Homepage = "https://foundry.provide.io/pyvider-rpcplugin/"
+Documentation = "https://foundry.provide.io/pyvider-rpcplugin/"
+Repository = "https://foundry.provide.io/pyvider-rpcplugin/repo"
+Issues = "https://foundry.provide.io/pyvider-rpcplugin/issues"
+
 dependencies = [
     "attrs>=25.1.0",
     "cryptography>=44.0.1",
