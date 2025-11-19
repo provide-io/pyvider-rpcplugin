@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """OpenTelemetry Telemetry Demo
 
 This example demonstrates the CORRECT OpenTelemetry pattern for libraries:
@@ -34,14 +33,12 @@ Usage:
 
 import asyncio
 import os
-from pathlib import Path
 import sys
-from typing import Any
 
 from provide.foundation import logger
 
 # Add src to path for local development
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import contextlib
 
@@ -55,7 +52,15 @@ from pyvider.rpcplugin.telemetry import get_rpc_tracer, is_telemetry_available
 class DemoProtocol(RPCPluginProtocol):
     """Simple protocol for telemetry demo."""
 
-    def add_to_server(self, server: Any, handler: Any) -> None:
+    def create_server(self) -> tuple:
+        """Create gRPC server and handler."""
+        import grpc.aio
+
+        server = grpc.aio.server()
+        handler = DemoHandler()
+        return server, handler
+
+    def add_to_server(self, server, handler) -> None:
         """Add service to server."""
         from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import (
             add_GRPCControllerServicer_to_server,
@@ -63,7 +68,7 @@ class DemoProtocol(RPCPluginProtocol):
 
         add_GRPCControllerServicer_to_server(handler, server)
 
-    async def get_grpc_descriptors(self) -> Any:
+    def get_grpc_descriptors(self):
         """Get gRPC service descriptors."""
         from pyvider.rpcplugin.protocol import grpc_controller_pb2
 
@@ -73,7 +78,7 @@ class DemoProtocol(RPCPluginProtocol):
 class DemoHandler(GRPCControllerServicer):
     """Simple handler for demo."""
 
-    async def Shutdown(self, request: Any, context: Any) -> Any:
+    async def Shutdown(self, request, context):
         """Handle shutdown."""
         from google.protobuf.empty_pb2 import Empty
 
@@ -102,6 +107,7 @@ async def run_demo() -> None:
 
     # Application sets service name, not the library!
     telemetry_config = TelemetryConfig(
+        service_name="demo-app",  # ✅ Application's service identity
         tracing_enabled=True,
         otlp_endpoint=os.getenv("PLUGIN_OTEL_ENDPOINT", "http://localhost:4317"),
         otlp_protocol=os.getenv("PLUGIN_OTEL_PROTOCOL", "grpc"),
@@ -118,7 +124,7 @@ async def run_demo() -> None:
     # Library gets tracer from app's configuration
     tracer = get_rpc_tracer()
     if tracer:
-        print("✅ Tracer initialized and ready")
+        print("✅ Library tracer obtained (instrumentation.library.name='pyvider.rpcplugin')")
     else:
         print("⚠️  Tracer not available")
     print()
@@ -141,6 +147,7 @@ async def run_demo() -> None:
     # Wait for server to be ready
     try:
         await server.wait_for_server_ready(timeout=5.0)
+        print("✅ Server ready\n")
     except Exception as e:
         print(f"❌ Server startup failed: {e}")
         server_task.cancel()
@@ -198,4 +205,4 @@ if __name__ == "__main__":
         traceback.print_exc()
         sys.exit(1)
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

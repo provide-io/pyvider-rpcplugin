@@ -6,7 +6,8 @@
 """Pyvider RPC Plugin Client Package.
 
 This package provides the core components for creating RPC plugin clients,
-including the main `RPCPluginClient` class, connection handling, and associated types."""
+including the main `RPCPluginClient` class, connection handling, and associated types.
+"""
 
 from pyvider.rpcplugin.client.connection import ClientConnection
 from pyvider.rpcplugin.client.core import RPCPluginClient
@@ -28,4 +29,4 @@ __all__ = [
     "SecureRpcClientT",
 ]
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

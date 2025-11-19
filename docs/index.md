@@ -6,18 +6,6 @@ Build high-performance, type-safe plugin systems with Foundation integration, se
 
 **Part of the [provide.foundation](https://foundation.provide.io) ecosystem** - seamlessly integrates with Foundation's configuration, logging, and development toolchain for consistent, unified application architecture.
 
----
-
-## Part of the provide.io Ecosystem
-
-This project is part of a larger ecosystem of tools for Python and Terraform development.
-
-**[View Ecosystem Overview →](https://docs.provide.io/provide-foundation/ecosystem/)**
-
-Understand how provide-foundation, pyvider, flavorpack, and other projects work together.
-
----
-
 ## ✨ Key Features
 
 ### ⚡ **Performance-First**
@@ -71,9 +59,7 @@ Create a complete echo service with modern Python patterns:
 import asyncio
 from pyvider.rpcplugin import plugin_server, configure
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Configure for your environment
 # Note: configure() has 5 explicit parameters (magic_cookie, protocol_version, transports,
@@ -129,9 +115,7 @@ import asyncio
 import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Configure client environment
 # Note: configure() has explicit parameters plus **kwargs for additional settings
@@ -211,7 +195,7 @@ graph TB
     
     Quick installation, setup guide, and your first plugin
     
-    [:octicons-arrow-right-24: Get Started](getting-started/index/)
+    [:octicons-arrow-right-24: Get Started](getting-started/index.md)
 
 -   :material-book-open: **User Guide**
 
@@ -219,7 +203,7 @@ graph TB
     
     Comprehensive guide covering concepts, server/client development, and advanced topics
     
-    [:octicons-arrow-right-24: User Guide](guide/index/)
+    [:octicons-arrow-right-24: User Guide](guide/index.md)
 
 -   :material-api: **API Reference**
 
@@ -227,7 +211,7 @@ graph TB
     
     Complete API documentation with examples and code snippets
     
-    [:octicons-arrow-right-24: API Reference](reference/index/)
+    [:octicons-arrow-right-24: API Reference](reference/index.md)
 
 -   :material-code-braces: **Examples**
 
@@ -235,7 +219,7 @@ graph TB
     
     Working examples from simple echo services to production deployments
     
-    [:octicons-arrow-right-24: Examples](examples/index/)
+    [:octicons-arrow-right-24: Examples](examples/index.md)
 
 </div>
 
@@ -269,8 +253,8 @@ graph TB
 
 **Choose your path based on your experience with Foundation and plugin systems:**
 
-[**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation/){ .md-button .md-button--primary }
+[**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation.md){ .md-button .md-button--primary }
 
-[**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture/){ .md-button }
+[**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture.md){ .md-button }
 
-**Foundation Users:** See [Foundation Integration](introduction/foundation/) for seamless ecosystem integration.
+**Foundation Users:** See [Foundation Integration](introduction/foundation.md) for seamless ecosystem integration.

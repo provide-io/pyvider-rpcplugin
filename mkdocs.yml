@@ -1,26 +1,21 @@
-# Inherit shared configuration from provide-foundry
-INHERIT: .provide/foundry/base-mkdocs.yml
-
-# Project-Specific Configuration
-site_name: pyvider-rpcplugin
+site_name: Pyvider RPC Plugin Documentation
 site_description: High-performance, type-safe RPC plugin framework for Python with built-in security, async support, and production-ready patterns
 site_author: provide.io
 site_url: https://rpcplugin.provide.io
 repo_url: https://github.com/provide-io/pyvider-rpcplugin
 repo_name: provide-io/pyvider-rpcplugin
 edit_uri: edit/main/docs/
-copyright: ©2024-2025 provide.io llc<br/>🛠️ with 💚 and 🦝 on 🌎
 
 # Development server configuration
-dev_addr: '127.0.0.1:11006'
+dev_addr: '127.0.0.1:8006'
+copyright: Copyright &copy; 2024-2025 provide.io
 
-# Project-specific theme overrides
 theme:
-  font:
-    text: Inter
-    code: Fira Code
+  name: material
+  language: en
+  
   palette:
-    # Light mode - custom colors for pyvider-rpcplugin
+    # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
       primary: black
@@ -28,7 +23,8 @@ theme:
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-    # Dark mode - custom colors for pyvider-rpcplugin
+    
+    # Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
       primary: indigo
@@ -36,34 +32,184 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
+  
+  font:
+    text: Inter
+    code: Fira Code
+  
   features:
-    - navigation.prune  # Additional feature specific to this project
+    # Navigation
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.prune
+    - navigation.path
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    
+    # Table of contents
+    - toc.follow
+    - toc.integrate
+    
+    # Search
+    - search.suggest
+    - search.highlight
+    - search.share
+    
+    # Content
+    - content.code.copy
+    - content.code.select
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+    
+    # Header
+    - header.autohide
+    
+    # Announce
+    - announce.dismiss
 
-# Project-specific plugins (in addition to base plugins)
-# Temporarily disabled for Phase 3 verification
-# plugins:
-#   - gen-files:
-#       scripts:
-#         - scripts/mkdocs_gen_ref_pages.py
-#   - literate-nav:
-#       nav_file: SUMMARY.md
-#   - section-index
-#   - tags
-#   - mkdocstrings:
-#       handlers:
-#         python:
-#           options:
-#             # Override mkdocstrings options specific to this project
-#             show_if_no_docstring: true
-#             inherited_members: false
-#             group_by_category: true
-#             heading_level: 2
-#             separate_signature: false
-#             filters:
-#               - "!^_"  # Hide private members
-#               - "!^__.*__$"  # Hide special methods
+plugins:
+  - search:
+      separator: '[\s\u200b\-_,:!=\[\]()"`/]+|\.(?!\d)|&[lg]t;|(?!\b)(?=[A-Z][a-z])'
+      lang:
+        - en
 
-# Project-specific extra configuration
+  - autorefs
+
+  - gen-files:
+      scripts:
+        - docs/reference/gen_ref_pages.py
+
+  - literate-nav:
+      nav_file: SUMMARY.md
+
+  - macros:
+      include_dir: docs/.shared-theme/data
+
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            show_signature_annotations: true
+            show_bases: true
+            merge_init_into_class: true
+            separate_signature: true
+            
+            # Member display
+            show_bases: true
+            show_inheritance_diagram: false
+            show_if_no_docstring: true
+            inherited_members: false
+            members_order: source
+            group_by_category: true
+            show_category_heading: true
+            
+            # Signatures
+            show_signature_annotations: true
+            signature_crossrefs: true
+            separate_signature: false
+            
+            # Headings and navigation
+            heading_level: 2
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            
+            # Filtering
+            filters:
+              - "!^_"  # Hide private members
+              - "!^__.*__$"  # Hide special methods except in special cases
+            
+            # Cross-references
+            merge_init_into_class: true
+  
+  - section-index
+  
+  - tags
+  
+
+markdown_extensions:
+  # Python Markdown
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - tables
+  - meta
+  
+  # Python Markdown Extensions
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      use_pygments: true
+      auto_title: true
+      linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.critic:
+      mode: view
+  - pymdownx.magiclink:
+      normalize_issue_symbols: true
+      repo_url_shorthand: true
+      user: provide-io
+      repo: pyvider-rpcplugin
+
+extra_css:
+  - .shared-theme/stylesheets/provide-theme.css
+  - .shared-theme/stylesheets/termynal.css
+  - stylesheets/extra.css
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - .shared-theme/javascripts/mermaid-init.js
+  - .shared-theme/javascripts/termynal.js
+  - .shared-theme/javascripts/custom.js
+
 extra:
   version:
     provider: mike
@@ -89,12 +235,6 @@ extra:
       find what they're searching for. With your consent, you're helping us to
       make our documentation better.
 
-# Watch configuration
-watch:
-  - src/pyvider
-  - docs
-  - mkdocs.yml
-
 nav:
   - Home: index.md
 
@@ -113,9 +253,10 @@ nav:
     - guide/index.md
     - Core Concepts:
       - guide/concepts/index.md
-      - RPC Architecture & Handshake: guide/concepts/architecture-and-handshake.md
+      - RPC Architecture: guide/concepts/rpc-architecture.md
       - Transports: guide/concepts/transports.md
       - Protocols: guide/concepts/protocols.md
+      - Handshake Process: guide/concepts/handshake.md
       - Security Model: guide/concepts/security.md
     
     - Server Development:
@@ -128,9 +269,11 @@ nav:
     
     - Client Development:
       - guide/client/index.md
-      - Client Development Guide: guide/client/client-guide.md
-      - Connection Resilience: guide/client/resilience.md
+      - Basic Client Setup: guide/client/basic-setup.md
+      - Connection Management: guide/client/connections.md
       - Direct Connections: guide/client/direct-connections.md
+      - Error Handling: guide/client/error-handling.md
+      - Retry Logic: guide/client/retry-logic.md
     
     - Security:
       - guide/security/index.md
@@ -144,35 +287,49 @@ nav:
       - guide/config/index.md
       - Configuration Reference: guide/config/configuration-reference.md
       - Config vs Factory Parameters: guide/config/configuration-vs-factory-parameters.md
-      - Configuration Guide: guide/config/configuration-guide.md
-      - Advanced Configuration: guide/config/advanced.md
+      - Client Configuration: guide/config/configuration-client.md
+      - Server Configuration: guide/config/configuration-server.md
+      - Security Configuration: guide/config/configuration-security.md
+      - Advanced Configuration: guide/config/configuration-advanced.md
       - Environment Variables: guide/config/environment.md
+      - Production Setup: guide/config/production.md
+      - Rate Limiting: guide/config/rate-limiting.md
       - Logging Configuration: guide/config/logging.md
     
     - Advanced Topics:
       - guide/advanced/index.md
-      - Observability & Performance: guide/advanced/observability.md
-      - Type System & Custom Protocols: guide/advanced/customization.md
-      - Plugin Lifecycle: guide/advanced/lifecycle.md
+      - Type System: guide/advanced/type-system.md
+      - Custom Protocols: guide/advanced/custom-protocols.md
+      - Performance Tuning: guide/advanced/performance.md
+      - Telemetry & Observability: guide/advanced/telemetry.md
       - Middleware: guide/advanced/middleware.md
-      - Foundation Integration: guide/advanced/foundation-integration.md
+      - Plugin Lifecycle: guide/advanced/lifecycle.md
 
     - Best Practices: guide/best-practices.md
 
   - API Reference:
-    - reference/index.md
-    - Glossary: reference/glossary.md
+    - reference/
   
   - Examples:
     - examples/index.md
-    - Quick Start: examples/quick-start.md
-    - Echo Service: examples/echo-example.md
+    - Echo Service Examples:
+      - Basic Echo: examples/echo-basic.md
+      - Intermediate Patterns: examples/echo-intermediate.md
+      - Advanced Patterns: examples/echo-advanced.md
+    - Short Examples:
+      - Basic Client: examples/short/basic-client.md
+      - Basic Server: examples/short/basic-server.md
+      - Health Check: examples/short/health-check.md
+      - Rate Limiting: examples/short/rate-limiting.md
+      - TCP Transport: examples/short/tcp-transport.md
+      - Custom Protocol: examples/short/custom-protocol.md
   
   - Development:
     - development/index.md
-    - Contributing Guide: development/contributing-guide.md
+    - Contributing: development/contributing.md
     - Architecture: development/architecture.md
     - Testing: development/testing.md
+    - CI/CD: development/ci-cd.md
     - Troubleshooting: development/troubleshooting.md
 
 validation:

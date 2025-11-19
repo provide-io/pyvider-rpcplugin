@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Unix Domain Socket Transport Package.
 
 This package provides Unix domain socket transport implementation and utilities
@@ -21,4 +20,4 @@ __all__ = [
     "normalize_unix_path",
 ]
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

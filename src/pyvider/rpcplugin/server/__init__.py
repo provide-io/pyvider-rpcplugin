@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Pyvider RPC Plugin Server Package.
 
 This package provides the core components for creating RPC plugin servers,
@@ -41,4 +40,4 @@ __all__ = [
     "validate_magic_cookie",
 ]
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

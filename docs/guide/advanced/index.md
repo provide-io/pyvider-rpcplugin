@@ -96,7 +96,7 @@ await advanced_plugin_system_example()
 
 ## Advanced Topics Overview
 
-### 🛠️ [Custom Protocols](custom-protocols/)
+### 🛠️ [Custom Protocols](custom-protocols.md)
 Build domain-specific communication protocols for specialized use cases:
 
 - **Protocol Design Patterns** - Create efficient, type-safe protocols
@@ -113,7 +113,7 @@ Build domain-specific communication protocols for specialized use cases:
 - Financial data feeds with domain-specific compression
 - Video streaming with adaptive quality protocols
 
-### 🏗️ [Foundation Integration](foundation-integration/)
+### 🏗️ [Foundation Integration](foundation-integration.md)
 Advanced integration patterns with Foundation infrastructure:
 
 - **Configuration Inheritance** - Custom config classes extending RuntimeConfig
@@ -129,7 +129,7 @@ Advanced integration patterns with Foundation infrastructure:
 - Microservices with comprehensive observability requirements
 - Systems requiring automatic failover and recovery
 
-### ⚡ [Performance Tuning](performance/)  
+### ⚡ [Performance Tuning](performance.md)  
 Optimize plugin performance for production workloads:
 
 - **Profiling and Benchmarking** - Identify performance bottlenecks
@@ -147,7 +147,7 @@ Optimize plugin performance for production workloads:
 - Memory usage optimization for long-running processes
 - Zero-copy data processing where possible
 
-### 🔗 [Middleware](middleware/)
+### 🔗 [Middleware](middleware.md)
 Implement cross-cutting concerns with middleware patterns:
 
 - **Middleware Architecture** - Flexible, composable middleware stacks
@@ -178,7 +178,7 @@ async def rate_limit_middleware(request, call_next):
     return await call_next(request)
 ```
 
-### 🔄 [Plugin Lifecycle](lifecycle/)
+### 🔄 [Plugin Lifecycle](lifecycle.md)
 Manage complex plugin lifecycles and orchestration:
 
 - **Startup Orchestration** - Coordinated plugin initialization
@@ -688,9 +688,9 @@ spec:
 
 Ready to master advanced plugin development? Choose your focus area:
 
-- **[Custom Protocols](custom-protocols/)** - Build specialized communication protocols
-- **[Performance Tuning](performance/)** - Optimize for production workloads  
-- **[Middleware](middleware/)** - Implement cross-cutting concerns
-- **[Plugin Lifecycle](lifecycle/)** - Master plugin orchestration and management
+- **[Custom Protocols](custom-protocols.md)** - Build specialized communication protocols
+- **[Performance Tuning](performance.md)** - Optimize for production workloads  
+- **[Middleware](middleware.md)** - Implement cross-cutting concerns
+- **[Plugin Lifecycle](lifecycle.md)** - Master plugin orchestration and management
 
 Each section provides practical examples, performance benchmarks, and production-ready implementations for advanced plugin development scenarios.

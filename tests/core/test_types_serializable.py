@@ -1,8 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
+# tests/core/test_types_serializable.py
 """Tests for serializable type validation."""
 
 import inspect
@@ -30,10 +26,11 @@ def test_is_valid_serializable_true(mocker: object) -> None:
     instance = ValidSerializable()
     assert is_valid_serializable(instance) is True
     expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"),
         mocker.call("SerializableT: All structural and signature checks passed."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 1
+    assert mock_logger_debug.call_count == 2
 
 
 # --- New tests for covering missed branches ---
@@ -124,10 +121,11 @@ def test_is_valid_serializable_false_missing_methods(mocker: object) -> None:
     instance = InvalidSerializableMissing()
     assert is_valid_serializable(instance) is False
     expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"),
         mocker.call("SerializableT: Method to_dict is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 1
+    assert mock_logger_debug.call_count == 2
 
 
 def test_is_valid_serializable_false_incorrect_signature(mocker: object) -> None:
@@ -145,9 +143,8 @@ def test_is_valid_serializable_false_incorrect_signature(mocker: object) -> None
     instance = InvalidSerializableSignature()
     assert is_valid_serializable(instance) is False
     expected_log_calls = [
+        mocker.call("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)"),
         mocker.call("SerializableT: to_dict signature incorrect. Expected 0 params, got 1."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
-    assert mock_logger_debug.call_count == 1
-
-# 🐍🔌📞🔚
+    assert mock_logger_debug.call_count == 2

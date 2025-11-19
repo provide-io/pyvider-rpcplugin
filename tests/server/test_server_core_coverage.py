@@ -1,11 +1,8 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+"""
+Tests for server/core.py to improve code coverage.
 
-"""Tests for server/core.py to improve code coverage.
-
-Focuses on testing uncovered paths in RPCPluginServer core functionality."""
+Focuses on testing uncovered paths in RPCPluginServer core functionality.
+"""
 
 import asyncio
 import os
@@ -337,4 +334,5 @@ def temp_unix_socket_path():
     if os.path.exists(path):
         os.unlink(path)
 
-# 🐍🔌📞🔚
+
+# 🐍🔌🧪🪄

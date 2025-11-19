@@ -1,8 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
+# tests/client/test_client_handshake_read.py
 """Tests for raw handshake reading functionality."""
 
 import asyncio
@@ -390,5 +386,3 @@ async def test_try_chunk_strategy_detect_complete(
     monkeypatch.setattr("pyvider.rpcplugin.client.handshake.rpcplugin_config.plugin_chunk_size", 64)
     result = await client._try_chunk_strategy(buffer)
     assert result == "1|1|tcp|127.0.0.1:9000|grpc|"
-
-# 🐍🔌📞🔚

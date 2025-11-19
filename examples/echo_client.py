@@ -2,12 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
-"""Echo client example demonstrating basic RPC plugin client usage.
-
-This example shows how to create and connect an RPC plugin client to a server,
-send echo requests, and handle responses. It demonstrates the client-side setup
-and communication patterns needed to interact with a plugin server."""
+"""TODO: Add module docstring."""
 
 import asyncio
 import os
@@ -178,4 +173,4 @@ if __name__ == "__main__":
     os.environ["PYTHONIOENCODING"] = "UTF-8"
     asyncio.run(run_client())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

@@ -1,10 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
-
+# tests/conftest.py
 import asyncio
 import os
 
@@ -131,4 +125,5 @@ def reset_rpcplugin_config_singleton():
     # Foundation config loads fresh from environment each time
     # No singleton cleanup needed
 
-# 🐍🔌📞🔚
+
+# 🐍🔌🧪🪄

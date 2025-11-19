@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Core RPCPluginServer class definition and lifecycle management.
 
 This module contains the main RPCPluginServer class with its attributes,
@@ -416,6 +415,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
 
             # Indicate server is ready
             self._serving_event.set()
+            logger.info("✅ RPCPluginServer is ready and serving")
 
             # Wait for shutdown signal
             await self._serving_future
@@ -466,5 +466,6 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             logger.info("⚡ Exiting process...")
             sys.exit(0)
 
+        logger.info("✅ RPCPluginServer stopped")
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

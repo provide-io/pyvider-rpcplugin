@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Custom Protocols - Custom protocol definitions and middleware patterns."""
 
 import asyncio
@@ -34,6 +33,7 @@ class CustomProtocol(RPCPluginProtocol):
         self,
     ) -> tuple[Any | None, str]:
         """Get gRPC service descriptors."""
+        logger.info(f"🔌 Getting descriptors for {self.service_name}")
         return None, self.service_name
 
     async def add_to_server(self, server: Any, handler: Any) -> None:
@@ -42,11 +42,13 @@ class CustomProtocol(RPCPluginProtocol):
         'handler' is your gRPC servicer instance.
         This method would call generated add_Servicer_to_server functions.
         """
+        logger.info(f"🔧 Registering {self.service_name} to gRPC server.")
 
         # Conceptually apply middleware to the handler before registration
         wrapped_handler = self._apply_middleware(handler)
 
         logger.info(
+            f"✅ {self.service_name} (with {len(self.middleware_factories)} middleware "
             f"layers, using handler {type(wrapped_handler).__name__}) would be "
             "registered with the gRPC server here."
         )
@@ -57,7 +59,7 @@ class CustomProtocol(RPCPluginProtocol):
         factory_name = (
             middleware_factory.__name__ if hasattr(middleware_factory, "__name__") else str(middleware_factory)
         )
-        logger.info(f"+ Added middleware factory: {factory_name}")
+        logger.info(f"➕ Added middleware factory: {factory_name}")
 
     def _apply_middleware(self, handler: Any) -> Any:
         """Apply middleware stack to handler."""
@@ -83,6 +85,7 @@ class LoggingMiddleware:
                 logger.info(f"📝 [LOG] Calling: {self.next_handler.__class__.__name__}.{name}")
                 try:
                     result = await original_method(*args, **kwargs)
+                    logger.info(f"✅ [LOG] Completed: {name}")
                     return result
                 except Exception as e:
                     logger.error(f"❌ [LOG] Error in {name}: {e}")
@@ -139,12 +142,14 @@ class CustomHandler:
 
 async def custom_protocol_example() -> None:
     """Example: Custom protocol with middleware."""
+    logger.info("🔧 Custom Protocol Example")
 
     protocol = CustomProtocol("DataProcessingService")
     protocol.add_middleware(LoggingMiddleware)
     protocol.add_middleware(TimingMiddleware)
     handler = CustomHandler()
     await protocol.add_to_server(None, handler)
+    logger.info("✅ Custom protocol example completed")
 
 
 async def protocol_composition_example() -> None:
@@ -165,15 +170,18 @@ async def protocol_composition_example() -> None:
     protocol_c.add_middleware(TimingMiddleware)
     await protocol_c.add_to_server(None, CustomHandler())
 
+    logger.info("✅ Composed 3 protocols with varied middleware")
+
 
 async def main() -> None:
     """Run custom protocol examples."""
     logger.info("🚀 Custom Protocol Examples")
     await custom_protocol_example()
     await protocol_composition_example()
+    logger.info("✅ All custom protocol examples completed")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

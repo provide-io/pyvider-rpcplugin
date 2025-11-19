@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """End-to-End Greeter Plugin Server."""
 
 import asyncio
@@ -110,4 +109,4 @@ if __name__ == "__main__":
     )
     asyncio.run(main())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

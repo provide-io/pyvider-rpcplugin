@@ -2,109 +2,27 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Core RPCPluginConfig class implementation using Foundation framework.
 
 This module contains the main configuration class that uses env_field
 and parse_list for proper environment variable parsing."""
 
-from attrs import define
-from provide.foundation.config import RuntimeConfig, parse_log_level
-from provide.foundation.config.env import env_field
-
-from pyvider.rpcplugin.config.validators import validate_protocol_versions_list, validate_transport_list
-from pyvider.rpcplugin.defaults import (
-    DEFAULT_PLUGIN_AUTO_MTLS,
-    DEFAULT_PLUGIN_BUFFER_SIZE,
-    DEFAULT_PLUGIN_CA_CERT,
-    DEFAULT_PLUGIN_CERT_VALIDITY_DAYS,
-    DEFAULT_PLUGIN_CHANNEL_READY_TIMEOUT,
-    DEFAULT_PLUGIN_CHUNK_SIZE,
-    DEFAULT_PLUGIN_CLIENT_BACKOFF_MULTIPLIER,
-    DEFAULT_PLUGIN_CLIENT_CERT,
-    DEFAULT_PLUGIN_CLIENT_CERT_FILE,
-    DEFAULT_PLUGIN_CLIENT_INITIAL_BACKOFF_MS,
-    DEFAULT_PLUGIN_CLIENT_KEY,
-    DEFAULT_PLUGIN_CLIENT_KEY_FILE,
-    DEFAULT_PLUGIN_CLIENT_MAX_BACKOFF_MS,
-    DEFAULT_PLUGIN_CLIENT_MAX_RETRIES,
-    DEFAULT_PLUGIN_CLIENT_MAX_RETRY_DELAY,
-    DEFAULT_PLUGIN_CLIENT_RETRY_DELAY,
-    DEFAULT_PLUGIN_CLIENT_RETRY_ENABLED,
-    DEFAULT_PLUGIN_CLIENT_RETRY_JITTER_MS,
-    DEFAULT_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S,
-    DEFAULT_PLUGIN_CLIENT_ROOT_CERTS,
-    DEFAULT_PLUGIN_CLIENT_TRANSPORTS,
-    DEFAULT_PLUGIN_CONNECTION_TIMEOUT,
-    DEFAULT_PLUGIN_CORE_VERSION,
-    DEFAULT_PLUGIN_GRPC_GRACE_PERIOD,
-    DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIME_MS,
-    DEFAULT_PLUGIN_GRPC_KEEPALIVE_TIMEOUT_MS,
-    DEFAULT_PLUGIN_GRPC_MAX_RECEIVE_MESSAGE_SIZE,
-    DEFAULT_PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE,
-    DEFAULT_PLUGIN_HANDSHAKE_TIMEOUT,
-    DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED,
-    DEFAULT_PLUGIN_INSECURE,
-    DEFAULT_PLUGIN_LOG_LEVEL,
-    DEFAULT_PLUGIN_MAGIC_COOKIE_KEY,
-    DEFAULT_PLUGIN_MAGIC_COOKIE_VALUE,
-    DEFAULT_PLUGIN_MTLS_CERT_DIR,
-    DEFAULT_PLUGIN_PROTOCOL_VERSION,
-    DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
-    DEFAULT_PLUGIN_RATE_LIMIT_BURST_CAPACITY,
-    DEFAULT_PLUGIN_RATE_LIMIT_ENABLED,
-    DEFAULT_PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND,
-    DEFAULT_PLUGIN_SERVER_CERT,
-    DEFAULT_PLUGIN_SERVER_HOST,
-    DEFAULT_PLUGIN_SERVER_KEY,
-    DEFAULT_PLUGIN_SERVER_PORT,
-    DEFAULT_PLUGIN_SERVER_READY_TIMEOUT,
-    DEFAULT_PLUGIN_SERVER_ROOT_CERTS,
-    DEFAULT_PLUGIN_SERVER_TRANSPORTS,
-    DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH,
-    DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX,
-    DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH,
-    DEFAULT_PLUGIN_UI_ENABLED,
-    DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
-    DEFAULT_SUPPORTED_TRANSPORTS,
+from provide_foundation.config import (
+    RuntimeConfig,
+    env_field,
 )
 
-PLUGIN_PROTOCOL_VERSIONS_FIELD = env_field(
-    factory=lambda: DEFAULT_PLUGIN_PROTOCOL_VERSIONS.copy(),
-    parser=validate_protocol_versions_list,
-    env_var="PLUGIN_PROTOCOL_VERSIONS",
-)
-
-PLUGIN_PROTOCOL_VERSION_FIELD = env_field(
-    default=DEFAULT_PLUGIN_PROTOCOL_VERSION,
-    parser=int,
-    env_var="PLUGIN_PROTOCOL_VERSION",
-)
-
-SUPPORTED_PROTOCOL_VERSIONS_FIELD = env_field(
-    factory=lambda: DEFAULT_SUPPORTED_PROTOCOL_VERSIONS.copy(),
-    env_var="SUPPORTED_PROTOCOL_VERSIONS",
-)
-
-PLUGIN_SERVER_TRANSPORTS_FIELD = env_field(
-    factory=lambda: DEFAULT_PLUGIN_SERVER_TRANSPORTS.copy(),
-    parser=validate_transport_list,
-    env_var="PLUGIN_SERVER_TRANSPORTS",
-)
-
-PLUGIN_CLIENT_TRANSPORTS_FIELD = env_field(
-    factory=lambda: DEFAULT_PLUGIN_CLIENT_TRANSPORTS.copy(),
-    parser=validate_transport_list,
-    env_var="PLUGIN_CLIENT_TRANSPORTS",
-)
-
-PLUGIN_SUPPORTED_TRANSPORTS_FIELD = env_field(
-    factory=lambda: DEFAULT_SUPPORTED_TRANSPORTS.copy(),
-    env_var="PLUGIN_SUPPORTED_TRANSPORTS",
+from pyvider.rpcplugin.config.defaults import *
+from pyvider.rpcplugin.config.validators import (
+    PLUGIN_PROTOCOL_VERSIONS_FIELD,
+    PLUGIN_PROTOCOL_VERSION_FIELD,
+    PLUGIN_SERVER_TRANSPORTS_FIELD,
+    PLUGIN_CLIENT_TRANSPORTS_FIELD,
+    PLUGIN_SUPPORTED_TRANSPORTS_FIELD,
+    parse_log_level,
 )
 
 
-@define
 class RPCPluginConfig(RuntimeConfig):
     """
     Comprehensive configuration for the RPC plugin system.
@@ -489,5 +407,4 @@ class RPCPluginConfig(RuntimeConfig):
     # - config.plugin_handshake_timeout instead of config.handshake_timeout()
     # - etc.
 
-
-# 🐍🔌📞🔚
+# 📞🔌🔚

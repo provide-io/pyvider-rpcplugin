@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/transport/unix/test_unix_error_handling.py
 
 import asyncio
 import os
@@ -143,4 +139,8 @@ async def test_unix_socket_connect_timeout() -> None:
             with pytest.raises(TransportError, match="timed out|timeout"):
                 await transport.connect(socket_path)
 
-# 🐍🔌📞🔚
+
+# 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

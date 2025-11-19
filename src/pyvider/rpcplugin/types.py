@@ -2,16 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
-"""Type definitions for the Pyvider RPC plugin system.
-
-This module provides Protocol classes, TypeVars, and type aliases that define
-the interfaces and contracts used throughout the pyvider.rpcplugin package.
-These types enable static type checking and clear API boundaries.
-
-For most users, these types are used only in type annotations. Advanced users
-implementing custom protocol handlers will need to implement the Protocol
-interfaces defined here."""
+"""TODO: Add module docstring."""
 
 from __future__ import annotations
 
@@ -31,6 +22,17 @@ import grpc
 from provide.foundation.logger import get_logger
 
 logger = get_logger(__name__)
+
+"""Type definitions for the Pyvider RPC plugin system.
+
+This module provides Protocol classes, TypeVars, and type aliases that define
+the interfaces and contracts used throughout the pyvider.rpcplugin package.
+These types enable static type checking and clear API boundaries.
+
+For most users, these types are used only in type annotations. Advanced users
+implementing custom protocol handlers will need to implement the Protocol
+interfaces defined here.
+"""
 
 if TYPE_CHECKING:
     from .config import RPCPluginConfig  # For TypeVar bound
@@ -171,6 +173,8 @@ class SerializableT(TypeProtocol):
 
 
 def is_valid_serializable(obj: Any) -> TypeGuard[SerializableT]:
+    logger.debug("🧰🔍✅ Checking if object implements SerializableT protocol (manual runtime checks)")
+
     # Check to_dict method
     if not hasattr(obj, "to_dict"):
         logger.debug("SerializableT: Method to_dict is missing.")
@@ -256,6 +260,8 @@ class ConnectionT(TypeProtocol):
 
 
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
+    logger.debug("🧰🔍✅ Checking if object implements ConnectionT protocol (manual runtime checks)")
+
     methods_spec = {
         "send_data": {"params": 1, "is_async": True},
         "receive_data": {"params": 1, "is_async": True},
@@ -339,6 +345,8 @@ class SecureRpcClientT(TypeProtocol):
 
 
 def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
+    logger.debug("🧰🔍✅ Checking if object implements SecureRpcClientT protocol (manual runtime checks)")
+
     methods_spec = {
         "_perform_handshake": {"params": 0, "is_async": True},
         "_setup_tls": {"params": 0, "is_async": True},
@@ -386,6 +394,7 @@ def is_valid_handler(obj: Any) -> TypeGuard[RPCPluginHandler]:
     Returns:
         True if the object implements RPCPluginHandler, False otherwise
     """
+    logger.debug("🧰🔍✅ Checking if object implements RPCPluginHandler protocol")
     return isinstance(obj, RPCPluginHandler)
 
 
@@ -399,6 +408,7 @@ def is_valid_protocol(obj: Any) -> TypeGuard[RPCPluginProtocol]:
     Returns:
         True if the object implements RPCPluginProtocol, False otherwise
     """
+    logger.debug("🧰🔍✅ Checking if object implements RPCPluginProtocol protocol")
     return isinstance(obj, RPCPluginProtocol)
 
 
@@ -412,7 +422,7 @@ def is_valid_transport(obj: Any) -> TypeGuard[RPCPluginTransport]:
     Returns:
         True if the object implements RPCPluginTransport, False otherwise
     """
+    logger.debug("🧰🔍✅ Checking if object implements RPCPluginTransport protocol")
     return isinstance(obj, RPCPluginTransport)
 
-
-# 🐍🔌📞🔚
+# 📞🔌🔚

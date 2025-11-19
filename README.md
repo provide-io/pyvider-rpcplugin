@@ -1,14 +1,22 @@
-# 🐍🔌 `pyvider.rpcplugin`
+<div align="center">
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![uv](https://img.shields.io/badge/uv-package_manager-FF6B35.svg)](https://github.com/astral-sh/uv)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![CI](https://github.com/provide-io/pyvider-rpcplugin/actions/workflows/ci.yml/badge.svg)](https://github.com/provide-io/pyvider-rpcplugin/actions)
+# 🐍🔌 `pyvider.rpcplugin`
 
 **High-performance, type-safe RPC plugin framework for Python.**
 
 Modern gRPC-based plugin architecture with async support, mTLS security, and comprehensive transport options.
+
+[![Awesome: uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![PyPI Version](https://img.shields.io/pypi/v/pyvider-rpcplugin?style=flat-square)](https://pypi.org/project/pyvider-rpcplugin/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pyvider-rpcplugin?style=flat-square)](https://pypi.org/project/pyvider-rpcplugin/)
+[![Downloads](https://static.pepy.tech/badge/pyvider-rpcplugin/month)](https://pepy.tech/project/pyvider-rpcplugin)
+
+[![CI](https://github.com/provide-io/pyvider-rpcplugin/actions/workflows/ci.yml/badge.svg)](https://github.com/provide-io/pyvider-rpcplugin/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/provide-io/pyvider-rpcplugin/branch/main/graph/badge.svg)](https://codecov.io/gh/provide-io/pyvider-rpcplugin)
+[![Type Checked](https://img.shields.io/badge/type--checked-mypy-blue?style=flat-square)](https://mypy.readthedocs.io/)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json&style=flat-square)](https://github.com/astral-sh/ruff)
+
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache-blue.svg?style=flat-square)](https://opensource.org/license/apache-2-0)
 
 ---
 
@@ -48,7 +56,7 @@ Dive into the **[Documentation](./docs/index.md)** to get started!
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing-guide.md) for details.
+We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing.md) for details.
 
 ## 📜 License
 

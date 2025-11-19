@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Type definitions for the Pyvider RPC plugin transport system.
 
 This module provides Protocol classes, TypeVars, and type aliases that define
@@ -70,4 +69,4 @@ __all__ = [
     "WriterT",
 ]
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

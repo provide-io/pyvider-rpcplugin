@@ -1,10 +1,3 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
-
 import asyncio
 import os
 import tempfile
@@ -103,4 +96,5 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, temp_unix_
             with contextlib.suppress(asyncio.CancelledError):
                 await serve_task
 
-# 🐍🔌📞🔚
+
+# 🐍🔌🧪🪄

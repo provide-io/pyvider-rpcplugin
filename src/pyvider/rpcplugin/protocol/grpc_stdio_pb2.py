@@ -1,8 +1,7 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Generated protocol buffer code."""
 
 from google.protobuf import descriptor as _descriptor
@@ -41,4 +40,4 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GRPCSTDIO']._serialized_end=247
 # @@protoc_insertion_point(module_scope)
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

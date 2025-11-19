@@ -7,9 +7,7 @@ Learn the fundamentals of creating and configuring plugin servers with comprehen
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server, RPCPluginProtocol
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class EchoProtocol(RPCPluginProtocol):
     """Echo service protocol implementation."""
@@ -65,9 +63,7 @@ Configure your server using environment variables (recommended) or the `configur
 ```python
 import os
 from pyvider.rpcplugin import plugin_server
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Set configuration via environment variables
 os.environ.update({
@@ -90,9 +86,7 @@ logger.info("Server created with environment configuration")
 
 ```python
 from pyvider.rpcplugin import configure, plugin_server
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Configure programmatically
 configure(
@@ -115,9 +109,7 @@ logger.info("Server created with programmatic configuration")
 ```python
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Modify configuration directly
 rpcplugin_config.plugin_auto_mtls = False
@@ -138,9 +130,7 @@ logger.info("Server created with direct configuration")
 ```python
 import signal
 import asyncio
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class GracefulServer:
     def __init__(self, protocol, handler):
@@ -243,9 +233,7 @@ def setup_production():
 ## Error Handling
 
 ```python
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class ValidatedServer:
     def __init__(self, protocol, handler):
@@ -290,6 +278,6 @@ await server.start()
 
 ## Next Steps
 
-- **[Service Implementation](services/)** - Build robust gRPC services
-- **[Transport Configuration](transports/)** - Optimize communication layers
-- **[Async Patterns](async-patterns/)** - Master concurrency patterns
+- **[Service Implementation](services.md)** - Build robust gRPC services
+- **[Transport Configuration](transports.md)** - Optimize communication layers
+- **[Async Patterns](async-patterns.md)** - Master concurrency patterns

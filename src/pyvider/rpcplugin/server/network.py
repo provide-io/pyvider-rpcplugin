@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Network setup, handshake, and credential handling for RPC plugin servers.
 
 This module contains the ServerNetworkMixin with methods for handling
@@ -126,7 +125,7 @@ class ServerNetworkMixin:
             return None, False
 
         if not client_root_certs_conf:
-            logger.info(
+            logger.warning(
                 "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. "
                 "Client certs will not be required/verified."
             )
@@ -223,7 +222,7 @@ class ServerNetworkMixin:
             and isinstance(self.transport, TCPSocketTransport)
             and getattr(self.transport, "port", None) is not None
         ):
-            return int(self.transport.port)
+            return self.transport.port
 
         port_conf = self._get_instance_override("PLUGIN_SERVER_PORT", rpcplugin_config.plugin_server_port)
         if port_conf is None:
@@ -246,7 +245,7 @@ class ServerNetworkMixin:
 
         self._port = port_num
         transport.port = port_num
-        current_host = transport.host if transport.host else "0.0.0.0"  # nosec B104 - intentional for plugin server launched with explicit transport config
+        current_host = transport.host if transport.host else "0.0.0.0"
         transport.endpoint = f"{current_host}:{port_num}"
 
     def _configure_port_binding(
@@ -261,6 +260,7 @@ class ServerNetworkMixin:
             logger.info(f"🔒 Server starting in secure mode on {bind_address} (port_num: {port_num})")
         else:
             port_num = server.add_insecure_port(bind_address)
+            logger.info(f"🔌 Server starting in insecure mode on {bind_address} (port_num: {port_num})")
 
         if isinstance(transport, TCPSocketTransport):
             self._apply_tcp_port_configuration(transport, port_num)
@@ -345,5 +345,4 @@ class ServerNetworkMixin:
         sys.stdout.buffer.write(f"{response}\n".encode())
         sys.stdout.buffer.flush()
 
-
-# 🐍🔌📞🔚
+# 📞🔌🔚
