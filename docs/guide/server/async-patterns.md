@@ -9,7 +9,9 @@ Master asynchronous programming patterns for high-performance plugin servers usi
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class AsyncHandler:
     """Async-first plugin handler."""

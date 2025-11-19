@@ -151,7 +151,9 @@ import asyncio
 import os
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 async def secure_plugin_example():
     """Complete mTLS plugin example using external certificates."""
@@ -308,7 +310,9 @@ sudo ufw allow from 127.0.0.1 to any port 8000:9000
 ### Logging Security Events
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Log security events
 logger.info("🔐 mTLS handshake successful",

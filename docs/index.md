@@ -71,7 +71,9 @@ Create a complete echo service with modern Python patterns:
 import asyncio
 from pyvider.rpcplugin import plugin_server, configure
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Configure for your environment
 # Note: configure() has 5 explicit parameters (magic_cookie, protocol_version, transports,
@@ -127,7 +129,9 @@ import asyncio
 import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Configure client environment
 # Note: configure() has explicit parameters plus **kwargs for additional settings

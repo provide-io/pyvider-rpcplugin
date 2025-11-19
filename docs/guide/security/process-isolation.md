@@ -18,7 +18,9 @@ Process isolation creates secure, controlled environments where plugins run with
 
 ```python
 from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.isolation import ProcessIsolator, SandboxConfig
+# NOTE: pyvider.rpcplugin.isolation does not currently exist
+# This is a conceptual example showing potential future API
+# from pyvider.rpcplugin.isolation import ProcessIsolator, SandboxConfig
 
 async def isolated_plugin_example():
     """Run plugin in isolated environment."""

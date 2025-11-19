@@ -93,7 +93,9 @@ import pyvider.rpcplugin
 # Check version
 print(f"Pyvider RPC Plugin version: {pyvider.rpcplugin.__version__}")
 
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from provide.foundation.config import RuntimeConfig
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.config import rpcplugin_config
@@ -109,7 +111,9 @@ print("Foundation integration verified!")
 import asyncio
 from pyvider.rpcplugin import plugin_server, plugin_client
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class TestProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self):
@@ -247,7 +251,9 @@ Pyvider RPC Plugin is built on Foundation's infrastructure:
 
 ```python
 from provide.foundation.config import RuntimeConfig
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from provide.foundation.crypto import Certificate
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 

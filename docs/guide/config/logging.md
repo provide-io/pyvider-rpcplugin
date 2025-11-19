@@ -160,7 +160,9 @@ The logging system automatically includes contextual information:
 Add custom context using the `extra` parameter:
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 logger.info("Processing user request", extra={
     "user_id": "user_12345",
@@ -321,7 +323,9 @@ export PLUGIN_SHOW_EMOJI_MATRIX=true
 Add context to target specific components:
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Transport debugging
 logger.debug("Transport debug enabled", extra={
@@ -432,7 +436,9 @@ Monitor these patterns for issues:
 export PLUGIN_LOG_LEVEL=DEBUG
 
 # Verify Foundation logger
-python -c "from provide.foundation import logger; logger.info('Test')"
+python -c "from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__); logger.info('Test')"
 
 # Logs go to stderr - ensure stderr is not suppressed
 ```

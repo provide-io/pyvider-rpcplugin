@@ -242,7 +242,9 @@ Consider custom protocols for:
 
 ```python
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CustomProtocol(RPCPluginProtocol):
     def __init__(self, name: str, version: str):
@@ -531,7 +533,9 @@ def create_protocol():
 ### Monitoring
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class MonitoredProtocol(RPCPluginProtocol):
     def __init__(self, base_protocol):

@@ -7,7 +7,9 @@ Learn the fundamentals of creating and configuring plugin servers with comprehen
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server, RPCPluginProtocol
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class EchoProtocol(RPCPluginProtocol):
     """Echo service protocol implementation."""
@@ -63,7 +65,9 @@ Configure your server using environment variables (recommended) or the `configur
 ```python
 import os
 from pyvider.rpcplugin import plugin_server
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Set configuration via environment variables
 os.environ.update({
@@ -86,7 +90,9 @@ logger.info("Server created with environment configuration")
 
 ```python
 from pyvider.rpcplugin import configure, plugin_server
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Configure programmatically
 configure(
@@ -109,7 +115,9 @@ logger.info("Server created with programmatic configuration")
 ```python
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Modify configuration directly
 rpcplugin_config.plugin_auto_mtls = False
@@ -130,7 +138,9 @@ logger.info("Server created with direct configuration")
 ```python
 import signal
 import asyncio
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class GracefulServer:
     def __init__(self, protocol, handler):
@@ -233,7 +243,9 @@ def setup_production():
 ## Error Handling
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class ValidatedServer:
     def __init__(self, protocol, handler):

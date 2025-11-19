@@ -118,7 +118,9 @@ Automated certificate renewal with configurable rotation policies and zero-downt
 import asyncio
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 async def rotate_certificate_if_needed(
     cert_path: str,
@@ -335,7 +337,9 @@ else:
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 async def check_certificate_health(cert_paths: list[str]) -> dict[str, bool]:
     """Check health of multiple certificates."""
@@ -373,7 +377,9 @@ health_status = await check_certificate_health([
 import asyncio
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Monitor expiration and alert
 async def monitor_certificate_expiry():
@@ -432,7 +438,9 @@ dev_server_cert = Certificate.create_self_signed_server_cert(
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Production certificate management with validation
 def load_production_certificates(cert_dir: str) -> tuple[Certificate, Certificate]:
@@ -521,7 +529,9 @@ backup_path = backup_certificates("/etc/ssl/plugin", "/backups/certs")
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Debug certificate issues
 try:

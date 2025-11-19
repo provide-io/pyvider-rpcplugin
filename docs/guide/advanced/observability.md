@@ -79,7 +79,9 @@ Effective observability combines distributed tracing, metrics collection, and pe
 
 ```python
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from opentelemetry import trace
 from opentelemetry.trace import Status, StatusCode
 
@@ -220,7 +222,9 @@ class MetricsHandler:
 ### Log Correlation
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CorrelatedLoggingHandler:
     async def process_request(self, request):
@@ -536,7 +540,9 @@ async def benchmark_plugin_performance():
 
 ```python
 from pyvider.rpcplugin.metrics import PerformanceMetrics
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 metrics = PerformanceMetrics()
 

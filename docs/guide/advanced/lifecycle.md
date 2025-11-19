@@ -14,7 +14,9 @@ Load and validate settings:
 
 ```python
 from pyvider.rpcplugin.config import rpcplugin_config
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class PluginLifecycleManager:
     def __init__(self, config_path: Path | None = None):

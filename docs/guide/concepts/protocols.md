@@ -133,7 +133,9 @@ Service handlers implement the actual business logic:
 ```python
 import example_pb2
 import example_pb2_grpc
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class DataProcessorHandler(example_pb2_grpc.DataProcessorServicer):
     """Implementation of DataProcessor service."""

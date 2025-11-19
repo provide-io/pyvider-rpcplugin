@@ -48,7 +48,7 @@ Dive into the **[Documentation](./docs/index.md)** to get started!
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing.md) for details.
+We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing-guide.md) for details.
 
 ## 📜 License
 

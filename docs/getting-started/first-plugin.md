@@ -88,7 +88,9 @@ Create `echo_handler.py` with your business logic:
 import grpc
 from echo_pb2 import EchoRequest, EchoResponse
 from echo_pb2_grpc import EchoServiceServicer
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class EchoHandler(EchoServiceServicer):
     """Handler implementing the Echo service business logic."""
@@ -117,7 +119,9 @@ Create `echo_protocol.py` to bridge your service with Pyvider RPC Plugin:
 from typing import Any
 from pyvider.rpcplugin import RPCPluginProtocol
 import echo_pb2_grpc
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class EchoProtocol(RPCPluginProtocol):
     """Protocol bridge for Echo service."""
@@ -152,7 +156,9 @@ Echo plugin server - demonstrates custom RPC service implementation.
 import asyncio
 import os
 from pyvider.rpcplugin import plugin_server, rpcplugin_config
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from echo_handler import EchoHandler
 from echo_protocol import EchoProtocol
@@ -202,7 +208,9 @@ import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 from echo_pb2 import EchoRequest
 from echo_pb2_grpc import EchoServiceStub

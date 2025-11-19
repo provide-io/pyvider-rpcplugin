@@ -53,7 +53,9 @@ Demonstrates Foundation integration:
 import asyncio
 
 from pyvider.rpcplugin import plugin_protocol, plugin_server
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 class DummyHandler:
     def __init__(self):
         logger.info("🔌 Plugin handler initialized")
@@ -81,7 +83,9 @@ if __name__ == "__main__":
 ```
 
 !!! note "About Imports"
-    Notice the `from provide.foundation import logger` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
+    Notice the `from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
 
 ### 2. Create the Host Application
 
@@ -103,7 +107,9 @@ from pathlib import Path
 
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 async def main():
     logger.info("🚀 Starting host application...")
