@@ -101,7 +101,9 @@ The RPC architecture seamlessly integrates with Foundation for essential service
 ```python
 from pyvider.rpcplugin import plugin_server
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-from provide.foundation import logger, config
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__), config
 from provide.foundation.crypto import Certificate
 
 class SecureDataProcessor:

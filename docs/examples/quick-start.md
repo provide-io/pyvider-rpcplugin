@@ -18,7 +18,9 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     import sys
     from pathlib import Path
     from pyvider.rpcplugin import plugin_client
-    from provide.foundation import logger
+    from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
     async def main():
@@ -78,7 +80,9 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     """
     import asyncio
     from pyvider.rpcplugin import plugin_protocol, plugin_server
-    from provide.foundation import logger
+    from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
     async def main():
@@ -117,7 +121,9 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     """
     import asyncio
     from pyvider.rpcplugin import plugin_protocol, plugin_server, configure
-    from provide.foundation import logger
+    from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
     async def main():
@@ -166,7 +172,9 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     """
     import asyncio
     from pyvider.rpcplugin import plugin_protocol, plugin_server, configure
-    from provide.foundation import logger
+    from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
     async def main():
@@ -227,7 +235,9 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     """
     import asyncio
     from pyvider.rpcplugin import plugin_protocol, plugin_server
-    from provide.foundation import logger
+    from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
     async def main():
@@ -288,7 +298,9 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     from typing import Any
     from pyvider.rpcplugin import plugin_server
     from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
-    from provide.foundation import logger
+    from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 
     class CustomProtocol(RPCPluginProtocol):

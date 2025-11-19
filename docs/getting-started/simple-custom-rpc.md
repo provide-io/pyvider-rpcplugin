@@ -40,7 +40,9 @@ Create `processor_service.py`:
 ```python
 from dataclasses import dataclass
 from typing import Any
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 @dataclass
 class ProcessRequest:
@@ -133,7 +135,9 @@ Create `simple_server.py`:
 ```python
 import asyncio
 from pyvider.rpcplugin import plugin_server, configure
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Import our service components
 from processor_service import DataProcessor
@@ -175,7 +179,9 @@ import asyncio
 import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client, configure
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Import message types
 from processor_service import ProcessRequest, ProcessResponse

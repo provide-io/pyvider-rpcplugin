@@ -20,7 +20,9 @@ Let Foundation handle certificate generation and management:
 
 ```python
 from pyvider.rpcplugin import plugin_server, plugin_client
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Server with automatic mTLS
 server = plugin_server(
@@ -109,7 +111,9 @@ Use Foundation to generate development certificates:
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Create Certificate Authority
 ca_cert = Certificate.create_ca(
@@ -196,7 +200,9 @@ Implement automatic certificate rotation with Foundation:
 import asyncio
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 async def check_and_rotate_certificates(
     cert_path: str,
@@ -209,9 +215,12 @@ async def check_and_rotate_certificates(
         await asyncio.sleep(check_interval)
 
         # Load current certificate
+        # Read PEM content from files
+        cert_pem_content = Path(cert_path).read_text()
+        key_pem_content = Path(key_path).read_text()
         cert = Certificate.from_pem(
-            cert_pem=f"file://{cert_path}",
-            key_pem=f"file://{key_path}"
+            cert_pem=cert_pem_content,
+            key_pem=key_pem_content
         )
 
         # Check if rotation needed (based on validity)
@@ -244,12 +253,16 @@ asyncio.create_task(check_and_rotate_certificates(
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
 
-# Load current certificate
+logger = get_logger(__name__)
+
+# Load current certificate - read PEM content from files
+cert_pem_content = Path("server.pem").read_text()
+key_pem_content = Path("server.key").read_text()
 cert = Certificate.from_pem(
-    cert_pem="file://server.pem",
-    key_pem="file://server.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Check validity and rotate if needed
@@ -277,7 +290,9 @@ if not cert.is_valid:
 
 ```python
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from pathlib import Path
 
 # Load certificate - read PEM content from files
@@ -367,7 +382,9 @@ server = plugin_server(
 
 ```python
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from pathlib import Path
 
 # Monitor certificate health
@@ -426,10 +443,12 @@ server = plugin_server(
 from provide.foundation.crypto import Certificate
 from pyvider.rpcplugin import plugin_server
 
-# Load staging CA
+# Load staging CA - read PEM content from files
+cert_pem_content = Path("staging-ca.pem").read_text()
+key_pem_content = Path("staging-ca.key").read_text()
 staging_ca = Certificate.from_pem(
-    cert_pem="file://staging-ca.pem",
-    key_pem="file://staging-ca.key"
+    cert_pem=cert_pem_content,
+    key_pem=key_pem_content
 )
 
 # Create server certificate for staging
@@ -491,7 +510,9 @@ openssl verify -CAfile ca.pem server.pem
 import logging
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 logging.getLogger('grpc').setLevel(logging.DEBUG)
 

@@ -74,7 +74,9 @@ transports = rpcplugin_config.plugin_server_transports  # Validated values
 Every component uses Foundation's structured logging:
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 logger.info("Server starting", extra={
     "port": 50051,
@@ -141,7 +143,9 @@ Here's a complete example showing Foundation and Pyvider RPC Plugin integration:
 
 ```python
 # Foundation provides infrastructure
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from provide.foundation.config import RuntimeConfig
 from provide.foundation.crypto import Certificate
 

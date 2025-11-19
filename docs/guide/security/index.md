@@ -354,7 +354,9 @@ configure_process_security()
 ### Security Event Logging
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 def log_security_event(event_type, details, severity="INFO"):
     """Log security-related events for monitoring."""

@@ -13,7 +13,9 @@ Extend Foundation's `RuntimeConfig` for plugin-specific configuration:
 ```python
 from dataclasses import dataclass, field
 from provide.foundation.config import RuntimeConfig, ConfigError
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from pyvider.rpcplugin.config import rpcplugin_config
 import os
 
@@ -63,7 +65,9 @@ Use Foundation's crypto module for certificate management:
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from pyvider.rpcplugin import plugin_server
 
 class CertificateManager:
@@ -131,7 +135,9 @@ Implement automatic certificate rotation:
 
 ```python
 import asyncio
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CertificateRotator:
     """Handles automatic certificate rotation."""
@@ -174,7 +180,9 @@ Per-client rate limiting using Foundation:
 ```python
 from collections import defaultdict
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 import time
 
 class PerClientRateLimiter:
@@ -255,7 +263,9 @@ Leverage Foundation's structured logging for comprehensive observability:
 
 ```python
 from contextvars import ContextVar
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 from pyvider.rpcplugin import plugin_server
 import uuid
 import time
@@ -344,7 +354,9 @@ Implement circuit breaker using Foundation patterns:
 ```python
 from enum import Enum
 from datetime import datetime, timedelta
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CircuitState(Enum):
     CLOSED = "closed"

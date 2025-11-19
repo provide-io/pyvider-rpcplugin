@@ -22,7 +22,9 @@ from pyvider.rpcplugin.exception import (
     HandshakeError,
     TransportError,
 )
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 ```
 
 ### Avoid Deep Imports
@@ -112,7 +114,9 @@ from pyvider.rpcplugin.exception import (
     TransportError,
     SecurityError,
 )
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 async def safe_client_startup():
     """Example of proper error handling."""
@@ -138,7 +142,9 @@ async def safe_client_startup():
 Include context in error messages:
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 try:
     await server.serve()
@@ -162,7 +168,9 @@ except Exception as e:
 Always use Foundation's structured logger:
 
 ```python
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 # ✅ Recommended: Foundation logger with context
 logger.info(
@@ -365,7 +373,9 @@ class MyProtocol(RPCPluginProtocol):
         add_MyServiceServicer_to_server(handler, server)
 
 # handler.py
-from provide.foundation import logger
+from provide.foundation.logger import get_logger
+
+logger = get_logger(__name__)
 
 class MyHandler:
     async def MyMethod(self, request, context):
