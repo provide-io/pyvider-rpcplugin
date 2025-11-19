@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Custom protocol example (30 lines).
 
 Shows how to create a custom protocol wrapper."""
@@ -28,7 +27,7 @@ class CustomProtocol(RPCPluginProtocol):
         logger.info("Custom protocol registered")
 
 
-async def main() -> None:
+async def main():
     """Run server with custom protocol."""
     protocol = CustomProtocol()
     handler = object()
@@ -41,4 +40,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

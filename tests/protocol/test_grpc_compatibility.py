@@ -1,9 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/protocol/test_grpc_compatibility.py
 
 import pytest
 import importlib
@@ -66,4 +61,8 @@ def test_version_compatibility_check() -> None:
         # Should not raise
         importlib.reload(grpc_broker_pb2_grpc)
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

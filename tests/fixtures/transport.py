@@ -1,9 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
+# tests/fixtures/transport.py
 
 import pytest
 import pytest_asyncio
@@ -247,7 +242,9 @@ async def managed_unix_socket_path(
 
     socket_path = str(socket_path_obj)
 
-    logger.debug("Managed Unix socket path created", socket_path=socket_path, base=log_base_path_info)
+    logger.debug(
+        f"🧪🔌 Providing managed socket path: {socket_path} (OS: {sys.platform}, Base: {log_base_path_info})"
+    )
 
     # Ensure the path does not exist before yielding (defensive)
     if os.path.exists(socket_path):
@@ -263,7 +260,9 @@ async def managed_unix_socket_path(
             # Depending on strictness, could raise an error here or let the test proceed.
 
     async def finalizer():
-        logger.debug("Starting socket finalizer", socket_path=socket_path)
+        logger.debug(
+            f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER: Finalizing managed socket path: {socket_path}"
+        )  # Existing + emphasis
         await asyncio.sleep(0.05)
         if os.path.exists(socket_path):  # socket_path_obj should be used here
             try:
@@ -271,6 +270,7 @@ async def managed_unix_socket_path(
                 os.unlink(
                     socket_path
                 )  # socket_path_obj.unlink(missing_ok=True) is better
+                logger.debug(f"✅ Successfully unlinked socket: {socket_path}")
             except OSError as e:
                 logger.warning(
                     f"⚠️ Error unlinking socket {socket_path} in finalizer: {e}. This might affect subsequent tests if not cleaned."
@@ -281,12 +281,15 @@ async def managed_unix_socket_path(
             )
 
     async def finalizer_coro(): # Renamed to avoid confusion if we bring back old finalizer name
-        logger.debug("Starting async socket finalizer", socket_path=socket_path)
+        logger.debug(
+            f"🧪🧹 MANAGED_SOCKET_PATH_FINALIZER (async_finalizer): Finalizing managed socket path: {socket_path}"
+        )
         await asyncio.sleep(0.05) # Keep the sleep, it might be generally helpful
         if os.path.exists(socket_path):
             try:
                 os.chmod(socket_path, 0o777)
                 os.unlink(socket_path)
+                logger.debug(f"✅ Successfully unlinked socket (async_finalizer): {socket_path}")
             except Exception as e: # Keep catching generic Exception
                 logger.warning(
                     f"⚠️ Error unlinking socket {socket_path} in async_finalizer (type: {type(e).__name__}): {e}"
@@ -309,4 +312,7 @@ async def managed_unix_socket_path(
 #     # Force cleanup of transport resources
 #     await asyncio.sleep(0.1)  # Allow any pending cleanups
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️
+
+# 🐍🔌📄🪄

@@ -2,33 +2,45 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Transport and protocol negotiation for the RPC plugin handshake.
 
 This module handles transport negotiation, protocol version negotiation,
 and I/O operations for handshake processes."""
 
 import asyncio
+import logging
 import os
-from pathlib import Path
-import subprocess  # nosec B404 # For process type hint only
+import subprocess
 import tempfile
 import time
-from typing import cast
-
-from provide.foundation.logger import get_logger
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    cast,
+)
 
 from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.defaults import DEFAULT_HANDSHAKE_RETRY_WAIT, DEFAULT_PROCESS_WAIT_TIME
-from pyvider.rpcplugin.exception import HandshakeError, ProtocolError, TransportError
-from pyvider.rpcplugin.transport.types import TransportT
+from pyvider.rpcplugin.defaults import (
+    DEFAULT_HANDSHAKE_RETRY_WAIT,
+    DEFAULT_PROCESS_WAIT_TIME,
+)
+from pyvider.rpcplugin.exception import (
+    HandshakeError,
+    ProtocolError,
+    TransportError,
+)
 
-logger = get_logger(__name__)
+if TYPE_CHECKING:
+    from pyvider.rpcplugin.transport import Transport as TransportT
+
+logger = logging.getLogger(__name__)
 
 
-async def negotiate_transport(server_transports: list[str]) -> tuple[str, TransportT]:
+def negotiate_transport(
+    server_transports: list[str],
+) -> tuple[str, "TransportT"]:
     """
-    (🗣️🚊 Transport Negotiation) Negotiates the transport type with the server and
+    Negotiates the transport type with the server and
     creates the appropriate transport instance.
 
     Returns:
@@ -38,9 +50,9 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
       TransportError: If no compatible transport can be negotiated or an error
                       occurs during negotiation.
     """
-    logger.debug(f"(🗣️🚊 Transport Negotiation: Starting) => Available transports: {server_transports}")
+    logger.debug(f"Starting transport negotiation. Available transports: {server_transports}")
     if not server_transports:
-        logger.error("🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided")
+        logger.error("Transport negotiation failed: No transport options provided")
         raise TransportError(
             message="No transport options were provided by the server for negotiation.",
             hint=(
@@ -50,21 +62,21 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         )
     try:
         if "unix" in server_transports:
-            logger.debug("🗣️🚊🧦 (Transport Negotiation: Selected Unix) => Unix socket transport is available")
+            logger.debug("Unix socket transport is available")
             temp_dir = os.environ.get("TEMP_DIR") or tempfile.gettempdir()
             transport_path = str(Path(temp_dir) / f"pyvider-{os.getpid()}.sock")
             from pyvider.rpcplugin.transport import UnixSocketTransport
 
-            return "unix", cast(TransportT, UnixSocketTransport(path=transport_path))
+            return "unix", cast("TransportT", UnixSocketTransport(path=transport_path))
 
         elif "tcp" in server_transports:
-            logger.debug("🗣️🚊👥 (Transport Negotiation: Selected TCP) => TCP transport is available")
+            logger.debug("TCP transport is available")
             from pyvider.rpcplugin.transport import TCPSocketTransport
 
-            return "tcp", cast(TransportT, TCPSocketTransport())
+            return "tcp", cast("TransportT", TCPSocketTransport())
         else:
             logger.error(
-                "🗣️🚊❌ (Transport Negotiation: Failed) => No supported transport found",
+                "Transport negotiation failed: No supported transport found",
                 extra={"server_transports": server_transports},
             )
             client_supported = (
@@ -79,7 +91,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
             )
     except Exception as e:
         logger.error(
-            "🗣️🚊❌ (Transport Negotiation: Exception) => Error during transport negotiation",
+            "An unexpected error occurred during transport negotiation",
             extra={"error": str(e)},
         )
         raise TransportError(
@@ -90,7 +102,7 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
 
 def negotiate_protocol_version(server_versions: list[int]) -> int:
     """
-    🤝🔄 Selects the highest mutually supported protocol version.
+    Selects the highest mutually supported protocol version.
 
     Compares the server-provided versions against the client's supported versions
     from the configuration.
@@ -101,14 +113,15 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     Raises:
       ProtocolError: If no mutually supported version is found.
     """
-    logger.debug(f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}")
+    logger.debug(f"Negotiating protocol version. Server supports: {server_versions}")
     supported_versions_config = rpcplugin_config.supported_protocol_versions
     for version in sorted(server_versions, reverse=True):
         if version in supported_versions_config:
+            logger.info(f"Selected protocol version: {version}")
             return version
 
     logger.error(
-        "🤝❌ Protocol negotiation failed: No compatible version found. "
+        "Protocol negotiation failed: No compatible version found. "
         f"Server supports: {server_versions}, Client supports: "
         f"{supported_versions_config}"
     )
@@ -148,7 +161,7 @@ def _process_has_exited(process: subprocess.Popen[bytes], buffer: str) -> None:
         return
     stderr_output = _collect_process_stderr(process)
     truncated = (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
-    logger.error(f"🤝📥❌ Plugin process exited with code {process.returncode} before handshake")
+    logger.error(f"Plugin process exited with code {process.returncode} before handshake")
     raise HandshakeError(
         message=(
             f"Plugin process exited prematurely with code {process.returncode} before completing handshake."
@@ -192,13 +205,16 @@ async def _try_read_chunk(process: subprocess.Popen[bytes], *, chunk_size: int) 
 def _process_line_candidate(line: str | None, buffer: str) -> tuple[str | None, str, bool]:
     if not line:
         return None, buffer, False
+    logger.debug(f"Read line from stdout: '{line}'")
     completed = _buffer_has_complete_handshake(line)
     if completed:
+        logger.debug("Complete handshake response found in line")
         return completed, buffer, True
 
     combined_buffer = buffer + line
     completed = _buffer_has_complete_handshake(combined_buffer)
     if completed:
+        logger.debug("Complete handshake response assembled from buffer")
         return completed, combined_buffer, True
     return None, combined_buffer, True
 
@@ -213,16 +229,17 @@ async def _process_chunk_candidate(
             chunk_size=rpcplugin_config.plugin_chunk_size,
         )
     except TimeoutError:
-        logger.debug("🤝📥⚠️ Timeout reading chunk, retrying...")
+        logger.debug("Timeout reading chunk, retrying...")
         return None, buffer, False
 
     if not chunk:
         return None, buffer, False
 
     new_buffer = buffer + chunk
+    logger.debug(f"Read chunk: {len(chunk)} bytes, buffer now has {len(new_buffer)} bytes")
     completed = _buffer_has_complete_handshake(new_buffer)
     if completed:
-        return completed, new_buffer, True
+        logger.debug("Complete handshake response found in buffer after chunk read")
     return completed, new_buffer, True
 
 
@@ -267,7 +284,7 @@ async def read_handshake_response(process: subprocess.Popen[bytes]) -> str:
             hint="Ensure the plugin process started correctly and is accessible.",
         )
 
-    logger.debug("🤝📥🚀 Reading handshake response from plugin process...")
+    logger.debug("Reading handshake response from plugin process...")
 
     timeout = rpcplugin_config.plugin_handshake_timeout
     start_time = time.time()
@@ -315,15 +332,15 @@ async def create_stderr_relay(
         The asyncio.Task managing the stderr relay, or None if stderr is not available.
     """
     if not process or not process.stderr:
-        logger.debug("🤝📤⚠️ No process or stderr stream available for relay")
+        logger.debug("No process or stderr stream available for relay")
         return None
 
     async def _stderr_reader() -> None:
         """Background task to continuously read stderr"""
-        logger.debug("🤝📤🚀 Starting stderr relay task")
+        logger.debug("Starting stderr relay task")
         # Ensure stderr is not None before accessing readline
         if process.stderr is None:
-            logger.error("🤝📤❌ Stderr became None unexpectedly in relay task.")
+            logger.error("Stderr became None unexpectedly in relay task.")
             return
 
         while process.poll() is None:
@@ -335,15 +352,15 @@ async def create_stderr_relay(
 
                 text = line.decode("utf-8", errors="replace").rstrip()
                 if text:
-                    logger.debug(f"🤝📤📝 Plugin stderr: {text}")
+                    logger.debug(f"Plugin stderr: {text}")
             except Exception as e:
-                logger.error(f"🤝📤❌ Error in stderr relay: {e}")
+                logger.error(f"Error in stderr relay: {e}")
                 break
 
-        logger.debug("🤝📤🛑 Stderr relay task ended")
+        logger.debug("Stderr relay task ended")
 
     relay_task = asyncio.create_task(_stderr_reader())
+    logger.debug("Created stderr relay task")
     return relay_task
 
-
-# 🐍🔌📞🔚
+# 📞🔌🔚

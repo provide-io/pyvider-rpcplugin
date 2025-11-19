@@ -5,7 +5,7 @@ Get up and running with Pyvider RPC Plugin in 5 minutes. This guide demonstrates
 ## Prerequisites
 
 - Python 3.11+ installed
-- Pyvider RPC Plugin installed (`uv add pyvider-rpcplugin` or `uv sync`)
+- Pyvider RPC Plugin installed (`pip install pyvider-rpcplugin`)
 
 ## Core Components
 
@@ -20,7 +20,7 @@ Before diving in, let's understand the key components:
 !!! info "Built on Foundation"
     Pyvider RPC Plugin is built on **Foundation** (`provide.foundation`), which provides infrastructure for logging, configuration, cryptography, and utilities. This means you get enterprise-grade patterns out of the box.
 
-    **→ [Understanding Foundation](../introduction/foundation/)** - Learn how Foundation and Pyvider work together
+    **→ [Understanding Foundation](../introduction/foundation.md)** - Learn how Foundation and Pyvider work together
 
 !!! tip "Tutorial Code vs Production Code"
     The examples below are **simplified for teaching** to focus on core concepts.
@@ -32,7 +32,7 @@ Before diving in, let's understand the key components:
 
     Run with: `python examples/quick_start_client.py`
 
-    → [Complete example file mapping](../examples/index/#tutorial-example-actual-file-mapping)
+    → [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
 
 ## Your First Plugin
 
@@ -53,9 +53,7 @@ Demonstrates Foundation integration:
 import asyncio
 
 from pyvider.rpcplugin import plugin_protocol, plugin_server
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 class DummyHandler:
     def __init__(self):
         logger.info("🔌 Plugin handler initialized")
@@ -83,9 +81,7 @@ if __name__ == "__main__":
 ```
 
 !!! note "About Imports"
-    Notice the `from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
+    Notice the `from provide.foundation import logger` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
 
 ### 2. Create the Host Application
 
@@ -107,9 +103,7 @@ from pathlib import Path
 
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 async def main():
     logger.info("🚀 Starting host application...")
@@ -181,7 +175,7 @@ You should see output like:
     python examples/quick_start_client.py
     ```
 
-    See [Example File Mapping](../examples/index/#tutorial-example-actual-file-mapping) for more details.
+    See [Example File Mapping](../examples/index.md#tutorial-example-actual-file-mapping) for more details.
 
 ## What Just Happened?
 
@@ -199,7 +193,7 @@ Foundation handles infrastructure concerns automatically:
 - **Configuration**: Environment variable management
 - **Error Handling**: Standardized exception types
 
-**→ [Foundation Architecture](../introduction/foundation/)** explains the complete separation of concerns between Foundation (infrastructure), Pyvider (RPC), and your business logic.
+**→ [Foundation Architecture](../introduction/foundation.md)** explains the complete separation of concerns between Foundation (infrastructure), Pyvider (RPC), and your business logic.
 
 ## Key Concepts
 
@@ -240,7 +234,7 @@ The handshake is automatic and includes:
     # mTLS enabled with your production certificates
     ```
 
-    📖 **Learn more:** [Security Guide](../guide/security/index/) | [mTLS Configuration](../guide/security/mtls/)
+    📖 **Learn more:** [Security Guide](../guide/security/index.md) | [mTLS Configuration](../guide/security/mtls.md)
 
 ### 🔧 Configuration
 
@@ -259,21 +253,21 @@ logger.info(f"mTLS enabled: {rpcplugin_config.plugin_auto_mtls}")
 
 Now that you have the basics working:
 
-1. **[Build a Real Service](first-plugin/)** - Create an Echo plugin with custom RPC methods
-2. **[Learn Core Concepts](../guide/concepts/index/)** - Understand the architecture in depth
-3. **[Security Setup](../guide/concepts/security/)** - Configure mTLS with production certificates
-4. **[Advanced Patterns](../guide/index/)** - Explore async patterns, error handling, and more
+1. **[Build a Real Service](first-plugin.md)** - Create an Echo plugin with custom RPC methods
+2. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
+3. **[Security Setup](../guide/concepts/security.md)** - Configure mTLS with production certificates
+4. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
 
 ### 📝 Short Examples
 
 For focused, executable examples (15-30 lines each):
 
-- **[Basic Client](../examples/short/basic-client/)** - Minimal client connection
-- **[Basic Server](../examples/short/basic-server/)** - Simple plugin server  
-- **[Health Checks](../examples/short/health-check/)** - Server with health monitoring
-- **[Rate Limiting](../examples/short/rate-limiting/)** - Request throttling with token bucket
-- **[TCP Transport](../examples/short/tcp-transport/)** - Network transport configuration
-- **[Custom Protocol](../examples/short/custom-protocol/)** - Custom gRPC service integration
+- **[Basic Client](../examples/short/basic-client.md)** - Minimal client connection
+- **[Basic Server](../examples/short/basic-server.md)** - Simple plugin server  
+- **[Health Checks](../examples/short/health-check.md)** - Server with health monitoring
+- **[Rate Limiting](../examples/short/rate-limiting.md)** - Request throttling with token bucket
+- **[TCP Transport](../examples/short/tcp-transport.md)** - Network transport configuration
+- **[Custom Protocol](../examples/short/custom-protocol.md)** - Custom gRPC service integration
 
 ## Common Issues
 
@@ -293,9 +287,8 @@ chmod +x my_plugin.py
 ### Import Errors
 ```bash
 # Ensure pyvider-rpcplugin is installed
-uv add pyvider-rpcplugin
-# Or if already in pyproject.toml
-uv sync
+pip list | grep pyvider
+pip install --upgrade pyvider-rpcplugin
 ```
 
-Ready to build something more substantial? Let's create your [First Plugin](first-plugin/) with custom RPC methods!
+Ready to build something more substantial? Let's create your [First Plugin](first-plugin.md) with custom RPC methods!

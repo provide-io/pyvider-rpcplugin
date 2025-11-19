@@ -82,9 +82,7 @@ class RPCPluginServer:
 import asyncio
 import os
 from pyvider.rpcplugin import plugin_server, plugin_protocol
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Configure rate limiting via environment
 os.environ.update({
@@ -171,9 +169,7 @@ Clients should handle rate limit errors gracefully:
 import grpc
 from pyvider.rpcplugin import plugin_client
 import asyncio
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 async def make_request_with_retry(client, request):
     """Make request with exponential backoff on rate limit."""
@@ -204,9 +200,7 @@ async def make_request_with_retry(client, request):
 The rate limiter logs important events:
 
 ```python
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class MonitoredRateLimiter(RateLimitingInterceptor):
     """Rate limiter with monitoring."""
@@ -341,7 +335,7 @@ logging.getLogger("pyvider.rpcplugin.server").setLevel(logging.DEBUG)
 
 ## Related Topics
 
-- [Server Configuration](../config/index/) - General server configuration options
-- [Health Checks](health-checks/) - Monitor server health under load
-- [Performance Tuning](../advanced/performance/) - Optimize server performance
-- [Error Handling](../client/error-handling/) - Client-side error handling patterns
+- [Server Configuration](../config/index.md) - General server configuration options
+- [Health Checks](health-checks.md) - Monitor server health under load
+- [Performance Tuning](../advanced/performance.md) - Optimize server performance
+- [Error Handling](../client/error-handling.md) - Client-side error handling patterns

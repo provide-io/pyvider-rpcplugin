@@ -9,9 +9,7 @@ Master the art of implementing robust gRPC service handlers with error handling,
 ```python
 import grpc
 from calculator_pb2 import CalculationResponse
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class CalculatorHandler:
     async def Add(self, request, context):
@@ -256,9 +254,7 @@ class ChatHandler:
 ```python
 import grpc
 from typing import Any, Callable
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class ServiceErrorHandler:
     """Comprehensive error handling for gRPC services."""
@@ -616,6 +612,6 @@ class MockContext:
 
 ## Next Steps
 
-- **[Transport Configuration](transports/)** - Optimize transport layers
-- **[Async Patterns](async-patterns/)** - Master concurrency patterns
-- **[Health Checks](health-checks/)** - Implement service monitoring
+- **[Transport Configuration](transports.md)** - Optimize transport layers
+- **[Async Patterns](async-patterns.md)** - Master concurrency patterns
+- **[Health Checks](health-checks.md)** - Implement service monitoring

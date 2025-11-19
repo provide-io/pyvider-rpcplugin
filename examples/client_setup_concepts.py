@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Client Connection Examples - Various client implementation patterns."""
 
 import asyncio
@@ -44,6 +43,7 @@ async def basic_client_example() -> None:
     # # After client.start() succeeds, client.grpc_channel is available
     # # ... make RPC calls using a stub ...
     # await client.close() # This stops the plugin and cleans up
+    logger.info("✅ Basic client example completed (conceptual)")
 
 
 async def error_handling_example() -> None:
@@ -58,6 +58,7 @@ async def error_handling_example() -> None:
         # raise TransportError("Simulated network issue during connection")
         # raise HandshakeError("Simulated authentication or handshake protocol failure")
         # raise RPCPluginError("A generic plugin system error during setup")
+        logger.info("✅ Connection successful")
 
     except TransportError as e:
         logger.error(f"🚫 Transport error: {e}")
@@ -66,11 +67,12 @@ async def error_handling_example() -> None:
         logger.error(f"🤝 Handshake error: {e}")
         # Handle authentication/handshake errors
     except RPCPluginError as e:  # Catching the base plugin error
-        logger.error(f"🔌 Plugin error: {e}")
-        # Handle plugin-specific errors
+        logger.error(f"🔌 RPC Plugin System Error: {e}")
     except Exception as e:
         logger.error(f"❌ Unexpected error: {e}")
         # Handle other errors
+
+    logger.info("✅ Error handling example completed")
 
 
 async def main() -> None:
@@ -80,8 +82,10 @@ async def main() -> None:
     await basic_client_example()
     await error_handling_example()
 
+    logger.info("✅ All client examples completed")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

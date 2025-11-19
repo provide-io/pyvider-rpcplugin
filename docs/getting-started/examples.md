@@ -100,9 +100,7 @@ Comprehensive security setup with mutual TLS:
 import os
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 # Load certificate and key PEM content from files
 # Note: from_pem() expects PEM string content, not file paths
@@ -221,9 +219,7 @@ Production-grade error handling patterns:
 from pyvider.rpcplugin.exception import (
     RPCPluginError, TransportError, HandshakeError
 )
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 try:
     async with client:
@@ -261,9 +257,7 @@ Modern async/await patterns for plugin development:
 
 ```python
 # From async_patterns_demo.py
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 import asyncio
 
 async def concurrent_requests():
@@ -357,7 +351,7 @@ examples/
 
 ## Additional Resources
 
-- **[Complete Example Index](../examples/index/)** - All available examples with source code
-- **[User Guide](../guide/index/)** - Conceptual explanations and best practices
-- **[API Reference](../reference/index/)** - Complete API documentation
-- **[Configuration Guide](../guide/config/index/)** - Environment setup and options
+- **[Complete Example Index](../examples/index.md)** - All available examples with source code
+- **[User Guide](../guide/index.md)** - Conceptual explanations and best practices
+- **[API Reference](../reference/index.md)** - Complete API documentation
+- **[Configuration Guide](../guide/config/index.md)** - Environment setup and options

@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """A minimal RPC plugin server for the Quick Start example.
 It uses the BasicRPCPluginProtocol and a no-op handler.
 Prints its handshake string to stdout upon successful startup."""
@@ -27,7 +26,7 @@ from pyvider.rpcplugin.types import (  # noqa: E402
 )
 
 
-async def main() -> None:  # noqa: C901
+async def main() -> None:
     """Sets up and runs the dummy server for Quick Start."""
     logger.info("🚀 dummy_server.py (Quick Start version): Starting as an executable plugin...")
 
@@ -74,7 +73,8 @@ async def main() -> None:  # noqa: C901
                 if server._transport_name == "unix":
                     logger.info(f"Writing socket path: {server.transport.endpoint} to {socket_comm_file}")
                     try:
-                        Path(socket_comm_file).write_text(str(server.transport.endpoint))
+                        with open(socket_comm_file, "w") as f:
+                            f.write(str(server.transport.endpoint))
                     except OSError as e:
                         logger.error(f"Failed to write socket path: {e}")
                 else:
@@ -156,4 +156,4 @@ if __name__ == "__main__":
 
     asyncio.run(main())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

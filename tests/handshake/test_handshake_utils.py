@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
+# tests/handshake/test_handshake_utils.py
 
-"""TODO: Add module docstring."""
 
 from pyvider.rpcplugin.handshake import (
     HandshakeConfig,
@@ -72,4 +69,8 @@ def test_handshake_config_attrs():
     assert config.protocol_versions == [1, 2, 3]
     assert config.supported_transports == ["tcp", "unix"]
 
-# 🐍🔌📞🔚
+
+### 🐍🏗🧪️
+
+
+# 🐍🔌🧪🪄

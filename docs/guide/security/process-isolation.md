@@ -18,9 +18,7 @@ Process isolation creates secure, controlled environments where plugins run with
 
 ```python
 from pyvider.rpcplugin import plugin_server
-# NOTE: pyvider.rpcplugin.isolation does not currently exist
-# This is a conceptual example showing potential future API
-# from pyvider.rpcplugin.isolation import ProcessIsolator, SandboxConfig
+from pyvider.rpcplugin.isolation import ProcessIsolator, SandboxConfig
 
 async def isolated_plugin_example():
     """Run plugin in isolated environment."""
@@ -149,7 +147,7 @@ async def safe_plugin_execution():
 
 ## Next Steps
 
-- **[Security Overview](index/)** - Comprehensive security guide
-- **[Magic Cookies](magic-cookies/)** - Plugin authentication
-- **[mTLS Security](mtls/)** - Network-level security
-- **[Certificate Management](certificates/)** - PKI for plugin authentication
+- **[Security Overview](index.md)** - Comprehensive security guide
+- **[Magic Cookies](magic-cookies.md)** - Plugin authentication
+- **[mTLS Security](mtls.md)** - Network-level security
+- **[Certificate Management](certificates.md)** - PKI for plugin authentication

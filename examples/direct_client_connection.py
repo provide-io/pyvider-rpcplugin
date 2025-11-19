@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Demonstrates a client connecting directly to an independently running
 pyvider-rpcplugin server using a known transport path (e.g., Unix socket).
 
@@ -100,6 +99,7 @@ async def run_direct_client() -> None:
         logger.info("Waiting for channel to be ready (timeout 5s)...")
         await asyncio.wait_for(channel.channel_ready(), timeout=5.0)
         logger.info(f"Successfully connected to {target}")
+        print(f"\n✅ Successfully connected to server at {target}")
 
         # At this point, you would typically use a gRPC stub generated
         # from your .proto file to make RPC calls. For example:
@@ -134,9 +134,10 @@ async def run_direct_client() -> None:
             logger.info("Closing gRPC channel.")
             await channel.close(grace=None)
             print("   gRPC channel closed.")
+        print("\n✅ Direct Client Connection Example Finished.")
 
 
 if __name__ == "__main__":
     asyncio.run(run_direct_client())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

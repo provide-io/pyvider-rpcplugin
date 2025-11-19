@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Minimal plugin server example (15 lines).
 
 Shows the absolute basics of creating a plugin server."""
@@ -14,7 +13,7 @@ from provide.foundation import logger
 from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 
-async def main() -> None:
+async def main():
     """Run minimal plugin server."""
     protocol = plugin_protocol()  # Basic protocol
     handler = object()  # Dummy handler
@@ -27,4 +26,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

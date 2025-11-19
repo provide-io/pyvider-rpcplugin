@@ -1,10 +1,3 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
-"""TODO: Add module docstring."""
-
 import asyncio
 import os  # Added import
 from typing import Any
@@ -205,4 +198,5 @@ async def test_rate_limiter_denies_requests_when_limit_exceeded(server_config_ov
         except Exception as cleanup_error:
             logger.warning(f"Error during test cleanup: {cleanup_error}")
 
-# 🐍🔌📞🔚
+
+# 🐍🔌🧪🪄

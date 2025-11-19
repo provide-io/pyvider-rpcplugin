@@ -2,44 +2,42 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Core RPCPluginClient class definition and lifecycle management.
 
 This module contains the main RPCPluginClient class with its attributes,
 initialization, and core lifecycle methods like start, close, and shutdown."""
-
 from __future__ import annotations
 
 import asyncio
+import logging
 from types import TracebackType
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from attrs import define, field
 import grpc
-from provide.foundation.logger import get_logger
-
-from pyvider.rpcplugin.client.handshake import ClientHandshakeMixin
-from pyvider.rpcplugin.client.process import ClientProcessMixin
-from pyvider.rpcplugin.config import rpcplugin_config
-from pyvider.rpcplugin.defaults import (
-    DEFAULT_CLEANUP_WAIT_TIME,
+from attrs import (
+    define,
+    field,
 )
+
+from pyvider.rpcplugin.client.handshake import (
+    HandshakeManager,
+    handshake_manager_factory,
+)
+from pyvider.rpcplugin.client.process import ManagedProcess
+from pyvider.rpcplugin.client.types import TransportType
+from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_CLEANUP_WAIT_TIME
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
-from pyvider.rpcplugin.transport.types import TransportType
 
-if TYPE_CHECKING:
-    from provide.foundation.process import ManagedProcess
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
-@define
-class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
-    """
-    Client interface for interacting with Terraform-compatible plugin servers.
+@define(slots=True, weakref_slot=False)
+class RPCPluginClient:
+    """Client interface for interacting with Terraform-compatible plugin servers.
 
     The RPCPluginClient handles the complete lifecycle of plugin communication:
     1. Launching or attaching to a plugin server subprocess
@@ -122,6 +120,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         Initialize client state after attributes are set.
         """
         self.logger = logger
+        self.logger.debug("🔧 RPCPluginClient.__attrs_post_init__: Client object created.")
 
     async def start(self) -> None:
         """
@@ -140,6 +139,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         try:
             await self._connect_and_handshake_with_retry()
             self.is_started = True
+            self.logger.info("✅ RPCPluginClient started successfully.")
         except Exception as e:
             self.logger.error(f"❌ Failed to start RPCPluginClient: {e}")
             self._handshake_failed_event.set()
@@ -156,13 +156,14 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         """
         try:
             if self._controller_stub:
+                self.logger.debug("🔌 Sending shutdown signal to plugin...")
                 await self._controller_stub.Shutdown(ControllerEmpty())
                 self.logger.debug("📤 Shutdown signal sent to plugin.")
             else:
                 self.logger.warning("⚠️ No controller stub available for shutdown signal.")
-        except grpc.RpcError:
+        except grpc.RpcError as e:
             # Expected behavior when plugin shuts down immediately
-            pass
+            self.logger.debug(f"🔌 Plugin shutdown RPC completed: {e.code()}")
         except Exception as e:
             self.logger.warning(f"⚠️ Error sending shutdown signal to plugin: {e}", exc_info=True)
 
@@ -181,7 +182,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
                 try:
                     await task
                 except asyncio.CancelledError:
-                    pass  # Expected when cancelling tasks
+                    self.logger.debug(f"✅ {task_name.title()} task cancelled.")
                 except Exception as e:
                     self.logger.warning(f"⚠️ Error cancelling {task_name} task: {e}", exc_info=True)
 
@@ -189,7 +190,9 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         """Close the gRPC channel with error handling."""
         if self.grpc_channel:
             try:
+                self.logger.debug("🔌 Closing gRPC channel...")
                 await self.grpc_channel.close(grace=rpcplugin_config.plugin_grpc_grace_period)
+                self.logger.debug("✅ gRPC channel closed.")
             except Exception as e:
                 self.logger.warning(f"⚠️ Error closing gRPC channel: {e}", exc_info=True)
             finally:
@@ -230,6 +233,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             try:
                 self.logger.debug("🚪 Closing transport...")
                 await self._transport.close()
+                self.logger.debug("✅ Transport closed.")
             except Exception as e:
                 self.logger.warning(f"⚠️ Error closing transport: {e}", exc_info=True)
             finally:
@@ -259,7 +263,9 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         await self._close_transport()
         self._reset_state()
 
-    async def __aenter__(self) -> RPCPluginClient:
+        self.logger.debug("✅ RPCPluginClient closed successfully.")
+
+    async def __aenter__(self) -> "RPCPluginClient":
         """Async context manager entry."""
         await self.start()
         return self
@@ -278,5 +284,4 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
         finally:
             await self.close()
 
-
-# 🐍🔌📞🔚
+# 📞🔌🔚

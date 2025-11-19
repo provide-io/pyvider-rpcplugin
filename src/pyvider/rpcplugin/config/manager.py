@@ -2,7 +2,6 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """RPC Plugin Configuration Manager.
 
 Provides centralized configuration management for multiple RPC plugin instances
@@ -44,13 +43,14 @@ from __future__ import annotations
 
 from typing import (
     Any,
+    Optional,
 )
 
-from provide.foundation.config import ConfigManager
+from provide_foundation.config import ConfigManager
 
 from pyvider.rpcplugin.config.runtime import RPCPluginConfig
 
-_plugin_config_manager: ConfigManager | None = None
+_plugin_config_manager: Optional[ConfigManager] = None
 
 
 def get_plugin_config_manager() -> ConfigManager:
@@ -222,4 +222,4 @@ __all__ = [
     "update_plugin_config",
 ]
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

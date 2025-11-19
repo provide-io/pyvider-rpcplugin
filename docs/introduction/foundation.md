@@ -1,6 +1,6 @@
 # Foundation: The Infrastructure Layer
 
-**Path:** [Home](../index/) → [Introduction](index/) → Foundation
+**Path:** [Home](../index.md) → [Introduction](index.md) → Foundation
 
 !!! info "Canonical Foundation Reference"
     This page is the **canonical reference** for understanding Foundation's role in Pyvider RPC Plugin. Other documentation pages link here for detailed Foundation information.
@@ -74,9 +74,7 @@ transports = rpcplugin_config.plugin_server_transports  # Validated values
 Every component uses Foundation's structured logging:
 
 ```python
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 logger.info("Server starting", extra={
     "port": 50051,
@@ -143,9 +141,7 @@ Here's a complete example showing Foundation and Pyvider RPC Plugin integration:
 
 ```python
 # Foundation provides infrastructure
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 from provide.foundation.config import RuntimeConfig
 from provide.foundation.crypto import Certificate
 
@@ -278,5 +274,5 @@ This separation of concerns means:
 
 Now that you understand the Foundation relationship:
 
-1. Continue to [Architecture Overview](../development/architecture/) to understand the system design
-2. Or jump to [Installation](../getting-started/installation/) to start building
+1. Continue to [Architecture Overview](../development/architecture.md) to understand the system design
+2. Or jump to [Installation](../getting-started/installation.md) to start building

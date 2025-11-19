@@ -1,13 +1,13 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# pyvider/rpcplugin/protocol/base.py
 #
-
-"""Base Definitions for RPC Plugin Protocols.
+"""
+Base Definitions for RPC Plugin Protocols.
 
 This module provides the abstract base class `RPCPluginProtocol`
 which defines the interface for protocol implementations used within
-the Pyvider RPC Plugin system."""
+the Pyvider RPC Plugin system.
+"""
 
 from abc import ABC, abstractmethod
 from typing import Any, Generic, TypeVar
@@ -40,4 +40,7 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
         pass
 
 
-# 🐍🔌📞🔚
+# 🐍🏗️🔌
+
+
+# 🐍🔌🏛️🪄

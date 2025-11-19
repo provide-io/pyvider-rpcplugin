@@ -29,12 +29,9 @@ ca_cert = Certificate.from_pem(cert_pem=ca_cert_content)
 from provide.foundation.crypto import Certificate
 
 # ❌ WRONG - from_pem() does NOT accept file:// URIs
-cert = # Read PEM content from files
-cert_pem_content = Path("server.pem").read_text()
-key_pem_content = Path("server.key").read_text()
-Certificate.from_pem(
-    cert_pem=cert_pem_content,
-    key_pem=key_pem_content
+cert = Certificate.from_pem(
+    cert_pem="file://server.pem",
+    key_pem="file://server.key"
 )
 
 # ❌ WRONG - from_pem() does NOT accept file paths
@@ -144,9 +141,7 @@ else:
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 def load_and_validate_certificate(
     cert_path: str,
@@ -361,9 +356,7 @@ os.environ["PLUGIN_SERVER_KEY"] = server_cert.key_pem
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 def load_certificate_safely(
     cert_path: str,
@@ -420,6 +413,6 @@ def load_certificate_safely(
 
 ### Related Documentation
 
-- **[mTLS Configuration](mtls/)** - Complete mTLS setup guide
-- **[Certificate Management](certificates/)** - Detailed certificate operations
-- **[Security Best Practices](../security/index/)** - Production security patterns
+- **[mTLS Configuration](mtls.md)** - Complete mTLS setup guide
+- **[Certificate Management](certificates.md)** - Detailed certificate operations
+- **[Security Best Practices](../security/index.md)** - Production security patterns

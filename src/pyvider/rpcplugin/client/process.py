@@ -1,8 +1,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-A-Identifier: Apache-2.0
 #
-
 """Process management and gRPC operations for RPC plugin clients.
 
 This module handles subprocess launching, gRPC channel creation,
@@ -11,13 +10,16 @@ stub initialization, and stdio/broker operations."""
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+import logging
+from typing import (
+    TYPE_CHECKING,
+    Any,
+)
 
-from google.protobuf import empty_pb2
 import grpc
-from provide.foundation import retry
-from provide.foundation.process import ManagedProcess
-from provide.foundation.resilience import BackoffStrategy
+from google.protobuf import empty_pb2
+from retry import retry
+from retry.api import BackoffStrategy
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import DEFAULT_PROCESS_WAIT_TIME
@@ -25,23 +27,32 @@ from pyvider.rpcplugin.exception import (
     ProtocolError,
     TransportError,
 )
+from pyvider.rpcplugin.process import ManagedProcess
 from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
-from pyvider.rpcplugin.telemetry import get_rpc_tracer
-
-# Get tracer for client process operations
-_tracer = get_rpc_tracer()
 
 if TYPE_CHECKING:
-    from pyvider.rpcplugin.client.core import RPCPluginClient
+    from pyvider.rpcplugin.client import RPCPluginClient
+
+# Otel tracing
+_tracer = None
+try:
+    from opentelemetry import trace
+
+    _tracer = trace.get_tracer(__name__)
+except ImportError:
+    pass
+
+logger = logging.getLogger(__name__)
 
 
-# Process and gRPC-related methods that will be mixed into RPCPluginClient
 class ClientProcessMixin:
-    """Mixin class containing process and gRPC methods for RPCPluginClient."""
+    """
+    Mixin class for RPCPluginClient that handles process management and gRPC operations.
+    """
 
     async def _launch_process(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """
@@ -146,8 +157,8 @@ class ClientProcessMixin:
 
     def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        self.logger.debug(  # type: ignore[attr-defined]
-            f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
+        self.logger.debug(
+            f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"
         )
 
         options: list[tuple[str, int | bool | str]] = [
@@ -162,11 +173,12 @@ class ClientProcessMixin:
         # Unix socket addresses (unix:/path/to/socket) don't have hostnames, but TLS
         # certificates are issued for hostnames (e.g., "localhost"). We need to tell
         # gRPC which hostname to verify the server certificate against.
-        if self._transport_name == "unix" and self._server_cert:  # type: ignore[attr-defined]
+        if self._transport_name == "unix" and self._server_cert:
             options.append(("grpc.ssl_target_name_override", "localhost"))
+            self.logger.info("✅ Added SSL target name override 'localhost' for Unix socket + TLS connection")
         else:
-            self.logger.debug(  # type: ignore[attr-defined]
-                f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
+            self.logger.debug(
+                f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"
             )
 
         return options
@@ -386,5 +398,4 @@ class ClientProcessMixin:
         except Exception as e:
             raise ProtocolError(f"Error opening broker subchannel {sub_id}: {e}") from e
 
-
-# 🐍🔌📞🔚
+# 📞🔌🔚

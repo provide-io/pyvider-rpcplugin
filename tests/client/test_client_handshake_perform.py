@@ -1,8 +1,4 @@
-# 
-# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-#
-
+# tests/client/test_client_handshake_perform.py
 """Tests for basic handshake execution functionality."""
 
 import asyncio
@@ -401,5 +397,3 @@ async def test_perform_handshake_invalid_network_type(
     ):
         await client_instance._perform_handshake()
     mock_parse.assert_called_once()
-
-# 🐍🔌📞🔚

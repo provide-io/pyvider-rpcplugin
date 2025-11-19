@@ -2,11 +2,11 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """RPC Plugin handshake functionality.
 
 This package provides handshake configuration, validation, building, parsing,
-and negotiation capabilities for the RPC plugin system."""
+and negotiation capabilities for the RPC plugin system.
+"""
 
 from .core import (
     _SENTINEL_INSTANCE,
@@ -42,4 +42,4 @@ __all__ = [
     "validate_magic_cookie",
 ]
 
-# 🐍🔌📞🔚
+# 📞🔌🔚

@@ -1,6 +1,6 @@
 # Build Your First Plugin
 
-Create a complete Echo plugin with custom RPC methods. This tutorial builds on the [Quick Start](quick-start/) to show you how to implement a real service with Protocol Buffers and gRPC.
+Create a complete Echo plugin with custom RPC methods. This tutorial builds on the [Quick Start](quick-start.md) to show you how to implement a real service with Protocol Buffers and gRPC.
 
 !!! tip "Tutorial Code vs Production Code"
     This tutorial shows **simplified examples for teaching** purposes.
@@ -13,7 +13,7 @@ Create a complete Echo plugin with custom RPC methods. This tutorial builds on t
 
     Run with: `python examples/echo_client.py`
 
-    → [Example file mapping](../examples/index/#tutorial-example-actual-file-mapping)
+    → [Example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
 
 ## What You'll Build
 
@@ -25,7 +25,7 @@ An Echo plugin that:
 
 ## Prerequisites
 
-- Completed [Quick Start](quick-start/) 
+- Completed [Quick Start](quick-start.md) 
 - Python 3.11+ with `pyvider-rpcplugin` installed
 - `grpcio-tools` for Protocol Buffer compilation
 
@@ -63,7 +63,7 @@ Compile the `.proto` file to generate Python classes:
 
 ```bash
 # Install grpcio-tools if needed
-uv add --group dev grpcio-tools
+pip install grpcio-tools
 
 # Generate Python files
 python -m grpc_tools.protoc \
@@ -88,9 +88,7 @@ Create `echo_handler.py` with your business logic:
 import grpc
 from echo_pb2 import EchoRequest, EchoResponse
 from echo_pb2_grpc import EchoServiceServicer
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class EchoHandler(EchoServiceServicer):
     """Handler implementing the Echo service business logic."""
@@ -119,9 +117,7 @@ Create `echo_protocol.py` to bridge your service with Pyvider RPC Plugin:
 from typing import Any
 from pyvider.rpcplugin import RPCPluginProtocol
 import echo_pb2_grpc
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 class EchoProtocol(RPCPluginProtocol):
     """Protocol bridge for Echo service."""
@@ -156,9 +152,7 @@ Echo plugin server - demonstrates custom RPC service implementation.
 import asyncio
 import os
 from pyvider.rpcplugin import plugin_server, rpcplugin_config
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 from echo_handler import EchoHandler
 from echo_protocol import EchoProtocol
@@ -208,9 +202,7 @@ import sys
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client
 from pyvider.rpcplugin.exception import RPCPluginError
-from provide.foundation.logger import get_logger
-
-logger = get_logger(__name__)
+from provide.foundation import logger
 
 from echo_pb2 import EchoRequest
 from echo_pb2_grpc import EchoServiceStub
@@ -356,30 +348,30 @@ Now that you understand the plugin architecture:
 
 For focused, executable examples (15-30 lines each):
 
-- **[Basic Server](../examples/short/basic-server/)** - Minimal factory-based server
-- **[Health Checks](../examples/short/health-check/)** - Health monitoring integration  
-- **[Rate Limiting](../examples/short/rate-limiting/)** - Request throttling patterns
-- **[Custom Protocol](../examples/short/custom-protocol/)** - Like the Echo example above
+- **[Basic Server](../examples/short/basic-server.md)** - Minimal factory-based server
+- **[Health Checks](../examples/short/health-check.md)** - Health monitoring integration  
+- **[Rate Limiting](../examples/short/rate-limiting.md)** - Request throttling patterns
+- **[Custom Protocol](../examples/short/custom-protocol.md)** - Like the Echo example above
 
 ### 📚 Learn More
 
-- **[Core Concepts](../guide/concepts/index/)** - Deep dive into architecture
-- **[Security](../guide/concepts/security/)** - Enable mTLS for production
-- **[Transports](../guide/concepts/transports/)** - Unix vs TCP sockets
-- **[Configuration](../guide/config/index/)** - Environment variables and settings
+- **[Core Concepts](../guide/concepts/index.md)** - Deep dive into architecture
+- **[Security](../guide/concepts/security.md)** - Enable mTLS for production
+- **[Transports](../guide/concepts/transports.md)** - Unix vs TCP sockets
+- **[Configuration](../guide/config/index.md)** - Environment variables and settings
 
 ### 🛠️ Practical Guides
 
-- **[Server Development](../guide/server/index/)** - Advanced server patterns
-- **[Client Development](../guide/client/index/)** - Connection management and retry logic
-- **[Error Handling](../guide/client/error-handling/)** - Robust error handling patterns
-- **[Testing](../development/testing/)** - Unit and integration testing strategies
+- **[Server Development](../guide/server/index.md)** - Advanced server patterns
+- **[Client Development](../guide/client/index.md)** - Connection management and retry logic
+- **[Error Handling](../guide/client/error-handling.md)** - Robust error handling patterns
+- **[Testing](../development/testing.md)** - Unit and integration testing strategies
 
 ### 🚀 Advanced Topics
 
-- **[Async Patterns](../guide/server/async-patterns/)** - Stream processing and concurrency
-- **[Performance](../guide/advanced/performance/)** - Optimization and benchmarking
-- **[Production Deployment](../guide/config/production/)** - Scaling and monitoring
+- **[Async Patterns](../guide/server/async-patterns.md)** - Stream processing and concurrency
+- **[Performance](../guide/advanced/performance.md)** - Optimization and benchmarking
+- **[Production Deployment](../guide/config/production.md)** - Scaling and monitoring
 
 ## Common Issues
 
@@ -397,7 +389,7 @@ touch echo_service/__init__.py
 ### Protocol Compilation Issues
 ```bash
 # Install/upgrade protobuf compiler
-uv add --group dev grpcio-tools
+pip install --upgrade grpcio-tools
 
 # Check protoc version
 python -m grpc_tools.protoc --version
@@ -412,4 +404,4 @@ python echo_plugin.py
 # Should print connection details to stdout
 ```
 
-Ready to explore more advanced features? Check out the [User Guide](../guide/index/) for comprehensive documentation!
+Ready to explore more advanced features? Check out the [User Guide](../guide/index.md) for comprehensive documentation!

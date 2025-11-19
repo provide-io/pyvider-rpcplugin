@@ -17,7 +17,7 @@ This page provides an overview of the configuration system and links to detailed
     - `PLUGIN_SERVER_CERT` and `PLUGIN_SERVER_KEY` (server-side)
     - `PLUGIN_CLIENT_CERT` and `PLUGIN_CLIENT_KEY` (client-side)
 
-    See [Security Configuration](configuration-security/) for complete mTLS setup instructions.
+    See [Security Configuration](configuration-security.md) for complete mTLS setup instructions.
 
 !!! info "Source of Truth"
     All default values are defined in `src/pyvider/rpcplugin/defaults.py`. If you notice any discrepancies between this documentation and the actual defaults, the code is authoritative. You can verify defaults programmatically:
@@ -43,10 +43,10 @@ The configuration documentation is organized into focused areas. Choose the sect
 
 | Configuration Area | Topics Covered | When to Use |
 |-------------------|----------------|-------------|
-| **[Client Configuration](configuration-client/)** | Retry logic, backoff, transport preferences, connection timeouts | Setting up plugin clients, tuning connection reliability |
-| **[Server Configuration](configuration-server/)** | Network binding, health checks, rate limiting, shutdown behavior | Configuring plugin servers, production deployment |
-| **[Security Configuration](configuration-security/)** | mTLS, certificates, authentication, insecure mode | Setting up secure communication, certificate management |
-| **[Advanced Configuration](configuration-advanced/)** | gRPC tuning, timeouts, buffers, protocol versions, logging | Performance optimization, debugging, custom setups |
+| **[Client Configuration](configuration-client.md)** | Retry logic, backoff, transport preferences, connection timeouts | Setting up plugin clients, tuning connection reliability |
+| **[Server Configuration](configuration-server.md)** | Network binding, health checks, rate limiting, shutdown behavior | Configuring plugin servers, production deployment |
+| **[Security Configuration](configuration-security.md)** | mTLS, certificates, authentication, insecure mode | Setting up secure communication, certificate management |
+| **[Advanced Configuration](configuration-advanced.md)** | gRPC tuning, timeouts, buffers, protocol versions, logging | Performance optimization, debugging, custom setups |
 
 ## Configuration System Overview
 
@@ -290,10 +290,10 @@ config = get_plugin_config("auth_plugin")
 
 For complete configuration tables and detailed explanations, see:
 
-- **[Client Configuration](configuration-client/)** - 11 client settings
-- **[Server Configuration](configuration-server/)** - 8 server settings
-- **[Security Configuration](configuration-security/)** - 12 security settings
-- **[Advanced Configuration](configuration-advanced/)** - 20+ advanced settings
+- **[Client Configuration](configuration-client.md)** - 11 client settings
+- **[Server Configuration](configuration-server.md)** - 8 server settings
+- **[Security Configuration](configuration-security.md)** - 12 security settings
+- **[Advanced Configuration](configuration-advanced.md)** - 20+ advanced settings
 
 ## Best Practices
 
@@ -414,24 +414,24 @@ configure(log_level="DEBUG")
 Now that you understand configuration:
 
 1. **Review** your specific configuration area:
-   - [Client Configuration](configuration-client/) for client setup
-   - [Server Configuration](configuration-server/) for server setup
-   - [Security Configuration](configuration-security/) for mTLS
-   - [Advanced Configuration](configuration-advanced/) for tuning
+   - [Client Configuration](configuration-client.md) for client setup
+   - [Server Configuration](configuration-server.md) for server setup
+   - [Security Configuration](configuration-security.md) for mTLS
+   - [Advanced Configuration](configuration-advanced.md) for tuning
 
 2. **Check** configuration examples in:
-   - [Production Guide](production/) for deployment patterns
-   - [Security Guide](../security/index/) for security setup
+   - [Production Guide](production.md) for deployment patterns
+   - [Security Guide](../security/index.md) for security setup
 
 3. **Explore** the complete API:
-   - [API Reference](../../reference/pyvider/rpcplugin/config/index/) for configuration classes
+   - [API Reference](../../reference/pyvider/rpcplugin/config/index.md) for configuration classes
 
 ## Related Topics
 
-- **[Environment Configuration Guide](environment/)** - Setting up environment variables
-- **[Production Configuration](production/)** - Production deployment patterns
-- **[Configuration API Reference](../../reference/pyvider/rpcplugin/config/index/)** - Complete API docs
+- **[Environment Configuration Guide](environment.md)** - Setting up environment variables
+- **[Production Configuration](production.md)** - Production deployment patterns
+- **[Configuration API Reference](../../reference/pyvider/rpcplugin/config/index.md)** - Complete API docs
 
 ---
 
-**Navigation:** [← Config Index](index/) | [Client Config →](configuration-client/)
+**Navigation:** [← Config Index](index.md) | [Client Config →](configuration-client.md)

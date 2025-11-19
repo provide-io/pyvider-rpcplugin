@@ -2,20 +2,27 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-
 """Validation functions for RPC Plugin configuration values.
 
 This module provides validators for configuration fields that require
 custom validation logic beyond simple type checking."""
 
-from provide.foundation.config import parse_list
-from provide.foundation.errors import ValidationError
+from provide_foundation.config import (
+    env_field,
+    parse_list,
+    ValidationError,
+)
 
-from pyvider.rpcplugin.defaults import DEFAULT_SUPPORTED_PROTOCOL_VERSIONS, DEFAULT_SUPPORTED_TRANSPORTS
+from pyvider.rpcplugin.config.defaults import (
+    DEFAULT_PLUGIN_CORE_VERSION,
+    DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
+    DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
+    DEFAULT_SUPPORTED_TRANSPORTS,
+)
 
 
-def validate_protocol_versions_list(value: str | list[int]) -> list[int]:
-    """Validate that all protocol versions in the list are supported.
+def validate_protocol_version(value: str | list[int]) -> list[int]:
+    """Validate protocol versions against the supported list.
 
     Args:
         value: Either a comma-separated string or a list of integers
@@ -26,6 +33,7 @@ def validate_protocol_versions_list(value: str | list[int]) -> list[int]:
     Raises:
         ValidationError: If any protocol version is not supported
     """
+
     if isinstance(value, str):
         # Parse comma-separated string
         str_list = parse_list(value)
@@ -72,4 +80,48 @@ def validate_transport_list(value: str | list[str]) -> list[str]:
     return str_list
 
 
-# 🐍🔌📞🔚
+def parse_log_level(value: str) -> str:
+    """Validate log level."""
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if value.upper() in valid_levels:
+        return value.upper()
+    raise ValidationError(f"Invalid log level: {value}. Must be one of {valid_levels}")
+
+
+# Define fields with validators
+PLUGIN_PROTOCOL_VERSIONS_FIELD = env_field(
+    default=DEFAULT_PLUGIN_PROTOCOL_VERSIONS,
+    parser=validate_protocol_version,
+    env_var="PLUGIN_PROTOCOL_VERSIONS",
+)
+
+PLUGIN_PROTOCOL_VERSION_FIELD = env_field(
+    default=DEFAULT_PLUGIN_CORE_VERSION,
+    parser=int,
+    env_var="PLUGIN_PROTOCOL_VERSION",
+)
+
+SUPPORTED_PROTOCOL_VERSIONS_FIELD = env_field(
+    default=DEFAULT_SUPPORTED_PROTOCOL_VERSIONS,
+    parser=validate_protocol_version,
+    env_var="SUPPORTED_PROTOCOL_VERSIONS",
+)
+
+PLUGIN_SERVER_TRANSPORTS_FIELD = env_field(
+    default=DEFAULT_SUPPORTED_TRANSPORTS,
+    parser=validate_transport_list,
+    env_var="PLUGIN_SERVER_TRANSPORTS",
+)
+
+PLUGIN_CLIENT_TRANSPORTS_FIELD = env_field(
+    default=DEFAULT_SUPPORTED_TRANSPORTS,
+    parser=validate_transport_list,
+    env_var="PLUGIN_CLIENT_TRANSPORTS",
+)
+
+PLUGIN_SUPPORTED_TRANSPORTS_FIELD = env_field(
+    default=DEFAULT_SUPPORTED_TRANSPORTS,
+    parser=validate_transport_list,
+    env_var="PLUGIN_SUPPORTED_TRANSPORTS",
+)
+# 📞🔌🔚
