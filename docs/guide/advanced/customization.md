@@ -7,14 +7,12 @@ Extend the framework with custom type safety patterns and specialized protocols 
 The `pyvider.rpcplugin` framework provides comprehensive customization capabilities through modern Python typing features and pluggable protocol architecture. This enables type-safe, domain-optimized communication for specialized use cases.
 
 **Type System Features:**
-
 - Static type checking with mypy/pyre support
 - Runtime-checkable protocols
 - Type guards and generic types
 - Modern Python 3.11+ typing syntax
 
 **Custom Protocol Capabilities:**
-
 - Binary data protocols for high performance
 - Streaming protocols for continuous data
 - Legacy system integration
@@ -24,91 +22,85 @@ The `pyvider.rpcplugin` framework provides comprehensive customization capabilit
 
 === "Core Types"
 
-````
-```python
-from typing import TypeVar, Protocol, runtime_checkable
+    ```python
+    from typing import TypeVar, Protocol, runtime_checkable
 
-# Generic type variables
-ServerT = TypeVar('ServerT')
-HandlerT = TypeVar('HandlerT')
-TransportT = TypeVar('TransportT')
+    # Generic type variables
+    ServerT = TypeVar('ServerT')
+    HandlerT = TypeVar('HandlerT')
+    TransportT = TypeVar('TransportT')
 
-# Type aliases
-GrpcServerType = grpc.aio.Server
-GrpcChannelType = grpc.aio.Channel
-AddressType = tuple[str, int]
+    # Type aliases
+    GrpcServerType = grpc.aio.Server
+    GrpcChannelType = grpc.aio.Channel
+    AddressType = tuple[str, int]
 
-# Modern union types (Python 3.11+)
-ConfigType = dict[str, any] | None
-EndpointType = str | tuple[str, int]
-```
-````
+    # Modern union types (Python 3.11+)
+    ConfigType = dict[str, any] | None
+    EndpointType = str | tuple[str, int]
+    ```
 
 === "Protocols"
 
-````
-```python
-@runtime_checkable
-class RPCPluginHandler(Protocol):
-    """Base protocol for RPC handlers."""
+    ```python
+    @runtime_checkable
+    class RPCPluginHandler(Protocol):
+        """Base protocol for RPC handlers."""
 
-    async def handle_request(self, request: any, context: any) -> any:
-        """Handle an RPC request."""
-        ...
+        async def handle_request(self, request: any, context: any) -> any:
+            """Handle an RPC request."""
+            ...
 
-@runtime_checkable
-class RPCPluginTransport(Protocol):
-    """Transport protocol for network communication."""
+    @runtime_checkable
+    class RPCPluginTransport(Protocol):
+        """Transport protocol for network communication."""
 
-    endpoint: str | None
+        endpoint: str | None
 
-    async def listen(self) -> str:
-        """Start listening and return endpoint."""
-        ...
+        async def listen(self) -> str:
+            """Start listening and return endpoint."""
+            ...
 
-    async def connect(self, endpoint: str) -> None:
-        """Connect to endpoint."""
-        ...
+        async def connect(self, endpoint: str) -> None:
+            """Connect to endpoint."""
+            ...
 
-    async def close(self) -> None:
-        """Close transport."""
-        ...
-```
-````
+        async def close(self) -> None:
+            """Close transport."""
+            ...
+    ```
 
 === "Type Guards"
 
-````
-```python
-from typing import TypeGuard
+    ```python
+    from typing import TypeGuard
 
-def is_valid_handler(obj: any) -> TypeGuard[RPCPluginHandler]:
-    """Check if object implements handler protocol."""
-    return (
-        hasattr(obj, 'handle_request') and
-        callable(getattr(obj, 'handle_request'))
-    )
+    def is_valid_handler(obj: any) -> TypeGuard[RPCPluginHandler]:
+        """Check if object implements handler protocol."""
+        return (
+            hasattr(obj, 'handle_request') and
+            callable(getattr(obj, 'handle_request'))
+        )
 
-def is_valid_transport(obj: any) -> TypeGuard[RPCPluginTransport]:
-    """Check if object implements transport protocol."""
-    return (
-        hasattr(obj, 'endpoint') and
-        hasattr(obj, 'listen') and
-        hasattr(obj, 'connect') and
-        hasattr(obj, 'close')
-    )
+    def is_valid_transport(obj: any) -> TypeGuard[RPCPluginTransport]:
+        """Check if object implements transport protocol."""
+        return (
+            hasattr(obj, 'endpoint') and
+            hasattr(obj, 'listen') and
+            hasattr(obj, 'connect') and
+            hasattr(obj, 'close')
+        )
 
-# Usage with type narrowing
-def setup_server(handler: any, transport: any) -> None:
-    if not is_valid_handler(handler):
-        raise TypeError("Invalid handler")
-    if not is_valid_transport(transport):
-        raise TypeError("Invalid transport")
+    # Usage with type narrowing
+    def setup_server(handler: any, transport: any) -> None:
+        if not is_valid_handler(handler):
+            raise TypeError("Invalid handler")
+        if not is_valid_transport(transport):
+            raise TypeError("Invalid transport")
 
-    # Type checker knows types are correct here
-    server = RPCPluginServer(handler=handler, transport=transport)
-```
-````
+        # Type checker knows types are correct here
+        server = RPCPluginServer(handler=handler, transport=transport)
+    ```
 
 ### Generic Classes
 
@@ -241,7 +233,6 @@ def add_numbers(a: int, b: int) -> int:
 ### When to Use
 
 Consider custom protocols for:
-
 - **Ultra-low latency**: Financial trading, real-time gaming, IoT
 - **Specialized formats**: Binary protocols, legacy integration
 - **Domain optimization**: Custom compression or serialization
@@ -272,76 +263,70 @@ class CustomProtocol(RPCPluginProtocol):
 
 === "Binary Data"
 
-````
-```python
-import struct
-from dataclasses import dataclass
+    ```python
+    import struct
+    from dataclasses import dataclass
 
-@dataclass
-class BinaryMessage:
-    message_type: int
-    payload_size: int
-    data: bytes
+    @dataclass
+    class BinaryMessage:
+        message_type: int
+        payload_size: int
+        data: bytes
 
-    def serialize(self) -> bytes:
-        header = struct.pack('<BI', self.message_type, self.payload_size)
-        return header + self.data
+        def serialize(self) -> bytes:
+            header = struct.pack('<BI', self.message_type, self.payload_size)
+            return header + self.data
 
-    @classmethod
-    def deserialize(cls, data: bytes) -> 'BinaryMessage':
-        message_type, payload_size = struct.unpack('<BI', data[:5])
-        payload = data[5:5+payload_size]
-        return cls(message_type, payload_size, payload)
+        @classmethod
+        def deserialize(cls, data: bytes) -> 'BinaryMessage':
+            message_type, payload_size = struct.unpack('<BI', data[:5])
+            payload = data[5:5+payload_size]
+            return cls(message_type, payload_size, payload)
 
-class BinaryProtocol(RPCPluginProtocol):
-    async def process_binary_stream(self, stream):
-        async for raw_data in stream:
-            message = BinaryMessage.deserialize(raw_data)
-            yield await self.handle_message(message)
-```
-````
+    class BinaryProtocol(RPCPluginProtocol):
+        async def process_binary_stream(self, stream):
+            async for raw_data in stream:
+                message = BinaryMessage.deserialize(raw_data)
+                yield await self.handle_message(message)
+    ```
 
 === "Streaming Data"
 
-````
-```python
-class StreamingProtocol(RPCPluginProtocol):
-    async def start_data_stream(self, request, context):
-        """Provide continuous data stream."""
-        while context.is_active():
-            data = await self.get_next_data_batch()
+    ```python
+    class StreamingProtocol(RPCPluginProtocol):
+        async def start_data_stream(self, request, context):
+            """Provide continuous data stream."""
+            while context.is_active():
+                data = await self.get_next_data_batch()
 
-            yield StreamingResponse(
-                timestamp=time.time_ns(),
-                data=data,
-                sequence=self.next_sequence()
-            )
+                yield StreamingResponse(
+                    timestamp=time.time_ns(),
+                    data=data,
+                    sequence=self.next_sequence()
+                )
 
-            await asyncio.sleep(0.001)  # 1ms intervals
-```
-````
+                await asyncio.sleep(0.001)  # 1ms intervals
+    ```
 
 === "Legacy Integration"
 
-````
-```python
-class LegacyProtocol(RPCPluginProtocol):
-    def __init__(self, legacy_format: str):
-        self.format = legacy_format
-        super().__init__("legacy-bridge", "1.0")
+    ```python
+    class LegacyProtocol(RPCPluginProtocol):
+        def __init__(self, legacy_format: str):
+            self.format = legacy_format
+            super().__init__("legacy-bridge", "1.0")
 
-    async def translate_request(self, grpc_request):
-        """Convert gRPC request to legacy format."""
-        if self.format == "xml":
-            return self.to_xml(grpc_request)
-        elif self.format == "fixed-width":
-            return self.to_fixed_width(grpc_request)
+        async def translate_request(self, grpc_request):
+            """Convert gRPC request to legacy format."""
+            if self.format == "xml":
+                return self.to_xml(grpc_request)
+            elif self.format == "fixed-width":
+                return self.to_fixed_width(grpc_request)
 
-    async def translate_response(self, legacy_response):
-        """Convert legacy response to gRPC format."""
-        return self.parse_legacy_response(legacy_response)
-```
-````
+        async def translate_response(self, legacy_response):
+            """Convert legacy response to gRPC format."""
+            return self.parse_legacy_response(legacy_response)
+    ```
 
 ### Protocol Buffer Definition
 
@@ -571,19 +556,19 @@ class MonitoredProtocol(RPCPluginProtocol):
 ### Type System
 
 1. **Use type hints everywhere** for IDE support and static analysis
-1. **Define custom types** for domain-specific values (NewType)
-1. **Use protocols for interfaces** instead of abstract base classes
-1. **Leverage type guards** for runtime type narrowing
-1. **Document type constraints** in docstrings
+2. **Define custom types** for domain-specific values (NewType)
+3. **Use protocols for interfaces** instead of abstract base classes
+4. **Leverage type guards** for runtime type narrowing
+5. **Document type constraints** in docstrings
 
 ### Custom Protocols
 
 1. **Start simple** - begin with gRPC, customize only when needed
-1. **Version management** - plan for protocol evolution
-1. **Error handling** - implement robust error recovery
-1. **Performance testing** - benchmark against gRPC baseline
-1. **Security** - consider authentication and validation
-1. **Documentation** - document protocol specifications
+2. **Version management** - plan for protocol evolution
+3. **Error handling** - implement robust error recovery
+4. **Performance testing** - benchmark against gRPC baseline
+5. **Security** - consider authentication and validation
+6. **Documentation** - document protocol specifications
 
 ## Advanced Patterns
 

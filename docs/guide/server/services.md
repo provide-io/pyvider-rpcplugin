@@ -612,6 +612,6 @@ class MockContext:
 
 ## Next Steps
 
-- **[Transport Configuration](transports.md)** - Optimize transport layers
-- **[Async Patterns](async-patterns.md)** - Master concurrency patterns
-- **[Health Checks](health-checks.md)** - Implement service monitoring
+- **[Transport Configuration](transports/)** - Optimize transport layers
+- **[Async Patterns](async-patterns/)** - Master concurrency patterns
+- **[Health Checks](health-checks/)** - Implement service monitoring

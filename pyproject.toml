@@ -21,8 +21,15 @@ license = "Apache-2.0"
 authors = [
     { name = "Tim Perkins", email = "code@tim.life" }
 ]
-maintainers = [
-    { name = "provide.io", email = "code@provide.io" },
+dependencies = [
+    "attrs>=25.1.0",
+    "cryptography>=44.0.1",
+    "google>=3.0.0",
+    "grpcio>=1.76.0",
+    "grpcio-health-checking>=1.76.0",
+    "protobuf>=5.29.3",
+    "provide-foundation",
+    "structlog>=25.1.0",
 ]
 keywords = ["pyvider", "rpc", "grpc", "plugin", "terraform", "provider"]
 classifiers = [
@@ -52,6 +59,12 @@ Documentation = "https://foundry.provide.io/pyvider-rpcplugin/"
 Repository = "https://github.com/provide-io/pyvider-rpcplugin"
 Issues = "https://github.com/provide-io/pyvider-rpcplugin/issues"
 
+[project.urls]
+Homepage = "https://foundry.provide.io/pyvider-rpcplugin/"
+Documentation = "https://foundry.provide.io/pyvider-rpcplugin/"
+Repository = "https://foundry.provide.io/pyvider-rpcplugin/repo"
+Issues = "https://foundry.provide.io/pyvider-rpcplugin/issues"
+
 [project.optional-dependencies]
 test = [
     "grpc-stubs>=1.53.0.6",
@@ -66,33 +79,18 @@ all = [
 [dependency-groups]
 dev = [
     "mkdocs-autorefs>=1.4.3",
+    "provide-cicd",
     "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]",
     "pyvider-rpcplugin[test]",
 ]
 docs = [
     "mkdocs-gen-files>=0.5.0",
+    "mkdocs-htmlproofer-plugin>=1.4.0",
     "provide-testkit[docs]",
 ]
 
-################################################################################
-# Build Configuration
-################################################################################
-
-[tool.setuptools]
-package-dir = {"" = "src"}
-
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-"pyvider.rpcplugin" = ["py.typed"]
-
-[tool.setuptools.dynamic]
-version = {file = "VERSION"}
-
-################################################################################
-# Testing
-################################################################################
+[tool.uv.sources]
+provide-cicd = { path = "../ci-tooling", editable = true }
 
 [tool.pytest.ini_options]
 log_cli = true

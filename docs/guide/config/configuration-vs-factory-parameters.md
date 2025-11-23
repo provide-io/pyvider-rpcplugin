@@ -71,11 +71,10 @@ rpcplugin_config.plugin_server_port = 8080
 ### Available Configuration Options
 
 All configuration options start with `plugin_` prefix. See the complete list in:
-
-- [Configuration Reference](configuration-reference.md)
-- [Client Configuration](configuration-guide.md)
-- [Server Configuration](configuration-guide.md)
-- [Security Configuration](configuration-guide.md)
+- [Configuration Reference](configuration-reference/)
+- [Client Configuration](configuration-client/)
+- [Server Configuration](configuration-server/)
+- [Security Configuration](configuration-security/)
 
 ## Factory Function Parameters
 
@@ -321,6 +320,6 @@ This is useful for:
 
 ## See Also
 
-- [Configuration Reference](configuration-reference.md) - Complete list of all configuration options
-- [Environment Variables](environment.md) - Environment variable reference
-- [API Reference](../../reference/index.md) - Factory function documentation
+- [Configuration Reference](configuration-reference/) - Complete list of all configuration options
+- [Environment Variables](environment/) - Environment variable reference
+- [API Reference](../../reference/pyvider/rpcplugin/factories/) - Factory function documentation

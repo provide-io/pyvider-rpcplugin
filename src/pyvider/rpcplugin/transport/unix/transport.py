@@ -114,18 +114,6 @@ class UnixSocketTransport(RPCPluginTransport):
         self._server_ready: asyncio.Event | None = None
         self._connections = set()  # Initialize connection set
 
-    def _ensure_lock(self) -> asyncio.Lock:
-        """Lazily create the asyncio.Lock on first use."""
-        if self._lock is None:
-            self._lock = asyncio.Lock()
-        return self._lock
-
-    def _ensure_server_ready(self) -> asyncio.Event:
-        """Lazily create the asyncio.Event on first use."""
-        if self._server_ready is None:
-            self._server_ready = asyncio.Event()
-        return self._server_ready
-
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
         if not self.path:
@@ -159,7 +147,7 @@ class UnixSocketTransport(RPCPluginTransport):
             return True
         except (ConnectionRefusedError, FileNotFoundError):
             # Connection refused or socket file disappeared: it's available
-            logger.debug("Socket not in use (connection refused or not found)", path=self.path)
+            logger.debug()
             return False
         except OSError:
             # Other OSErrors (e.g., timeout, permission issues during connect)
@@ -170,8 +158,8 @@ class UnixSocketTransport(RPCPluginTransport):
             if sock:
                 try:
                     sock.close()
-                except Exception as exc:
-                    logger.warning("Failed to close socket during in-use check", error=str(exc))
+                except Exception:
+                    logger.warning()
 
     def _raise_if_running(self) -> None:
         if self._running:
@@ -201,7 +189,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             path_exists = Path(socket_path).exists()
         except PermissionError:
-            logger.warning("Permission denied checking socket path", path=socket_path)
+            logger.warning()
             path_exists = False
 
         if not path_exists:
@@ -220,9 +208,9 @@ class UnixSocketTransport(RPCPluginTransport):
             os.umask(current_mask)
             desired_permissions = 0o660 & ~current_mask
             Path(socket_path).chmod(desired_permissions)  # nosec B103
-            logger.debug("Set socket permissions", path=socket_path, permissions=oct(desired_permissions))
-        except Exception as exc:
-            logger.warning("Failed to set socket permissions", path=socket_path, error=str(exc))
+            logger.debug()
+        except Exception:
+            logger.warning()
 
     async def _start_server_at_path(self, socket_path: str) -> str:
         try:
@@ -233,7 +221,7 @@ class UnixSocketTransport(RPCPluginTransport):
         self._set_socket_permissions(socket_path)
         self._running = True
         self.endpoint = socket_path
-        self._ensure_server_ready().set()
+        self._server_ready.set()
         return socket_path
 
     async def listen(self) -> str:
@@ -314,7 +302,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             async with self._ensure_lock():
                 self._connections.add(conn)
-                logger.debug("Client connected", remote_addr=str(peer_info))
+                logger.debug()
 
             while self._running and not conn.is_closed:
                 data = await conn.receive_data()

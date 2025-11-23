@@ -1,6 +1,6 @@
 # Getting Started
 
-**Path:** [Home](../index.md) → Getting Started
+**Path:** [Home](../index/) → Getting Started
 
 **Build production-focused plugin systems in minutes with Foundation integration**
 
@@ -34,45 +34,45 @@ By the end of this guide, you'll be able to:
 
 <div class="grid cards" markdown>
 
-- :material-download: **Installation & Setup**
+-   :material-download: **Installation & Setup**
+    
+    ---
+    
+    **5 minutes** • Install dependencies and verify environment
+    
+    Foundation configuration and `PLUGIN_*` environment setup
+    
+    [:octicons-arrow-right-24: Start Here](installation/)
 
-  ______________________________________________________________________
+-   :material-flash: **Quick Start**
+    
+    ---
+    
+    **10 minutes** • Working plugin with automatic process management
+    
+    Demonstrates core patterns with minimal configuration
+    
+    [:octicons-arrow-right-24: Quick Start](quick-start/)
 
-  **5 minutes** • Install dependencies and verify environment
+-   :material-puzzle: **Complete Plugin Tutorial**
+    
+    ---
+    
+    **25 minutes** • Production-ready echo service with all features
+    
+    Covers protocols, security, logging, and testing patterns
+    
+    [:octicons-arrow-right-24: Full Tutorial](first-plugin/)
 
-  Foundation configuration and `PLUGIN_*` environment setup
-
-  [:octicons-arrow-right-24: Start Here](installation.md)
-
-- :material-flash: **Quick Start**
-
-  ______________________________________________________________________
-
-  **10 minutes** • Working plugin with automatic process management
-
-  Demonstrates core patterns with minimal configuration
-
-  [:octicons-arrow-right-24: Quick Start](quick-start.md)
-
-- :material-puzzle: **Complete Plugin Tutorial**
-
-  ______________________________________________________________________
-
-  **25 minutes** • Production-focused echo service with all features
-
-  Covers protocols, security, logging, and testing patterns
-
-  [:octicons-arrow-right-24: Full Tutorial](first-plugin.md)
-
-- :material-rocket: **Advanced Patterns**
-
-  ______________________________________________________________________
-
-  **Explore examples** • Real-world patterns and production deployments
-
-  Database plugins, microservice gateways, and security implementations
-
-  [:octicons-arrow-right-24: See Examples](examples.md)
+-   :material-rocket: **Advanced Patterns**
+    
+    ---
+    
+    **Explore examples** • Real-world patterns and production deployments
+    
+    Database plugins, microservice gateways, and security implementations
+    
+    [:octicons-arrow-right-24: See Examples](examples/)
 
 </div>
 
@@ -81,23 +81,20 @@ By the end of this guide, you'll be able to:
 **Foundation Integration Approach:** Each step builds on Foundation patterns
 
 **Beginner Path** (Total: ~45 minutes)
-
-1. **[Installation](installation.md)** (5 min) → Environment setup with Foundation toolchain
-1. **[Quick Start](quick-start.md)** (10 min) → Basic plugin with `PLUGIN_*` configuration
-1. **[Simple Custom RPC](simple-custom-rpc.md)** (10 min) → Custom methods without Protocol Buffers
-1. **[Complete Tutorial](first-plugin.md)** (20 min) → Production patterns with Protocol Buffers
+1. **[Installation](installation/)** (5 min) → Environment setup with Foundation toolchain
+2. **[Quick Start](quick-start/)** (10 min) → Basic plugin with `PLUGIN_*` configuration 
+3. **[Simple Custom RPC](simple-custom-rpc/)** (10 min) → Custom methods without Protocol Buffers
+4. **[Complete Tutorial](first-plugin/)** (20 min) → Production patterns with Protocol Buffers
 
 **Experienced Developer Path** (Total: ~15 minutes)
-
-1. **[Installation](installation.md)** (2 min) → Quick dependency installation
-1. **[Complete Tutorial](first-plugin.md)** (10 min) → Skip to production patterns
-1. **[Advanced Examples](examples.md)** (3 min) → Real-world implementations
+1. **[Installation](installation/)** (2 min) → Quick dependency installation
+2. **[Complete Tutorial](first-plugin/)** (10 min) → Skip to production patterns
+3. **[Advanced Examples](examples/)** (3 min) → Real-world implementations
 
 **Next Steps After Completion:**
-
-- **[Security Guide](../guide/security/index.md)** - mTLS, certificates, and authentication patterns
-- **[Production Configuration](../guide/config/advanced.md)** - Environment-driven configuration for deployment
-- **[API Reference](../reference/index.md)** - Complete method documentation and advanced usage
+- **[Security Guide](../guide/security/index/)** - mTLS, certificates, and authentication patterns
+- **[Production Configuration](../guide/config/production/)** - Environment-driven configuration for deployment
+- **[API Reference](../reference/index/)** - Complete method documentation and advanced usage
 
 ## Support & Troubleshooting
 
@@ -108,10 +105,9 @@ By the end of this guide, you'll be able to:
 - **Performance**: Transport selection, connection issues, timeout problems
 
 **Resources:**
-
-- 📚 **[User Guide](../guide/index.md)** - Comprehensive concepts and advanced features
-- 🔍 **[API Reference](../reference/index.md)** - Complete method documentation with examples
-- 💻 **[Working Examples](../examples/index.md)** - Production patterns and real-world implementations
+- 📚 **[User Guide](../guide/index/)** - Comprehensive concepts and advanced features
+- 🔍 **[API Reference](../reference/index/)** - Complete method documentation with examples
+- 💻 **[Working Examples](../examples/index/)** - Production patterns and real-world implementations
 - 🐛 **[GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)** - Bug reports and feature requests
 
 ## Quick Start Options
@@ -120,8 +116,8 @@ By the end of this guide, you'll be able to:
 
 <div class="grid" markdown>
 
-[**New to plugins?** Start with Installation :material-arrow-right:](installation.md){ .md-button .md-button--primary }
+[**New to plugins?** Start with Installation :material-arrow-right:](installation/){ .md-button .md-button--primary }
 
-[**Want to jump in?** Quick Start Guide :material-arrow-right:](quick-start.md){ .md-button }
+[**Want to jump in?** Quick Start Guide :material-arrow-right:](quick-start/){ .md-button }
 
 </div>

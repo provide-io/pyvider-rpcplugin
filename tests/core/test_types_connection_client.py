@@ -1,5 +1,5 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 
@@ -186,7 +186,7 @@ def test_is_valid_connection_false_missing_method(mocker: object) -> None:
     instance = InvalidConnectionMissing()
     assert is_valid_connection(instance) is False
     expected_log_calls = [
-        mocker.call("ConnectionT: Method is missing: close."),
+        mocker.call("ConnectionT: Method close is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 1
@@ -294,7 +294,7 @@ def test_is_valid_connection_false_not_async(mocker: object) -> None:
     instance = InvalidConnectionNotAsync()
     assert is_valid_connection(instance) is False
     expected_log_calls = [
-        mocker.call("ConnectionT: Method is not async as expected: send_data."),
+        mocker.call("ConnectionT: Method send_data is not async as expected."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 1
@@ -345,7 +345,7 @@ def test_is_valid_secure_rpc_client_false_missing_method(mocker: object) -> None
     instance = InvalidSecureRpcClientMissing()
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
-        mocker.call("SecureRpcClientT: Method is missing: _create_grpc_channel."),
+        mocker.call("SecureRpcClientT: Method _create_grpc_channel is missing."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 1
@@ -397,10 +397,9 @@ def test_is_valid_secure_rpc_client_false_not_async(mocker: object) -> None:
     instance = InvalidSecureRpcClientNotAsync()
     assert is_valid_secure_rpc_client(instance) is False
     expected_log_calls = [
-        mocker.call("SecureRpcClientT: Method is not async as expected: _setup_tls."),
+        mocker.call("SecureRpcClientT: Method _setup_tls is not async as expected."),
     ]
     mock_logger_debug.assert_has_calls(expected_log_calls, any_order=False)
     assert mock_logger_debug.call_count == 1
-
 
 # 🐍🔌📞🔚

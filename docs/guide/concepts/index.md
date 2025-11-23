@@ -18,12 +18,12 @@ The plugin architecture separates concerns between the **Host Application** (you
 
 ### Core Classes
 
-| Class               | Role             | Description                                    |
-| ------------------- | ---------------- | ---------------------------------------------- |
-| `RPCPluginClient`   | Host Application | Manages plugin lifecycle and RPC communication |
-| `RPCPluginServer`   | Plugin Process   | Serves RPC requests from the host              |
-| `RPCPluginProtocol` | Both             | Defines the RPC interface and service methods  |
-| `Handler/Servicer`  | Plugin Process   | Implements the actual business logic           |
+| Class | Role | Description |
+|-------|------|-------------|
+| `RPCPluginClient` | Host Application | Manages plugin lifecycle and RPC communication |
+| `RPCPluginServer` | Plugin Process | Serves RPC requests from the host |
+| `RPCPluginProtocol` | Both | Defines the RPC interface and service methods |
+| `Handler/Servicer` | Plugin Process | Implements the actual business logic |
 
 ## Essential Concepts
 
@@ -32,10 +32,10 @@ The plugin architecture separates concerns between the **Host Application** (you
 The plugin system implements a robust RPC architecture built on gRPC with a secure handshake protocol:
 
 1. **gRPC Foundation** - Protocol Buffers for efficient serialization, HTTP/2 for multiplexed communication
-1. **Handshake Process** - Multi-phase negotiation including magic cookie authentication, protocol negotiation, and service discovery
-1. **Foundation Integration** - Seamless integration with provide.foundation for logging, configuration, and cryptography
+2. **Handshake Process** - Multi-phase negotiation including magic cookie authentication, protocol negotiation, and service discovery
+3. **Foundation Integration** - Seamless integration with provide.foundation for logging, configuration, and cryptography
 
-**Learn more:** [RPC Architecture & Handshake](architecture-and-handshake.md)
+**Learn more:** [RPC Architecture & Handshake](architecture-and-handshake/)
 
 ### 🌐 Transport Layer
 
@@ -53,7 +53,7 @@ Communication happens over different transport mechanisms:
 - **Platforms**: Linux, macOS, Windows
 - **Performance**: ~35,000 msg/sec (localhost)
 
-**Learn more:** [Transports](transports.md)
+**Learn more:** [Transports](transports/)
 
 ### 📋 Protocol Definition
 
@@ -70,7 +70,7 @@ class MyProtocol(RPCPluginProtocol):
         my_pb2_grpc.add_MyServiceServicer_to_server(handler, server)
 ```
 
-**Learn more:** [Protocols](protocols.md)
+**Learn more:** [Protocols](protocols/)
 
 ### 🔒 Security Model
 
@@ -80,7 +80,7 @@ Multi-layered security approach:
 - **Magic Cookie Authentication** - Shared secret passed via environment variable
 - **Mutual TLS (mTLS)** - Certificate-based authentication and encrypted communication
 
-**Learn more:** [Security Model](security.md)
+**Learn more:** [Security Model](security/)
 
 ## Configuration Architecture
 
@@ -138,41 +138,41 @@ Dive deeper into specific concepts:
 
 <div class="grid cards" markdown>
 
-- :material-sitemap: **RPC Architecture & Handshake**
+-   :material-sitemap: **RPC Architecture & Handshake**
 
-  ______________________________________________________________________
+    ---
 
-  Complete RPC architecture with secure handshake protocol
+    Complete RPC architecture with secure handshake protocol
 
-  [:octicons-arrow-right-24: Learn Architecture](architecture-and-handshake.md)
+    [:octicons-arrow-right-24: Learn Architecture](architecture-and-handshake/)
 
-- :material-swap-horizontal: **Transports**
+-   :material-swap-horizontal: **Transports**
 
-  ______________________________________________________________________
+    ---
 
-  Understanding Unix sockets vs TCP and when to use each
+    Understanding Unix sockets vs TCP and when to use each
 
-  [:octicons-arrow-right-24: Explore Transports](transports.md)
+    [:octicons-arrow-right-24: Explore Transports](transports/)
 
-- :material-api: **Protocols**
+-   :material-api: **Protocols**
 
-  ______________________________________________________________________
+    ---
 
-  How to define and implement RPC protocols with gRPC
+    How to define and implement RPC protocols with gRPC
 
-  [:octicons-arrow-right-24: Define Protocols](protocols.md)
+    [:octicons-arrow-right-24: Define Protocols](protocols/)
 
-- :material-shield-check: **Security Model**
+-   :material-shield-check: **Security Model**
 
-  ______________________________________________________________________
+    ---
 
-  Comprehensive security including mTLS, magic cookies, and isolation
+    Comprehensive security including mTLS, magic cookies, and isolation
 
-  [:octicons-arrow-right-24: Secure Plugins](security.md)
+    [:octicons-arrow-right-24: Secure Plugins](security/)
 
 </div>
 
 Or jump to practical implementation:
 
-- **[Server Development](../server/index.md)** - Build your first plugin server
-- **[Client Development](../client/index.md)** - Connect to and manage plugins
+- **[Server Development](../server/index/)** - Build your first plugin server
+- **[Client Development](../client/index/)** - Connect to and manage plugins
