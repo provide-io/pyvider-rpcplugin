@@ -247,11 +247,11 @@ cert_dir.mkdir(mode=0o700, exist_ok=True)
 cert_file.chmod(0o600)  # Owner read/write only
 ```
 
-**Certificate Rotation:** Implement certificate renewal workflow before expiration (typically 30-90 days). This involves:
-
+**Certificate Rotation:**
+Implement certificate renewal workflow before expiration (typically 30-90 days). This involves:
 1. Generating new certificates using external tools (OpenSSL, cert-manager, etc.)
-1. Updating certificate files on disk
-1. Restarting plugin services to pick up new certificates
+2. Updating certificate files on disk
+3. Restarting plugin services to pick up new certificates
 
 ### Runtime Security
 
@@ -405,22 +405,19 @@ logger.info("Certificate debugging would use external tools or libraries")
 ## Implementation Resources
 
 ### Complete Security Implementation
-
-- **[Security Implementation Guide](../security/index.md)** - Step-by-step security setup with practical examples, certificate management, and production patterns
-- **[mTLS Configuration Guide](../security/mtls.md)** - Detailed mutual TLS setup and certificate management
-- **[Certificate Management Guide](../security/certificates.md)** - Complete certificate lifecycle management
+- **[Security Implementation Guide](../security/index/)** - Step-by-step security setup with practical examples, certificate management, and production patterns
+- **[mTLS Configuration Guide](../security/mtls/)** - Detailed mutual TLS setup and certificate management
+- **[Certificate Management Guide](../security/certificates/)** - Complete certificate lifecycle management
 
 ### Configuration Integration
-
-- **[Configuration Guide](../config/index.md)** - Environment-driven security configuration with validation patterns
-- **[Production Configuration](../config/advanced.md)** - Production-focused security configuration examples
+- **[Configuration Guide](../config/index/)** - Environment-driven security configuration with validation patterns
+- **[Production Configuration](../config/production/)** - Production-ready security configuration examples
 
 ### Configuration Documentation
-
-- **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
+- **[Configuration Reference](../config/configuration-reference/)** - Complete security configuration options
 
 ## Related Concepts
 
-- **[Transport Security](transports.md)** - How transports integrate with the security model
-- **[Handshake Process](architecture-and-handshake.md)** - Connection establishment with authentication
-- **[Server Security Patterns](../security/index.md)** - Server-specific security implementation patterns
+- **[Transport Security](transports/)** - How transports integrate with the security model
+- **[Handshake Process](architecture-and-handshake/)** - Connection establishment with authentication
+- **[Server Security Patterns](../security/index/)** - Server-specific security implementation patterns

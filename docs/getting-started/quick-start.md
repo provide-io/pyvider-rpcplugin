@@ -19,9 +19,7 @@ Before diving in, let's understand the key components:
 
 !!! info "Built on Foundation" Pyvider RPC Plugin is built on **Foundation** (`provide.foundation`), which provides infrastructure for logging, configuration, cryptography, and utilities. This means you get enterprise-grade patterns out of the box.
 
-```
-**→ [Understanding Foundation](../introduction/foundation.md)** - Learn how Foundation and Pyvider work together
-```
+    **→ [Understanding Foundation](../introduction/foundation/)** - Learn how Foundation and Pyvider work together
 
 !!! tip "Tutorial Code vs Production Code" The examples below are **simplified for teaching** to focus on core concepts.
 
@@ -33,8 +31,7 @@ Before diving in, let's understand the key components:
 
 Run with: `python examples/quick_start_client.py`
 
-→ [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
-```
+    → [Complete example file mapping](../examples/index/#tutorial-example-actual-file-mapping)
 
 ## Your First Plugin
 
@@ -176,8 +173,7 @@ Run them with:
 python examples/quick_start_client.py
 ```
 
-See [Example File Mapping](../examples/index.md#tutorial-example-actual-file-mapping) for more details.
-````
+    See [Example File Mapping](../examples/index/#tutorial-example-actual-file-mapping) for more details.
 
 ## What Just Happened?
 
@@ -196,7 +192,7 @@ Foundation handles infrastructure concerns automatically:
 - **Configuration**: Environment variable management
 - **Error Handling**: Standardized exception types
 
-**→ [Foundation Architecture](../introduction/foundation.md)** explains the complete separation of concerns between Foundation (infrastructure), Pyvider (RPC), and your business logic.
+**→ [Foundation Architecture](../introduction/foundation/)** explains the complete separation of concerns between Foundation (infrastructure), Pyvider (RPC), and your business logic.
 
 ## Key Concepts
 
@@ -238,8 +234,7 @@ os.environ["PLUGIN_SERVER_KEY"] = "file:///path/to/server.key"
 # mTLS enabled with your production certificates
 ```
 
-📖 **Learn more:** [Security Guide](../guide/security/index.md) | [mTLS Configuration](../guide/security/mtls.md)
-````
+    📖 **Learn more:** [Security Guide](../guide/security/index/) | [mTLS Configuration](../guide/security/mtls/)
 
 ### 🔧 Configuration
 
@@ -258,21 +253,21 @@ logger.info(f"mTLS enabled: {rpcplugin_config.plugin_auto_mtls}")
 
 Now that you have the basics working:
 
-1. **[Build a Real Service](first-plugin.md)** - Create an Echo plugin with custom RPC methods
-1. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
-1. **[Security Setup](../guide/concepts/security.md)** - Configure mTLS with production certificates
-1. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
+1. **[Build a Real Service](first-plugin/)** - Create an Echo plugin with custom RPC methods
+2. **[Learn Core Concepts](../guide/concepts/index/)** - Understand the architecture in depth
+3. **[Security Setup](../guide/concepts/security/)** - Configure mTLS with production certificates
+4. **[Advanced Patterns](../guide/index/)** - Explore async patterns, error handling, and more
 
 ### 📝 Short Examples
 
 For focused, executable examples (15-30 lines each):
 
-- **[Basic Client](../examples/quick-start.md)** - Minimal client connection
-- **[Basic Server](../examples/quick-start.md)** - Simple plugin server
-- **[Health Checks](../examples/quick-start.md)** - Server with health monitoring
-- **[Rate Limiting](../examples/quick-start.md)** - Request throttling with token bucket
-- **[TCP Transport](../examples/quick-start.md)** - Network transport configuration
-- **[Custom Protocol](../examples/quick-start.md)** - Custom gRPC service integration
+- **[Basic Client](../examples/short/basic-client/)** - Minimal client connection
+- **[Basic Server](../examples/short/basic-server/)** - Simple plugin server  
+- **[Health Checks](../examples/short/health-check/)** - Server with health monitoring
+- **[Rate Limiting](../examples/short/rate-limiting/)** - Request throttling with token bucket
+- **[TCP Transport](../examples/short/tcp-transport/)** - Network transport configuration
+- **[Custom Protocol](../examples/short/custom-protocol/)** - Custom gRPC service integration
 
 ## Common Issues
 
@@ -300,4 +295,4 @@ uv add pyvider-rpcplugin
 uv sync
 ```
 
-Ready to build something more substantial? Let's create your [First Plugin](first-plugin.md) with custom RPC methods!
+Ready to build something more substantial? Let's create your [First Plugin](first-plugin/) with custom RPC methods!

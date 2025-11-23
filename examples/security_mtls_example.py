@@ -3,18 +3,25 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
+"""TODO: Add module docstring."""
+
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Security and mTLS Configuration - Functional Example.
 This example demonstrates a working mTLS setup between a client and a server
 plugin launched as a subprocess."""
 
-import asyncio
-import os
-from pathlib import Path
-import sys
-import tempfile
+import asyncio  # noqa: E402
+import os  # noqa: E402
+from pathlib import Path  # noqa: E402
+import sys  # noqa: E402
+import tempfile  # noqa: E402
 
 # First-party imports (project-specific)
-from example_utils import configure_for_example  # type: ignore[import-not-found]
+from example_utils import configure_for_example  # type: ignore[import-not-found]  # noqa: E402
 
 # Apply base configuration for examples (paths, logging)
 # Client context, clear its own env before specific mTLS config.

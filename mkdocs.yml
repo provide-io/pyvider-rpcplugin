@@ -1,6 +1,3 @@
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 # Inherit shared configuration from provide-foundry
 INHERIT: .provide/foundry/base-mkdocs.yml
 
@@ -15,7 +12,7 @@ edit_uri: edit/main/docs/
 copyright: ©2024-2025 provide.io llc<br/>🛠️ with 💚 and 🦝 on 🌎
 
 # Development server configuration
-dev_addr: 127.0.0.1:11007
+dev_addr: '127.0.0.1:11006'
 
 # Project-specific theme overrides
 theme:
@@ -43,12 +40,28 @@ theme:
     - navigation.prune  # Additional feature specific to this project
 
 # Project-specific plugins (in addition to base plugins)
-plugins:
-  - gen-files:
-      scripts:
-        - .provide/foundry/gen_ref_pages.py
-  - literate-nav:
-      nav_file: SUMMARY.md
+# Temporarily disabled for Phase 3 verification
+# plugins:
+#   - gen-files:
+#       scripts:
+#         - scripts/mkdocs_gen_ref_pages.py
+#   - literate-nav:
+#       nav_file: SUMMARY.md
+#   - section-index
+#   - tags
+#   - mkdocstrings:
+#       handlers:
+#         python:
+#           options:
+#             # Override mkdocstrings options specific to this project
+#             show_if_no_docstring: true
+#             inherited_members: false
+#             group_by_category: true
+#             heading_level: 2
+#             separate_signature: false
+#             filters:
+#               - "!^_"  # Hide private members
+#               - "!^__.*__$"  # Hide special methods
 
 # Project-specific extra configuration
 extra:
@@ -118,7 +131,7 @@ nav:
       - Client Development Guide: guide/client/client-guide.md
       - Connection Resilience: guide/client/resilience.md
       - Direct Connections: guide/client/direct-connections.md
-
+    
     - Security:
       - guide/security/index.md
       - mTLS Configuration: guide/security/mtls.md
@@ -137,6 +150,7 @@ nav:
       - Logging Configuration: guide/config/logging.md
 
     - Advanced Topics:
+      - guide/advanced/index.md
       - Observability & Performance: guide/advanced/observability.md
       - Type System & Custom Protocols: guide/advanced/customization.md
       - Plugin Lifecycle: guide/advanced/lifecycle.md
@@ -148,12 +162,12 @@ nav:
   - API Reference:
     - reference/index.md
     - Glossary: reference/glossary.md
-
+  
   - Examples:
     - examples/index.md
     - Quick Start: examples/quick-start.md
     - Echo Service: examples/echo-example.md
-
+  
   - Development:
     - development/index.md
     - Contributing Guide: development/contributing-guide.md

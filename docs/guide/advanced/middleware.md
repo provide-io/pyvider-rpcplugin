@@ -240,139 +240,133 @@ class RateLimitingInterceptor(ServicerInterceptor):
 
 === "Error Handling"
 
-````
-```python
-from grpc import StatusCode
-from pyvider.exceptions import (
-    ValidationError,
-    AuthenticationError,
-    NotFoundError
-)
+    ```python
+    from grpc import StatusCode
+    from pyvider.exceptions import (
+        ValidationError,
+        AuthenticationError,
+        NotFoundError
+    )
 
-class ErrorHandlingInterceptor(ServicerInterceptor):
-    """Standardizes error handling across all RPC methods."""
+    class ErrorHandlingInterceptor(ServicerInterceptor):
+        """Standardizes error handling across all RPC methods."""
 
-    async def intercept_service(self, continuation, handler_call_details):
-        context = handler_call_details.invocation_metadata
+        async def intercept_service(self, continuation, handler_call_details):
+            context = handler_call_details.invocation_metadata
 
-        try:
-            return await continuation(handler_call_details)
+            try:
+                return await continuation(handler_call_details)
 
-        except ValidationError as e:
-            await context.abort(StatusCode.INVALID_ARGUMENT, str(e))
+            except ValidationError as e:
+                await context.abort(StatusCode.INVALID_ARGUMENT, str(e))
 
-        except AuthenticationError as e:
-            await context.abort(StatusCode.UNAUTHENTICATED, str(e))
+            except AuthenticationError as e:
+                await context.abort(StatusCode.UNAUTHENTICATED, str(e))
 
-        except NotFoundError as e:
-            await context.abort(StatusCode.NOT_FOUND, str(e))
+            except NotFoundError as e:
+                await context.abort(StatusCode.NOT_FOUND, str(e))
 
-        except Exception as e:
-            logger.exception(f"Unexpected error in {handler_call_details.method}")
-            await context.abort(StatusCode.INTERNAL, "Internal server error")
-```
-````
+            except Exception as e:
+                logger.exception(f"Unexpected error in {handler_call_details.method}")
+                await context.abort(StatusCode.INTERNAL, "Internal server error")
+    ```
 
 === "Circuit Breaker"
 
-````
-```python
-class CircuitBreakerInterceptor(ServicerInterceptor):
-    """Implements circuit breaker pattern."""
+    ```python
+    class CircuitBreakerInterceptor(ServicerInterceptor):
+        """Implements circuit breaker pattern."""
 
-    def __init__(
-        self,
-        failure_threshold: int = 5,
-        recovery_timeout: int = 60,
-        expected_exception: type = Exception
-    ):
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.expected_exception = expected_exception
+        def __init__(
+            self,
+            failure_threshold: int = 5,
+            recovery_timeout: int = 60,
+            expected_exception: type = Exception
+        ):
+            self.failure_threshold = failure_threshold
+            self.recovery_timeout = recovery_timeout
+            self.expected_exception = expected_exception
 
-        self.failure_count = 0
-        self.last_failure_time = None
-        self.state = 'CLOSED'  # CLOSED, OPEN, HALF_OPEN
+            self.failure_count = 0
+            self.last_failure_time = None
+            self.state = 'CLOSED'  # CLOSED, OPEN, HALF_OPEN
 
-    async def intercept_service(self, continuation, handler_call_details):
-        context = handler_call_details.invocation_metadata
+        async def intercept_service(self, continuation, handler_call_details):
+            context = handler_call_details.invocation_metadata
 
-        # Check circuit breaker state
-        if self.state == 'OPEN':
-            if (self.last_failure_time and
-                time.time() - self.last_failure_time > self.recovery_timeout):
-                self.state = 'HALF_OPEN'
-            else:
-                await context.abort(
-                    StatusCode.UNAVAILABLE,
-                    'Service temporarily unavailable'
-                )
-                return
+            # Check circuit breaker state
+            if self.state == 'OPEN':
+                if (self.last_failure_time and
+                    time.time() - self.last_failure_time > self.recovery_timeout):
+                    self.state = 'HALF_OPEN'
+                else:
+                    await context.abort(
+                        StatusCode.UNAVAILABLE,
+                        'Service temporarily unavailable'
+                    )
+                    return
 
-        try:
-            response = await continuation(handler_call_details)
+            try:
+                response = await continuation(handler_call_details)
 
-            # Reset on success
-            if self.state == 'HALF_OPEN':
-                self.state = 'CLOSED'
-                self.failure_count = 0
+                # Reset on success
+                if self.state == 'HALF_OPEN':
+                    self.state = 'CLOSED'
+                    self.failure_count = 0
 
-            return response
+                return response
 
-        except self.expected_exception:
-            self.failure_count += 1
-            self.last_failure_time = time.time()
+            except self.expected_exception:
+                self.failure_count += 1
+                self.last_failure_time = time.time()
 
-            if self.failure_count >= self.failure_threshold:
-                self.state = 'OPEN'
+                if self.failure_count >= self.failure_threshold:
+                    self.state = 'OPEN'
 
-            raise
-```
-````
+                raise
+    ```
 
 === "Response Caching"
 
-````
-```python
-from google.protobuf.json_format import MessageToJson
+    ```python
+    from google.protobuf.json_format import MessageToJson
 
-class ResponseCacheInterceptor(ServicerInterceptor):
-    """Caches responses for idempotent operations."""
+    class ResponseCacheInterceptor(ServicerInterceptor):
+        """Caches responses for idempotent operations."""
 
-    def __init__(self, cache_ttl: int = 300):
-        self.cache = {}
-        self.cache_ttl = cache_ttl
+        def __init__(self, cache_ttl: int = 300):
+            self.cache = {}
+            self.cache_ttl = cache_ttl
 
-    def _get_cache_key(self, method: str, request) -> str:
-        request_json = MessageToJson(request)
-        return f"{method}:{hash(request_json)}"
+        def _get_cache_key(self, method: str, request) -> str:
+            request_json = MessageToJson(request)
+            return f"{method}:{hash(request_json)}"
 
-    async def intercept_service(self, continuation, handler_call_details):
-        method = handler_call_details.method
-        request = handler_call_details.request
+        async def intercept_service(self, continuation, handler_call_details):
+            method = handler_call_details.method
+            request = handler_call_details.request
 
-        # Only cache GET-like operations
-        if not method.endswith(('Get', 'List', 'Search')):
-            return await continuation(handler_call_details)
+            # Only cache GET-like operations
+            if not method.endswith(('Get', 'List', 'Search')):
+                return await continuation(handler_call_details)
 
-        cache_key = self._get_cache_key(method, request)
-        now = time.time()
+            cache_key = self._get_cache_key(method, request)
+            now = time.time()
 
-        # Check cache
-        if cache_key in self.cache:
-            cached_response, timestamp = self.cache[cache_key]
-            if now - timestamp < self.cache_ttl:
-                return cached_response
-            else:
-                del self.cache[cache_key]
+            # Check cache
+            if cache_key in self.cache:
+                cached_response, timestamp = self.cache[cache_key]
+                if now - timestamp < self.cache_ttl:
+                    return cached_response
+                else:
+                    del self.cache[cache_key]
 
-        # Execute request and cache result
-        response = await continuation(handler_call_details)
-        self.cache[cache_key] = (response, now)
+            # Execute request and cache result
+            response = await continuation(handler_call_details)
+            self.cache[cache_key] = (response, now)
 
-        return response
-```
-````
+            return response
+    ```
 
 ## Server Integration
 
@@ -463,16 +457,16 @@ auth_middleware = ConditionalMiddleware(
 ### Performance
 
 1. **Use connection pooling** for external services
-1. **Cache expensive computations** with weak references
-1. **Order middleware correctly** - auth before authorization
-1. **Monitor performance** - track latency added by each middleware
+2. **Cache expensive computations** with weak references
+3. **Order middleware correctly** - auth before authorization
+4. **Monitor performance** - track latency added by each middleware
 
 ### Security
 
 1. **Validate middleware order** - authentication before authorization
-1. **Sanitize log output** - don't log sensitive data
-1. **Use secure defaults** - conservative rate limiting initially
-1. **Implement proper cleanup** - release resources in destructors
+2. **Sanitize log output** - don't log sensitive data
+3. **Use secure defaults** - conservative rate limiting initially
+4. **Implement proper cleanup** - release resources in destructors
 
 ### Error Handling
 
@@ -517,5 +511,5 @@ class RobustMiddleware(ServicerInterceptor):
 
 - [Lifecycle Management](lifecycle.md) - Plugin lifecycle patterns
 - [Observability](observability.md) - Metrics and tracing
-- [Security](../security/index.md) - Authentication and authorization
+- [Security](../security/authentication.md) - Authentication and authorization
 - [Configuration](../config/configuration-guide.md) - Middleware configuration

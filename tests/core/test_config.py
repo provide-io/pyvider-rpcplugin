@@ -1,5 +1,5 @@
-#
-# SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 
@@ -7,8 +7,6 @@
 
 Tests the modern Foundation-based config system with direct attribute access,
 automatic type conversion, and clean environment variable loading."""
-
-import sys
 
 import pytest
 

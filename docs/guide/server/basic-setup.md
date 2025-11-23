@@ -280,6 +280,6 @@ await server.start()
 
 ## Next Steps
 
-- **[Service Implementation](services.md)** - Build robust gRPC services
-- **[Transport Configuration](transports.md)** - Optimize communication layers
-- **[Async Patterns](async-patterns.md)** - Master concurrency patterns
+- **[Service Implementation](services/)** - Build robust gRPC services
+- **[Transport Configuration](transports/)** - Optimize communication layers
+- **[Async Patterns](async-patterns/)** - Master concurrency patterns

@@ -72,99 +72,91 @@ git push origin feature/<feature-name>
 
 === "Write Tests First"
 
-````
-**TDD approach recommended:**
+    **TDD approach recommended:**
 
-```python
-# tests/test_new_feature.py
-import pytest
-from pyvider.new_feature import NewFeature
+    ```python
+    # tests/test_new_feature.py
+    import pytest
+    from pyvider.new_feature import NewFeature
 
-class TestNewFeature:
-    async def test_basic_functionality(self):
-        feature = NewFeature()
-        result = await feature.do_something()
-        assert result == "expected_result"
+    class TestNewFeature:
+        async def test_basic_functionality(self):
+            feature = NewFeature()
+            result = await feature.do_something()
+            assert result == "expected_result"
 
-    async def test_error_handling(self):
-        feature = NewFeature()
-        with pytest.raises(ValueError):
-            await feature.do_something_invalid()
-```
-````
+        async def test_error_handling(self):
+            feature = NewFeature()
+            with pytest.raises(ValueError):
+                await feature.do_something_invalid()
+    ```
 
 === "Implement the Feature"
 
-````
-```python
-# src/pyvider/new_feature.py
-from typing import Any
-import asyncio
+    ```python
+    # src/pyvider/new_feature.py
+    from typing import Any
+    import asyncio
 
-class NewFeature:
-    """A new feature for the RPC Plugin system."""
+    class NewFeature:
+        """A new feature for the RPC Plugin system."""
 
-    def __init__(self):
-        self._initialized = False
+        def __init__(self):
+            self._initialized = False
 
-    async def do_something(self) -> str:
-        """Perform the main functionality."""
-        if not self._initialized:
-            await self._initialize()
+        async def do_something(self) -> str:
+            """Perform the main functionality."""
+            if not self._initialized:
+                await self._initialize()
 
-        return "expected_result"
+            return "expected_result"
 
-    async def do_something_invalid(self) -> None:
-        """Example method that raises an error."""
-        raise ValueError("Invalid operation")
+        async def do_something_invalid(self) -> None:
+            """Example method that raises an error."""
+            raise ValueError("Invalid operation")
 
-    async def _initialize(self) -> None:
-        """Initialize the feature."""
-        self._initialized = True
-```
-````
+        async def _initialize(self) -> None:
+            """Initialize the feature."""
+            self._initialized = True
+    ```
 
 === "Update Documentation"
 
-````
-```python
-# Update docstrings with comprehensive information
-class NewFeature:
-    """A new feature for the RPC plugin system.
+    ```python
+    # Update docstrings with comprehensive information
+    class NewFeature:
+        """A new feature for the RPC plugin system.
 
-    This feature provides enhanced functionality for RPC operations
-    including advanced error handling and performance optimizations.
+        This feature provides enhanced functionality for RPC operations
+        including advanced error handling and performance optimizations.
 
-    Example:
-        ```python
-        feature = NewFeature()
-        result = await feature.do_something()
-        print(result)  # "expected_result"
-        ```
+        Example:
+            ```python
+            feature = NewFeature()
+            result = await feature.do_something()
+            print(result)  # "expected_result"
+            ```
 
-    Attributes:
-        initialized: Whether the feature has been initialized.
-    """
-```
-````
+        Attributes:
+            initialized: Whether the feature has been initialized.
+        """
+    ```
 
 === "Run Quality Checks"
 
-````
-```bash
-# Run all tests
-uv run pytest -v
+    ```bash
+    # Run all tests
+    uv run pytest -v
 
-# Check code formatting
-uv run ruff check . --fix
+    # Check code formatting
+    uv run ruff check . --fix
 
-# Run type checking
-uv run pyre check
+    # Run type checking
+    uv run pyre check
 
-# Check test coverage
-uv run pytest --cov=src --cov-report=html
-```
-````
+    # Check test coverage
+    uv run pytest --cov=src --cov-report=html
+    ```
 
 ## Code Standards
 
@@ -363,71 +355,232 @@ class TestConnectionManager:
 
 === "Unit Tests"
 
-````
-Test individual components in isolation:
+    Test individual components in isolation:
 
-```python
-def test_config_validation():
-    """Test configuration validation."""
-    config = ServerConfig(port=50051)
-    assert config.port == 50051
-```
-````
+    ```python
+    def test_config_validation():
+        """Test configuration validation."""
+        config = ServerConfig(port=50051)
+        assert config.port == 50051
+    ```
 
 === "Integration Tests"
 
-````
-Test component interactions:
+    Test component interactions:
 
-```python
-@pytest.mark.integration
-async def test_full_rpc_workflow():
-    """Test complete RPC workflow from client to server."""
-    server = await create_test_server()
-    try:
-        await server.start()
-
-        client = await create_test_client(server.port)
+    ```python
+    @pytest.mark.integration
+    async def test_full_rpc_workflow():
+        """Test complete RPC workflow from client to server."""
+        server = await create_test_server()
         try:
-            response = await client.echo("test message")
-            assert response.message == "test message"
+            await server.start()
+
+            client = await create_test_client(server.port)
+            try:
+                response = await client.echo("test message")
+                assert response.message == "test message"
+            finally:
+                await client.close()
         finally:
-            await client.close()
-    finally:
-        await server.stop()
-```
-````
+            await server.stop()
+    ```
 
 === "Performance Tests"
 
-````
-Test performance characteristics:
+    Test performance characteristics:
 
-```python
-@pytest.mark.performance
-async def test_high_throughput():
-    """Test server performance under high load."""
-    async def make_requests(client, count):
-        tasks = []
-        for i in range(count):
-            tasks.append(client.echo(f"message-{i}"))
-        return await asyncio.gather(*tasks)
+    ```python
+    @pytest.mark.performance
+    async def test_high_throughput():
+        """Test server performance under high load."""
+        async def make_requests(client, count):
+            tasks = []
+            for i in range(count):
+                tasks.append(client.echo(f"message-{i}"))
+            return await asyncio.gather(*tasks)
 
-    server = await create_test_server()
-    try:
-        await server.start()
-        client = await create_test_client(server.port)
+        server = await create_test_server()
+        try:
+            await server.start()
+            client = await create_test_client(server.port)
 
-        start_time = time.time()
-        results = await make_requests(client, 1000)
-        duration = time.time() - start_time
+            start_time = time.time()
+            results = await make_requests(client, 1000)
+            duration = time.time() - start_time
 
-        assert len(results) == 1000
-        assert duration < 10.0
+            assert len(results) == 1000
+            assert duration < 10.0
 
-    finally:
-        await client.close()
-        await server.stop()
+        finally:
+            await client.close()
+            await server.stop()
+    ```
+
+## CI/CD Pipeline
+
+### GitHub Actions Workflows
+
+=== "Main CI Pipeline"
+
+    **Location:** `.github/workflows/ci.yml`
+
+    ```yaml
+    name: CI
+
+    on:
+      push:
+        branches: [main, develop]
+      pull_request:
+        branches: [main]
+
+    jobs:
+      test:
+        runs-on: ${{ matrix.os }}
+        strategy:
+          matrix:
+            os: [ubuntu-latest, macos-latest, windows-latest]
+            python-version: ["3.11", "3.12"]
+
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: ${{ matrix.python-version }}
+
+        - name: Install dependencies
+          run: |
+            python -m pip install --upgrade pip uv
+            uv pip install -e ".[dev,test]"
+
+        - name: Run tests
+          run: pytest --cov=pyvider.rpcplugin --cov-report=xml
+
+        - name: Upload coverage
+          uses: codecov/codecov-action@v4
+          with:
+            file: ./coverage.xml
+    ```
+
+=== "Release Workflow"
+
+    **Location:** `.github/workflows/release.yml`
+
+    ```yaml
+    name: Release
+
+    on:
+      push:
+        tags: ['v*']
+
+    jobs:
+      build-and-publish:
+        runs-on: ubuntu-latest
+
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Set up Python
+          uses: actions/setup-python@v5
+
+        - name: Build distribution
+          run: python -m build
+
+        - name: Publish to PyPI
+          env:
+            TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+          run: twine upload dist/*
+    ```
+
+### Code Quality Configuration
+
+=== "Linting (Ruff)"
+
+    **pyproject.toml:**
+
+    ```toml
+    [tool.ruff]
+    target-version = "py311"
+    line-length = 88
+    select = [
+        "E",   # pycodestyle errors
+        "W",   # pycodestyle warnings
+        "F",   # pyflakes
+        "I",   # isort
+        "B",   # flake8-bugbear
+        "C4",  # flake8-comprehensions
+        "UP",  # pyupgrade
+    ]
+    ignore = ["E501"]
+    exclude = ["*_pb2.py", "*_pb2_grpc.py"]
+    ```
+
+=== "Type Checking (Mypy)"
+
+    **pyproject.toml:**
+
+    ```toml
+    [tool.mypy]
+    python_version = "3.11"
+    warn_return_any = true
+    warn_unused_configs = true
+    disallow_untyped_defs = true
+    no_implicit_optional = true
+    check_untyped_defs = true
+    show_error_codes = true
+    exclude = ["*_pb2.py", "*_pb2_grpc.py"]
+    ```
+
+=== "Testing (Pytest)"
+
+    **pyproject.toml:**
+
+    ```toml
+    [tool.pytest.ini_options]
+    minversion = "7.0"
+    testpaths = ["tests"]
+    asyncio_mode = "auto"
+    markers = [
+        "slow: marks tests as slow",
+        "integration: marks integration tests",
+        "benchmark: marks performance tests"
+    ]
+    addopts = """
+        -ra
+        --strict-markers
+        --cov=pyvider.rpcplugin
+        --cov-branch
+        --cov-report=term-missing
+    """
+    ```
+
+### Pre-commit Hooks
+
+**.pre-commit-config.yaml:**
+
+```yaml
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.9.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-all]
+        exclude: "_pb2(_grpc)?\\.py$"
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: [-r, src/]
 ```
 ````
 
@@ -663,6 +816,58 @@ git tag -a "v$NEW" -m "Release version $NEW"
 ```
 ````
 
+### Release Management
+
+=== "Semantic Versioning"
+
+    **Version Bumping Script:**
+
+    ```bash
+    #!/bin/bash
+    # scripts/bump-version.sh
+
+    set -e
+
+    BUMP_TYPE=${1:-patch}  # major, minor, patch
+    CURRENT=$(python -c "import pyvider.rpcplugin; print(pyvider.rpcplugin.__version__)")
+
+    case $BUMP_TYPE in
+        major) NEW=$(echo $CURRENT | awk -F. '{printf "%d.0.0", $1+1}') ;;
+        minor) NEW=$(echo $CURRENT | awk -F. '{printf "%d.%d.0", $1, $2+1}') ;;
+        patch) NEW=$(echo $CURRENT | awk -F. '{printf "%d.%d.%d", $1, $2, $3+1}') ;;
+    esac
+
+    echo "Bumping version: $CURRENT → $NEW"
+    sed -i "s/__version__ = \"$CURRENT\"/__version__ = \"$NEW\"/" src/pyvider/rpcplugin/__init__.py
+    git add -A
+    git commit -m "Release v$NEW"
+    git tag -a "v$NEW" -m "Release version $NEW"
+    ```
+
+=== "Release Notes Template"
+
+    ```markdown
+    ## [VERSION] - DATE
+
+    ### 🎯 Highlights
+    - Major feature or improvement
+    - Performance enhancement
+    - Security update
+
+    ### ✨ Added
+    - New feature description
+
+    ### 🔄 Changed
+    - Updated behavior
+
+    ### 🐛 Fixed
+    - Bug fix description
+
+    ### ⚠️ Breaking Changes
+    - Breaking change description
+    - Migration guide
+    ```
+
 ## Pull Request Process
 
 ### Before Submitting
@@ -769,6 +974,7 @@ A clear description of what you expected to happen.
 
 Include relevant log output here
 
+```
 ```
 ```
 
@@ -878,18 +1084,18 @@ async def test_performance_baseline():
 ## Best Practices
 
 1. **Branch Protection** - Require PR reviews and passing CI
-1. **Automated Testing** - Run tests on every push
-1. **Code Coverage** - Maintain >80% coverage
-1. **Security Scanning** - Regular dependency and code scanning
-1. **Performance Monitoring** - Track benchmarks over time
-1. **Semantic Versioning** - Follow semver for releases
-1. **Documentation** - Update docs with code changes
-1. **Dependency Updates** - Keep dependencies current and secure
+2. **Automated Testing** - Run tests on every push
+3. **Code Coverage** - Maintain >80% coverage
+4. **Security Scanning** - Regular dependency and code scanning
+5. **Performance Monitoring** - Track benchmarks over time
+6. **Semantic Versioning** - Follow semver for releases
+7. **Documentation** - Update docs with code changes
+8. **Dependency Updates** - Keep dependencies current and secure
 
 ## See Also
 
-- [Testing Guide](testing.md) - Comprehensive testing documentation
-- [Architecture](architecture.md) - Internal system design
-- [Troubleshooting](troubleshooting.md) - Common development issues
+- [Testing Guide](testing/) - Comprehensive testing documentation
+- [Architecture](architecture/) - Internal system design
+- [Troubleshooting](troubleshooting/) - Common development issues
 
 Thank you for contributing to Pyvider RPC Plugin! Your contributions help make this project better for everyone.

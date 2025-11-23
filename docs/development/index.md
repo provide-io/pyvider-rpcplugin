@@ -13,7 +13,7 @@ The development documentation covers:
 
 ## Development Sections
 
-### 🤝 [Contributing Guide](contributing-guide.md)
+### 🤝 [Contributing Guide](contributing-guide/)
 
 **Complete development workflow documentation covering:**
 
@@ -27,7 +27,7 @@ The development documentation covers:
 
 **Perfect for:** New contributors, understanding the full development lifecycle
 
-### 🏗️ [Architecture](architecture.md)
+### 🏗️ [Architecture](architecture/)
 
 **Internal system architecture and design:**
 
@@ -39,7 +39,7 @@ The development documentation covers:
 
 **Perfect for:** Understanding internal design, extending the framework
 
-### 🧪 [Testing](testing.md)
+### 🧪 [Testing](testing/)
 
 **Comprehensive testing documentation:**
 
@@ -51,7 +51,7 @@ The development documentation covers:
 
 **Perfect for:** Writing tests, understanding test patterns
 
-### 🔧 [Troubleshooting](troubleshooting.md)
+### 🔧 [Troubleshooting](troubleshooting/)
 
 **Common issues and debugging:**
 
@@ -96,18 +96,18 @@ mkdocs serve                    # Serve docs locally
 mkdocs build --strict           # Build with strict checking
 ```
 
-See the [Contributing Guide](contributing-guide.md) for complete development workflow documentation.
+See the [Contributing Guide](contributing-guide/) for complete development workflow documentation.
 
 ## Development Principles
 
 The project follows these core principles:
 
 1. **Type Safety** - Comprehensive type annotations throughout
-1. **Modern Python** - Python 3.11+ features, no legacy patterns
-1. **Async First** - Built on asyncio for high performance
-1. **Security by Default** - mTLS and authentication built-in
-1. **Comprehensive Testing** - All features require tests
-1. **Clear Documentation** - All public APIs documented
+2. **Modern Python** - Python 3.11+ features, no legacy patterns
+3. **Async First** - Built on asyncio for high performance
+4. **Security by Default** - mTLS and authentication built-in
+5. **Comprehensive Testing** - All features require tests
+6. **Clear Documentation** - All public APIs documented
 
 ## Getting Help
 
@@ -128,9 +128,9 @@ For development-specific questions:
 
 ## Next Steps
 
-1. **[Read Contributing Guide](contributing-guide.md)** - Understand contribution process
-1. **[Study Architecture](architecture.md)** - Learn internal system design
-1. **[Review Testing](testing.md)** - Understand testing framework
-1. **[Check Troubleshooting](troubleshooting.md)** - Common development issues
+1. **[Read Contributing Guide](contributing-guide/)** - Understand contribution process
+2. **[Study Architecture](architecture/)** - Learn internal system design
+3. **[Review Testing](testing/)** - Understand testing framework
+4. **[Check Troubleshooting](troubleshooting/)** - Common development issues
 
-Ready to contribute? Start with the [Contributing Guide](contributing-guide.md) and explore the codebase!
+Ready to contribute? Start with the [Contributing Guide](contributing-guide/) and explore the codebase!

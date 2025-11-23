@@ -71,7 +71,7 @@ def _split_handshake_response(response: str) -> list[str]:
             hint="Ensure the plugin process outputs a valid string for handshake.",
         )
     parts = response.strip().split("|")
-    logger.debug("Split handshake response into parts", parts=parts)
+    logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
     if not is_valid_handshake_parts(parts):
         logger.error(
             "📡❌ Invalid handshake response format. Expected 6 parts with numeric versions.",
@@ -130,7 +130,9 @@ def _resolve_expected_core_version() -> int:
     Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
     """
     expected_value = rpcplugin_config.plugin_core_version
-    logger.debug("Retrieved PLUGIN_CORE_VERSION from config", value=expected_value)
+    logger.debug(
+        f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_value} (type: {type(expected_value)})"
+    )
     if expected_value is None:
         logger.error(
             "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1."
@@ -150,7 +152,7 @@ def _resolve_expected_core_version() -> int:
 
 def _ensure_supported_core_version(core_version: int, expected_version: int) -> None:
     if core_version != expected_version:
-        logger.error("Unsupported handshake version", core_version=core_version, expected=expected_version)
+        logger.error(f"🤝 Unsupported handshake version: {core_version} (expected: {expected_version})")
         raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_version})")
 
 
@@ -159,7 +161,7 @@ def _apply_certificate_padding(server_cert: str | None) -> str | None:
         return None
     padding = len(server_cert) % 4
     if padding:
-        logger.debug("Restoring certificate padding for handshake parsing")
+        logger.debug("📡🔐 Restoring certificate padding for handshake parsing.")
         server_cert += "=" * (4 - padding)
     return server_cert
 
@@ -353,7 +355,7 @@ async def _build_handshake_response_impl(
     port: int | None = None,
 ) -> str:
     """Implementation of handshake response building."""
-    logger.debug("Building handshake response...")
+    logger.debug("🤝📝🔄 Building handshake response...")
 
     try:
         if transport_name == "tcp":
@@ -371,10 +373,10 @@ async def _build_handshake_response_impl(
             if hasattr(transport, "_running") and transport._running and transport.endpoint:
                 endpoint = transport.endpoint
             else:
-                logger.debug("Waiting for Unix transport to listen...")
+                logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
                 endpoint = await transport.listen()
         else:
-            logger.error("Unsupported transport type for handshake response", transport=transport_name)
+            logger.error(f"🤝📝❌ Unsupported transport type for handshake response: {transport_name}")
             raise TransportError(
                 message=(f"Unsupported transport type specified for handshake response: '{transport_name}'."),
                 hint="Valid transport types are 'unix' or 'tcp'.",
@@ -388,10 +390,10 @@ async def _build_handshake_response_impl(
             "grpc",
             "",
         ]
-        logger.debug("Base response structure built", parts_count=len(response_parts))
+        logger.debug(f"🤝📝🔄 Base response structure: {response_parts}")
 
         if server_cert:
-            logger.debug("Processing server certificate...")
+            logger.debug("🤝🔐🔄 Processing server certificate...")
             cert_lines = server_cert.cert_pem.strip().split("\n")
             if len(cert_lines) < 3:
                 logger.error(
@@ -408,7 +410,7 @@ async def _build_handshake_response_impl(
         return handshake_response
 
     except Exception as e:
-        logger.error("Handshake response build failed", error=str(e))
+        logger.error(f"🤝📝❌ Handshake response build failed: {e}", error=str(e))
         raise HandshakeError(
             message=f"Failed to build handshake response: {e}",
             hint="Review server logs for details on the failure.",
@@ -458,10 +460,7 @@ def _parse_handshake_response_impl(
     span: otel_trace.Span | None = None,  # Optional span for adding attributes
 ) -> tuple[int, int, str, str, str, str | None]:
     """Implementation of handshake response parsing."""
-    logger.debug(
-        "Starting handshake response parsing",
-        response_len=len(response) if isinstance(response, str) else 0,
-    )
+    logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
     try:
         parts = _split_handshake_response(response)
         core_version, plugin_version = _parse_versions(parts)
@@ -483,17 +482,14 @@ def _parse_handshake_response_impl(
             span.set_attribute("has_cert", server_cert is not None)
 
         logger.debug(
-            "Handshake parsed",
-            core_version=core_version,
-            plugin_version=plugin_version,
-            network=network,
-            protocol=protocol,
-            has_cert=server_cert is not None,
+            f"core_version={core_version}, plugin_version={plugin_version}, "
+            f"network={network}, address={address}, protocol={protocol}, "
+            f"server_cert={'present' if server_cert else 'none'}"
         )
         return core_version, plugin_version, network, address, protocol, server_cert
 
     except Exception as e:
-        logger.error("Handshake parsing failed", error=str(e))
+        logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
 
 

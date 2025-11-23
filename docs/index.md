@@ -4,17 +4,17 @@ Build high-performance, type-safe plugin systems with Foundation integration, se
 
 **Part of the [provide.foundation](https://foundation.provide.io) ecosystem** - seamlessly integrates with Foundation's configuration, logging, and development toolchain for consistent, unified application architecture.
 
-______________________________________________________________________
+---
 
 ## Part of the provide.io Ecosystem
 
 This project is part of a larger ecosystem of tools for Python and Terraform development.
 
-**[View Ecosystem Overview →](https://foundry.provide.io/provide-foundation/ecosystem/)**
+**[View Ecosystem Overview →](https://docs.provide.io/provide-foundation/ecosystem/)**
 
 Understand how provide-foundation, pyvider, flavorpack, and other projects work together.
 
-______________________________________________________________________
+---
 
 ## ✨ Key Features
 
@@ -192,35 +192,35 @@ graph TB
 
 - :material-rocket-launch: **Getting Started**
 
-  ______________________________________________________________________
+    ---
+    
+    Quick installation, setup guide, and your first plugin
+    
+    [:octicons-arrow-right-24: Get Started](getting-started/index/)
 
   Quick installation, setup guide, and your first plugin
 
-  [:octicons-arrow-right-24: Get Started](getting-started/index.md)
+    ---
+    
+    Comprehensive guide covering concepts, server/client development, and advanced topics
+    
+    [:octicons-arrow-right-24: User Guide](guide/index/)
 
 - :material-book-open: **User Guide**
 
-  ______________________________________________________________________
+    ---
+    
+    Complete API documentation with examples and code snippets
+    
+    [:octicons-arrow-right-24: API Reference](reference/index/)
 
   Comprehensive guide covering concepts, server/client development, and advanced topics
 
-  [:octicons-arrow-right-24: User Guide](guide/index.md)
-
-- :material-api: **API Reference**
-
-  ______________________________________________________________________
-
-  Complete API documentation with examples and code snippets
-
-  [:octicons-arrow-right-24: API Reference](reference/index.md)
-
-- :material-code-braces: **Examples**
-
-  ______________________________________________________________________
-
-  Working examples from simple echo services to production deployments
-
-  [:octicons-arrow-right-24: Examples](examples/index.md)
+    ---
+    
+    Working examples from simple echo services to production deployments
+    
+    [:octicons-arrow-right-24: Examples](examples/index/)
 
 </div>
 
@@ -258,8 +258,8 @@ graph TB
 
 **Choose your path based on your experience with Foundation and plugin systems:**
 
-[**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation.md){ .md-button .md-button--primary }
+[**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation/){ .md-button .md-button--primary }
 
-[**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/architecture-and-handshake.md){ .md-button }
+[**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture/){ .md-button }
 
-**Foundation Users:** See [Foundation Integration](introduction/foundation.md) for seamless ecosystem integration.
+**Foundation Users:** See [Foundation Integration](introduction/foundation/) for seamless ecosystem integration.

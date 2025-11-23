@@ -1,14 +1,18 @@
-# 🔌📞 Pyvider RPC Plugin
+# 🐍🔌 `pyvider.rpcplugin`
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0) [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/) [![uv](https://img.shields.io/badge/uv-package_manager-FF6B35.svg)](https://github.com/astral-sh/uv) [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff) [![CI](https://github.com/provide-io/pyvider-rpcplugin/actions/workflows/ci.yml/badge.svg)](https://github.com/provide-io/pyvider-rpcplugin/actions)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![uv](https://img.shields.io/badge/uv-package_manager-FF6B35.svg)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![CI](https://github.com/provide-io/pyvider-rpcplugin/actions/workflows/ci.yml/badge.svg)](https://github.com/provide-io/pyvider-rpcplugin/actions)
 
 **High-performance, type-safe RPC plugin framework for Python.**
 
 Modern gRPC-based plugin architecture with async support, mTLS security, and comprehensive transport options.
 
-______________________________________________________________________
+---
 
-**Build lightning-fast, secure RPC plugins!** `pyvider.rpcplugin` provides a complete framework for creating high-performance RPC-based plugins with built-in security, async support, and production-focused patterns. Perfect for microservices, plugin architectures, and inter-process communication.
+**Build lightning-fast, secure RPC plugins!** `pyvider.rpcplugin` provides a complete framework for creating high-performance RPC-based plugins with built-in security, async support, and production-ready patterns. Perfect for microservices, plugin architectures, and inter-process communication.
 
 </div>
 

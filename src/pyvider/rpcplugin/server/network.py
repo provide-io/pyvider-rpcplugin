@@ -272,9 +272,6 @@ class ServerNetworkMixin:
         else:
             port_num = server.add_insecure_port(bind_address)
 
-        if port_num == 0 and not isinstance(transport, TCPSocketTransport):
-            raise TransportError(f"gRPC failed to bind to {bind_address}")
-
         if isinstance(transport, TCPSocketTransport):
             self._apply_tcp_port_configuration(transport, port_num)
 
