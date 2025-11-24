@@ -2,28 +2,24 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Configuration helper functions for the RPC Plugin framework.
 
 This module provides convenience functions for configuring the RPC plugin system."""
 
-import logging
-from typing import (
-    Any,
-    List,
-    Optional,
-)
+from typing import Any
+
+from provide.foundation.logger import logger
 
 from pyvider.rpcplugin.exception import ConfigError
 
-logger = logging.getLogger(__name__)
-
 
 def configure(
-    magic_cookie: Optional[str] = None,
-    protocol_version: Optional[int] = None,
-    transports: Optional[List[str]] = None,
-    auto_mtls: Optional[bool] = None,
-    handshake_timeout: Optional[int] = None,
+    magic_cookie: str | None = None,
+    protocol_version: int | None = None,
+    transports: list[str] | None = None,
+    auto_mtls: bool | None = None,
+    handshake_timeout: float | None = None,
     **kwargs: Any,
 ) -> None:
     """
@@ -75,4 +71,5 @@ def configure(
     except Exception as e:
         raise ConfigError(f"Failed to configure RPC plugin: {e}") from e
 
-# 📞🔌🔚
+
+# 🐍🔌📞🔚

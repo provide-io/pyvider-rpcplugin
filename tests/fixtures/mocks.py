@@ -1,5 +1,11 @@
-# tests/fixtures/mocks.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 
+"""TODO: Add module docstring."""
+
+"""TODO: Add module docstring."""
 
 import asyncio
 import os
@@ -29,16 +35,13 @@ from typing import Tuple, Any, AsyncGenerator # Added Any, AsyncGenerator
 class MockProtocol(RPCPluginProtocol):
     async def get_grpc_descriptors(self) -> Tuple[Any, str]:
         # Mock descriptors for testing
-        logger.debug("🔌🚀✅ MockProtocol.get_grpc_descriptors called.")
         return (None, "MockService") # Return a 2-tuple (descriptor, service_name)
 
     async def add_to_server(self, server, handler) -> None: # Corrected param order
         # Mock add_to_server for testing
-        logger.debug("🔌🚀✅ MockProtocol.add_to_server called.")
         pass
 
     def get_method_type(self, method_name: str) -> str:
-        logger.debug("🔌🚀✅ MockProtocol.get_method_type called.")
         return "unary_unary"  # Mock implementation
 
 
@@ -46,19 +49,15 @@ class MockHandler:
     """Mock handler for testing the RPCPluginServer."""
 
     async def GetRequest(self, request, context) -> None:
-        logger.debug("🔌🚀✅ MockHandler.GetRequest called.")
         return None
 
     async def GetResponse(self, request, context) -> None:
-        logger.debug("🔌🚀✅ MockHandler.GetResponse called.")
         return None
 
     async def PutRequest(self, request, context) -> None:
-        logger.debug("🔌🚀✅ MockHandler.PutRequest called.")
         return None
 
     async def Empty(self, request, context) -> None:
-        logger.debug("🔌🚀✅ MockHandler.Empty called.")
         return None
 
 
@@ -92,19 +91,15 @@ async def mock_server_transport(
     transport_name = request.param
     transport: RPCPluginTransport | None = None # Initialize transport with broader type
 
-    logger.debug(f"🧪🔌🐛 mock_server_transport called for transport: {transport_name}")
 
     if transport_name == "tcp":
         # For TCP, we don't use managed_unix_socket_path.
         # The original logic for TCP can remain.
         transport = TCPSocketTransport()
-        logger.debug("🧪🔌🐛 Providing TCPSocketTransport")
         yield transport
     elif transport_name == "unix":
         # Use the path from managed_unix_socket_path fixture
-        logger.debug(
-            f"🧪🔌🐛 Providing UnixSocketTransport with path: {managed_unix_socket_path}"
-        )
+        logger.debug("Creating Unix socket transport", path=managed_unix_socket_path)
         transport = UnixSocketTransport(path=managed_unix_socket_path) # This is compatible with RPCPluginTransport
         yield transport
     else:
@@ -113,19 +108,14 @@ async def mock_server_transport(
 
     # Cleanup is handled after yield returns for the specific yielded transport
     if transport: # transport is now RPCPluginTransport | None
-        logger.debug(
-            f"🧪🔌🐛 Cleaning up transport {transport_name} for path/endpoint: {getattr(transport, 'path', getattr(transport, 'endpoint', 'N/A'))}"
-        )
+        logger.debug("Closing transport in fixture cleanup")
         try:
             await transport.close()
         except Exception as e:
-            logger.error(f"🧪🔌🐛 Error during transport.close(): {e}")
-        # Short sleep to help ensure resources are released, especially sockets.
-        await asyncio.sleep(0.1)
+            # Short sleep to help ensure resources are released, especially sockets.
+            await asyncio.sleep(0.1)
     else:
-        logger.warning(
-            f"🧪🔌🐛 Transport was None for {transport_name}, no cleanup performed by mock_server_transport."
-        )
+        logger.warning("No transport to clean up")
 
 
 @pytest_asyncio.fixture
@@ -165,23 +155,19 @@ async def mock_server_transport_unix(managed_unix_socket_path) -> AsyncGenerator
     try:
         # Early startup to verify it works
         await transport.listen()
-        logger.debug(f"🧪✅ Unix transport initialized at {managed_unix_socket_path}")
         yield transport
     finally:
         # Ensure proper cleanup
         try:
             await transport.close()
-            logger.debug(f"🧪🧹 Transport closed for {managed_unix_socket_path}")
 
             # Double-check for stale socket file
             if os.path.exists(managed_unix_socket_path):
                 os.chmod(managed_unix_socket_path, 0o770) # Removed problematic comment
                 os.unlink(managed_unix_socket_path)
-                logger.debug(
-                    f"🧪🧹 Manually removed socket file {managed_unix_socket_path}"
-                )
+                logger.debug("Cleaned up Unix transport socket", path=managed_unix_socket_path)
         except Exception as e:
-            logger.error(f"🧪❌ Error cleaning transport: {e}")
+            logger.warning(f"Error during Unix transport cleanup: {e}")
 
 
 # @pytest_asyncio.fixture(scope="module", autouse=True)
@@ -244,4 +230,4 @@ async def server_with_mocks(
         with suppress(Exception):
             await server.stop()
 
-# 🐍🔌📄🪄
+# 🐍🔌📞🔚

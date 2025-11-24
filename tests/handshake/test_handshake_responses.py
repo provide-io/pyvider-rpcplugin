@@ -1,4 +1,10 @@
-# tests/handshake/test_handshake_responses.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import pytest
 from provide.testkit.mocking import patch, MagicMock, AsyncMock  # Added AsyncMock
 from pyvider.rpcplugin.transport import UnixSocketTransport # Added import
@@ -338,7 +344,4 @@ def test_parse_handshake_response_invalid_network(mocker):
     with pytest.raises(HandshakeError, match="Invalid network type 'invalidnet' in handshake."):
         parse_handshake_response(response_str)
 
-# 🐍🏗️🤝
-
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

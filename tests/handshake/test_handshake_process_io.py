@@ -1,4 +1,10 @@
-# tests/handshake/test_handshake_process_io.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import pytest
 import asyncio
 from provide.testkit.mocking import patch, MagicMock, AsyncMock
@@ -323,7 +329,4 @@ async def test_read_handshake_stdout_becomes_none(mocker):
         await read_handshake_response(mock_process)
     assert mock_process.stdout is None
 
-# 🐍🏗️🤝
-
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

@@ -1,4 +1,8 @@
-# tests/protocol/test_service_stdio.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for stdio service functionality."""
 
 import asyncio
@@ -222,3 +226,5 @@ async def test_stdio_service_backpressure(stdio_service: GRPCStdioService) -> No
     except Exception:
         # If queue has limits, exception handling should be graceful
         pass
+
+# 🐍🔌📞🔚

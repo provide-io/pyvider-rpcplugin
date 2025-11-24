@@ -1,12 +1,14 @@
-# Advanced Foundation Integration
+# Foundation Integration
 
-This guide demonstrates advanced integration patterns between Pyvider RPC Plugin and Foundation, showcasing how to leverage Foundation's infrastructure for production-ready plugin systems.
+Advanced integration patterns leveraging Foundation's infrastructure for production-ready plugin systems.
+
+## Overview
+
+Foundation provides core infrastructure for configuration, cryptography, rate limiting, logging, and error handling. This guide demonstrates advanced integration patterns that extend pyvider-rpcplugin with Foundation's capabilities.
 
 ## Configuration Inheritance
 
-### Custom Configuration Classes
-
-Extend Foundation's `RuntimeConfig` with plugin-specific configuration:
+Extend Foundation's `RuntimeConfig` for plugin-specific configuration:
 
 ```python
 from dataclasses import dataclass, field
@@ -17,58 +19,52 @@ import os
 
 @dataclass
 class PluginServiceConfig(RuntimeConfig):
-    """Advanced plugin configuration extending Foundation's RuntimeConfig."""
-    
+    """Plugin configuration extending Foundation's RuntimeConfig."""
+
     # Service identification
     service_name: str = field(default=os.environ.get("SERVICE_NAME", "unnamed"))
     service_version: str = field(default=os.environ.get("SERVICE_VERSION", "1.0.0"))
-    
+
     # Performance tuning
     max_concurrent_requests: int = field(default=int(os.environ.get("MAX_CONCURRENT_REQUESTS", "100")))
     request_timeout: float = field(default=float(os.environ.get("REQUEST_TIMEOUT", "30.0")))
-    
-    # Foundation integration settings
+
+    # Foundation integration
     enable_structured_logging: bool = field(default=True)
     enable_rate_limiting: bool = field(default=True)
     rate_limit_rps: float = field(default=100.0)
-    
-    def validate(self) -> None:
-        """Custom validation logic using Foundation patterns."""
+
+    def validate(self):
+        """Validate configuration using Foundation patterns."""
         super().validate()
-        
+
         if self.max_concurrent_requests < 1:
             raise ConfigError("max_concurrent_requests must be positive")
-        
+
         if self.request_timeout <= 0:
             raise ConfigError("request_timeout must be positive")
-        
+
         logger.info("Configuration validated", extra={
             "service": self.service_name,
-            "version": self.service_version,
-            "max_concurrent": self.max_concurrent_requests
+            "version": self.service_version
         })
 
 # Usage
 config = PluginServiceConfig()
 config.validate()
-
-# Access both custom and inherited Foundation config
-logger.info(f"Service: {config.service_name}")
-logger.info(f"RPC timeout: {rpcplugin_config.plugin_handshake_timeout}")
 ```
 
-## Cryptography & Certificate Management
+## Cryptography & Certificates
 
 ### Dynamic Certificate Generation
 
-Use Foundation's crypto module for dynamic certificate generation:
+Use Foundation's crypto module for certificate management:
 
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 from pyvider.rpcplugin import plugin_server
-from pyvider.rpcplugin.transport import TCPSocketTransport
 
 class CertificateManager:
     """Manages certificates using Foundation's crypto utilities."""
@@ -79,15 +75,13 @@ class CertificateManager:
         logger.info(f"Certificate manager initialized: {cert_dir}")
 
     async def ensure_certificates(self) -> Certificate:
-        """Ensure valid certificates exist, generating if needed."""
+        """Ensure valid certificates exist."""
         cert_path = self.cert_dir / "server.crt"
         key_path = self.cert_dir / "server.key"
 
         # Check existing certificates
         if cert_path.exists() and key_path.exists():
             try:
-                # Load certificate and key from PEM files
-                # Read the actual PEM content from files
                 cert_pem_content = cert_path.read_text()
                 key_pem_content = key_path.read_text()
 
@@ -96,38 +90,33 @@ class CertificateManager:
                     key_pem=key_pem_content
                 )
 
-                logger.info("Successfully loaded existing certificates")
+                logger.info("Loaded existing certificates")
                 return cert
             except Exception as e:
                 logger.warning(f"Error loading certificates: {e}, regenerating")
 
         # Generate new self-signed certificate
-        logger.info("Generating new self-signed certificate")
+        logger.info("Generating new certificate")
         cert = Certificate.create_self_signed_server_cert(
             common_name="plugin.local",
             organization_name="Pyvider RPC Plugin",
-            validity_days=365,  # Required parameter
-            alt_names=["localhost", "127.0.0.1"],  # Optional: Subject Alternative Names
-            # Optional: key_type="rsa", key_size=2048, ecdsa_curve="secp256r1"
+            validity_days=365,
+            alt_names=["localhost", "127.0.0.1"]
         )
 
-        # Save certificate and key to disk
+        # Save to disk
         cert_path.write_text(cert.cert_pem)
         key_path.write_text(cert.key_pem)
-        logger.info("New certificate and key generated and saved")
+        logger.info("Certificate generated and saved")
 
         return cert
 
-# Usage in plugin server
+# Usage
 async def create_secure_server():
     cert_manager = CertificateManager(Path("/etc/plugin/certs"))
     cert = await cert_manager.ensure_certificates()
 
-    # Create secure transport with Foundation-managed certificates
-    transport = TCPSocketTransport(
-        host="0.0.0.0",
-        port=8443
-    )
+    transport = TCPSocketTransport(host="0.0.0.0", port=8443)
 
     return plugin_server(
         protocol=plugin_protocol(),
@@ -138,17 +127,16 @@ async def create_secure_server():
 
 ### Certificate Rotation
 
-Implement certificate rotation with Foundation:
+Implement automatic certificate rotation:
 
 ```python
 import asyncio
-from provide.foundation.crypto import Certificate
 from provide.foundation import logger
 
 class CertificateRotator:
-    """Handles automatic certificate rotation using Foundation."""
+    """Handles automatic certificate rotation."""
 
-    def __init__(self, cert_manager: CertificateManager, server):
+    def __init__(self, cert_manager, server):
         self.cert_manager = cert_manager
         self.server = server
         self.rotation_task = None
@@ -161,37 +149,27 @@ class CertificateRotator:
         logger.info(f"Certificate rotation started (interval: {check_interval}s)")
 
     async def _rotation_loop(self, interval: int):
-        """Check and rotate certificates periodically."""
+        """Periodically check and rotate certificates."""
         while True:
             try:
                 await asyncio.sleep(interval)
-
-                # Regenerate certificates periodically for rotation
-                # In production, you'd implement more sophisticated expiry checking
                 logger.info("Rotating certificates on schedule")
                 await self._rotate_certificates()
-
             except asyncio.CancelledError:
                 break
             except Exception as e:
                 logger.error(f"Certificate rotation error: {e}", exc_info=True)
 
     async def _rotate_certificates(self):
-        """Perform certificate rotation with zero downtime."""
-        # Generate new certificate (contains both cert and key)
+        """Perform certificate rotation."""
         new_cert = await self.cert_manager.ensure_certificates()
-
-        # Update server with new certificate (implementation depends on transport)
         await self.server.update_certificates(new_cert)
-
         logger.info("Certificate rotated successfully")
 ```
 
 ## Advanced Rate Limiting
 
-### Per-Client Rate Limiting
-
-Implement sophisticated per-client rate limiting using Foundation:
+Per-client rate limiting using Foundation:
 
 ```python
 from collections import defaultdict
@@ -200,15 +178,15 @@ from provide.foundation import logger
 import time
 
 class PerClientRateLimiter:
-    """Per-client rate limiting using Foundation's TokenBucketRateLimiter."""
-    
+    """Per-client rate limiting with Foundation's TokenBucketRateLimiter."""
+
     def __init__(self, default_rps: float = 10.0, default_burst: float = 20.0):
         self.default_rps = default_rps
         self.default_burst = default_burst
-        self.limiters: dict[str, TokenBucketRateLimiter] = {}
+        self.limiters = {}
         self.last_cleanup = time.time()
         logger.info(f"Per-client rate limiter initialized (RPS: {default_rps})")
-    
+
     def get_limiter(self, client_id: str) -> TokenBucketRateLimiter:
         """Get or create rate limiter for client."""
         if client_id not in self.limiters:
@@ -217,32 +195,32 @@ class PerClientRateLimiter:
                 refill_rate=self.default_rps
             )
             logger.debug(f"Created rate limiter for client: {client_id}")
-        
-        # Periodic cleanup of old limiters
-        if time.time() - self.last_cleanup > 300:  # 5 minutes
+
+        # Periodic cleanup
+        if time.time() - self.last_cleanup > 300:
             self._cleanup_old_limiters()
-        
+
         return self.limiters[client_id]
-    
+
     def _cleanup_old_limiters(self):
         """Remove limiters for inactive clients."""
         current_time = time.time()
         to_remove = []
-        
+
         for client_id, limiter in self.limiters.items():
-            if current_time - limiter.last_access > 600:  # 10 minutes inactive
+            if current_time - limiter.last_access > 600:  # 10 minutes
                 to_remove.append(client_id)
-        
+
         for client_id in to_remove:
             del self.limiters[client_id]
             logger.debug(f"Removed inactive rate limiter: {client_id}")
-        
+
         self.last_cleanup = current_time
-    
+
     async def check_rate_limit(self, client_id: str, weight: float = 1.0) -> bool:
         """Check if request is allowed for client."""
         limiter = self.get_limiter(client_id)
-        
+
         if await limiter.is_allowed():
             logger.debug(f"Request allowed for client: {client_id}")
             return True
@@ -261,20 +239,17 @@ class RateLimitedHandler:
             default_rps=100.0,
             default_burst=200.0
         )
-    
+
     async def handle_request(self, request, context):
-        # Extract client ID from context
         client_id = context.peer() or "unknown"
-        
+
         if not await self.rate_limiter.check_rate_limit(client_id):
             raise Exception("Rate limit exceeded")
-        
+
         return await self.process_request(request)
 ```
 
 ## Structured Logging & Observability
-
-### Context-Aware Logging
 
 Leverage Foundation's structured logging for comprehensive observability:
 
@@ -286,27 +261,27 @@ import uuid
 import time
 
 # Context variables for request tracking
-request_id_var: ContextVar[str] = ContextVar('request_id', default=None)
-client_id_var: ContextVar[str] = ContextVar('client_id', default=None)
+request_id_var = ContextVar('request_id', default=None)
+client_id_var = ContextVar('client_id', default=None)
 
 class ObservableHandler:
     """Handler with comprehensive observability using Foundation logging."""
-    
+
     def __init__(self):
         self.request_counter = 0
         self.error_counter = 0
         self.latencies = []
-    
+
     async def handle_request(self, request, context):
         """Handle request with full observability."""
         request_id = str(uuid.uuid4())
         client_id = context.peer() or "unknown"
         start_time = time.time()
-        
+
         # Set context variables
         request_id_var.set(request_id)
         client_id_var.set(client_id)
-        
+
         # Log request with context
         logger.info("Request received", extra={
             "request_id": request_id,
@@ -314,17 +289,14 @@ class ObservableHandler:
             "method": context.method,
             "request_size": len(str(request))
         })
-        
+
         try:
-            # Process request
             result = await self.process_request(request)
-            
-            # Calculate metrics
+
             duration = time.time() - start_time
             self.request_counter += 1
             self.latencies.append(duration)
-            
-            # Log success with metrics
+
             logger.info("Request completed", extra={
                 "request_id": request_id,
                 "client_id": client_id,
@@ -332,14 +304,13 @@ class ObservableHandler:
                 "response_size": len(str(result)),
                 "total_requests": self.request_counter
             })
-            
+
             return result
-            
+
         except Exception as e:
-            # Log error with context
             duration = time.time() - start_time
             self.error_counter += 1
-            
+
             logger.error("Request failed", extra={
                 "request_id": request_id,
                 "client_id": client_id,
@@ -347,14 +318,14 @@ class ObservableHandler:
                 "error": str(e),
                 "error_rate": self.error_counter / max(1, self.request_counter)
             }, exc_info=True)
-            
+
             raise
-    
-    def get_metrics(self) -> dict:
+
+    def get_metrics(self):
         """Get handler metrics."""
         if not self.latencies:
             return {"requests": 0}
-        
+
         return {
             "total_requests": self.request_counter,
             "total_errors": self.error_counter,
@@ -371,7 +342,6 @@ class ObservableHandler:
 Implement circuit breaker using Foundation patterns:
 
 ```python
-import asyncio
 from enum import Enum
 from datetime import datetime, timedelta
 from provide.foundation import logger
@@ -383,7 +353,7 @@ class CircuitState(Enum):
 
 class CircuitBreaker:
     """Circuit breaker implementation using Foundation patterns."""
-    
+
     def __init__(
         self,
         failure_threshold: int = 5,
@@ -393,16 +363,16 @@ class CircuitBreaker:
         self.failure_threshold = failure_threshold
         self.recovery_timeout = recovery_timeout
         self.expected_exception = expected_exception
-        
+
         self.failure_count = 0
         self.last_failure_time = None
         self.state = CircuitState.CLOSED
-        
+
         logger.info("Circuit breaker initialized", extra={
             "threshold": failure_threshold,
             "timeout": recovery_timeout
         })
-    
+
     async def call(self, func, *args, **kwargs):
         """Execute function with circuit breaker protection."""
         if self.state == CircuitState.OPEN:
@@ -412,7 +382,7 @@ class CircuitBreaker:
             else:
                 logger.warning("Circuit breaker is open, rejecting call")
                 raise Exception("Circuit breaker is OPEN")
-        
+
         try:
             result = await func(*args, **kwargs)
             self._on_success()
@@ -420,36 +390,34 @@ class CircuitBreaker:
         except self.expected_exception as e:
             self._on_failure()
             raise
-    
+
     def _should_attempt_reset(self) -> bool:
         """Check if we should try to reset the circuit."""
         if self.last_failure_time is None:
             return False
-        
+
         return datetime.now() >= self.last_failure_time + timedelta(seconds=self.recovery_timeout)
-    
+
     def _on_success(self):
         """Handle successful call."""
         if self.state == CircuitState.HALF_OPEN:
             logger.info("Circuit breaker reset to closed")
             self.state = CircuitState.CLOSED
-        
+
         self.failure_count = 0
         self.last_failure_time = None
-    
+
     def _on_failure(self):
         """Handle failed call."""
         self.failure_count += 1
         self.last_failure_time = datetime.now()
-        
+
         if self.failure_count >= self.failure_threshold:
             self.state = CircuitState.OPEN
             logger.error("Circuit breaker opened", extra={
                 "failures": self.failure_count,
                 "threshold": self.failure_threshold
             })
-        else:
-            logger.warning(f"Circuit breaker failure {self.failure_count}/{self.failure_threshold}")
 
 # Usage in plugin handler
 class ResilientHandler:
@@ -458,107 +426,52 @@ class ResilientHandler:
             failure_threshold=3,
             recovery_timeout=30
         )
-    
+
     async def handle_request(self, request, context):
         return await self.circuit_breaker.call(
             self._process_with_retry,
             request
         )
-    
+
     async def _process_with_retry(self, request):
-        # Actual processing logic
         return await external_service.process(request)
 ```
 
-## Performance Optimization
+## Best Practices
 
-### Connection Pooling with Foundation
+### Configuration
 
-Implement efficient connection pooling:
+- Extend `RuntimeConfig` for type-safe configuration
+- Validate early in lifecycle
+- Use environment variables with sensible defaults
 
-```python
-import asyncio
-from provide.foundation import logger
-from provide.foundation.config import RuntimeConfig
+### Security
 
-class ConnectionPool:
-    """Connection pool using Foundation patterns."""
-    
-    def __init__(self, min_size: int = 5, max_size: int = 20):
-        self.min_size = min_size
-        self.max_size = max_size
-        self.connections = []
-        self.available = asyncio.Queue(maxsize=max_size)
-        self.in_use = set()
-        
-        logger.info(f"Connection pool initialized (min: {min_size}, max: {max_size})")
-    
-    async def initialize(self):
-        """Pre-create minimum connections."""
-        for _ in range(self.min_size):
-            conn = await self._create_connection()
-            await self.available.put(conn)
-        
-        logger.info(f"Connection pool ready with {self.min_size} connections")
-    
-    async def acquire(self) -> Any:
-        """Acquire connection from pool."""
-        try:
-            # Try to get available connection
-            conn = await asyncio.wait_for(self.available.get(), timeout=0.1)
-        except asyncio.TimeoutError:
-            # Create new connection if under limit
-            if len(self.connections) < self.max_size:
-                conn = await self._create_connection()
-                logger.debug("Created new connection for pool")
-            else:
-                # Wait for connection to become available
-                logger.warning("Connection pool at maximum, waiting...")
-                conn = await self.available.get()
-        
-        self.in_use.add(conn)
-        return conn
-    
-    async def release(self, conn):
-        """Return connection to pool."""
-        self.in_use.discard(conn)
-        
-        if await self._is_connection_healthy(conn):
-            await self.available.put(conn)
-        else:
-            logger.warning("Unhealthy connection discarded")
-            self.connections.remove(conn)
-            
-            # Maintain minimum pool size
-            if len(self.connections) < self.min_size:
-                new_conn = await self._create_connection()
-                await self.available.put(new_conn)
-    
-    async def _create_connection(self):
-        """Create new connection."""
-        # Implementation specific to your needs
-        conn = await create_plugin_connection()
-        self.connections.append(conn)
-        return conn
-    
-    async def _is_connection_healthy(self, conn) -> bool:
-        """Check if connection is still healthy."""
-        try:
-            await conn.ping()
-            return True
-        except:
-            return False
-```
+- Use Foundation's crypto module for certificate management
+- Implement certificate rotation for long-running services
+- Never hardcode secrets or credentials
 
-## Summary
+### Observability
 
-These advanced integration patterns demonstrate how Pyvider RPC Plugin leverages Foundation's infrastructure for:
+- Use structured logging with Foundation's logger
+- Include request context in all log messages
+- Track metrics for error rates and latencies
 
-1. **Configuration Management** - Type-safe, validated configuration inheritance
-2. **Security** - Dynamic certificate generation and rotation
-3. **Rate Limiting** - Sophisticated per-client rate limiting
-4. **Observability** - Structured logging with request context
-5. **Resilience** - Circuit breakers and error recovery
-6. **Performance** - Connection pooling and resource management
+### Rate Limiting
 
-Foundation provides the infrastructure layer, while Pyvider RPC Plugin extends it with RPC-specific functionality, creating a powerful and production-ready plugin system.
+- Implement per-client rate limiting
+- Clean up inactive limiters periodically
+- Log rate limit violations for monitoring
+
+### Error Handling
+
+- Use circuit breakers for external dependencies
+- Implement retry logic with exponential backoff
+- Log errors with full context for debugging
+
+## Related Topics
+
+- [Configuration](../config/configuration-guide.md) - Configuration patterns
+- [Observability](observability.md) - Metrics and tracing
+- [Lifecycle Management](lifecycle.md) - Plugin lifecycle
+- [Middleware](middleware.md) - Cross-cutting concerns

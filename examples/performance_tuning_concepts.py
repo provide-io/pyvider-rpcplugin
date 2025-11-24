@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Performance Tuning - Performance benchmarking and optimization patterns."""
 
 import asyncio
@@ -59,7 +60,6 @@ async def connection_pooling_example() -> None:
             if self.active_connections < self.pool_size:
                 self.active_connections += 1
                 connection_id = f"conn_{self.active_connections}"
-                logger.info(f"🔌 Created new connection: {connection_id}")
                 return connection_id
             else:
                 await asyncio.sleep(0.01)  # Wait for available connection
@@ -87,16 +87,14 @@ async def connection_pooling_example() -> None:
 
         tasks.append(use_connection(i))
 
-    results = await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
     monitor.end_timer("connection_test")
 
-    logger.info(f"✅ Processed {len(results)} requests")
     monitor.report()
 
 
 async def batch_processing_example() -> None:
     """Example: Batch processing optimization."""
-    logger.info("📦 Batch Processing Example")
 
     async def process_single_item(item: str) -> str:
         """Process a single item (inefficient)."""
@@ -171,8 +169,6 @@ async def memory_optimization_example() -> None:
     memory_savings = list_size - gen_size
     logger.info(f"💰 Memory savings: {memory_savings:,} bytes ({memory_savings / list_size * 100:.1f}%)")
 
-    logger.info("✅ Memory optimization example completed")
-
 
 async def main() -> None:
     """Run performance tuning examples."""
@@ -184,15 +180,12 @@ async def main() -> None:
 
     logger.info("🏁 Performance Guidelines:")
     logger.info("  🏊 Use connection pooling for high-concurrency scenarios")
-    logger.info("  📦 Batch operations when possible to reduce overhead")
     logger.info("  💾 Use generators for large datasets to save memory")
     logger.info("  ⏱️  Profile your application to identify bottlenecks")
     logger.info("  📊 Monitor key metrics in production")
-
-    logger.info("✅ All performance examples completed")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🐍🔌📞🔚

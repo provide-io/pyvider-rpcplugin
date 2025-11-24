@@ -2,34 +2,43 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
+"""TODO: Add module docstring."""
+
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Security and mTLS Configuration - Functional Example.
 This example demonstrates a working mTLS setup between a client and a server
 plugin launched as a subprocess."""
 
-import asyncio
-import os
-from pathlib import Path
-import sys
-import tempfile
+import asyncio  # noqa: E402
+import os  # noqa: E402
+from pathlib import Path  # noqa: E402
+import sys  # noqa: E402
+import tempfile  # noqa: E402
 
 # First-party imports (project-specific)
-from example_utils import configure_for_example  # type: ignore[import-not-found]
-from provide.foundation import logger
-from provide.foundation.crypto import Certificate
+from example_utils import configure_for_example  # type: ignore[import-not-found]  # noqa: E402
 
-from pyvider.rpcplugin import (
+# Apply base configuration for examples (paths, logging)
+# Client context, clear its own env before specific mTLS config.
+configure_for_example(clear_env=True)
+
+from provide.foundation import logger  # noqa: E402
+from provide.foundation.crypto import Certificate  # noqa: E402
+
+from pyvider.rpcplugin import (  # noqa: E402
     RPCPluginClient,
     RPCPluginError,
     configure,
     plugin_client,
 )
 
-# Apply base configuration for examples (paths, logging)
-# Client context, clear its own env before specific mTLS config.
-configure_for_example(clear_env=True)
 
-
-async def functional_mtls_example() -> None:
+async def functional_mtls_example() -> None:  # noqa: C901
     """Functional example of mTLS configuration and operation."""
 
     temp_dir_obj = tempfile.TemporaryDirectory(prefix="pyvider_mtls_example_")
@@ -91,12 +100,9 @@ async def functional_mtls_example() -> None:
             temp_dir_path / "ca_for_server_to_verify_client.crt"
         )  # Server uses this to verify client
 
-        with open(server_cert_file_path, "w") as f:
-            f.write(server_cert_pem)
-        with open(server_key_file_path, "w") as f:
-            f.write(server_key_pem)
-        with open(ca_cert_file_path, "w") as f:  # This CA is for server to verify client
-            f.write(ca_cert_pem)
+        server_cert_file_path.write_text(server_cert_pem)
+        server_key_file_path.write_text(server_key_pem)
+        ca_cert_file_path.write_text(ca_cert_pem)  # This CA is for server to verify client
         logger.info(f"🔑 Server-related certificates saved to {temp_dir_path}")
 
         # 2. Configure Client-Side mTLS (for this script's RPCPluginClient instance)
@@ -116,7 +122,6 @@ async def functional_mtls_example() -> None:
             connection_timeout=25.0,
             channel_ready_timeout=25.0,  # Increased from default 10s
         )
-        logger.info("🔧 Client-side mTLS configured programmatically using PEM strings via configure().")
 
         # No need to set os.environ for client-side certs if configure() is
         # respected and not reset before client use. The main issue is ensuring
@@ -155,10 +160,9 @@ async def functional_mtls_example() -> None:
             client = plugin_client(command=dummy_server_command, config={"env": server_env_vars})
 
             await client.start()
-            logger.info("✅ Successfully connected to mTLS-enabled server!")
 
             if client._controller_stub:  # Accessing private member for example check
-                logger.info("✅ Controller stub available, basic connection seems okay.")
+                logger.info("✅ mTLS handshake successful, controller stub available.")
             else:
                 logger.error("❌ Controller stub not available after connect.")
 
@@ -170,9 +174,7 @@ async def functional_mtls_example() -> None:
             logger.error(f"❌ An unexpected error occurred: {e}", exc_info=True)
         finally:
             if client:
-                logger.info("🔌 Shutting down client and mTLS-enabled server...")
                 await client.close()
-                logger.info("🔌 Client and server shut down.")
 
     finally:
         # 5. Cleanup
@@ -201,4 +203,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🐍🔌📞🔚

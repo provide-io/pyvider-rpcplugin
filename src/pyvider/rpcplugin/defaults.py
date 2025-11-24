@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Default configuration values for the RPC plugin system.
 
 This module centralizes all default values to avoid inline defaults
@@ -62,7 +63,7 @@ DEFAULT_SUPPORTED_TRANSPORTS = ["unix", "tcp"]
 DEFAULT_PLUGIN_AUTO_MTLS = True
 DEFAULT_PLUGIN_INSECURE = False
 DEFAULT_PLUGIN_CERT_VALIDITY_DAYS = 365
-DEFAULT_PLUGIN_MTLS_CERT_DIR = "/tmp/plugin-certs"
+DEFAULT_PLUGIN_MTLS_CERT_DIR = "/tmp/plugin-certs"  # nosec B108 - fallback path for development; override in production
 DEFAULT_PLUGIN_CLIENT_CERT_FILE = ""
 DEFAULT_PLUGIN_CLIENT_KEY_FILE = ""
 DEFAULT_PLUGIN_CLIENT_ROOT_CERTS = ""
@@ -104,7 +105,7 @@ DEFAULT_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S = 30.0
 # =================================
 DEFAULT_PLUGIN_SERVER_HOST = "localhost"
 DEFAULT_PLUGIN_SERVER_PORT = 0
-DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH = "/tmp/plugin.sock"
+DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH = "/tmp/plugin.sock"  # nosec B108 - fallback path for development; override in production
 DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH = ""
 
 # =================================
@@ -117,4 +118,4 @@ DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED = True
 DEFAULT_PLUGIN_UI_ENABLED = False
 DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX = False
 
-# 📞🔌🔚
+# 🐍🔌📞🔚

@@ -1,4 +1,9 @@
-# tests/client/test_client_transport.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 from provide.testkit.mocking import patch, MagicMock, AsyncMock
@@ -139,5 +144,4 @@ async def test_launch_process_generic_error(client_instance):
         with pytest.raises(TransportError, match=expected_msg_regex):
             await client_instance._launch_process()
 
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

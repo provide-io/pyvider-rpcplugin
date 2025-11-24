@@ -1,6 +1,6 @@
 # Glossary
 
-**Path:** [Home](../index.md) → [Reference](index.md) → Glossary
+**Path:** [Home](../index/) → [Reference](index/) → Glossary
 
 ## Core Terms
 
@@ -160,4 +160,4 @@ export PLUGIN_SERVER_TRANSPORTS="unix,tcp"
 
 ---
 
-**Navigation:** [Previous: Reference](index.md) | [Home](../index.md)
+**Navigation:** [Previous: Reference](index/) | [Home](../index/)

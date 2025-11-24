@@ -1,12 +1,32 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Generate the API reference pages for mkdocs."""
 
+from __future__ import annotations
+
+import os
 from pathlib import Path
 
 import mkdocs_gen_files
 
-nav = mkdocs_gen_files.Nav()
-# Source code is in 'src/pyvider/rpcplugin' directory at the project root
-src_root = Path("src")
+nav = mkdocs_gen_files.Nav()  # type: ignore[attr-defined,no-untyped-call]
+
+# Get the directory containing mkdocs.yml (works in both standalone and monorepo)
+config_dir = Path(os.getenv("MKDOCS_CONFIG_DIR", "."))
+src_root = config_dir / "src"
+
+# Fallback if source directory not found
+if not src_root.exists():
+    # Try current directory (for standalone builds)
+    src_root = Path("src")
+    if not src_root.exists():
+        # No source files to document - exit silently
+        import sys
+
+        sys.exit(0)
 
 for path in sorted(src_root.rglob("*.py")):
     if "__pycache__" in str(path):
@@ -46,3 +66,5 @@ for path in sorted(src_root.rglob("*.py")):
 
 with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
     nav_file.writelines(nav.build_literate_nav())
+
+# 🐍🔌📞🔚

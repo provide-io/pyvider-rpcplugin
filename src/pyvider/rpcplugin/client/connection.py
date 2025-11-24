@@ -2,38 +2,37 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Client Connection Management.
 
 This module defines the `ClientConnection` class, responsible for managing
 the state and I/O operations of a single client connection within the
 Pyvider RPC Plugin system. It includes metrics tracking and supports
 dependency injection for I/O functions to facilitate testing."""
-import asyncio
-import logging
-from typing import (
-    Any,
-    Awaitable,
-    Callable,
-    Optional,
-)
 
-from attrs import (
-    define,
-    field,
+import asyncio
+from collections.abc import (
+    Awaitable,
+    Callable as AbcCallable,
 )
+from typing import Any  # Added for __eq__ type hint
+
+from attrs import define, field
+from provide.foundation.logger import get_logger
 
 from pyvider.rpcplugin.config import rpcplugin_config
 
-# Type aliases for dependency injection
-SendFuncType = Callable[[bytes], Awaitable[None]]
-ReceiveFuncType = Callable[[Optional[int]], Awaitable[bytes]]
+logger = get_logger(__name__)
 
-logger = logging.getLogger(__name__)
+# Type aliases for dependency-injected I/O functions using collections.abc
+SendFuncType = AbcCallable[[bytes], Awaitable[None]]
+ReceiveFuncType = AbcCallable[[int], Awaitable[bytes]]
 
 
-@define(slots=True, weakref_slot=False)
+@define(slots=True, frozen=False)
 class ClientConnection:
-    """Represents an active client connection with associated metrics and state.
+    """
+    Represents an active client connection with associated metrics and state.
 
     This class wraps the asyncio StreamReader and StreamWriter with additional
     functionality for tracking metrics and managing connection state. It now
@@ -216,4 +215,5 @@ class ClientConnection:
             return NotImplemented
         return id(self) == id(other)
 
-# 📞🔌🔚
+
+# 🐍🔌📞🔚

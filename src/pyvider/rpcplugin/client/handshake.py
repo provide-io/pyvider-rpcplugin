@@ -2,21 +2,21 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Client handshake functionality for RPC plugin connections.
 
 This module contains handshake-related methods including retry logic,
 certificate setup, handshake parsing, and X.509 certificate processing."""
+
 from __future__ import annotations
 
 import asyncio
-import logging
 import os
 import random
 import time
-from typing import (
-    TYPE_CHECKING,
-    NamedTuple,
-)
+from typing import TYPE_CHECKING, NamedTuple
+
+from provide.foundation.crypto import Certificate
 
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import (
@@ -30,16 +30,14 @@ from pyvider.rpcplugin.exception import (
     TransportError,
 )
 from pyvider.rpcplugin.handshake import parse_handshake_response
-from pyvider.rpcplugin.security import Certificate
 
 if TYPE_CHECKING:
-    from pyvider.rpcplugin.client import RPCPluginClient
-
-logger = logging.getLogger(__name__)
+    from pyvider.rpcplugin.client.core import RPCPluginClient
 
 
 class HandshakeData(NamedTuple):
-    """Essential data parsed from the plugin's handshake response.
+    """
+    Essential data parsed from the plugin's handshake response.
 
     This tuple contains the core information needed to establish a connection
     with the plugin server after the handshake protocol completes.
@@ -349,7 +347,7 @@ class ClientHandshakeMixin:
         chunk = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)  # type: ignore[arg-type]  # pyre-ignore[6]
+                lambda: self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)
                 if self._process and self._process.process and self._process.process.stdout
                 else b"",
             ),
@@ -534,4 +532,5 @@ class ClientHandshakeMixin:
 
         return pem_cert
 
-# 📞🔌🔚
+
+# 🐍🔌📞🔚

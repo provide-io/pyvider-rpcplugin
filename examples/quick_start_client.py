@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Quick Start Example - Client launching an executable plugin server."""
 
 import asyncio
@@ -41,7 +42,6 @@ async def main() -> None:
         logger.info("Starting client and connecting to plugin...")
         await client.start()
 
-        logger.info("✅ Client connected to dummy_server plugin successfully!")
         logger.info("   The dummy_server uses a basic protocol with no custom RPC methods.")
         # If your plugin had defined services (e.g., via .proto files),
         # you would create a gRPC stub here using client.grpc_channel:
@@ -68,4 +68,4 @@ async def main() -> None:
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🐍🔌📞🔚

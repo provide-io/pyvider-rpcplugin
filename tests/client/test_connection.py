@@ -1,4 +1,9 @@
-# pyvider/rpcplugin/tests/transport/test_connection.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import asyncio
 import gc
@@ -218,5 +223,4 @@ async def test_del_warning() -> None:
             f"Actual calls: {mock_log_warning.call_args_list}"
         )
 
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

@@ -1,4 +1,9 @@
-# pyvider/rpcplugin/tests/server/test_server_handshake.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 from pyvider.rpcplugin.server import RPCPluginServer
@@ -61,5 +66,4 @@ async def test_negotiate_handshake_via_negotiation(
     else:
         assert isinstance(server._transport, UnixSocketTransport)
 
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

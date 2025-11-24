@@ -1,4 +1,10 @@
-# tests/handshake/test_handshake_magic_cookie.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
+
 import pytest
 
 from pyvider.rpcplugin.handshake import validate_magic_cookie
@@ -264,5 +270,4 @@ def test_validate_magic_cookie_explicit_none_empty_key(monkeypatch) -> None:
             magic_cookie_key="key", magic_cookie_value="val", magic_cookie=""
         )
 
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

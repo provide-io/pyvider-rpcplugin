@@ -1,4 +1,9 @@
-# tests/protocol/test_grpc_stdio.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 import importlib
@@ -119,8 +124,4 @@ async def test_stdio_experimental_api() -> None:
         )
         mock_unary_stream.assert_called_once()
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

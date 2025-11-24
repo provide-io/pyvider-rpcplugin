@@ -1,9 +1,9 @@
 #
-# pyvider/rpcplugin/telemetry.py
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
-# pyre-ignore-all-errors
-"""
-OpenTelemetry integration for RPC Plugin framework.
+
+"""OpenTelemetry integration for RPC Plugin framework.
 
 This module provides access to OpenTelemetry tracing for RPC operations.
 
@@ -44,8 +44,7 @@ Note:
     via instrumentation.library.name="pyvider.rpcplugin".
 
     All traces will appear under the application's service.name, making
-    observability unified rather than fragmented.
-"""
+    observability unified rather than fragmented."""
 
 from __future__ import annotations
 
@@ -69,7 +68,7 @@ except ImportError:
     otel_metrics = None  # type: ignore[assignment]
 
 
-def get_rpc_tracer() -> otel_trace.Tracer | None:  # type: ignore  # pyre-ignore[11]  # pyre-ignore[16]
+def get_rpc_tracer() -> otel_trace.Tracer | None:
     """Get OpenTelemetry tracer for RPC operations.
 
     Returns tracer from the already-configured global tracer provider.
@@ -147,3 +146,5 @@ __all__ = [
     "get_rpc_tracer",
     "is_telemetry_available",
 ]
+
+# 🐍🔌📞🔚
