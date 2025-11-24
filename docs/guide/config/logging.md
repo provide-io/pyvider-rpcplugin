@@ -15,123 +15,87 @@ The logging system provides:
 
 ## Basic Configuration
 
-### Log Level Configuration
+### Log Level
 
-Control logging verbosity with the log level setting:
+Control logging verbosity:
 
 ```bash
-# Development: Verbose logging
+# Development
 export PLUGIN_LOG_LEVEL=DEBUG
 
-# Production: Standard logging
+# Production
 export PLUGIN_LOG_LEVEL=INFO
 
-# High-traffic production: Minimal logging
+# High-traffic production
 export PLUGIN_LOG_LEVEL=WARNING
 ```
 
 ### Emoji Enhancement
 
-Enable or disable emoji indicators in log messages:
-
 ```bash
-# Enable emoji enhancement (development)
+# Enable for development (human-readable)
 export PLUGIN_SHOW_EMOJI_MATRIX=true
 
-# Disable emoji enhancement (production log aggregation)
+# Disable for production (machine-readable)
 export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
-## Log Levels and Content
+---
 
-### DEBUG Level
+## Log Levels
 
-Most verbose logging including internal operations:
+### Quick Reference
 
-```python
-# Example DEBUG log messages
-2024-01-15 10:30:45.123 DEBUG [pyvider.rpcplugin.transport.unix] 🔌 Creating Unix socket transport path="/tmp/plugin.sock"
-2024-01-15 10:30:45.124 DEBUG [pyvider.rpcplugin.server] 🏗️ Server initialization transport=unix endpoint="/tmp/plugin.sock"
-2024-01-15 10:30:45.125 DEBUG [pyvider.rpcplugin.handshake] 🤝 Handshake initiated protocol_version=1 magic_cookie_length=32
-2024-01-15 10:30:45.126 DEBUG [pyvider.rpcplugin.security] 🔐 mTLS configuration loaded server_cert_path="/etc/ssl/server.pem"
-```
+| Level | Use Case | Overhead | Example |
+|-------|----------|----------|---------|
+| **DEBUG** | Local development, troubleshooting | ~50μs/req | `🔌 Creating Unix socket transport path="/tmp/plugin.sock"` |
+| **INFO** | Production monitoring | ~20μs/req | `🚀 Plugin server started endpoint="unix:/tmp/plugin.sock"` |
+| **WARNING** | Important events | ~10μs/req | `⚠️ Self-signed certificate detected - not for production` |
+| **ERROR** | Service operation errors | ~5μs/req | `❌ Connection failed endpoint="tcp:server:8080"` |
+| **CRITICAL** | System-threatening | Minimal | `💥 Server shutdown due to critical error` |
 
-**Use DEBUG for:**
-- Local development
-- Troubleshooting connection issues  
-- Understanding handshake flow
-- Certificate and TLS debugging
+### Detailed Usage
 
-### INFO Level
+=== "DEBUG"
 
-Standard operational logging:
+    Most verbose logging including internal operations.
 
-```python
-# Example INFO log messages  
-2024-01-15 10:30:45.200 INFO [pyvider.rpcplugin.server] 🚀 Plugin server started endpoint="unix:/tmp/plugin.sock" protocol_version=1
-2024-01-15 10:30:45.205 INFO [pyvider.rpcplugin.client] 🔗 Client connected to server endpoint="unix:/tmp/plugin.sock" handshake_time=0.005s
-2024-01-15 10:30:45.210 INFO [pyvider.rpcplugin.health] ❤️ Health service registered endpoints=["/grpc.health.v1.Health/Check"]
-2024-01-15 10:30:45.215 INFO [pyvider.rpcplugin.ratelimit] 🚦 Rate limiting enabled rate=100.0/s burst=200
-```
+    ```python
+    2024-01-15 10:30:45.123 DEBUG [pyvider.rpcplugin.server] 🏗️ Server initialization transport=unix
+    2024-01-15 10:30:45.125 DEBUG [pyvider.rpcplugin.handshake] 🤝 Handshake initiated protocol_version=1
+    ```
 
-**Use INFO for:**
-- Production monitoring
-- Service health tracking
-- Connection lifecycle events
-- Performance metrics
+    **Use for:** Local development, connection debugging, TLS troubleshooting
 
-### WARNING Level
+=== "INFO"
 
-Important events that may require attention:
+    Standard operational logging.
 
-```python
-# Example WARNING log messages
-2024-01-15 10:30:45.300 WARNING [pyvider.rpcplugin.security] ⚠️ Self-signed certificate detected - not recommended for production
-2024-01-15 10:30:45.305 WARNING [pyvider.rpcplugin.ratelimit] 🚦 Rate limit threshold reached client="192.168.1.100" requests=95/100
-2024-01-15 10:30:45.310 WARNING [pyvider.rpcplugin.transport] 🔌 Connection retry attempt=3/5 backoff=2.0s endpoint="tcp:server:8080"
-```
+    ```python
+    2024-01-15 10:30:45.200 INFO [pyvider.rpcplugin.server] 🚀 Plugin server started endpoint="unix:/tmp/plugin.sock"
+    2024-01-15 10:30:45.205 INFO [pyvider.rpcplugin.client] 🔗 Client connected handshake_time=0.005s
+    ```
 
-**Use WARNING for:**
-- Production environments with moderate traffic
-- Security-focused deployments
-- Systems with established monitoring
+    **Use for:** Production monitoring, service health tracking, performance metrics
 
-### ERROR Level
+=== "WARNING/ERROR"
 
-Error conditions that affect service operation:
+    Important events and errors.
 
-```python
-# Example ERROR log messages
-2024-01-15 10:30:45.400 ERROR [pyvider.rpcplugin.transport] ❌ Connection failed endpoint="tcp:server:8080" error="Connection refused"
-2024-01-15 10:30:45.405 ERROR [pyvider.rpcplugin.security] 🔐 Certificate validation failed cert_path="/etc/ssl/bad.pem" error="Invalid certificate format"
-2024-01-15 10:30:45.410 ERROR [pyvider.rpcplugin.handshake] 🤝 Handshake timeout exceeded client="192.168.1.100" timeout=30.0s
-```
+    ```python
+    2024-01-15 10:30:45.300 WARNING [pyvider.rpcplugin.ratelimit] 🚦 Rate limit threshold reached
+    2024-01-15 10:30:45.400 ERROR [pyvider.rpcplugin.transport] ❌ Connection failed error="Connection refused"
+    ```
 
-**Use ERROR for:**
-- Critical production systems
-- Alert-driven monitoring
-- Minimal log volume requirements
+    **Use for:** Production with established monitoring, alert-driven systems
 
-### CRITICAL Level
-
-System-threatening conditions requiring immediate attention:
-
-```python
-# Example CRITICAL log messages
-2024-01-15 10:30:45.500 CRITICAL [pyvider.rpcplugin.server] 💥 Server shutdown due to critical error error="Out of memory"
-2024-01-15 10:30:45.505 CRITICAL [pyvider.rpcplugin.security] 🚨 Security breach detected unauthorized_access=true client="unknown"
-```
-
-**Use CRITICAL for:**
-- High-security environments
-- Systems where any error is critical
-- Alert-only logging configurations
+---
 
 ## Structured Logging Format
 
-### JSON Output Format
+### JSON Output (Production)
 
-When emoji enhancement is disabled, logs use structured JSON format:
+When emoji enhancement is disabled:
 
 ```json
 {
@@ -142,27 +106,25 @@ When emoji enhancement is disabled, logs use structured JSON format:
   "context": {
     "endpoint": "unix:/tmp/plugin.sock",
     "protocol_version": 1,
-    "transport_type": "unix",
-    "server_id": "srv_abc123",
-    "pid": 12345
+    "server_id": "srv_abc123"
   },
   "correlation_id": "req_xyz789",
   "duration_ms": 5.2
 }
 ```
 
-### Console Output Format
+### Console Output (Development)
 
-With emoji enhancement enabled for development:
+With emoji enhancement enabled:
 
 ```
 2024-01-15 10:30:45.123 INFO [pyvider.rpcplugin.server] 🚀 Plugin server started
   └─ endpoint: unix:/tmp/plugin.sock
   └─ protocol_version: 1
-  └─ transport_type: unix
-  └─ server_id: srv_abc123
   └─ duration: 5.2ms
 ```
+
+---
 
 ## Context and Correlation
 
@@ -175,24 +137,19 @@ The logging system automatically includes contextual information:
 {
   "server_id": "srv_abc123",
   "transport_type": "unix",
-  "endpoint": "/tmp/plugin.sock",
-  "pid": 12345,
-  "thread_id": "MainThread"
+  "endpoint": "/tmp/plugin.sock"
 }
 
-# Client context  
+# Client context
 {
-  "client_id": "cli_def456", 
+  "client_id": "cli_def456",
   "connection_id": "conn_ghi789",
-  "peer_address": "unix:/tmp/plugin.sock",
   "request_id": "req_jkl012"
 }
 
 # Request context
 {
   "method": "MyService.ProcessData",
-  "request_size": 1024,
-  "response_size": 2048,
   "duration_ms": 15.7,
   "status": "OK"
 }
@@ -200,315 +157,205 @@ The logging system automatically includes contextual information:
 
 ### Custom Context
 
-Add custom context to log messages using the `extra` parameter:
+Add custom context using the `extra` parameter:
 
 ```python
 from provide.foundation import logger
 
-# Add context to specific log message
 logger.info("Processing user request", extra={
     "user_id": "user_12345",
     "operation": "data_processing",
-    "batch_size": 100,
     "priority": "high"
 })
-
-# For multiple related log messages, include consistent context
-logger.info("Starting user session", extra={
-    "user_id": "user_12345",
-    "session_id": "sess_67890"
-})
-logger.debug("Loading user preferences", extra={
-    "user_id": "user_12345",
-    "session_id": "sess_67890"
-})
-logger.info("Session initialized successfully", extra={
-    "user_id": "user_12345",
-    "session_id": "sess_67890"
-})
 ```
 
-## Integration Examples
+---
 
-### ELK Stack (Elasticsearch, Logstash, Kibana)
+## Log Aggregation Integration
 
-Configure for ELK ingestion:
+Configure for log aggregation systems by disabling emoji and using JSON format:
 
 ```bash
-# Production ELK configuration
+# Common configuration for all log aggregation systems
 export PLUGIN_LOG_LEVEL=INFO
 export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
-Logstash configuration:
-```ruby
-input {
-  file {
-    path => "/var/log/plugin/*.log"
-    codec => "json"
-  }
-}
+### Platform-Specific Configuration
 
-filter {
-  if [logger] =~ /pyvider\.rpcplugin/ {
-    mutate {
-      add_tag => ["pyvider-plugin"]
+=== "ELK Stack"
+
+    **Logstash configuration:**
+
+    ```ruby
+    input {
+      file {
+        path => "/var/log/plugin/*.log"
+        codec => "json"
+      }
     }
-  }
-  
-  # Extract performance metrics
-  if [duration_ms] {
-    mutate {
-      convert => { "duration_ms" => "float" }
+
+    filter {
+      if [logger] =~ /pyvider\.rpcplugin/ {
+        mutate { add_tag => ["pyvider-plugin"] }
+      }
     }
-  }
-}
 
-output {
-  elasticsearch {
-    hosts => ["localhost:9200"]
-    index => "pyvider-plugin-%{+YYYY.MM.dd}"
-  }
-}
-```
+    output {
+      elasticsearch {
+        hosts => ["localhost:9200"]
+        index => "pyvider-plugin-%{+YYYY.MM.dd}"
+      }
+    }
+    ```
 
-### Splunk
+=== "Splunk"
 
-Configure for Splunk ingestion:
+    **props.conf:**
 
-```bash
-# Splunk configuration
-export PLUGIN_LOG_LEVEL=INFO 
-export PLUGIN_SHOW_EMOJI_MATRIX=false
-```
+    ```ini
+    [pyvider_plugin]
+    KV_MODE = json
+    DATETIME_CONFIG = CURRENT
+    SHOULD_LINEMERGE = false
+    ```
 
-Splunk props.conf:
-```ini
-[pyvider_plugin]
-KV_MODE = json
-DATETIME_CONFIG = CURRENT
-SHOULD_LINEMERGE = false
-LINE_BREAKER = ([\r\n]+)
-```
+=== "Datadog"
 
-### Datadog
+    **Agent configuration:**
 
-Configure for Datadog log management:
+    ```yaml
+    logs:
+      - type: file
+        path: /var/log/plugin/*.log
+        service: pyvider-plugin
+        source: python
+        tags:
+          - env:production
+          - component:rpc-plugin
+    ```
 
-```bash
-# Datadog configuration  
-export PLUGIN_LOG_LEVEL=INFO
-export PLUGIN_SHOW_EMOJI_MATRIX=false
-```
+=== "Fluentd"
 
-Datadog agent configuration:
-```yaml
-logs:
-  - type: file
-    path: /var/log/plugin/*.log
-    service: pyvider-plugin
-    source: python
-    sourcecategory: pyvider
-    tags:
-      - env:production
-      - component:rpc-plugin
-```
+    **Configuration:**
 
-### Fluentd
+    ```ruby
+    <source>
+      @type tail
+      format json
+      path /var/log/plugin/*.log
+      tag pyvider.plugin
+    </source>
 
-Configure for Fluentd collection:
+    <match pyvider.plugin>
+      @type forward
+      <server>
+        host aggregator.example.com
+        port 24224
+      </server>
+    </match>
+    ```
 
-```ruby
-<source>
-  @type tail
-  format json
-  path /var/log/plugin/*.log
-  pos_file /var/log/fluentd/plugin.log.pos
-  tag pyvider.plugin
-</source>
+**Common patterns:** All platforms support JSON format logs. Use structured logging (emoji disabled) for best compatibility.
 
-<filter pyvider.plugin>
-  @type parser
-  key_name message
-  reserve_data true
-  <parse>
-    @type json
-  </parse>
-</filter>
-
-<match pyvider.plugin>
-  @type forward
-  <server>
-    host aggregator.example.com
-    port 24224
-  </server>
-</match>
-```
+---
 
 ## Performance and Security Logging
 
-### Performance Monitoring
+### Performance Metrics
 
 Key performance metrics are automatically logged:
 
 ```python
-# Request performance logging
+# Request performance
 {
-  "message": "Request completed",
-  "context": {
-    "method": "MyService.ProcessData",
-    "request_size": 1024,
-    "response_size": 2048, 
-    "duration_ms": 15.7,
-    "status": "OK",
-    "concurrent_requests": 23
-  }
+  "method": "MyService.ProcessData",
+  "request_size": 1024,
+  "response_size": 2048,
+  "duration_ms": 15.7,
+  "concurrent_requests": 23
 }
 
-# Transport performance logging
+# Connection performance
 {
-  "message": "Connection established", 
-  "context": {
-    "transport": "tcp",
-    "endpoint": "server:8080",
-    "handshake_duration_ms": 5.2,
-    "tls_negotiation_ms": 8.1,
-    "total_connection_time_ms": 13.3
-  }
+  "transport": "tcp",
+  "handshake_duration_ms": 5.2,
+  "tls_negotiation_ms": 8.1
 }
 ```
 
-### Security Event Logging
+### Security Events
 
-Security-related events are logged with appropriate context:
+Security events are logged with appropriate context:
 
 ```python
-# Authentication events
+# Authentication
 {
   "message": "Client authentication successful",
-  "context": {
-    "client_id": "cli_abc123",
-    "peer_address": "192.168.1.100:12345",
-    "certificate_subject": "CN=client.example.com",
-    "auth_method": "mtls"
-  }
+  "certificate_subject": "CN=client.example.com",
+  "auth_method": "mtls"
 }
 
 # Security violations
 {
-  "message": "Rate limit exceeded", 
+  "message": "Rate limit exceeded",
   "level": "WARNING",
-  "context": {
-    "client_id": "cli_def456",
-    "peer_address": "192.168.1.100:23456", 
-    "rate_limit": 100.0,
-    "current_rate": 125.3,
-    "action": "request_rejected"
-  }
+  "rate_limit": 100.0,
+  "current_rate": 125.3
 }
 ```
+
+---
 
 ## Development and Debugging
 
 ### Development Configuration
 
-Optimal settings for development:
-
 ```bash
-# Development logging configuration
 export PLUGIN_LOG_LEVEL=DEBUG
 export PLUGIN_SHOW_EMOJI_MATRIX=true
 ```
 
-### Debugging Specific Components
+### Component-Specific Debugging
 
-Enable targeted debugging by adding context to log messages:
+Add context to target specific components:
 
 ```python
 from provide.foundation import logger
 
-# Add context using the 'extra' parameter
-logger.debug("Transport-specific debug logging enabled", extra={
-    "component": "transport"
-})
-
-logger.debug("Security-specific debug logging enabled", extra={
-    "component": "security"
-})
-
-logger.info("Handshake logging at INFO level", extra={
-    "component": "handshake"
-})
-
-# Add connection context to debug messages
-logger.debug("Attempting connection with full context", extra={
-    "connection_type": "unix",
+# Transport debugging
+logger.debug("Transport debug enabled", extra={
+    "component": "transport",
     "socket_path": "/tmp/plugin.sock"
 })
-await client.connect("unix:/tmp/plugin.sock")
+
+# Security debugging
+logger.debug("Security debug enabled", extra={
+    "component": "security"
+})
 ```
 
 ### Request Tracing
 
-Enable request tracing for debugging:
+Use correlation IDs for request tracing:
 
 ```python
-from provide.foundation import logger
 import uuid
 
-class TracingMiddleware:
-    async def intercept_request(self, request, context, handler):
-        # Generate trace ID
-        trace_id = str(uuid.uuid4())
+trace_id = str(uuid.uuid4())
 
-        # Add trace_id to all log messages
-        logger.debug("Request started", extra={
-            "trace_id": trace_id,
-            "method": context.method,
-            "peer": context.peer(),
-            "headers": dict(context.invocation_metadata())
-        })
-
-        try:
-            response = await handler(request, context)
-            logger.debug("Request completed successfully", extra={
-                "trace_id": trace_id
-            })
-            return response
-        except Exception as e:
-            logger.error("Request failed", extra={
-                "trace_id": trace_id,
-                "error": str(e)
-            })
-            raise
+logger.info("Request started", extra={"trace_id": trace_id})
+# ... process request ...
+logger.info("Request completed", extra={"trace_id": trace_id})
 ```
+
+---
 
 ## Log Rotation and Management
 
-### File-Based Logging
+### System-Level Rotation
 
-!!! note "Log File Configuration"
-    Pyvider RPC Plugin uses Foundation's structured logging to stderr by default.
-    For file-based logging, use Python's standard logging configuration or external
-    tools like logrotate (see system-level example below).
-
-```python
-from provide.foundation import logger
-
-# Foundation handles structured logging to stderr
-# To redirect to a file, use shell redirection or Python's logging handlers
-logger.info("Application starting", extra={
-    "version": "1.0.0",
-    "environment": "production"
-})
-
-# For production deployments, use system-level log rotation (see logrotate example below)
-# or configure Python's RotatingFileHandler if needed
-```
-
-### Logrotate Configuration
-
-System-level log rotation:
+Pyvider RPC Plugin logs to stderr by default. Use system-level log rotation:
 
 ```bash
 # /etc/logrotate.d/pyvider-plugin
@@ -516,186 +363,106 @@ System-level log rotation:
     daily
     rotate 30
     compress
-    delaycompress
     missingok
     notifempty
-    create 644 plugin plugin
-    postrotate
-        /usr/bin/systemctl reload plugin.service > /dev/null 2>&1 || true
-    endrotate
 }
 ```
+
+For file-based logging, redirect stderr or use Python's logging handlers.
+
+---
 
 ## Monitoring and Alerting
 
-### Key Log Patterns to Monitor
+### Key Log Patterns
 
-1. **Connection Failures**:
-   ```
-   level="ERROR" AND message CONTAINS "Connection failed"
-   ```
+Monitor these patterns for issues:
 
-2. **Rate Limiting Events**:
-   ```
-   level="WARNING" AND message CONTAINS "Rate limit"
-   ```
+1. **Connection Failures**: `level="ERROR" AND message CONTAINS "Connection failed"`
+2. **Rate Limiting**: `level="WARNING" AND message CONTAINS "Rate limit"`
+3. **Security Events**: `logger="pyvider.rpcplugin.security" AND level IN ["WARNING", "ERROR"]`
+4. **Performance Degradation**: `duration_ms > 1000`
 
-3. **Security Events**:
-   ```
-   logger="pyvider.rpcplugin.security" AND level IN ["WARNING", "ERROR", "CRITICAL"]
-   ```
-
-4. **Performance Degradation**:
-   ```
-   duration_ms > 1000 OR handshake_duration_ms > 500
-   ```
-
-### Alert Configuration Examples
-
-#### Elasticsearch Watcher Alert
-
-```json
-{
-  "trigger": {
-    "schedule": {
-      "interval": "1m"
-    }
-  },
-  "input": {
-    "search": {
-      "request": {
-        "search_type": "query_then_fetch",
-        "indices": ["pyvider-plugin-*"],
-        "body": {
-          "query": {
-            "bool": {
-              "filter": [
-                {"term": {"level": "ERROR"}},
-                {"range": {"timestamp": {"gte": "now-1m"}}}
-              ]
-            }
-          }
-        }
-      }
-    }
-  },
-  "condition": {
-    "compare": {
-      "ctx.payload.hits.total": {
-        "gt": 5
-      }
-    }
-  },
-  "actions": {
-    "send_email": {
-      "email": {
-        "to": ["ops-team@example.com"],
-        "subject": "Pyvider Plugin Error Alert",
-        "body": "More than 5 errors in the last minute"
-      }
-    }
-  }
-}
-```
-
-#### Prometheus/Grafana Alerts
+### Alert Example (Prometheus)
 
 ```yaml
-groups:
-  - name: pyvider-plugin
-    rules:
-      - alert: PluginHighErrorRate
-        expr: rate(pyvider_plugin_errors_total[5m]) > 0.1
-        for: 2m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High error rate in Pyvider Plugin"
-          description: "Error rate is {{ $value }} errors per second"
-
-      - alert: PluginConnectionFailures  
-        expr: rate(pyvider_plugin_connection_failures_total[5m]) > 0.05
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Connection failures in Pyvider Plugin"
-          description: "Connection failure rate is {{ $value }} per second"
+- alert: PluginHighErrorRate
+  expr: rate(pyvider_plugin_errors_total[5m]) > 0.1
+  for: 2m
+  labels:
+    severity: warning
+  annotations:
+    summary: "High error rate in Pyvider Plugin"
 ```
+
+---
 
 ## Best Practices
 
-### Production Logging
+### Production
 
-1. **Use appropriate log levels**: INFO for production, DEBUG only for troubleshooting
-2. **Disable emoji enhancement**: Set `PLUGIN_SHOW_EMOJI_MATRIX="false"`
-3. **Structured output**: Use JSON format for log aggregation systems
-4. **Log rotation**: Implement proper log rotation to prevent disk space issues
-5. **Sensitive data**: Never log passwords, tokens, or personal information
+1. **Use INFO level** - DEBUG only for troubleshooting
+2. **Disable emoji enhancement** - Set `PLUGIN_SHOW_EMOJI_MATRIX="false"`
+3. **Use JSON format** - For log aggregation systems
+4. **Implement log rotation** - Prevent disk space issues
+5. **Never log sensitive data** - No passwords, tokens, or PII
 
-### Development Logging
+### Development
 
-1. **Enable emoji enhancement**: Set `PLUGIN_SHOW_EMOJI_MATRIX="true"`
-2. **Use DEBUG level**: Set `PLUGIN_LOG_LEVEL="DEBUG"`
-3. **Console output**: Human-readable format for development
-4. **Request tracing**: Enable correlation IDs for request flow tracking
+1. **Enable emoji enhancement** - Set `PLUGIN_SHOW_EMOJI_MATRIX="true"`
+2. **Use DEBUG level** - Set `PLUGIN_LOG_LEVEL="DEBUG"`
+3. **Console output** - Human-readable format
+4. **Request tracing** - Enable correlation IDs
 
-### Security Considerations
+### Security
 
-1. **Log access control**: Restrict access to log files and systems
-2. **Data sanitization**: Ensure no sensitive data in log messages
-3. **Audit trails**: Maintain security event logs for compliance
-4. **Retention policies**: Define appropriate log retention periods
+1. **Log access control** - Restrict log file access
+2. **Data sanitization** - Ensure no sensitive data in logs
+3. **Audit trails** - Maintain security event logs
+4. **Retention policies** - Define appropriate retention periods
+
+---
 
 ## Troubleshooting
 
-### Common Logging Issues
+### No Log Output
 
-#### No Log Output
 ```bash
-# Check log level configuration
+# Check log level
 export PLUGIN_LOG_LEVEL=DEBUG
 
-# Verify Foundation logger is working
-python -c "from provide.foundation import logger; logger.info('Foundation logging test', extra={'test_key': 'test_value'})"
+# Verify Foundation logger
+python -c "from provide.foundation import logger; logger.info('Test')"
 
-# Logs go to stderr by default - make sure stderr is not being suppressed
+# Logs go to stderr - ensure stderr is not suppressed
 ```
 
-#### Log Format Issues
+### Log Format Issues
+
 ```bash
-# For machine processing, disable emoji
+# For machine processing
 export PLUGIN_SHOW_EMOJI_MATRIX=false
 
-# For human reading, enable emoji
+# For human reading
 export PLUGIN_SHOW_EMOJI_MATRIX=true
 ```
 
-#### Missing Context Information
+### Missing Context
+
 ```python
-# Ensure context is preserved in async operations
+# Preserve context in async operations
 async def my_handler(request, context):
     with logger.context(request_id=generate_request_id()):
         logger.info("Processing request")
         result = await process_request(request)
-        logger.info("Request completed", extra={"result_size": len(result)})
         return result
 ```
 
-### Performance Impact
+---
 
-Logging performance characteristics:
-
-| Log Level | Overhead per Request | Disk I/O Impact |
-|-----------|---------------------|-----------------|
-| DEBUG | ~50μs | High |
-| INFO | ~20μs | Medium |
-| WARNING | ~10μs | Low |
-| ERROR | ~5μs | Minimal |
-
-## Next Steps
+## Related Topics
 
 - **[Production Setup](production.md)** - Complete production deployment configuration
 - **[Environment Variables](environment.md)** - All configuration options reference
-- **[Rate Limiting](rate-limiting.md)** - Request rate limiting configuration
 - **[Configuration Reference](configuration-reference.md)** - Complete configuration options
+- **[Configuration Guide](configuration-guide.md)** - Client, server, and security configuration

@@ -1,4 +1,9 @@
-# pyvider/rpcplugin/tests/server/test_server_tls.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 from provide.foundation.crypto import Certificate
 import pytest
@@ -36,7 +41,6 @@ async def test_generate_server_credentials_failure(
         server._generate_server_credentials()
 
 
-# 🐍🔌🧪🪄
 
 
 def _make_dummy_cert(common_name: str = "CN"):
@@ -100,7 +104,7 @@ def test_generate_server_credentials_with_client_root_file(
     assert kwargs["require_client_auth"] is True
 
 
-def test_generate_server_credentials_warn_when_missing_root(
+def test_generate_server_credentials_info_when_missing_root(
     monkeypatch, mock_server_protocol, mock_server_handler, mocker
 ) -> None:
     monkeypatch.setattr(rpcplugin_config, "plugin_server_cert", None)
@@ -115,8 +119,10 @@ def test_generate_server_credentials_warn_when_missing_root(
 
     server = RPCPluginServer(protocol=mock_server_protocol, handler=mock_server_handler, config=None)
 
-    warning_spy = mocker.spy(server_network.logger, "warning")
+    info_spy = mocker.spy(server_network.logger, "info")
     server._generate_server_credentials()
-    warning_spy.assert_any_call(
+    info_spy.assert_any_call(
         "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. Client certs will not be required/verified."
     )
+
+# 🐍🔌📞🔚

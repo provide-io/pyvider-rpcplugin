@@ -1,4 +1,9 @@
-# tests/transport/test_transport_unix.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import asyncio
 import os
@@ -241,8 +246,4 @@ def test_normalize_unix_path_with_prefix():
     assert normalize_unix_path("unix://") == "/"  # Added test case
     assert normalize_unix_path("unix:/") == "/"  # Added test case
 
-
-### 🐍🏗🧪️
-
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

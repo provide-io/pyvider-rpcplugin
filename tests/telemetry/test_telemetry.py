@@ -1,8 +1,11 @@
-"""
-Tests for OpenTelemetry integration module.
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
 
-Tests the telemetry module's access to Foundation OTEL.
-"""
+"""Tests for OpenTelemetry integration module.
+
+Tests the telemetry module's access to Foundation OTEL."""
 
 from unittest.mock import MagicMock, patch
 
@@ -115,3 +118,5 @@ class TestTelemetryImportError:
             assert is_telemetry_available() is False
             assert get_rpc_tracer() is None
             assert get_rpc_meter() is None
+
+# 🐍🔌📞🔚

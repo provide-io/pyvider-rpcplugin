@@ -1,4 +1,8 @@
-# tests/protocol/test_service_controller.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
 """Tests for controller service and protocol registration functionality."""
 
 import asyncio
@@ -212,3 +216,5 @@ async def test_controller_multiple_shutdown_calls(
 
         # Delayed shutdown should be called for each shutdown request
         assert mock_delayed_shutdown.call_count >= 1
+
+# 🐍🔌📞🔚

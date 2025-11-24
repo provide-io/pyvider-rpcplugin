@@ -6,10 +6,8 @@
 """Pyvider RPC Plugin Package.
 
 This package exports the main classes and exceptions for the Pyvider RPC Plugin system,
-making them available for direct import from `pyvider.rpcplugin`.
-"""
+making them available for direct import from `pyvider.rpcplugin`."""
 
-from pyvider.rpcplugin._version import __version__
 from pyvider.rpcplugin.client import RPCPluginClient
 from pyvider.rpcplugin.config import (
     RPCPluginConfig,
@@ -53,4 +51,27 @@ __all__ = [
     "rpcplugin_config",
 ]
 
-# 📞🔌🔚
+
+def __getattr__(name: str) -> str:
+    """Support lazy loading of __version__.
+
+    This reduces initial import overhead by deferring version loading
+    until first access.
+
+    Args:
+        name: Attribute name to lazy-load
+
+    Returns:
+        The attribute value
+
+    Raises:
+        AttributeError: If the attribute is not found
+    """
+    if name == "__version__":
+        from provide.foundation.utils.versioning import get_version
+
+        return get_version("pyvider-rpcplugin", caller_file=__file__)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+# 🐍🔌📞🔚

@@ -1,4 +1,9 @@
-# tests/client/test_client_stubs.py
+# 
+# SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""TODO: Add module docstring."""
 
 import pytest
 import asyncio
@@ -279,5 +284,4 @@ async def test_shutdown_plugin_rpc_error(client_instance, mocker):
     # The RpcError is logged as debug, not error, so no logger.error call expected
     mock_logger_error.assert_not_called()
 
-
-# 🐍🔌🧪🪄
+# 🐍🔌📞🔚

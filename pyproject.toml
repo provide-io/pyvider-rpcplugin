@@ -12,7 +12,6 @@ license = "Apache-2.0"
 authors = [
     { name = "Tim Perkins", email = "code@tim.life" }
 ]
-
 dependencies = [
     "attrs>=25.1.0",
     "cryptography>=44.0.1",
@@ -24,6 +23,12 @@ dependencies = [
     "structlog>=25.1.0",
 ]
 
+[project.urls]
+Homepage = "https://foundry.provide.io/pyvider-rpcplugin/"
+Documentation = "https://foundry.provide.io/pyvider-rpcplugin/"
+Repository = "https://foundry.provide.io/pyvider-rpcplugin/repo"
+Issues = "https://foundry.provide.io/pyvider-rpcplugin/issues"
+
 [project.optional-dependencies]
 test = [
     "grpc-stubs>=1.53.0.6",
@@ -34,12 +39,20 @@ test = [
 
 [dependency-groups]
 dev = [
+    "mkdocs-autorefs>=1.4.3",
+    "provide-cicd",
     "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]",
     "pyvider-rpcplugin[test]",
 ]
 docs = [
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-htmlproofer-plugin>=1.4.0",
     "provide-testkit[docs]",
 ]
+
+[tool.uv.sources]
+provide-cicd = { path = "../ci-tooling", editable = true }
+
 [tool.pytest.ini_options]
 log_cli = true
 # log_cli_level = "DEBUG"
@@ -52,6 +65,7 @@ pythonpath = ["src"]
 python_files = ["test_*.py"]
 
 markers = [
+    "integration: marks tests as integration tests (deselect with -m \"not integration\")",
     "long_running: marks tests as long_running (deselect with -m \"not long_running\")",
     "slow: marks tests as slow (deselect with -m \"not slow\")"
 ]

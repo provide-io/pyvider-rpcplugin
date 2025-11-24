@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Configuration management for the RPC Plugin framework.
 
 This module provides centralized configuration management using the Foundation
@@ -12,8 +13,7 @@ The configuration is organized into separate modules:
 - runtime.py: Main RPCPluginConfig class with env_field support
 - configure.py: Configuration helper functions
 - defaults.py: All default values (no inline defaults)
-- manager.py: ConfigManager integration for multi-instance management (optional)
-"""
+- manager.py: ConfigManager integration for multi-instance management (optional)"""
 
 from pyvider.rpcplugin.config.configure import configure
 from pyvider.rpcplugin.config.manager import (
@@ -51,4 +51,4 @@ __all__ = [
     "update_plugin_config",
 ]
 
-# 📞🔌🔚
+# 🐍🔌📞🔚

@@ -2,7 +2,12 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
-"""TODO: Add module docstring."""
+
+"""Echo server example demonstrating basic RPC plugin server usage.
+
+This example shows how to create a simple RPC plugin server that implements
+the echo service, handling client requests and responding with echoed data.
+It demonstrates the minimal setup needed to launch a functioning plugin server."""
 
 import asyncio
 import os
@@ -121,4 +126,4 @@ if __name__ == "__main__":
     except KeyboardInterrupt:  # pragma: no cover
         logger.info("Server stopped by user.")
 
-# 📞🔌🔚
+# 🐍🔌📞🔚

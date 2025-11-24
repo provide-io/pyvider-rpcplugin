@@ -14,21 +14,21 @@ repos:
       - id: mixed-line-ending
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.4
+    rev: v0.8.0
     hooks:
       - id: ruff
         args: [--fix]
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v1.13.0
     hooks:
       - id: mypy
         args: [--ignore-missing-imports, --no-strict-optional]
         additional_dependencies: [types-all, grpc-stubs]
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.8
+    rev: 1.8.0
     hooks:
       - id: bandit
         args: [-ll, -r, src/]
@@ -37,3 +37,19 @@ repos:
     rev: v1.3.3
     hooks:
       - id: python-safety-dependencies-check
+
+  - repo: local
+    hooks:
+      - id: provide-conform
+        name: provide-conform
+        entry: provide-conform
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      - id: provide-config-check
+        name: provide-config-check
+        entry: provide-config-check
+        language: system
+        files: pyproject\.toml$
+        pass_filenames: true

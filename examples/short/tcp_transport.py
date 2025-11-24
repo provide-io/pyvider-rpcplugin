@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
+
 """Server with TCP transport (20 lines).
 
 Demonstrates using TCP instead of Unix sockets."""
@@ -13,7 +14,7 @@ from provide.foundation import logger
 from pyvider.rpcplugin import plugin_protocol, plugin_server
 
 
-async def main():
+async def main() -> None:
     """Run server with TCP transport."""
     protocol = plugin_protocol()
     handler = object()
@@ -28,4 +29,4 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
-# 📞🔌🔚
+# 🐍🔌📞🔚
