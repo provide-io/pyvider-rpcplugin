@@ -86,6 +86,7 @@ norecursedirs = [
     ".venv",
     "**/*pb2*.py",
 ]
+addopts = "--dist load"
 
 ################################################################################
 # Ruff (Linter & Formatter)
