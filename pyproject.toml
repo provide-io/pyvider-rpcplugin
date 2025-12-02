@@ -23,7 +23,7 @@ authors = [
 ]
 dependencies = [
     "attrs>=25.3.0",
-    "cryptography>=44.0.1",
+    "cryptography>=45.0.7",
     "google>=3.0.0",
     "grpcio>=1.76.0",
     "grpcio-health-checking>=1.76.0",
