@@ -182,6 +182,49 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
+################################################################################
+# coverage
+################################################################################
+
+[tool.coverage.run]
+source = ["pyvider.rpcplugin"]
+omit = [
+    "**/*pb2*.py",
+]
+branch = true
+
+[tool.coverage.report]
+fail_under = 70
+show_missing = true
+skip_covered = false  # Show all lines, even if 100% covered
+precision = 2  # Decimal places in report output
+
+[tool.coverage.html]
+directory = "htmlcov"  # Output directory for HTML coverage reports
+
+[tool.coverage.xml]
+output = "coverage.xml"  # Output XML for CI/CD tools
+
+[tool.coverage.annotate]
+directory = "cover"  # Annotate files with coverage info
+
+################################################################################
+# pyre
+################################################################################
+
+[tool.pyre]
+source_directories = ["src"]
+exclude = [
+    "tests/*",
+    "**/*pb2.py",       # Generated protobuf Python
+    "**/*pb2.pyi",      # Generated protobuf stubs
+    "**/*pb2_grpc.py"   # Generated gRPC service stubs
+]
+strict = true
+
+################################################################################
+# mypy
+################################################################################
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
