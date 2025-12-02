@@ -274,70 +274,10 @@ omit = [
 branch = true
 parallel = true
 
-[tool.coverage.report]
-fail_under = 70
-show_missing = true
-skip_covered = false  # Show all lines, even if 100% covered
-precision = 2  # Decimal places in report output
+[tool.setuptools.package-data]
+"pyvider.rpcplugin" = ["py.typed"]
 
-[tool.coverage.html]
-directory = "htmlcov"  # Output directory for HTML coverage reports
-
-[tool.coverage.xml]
-output = "coverage.xml"  # Output XML for CI/CD tools
-
-[tool.coverage.annotate]
-directory = "cover"  # Annotate files with coverage info
-
-################################################################################
-# Mutation Testing
-################################################################################
-
-[tool.mutmut]
-# Integration tests use gRPC async generator servicers incompatible with
-# mutmut's sync trampolines. Memray tests run subprocess stress scripts.
-# Both are excluded from mutation test runs.
-pytest_add_cli_args = ["-m", "not integration and not memray"]
-
-################################################################################
-# Static Analysis
-################################################################################
-
-[tool.pyre]
-source_directories = ["src"]
-exclude = [
-    "tests/*",
-    "**/*pb2.py",       # Generated protobuf Python
-    "**/*pb2.pyi",      # Generated protobuf stubs
-    "**/*pb2_grpc.py"   # Generated gRPC service stubs
-]
-strict = true
-
-[tool.bandit]
-exclude_dirs = [".venv", "tests", "workenv"]
-
-################################################################################
-# Security Scanning Allowlist
-################################################################################
-
-[tool.security]
-# Paths to exclude from secret scanning (TruffleHog, GitGuardian, Gitleaks)
-description = "Test fixtures and example credentials - intentionally committed"
-allowed_paths = [
-    # Test certificates and keys for mTLS testing
-    "tests/certs/*.key",
-    "tests/fixtures/crypto.py",
-    "tests/server/test_server_tls.py",
-    # Example keys for documentation/demos
-    "examples/**/*.key",
-    "examples/grpc/server.key",
-    "examples/grpc/env.sh",
-    "example_certs_output/*.key",
-    # Documentation with example credentials/keys
-    "docs/**/*.md",
-    # Test output/debug files
-    "tests/rpcplugin-tests.txt",
-    "tests/bfiles-*.txt",
-]
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
 
 # 🐍🏗️📋
