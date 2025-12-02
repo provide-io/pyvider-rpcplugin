@@ -22,7 +22,7 @@ authors = [
     { name = "Tim Perkins", email = "code@tim.life" }
 ]
 dependencies = [
-    "attrs>=25.1.0",
+    "attrs>=25.3.0",
     "cryptography>=44.0.1",
     "google>=3.0.0",
     "grpcio>=1.76.0",
