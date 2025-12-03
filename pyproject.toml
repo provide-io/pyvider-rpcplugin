@@ -202,6 +202,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"pyvider.rpcplugin" = ["py.typed"]
+
 [tool.setuptools.dynamic]
 version = {file = "VERSION"}
 
