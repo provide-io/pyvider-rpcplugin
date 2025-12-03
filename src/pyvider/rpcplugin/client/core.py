@@ -94,7 +94,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     _address: str | None = field(init=False, default=None)  # type: ignore[assignment]
     _protocol_version: int | None = field(init=False, default=None)  # type: ignore[assignment]
     _server_cert: str | None = field(init=False, default=None)
-    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)  # type: ignore[assignment]
+    grpc_channel: grpc.aio.Channel | None = field(init=False, default=None)
     target_endpoint: str | None = field(init=False, default=None)  # type: ignore[assignment]
 
     # Generated or loaded client certificate

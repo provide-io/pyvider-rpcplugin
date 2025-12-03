@@ -332,7 +332,7 @@ class GRPCStdioService(GRPCStdioServicer):
         def on_rpc_done(_: Any) -> None:
             done.set()
 
-        context.add_done_callback(on_rpc_done)  # type: ignore[arg-type]
+        context.add_done_callback(on_rpc_done)
 
         async for item in self._stream_items(done):
             yield item
