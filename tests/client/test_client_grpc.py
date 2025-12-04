@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
 
 from provide.testkit.mocking import ANY, AsyncMock, MagicMock, patch
 import pytest
