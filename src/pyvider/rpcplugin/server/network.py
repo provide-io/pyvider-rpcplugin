@@ -184,7 +184,7 @@ class ServerNetworkMixin:
     async def _initialize_server_with_services(self) -> grpc.aio.Server:
         from .core import RateLimitingInterceptor
 
-        interceptors_list: list[grpc.aio.ServerInterceptor] = (
+        interceptors_list: list[grpc.aio.ServerInterceptor] = (  # type: ignore[type-arg]
             [RateLimitingInterceptor(self._rate_limiter)] if self._rate_limiter else []
         )
         self._server = cast(Any, GRPCServer(interceptors=interceptors_list))

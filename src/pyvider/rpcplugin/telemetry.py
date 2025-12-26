@@ -65,8 +65,8 @@ try:
     _HAS_OTEL = True
 except ImportError:
     _HAS_OTEL = False
-    otel_trace = None  # type: ignore[assignment]
-    otel_metrics = None  # type: ignore[assignment]
+    otel_trace = None  # type: ignore[misc]
+    otel_metrics = None  # type: ignore[misc]
 
 
 def get_rpc_tracer() -> otel_trace.Tracer | None:
