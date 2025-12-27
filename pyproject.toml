@@ -40,7 +40,6 @@ test = [
 [dependency-groups]
 dev = [
     "mkdocs-autorefs>=1.4.3",
-    "provide-cicd",
     "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]",
     "pyvider-rpcplugin[test]",
 ]
@@ -48,9 +47,6 @@ docs = [
     "mkdocs-gen-files>=0.5.0",
     "provide-testkit[docs]",
 ]
-
-[tool.uv.sources]
-provide-cicd = { path = "../ci-tooling", editable = true }
 
 [tool.pytest.ini_options]
 log_cli = true

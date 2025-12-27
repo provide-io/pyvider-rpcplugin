@@ -58,6 +58,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 # Feature detection - gracefully handle missing OTEL dependencies
+_HAS_OTEL: bool
 try:
     from opentelemetry import metrics as otel_metrics, trace as otel_trace
 
