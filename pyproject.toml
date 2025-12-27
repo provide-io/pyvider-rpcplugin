@@ -209,3 +209,6 @@ where = ["src"]
 version = {file = "VERSION"}
 
 # 🐍🏗️📋
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests", "workenv"]
