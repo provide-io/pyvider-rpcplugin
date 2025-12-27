@@ -188,6 +188,11 @@ module = [
 ]
 ignore_errors = true
 
+[[tool.mypy.overrides]]
+# telemetry.py has type: ignore for OTEL fallback that only runs when OTEL is missing
+module = "pyvider.rpcplugin.telemetry"
+warn_unused_ignores = false
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"

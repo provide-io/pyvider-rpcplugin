@@ -198,7 +198,7 @@ class ClientProcessMixin:
     async def _cleanup_failed_channel(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """Clean up gRPC channel on failure."""
         if self.grpc_channel:
-            await self.grpc_channel.close()
+            await self.grpc_channel.close(grace=None)
             self.grpc_channel = None
 
     @retry(
