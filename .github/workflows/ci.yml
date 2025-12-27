@@ -38,9 +38,8 @@ jobs:
       
       - name: 📦 Install dependencies
         run: |
-          uv venv
-          uv pip install -e ".[dev]"
-      
+          uv sync --group dev
+
       - name: 🧪 Run tests
         run: |
           source .venv/bin/activate
@@ -81,9 +80,8 @@ jobs:
       
       - name: 📦 Install dependencies
         run: |
-          uv venv
-          uv pip install -e ".[dev]"
-      
+          uv sync --group dev
+
       - name: 🎨 Check code formatting with Ruff
         run: |
           source .venv/bin/activate
@@ -154,9 +152,8 @@ jobs:
       
       - name: 📦 Install package
         run: |
-          uv venv
-          uv pip install -e ".[dev]"
-      
+          uv sync --group dev
+
       - name: 🧪 Run integration tests
         run: |
           source .venv/bin/activate
