@@ -58,6 +58,7 @@ class RPCPluginHandler(TypeProtocol):
     """
 
 
+
 @runtime_checkable
 class RPCPluginProtocol(TypeProtocol):
     """
