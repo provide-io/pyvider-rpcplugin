@@ -98,7 +98,6 @@ def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
                 f"BasicRPCPluginProtocol: add_to_server for {self.service_name} "
                 "(no specific services added by this basic protocol itself)."
             )
-            pass
 
         def get_method_type(self, method_name: str) -> str:
             logger.warning(

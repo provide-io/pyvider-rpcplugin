@@ -26,7 +26,6 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
     @abstractmethod
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Returns the protobuf descriptor set and service name."""
-        pass
 
     @abstractmethod
     async def add_to_server(self, server: ServerT, handler: HandlerT) -> None:
@@ -37,7 +36,6 @@ class RPCPluginProtocol(ABC, Generic[ServerT, HandlerT]):  # pragma: no cover
             server: The gRPC async server instance.
             handler: The handler implementing the RPC methods for this protocol.
         """
-        pass
 
 
 # 🐍🔌📞🔚

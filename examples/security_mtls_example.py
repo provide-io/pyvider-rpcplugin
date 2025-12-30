@@ -186,9 +186,8 @@ async def functional_mtls_example() -> None:  # noqa: C901
         for key, value in original_env.items():
             if value is not None:
                 os.environ[key] = value
-            else:
-                if key in os.environ:  # Check if key exists before trying to delete
-                    del os.environ[key]
+            elif key in os.environ:  # Check if key exists before trying to delete
+                del os.environ[key]
         # Also remove keys that were added if they weren't in original_env
         for key in env_keys_to_manage:
             if key not in original_env and key in os.environ:

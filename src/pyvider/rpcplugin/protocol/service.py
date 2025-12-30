@@ -172,19 +172,18 @@ class GRPCBrokerService(GRPCBrokerServicer):
                                 address=incoming.address,
                                 knock=ConnInfo.Knock(knock=False, ack=True, error=""),
                             )
-                    else:  # Request to close channel (knock=False)
-                        if sub_id in self._subchannels:
-                            await self._subchannels[sub_id].close()
-                            del self._subchannels[sub_id]
-                            yield ConnInfo(  # Ack the close
-                                service_id=sub_id,
-                                knock=ConnInfo.Knock(knock=False, ack=True, error=""),
-                            )
-                        else:
-                            yield ConnInfo(
-                                service_id=sub_id,
-                                knock=ConnInfo.Knock(knock=False, ack=True, error="Channel not found"),
-                            )
+                    elif sub_id in self._subchannels:
+                        await self._subchannels[sub_id].close()
+                        del self._subchannels[sub_id]
+                        yield ConnInfo(  # Ack the close
+                            service_id=sub_id,
+                            knock=ConnInfo.Knock(knock=False, ack=True, error=""),
+                        )
+                    else:
+                        yield ConnInfo(
+                            service_id=sub_id,
+                            knock=ConnInfo.Knock(knock=False, ack=True, error="Channel not found"),
+                        )
                 except Exception as ex_inner:
                     err_str_inner = f"Broker error processing item for sub_id {sub_id}: {ex_inner}"
                     logger.error(
