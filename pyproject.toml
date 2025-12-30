@@ -12,6 +12,17 @@ license = "Apache-2.0"
 authors = [
     { name = "Tim Perkins", email = "code@tim.life" }
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Typing :: Typed",
+]
 dependencies = [
     "attrs>=25.4.0",
     "cryptography>=45.0.7",
