@@ -57,7 +57,6 @@ class RPCPluginHandler(TypeProtocol):
     methods required will depend on the specific gRPC service being implemented.
     """
 
-    pass
 
 
 @runtime_checkable

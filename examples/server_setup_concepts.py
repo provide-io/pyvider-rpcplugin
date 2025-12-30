@@ -53,7 +53,6 @@ class BasicProtocol(RPCPluginProtocol):
 class BasicHandler:
     """Basic handler for demonstration."""
 
-    pass
 
 
 async def tcp_server_example() -> RPCPluginServer:
