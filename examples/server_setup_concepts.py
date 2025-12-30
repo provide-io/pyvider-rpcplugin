@@ -54,7 +54,6 @@ class BasicHandler:
     """Basic handler for demonstration."""
 
 
-
 async def tcp_server_example() -> RPCPluginServer:
     """Example: TCP server configuration."""
     logger.info("🌐 TCP Server Configuration Example")
