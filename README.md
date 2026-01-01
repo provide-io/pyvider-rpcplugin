@@ -87,4 +87,10 @@ uv add pyvider-rpcplugin
 
 Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
 
-Copyright (c) provide.io LLC.
+## 🤝 Contributing
+
+We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing-guide.md) for details.
+
+## 📜 License
+
+This project is licensed under the **Apache 2.0 License**. See the [LICENSE](LICENSE) file for details.
