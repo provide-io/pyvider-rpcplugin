@@ -48,7 +48,7 @@ _HandlerT = TypeVar("_HandlerT")
 _TransportT = TypeVar("_TransportT", bound=RPCPluginTransportType)
 
 
-class RateLimitingInterceptor(grpc.aio.ServerInterceptor):  # type: ignore[type-arg]
+class RateLimitingInterceptor(grpc.aio.ServerInterceptor):
     """
     gRPC server interceptor for request rate limiting.
 
