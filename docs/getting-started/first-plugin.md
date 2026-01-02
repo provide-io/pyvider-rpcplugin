@@ -4,8 +4,7 @@ Create a complete Echo plugin with custom RPC methods. This tutorial builds on t
 
 !!! tip "Tutorial Code vs Production Code" This tutorial shows **simplified examples for teaching** purposes.
 
-```
-**For complete, production-focused implementation**, see:
+    **For complete, production-focused implementation**, see:
 
 - `examples/echo_server.py` - Full Echo server with comprehensive error handling
 - `examples/echo_client.py` - Full Echo client with production patterns

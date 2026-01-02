@@ -497,7 +497,7 @@ class TestHealthChecks:
 ```python
 def create_production_health_setup(config: PluginHealthConfig):
     """Create production-focused health check setup."""
-
+    
     health_checker = AdvancedHealthChecker()
     health_checker.resource_thresholds = {
         "cpu_percent": config.resource_cpu_threshold,

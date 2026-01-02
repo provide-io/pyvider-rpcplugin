@@ -23,8 +23,7 @@ Before diving in, let's understand the key components:
 
 !!! tip "Tutorial Code vs Production Code" The examples below are **simplified for teaching** to focus on core concepts.
 
-```
-**For production-focused, runnable code**, see:
+    **For production-focused, runnable code**, see:
 
 - `examples/dummy_server.py` - Full-featured version of `my_plugin.py`
 - `examples/quick_start_client.py` - Full-featured version of `host_app.py`
@@ -164,9 +163,8 @@ You should see output like:
 
 !!! note "Actual Runnable Examples" The simplified examples above (`my_plugin.py`, `host_app.py`) are for teaching. **For working code you can run**, see:
 
-````
-- **`examples/dummy_server.py`** - Production-focused version of `my_plugin.py`
-- **`examples/quick_start_client.py`** - Production-focused version of `host_app.py`
+    - **`examples/dummy_server.py`** - Production-focused version of `my_plugin.py`
+    - **`examples/quick_start_client.py`** - Production-focused version of `host_app.py`
 
 Run them with:
 ```bash

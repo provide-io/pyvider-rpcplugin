@@ -1,6 +1,6 @@
 # Client Development
 
-Build robust, production-ready plugin clients with comprehensive guides covering setup, resilience, and advanced patterns.
+Build robust, production-focused plugin clients with comprehensive guides covering setup, resilience, and advanced patterns.
 
 ## Quick Start
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
 - Connection pooling and load balancing
 - Best practices for fault-tolerant clients
 
-**Perfect for:** Building production-ready, fault-tolerant clients
+**Perfect for:** Building production-focused, fault-tolerant clients
 
 ### [Direct Connections](direct-connections/)
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
 
 === "Intermediate"
 
-    **Goal:** Build resilient, production-ready clients
+    **Goal:** Build resilient, production-focused clients
 
     1. [Resilience: Exception Handling](resilience/#exception-handling)
     2. [Resilience: Retry Strategies](resilience/#retry-strategies)

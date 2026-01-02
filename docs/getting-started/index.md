@@ -58,7 +58,7 @@ By the end of this guide, you'll be able to:
     
     ---
     
-    **25 minutes** • Production-ready echo service with all features
+    **25 minutes** • Production-focused echo service with all features
     
     Covers protocols, security, logging, and testing patterns
     

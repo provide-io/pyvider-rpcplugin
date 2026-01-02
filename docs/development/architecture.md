@@ -36,12 +36,12 @@ graph TD
 ### Core Design Principles
 
 1. **Separation of Concerns** - Each layer has a single, well-defined responsibility
-1. **Transport Agnostic** - Support multiple transport mechanisms (Unix sockets, TCP, etc.)
-1. **Protocol Flexibility** - Pluggable protocol implementations
-1. **Type Safety** - Modern typing throughout (dict, list, set)
-1. **Async First** - Built on asyncio for high performance
-1. **Security by Default** - mTLS and authentication built-in
-1. **Production-focused** - Comprehensive error handling, logging, and monitoring
+2. **Transport Agnostic** - Support multiple transport mechanisms (Unix sockets, TCP, etc.)
+3. **Protocol Flexibility** - Pluggable protocol implementations
+4. **Type Safety** - Modern typing throughout (dict, list, set)
+5. **Async First** - Built on asyncio for high performance
+6. **Security by Default** - mTLS and authentication built-in
+7. **Production-focused** - Comprehensive error handling, logging, and monitoring
 
 ## Component Architecture
 

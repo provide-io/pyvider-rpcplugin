@@ -391,7 +391,7 @@ If you encounter issues:
 
 ### Advanced Topics
 
-- **[Server Development](../guide/server/index/)** - Production-ready server patterns and optimization
+- **[Server Development](../guide/server/index/)** - Production-focused server patterns and optimization
 - **[Security Implementation](../guide/security/index/)** - Complete security setup and certificate management
 
 Ready to create your first plugin? Let's go to the [Quick Start](quick-start/)!

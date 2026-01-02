@@ -142,7 +142,7 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
     - **`configure(health_service_enabled=True)`** enables the gRPC Health Checking Protocol
     - **Automatic health service** - no custom health logic required for basic health checks
     - **Standard gRPC protocol** - compatible with Kubernetes liveness/readiness probes
-    - **Production-ready** - health checks are essential for container orchestration
+    - **Production-focused** - health checks are essential for container orchestration
 
     ### Testing Health Status
 
