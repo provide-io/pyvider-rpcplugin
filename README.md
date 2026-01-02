@@ -73,4 +73,4 @@ uv add pyvider-rpcplugin
 
 Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
 
-Copyright (c) Provide.io LLC.
+Copyright (c) provide.io LLC.
