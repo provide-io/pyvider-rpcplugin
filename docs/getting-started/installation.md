@@ -76,7 +76,7 @@ Pyvider RPC Plugin supports:
 | TCP Sockets | ✅ | ✅ | ✅ |
 
 !!! note "Windows Support"
-    On Windows, only TCP transport is available. Unix socket support is planned for future releases using named pipes.
+    On Windows, only TCP transport is available. Unix socket support is exploratory and may change or be removed.
 
 ## Verifying Installation
 
