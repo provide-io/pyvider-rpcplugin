@@ -82,8 +82,7 @@ server = plugin_server(protocol=my_protocol, handler=my_handler, transport=unix_
 configure(transports=["unix", "tcp"])  # Unix preferred, TCP fallback
 ```
 
-**Windows:** TCP transport only (Unix sockets are not supported)
-
+**Windows:** TCP transport only (Unix socket support is exploratory and may change or be removed)
 ```python
 configure(transports=["tcp"])  # TCP only
 ```
