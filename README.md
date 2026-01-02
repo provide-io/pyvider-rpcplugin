@@ -16,49 +16,25 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 </div>
 
-## ✨ Key Features
-
-- 🔌 **gRPC Framework** - High-performance plugin framework with strong typing
-- ⚡ **Async-First** - Native async APIs with secure mTLS support
-- 🧱 **Foundation Integration** - Seamless integration with provide.foundation utilities
+## Key Features
+Key features are highlighted in the sections below and in the documentation.
 
 ## Quick Start
-
-> **Note**: pyvider-rpcplugin is in pre-release (v0.x.x). APIs and features may change before 1.0 release.
-
-1. Install: `uv add pyvider-rpcplugin`
-1. Follow the [Quick Start guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/quick-start.md).
-1. Build your first plugin via [docs/getting-started/first-plugin.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/first-plugin.md).
+For a quick start, see [docs/index.md](docs/index.md).
 
 ## Documentation
-
-- [Documentation index](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)
-- [Getting started](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/index.md)
-- [Guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/guide/index.md)
+Documentation lives in [docs/index.md](docs/index.md).
 
 ## Development
-
-### Quick Start
-
-```bash
-# Set up environment
-uv sync
-
-# Run common tasks
-uv run pytest             # Run tests
-uv run ruff check .       # Check code
-uv run ruff format .      # Format code
-```
-
-See [CLAUDE.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/CLAUDE.md) for detailed development instructions and architecture information.
+Development notes are in [CLAUDE.md](CLAUDE.md).
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/development/contributing-guide.md) for details.
+We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing-guide.md) for details.
 
 ## 📜 License
 
-This project is licensed under the **Apache 2.0 License**. See the [LICENSE](https://github.com/provide-io/pyvider-rpcplugin/blob/main/LICENSE) file for details.
+This project is licensed under the **Apache 2.0 License**. See the [LICENSE](LICENSE) file for details.
 
 ## 📖 Full Documentation
 
@@ -85,12 +61,4 @@ Complete documentation with tutorials, examples, API reference, and deployment g
 uv add pyvider-rpcplugin
 ```
 
-Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
-
-## 🤝 Contributing
-
-We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing-guide.md) for details.
-
-## 📜 License
-
-This project is licensed under the **Apache 2.0 License**. See the [LICENSE](LICENSE) file for details.
+Dive into the **[Documentation](./docs/index.md)** to get started!
