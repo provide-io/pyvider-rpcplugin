@@ -22,7 +22,7 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 - Designed to integrate with provide.foundation utilities.
 
 ## Quick Start
-1. Install: `uv pip install pyvider-rpcplugin`
+1. Install: `uv add pyvider-rpcplugin`
 2. Follow the [Quick Start guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/quick-start.md).
 3. Build your first plugin via [docs/getting-started/first-plugin.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/first-plugin.md).
 
@@ -68,7 +68,7 @@ Complete documentation with tutorials, examples, API reference, and deployment g
 uv add pyvider-rpcplugin
 
 # With pip
-uv pip install pyvider-rpcplugin
+uv add pyvider-rpcplugin
 ```
 
 Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
