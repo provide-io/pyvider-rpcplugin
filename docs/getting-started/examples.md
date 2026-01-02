@@ -176,7 +176,6 @@ class CustomProtocol(RPCPluginProtocol):
 ## Configuration Examples
 
 ### Production Configuration
-
 Production-focused configuration patterns:
 
 ```python
