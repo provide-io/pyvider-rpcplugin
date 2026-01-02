@@ -190,7 +190,7 @@ If examples time out:
 - **API Reference**: [API Documentation](../docs/reference/index.md)
 - **Core Architecture**: [Development Architecture Guide](../docs/development/architecture.md)
 - **Security (mTLS)**: [mTLS Security Guide](../docs/guide/security/mtls.md)
-- **Production Configuration & Deployment**: [Production Configuration Guide](../docs/guide/config/production.md)
+- **Configuration & Deployment**: [Configuration Guide](../docs/guide/config/configuration-guide.md)
 - **Getting Started Documentation**: [Quick Start Guide](../docs/getting-started/quick-start.md)
 
 ## 🤝 Contributing Examples
