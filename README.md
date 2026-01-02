@@ -16,11 +16,38 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 </div>
 
+## Key Features
+- gRPC-based plugin framework with strong typing.
+- Async-first APIs with secure mTLS support.
+- Designed to integrate with provide.foundation utilities.
+
+## Quick Start
+1. Install: `pip install pyvider-rpcplugin`
+2. Follow the [Quick Start guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/quick-start.md).
+3. Build your first plugin via [docs/getting-started/first-plugin.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/first-plugin.md).
+
+## Documentation
+- [Documentation index](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)
+- [Getting started](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/index.md)
+- [Guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/guide/index.md)
+
+## Development
+- See [CLAUDE.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/CLAUDE.md) for local development notes.
+- Run `uv sync --extra dev` to set up the dev environment.
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/development/contributing-guide.md) for details.
+
+## 📜 License
+
+This project is licensed under the **Apache 2.0 License**. See the [LICENSE](https://github.com/provide-io/pyvider-rpcplugin/blob/main/LICENSE) file for details.
+
 ## 📖 Full Documentation
 
 For a comprehensive guide to installing, using, and understanding `pyvider.rpcplugin`, including tutorials, advanced topics, and API references, please see the:
 
-➡️ **[Documentation Home](./docs/index.md)**
+➡️ **[Documentation Home](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)**
 
 Complete documentation with tutorials, examples, API reference, and deployment guides.
 
@@ -44,12 +71,6 @@ uv add pyvider-rpcplugin
 pip install pyvider-rpcplugin
 ```
 
-Dive into the **[Documentation](./docs/index.md)** to get started!
+Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
 
-## 🤝 Contributing
-
-We welcome contributions! Please see [Contributing to Pyvider RPCPlugin](./docs/development/contributing.md) for details.
-
-## 📜 License
-
-This project is licensed under the **Apache 2.0 License**. See the [LICENSE](LICENSE) file for details.
+Copyright (c) Provide.io LLC.
