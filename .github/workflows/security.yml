@@ -46,7 +46,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pip-audit || true
-
+      
       - name: 🔐 Check for hardcoded secrets (PR)
         if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
@@ -71,7 +71,7 @@ jobs:
         continue-on-error: true
         with:
           path: ./
-
+      
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         if: always()
