@@ -51,7 +51,20 @@ Understand how provide-foundation, pyvider, flavorpack, and other projects work 
 
 ### Installation
 
-=== "uv" `bash     uv add pyvider-rpcplugin     `
+=== "pip"
+    ```bash
+    uv add pyvider-rpcplugin
+    ```
+
+=== "uv"  
+    ```bash
+    uv add pyvider-rpcplugin
+    ```
+
+=== "poetry"
+    ```bash  
+    poetry add pyvider-rpcplugin
+    ```
 
 ### Your First Plugin
 
