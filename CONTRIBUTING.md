@@ -284,7 +284,7 @@ All submissions require review. The maintainers will:
 
 - Open an issue for bugs or feature requests
 - Check existing issues and documentation first
-- See [CLAUDE.md](CLAUDE.md) for detailed development instructions
+- Refer to the project documentation in the `docs/` directory
 
 ## License
 
