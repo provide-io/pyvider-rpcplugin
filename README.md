@@ -12,7 +12,7 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 ---
 
-**Build lightning-fast, secure RPC plugins!** `pyvider.rpcplugin` provides a complete framework for creating high-performance RPC-based plugins with built-in security, async support, and production-ready patterns. Perfect for microservices, plugin architectures, and inter-process communication.
+**Build lightning-fast, secure RPC plugins!** `pyvider.rpcplugin` provides a complete framework for creating high-performance RPC-based plugins with built-in security, async support, and production-focused patterns. Perfect for microservices, plugin architectures, and inter-process communication.
 
 </div>
 
@@ -73,4 +73,4 @@ uv add pyvider-rpcplugin
 
 Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
 
-Copyright (c) Provide.io LLC.
+Copyright (c) provide.io LLC.

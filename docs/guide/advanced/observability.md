@@ -1,6 +1,6 @@
 # Observability and Performance
 
-Comprehensive monitoring, tracing, metrics, and performance optimization for production-ready RPC plugins.
+Comprehensive monitoring, tracing, metrics, and performance optimization for production-focused RPC plugins.
 
 ## Overview
 

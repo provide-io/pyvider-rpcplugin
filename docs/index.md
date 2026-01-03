@@ -2,7 +2,7 @@
 
 **Enterprise-grade RPC plugin framework for Python applications**
 
-Build high-performance, type-safe plugin systems with Foundation integration, security-first architecture, and modern async patterns. Pyvider RPC Plugin provides everything you need to create production-ready microservices and plugin ecosystems.
+Build high-performance, type-safe plugin systems with Foundation integration, security-first architecture, and modern async patterns. Pyvider RPC Plugin provides everything you need to create production-focused microservices and plugin ecosystems.
 
 **Part of the [provide.foundation](https://foundation.provide.io) ecosystem** - seamlessly integrates with Foundation's configuration, logging, and development toolchain for consistent, unified application architecture.
 
@@ -38,7 +38,7 @@ Understand how provide-foundation, pyvider, flavorpack, and other projects work 
 - **Factory functions**: `plugin_server()` and `plugin_client()` for rapid development
 - **Rich error handling**: Detailed exceptions with contextual information and guidance
 
-### 🏗️ **Production Ready**
+### 🏗️ **Production-focused**
 - **Foundation configuration**: `PLUGIN_*` environment variables with validation and type safety
 - **Structured logging**: Foundation's logging system with context preservation and filtering
 - **Health checks**: gRPC Health Checking Protocol with custom status reporting
@@ -257,7 +257,7 @@ graph TB
 
 ### **vs. Custom RPC Solutions**  
 - ⚡ **Accelerated development** with battle-tested infrastructure and patterns
-- 🛡️ **Production-ready security** with mTLS, process isolation, and rate limiting
+- 🛡️ **Production-focused security** with mTLS, process isolation, and rate limiting
 - 📚 **Comprehensive tooling** for configuration, logging, health checks, and testing
 - 🏢 **Enterprise support** with Foundation's ecosystem and community
 

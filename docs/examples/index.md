@@ -54,7 +54,7 @@ Start here to learn the fundamentals:
 
 === "Advanced Track"
 
-    **Goal**: Build production-ready, observable, secure services
+    **Goal**: Build production-focused, observable, secure services
 
     1. **[Echo Service: Production Features](echo-example/#production-features)** - Health, rate limiting, metrics, mTLS
     2. **[Echo Service: Testing](echo-example/#testing)** - Unit and integration test patterns
@@ -148,7 +148,7 @@ Expected output:
 
     - `example_utils.configure_for_example()` for environment setup
     - Comprehensive error handling and logging
-    - Production-ready patterns and best practices
+    - Production-focused patterns and best practices
 
     Here's the mapping:
 
@@ -171,7 +171,7 @@ examples/
 │   ├── tcp_transport.py             # TCP transport configuration
 │   └── custom_protocol.py           # Custom protocol example
 ├── echo_server.py                   # Echo service server (comprehensive)
-├── echo_client.py                   # Echo service client (production-ready)
+├── echo_client.py                   # Echo service client (production-focused)
 ├── quick_start_client.py            # Basic client launching dummy_server.py
 ├── dummy_server.py                  # Minimal plugin server
 ├── proto/                           # Protocol Buffer definitions

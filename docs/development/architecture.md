@@ -41,7 +41,7 @@ graph TD
 4. **Type Safety** - Modern typing throughout (dict, list, set)
 5. **Async First** - Built on asyncio for high performance
 6. **Security by Default** - mTLS and authentication built-in
-7. **Production Ready** - Comprehensive error handling, logging, and monitoring
+7. **Production-focused** - Comprehensive error handling, logging, and monitoring
 
 ## Component Architecture
 

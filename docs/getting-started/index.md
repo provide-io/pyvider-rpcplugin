@@ -2,7 +2,7 @@
 
 **Path:** [Home](../index/) → Getting Started
 
-**Build production-ready plugin systems in minutes with Foundation integration**
+**Build production-focused plugin systems in minutes with Foundation integration**
 
 This guide takes you from installation to your first working plugin with clear learning paths for different experience levels and use cases.
 
@@ -56,7 +56,7 @@ By the end of this guide, you'll be able to:
     
     ---
     
-    **25 minutes** • Production-ready echo service with all features
+    **25 minutes** • Production-focused echo service with all features
     
     Covers protocols, security, logging, and testing patterns
     

@@ -4,7 +4,7 @@ X.509 certificate lifecycle management for secure plugin communication using Fou
 
 ## Overview
 
-Certificate management provides PKI-based authentication and encryption for plugin communication. Foundation handles certificate generation, validation, rotation, and monitoring with production-ready utilities.
+Certificate management provides PKI-based authentication and encryption for plugin communication. Foundation handles certificate generation, validation, rotation, and monitoring with production-focused utilities.
 
 ### Key Benefits
 

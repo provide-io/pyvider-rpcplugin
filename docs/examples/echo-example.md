@@ -1,9 +1,9 @@
 # Echo Service Example
 
-A comprehensive example demonstrating RPC plugin development from basic unary calls to production-ready patterns with streaming, error handling, and observability.
+A comprehensive example demonstrating RPC plugin development from basic unary calls to production-focused patterns with streaming, error handling, and observability.
 
 !!! note "Documentation vs. Actual Code"
-    This documentation provides **simplified code examples** focused on teaching core concepts. The actual files (`examples/echo_server.py` and `examples/echo_client.py`) contain production-ready patterns with additional error handling, environment setup, and utility functions.
+    This documentation provides **simplified code examples** focused on teaching core concepts. The actual files (`examples/echo_server.py` and `examples/echo_client.py`) contain production-focused patterns with additional error handling, environment setup, and utility functions.
 
     **To run the actual working example:**
     ```bash
