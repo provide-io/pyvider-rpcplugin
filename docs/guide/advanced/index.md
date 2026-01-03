@@ -1,20 +1,20 @@
 # Advanced Topics
 
-Master advanced plugin development techniques for building high-performance, extensible, and production-ready plugin systems. Learn custom protocols, performance optimization, middleware patterns, and lifecycle management.
+Master advanced plugin development techniques for building high-performance, extensible, and production-focused plugin systems. Learn custom protocols, performance optimization, middleware patterns, and lifecycle management.
 
 !!! warning "Conceptual Examples - Not Current Implementation"
-    **IMPORTANT:** The code examples on this page use **conceptual APIs** that represent future planned features and architectural patterns. These modules and classes **do not currently exist** in pyvider-rpcplugin:
+    **IMPORTANT:** The code examples on this page use **conceptual APIs** that represent exploratory features and architectural patterns. These modules and classes **do not currently exist** in pyvider-rpcplugin:
 
-    - `pyvider.rpcplugin.advanced` - Planned advanced features module
-    - `pyvider.rpcplugin.patterns` - Planned microservices patterns
-    - `pyvider.rpcplugin.events` - Planned event-driven architecture
-    - `pyvider.rpcplugin.composition` - Planned plugin composition
-    - `pyvider.rpcplugin.testing` - Planned testing utilities
+    - `pyvider.rpcplugin.advanced` - Exploratory advanced features module
+    - `pyvider.rpcplugin.patterns` - Exploratory microservices patterns
+    - `pyvider.rpcplugin.events` - Exploratory event-driven architecture
+    - `pyvider.rpcplugin.composition` - Exploratory plugin composition
+    - `pyvider.rpcplugin.testing` - Exploratory testing utilities
 
     These examples serve as:
 
     - **Design documentation** showing intended architecture
-    - **Future roadmap** illustrating planned capabilities
+    - **Exploratory roadmap** illustrating potential capabilities
     - **Conceptual patterns** for building advanced systems today using current APIs
 
     For **working code examples**, see the individual topic pages linked below, which use actual current APIs.
@@ -26,7 +26,7 @@ Advanced topics in Pyvider RPC Plugin development focus on customization, optimi
 ### Conceptual Architecture Example
 
 ```python
-# NOTE: This is a CONCEPTUAL example showing planned future APIs
+# NOTE: This is a CONCEPTUAL example showing exploratory APIs
 # These imports DO NOT currently exist - see warning above
 
 from pyvider.rpcplugin import plugin_server, plugin_client
@@ -693,4 +693,4 @@ Ready to master advanced plugin development? Choose your focus area:
 - **[Middleware](middleware/)** - Implement cross-cutting concerns
 - **[Plugin Lifecycle](lifecycle/)** - Master plugin orchestration and management
 
-Each section provides practical examples, performance benchmarks, and production-ready implementations for advanced plugin development scenarios.
+Each section provides practical examples, performance benchmarks, and production-focused implementations for advanced plugin development scenarios.

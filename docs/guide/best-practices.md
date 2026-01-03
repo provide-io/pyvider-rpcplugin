@@ -1,6 +1,6 @@
 # Best Practices
 
-This guide covers recommended patterns and best practices for building production-ready plugins with pyvider-rpcplugin.
+This guide covers recommended patterns and best practices for building production-focused plugins with pyvider-rpcplugin.
 
 ## Import Patterns
 

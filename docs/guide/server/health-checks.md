@@ -496,7 +496,7 @@ class TestHealthChecks:
 
 ```python
 def create_production_health_setup(config: PluginHealthConfig):
-    """Create production-ready health check setup."""
+    """Create production-focused health check setup."""
     
     health_checker = AdvancedHealthChecker()
     health_checker.resource_thresholds = {

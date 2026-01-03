@@ -41,7 +41,7 @@ python examples/e2e_greeter_client.py
 - Custom protocol implementation
 - Service handler with business logic
 - Health checking and status monitoring
-- Production-ready server configuration
+- Production-focused server configuration
 
 ## Development Examples
 
@@ -161,7 +161,7 @@ class CustomProtocol(RPCPluginProtocol):
 ## Configuration Examples
 
 ### Production Configuration
-Production-ready configuration patterns:
+Production-focused configuration patterns:
 
 ```python
 # From production_config_discussion.py

@@ -1,6 +1,6 @@
 # User Guide
 
-The Pyvider RPC Plugin User Guide provides comprehensive documentation for building production-ready RPC plugins with Python. Whether you're new to RPC development or an experienced developer, this guide covers everything from basic concepts to advanced deployment patterns.
+The Pyvider RPC Plugin User Guide provides comprehensive documentation for building production-focused RPC plugins with Python. Whether you're new to RPC development or an experienced developer, this guide covers everything from basic concepts to advanced deployment patterns.
 
 ## What's Covered
 
@@ -19,7 +19,7 @@ Master client development including connection management, error handling, retry
 Comprehensive security coverage including mTLS configuration, certificate management, magic cookies, and process isolation.
 
 ### ⚙️ **Configuration** 
-Production-ready configuration management with environment variables, deployment setups, rate limiting, and logging.
+Production-focused configuration management with environment variables, deployment setups, rate limiting, and logging.
 
 ### 🚀 **Advanced Topics**
 Advanced patterns including custom protocols, performance tuning, middleware development, and plugin lifecycle management.
@@ -110,7 +110,7 @@ Async-first design with efficient transports and serialization for high-throughp
 ### **🛠️ Developer Experience**
 Comprehensive type safety, clear error messages, and extensive documentation make development productive and enjoyable.
 
-### **🏗️ Production Ready**
+### **🏗️ Production-focused**
 Built-in monitoring, logging, rate limiting, and deployment patterns for enterprise environments.
 
 ## Related Documentation

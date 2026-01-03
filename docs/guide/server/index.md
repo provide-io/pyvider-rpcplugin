@@ -94,4 +94,4 @@ Ready to dive deeper into server development? Choose your path:
 3. **Working on Performance?** Explore [Async Patterns](async-patterns/)
 4. **Production Deployment?** Review [Transport Configuration](transports/)
 
-Each section builds upon the concepts introduced here, providing practical examples and advanced patterns for building production-ready plugin servers.
+Each section builds upon the concepts introduced here, providing practical examples and advanced patterns for building production-focused plugin servers.

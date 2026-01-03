@@ -9,7 +9,7 @@ Welcome to the Pyvider RPC Plugin framework! This section provides an overview o
 - **Async-first design** - Built on Python's `asyncio` for maximum concurrency
 - **Security by default** - Automatic mTLS with certificate management
 - **Flexible transports** - Unix domain sockets and TCP with auto-negotiation
-- **Production-ready** - Health checks, rate limiting, and comprehensive error handling
+- **Production-focused** - Health checks, rate limiting, and comprehensive error handling
 - **Type safety** - Modern Python 3.11+ type annotations throughout
 
 ## Foundation Integration
