@@ -452,7 +452,7 @@ class TestConnectionManager:
 
         - name: Install dependencies
           run: |
-            python -m pip install --upgrade pip uv
+            curl -LsSf https://astral.sh/uv/install.sh | sh
             uv pip install -e ".[dev,test]"
 
         - name: Run tests

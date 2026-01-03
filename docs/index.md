@@ -54,7 +54,7 @@ Understand how provide-foundation, pyvider, flavorpack, and other projects work 
 
 === "pip"
     ```bash
-    pip install pyvider-rpcplugin
+    uv add pyvider-rpcplugin
     ```
 
 === "uv"  
