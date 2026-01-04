@@ -134,7 +134,6 @@ nav:
       - Logging Configuration: guide/config/logging.md
 
     - Advanced Topics:
-      - guide/advanced/index.md
       - Observability & Performance: guide/advanced/observability.md
       - Type System & Custom Protocols: guide/advanced/customization.md
       - Plugin Lifecycle: guide/advanced/lifecycle.md
