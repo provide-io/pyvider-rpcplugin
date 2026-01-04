@@ -16,12 +16,16 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 </div>
 
-## Key Features
-- gRPC-based plugin framework with strong typing.
-- Async-first APIs with secure mTLS support.
-- Designed to integrate with provide.foundation utilities.
+## ✨ Key Features
+
+- 🔌 **gRPC Framework** - High-performance plugin framework with strong typing
+- ⚡ **Async-First** - Native async APIs with secure mTLS support
+- 🧱 **Foundation Integration** - Seamless integration with provide.foundation utilities
 
 ## Quick Start
+
+> **Note**: pyvider-rpcplugin is in pre-release (v0.x.x). APIs and features may change before 1.0 release.
+
 1. Install: `uv add pyvider-rpcplugin`
 2. Follow the [Quick Start guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/quick-start.md).
 3. Build your first plugin via [docs/getting-started/first-plugin.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/first-plugin.md).
