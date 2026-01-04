@@ -40,28 +40,12 @@ theme:
     - navigation.prune  # Additional feature specific to this project
 
 # Project-specific plugins (in addition to base plugins)
-# Temporarily disabled for Phase 3 verification
-# plugins:
-#   - gen-files:
-#       scripts:
-#         - scripts/mkdocs_gen_ref_pages.py
-#   - literate-nav:
-#       nav_file: SUMMARY.md
-#   - section-index
-#   - tags
-#   - mkdocstrings:
-#       handlers:
-#         python:
-#           options:
-#             # Override mkdocstrings options specific to this project
-#             show_if_no_docstring: true
-#             inherited_members: false
-#             group_by_category: true
-#             heading_level: 2
-#             separate_signature: false
-#             filters:
-#               - "!^_"  # Hide private members
-#               - "!^__.*__$"  # Hide special methods
+plugins:
+  - gen-files:
+      scripts:
+        - .provide/foundry/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
 
 # Project-specific extra configuration
 extra:
