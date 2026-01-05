@@ -574,8 +574,8 @@ openssl verify -CAfile ca.pem server.pem
 
 ## Next Steps
 
-- **[Certificate API Reference](certificate-reference/)** - Quick reference for Certificate.from_pem() usage patterns
-- **[mTLS Configuration](mtls/)** - Complete mutual TLS setup guide
-- **[Process Isolation](process-isolation/)** - Secure plugin sandboxing
-- **[Magic Cookies](magic-cookies/)** - Lightweight authentication alternative
-- **[Security Overview](index/)** - Complete security architecture
+- **[Certificate API Reference](certificate-reference.md)** - Quick reference for Certificate.from_pem() usage patterns
+- **[mTLS Configuration](mtls.md)** - Complete mutual TLS setup guide
+- **[Process Isolation](process-isolation.md)** - Secure plugin sandboxing
+- **[Magic Cookies](magic-cookies.md)** - Lightweight authentication alternative
+- **[Security Overview](index.md)** - Complete security architecture

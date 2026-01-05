@@ -242,20 +242,20 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 ## Implementation Resources
 
 ### Server Transport Configuration
-- **[Server Transport Configuration](../server/transports/)** - Advanced transport configuration for production servers, including performance optimization, mTLS setup, and monitoring
-- **[Server Basic Setup](../server/basic-setup/)** - How to configure transports in server implementations
+- **[Server Transport Configuration](../server/transports.md)** - Advanced transport configuration for production servers, including performance optimization, mTLS setup, and monitoring
+- **[Server Basic Setup](../server/basic-setup.md)** - How to configure transports in server implementations
 
 ### Configuration Integration
-- **[Configuration Guide](../config/index/)** - Environment-driven transport configuration with examples for different deployment scenarios
+- **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration with examples for different deployment scenarios
 - **[Production Configuration](../config/production/)** - Production transport configuration patterns
 
 ### Documentation
-- **[Configuration Reference](../config/configuration-reference/)** - Transport configuration options
-- **[API Reference](../../reference/index/)** - Auto-generated API documentation
+- **[Configuration Reference](../config/configuration-reference.md)** - Transport configuration options
+- **[API Reference](../../reference/index.md)** - Auto-generated API documentation
 
 ## Related Concepts
 
-- **[Security Model](security/)** - How transports integrate with security layers including mTLS and authentication
+- **[Security Model](security.md)** - How transports integrate with security layers including mTLS and authentication
 - **[Handshake Process](handshake/)** - Connection establishment details across different transports
 
 ## Examples and Learning Path

@@ -6,8 +6,8 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 
 | Example | Description | Complexity | Lines |
 |---------|-------------|------------|-------|
-| [Quick Start](quick-start/) | Focused code samples for specific features | 🟢 Beginner | ~20-30 each |
-| [Echo Service](echo-example/) | Complete RPC service from basic to production | 🟢-🟡 Beginner to Advanced | ~570 |
+| [Quick Start](quick-start.md) | Focused code samples for specific features | 🟢 Beginner | ~20-30 each |
+| [Echo Service](echo-example.md) | Complete RPC service from basic to production | 🟢-🟡 Beginner to Advanced | ~570 |
 
 ## Getting Started
 
@@ -15,13 +15,13 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 
 Start here to learn the fundamentals:
 
-1. **[Quick Start Examples](quick-start/)** - Six focused examples covering:
+1. **[Quick Start Examples](quick-start.md)** - Six focused examples covering:
    - Basic client and server setup
    - Health checks and rate limiting
    - TCP transport configuration
    - Custom protocol implementation
 
-2. **[Echo Service Example](echo-example/)** - Complete service demonstrating:
+2. **[Echo Service Example](echo-example.md)** - Complete service demonstrating:
    - Unary RPC patterns
    - Streaming (server, client, bidirectional)
    - Error handling and retry logic
@@ -33,11 +33,11 @@ Start here to learn the fundamentals:
 
     **Goal**: Understand core plugin lifecycle and basic patterns
 
-    1. **[Quick Start: Basic Server](quick-start/#basic-server)** - Minimal server (15 lines)
-    2. **[Quick Start: Basic Client](quick-start/#basic-client)** - Minimal client (20 lines)
-    3. **[Echo Service: Basic Setup](echo-example/#basic-setup)** - Complete RPC service
-    4. **[Quick Start: Health Checks](quick-start/#health-checks)** - Production monitoring
-    5. **[Quick Start: Rate Limiting](quick-start/#rate-limiting)** - Service protection
+    1. **[Quick Start: Basic Server](quick-start.md#basic-server)** - Minimal server (15 lines)
+    2. **[Quick Start: Basic Client](quick-start.md#basic-client)** - Minimal client (20 lines)
+    3. **[Echo Service: Basic Setup](echo-example.md#basic-setup)** - Complete RPC service
+    4. **[Quick Start: Health Checks](quick-start.md#health-checks)** - Production monitoring
+    5. **[Quick Start: Rate Limiting](quick-start.md#rate-limiting)** - Service protection
 
     **Next**: Explore streaming patterns in the Echo Service example
 
@@ -45,10 +45,10 @@ Start here to learn the fundamentals:
 
     **Goal**: Master streaming, transports, and custom protocols
 
-    1. **[Echo Service: Streaming Patterns](echo-example/#streaming-patterns)** - Server/client/bidirectional streaming
-    2. **[Quick Start: TCP Transport](quick-start/#tcp-transport)** - Cross-platform communication
-    3. **[Quick Start: Custom Protocol](quick-start/#custom-protocol)** - Integrate your gRPC services
-    4. **[Echo Service: Error Handling](echo-example/#error-handling)** - Robust error management
+    1. **[Echo Service: Streaming Patterns](echo-example.md#streaming-patterns)** - Server/client/bidirectional streaming
+    2. **[Quick Start: TCP Transport](quick-start.md#tcp-transport)** - Cross-platform communication
+    3. **[Quick Start: Custom Protocol](quick-start.md#custom-protocol)** - Integrate your gRPC services
+    4. **[Echo Service: Error Handling](echo-example.md#error-handling)** - Robust error management
 
     **Next**: Study production deployment in the Configuration Guide
 
@@ -56,8 +56,8 @@ Start here to learn the fundamentals:
 
     **Goal**: Build production-focused, observable, secure services
 
-    1. **[Echo Service: Production Features](echo-example/#production-features)** - Health, rate limiting, metrics, mTLS
-    2. **[Echo Service: Testing](echo-example/#testing)** - Unit and integration test patterns
+    1. **[Echo Service: Production Features](echo-example.md#production-features)** - Health, rate limiting, metrics, mTLS
+    2. **[Echo Service: Testing](echo-example.md#testing)** - Unit and integration test patterns
     3. **[Advanced Topics Guide](../guide/advanced/)** - Observability, performance tuning
     4. **[Security Guide](../guide/security/)** - Comprehensive mTLS setup
 
@@ -78,7 +78,7 @@ async def main():
     await server.serve()
 ```
 
-See **[Quick Start Examples](quick-start/)** for all patterns.
+See **[Quick Start Examples](quick-start.md)** for all patterns.
 
 ### Echo Service Example
 
@@ -89,7 +89,7 @@ Comprehensive example (576 lines) covering:
 - **Error Handling** - Validation, retry, graceful degradation
 - **Production Features** - Health, rate limiting, metrics, mTLS, testing
 
-See **[Echo Service Example](echo-example/)** for complete details.
+See **[Echo Service Example](echo-example.md)** for complete details.
 
 ## Running Examples
 
@@ -216,8 +216,8 @@ If Unix sockets or TCP transport fails:
 ### Study Concepts
 
 - **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
-- **[Transport Configuration](../guide/concepts/transports/)** - Unix sockets vs TCP
-- **[Security Model](../guide/concepts/security/)** - Authentication and encryption
+- **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
+- **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
 
 ### Get Help
 

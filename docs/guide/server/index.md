@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
 ## Server Development Sections
 
-### 📝 [Basic Server Setup](basic-setup/)
+### 📝 [Basic Server Setup](basic-setup.md)
 Learn the fundamentals of creating and configuring plugin servers:
 
 - Server initialization and configuration
@@ -58,7 +58,7 @@ Learn the fundamentals of creating and configuring plugin servers:
 - Basic error handling patterns
 - Development vs production setup
 
-### ⚙️ [Service Implementation](services/)
+### ⚙️ [Service Implementation](services.md)
 Implement robust gRPC service handlers:
 
 - Service method patterns (unary, streaming)
@@ -66,7 +66,7 @@ Implement robust gRPC service handlers:
 - Input validation and sanitization
 - Business logic organization
 
-### 🌐 [Transport Configuration](transports/)
+### 🌐 [Transport Configuration](transports.md)
 Configure transport layers for optimal performance:
 
 - Unix socket vs TCP selection
@@ -74,7 +74,7 @@ Configure transport layers for optimal performance:
 - Performance optimization
 - Security considerations
 
-### 🔄 [Async Patterns](async-patterns/)
+### 🔄 [Async Patterns](async-patterns.md)
 Master asynchronous programming patterns:
 
 - Concurrent request handling
@@ -82,7 +82,7 @@ Master asynchronous programming patterns:
 - Resource pooling
 - Async context management
 
-### 🏥 [Health Checks](health-checks/)
+### 🏥 [Health Checks](health-checks.md)
 Implement comprehensive health monitoring:
 
 - gRPC health check protocol
@@ -94,9 +94,9 @@ Implement comprehensive health monitoring:
 
 Ready to dive deeper into server development? Choose your path:
 
-1. **New to Plugin Servers?** Start with [Basic Server Setup](basic-setup/)
-2. **Need Service Implementation Help?** Check out [Service Implementation](services/)
-3. **Working on Performance?** Explore [Async Patterns](async-patterns/)
-4. **Production Deployment?** Review [Transport Configuration](transports/)
+1. **New to Plugin Servers?** Start with [Basic Server Setup](basic-setup.md)
+2. **Need Service Implementation Help?** Check out [Service Implementation](services.md)
+3. **Working on Performance?** Explore [Async Patterns](async-patterns.md)
+4. **Production Deployment?** Review [Transport Configuration](transports.md)
 
 Each section builds upon the concepts introduced here, providing practical examples and advanced patterns for building production-focused plugin servers.

@@ -153,7 +153,7 @@ async def safe_plugin_execution():
 
 ## Next Steps
 
-- **[Security Overview](index/)** - Comprehensive security guide
-- **[Magic Cookies](magic-cookies/)** - Plugin authentication
-- **[mTLS Security](mtls/)** - Network-level security
-- **[Certificate Management](certificates/)** - PKI for plugin authentication
+- **[Security Overview](index.md)** - Comprehensive security guide
+- **[Magic Cookies](magic-cookies.md)** - Plugin authentication
+- **[mTLS Security](mtls.md)** - Network-level security
+- **[Certificate Management](certificates.md)** - PKI for plugin authentication

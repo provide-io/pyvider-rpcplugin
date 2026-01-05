@@ -618,7 +618,7 @@ async def call_with_fallback(primary_func, fallback_func):
 
 ## Next Steps
 
-- **[Client Development Guide](client-guide/)** - Basic client setup and configuration
-- **[Direct Connections](direct-connections/)** - Connect to existing servers
+- **[Client Development Guide](client-guide.md)** - Basic client setup and configuration
+- **[Direct Connections](direct-connections.md)** - Connect to existing servers
 - **[Security Guide](../security/)** - mTLS and authentication
 - **[Examples](../../examples/)** - Complete working examples

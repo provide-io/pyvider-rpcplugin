@@ -84,7 +84,7 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 
 ## Security Sections
 
-### 🔐 [mTLS Configuration](mtls/)
+### 🔐 [mTLS Configuration](mtls.md)
 Configure mutual TLS for encrypted communication:
 
 - Certificate setup and management
@@ -92,7 +92,7 @@ Configure mutual TLS for encrypted communication:
 - TLS cipher suite configuration
 - Certificate validation and rotation
 
-### 🏆 [Certificate Management](certificates/)
+### 🏆 [Certificate Management](certificates.md)
 Manage X.509 certificates for production security:
 
 - Certificate generation and signing
@@ -100,7 +100,7 @@ Manage X.509 certificates for production security:
 - Certificate storage and file permissions
 - Automated certificate renewal
 
-### 🍪 [Magic Cookies](magic-cookies/)
+### 🍪 [Magic Cookies](magic-cookies.md)
 Implement shared secret authentication:
 
 - Magic cookie generation and management
@@ -108,7 +108,7 @@ Implement shared secret authentication:
 - Security considerations and best practices
 - Integration with secret management systems
 
-### 🏰 [Process Isolation](process-isolation/)
+### 🏰 [Process Isolation](process-isolation.md)
 Secure plugin process execution:
 
 - Subprocess sandboxing and limits
@@ -485,13 +485,13 @@ health = await security_health_check()
 ## Configuration Integration
 
 ### Security Configuration Resources
-- **[Security Configuration Guide](../config/index/)** - Environment-driven security configuration with comprehensive examples
+- **[Security Configuration Guide](../config/index.md)** - Environment-driven security configuration with comprehensive examples
 - **[Production Configuration](../config/production/)** - Production-grade security configuration patterns
-- **[Configuration Reference](../config/configuration-reference/)** - Complete security configuration options
+- **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ### Conceptual Foundation
-- **[Security Model Concepts](../concepts/security/)** - Understand the security architecture and how different layers work together
-- **[Transport Security](../concepts/transports/)** - How transport selection impacts security
+- **[Security Model Concepts](../concepts/security.md)** - Understand the security architecture and how different layers work together
+- **[Transport Security](../concepts/transports.md)** - How transport selection impacts security
 
 ## Examples and Learning Path
 
@@ -507,8 +507,8 @@ health = await security_health_check()
 
 ## Next Steps
 
-1. **[Configure mTLS](mtls/)** - Set up mutual TLS encryption
-2. **[Manage Certificates](certificates/)** - Handle X.509 certificates
-3. **[Implement Magic Cookies](magic-cookies/)** - Add authentication layer
-4. **[Secure Processes](process-isolation/)** - Isolate and secure plugin execution
+1. **[Configure mTLS](mtls.md)** - Set up mutual TLS encryption
+2. **[Manage Certificates](certificates.md)** - Handle X.509 certificates
+3. **[Implement Magic Cookies](magic-cookies.md)** - Add authentication layer
+4. **[Secure Processes](process-isolation.md)** - Isolate and secure plugin execution
 5. **Monitor Security** - Implement security event logging and health checks

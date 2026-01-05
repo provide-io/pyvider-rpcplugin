@@ -8,7 +8,7 @@ Optimize transport layers for your plugin servers with Unix sockets, TCP, and mT
 - ✅ Use: `plugin_server(port=8080, host="0.0.0.0")`
 - ❌ Don't: `configure(tcp_port=8080, tcp_host="0.0.0.0")`
 
-    See [Config vs Factory Parameters](../config/configuration-vs-factory-parameters/) for complete details.
+    See [Config vs Factory Parameters](../config/configuration-vs-factory-parameters.md) for complete details.
 
 ## Transport Selection
 
@@ -623,19 +623,19 @@ def setup_production_transport():
 ## Related Documentation
 
 ### Conceptual Foundation
-- **[Transport Concepts](../concepts/transports/)** - Understanding transport types, selection criteria, and performance characteristics
-- **[Security Model](../concepts/security/)** - How transport security integrates with the overall security architecture
+- **[Transport Concepts](../concepts/transports.md)** - Understanding transport types, selection criteria, and performance characteristics
+- **[Security Model](../concepts/security.md)** - How transport security integrates with the overall security architecture
 
 ### Configuration Resources
-- **[Configuration Guide](../config/index/)** - Environment-driven transport configuration patterns and best practices
+- **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration patterns and best practices
 - **[Configuration API Reference](../../reference/pyvider/rpcplugin/config/index/)** - Programmatic transport configuration access and validation methods
 
 ### Security Integration
-- **[Security Implementation Guide](../security/index/)** - Complete security setup including transport-level security
-- **[mTLS Configuration](../security/mtls/)** - Detailed mutual TLS setup for secure transport
+- **[Security Implementation Guide](../security/index.md)** - Complete security setup including transport-level security
+- **[mTLS Configuration](../security/mtls.md)** - Detailed mutual TLS setup for secure transport
 
 ## Next Steps
 
-- **[Async Patterns](async-patterns/)** - Master concurrency and async programming
-- **[Health Checks](health-checks/)** - Implement monitoring and health checks
-- **[Security](../security/index/)** - Dive deeper into mTLS and security patterns
+- **[Async Patterns](async-patterns.md)** - Master concurrency and async programming
+- **[Health Checks](health-checks.md)** - Implement monitoring and health checks
+- **[Security](../security/index.md)** - Dive deeper into mTLS and security patterns

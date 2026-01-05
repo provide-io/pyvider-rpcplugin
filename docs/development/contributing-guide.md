@@ -1094,8 +1094,8 @@ async def test_performance_baseline():
 
 ## See Also
 
-- [Testing Guide](testing/) - Comprehensive testing documentation
-- [Architecture](architecture/) - Internal system design
-- [Troubleshooting](troubleshooting/) - Common development issues
+- [Testing Guide](testing.md) - Comprehensive testing documentation
+- [Architecture](architecture.md) - Internal system design
+- [Troubleshooting](troubleshooting.md) - Common development issues
 
 Thank you for contributing to Pyvider RPC Plugin! Your contributions help make this project better for everyone.

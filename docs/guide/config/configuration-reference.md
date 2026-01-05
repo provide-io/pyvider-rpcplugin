@@ -426,17 +426,17 @@ Now that you understand configuration:
 
 2. **Check** configuration examples in:
    - [Production Guide](production/) for deployment patterns
-   - [Security Guide](../security/index/) for security setup
+   - [Security Guide](../security/index.md) for security setup
 
 3. **Explore** the complete API:
    - [API Reference](../../reference/pyvider/rpcplugin/config/index/) for configuration classes
 
 ## Related Topics
 
-- **[Environment Configuration Guide](environment/)** - Setting up environment variables
+- **[Environment Configuration Guide](environment.md)** - Setting up environment variables
 - **[Production Configuration](production/)** - Production deployment patterns
 - **[Configuration API Reference](../../reference/pyvider/rpcplugin/config/index/)** - Complete API docs
 
 ______________________________________________________________________
 
-**Navigation:** [← Config Index](index/) | [Client Config →](configuration-client/)
+**Navigation:** [← Config Index](index.md) | [Client Config →](configuration-client/)
