@@ -204,7 +204,7 @@ graph TB
     
     Quick installation, setup guide, and your first plugin
     
-    [:octicons-arrow-right-24: Get Started](getting-started/index/)
+    [:octicons-arrow-right-24: Get Started](getting-started/index.md)
 
   Quick installation, setup guide, and your first plugin
 
@@ -212,7 +212,7 @@ graph TB
     
     Comprehensive guide covering concepts, server/client development, and advanced topics
     
-    [:octicons-arrow-right-24: User Guide](guide/index/)
+    [:octicons-arrow-right-24: User Guide](guide/index.md)
 
 - :material-book-open: **User Guide**
 
@@ -220,7 +220,7 @@ graph TB
     
     Complete API documentation with examples and code snippets
     
-    [:octicons-arrow-right-24: API Reference](reference/index/)
+    [:octicons-arrow-right-24: API Reference](reference/index.md)
 
   Comprehensive guide covering concepts, server/client development, and advanced topics
 
@@ -228,7 +228,7 @@ graph TB
     
     Working examples from simple echo services to production deployments
     
-    [:octicons-arrow-right-24: Examples](examples/index/)
+    [:octicons-arrow-right-24: Examples](examples/index.md)
 
 </div>
 
@@ -266,8 +266,8 @@ graph TB
 
 **Choose your path based on your experience with Foundation and plugin systems:**
 
-[**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation/){ .md-button .md-button--primary }
+[**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation.md){ .md-button .md-button--primary }
 
 [**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture/){ .md-button }
 
-**Foundation Users:** See [Foundation Integration](introduction/foundation/) for seamless ecosystem integration.
+**Foundation Users:** See [Foundation Integration](introduction/foundation.md) for seamless ecosystem integration.

@@ -375,7 +375,7 @@ examples/
 
 ## Additional Resources
 
-- **[Complete Example Index](../examples/index/)** - All available examples with source code
-- **[User Guide](../guide/index/)** - Conceptual explanations and best practices
-- **[API Reference](../reference/index/)** - Complete API documentation
-- **[Configuration Guide](../guide/config/index/)** - Environment setup and options
+- **[Complete Example Index](../examples/index.md)** - All available examples with source code
+- **[User Guide](../guide/index.md)** - Conceptual explanations and best practices
+- **[API Reference](../reference/index.md)** - Complete API documentation
+- **[Configuration Guide](../guide/config/index.md)** - Environment setup and options

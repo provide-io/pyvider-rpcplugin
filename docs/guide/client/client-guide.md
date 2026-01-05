@@ -451,7 +451,7 @@ server = plugin_server(
 
 ## Next Steps
 
-- **[Connection Resilience](resilience/)** - Error handling, retry logic, health monitoring
-- **[Direct Connections](direct-connections/)** - Connect to existing servers
+- **[Connection Resilience](resilience.md)** - Error handling, retry logic, health monitoring
+- **[Direct Connections](direct-connections.md)** - Connect to existing servers
 - **[Security Guide](../security/)** - mTLS configuration and authentication
 - **[Examples](../../examples/)** - Complete working examples

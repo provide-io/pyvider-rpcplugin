@@ -459,7 +459,7 @@ Example:
 
 ## Related Documentation
 
-- **[Configuration Reference](../guide/config/configuration-reference/)** - Complete configuration options
-- **[Security Guide](../guide/security/index/)** - Security implementation details
-- **[Testing Guide](../development/testing/)** - Testing patterns and fixtures
-- **[Examples](../examples/index/)** - Working code examples
+- **[Configuration Reference](../guide/config/configuration-reference.md)** - Complete configuration options
+- **[Security Guide](../guide/security/index.md)** - Security implementation details
+- **[Testing Guide](../development/testing.md)** - Testing patterns and fixtures
+- **[Examples](../examples/index.md)** - Working code examples

@@ -846,8 +846,8 @@ async with plugin_client(command=["./go-plugin-server"]) as client:
 
 ## Next Steps
 
-- **[Protocols](protocols/)** - Protocol definition and implementation patterns
-- **[Transports](transports/)** - Transport layer implementation details
-- **[Security Model](security/)** - Security architecture and patterns
-- **[Server Development](../server/index/)** - Building secure plugin servers
-- **[Client Development](../client/index/)** - Implementing robust plugin clients
+- **[Protocols](protocols.md)** - Protocol definition and implementation patterns
+- **[Transports](transports.md)** - Transport layer implementation details
+- **[Security Model](security.md)** - Security architecture and patterns
+- **[Server Development](../server/index.md)** - Building secure plugin servers
+- **[Client Development](../client/index.md)** - Implementing robust plugin clients
