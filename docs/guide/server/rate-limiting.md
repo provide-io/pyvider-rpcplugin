@@ -341,5 +341,5 @@ logging.getLogger("pyvider.rpcplugin.server").setLevel(logging.DEBUG)
 
 - [Server Configuration](../config/index.md) - General server configuration options
 - [Health Checks](health-checks.md) - Monitor server health under load
-- [Performance Tuning](../advanced/performance/) - Optimize server performance
-- [Error Handling](../client/error-handling/) - Client-side error handling patterns
+- [Performance Tuning](../advanced/observability.md) - Optimize server performance
+- [Error Handling](../client/resilience.md) - Client-side error handling patterns

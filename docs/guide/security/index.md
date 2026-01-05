@@ -486,7 +486,7 @@ health = await security_health_check()
 
 ### Security Configuration Resources
 - **[Security Configuration Guide](../config/index.md)** - Environment-driven security configuration with comprehensive examples
-- **[Production Configuration](../config/production/)** - Production-grade security configuration patterns
+- **[Production Configuration](../config/advanced.md)** - Production-grade security configuration patterns
 - **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ### Conceptual Foundation
@@ -496,8 +496,8 @@ health = await security_health_check()
 ## Examples and Learning Path
 
 ### Hands-On Examples
-- **[Echo Service Examples](../../examples/echo-basic/)** - Security implementation in working service examples
-- **[Basic Server Example](../../examples/short/basic-server/)** - Simple server setup with security considerations
+- **[Echo Service Examples](../../examples/echo-example.md)** - Security implementation in working service examples
+- **[Basic Server Example](../../examples/quick-start.md)** - Simple server setup with security considerations
 
 ### Working Examples
 

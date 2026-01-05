@@ -268,6 +268,6 @@ graph TB
 
 [**Start Building** - Installation & Quick Start :material-arrow-right:](getting-started/installation.md){ .md-button .md-button--primary }
 
-[**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/rpc-architecture/){ .md-button }
+[**Deep Dive** - Architecture & Concepts :material-arrow-right:](guide/concepts/architecture-and-handshake.md){ .md-button }
 
 **Foundation Users:** See [Foundation Integration](introduction/foundation.md) for seamless ecosystem integration.

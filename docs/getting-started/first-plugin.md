@@ -354,10 +354,10 @@ Now that you understand the plugin architecture:
 
 For focused, executable examples (15-30 lines each):
 
-- **[Basic Server](../examples/short/basic-server/)** - Minimal factory-based server
-- **[Health Checks](../examples/short/health-check/)** - Health monitoring integration  
-- **[Rate Limiting](../examples/short/rate-limiting/)** - Request throttling patterns
-- **[Custom Protocol](../examples/short/custom-protocol/)** - Like the Echo example above
+- **[Basic Server](../examples/quick-start.md)** - Minimal factory-based server
+- **[Health Checks](../examples/quick-start.md)** - Health monitoring integration  
+- **[Rate Limiting](../examples/quick-start.md)** - Request throttling patterns
+- **[Custom Protocol](../examples/quick-start.md)** - Like the Echo example above
 
 ### 📚 Learn More
 
@@ -370,14 +370,14 @@ For focused, executable examples (15-30 lines each):
 
 - **[Server Development](../guide/server/index.md)** - Advanced server patterns
 - **[Client Development](../guide/client/index.md)** - Connection management and retry logic
-- **[Error Handling](../guide/client/error-handling/)** - Robust error handling patterns
+- **[Error Handling](../guide/client/resilience.md)** - Robust error handling patterns
 - **[Testing](../development/testing.md)** - Unit and integration testing strategies
 
 ### 🚀 Advanced Topics
 
 - **[Async Patterns](../guide/server/async-patterns.md)** - Stream processing and concurrency
-- **[Performance](../guide/advanced/performance/)** - Optimization and benchmarking
-- **[Production Deployment](../guide/config/production/)** - Scaling and monitoring
+- **[Performance](../guide/advanced/observability.md)** - Optimization and benchmarking
+- **[Production Deployment](../guide/config/advanced.md)** - Scaling and monitoring
 
 ## Common Issues
 

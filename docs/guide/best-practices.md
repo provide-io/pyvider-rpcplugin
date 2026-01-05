@@ -460,6 +460,6 @@ Example:
 ## Related Documentation
 
 - **[Configuration Reference](../guide/config/configuration-reference.md)** - Complete configuration options
-- **[Security Guide](../guide/security/index.md)** - Security implementation details
+- **[Security Guide](security/index.md)** - Security implementation details
 - **[Testing Guide](../development/testing.md)** - Testing patterns and fixtures
 - **[Examples](../examples/index.md)** - Working code examples

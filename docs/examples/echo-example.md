@@ -561,7 +561,7 @@ If streams don't properly cancel:
 - **[Production Configuration](../guide/config/advanced.md)** - Deployment patterns
 
 ### Study Core Concepts
-- **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
+- **[RPC Architecture](../guide/concepts/architecture-and-handshake.md)** - Understanding the plugin model
 - **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
 - **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
 

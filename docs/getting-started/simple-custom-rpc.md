@@ -7,10 +7,10 @@ This intermediate tutorial bridges the gap between the [Quick Start](quick-start
     **You can:**
     - Create these files yourself as a learning exercise
     - Use them as templates for your own custom RPC services
-    - Skip to the [Echo Service Example](../examples/echo-basic/) for a complete, runnable example using Protocol Buffers
+    - Skip to the [Echo Service Example](../examples/echo-example.md) for a complete, runnable example using Protocol Buffers
 
     **For working examples**, see:
-    - [Echo Service](../examples/echo-basic/) - Complete RPC service with Protocol Buffers
+    - [Echo Service](../examples/echo-example.md) - Complete RPC service with Protocol Buffers
     - [Examples Overview](../examples/index.md) - All runnable examples
 
 **Navigation:** [Home](../index.md) → [Getting Started](index.md) → Simple Custom RPC
