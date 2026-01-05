@@ -14,7 +14,7 @@ Master advanced plugin development techniques for building high-performance, ext
     These examples serve as:
 
     - **Design documentation** showing intended architecture
-    - **Exploratory roadmap** illustrating potential capabilities
+    - **Exploratory outline** illustrating potential capabilities
     - **Conceptual patterns** for building advanced systems today using current APIs
 
     For **working code examples**, see the individual topic pages linked below, which use actual current APIs.
