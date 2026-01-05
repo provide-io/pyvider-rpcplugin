@@ -93,7 +93,7 @@ By the end of this guide, you'll be able to:
 
 **Next Steps After Completion:**
 - **[Security Guide](../guide/security/index.md)** - mTLS, certificates, and authentication patterns
-- **[Production Configuration](../guide/config/production/)** - Environment-driven configuration for deployment
+- **[Production Configuration](../guide/config/advanced.md)** - Environment-driven configuration for deployment
 - **[API Reference](../reference/index.md)** - Complete method documentation and advanced usage
 
 ## Support & Troubleshooting

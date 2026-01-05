@@ -215,7 +215,7 @@ If Unix sockets or TCP transport fails:
 
 ### Study Concepts
 
-- **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
+- **[RPC Architecture](../guide/concepts/architecture-and-handshake.md)** - Understanding the plugin model
 - **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
 - **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
 
@@ -235,4 +235,4 @@ We welcome contributions! Please:
 4. Test examples on multiple platforms (Linux, macOS, Windows where applicable)
 5. Submit a pull request with your example
 
-See the [Contributing Guide](../development/contributing/) for details.
+See the [Contributing Guide](../development/contributing-guide.md) for details.

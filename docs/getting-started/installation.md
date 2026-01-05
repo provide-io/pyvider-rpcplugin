@@ -164,7 +164,7 @@ uv run pytest tests/test_factories.py -v
 uv run pytest tests/transport/ -v
 
 # Run handshake tests
-uv run pytest tests/handshake/ -v
+uv run pytest tests/architecture-and-handshake.md -v
 ```
 
 ## Development Workflow
@@ -380,8 +380,8 @@ If you encounter issues:
 
 ### Explore Examples
 
-- **[Basic Server Example](../examples/short/basic-server/)** - Minimal server implementation using factory functions
-- **[Echo Service Examples](../examples/echo-basic/)** - Complete service examples from basic to advanced patterns
+- **[Basic Server Example](../examples/quick-start.md)** - Minimal server implementation using factory functions
+- **[Echo Service Examples](../examples/echo-example.md)** - Complete service examples from basic to advanced patterns
 
 ### Learn Core Concepts
 

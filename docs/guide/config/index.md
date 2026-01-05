@@ -321,6 +321,6 @@ elif os.getenv('ENVIRONMENT') == 'production':
 ## Next Steps
 
 - **[Environment Variables](environment.md)** - Complete reference of all configuration options
-- **[Production Setup](production/)** - Production deployment patterns and security
-- **[Rate Limiting](rate-limiting/)** - Request rate limiting and throttling configuration  
+- **[Production Setup](advanced.md)** - Production deployment patterns and security
+- **[Rate Limiting](../server/rate-limiting.md)** - Request rate limiting and throttling configuration  
 - **[Logging Configuration](logging.md)** - Logging setup and structured output patterns

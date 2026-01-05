@@ -260,12 +260,12 @@ Now that you have the basics working:
 
 For focused, executable examples (15-30 lines each):
 
-- **[Basic Client](../examples/short/basic-client/)** - Minimal client connection
-- **[Basic Server](../examples/short/basic-server/)** - Simple plugin server  
-- **[Health Checks](../examples/short/health-check/)** - Server with health monitoring
-- **[Rate Limiting](../examples/short/rate-limiting/)** - Request throttling with token bucket
-- **[TCP Transport](../examples/short/tcp-transport/)** - Network transport configuration
-- **[Custom Protocol](../examples/short/custom-protocol/)** - Custom gRPC service integration
+- **[Basic Client](../examples/quick-start.md)** - Minimal client connection
+- **[Basic Server](../examples/quick-start.md)** - Simple plugin server  
+- **[Health Checks](../examples/quick-start.md)** - Server with health monitoring
+- **[Rate Limiting](../examples/quick-start.md)** - Request throttling with token bucket
+- **[TCP Transport](../examples/quick-start.md)** - Network transport configuration
+- **[Custom Protocol](../examples/quick-start.md)** - Custom gRPC service integration
 
 ## Common Issues
 

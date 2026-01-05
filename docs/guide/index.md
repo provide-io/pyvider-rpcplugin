@@ -79,7 +79,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     Custom protocols, performance tuning, middleware, and lifecycle management
     
-    [:octicons-arrow-right-24: Advanced Patterns](advanced/index/)
+    [:octicons-arrow-right-24: Advanced Patterns](advanced/lifecycle.md)
 
 </div>
 
@@ -97,9 +97,9 @@ If you're new to RPC development, start with:
 
 If you have RPC experience, you might want to:
 1. Skim [Core Concepts](concepts/index.md) for pyvider-specific patterns
-2. Jump to [Advanced Topics](advanced/index/) for sophisticated use cases
+2. Jump to [Advanced Topics](advanced/lifecycle.md) for sophisticated use cases
 3. Reference [Configuration](config/index.md) for production deployment
-4. Explore custom [Protocols](advanced/custom-protocols/) and [Middleware](advanced/middleware.md)
+4. Explore custom [Protocols](advanced/customization.md) and [Middleware](advanced/middleware.md)
 
 ## Design Philosophy
 

@@ -247,7 +247,7 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 
 ### Configuration Integration
 - **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration with examples for different deployment scenarios
-- **[Production Configuration](../config/production/)** - Production transport configuration patterns
+- **[Production Configuration](../config/advanced.md)** - Production transport configuration patterns
 
 ### Documentation
 - **[Configuration Reference](../config/configuration-reference.md)** - Transport configuration options
@@ -256,9 +256,9 @@ Built-in metrics track connection counts, latency, throughput, and error rates f
 ## Related Concepts
 
 - **[Security Model](security.md)** - How transports integrate with security layers including mTLS and authentication
-- **[Handshake Process](handshake/)** - Connection establishment details across different transports
+- **[Handshake Process](architecture-and-handshake.md)** - Connection establishment details across different transports
 
 ## Examples and Learning Path
 
-- **[Echo Service Examples](../../examples/echo-basic/)** - Transport usage in complete working service examples
-- **[Basic Server Example](../../examples/short/basic-server/)** - Simple transport configuration examples
+- **[Echo Service Examples](../../examples/echo-example.md)** - Transport usage in complete working service examples
+- **[Basic Server Example](../../examples/quick-start.md)** - Simple transport configuration examples

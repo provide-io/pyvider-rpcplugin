@@ -411,7 +411,7 @@ logger.info("Certificate debugging would use external tools or libraries")
 
 ### Configuration Integration
 - **[Configuration Guide](../config/index.md)** - Environment-driven security configuration with validation patterns
-- **[Production Configuration](../config/production/)** - Production-focused security configuration examples
+- **[Production Configuration](../config/advanced.md)** - Production-focused security configuration examples
 
 ### Configuration Documentation
 - **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options

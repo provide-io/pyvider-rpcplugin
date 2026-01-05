@@ -367,7 +367,7 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
 - **[Examples Index](index.md)** - Full list of available examples
 
 ### Study Core Concepts
-- **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
+- **[RPC Architecture](../guide/concepts/architecture-and-handshake.md)** - Understanding the plugin model
 - **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
 - **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
 
