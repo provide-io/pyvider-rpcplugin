@@ -1,6 +1,6 @@
 # Gitleaks configuration
 # Test fixtures and example credentials - intentionally committed
-# Auto-generated from .secret-scan-allowlist.yaml
+# Auto-generated from pyproject.toml [tool.security]
 # https://github.com/gitleaks/gitleaks
 
 [extend]

@@ -1,6 +1,6 @@
 # TruffleHog path exclusions
 # Test fixtures and example credentials - intentionally committed
-# Auto-generated from .secret-scan-allowlist.yaml
+# Auto-generated from pyproject.toml [tool.security]
 
 tests/certs/[^/]*\.key$
 tests/fixtures/crypto\.py$
