@@ -282,15 +282,18 @@ allowed_paths = [
     # Test certificates and keys for mTLS testing
     "tests/certs/*.key",
     "tests/fixtures/crypto.py",
+    "tests/server/test_server_tls.py",
     # Example keys for documentation/demos
     "examples/**/*.key",
     "examples/grpc/server.key",
+    "examples/grpc/env.sh",
     "example_certs_output/*.key",
     "keys/flavor-private.key",
-    # Documentation with example credentials
-    "docs/examples/*.md",
-    # Test output files
+    # Documentation with example credentials/keys
+    "docs/**/*.md",
+    # Test output/debug files
     "tests/rpcplugin-tests.txt",
+    "tests/bfiles-*.txt",
 ]
 
 # 🐍🏗️📋
