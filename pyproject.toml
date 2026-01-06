@@ -288,7 +288,6 @@ allowed_paths = [
     "examples/grpc/server.key",
     "examples/grpc/env.sh",
     "example_certs_output/*.key",
-    "keys/flavor-private.key",
     # Documentation with example credentials/keys
     "docs/**/*.md",
     # Test output/debug files
