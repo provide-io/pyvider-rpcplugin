@@ -453,7 +453,7 @@ class TestConnectionManager:
         - name: Install dependencies
           run: |
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv add --editable ".[dev,test]"
+            uv pip install -e ".[dev,test]"
 
         - name: Run tests
           run: pytest --cov=pyvider.rpcplugin --cov-report=xml
