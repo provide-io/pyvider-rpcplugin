@@ -1,6 +1,6 @@
 # Simple Custom RPC (Without Protocol Buffers)
 
-This intermediate tutorial bridges the gap between the [Quick Start](quick-start/) and the full [Protocol Buffers Plugin](first-plugin/). Learn how to create custom RPC methods using plain Python before diving into protobuf complexity.
+This intermediate tutorial bridges the gap between the [Quick Start](quick-start.md) and the full [Protocol Buffers Plugin](first-plugin.md). Learn how to create custom RPC methods using plain Python before diving into protobuf complexity.
 
 !!! info "Conceptual Tutorial"
     This is a **conceptual tutorial** designed to teach the principles of RPC plugin development. The example files referenced (`processor_service.py`, `simple_protocol.py`, `simple_server.py`, `simple_client.py`) are **not included in the examples/ directory**.
@@ -8,13 +8,13 @@ This intermediate tutorial bridges the gap between the [Quick Start](quick-start
     **You can:**
     - Create these files yourself as a learning exercise
     - Use them as templates for your own custom RPC services
-    - Skip to the [Echo Service Example](../examples/echo-basic/) for a complete, runnable example using Protocol Buffers
+    - Skip to the [Echo Service Example](../examples/echo-example.md) for a complete, runnable example using Protocol Buffers
 
     **For working examples**, see:
-    - [Echo Service](../examples/echo-basic/) - Complete RPC service with Protocol Buffers
-    - [Examples Overview](../examples/index/) - All runnable examples
+    - [Echo Service](../examples/echo-example.md) - Complete RPC service with Protocol Buffers
+    - [Examples Overview](../examples/index.md) - All runnable examples
 
-**Navigation:** [Home](../index/) → [Getting Started](index/) → Simple Custom RPC
+**Navigation:** [Home](../index.md) → [Getting Started](index.md) → Simple Custom RPC
 
 ## What You'll Learn
 
@@ -25,7 +25,7 @@ This intermediate tutorial bridges the gap between the [Quick Start](quick-start
 
 ## Prerequisites
 
-- Completed [Quick Start](quick-start/)
+- Completed [Quick Start](quick-start.md)
 - Basic understanding of async Python
 - Pyvider RPC Plugin installed
 
@@ -247,8 +247,8 @@ The structure remains the same - Protocol Buffers just add:
 - Foundation provides logging, configuration, and infrastructure automatically
 - Type hints and dataclasses provide type safety without protobuf complexity
 
-**Ready for Protocol Buffers?** Continue to [Build Your First Plugin](first-plugin/)
+**Ready for Protocol Buffers?** Continue to [Build Your First Plugin](first-plugin.md)
 
 ---
 
-**Navigation:** [Previous: Quick Start](quick-start/) | [Next: First Plugin](first-plugin/)
+**Navigation:** [Previous: Quick Start](quick-start.md) | [Next: First Plugin](first-plugin.md)

@@ -351,7 +351,7 @@ def diagnose_protobuf_issue(message: Message):
 
     ```bash
     # Check protobuf versions
-    uv pip list | grep protobuf
+    uv run python -c "import importlib.metadata as m; print(m.version('protobuf'))"
 
     # Regenerate protobuf files
     python -m grpc_tools.protoc --python_out=. --grpc_python_out=. *.proto

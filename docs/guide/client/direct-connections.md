@@ -164,7 +164,7 @@ Direct connections enable clients to connect to already-running plugin servers v
 
 === "Connection Pooling"
 
-    See [Connection Resilience](resilience/) for complete connection pool implementation with health monitoring.
+    See [Connection Resilience](resilience.md) for complete connection pool implementation with health monitoring.
 
 ## Security
 
@@ -262,13 +262,13 @@ async def discover_and_connect(service_name: str):
     return client
 ```
 
-See [Connection Resilience](resilience/) for complete service discovery patterns and health monitoring.
+See [Connection Resilience](resilience.md) for complete service discovery patterns and health monitoring.
 
 ## Best Practices
 
 1. **Use Environment Variables** - Configure host/port from environment
 2. **Implement Health Checks** - Monitor connection health
-3. **Add Retry Logic** - Handle transient failures (see [Resilience Guide](resilience/))
+3. **Add Retry Logic** - Handle transient failures (see [Resilience Guide](resilience.md))
 4. **Secure with mTLS** - Always use encryption for production
 5. **Pool Connections** - Reuse connections efficiently
 6. **Load Balance** - Distribute load across multiple servers
@@ -277,7 +277,7 @@ See [Connection Resilience](resilience/) for complete service discovery patterns
 
 ## Next Steps
 
-- **[Connection Resilience](resilience/)** - Health monitoring, retry logic, connection pools
-- **[Client Development Guide](client-guide/)** - Basic client setup and configuration
+- **[Connection Resilience](resilience.md)** - Health monitoring, retry logic, connection pools
+- **[Client Development Guide](client-guide.md)** - Basic client setup and configuration
 - **[Security Guide](../security/)** - Comprehensive mTLS setup
 - **[Examples](../../examples/)** - Complete working examples

@@ -13,7 +13,7 @@ The development documentation covers:
 
 ## Development Sections
 
-### 🤝 [Contributing Guide](contributing-guide/)
+### 🤝 [Contributing Guide](contributing-guide.md)
 
 **Complete development workflow documentation covering:**
 
@@ -27,7 +27,7 @@ The development documentation covers:
 
 **Perfect for:** New contributors, understanding the full development lifecycle
 
-### 🏗️ [Architecture](architecture/)
+### 🏗️ [Architecture](architecture.md)
 
 **Internal system architecture and design:**
 
@@ -39,7 +39,7 @@ The development documentation covers:
 
 **Perfect for:** Understanding internal design, extending the framework
 
-### 🧪 [Testing](testing/)
+### 🧪 [Testing](testing.md)
 
 **Comprehensive testing documentation:**
 
@@ -51,7 +51,7 @@ The development documentation covers:
 
 **Perfect for:** Writing tests, understanding test patterns
 
-### 🔧 [Troubleshooting](troubleshooting/)
+### 🔧 [Troubleshooting](troubleshooting.md)
 
 **Common issues and debugging:**
 
@@ -96,7 +96,7 @@ mkdocs serve                    # Serve docs locally
 mkdocs build --strict           # Build with strict checking
 ```
 
-See the [Contributing Guide](contributing-guide/) for complete development workflow documentation.
+See the [Contributing Guide](contributing-guide.md) for complete development workflow documentation.
 
 ## Development Principles
 
@@ -128,9 +128,9 @@ For development-specific questions:
 
 ## Next Steps
 
-1. **[Read Contributing Guide](contributing-guide/)** - Understand contribution process
-2. **[Study Architecture](architecture/)** - Learn internal system design
-3. **[Review Testing](testing/)** - Understand testing framework
-4. **[Check Troubleshooting](troubleshooting/)** - Common development issues
+1. **[Read Contributing Guide](contributing-guide.md)** - Understand contribution process
+2. **[Study Architecture](architecture.md)** - Learn internal system design
+3. **[Review Testing](testing.md)** - Understand testing framework
+4. **[Check Troubleshooting](troubleshooting.md)** - Common development issues
 
-Ready to contribute? Start with the [Contributing Guide](contributing-guide/) and explore the codebase!
+Ready to contribute? Start with the [Contributing Guide](contributing-guide.md) and explore the codebase!

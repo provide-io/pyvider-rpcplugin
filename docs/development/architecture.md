@@ -429,7 +429,7 @@ class ConfigManager:
 The handshake ensures secure plugin communication:
 
 ```python
-# src/pyvider/rpcplugin/handshake/core.py
+# src/pyvider/rpcplugin/architecture-and-handshake.mdcore.py
 @define
 class HandshakeConfig:
     """Configuration for the handshake protocol."""

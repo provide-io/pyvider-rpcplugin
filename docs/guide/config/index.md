@@ -142,7 +142,7 @@ except ConfigError as e:
 
 ## Configuration Reference
 
-For a complete list of all configuration options with defaults, types, and descriptions, see the **[Configuration Reference](configuration-reference/)**.
+For a complete list of all configuration options with defaults, types, and descriptions, see the **[Configuration Reference](configuration-reference.md)**.
 
 ### Most Commonly Used Settings
 
@@ -167,7 +167,7 @@ Here are the most frequently configured options:
 - `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` - Request rate limit (default: `100.0`)
 - `PLUGIN_HEALTH_SERVICE_ENABLED` - Enable health checks (default: `true`)
 
-See **[Configuration Reference](configuration-reference/)** for all 60+ configuration options
+See **[Configuration Reference](configuration-reference.md)** for all 60+ configuration options
 
 ## Configuration Examples
 
@@ -303,19 +303,19 @@ elif os.getenv('ENVIRONMENT') == 'production':
 ## Related Documentation
 
 ### Complete Configuration Details
-- **[Configuration Reference](configuration-reference/)** - Complete list of all 60+ configuration options with defaults and types
+- **[Configuration Reference](configuration-reference.md)** - Complete list of all 60+ configuration options with defaults and types
 
 ### Security Configuration
-- **[Security Implementation Guide](../security/index/)** - Security-focused configuration patterns including mTLS, certificates, and magic cookies
-- **[Security Concepts](../concepts/security/)** - Understanding the security model and how configuration enables different security layers
+- **[Security Implementation Guide](../security/index.md)** - Security-focused configuration patterns including mTLS, certificates, and magic cookies
+- **[Security Concepts](../concepts/security.md)** - Understanding the security model and how configuration enables different security layers
 
 ### Transport Configuration
-- **[Transport Concepts](../concepts/transports/)** - Understanding transport types and selection criteria
-- **[Server Transport Configuration](../server/transports/)** - Advanced transport configuration for production servers
+- **[Transport Concepts](../concepts/transports.md)** - Understanding transport types and selection criteria
+- **[Server Transport Configuration](../server/transports.md)** - Advanced transport configuration for production servers
 
 ## Next Steps
 
-- **[Environment Variables](environment/)** - Complete reference of all configuration options
-- **[Production Setup](production/)** - Production deployment patterns and security
-- **[Rate Limiting](rate-limiting/)** - Request rate limiting and throttling configuration  
-- **[Logging Configuration](logging/)** - Logging setup and structured output patterns
+- **[Environment Variables](environment.md)** - Complete reference of all configuration options
+- **[Production Setup](advanced.md)** - Production deployment patterns and security
+- **[Rate Limiting](../server/rate-limiting.md)** - Request rate limiting and throttling configuration  
+- **[Logging Configuration](logging.md)** - Logging setup and structured output patterns

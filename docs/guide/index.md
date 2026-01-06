@@ -34,7 +34,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     RPC architecture, transports, protocols, handshake process, and security model
     
-    [:octicons-arrow-right-24: Learn Concepts](concepts/index/)
+    [:octicons-arrow-right-24: Learn Concepts](concepts/index.md)
 
 -   :material-server: **Server Development**
     
@@ -42,7 +42,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     Build robust plugin servers with async patterns and health monitoring
     
-    [:octicons-arrow-right-24: Build Servers](server/index/)
+    [:octicons-arrow-right-24: Build Servers](server/index.md)
 
 -   :material-laptop: **Client Development**
     
@@ -50,7 +50,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     Create reliable clients with connection management and retry logic
     
-    [:octicons-arrow-right-24: Build Clients](client/index/)
+    [:octicons-arrow-right-24: Build Clients](client/index.md)
 
 -   :material-shield-check: **Security**
     
@@ -58,7 +58,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     Implement mTLS, manage certificates, and ensure secure communication
     
-    [:octicons-arrow-right-24: Secure Plugins](security/index/)
+    [:octicons-arrow-right-24: Secure Plugins](security/index.md)
 
 -   :material-cog: **Configuration**
     
@@ -66,7 +66,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     Production configuration, environment setup, and deployment patterns
     
-    [:octicons-arrow-right-24: Configure Apps](config/index/)
+    [:octicons-arrow-right-24: Configure Apps](config/index.md)
 
 -   :material-rocket: **Advanced Topics**
     
@@ -74,7 +74,7 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
     
     Custom protocols, performance tuning, middleware, and lifecycle management
     
-    [:octicons-arrow-right-24: Advanced Patterns](advanced/index/)
+    [:octicons-arrow-right-24: Advanced Patterns](advanced/lifecycle.md)
 
 </div>
 
@@ -82,17 +82,17 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
 
 ### **For Beginners**
 If you're new to RPC development, start with:
-1. [Core Concepts](concepts/index/) - Understand the foundation
-2. [Server Development](server/index/) - Build your first server  
-3. [Client Development](client/index/) - Create a client to connect
-4. [Security](security/index/) - Add production-grade security
+1. [Core Concepts](concepts/index.md) - Understand the foundation
+2. [Server Development](server/index.md) - Build your first server  
+3. [Client Development](client/index.md) - Create a client to connect
+4. [Security](security/index.md) - Add production-grade security
 
 ### **For Experienced Developers**
 If you have RPC experience, you might want to:
-1. Skim [Core Concepts](concepts/index/) for pyvider-specific patterns
-2. Jump to [Advanced Topics](advanced/index/) for sophisticated use cases
-3. Reference [Configuration](config/index/) for production deployment
-4. Explore custom [Protocols](advanced/custom-protocols/) and [Middleware](advanced/middleware/)
+1. Skim [Core Concepts](concepts/index.md) for pyvider-specific patterns
+2. Jump to [Advanced Topics](advanced/lifecycle.md) for sophisticated use cases
+3. Reference [Configuration](config/index.md) for production deployment
+4. Explore custom [Protocols](advanced/customization.md) and [Middleware](advanced/middleware.md)
 
 ## Design Philosophy
 
@@ -115,9 +115,9 @@ Built-in monitoring, logging, rate limiting, and deployment patterns for enterpr
 
 ## Related Documentation
 
-- **[API Reference](../reference/index/)** - Detailed API documentation with examples
-- **[Examples](../examples/index/)** - Working code samples and tutorials  
-- **[Development](../development/index/)** - Contributing, testing, and architecture
-- **[Getting Started](../getting-started/index/)** - Quick setup and first steps
+- **[API Reference](../reference/index.md)** - Detailed API documentation with examples
+- **[Examples](../examples/index.md)** - Working code samples and tutorials  
+- **[Development](../development/index.md)** - Contributing, testing, and architecture
+- **[Getting Started](../getting-started/index.md)** - Quick setup and first steps
 
-Ready to dive in? Start with [Core Concepts](concepts/index/) or jump to a specific topic that interests you!
+Ready to dive in? Start with [Core Concepts](concepts/index.md) or jump to a specific topic that interests you!
