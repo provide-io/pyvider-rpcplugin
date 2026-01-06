@@ -1,18 +1,12 @@
-# TruffleHog path exclusions for pyvider-rpcplugin
-# These are intentional test fixtures and example credentials, not real secrets
+# TruffleHog path exclusions
+# Test fixtures and example credentials - intentionally committed
+# Auto-generated from .secret-scan-allowlist.yaml
 
-# Test certificates and keys for mTLS testing
-tests/certs/.*\.key$
+tests/certs/[^/]*\.key$
 tests/fixtures/crypto\.py$
-
-# Example keys for documentation/demos
-examples/.*/.*\.key$
+examples/.*/[^/]*\.key$
 examples/grpc/server\.key$
-example_certs_output/.*\.key$
-keys/flavor-private\.key$
-
-# Documentation with example credentials
-docs/examples/.*\.md$
-
-# Test output files
-tests/rpcplugin-tests\.txt$
+example_certs_output/[^/]*\.key$
+keys/flavor\-private\.key$
+docs/examples/[^/]*\.md$
+tests/rpcplugin\-tests\.txt$
