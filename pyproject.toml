@@ -270,4 +270,27 @@ strict = true
 [tool.bandit]
 exclude_dirs = [".venv", "tests", "workenv"]
 
+################################################################################
+# Security Scanning Allowlist
+################################################################################
+
+[tool.security]
+# Paths to exclude from secret scanning (TruffleHog, GitGuardian, Gitleaks)
+# Run: python scripts/generate-security-configs.py to regenerate tool configs
+description = "Test fixtures and example credentials - intentionally committed"
+allowed_paths = [
+    # Test certificates and keys for mTLS testing
+    "tests/certs/*.key",
+    "tests/fixtures/crypto.py",
+    # Example keys for documentation/demos
+    "examples/**/*.key",
+    "examples/grpc/server.key",
+    "example_certs_output/*.key",
+    "keys/flavor-private.key",
+    # Documentation with example credentials
+    "docs/examples/*.md",
+    # Test output files
+    "tests/rpcplugin-tests.txt",
+]
+
 # 🐍🏗️📋

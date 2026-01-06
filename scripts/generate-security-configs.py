@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate tool-specific secret scanning configs from a single source file.
+"""Generate tool-specific secret scanning configs from pyproject.toml.
 
-Reads .secret-scan-allowlist.yaml and generates:
+Reads [tool.security] from pyproject.toml and generates:
 - .trufflehog-exclude-paths.txt
 - .gitguardian.yaml
 - .gitleaks.toml
@@ -13,7 +13,13 @@ Usage:
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 import yaml
 
@@ -34,7 +40,7 @@ def generate_trufflehog(paths: list[str], description: str) -> str:
     lines = [
         "# TruffleHog path exclusions",
         f"# {description}",
-        "# Auto-generated from .secret-scan-allowlist.yaml",
+        "# Auto-generated from pyproject.toml [tool.security]",
         "",
     ]
     for path in paths:
@@ -53,7 +59,7 @@ def generate_gitguardian(paths: list[str], description: str) -> str:
     header = f"""\
 # GitGuardian configuration
 # {description}
-# Auto-generated from .secret-scan-allowlist.yaml
+# Auto-generated from pyproject.toml [tool.security]
 # https://docs.gitguardian.com/ggshield-docs/configuration
 
 """
@@ -65,7 +71,7 @@ def generate_gitleaks(paths: list[str], description: str) -> str:
     lines = [
         "# Gitleaks configuration",
         f"# {description}",
-        "# Auto-generated from .secret-scan-allowlist.yaml",
+        "# Auto-generated from pyproject.toml [tool.security]",
         "# https://github.com/gitleaks/gitleaks",
         "",
         "[extend]",
@@ -85,17 +91,25 @@ def generate_gitleaks(paths: list[str], description: str) -> str:
 def main() -> None:
     """Generate all security config files."""
     repo_root = Path(__file__).parent.parent
-    source_file = repo_root / ".secret-scan-allowlist.yaml"
+    pyproject_file = repo_root / "pyproject.toml"
 
-    if not source_file.exists():
-        print(f"Error: {source_file} not found")
-        return
+    if not pyproject_file.exists():
+        print(f"Error: {pyproject_file} not found")
+        sys.exit(1)
 
-    with open(source_file) as f:
-        config = yaml.safe_load(f)
+    with open(pyproject_file, "rb") as f:
+        pyproject = tomllib.load(f)
 
-    paths = config.get("paths", [])
-    description = config.get("description", "Allowlisted paths")
+    security_config = pyproject.get("tool", {}).get("security", {})
+    if not security_config:
+        print("Error: [tool.security] section not found in pyproject.toml")
+        sys.exit(1)
+
+    paths = security_config.get("allowed_paths", [])
+    description = security_config.get("description", "Allowlisted paths")
+
+    if not paths:
+        print("Warning: No paths defined in [tool.security].allowed_paths")
 
     # Generate each config file
     configs = [
