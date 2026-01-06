@@ -25,6 +25,8 @@ def glob_to_regex(pattern: str) -> str:
     # Escape regex special chars except * and ?
     result = re.escape(pattern)
     # Convert glob wildcards to regex
+    # Handle **/ (zero or more directories) - must come before ** replacement
+    result = result.replace(r"\*\*/", "(.*/)?")  # **/ matches zero or more dirs
     result = result.replace(r"\*\*", ".*")  # ** matches anything including /
     result = result.replace(r"\*", "[^/]*")  # * matches anything except /
     result = result.replace(r"\?", ".")  # ? matches single char
