@@ -556,18 +556,18 @@ If streams don't properly cancel:
 ## Next Steps
 
 ### Explore More Features
-- **[Security Guide](../guide/security/mtls/)** - Comprehensive mTLS setup
-- **[Performance Tuning](../guide/advanced/observability/)** - Optimization techniques
-- **[Production Configuration](../guide/config/advanced/)** - Deployment patterns
+- **[Security Guide](../guide/security/mtls.md)** - Comprehensive mTLS setup
+- **[Performance Tuning](../guide/advanced/observability.md)** - Optimization techniques
+- **[Production Configuration](../guide/config/advanced.md)** - Deployment patterns
 
 ### Study Core Concepts
-- **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
-- **[Transport Configuration](../guide/concepts/transports/)** - Unix sockets vs TCP
-- **[Security Model](../guide/concepts/security/)** - Authentication and encryption
+- **[RPC Architecture](../guide/concepts/architecture-and-handshake.md)** - Understanding the plugin model
+- **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
+- **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
 
 ### Additional Examples
-- **[Quick Start Examples](quick-start/)** - Focused code samples for specific features
-- **[Direct Connection Example](../guide/client/direct-connections/)** - Connect to existing server
+- **[Quick Start Examples](quick-start.md)** - Focused code samples for specific features
+- **[Direct Connection Example](../guide/client/direct-connections.md)** - Connect to existing server
 
 ## Source Code
 

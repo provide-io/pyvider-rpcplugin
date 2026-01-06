@@ -396,19 +396,19 @@ logger.info("Certificate debugging would use external tools or libraries")
 ## Implementation Resources
 
 ### Complete Security Implementation
-- **[Security Implementation Guide](../security/index/)** - Step-by-step security setup with practical examples, certificate management, and production patterns
-- **[mTLS Configuration Guide](../security/mtls/)** - Detailed mutual TLS setup and certificate management
-- **[Certificate Management Guide](../security/certificates/)** - Complete certificate lifecycle management
+- **[Security Implementation Guide](../security/index.md)** - Step-by-step security setup with practical examples, certificate management, and production patterns
+- **[mTLS Configuration Guide](../security/mtls.md)** - Detailed mutual TLS setup and certificate management
+- **[Certificate Management Guide](../security/certificates.md)** - Complete certificate lifecycle management
 
 ### Configuration Integration
-- **[Configuration Guide](../config/index/)** - Environment-driven security configuration with validation patterns
-- **[Production Configuration](../config/production/)** - Production-focused security configuration examples
+- **[Configuration Guide](../config/index.md)** - Environment-driven security configuration with validation patterns
+- **[Production Configuration](../config/advanced.md)** - Production-focused security configuration examples
 
 ### Configuration Documentation
-- **[Configuration Reference](../config/configuration-reference/)** - Complete security configuration options
+- **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ## Related Concepts
 
-- **[Transport Security](transports/)** - How transports integrate with the security model
-- **[Handshake Process](architecture-and-handshake/)** - Connection establishment with authentication
-- **[Server Security Patterns](../security/index/)** - Server-specific security implementation patterns
+- **[Transport Security](transports.md)** - How transports integrate with the security model
+- **[Handshake Process](architecture-and-handshake.md)** - Connection establishment with authentication
+- **[Server Security Patterns](../security/index.md)** - Server-specific security implementation patterns

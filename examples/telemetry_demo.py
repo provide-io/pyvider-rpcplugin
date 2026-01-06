@@ -90,7 +90,7 @@ async def run_demo() -> None:
     # Check if telemetry is available
     if not is_telemetry_available():
         print("⚠️  OpenTelemetry not available. Install with:")
-        print("   pip install 'provide-foundation[opentelemetry]'\n")
+        print("   uv add 'provide-foundation[opentelemetry]'\n")
         return
 
     # Application configures OpenTelemetry (library just accesses it)

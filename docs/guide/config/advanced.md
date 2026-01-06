@@ -567,4 +567,4 @@ export PLUGIN_RATE_LIMIT_ENABLED=true
 - **[Configuration Guide](configuration-guide.md)** - Client, server, and security configuration
 - **[Logging Configuration](logging.md)** - Structured logging and observability
 - **[Environment Variables](environment.md)** - All configuration options reference
-- **[Performance Tuning](../advanced/performance.md)** - Performance optimization guide
+- **[Performance Tuning](../advanced/observability.md)** - Performance optimization guide

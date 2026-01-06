@@ -511,5 +511,5 @@ class RobustMiddleware(ServicerInterceptor):
 
 - [Lifecycle Management](lifecycle.md) - Plugin lifecycle patterns
 - [Observability](observability.md) - Metrics and tracing
-- [Security](../security/authentication.md) - Authentication and authorization
+- [Security](../security/index.md) - Authentication and authorization
 - [Configuration](../config/configuration-guide.md) - Middleware configuration

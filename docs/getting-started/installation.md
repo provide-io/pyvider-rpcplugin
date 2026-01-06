@@ -1,6 +1,6 @@
 # Installation
 
-**Path:** [Home](../index/) → [Getting Started](index/) → Installation
+**Path:** [Home](../index.md) → [Getting Started](index.md) → Installation
 
 Get started with Pyvider RPC Plugin by installing it in your Python environment.
 
@@ -164,7 +164,7 @@ uv run pytest tests/test_factories.py -v
 uv run pytest tests/transport/ -v
 
 # Run handshake tests
-uv run pytest tests/handshake/ -v
+uv run pytest tests/architecture-and-handshake.md -v
 ```
 
 ## Development Workflow
@@ -260,7 +260,7 @@ from pyvider.rpcplugin import plugin_server, plugin_client
     **Pyvider RPC Plugin** provides RPC communication (gRPC, transports, protocols)
     **Your Plugin** provides business logic
 
-    **→ [Complete Foundation Overview](../introduction/foundation/)** for detailed architecture and practical examples
+    **→ [Complete Foundation Overview](../introduction/foundation.md)** for detailed architecture and practical examples
 
 ### Optional Dependencies
 
@@ -368,30 +368,30 @@ If you encounter issues:
 
 1. **Check the logs** - Foundation provides detailed error messages
 2. **Verify Python version** - Ensure you're using Python 3.11+
-3. **Check [Troubleshooting Guide](../development/troubleshooting/)** - Common issues and solutions
+3. **Check [Troubleshooting Guide](../development/troubleshooting.md)** - Common issues and solutions
 5. **Report issues** - [GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)
 
 ## Next Steps
 
 ### Get Started Quickly
 
-1. **[Quick Start](quick-start/)** - Run your first plugin in 5 minutes
-2. **[First Plugin](first-plugin/)** - Build a complete echo service with all RPC patterns
+1. **[Quick Start](quick-start.md)** - Run your first plugin in 5 minutes
+2. **[First Plugin](first-plugin.md)** - Build a complete echo service with all RPC patterns
 
 ### Explore Examples
 
-- **[Basic Server Example](../examples/short/basic-server/)** - Minimal server implementation using factory functions
-- **[Echo Service Examples](../examples/echo-basic/)** - Complete service examples from basic to advanced patterns
+- **[Basic Server Example](../examples/quick-start.md)** - Minimal server implementation using factory functions
+- **[Echo Service Examples](../examples/echo-example.md)** - Complete service examples from basic to advanced patterns
 
 ### Learn Core Concepts
 
-- **[Transport Concepts](../guide/concepts/transports/)** - Understanding Unix sockets, TCP, and transport selection
-- **[Security Model](../guide/concepts/security/)** - Learn about mTLS, certificates, and authentication
-- **[Configuration Guide](../guide/config/index/)** - Environment-driven configuration and deployment patterns
+- **[Transport Concepts](../guide/concepts/transports.md)** - Understanding Unix sockets, TCP, and transport selection
+- **[Security Model](../guide/concepts/security.md)** - Learn about mTLS, certificates, and authentication
+- **[Configuration Guide](../guide/config/index.md)** - Environment-driven configuration and deployment patterns
 
 ### Advanced Topics
 
-- **[Server Development](../guide/server/index/)** - Production-focused server patterns and optimization
-- **[Security Implementation](../guide/security/index/)** - Complete security setup and certificate management
+- **[Server Development](../guide/server/index.md)** - Production-focused server patterns and optimization
+- **[Security Implementation](../guide/security/index.md)** - Complete security setup and certificate management
 
-Ready to create your first plugin? Let's go to the [Quick Start](quick-start/)!
+Ready to create your first plugin? Let's go to the [Quick Start](quick-start.md)!

@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
 ## Documentation Structure
 
-### [Client Development Guide](client-guide/)
+### [Client Development Guide](client-guide.md)
 
 **Core Topics:**
 - Quick start and basic setup
@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
 **Perfect for:** Getting started, understanding fundamentals, basic configuration
 
-### [Connection Resilience](resilience/)
+### [Connection Resilience](resilience.md)
 
 **Core Topics:**
 - Exception handling and error hierarchy
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
 **Perfect for:** Building production-focused, fault-tolerant clients
 
-### [Direct Connections](direct-connections/)
+### [Direct Connections](direct-connections.md)
 
 **Core Topics:**
 - Connecting to existing servers (TCP, Unix sockets)
@@ -66,11 +66,11 @@ if __name__ == "__main__":
 
     **Goal:** Build your first working plugin client
 
-    1. [Client Guide: Quick Start](client-guide/#quick-start)
-    2. [Client Guide: Client Patterns](client-guide/#client-patterns)
-    3. [Client Guide: Configuration](client-guide/#configuration)
-    4. [Examples: Quick Start](../../examples/quick-start/)
-    5. [Examples: Echo Service](../../examples/echo-example/)
+    1. [Client Guide: Quick Start](client-guide.md#quick-start)
+    2. [Client Guide: Client Patterns](client-guide.md#client-patterns)
+    3. [Client Guide: Configuration](client-guide.md#configuration)
+    4. [Examples: Quick Start](../../examples/quick-start.md)
+    5. [Examples: Echo Service](../../examples/echo-example.md)
 
     **Next:** Add error handling and retry logic
 
@@ -78,10 +78,10 @@ if __name__ == "__main__":
 
     **Goal:** Build resilient, production-focused clients
 
-    1. [Resilience: Exception Handling](resilience/#exception-handling)
-    2. [Resilience: Retry Strategies](resilience/#retry-strategies)
-    3. [Resilience: Connection Management](resilience/#connection-management)
-    4. [Client Guide: Advanced Patterns](client-guide/#advanced-patterns)
+    1. [Resilience: Exception Handling](resilience.md#exception-handling)
+    2. [Resilience: Retry Strategies](resilience.md#retry-strategies)
+    3. [Resilience: Connection Management](resilience.md#connection-management)
+    4. [Client Guide: Advanced Patterns](client-guide.md#advanced-patterns)
     5. [Configuration Guide](../config/)
 
     **Next:** Implement advanced patterns for microservices
@@ -90,10 +90,10 @@ if __name__ == "__main__":
 
     **Goal:** Master distributed systems and microservices patterns
 
-    1. [Direct Connections](direct-connections/)
-    2. [Resilience: Circuit Breaker](resilience/#retry-strategies)
-    3. [Resilience: Connection Pooling](resilience/#connection-management)
-    4. [Security: mTLS](../security/mtls/)
+    1. [Direct Connections](direct-connections.md)
+    2. [Resilience: Circuit Breaker](resilience.md#retry-strategies)
+    3. [Resilience: Connection Pooling](resilience.md#connection-management)
+    4. [Security: mTLS](../security/mtls.md)
     5. [Advanced Topics](../advanced/)
 
     **Next:** Implement service mesh integration
@@ -124,7 +124,7 @@ async def robust_client():
                 raise
 ```
 
-See [Connection Resilience](resilience/) for comprehensive retry patterns.
+See [Connection Resilience](resilience.md) for comprehensive retry patterns.
 
 ### Direct Connection to Existing Server
 
@@ -145,7 +145,7 @@ async def connect_to_service():
         await client.close()
 ```
 
-See [Direct Connections](direct-connections/) for microservices patterns.
+See [Direct Connections](direct-connections.md) for microservices patterns.
 
 ### Connection Pool for High Performance
 
@@ -173,7 +173,7 @@ class ClientPool:
         self.connections.append(client)
 ```
 
-See [Connection Resilience](resilience/#connection-management) for complete implementation.
+See [Connection Resilience](resilience.md#connection-management) for complete implementation.
 
 ## Related Documentation
 
@@ -185,7 +185,7 @@ See [Connection Resilience](resilience/#connection-management) for complete impl
 
 ## Next Steps
 
-1. **Read [Client Development Guide](client-guide/)** - Understand fundamentals
-2. **Study [Connection Resilience](resilience/)** - Add fault tolerance
+1. **Read [Client Development Guide](client-guide.md)** - Understand fundamentals
+2. **Study [Connection Resilience](resilience.md)** - Add fault tolerance
 3. **Explore [Examples](../../examples/)** - See complete implementations
 4. **Review [Security Guide](../security/)** - Secure your clients

@@ -462,7 +462,7 @@ async def my_handler(request, context):
 
 ## Related Topics
 
-- **[Production Setup](production.md)** - Complete production deployment configuration
+- **[Production Setup](advanced.md)** - Complete production deployment configuration
 - **[Environment Variables](environment.md)** - All configuration options reference
 - **[Configuration Reference](configuration-reference.md)** - Complete configuration options
 - **[Configuration Guide](configuration-guide.md)** - Client, server, and security configuration

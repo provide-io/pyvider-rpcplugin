@@ -35,7 +35,7 @@ The plugin system implements a robust RPC architecture built on gRPC with a secu
 2. **Handshake Process** - Multi-phase negotiation including magic cookie authentication, protocol negotiation, and service discovery
 3. **Foundation Integration** - Seamless integration with provide.foundation for logging, configuration, and cryptography
 
-**Learn more:** [RPC Architecture & Handshake](architecture-and-handshake/)
+**Learn more:** [RPC Architecture & Handshake](architecture-and-handshake.md)
 
 ### 🌐 Transport Layer
 
@@ -53,7 +53,7 @@ Communication happens over different transport mechanisms:
 - **Platforms**: Linux, macOS, Windows
 - **Performance**: ~35,000 msg/sec (localhost)
 
-**Learn more:** [Transports](transports/)
+**Learn more:** [Transports](transports.md)
 
 ### 📋 Protocol Definition
 
@@ -70,7 +70,7 @@ class MyProtocol(RPCPluginProtocol):
         my_pb2_grpc.add_MyServiceServicer_to_server(handler, server)
 ```
 
-**Learn more:** [Protocols](protocols/)
+**Learn more:** [Protocols](protocols.md)
 
 ### 🔒 Security Model
 
@@ -80,7 +80,7 @@ Multi-layered security approach:
 - **Magic Cookie Authentication** - Shared secret passed via environment variable
 - **Mutual TLS (mTLS)** - Certificate-based authentication and encrypted communication
 
-**Learn more:** [Security Model](security/)
+**Learn more:** [Security Model](security.md)
 
 ## Configuration Architecture
 
@@ -144,7 +144,7 @@ Dive deeper into specific concepts:
 
     Complete RPC architecture with secure handshake protocol
 
-    [:octicons-arrow-right-24: Learn Architecture](architecture-and-handshake/)
+    [:octicons-arrow-right-24: Learn Architecture](architecture-and-handshake.md)
 
 -   :material-swap-horizontal: **Transports**
 
@@ -152,7 +152,7 @@ Dive deeper into specific concepts:
 
     Understanding Unix sockets vs TCP and when to use each
 
-    [:octicons-arrow-right-24: Explore Transports](transports/)
+    [:octicons-arrow-right-24: Explore Transports](transports.md)
 
 -   :material-api: **Protocols**
 
@@ -160,7 +160,7 @@ Dive deeper into specific concepts:
 
     How to define and implement RPC protocols with gRPC
 
-    [:octicons-arrow-right-24: Define Protocols](protocols/)
+    [:octicons-arrow-right-24: Define Protocols](protocols.md)
 
 -   :material-shield-check: **Security Model**
 
@@ -168,11 +168,11 @@ Dive deeper into specific concepts:
 
     Comprehensive security including mTLS, magic cookies, and isolation
 
-    [:octicons-arrow-right-24: Secure Plugins](security/)
+    [:octicons-arrow-right-24: Secure Plugins](security.md)
 
 </div>
 
 Or jump to practical implementation:
 
-- **[Server Development](../server/index/)** - Build your first plugin server
-- **[Client Development](../client/index/)** - Connect to and manage plugins
+- **[Server Development](../server/index.md)** - Build your first plugin server
+- **[Client Development](../client/index.md)** - Connect to and manage plugins

@@ -323,7 +323,7 @@ Common validation errors:
 
 ## Next Steps
 
-- **[Production Setup](production/)** - Production deployment configuration patterns
-- **[Rate Limiting](rate-limiting/)** - Detailed rate limiting configuration
-- **[Logging Configuration](logging/)** - Structured logging setup
-- **[Configuration Reference](configuration-reference/)** - Complete configuration reference
+- **[Production Setup](advanced.md)** - Production deployment configuration patterns
+- **[Rate Limiting](../server/rate-limiting.md)** - Detailed rate limiting configuration
+- **[Logging Configuration](logging.md)** - Structured logging setup
+- **[Configuration Reference](configuration-reference.md)** - Complete configuration reference

@@ -643,6 +643,6 @@ class DocumentedProtocol(RPCPluginProtocol):
 
 ## Next Steps
 
-- **[RPC Architecture](architecture-and-handshake/)** - Understanding the complete RPC system
-- **[Server Development](../server/index/)** - Implementing servers with custom protocols
-- **[Advanced Topics](../advanced/customization/)** - Advanced protocol development patterns
+- **[RPC Architecture](architecture-and-handshake.md)** - Understanding the complete RPC system
+- **[Server Development](../server/index.md)** - Implementing servers with custom protocols
+- **[Advanced Topics](../advanced/customization.md)** - Advanced protocol development patterns

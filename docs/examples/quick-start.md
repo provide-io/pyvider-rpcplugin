@@ -363,13 +363,13 @@ Focused code examples demonstrating specific pyvider-rpcplugin features in 15-30
 ## Next Steps
 
 ### Explore Complete Examples
-- **[Echo Service Example](echo-example/)** - Complete RPC service from basic to production
-- **[Examples Index](index/)** - Full list of available examples
+- **[Echo Service Example](echo-example.md)** - Complete RPC service from basic to production
+- **[Examples Index](index.md)** - Full list of available examples
 
 ### Study Core Concepts
-- **[RPC Architecture](../guide/concepts/rpc-architecture/)** - Understanding the plugin model
-- **[Transport Configuration](../guide/concepts/transports/)** - Unix sockets vs TCP
-- **[Security Model](../guide/concepts/security/)** - Authentication and encryption
+- **[RPC Architecture](../guide/concepts/architecture-and-handshake.md)** - Understanding the plugin model
+- **[Transport Configuration](../guide/concepts/transports.md)** - Unix sockets vs TCP
+- **[Security Model](../guide/concepts/security.md)** - Authentication and encryption
 
 ### Build Production Services
 - **[Server Guide](../guide/server/)** - Server-side patterns and optimization
