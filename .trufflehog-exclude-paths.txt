@@ -4,9 +4,12 @@
 
 tests/certs/[^/]*\.key$
 tests/fixtures/crypto\.py$
+tests/server/test_server_tls\.py$
 examples/.*/[^/]*\.key$
 examples/grpc/server\.key$
+examples/grpc/env\.sh$
 example_certs_output/[^/]*\.key$
 keys/flavor\-private\.key$
-docs/examples/[^/]*\.md$
+docs/.*/[^/]*\.md$
 tests/rpcplugin\-tests\.txt$
+tests/bfiles\-[^/]*\.txt$
