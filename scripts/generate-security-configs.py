@@ -12,14 +12,10 @@ Usage:
 
 from __future__ import annotations
 
+from pathlib import Path
 import re
 import sys
-from pathlib import Path
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
+import tomllib
 
 import yaml
 
@@ -97,7 +93,7 @@ def main() -> None:
         print(f"Error: {pyproject_file} not found")
         sys.exit(1)
 
-    with open(pyproject_file, "rb") as f:
+    with pyproject_file.open("rb") as f:
         pyproject = tomllib.load(f)
 
     security_config = pyproject.get("tool", {}).get("security", {})
@@ -120,7 +116,7 @@ def main() -> None:
 
     for filename, content in configs:
         filepath = repo_root / filename
-        with open(filepath, "w") as f:
+        with filepath.open("w") as f:
             f.write(content)
         print(f"Generated {filepath}")
 
