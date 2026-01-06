@@ -83,9 +83,6 @@ Complete documentation with tutorials, examples, API reference, and deployment g
 ```bash
 # With uv (recommended)
 uv add pyvider-rpcplugin
-
-# With pip
-uv add pyvider-rpcplugin
 ```
 
 Dive into the **[Documentation](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/index.md)** to get started!
