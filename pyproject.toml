@@ -262,7 +262,7 @@ exclude_dirs = [".venv", "tests", "workenv"]
 
 [tool.security]
 # Paths to exclude from secret scanning (TruffleHog, GitGuardian, Gitleaks)
-# Run: python scripts/generate-security-configs.py to regenerate tool configs
+# Run: we security generate (via wrknv) to regenerate tool configs
 description = "Test fixtures and example credentials - intentionally committed"
 allowed_paths = [
     # Test certificates and keys for mTLS testing
@@ -274,7 +274,6 @@ allowed_paths = [
     "examples/grpc/server.key",
     "examples/grpc/env.sh",
     "example_certs_output/*.key",
-    "keys/flavor-private.key",
     # Documentation with example credentials/keys
     "docs/**/*.md",
     # Test output/debug files
