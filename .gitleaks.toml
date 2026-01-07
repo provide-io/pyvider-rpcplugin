@@ -1,0 +1,23 @@
+# Gitleaks configuration
+# Test fixtures and example credentials - intentionally committed
+# Auto-generated from pyproject.toml [tool.security]
+# https://github.com/gitleaks/gitleaks
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Test fixtures and example credentials - intentionally committed"
+paths = [
+    '''tests/certs/[^/]*\.key$''',
+    '''tests/fixtures/crypto\.py$''',
+    '''tests/server/test_server_tls\.py$''',
+    '''examples/(.*/)?[^/]*\.key$''',
+    '''examples/grpc/server\.key$''',
+    '''examples/grpc/env\.sh$''',
+    '''example_certs_output/[^/]*\.key$''',
+    '''keys/flavor\-private\.key$''',
+    '''docs/(.*/)?[^/]*\.md$''',
+    '''tests/rpcplugin\-tests\.txt$''',
+    '''tests/bfiles\-[^/]*\.txt$''',
+]
