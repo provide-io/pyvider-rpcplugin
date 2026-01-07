@@ -72,6 +72,7 @@ rpcplugin_config.plugin_server_port = 8080
 ### Available Configuration Options
 
 All configuration options start with `plugin_` prefix. See the complete list in:
+
 - [Configuration Reference](configuration-reference.md)
 - [Client Configuration](configuration-guide.md)
 - [Server Configuration](configuration-guide.md)
