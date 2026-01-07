@@ -1,10 +1,4 @@
-# Pyvider RPC Plugin
-
-!!! warning "Pre-release"
-    This documentation covers a pre-release. APIs and features may change during the pre-release series.
-
-
-**Enterprise-grade RPC plugin framework for Python applications**
+# Pyvider RPC Plugin**Enterprise-grade RPC plugin framework for Python applications**
 
 Build high-performance, type-safe plugin systems with Foundation integration, security-first architecture, and modern async patterns. Pyvider RPC Plugin provides everything you need to create production-focused microservices and plugin ecosystems.
 
