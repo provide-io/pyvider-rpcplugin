@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   ci:
-    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@develop
+    uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@main
     with:
       python-version: '3.11'
       coverage-threshold: 80
