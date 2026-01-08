@@ -7,14 +7,14 @@
 This example demonstrates a working mTLS setup between a client and a server
 plugin launched as a subprocess."""
 
-import asyncio  # noqa: E402
-import os  # noqa: E402
-from pathlib import Path  # noqa: E402
-import sys  # noqa: E402
-import tempfile  # noqa: E402
+import asyncio
+import os
+from pathlib import Path
+import sys
+import tempfile
 
 # First-party imports (project-specific)
-from example_utils import configure_for_example  # type: ignore[import-not-found]  # noqa: E402
+from example_utils import configure_for_example  # type: ignore[import-not-found]
 
 # Apply base configuration for examples (paths, logging)
 # Client context, clear its own env before specific mTLS config.
