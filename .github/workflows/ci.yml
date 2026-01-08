@@ -1,4 +1,4 @@
-name: 🧪 CI - Tests & Quality
+name: ⚙️ Continuous Integration
 
 on:
   push:
