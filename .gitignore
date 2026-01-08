@@ -63,3 +63,4 @@ vendor
 certs
 kv-data-*
 bin/
+.coverage*
