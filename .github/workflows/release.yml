@@ -8,32 +8,19 @@ on:
 permissions:
   contents: write
 
-env:
-  UV_VERSION: "0.7.8"
-
 jobs:
-  build-package:
-    name: 📦 Build Package
+  download-artifacts:
+    name: 📥 Download CI Artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: 🐍 Setup Python
-        uses: actions/setup-python@v5
+      - name: Download artifacts from CI
+        uses: dawidd6/action-download-artifact@v6
         with:
-          python-version: "3.11"
-
-      - name: ⚡ Install uv
-        uses: astral-sh/setup-uv@v4
-        with:
-          version: ${{ env.UV_VERSION }}
-
-      - name: 📦 Build Package
-        run: |
-          uv build
-          ls -la dist/
+          workflow: ci.yml
+          name: dist
+          path: dist/
 
       - uses: actions/upload-artifact@v4
         with:
@@ -42,7 +29,7 @@ jobs:
 
   github-release:
     name: 📋 Create GitHub Release
-    needs: build-package
+    needs: download-artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
