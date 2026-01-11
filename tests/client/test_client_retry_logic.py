@@ -320,15 +320,16 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
     client_instance._process.poll.return_value = None
     client_instance._process.returncode = None
 
-    # Control time.time sequence (values in seconds)
-    # start_time = time.time() * 1000, so we return seconds and code multiplies by 1000
-    # 1st call: start_time capture
-    # 2nd call: elapsed_time check (should not timeout yet)
-    # 3rd call: elapsed_time check (should trigger timeout)
-    time_values_sequence = [
-        0.0,  # Initial start_time
-        0.01,  # First elapsed check (10ms elapsed, below 50ms timeout)
-        total_timeout_s_config + 0.01,  # Second elapsed check (60ms elapsed, above 50ms timeout)
+    # Control time.monotonic sequence
+    # 1st call: overall_start_time
+    # 2nd call: inside loop, before sleep (attempt 1)
+    # (asyncio.sleep for initial_backoff_ms (20ms) would happen here)
+    # 3rd call: inside loop, before sleep (attempt 2) - this should exceed total_timeout_s_config
+    monotonic_values_sequence = [
+        0.0,  # Initial overall_start_time
+        0.01,  # First check in loop (attempt 1)
+        # Value for the time check that leads to timeout:
+        total_timeout_s_config + 0.01,  # Ensures time.monotonic() - overall_start_time > total_timeout_s
     ]
     time_iterator = iter(time_values_sequence)
     # After the sequence, keep returning a value that maintains the timeout condition
