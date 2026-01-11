@@ -1,4 +1,4 @@
-name: 🔒 Security Scan
+name: 🔐 Security Scanning
 
 on:
   push:
@@ -76,7 +76,3 @@ jobs:
           name: security-reports
           path: |
             bandit-report.json
-      
-      - name: 🔒 Run CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        if: github.event_name == 'push'
