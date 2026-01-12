@@ -16,6 +16,7 @@ jobs:
     uses: provide-io/ci-tooling/.github/workflows/python-ci.yml@v0
     with:
       python-version: '3.11'
+      platform-preset: standard  # ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel
       coverage-threshold: 80
       run-security: true
       run-secret-scan: true
