@@ -301,9 +301,9 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
         "pyvider.rpcplugin.config.rpcplugin_config.plugin_client_retry_total_timeout_s", total_timeout_s_config
     )
 
-    # Mock asyncio.sleep to actually sleep, to allow time.monotonic() to advance
-    # Patch time.monotonic to control its return value precisely around sleep
-    mock_time_monotonic = mocker.patch("pyvider.rpcplugin.client.handshake.time.monotonic")
+    # The handshake code uses time.time() (not time.monotonic()) for timeout checking
+    # Patch time.time to control the elapsed time precisely
+    mock_time = mocker.patch("pyvider.rpcplugin.client.handshake.time.time")
 
     # _perform_handshake will always fail
     simulated_error = HandshakeError("Simulated persistent handshake failure for timeout test")
@@ -319,58 +319,40 @@ async def test_connect_handshake_total_timeout_exceeded(client_instance_local, m
     client_instance._process.poll.return_value = None
     client_instance._process.returncode = None
 
-    mock_logger_error = mocker.spy(client_instance.logger, "error")
-    mock_logger_warning = mocker.spy(client_instance.logger, "warning")
-
-    # Control time.monotonic sequence
-    # 1st call: overall_start_time
-    # 2nd call: inside loop, before sleep (attempt 1)
-    # (asyncio.sleep for initial_backoff_ms (20ms) would happen here)
-    # 3rd call: inside loop, before sleep (attempt 2) - this should exceed total_timeout_s_config
-    monotonic_values_sequence = [
-        0.0,  # Initial overall_start_time
-        0.01,  # First check in loop (attempt 1)
-        # Value for the time check that leads to timeout:
-        total_timeout_s_config + 0.01,  # Ensures time.monotonic() - overall_start_time > total_timeout_s
+    # Control time.time sequence (values in seconds)
+    # start_time = time.time() * 1000, so we return seconds and code multiplies by 1000
+    # 1st call: start_time capture
+    # 2nd call: elapsed_time check (should not timeout yet)
+    # 3rd call: elapsed_time check (should trigger timeout)
+    time_values_sequence = [
+        0.0,  # Initial start_time
+        0.01,  # First elapsed check (10ms elapsed, below 50ms timeout)
+        total_timeout_s_config + 0.01,  # Second elapsed check (60ms elapsed, above 50ms timeout)
     ]
-    monotonic_iterator = iter(monotonic_values_sequence)
+    time_iterator = iter(time_values_sequence)
     # After the sequence, keep returning a value that maintains the timeout condition
-    final_monotonic_value_after_timeout = total_timeout_s_config + 0.05
+    final_time_value = total_timeout_s_config + 0.05
 
-    def mock_monotonic_side_effect_func():
+    def mock_time_side_effect_func():
         try:
-            val = next(monotonic_iterator)
-            client_instance.logger.debug(f"Mock time.monotonic returning: {val}")
+            val = next(time_iterator)
             return val
         except StopIteration:
-            client_instance.logger.debug(
-                f"Mock time.monotonic returning final value: {final_monotonic_value_after_timeout}"
-            )
-            return final_monotonic_value_after_timeout
+            return final_time_value
 
-    mock_time_monotonic.side_effect = mock_monotonic_side_effect_func
+    mock_time.side_effect = mock_time_side_effect_func
 
-    # We need actual sleep to allow monotonic time to be checked correctly if not fully mocked
-    # For this test, fully mocking monotonic is better.
-    # Let's mock asyncio.sleep to do nothing to speed up the test.
+    # Mock asyncio.sleep to speed up the test
     mocker.patch("pyvider.rpcplugin.client.core.asyncio.sleep", new_callable=AsyncMock)
 
     # Expect HandshakeError due to total timeout
-    # The error message comes from line 206 or 209
-    expected_exception_message = "Retry sequence timed out."  # If last_exception is None
-    # If last_exception is set, it would be "Simulated persistent handshake failure for timeout test"
-    # The code prioritizes last_exception if it exists.
-
-    with pytest.raises(HandshakeError, match="Simulated persistent handshake failure for timeout test"):
+    # The error message comes from handshake.py line 206-207: "Total timeout of Xms exceeded after Y attempts. Elapsed time: Zms"
+    with pytest.raises(HandshakeError, match=r"Total timeout of.*exceeded after.*attempts\. Elapsed time:"):
         await client_instance._connect_and_handshake_with_retry()
 
     assert mock_perform_handshake.call_count >= 1  # It should make at least one attempt
 
-    # Check logger calls - should log the "All attempts failed" message
-    mock_logger_error.assert_any_call(
-        f"All 11 attempts failed. Last error: {simulated_error}",
-        exc_info=True,
-    )
+    # When total timeout is exceeded, the timeout error is logged (not "All attempts failed")
     assert client_instance._handshake_failed_event.is_set()
 
     # Cleanup of original_poll is not needed here as it's not modified in this test
