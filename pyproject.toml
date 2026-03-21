@@ -105,7 +105,8 @@ python_files = ["test_*.py"]
 markers = [
     "integration: marks tests as integration tests (deselect with -m \"not integration\")",
     "long_running: marks tests as long_running (deselect with -m \"not long_running\")",
-    "slow: marks tests as slow (deselect with -m \"not slow\")"
+    "slow: marks tests as slow (deselect with -m \"not slow\")",
+    "memray: memory profiling stress tests (run with -m memray)",
 ]
 
 filterwarnings = [

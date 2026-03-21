@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Literal, TypeGuard
 if TYPE_CHECKING:
     from opentelemetry import trace as otel_trace
 
+import structlog
 from attrs import define
 from provide.foundation import resilient
 from provide.foundation.crypto import Certificate
@@ -30,6 +31,25 @@ from pyvider.rpcplugin.transport.types import TransportT
 # Module logger and tracer
 logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
+
+# Debug-level guard: checks structlog's _LevelFilter threshold directly,
+# bypassing the full processor pipeline. The upstream logger.is_debug_enabled()
+# goes through __getattr__ proxy which triggers the same pipeline we're avoiding.
+_DEBUG_NUMERIC = 10
+_debug_check_cache: bool | None = None
+
+
+def _is_debug_enabled() -> bool:
+    """Check if debug events would pass the structlog LevelFilter."""
+    global _debug_check_cache
+    if _debug_check_cache is not None:
+        return _debug_check_cache
+    for proc in structlog.get_config().get("processors", []):
+        if hasattr(proc, "default_numeric_level"):
+            _debug_check_cache = proc.default_numeric_level <= _DEBUG_NUMERIC
+            return _debug_check_cache
+    _debug_check_cache = True
+    return True
 
 
 class _SentinelEnum(Enum):
@@ -71,7 +91,7 @@ def _split_handshake_response(response: str) -> list[str]:
             hint="Ensure the plugin process outputs a valid string for handshake.",
         )
     parts = response.strip().split("|")
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug("Split handshake response into parts", parts=parts)
     if not is_valid_handshake_parts(parts):
         logger.error(
@@ -131,7 +151,7 @@ def _resolve_expected_core_version() -> int:
     Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
     """
     expected_value = rpcplugin_config.plugin_core_version
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug("Retrieved PLUGIN_CORE_VERSION from config", value=expected_value)
     if expected_value is None:
         logger.error(
@@ -161,7 +181,7 @@ def _apply_certificate_padding(server_cert: str | None) -> str | None:
         return None
     padding = len(server_cert) % 4
     if padding:
-        if logger.is_debug_enabled():
+        if _is_debug_enabled():
             logger.debug("Restoring certificate padding for handshake parsing")
         server_cert += "=" * (4 - padding)
     return server_cert
@@ -205,7 +225,7 @@ def _validate_magic_cookie_impl(
     magic_cookie: str | None | _SentinelType,
 ) -> None:
     """Implementation of magic cookie validation."""
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug("Starting magic cookie validation...")
 
     cookie_key: str | None = (
@@ -236,15 +256,15 @@ def _validate_magic_cookie_impl(
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
         cookie_provided_by_caller = os.environ.get(str(cookie_key))
-        if logger.is_debug_enabled():
+        if _is_debug_enabled():
             logger.debug("Read magic_cookie from env var", cookie_key=cookie_key)
     else:
         # If magic_cookie param was explicitly passed (even if None), use that.
         cookie_provided_by_caller = magic_cookie
-        if logger.is_debug_enabled():
+        if _is_debug_enabled():
             logger.debug("Using explicitly passed magic_cookie parameter")
 
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug(
             "Cookie validation values resolved",
             cookie_key=cookie_key,
@@ -301,7 +321,7 @@ def _validate_magic_cookie_impl(
             ),
         )
 
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug("Magic cookie validated successfully.")
 
 
@@ -361,7 +381,7 @@ async def _build_handshake_response_impl(
     port: int | None = None,
 ) -> str:
     """Implementation of handshake response building."""
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug("Building handshake response...")
 
     try:
@@ -380,7 +400,7 @@ async def _build_handshake_response_impl(
             if hasattr(transport, "_running") and transport._running and transport.endpoint:
                 endpoint = transport.endpoint
             else:
-                if logger.is_debug_enabled():
+                if _is_debug_enabled():
                     logger.debug("Waiting for Unix transport to listen...")
                 endpoint = await transport.listen()
         else:
@@ -398,11 +418,11 @@ async def _build_handshake_response_impl(
             "grpc",
             "",
         ]
-        if logger.is_debug_enabled():
+        if _is_debug_enabled():
             logger.debug("Base response structure built", parts_count=len(response_parts))
 
         if server_cert:
-            if logger.is_debug_enabled():
+            if _is_debug_enabled():
                 logger.debug("Processing server certificate...")
             cert_lines = server_cert.cert_pem.strip().split("\n")
             if len(cert_lines) < 3:
@@ -470,7 +490,7 @@ def _parse_handshake_response_impl(
     span: otel_trace.Span | None = None,  # Optional span for adding attributes
 ) -> tuple[int, int, str, str, str, str | None]:
     """Implementation of handshake response parsing."""
-    if logger.is_debug_enabled():
+    if _is_debug_enabled():
         logger.debug(
             "Starting handshake response parsing",
             response_len=len(response) if isinstance(response, str) else 0,
@@ -495,7 +515,7 @@ def _parse_handshake_response_impl(
             span.set_attribute("plugin_version", plugin_version)
             span.set_attribute("has_cert", server_cert is not None)
 
-        if logger.is_debug_enabled():
+        if _is_debug_enabled():
             logger.debug(
                 "Handshake parsed",
                 core_version=core_version,
