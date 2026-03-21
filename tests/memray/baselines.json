@@ -1,0 +1,7 @@
+{
+  "config_total_allocations": 10577,
+  "handshake_total_allocations": 10619,
+  "protocol_total_allocations": 10639,
+  "rate_limiter_total_allocations": 10672,
+  "transport_total_allocations": 10582
+}
