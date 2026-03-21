@@ -1,7 +1,7 @@
 {
-  "config_total_allocations": 8718,
-  "handshake_total_allocations": 8761,
-  "protocol_total_allocations": 8780,
-  "rate_limiter_total_allocations": 8773,
-  "transport_total_allocations": 8722
+  "config_total_allocations": 11733,
+  "handshake_total_allocations": 8758,
+  "protocol_total_allocations": 8778,
+  "rate_limiter_total_allocations": 8823,
+  "transport_total_allocations": 8719
 }
