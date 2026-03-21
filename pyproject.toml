@@ -43,7 +43,7 @@ dependencies = [
     "grpcio>=1.78.0",
     "grpcio-health-checking>=1.78.0",
     "protobuf>=5.29.3",
-    "provide-foundation>=0.3.29",
+    "provide-foundation>=0.3.21",
 ]
 
 [project.urls]
