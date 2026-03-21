@@ -253,6 +253,44 @@ class ConnectionT(TypeProtocol):
         ...  # pragma: no cover
 
 
+def _log_method_validation_failure(protocol_label: str, method_name: str, reason: str) -> None:
+    """Log a method validation failure at debug level if debug is enabled."""
+    if logger.is_debug_enabled():
+        logger.debug(f"{protocol_label}: {reason} {method_name}.")
+
+
+def _validate_method(obj: Any, method_name: str, spec: dict[str, Any], protocol_label: str) -> bool:
+    """Validate a single method on an object against its spec. Returns False on failure."""
+    if not hasattr(obj, method_name):
+        _log_method_validation_failure(protocol_label, method_name, "Method is missing:")
+        return False
+
+    method = getattr(obj, method_name)
+    if not callable(method):
+        _log_method_validation_failure(protocol_label, method_name, "Attribute is not callable:")
+        return False
+
+    if spec["is_async"] and not asyncio.iscoroutinefunction(method):
+        _log_method_validation_failure(protocol_label, method_name, "Method is not async as expected:")
+        return False
+
+    try:
+        sig = inspect.signature(method)
+        if len(sig.parameters) != spec["params"]:
+            param_str = "param" if spec["params"] == 1 else "params"
+            if logger.is_debug_enabled():
+                logger.debug(
+                    f"{protocol_label}: {method_name} signature incorrect. Expected "
+                    f"{spec['params']} {param_str}, got {len(sig.parameters)}."
+                )
+            return False
+    except (TypeError, ValueError):
+        _log_method_validation_failure(protocol_label, method_name, "Could not inspect signature:")
+        return False
+
+    return True
+
+
 def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     methods_spec = {
         "send_data": {"params": 1, "is_async": True},
@@ -261,30 +299,7 @@ def is_valid_connection(obj: Any) -> TypeGuard[ConnectionT]:
     }
 
     for method_name, spec in methods_spec.items():
-        if not hasattr(obj, method_name):
-            logger.debug(f"ConnectionT: Method {method_name} is missing.")
-            return False
-
-        method = getattr(obj, method_name)
-        if not callable(method):
-            logger.debug(f"ConnectionT: Attribute {method_name} is not callable.")
-            return False
-
-        if spec["is_async"] and not asyncio.iscoroutinefunction(method):
-            logger.debug(f"ConnectionT: Method {method_name} is not async as expected.")
-            return False
-
-        try:
-            sig = inspect.signature(method)
-            if len(sig.parameters) != spec["params"]:
-                param_str = "param" if spec["params"] == 1 else "params"
-                logger.debug(
-                    f"ConnectionT: {method_name} signature incorrect. Expected "
-                    f"{spec['params']} {param_str}, got {len(sig.parameters)}."
-                )
-                return False
-        except (TypeError, ValueError):
-            logger.debug(f"ConnectionT: Could not inspect {method_name} signature.")
+        if not _validate_method(obj, method_name, spec, "ConnectionT"):
             return False
 
     logger.debug("ConnectionT: All structural and signature checks passed.")
@@ -345,29 +360,7 @@ def is_valid_secure_rpc_client(obj: Any) -> TypeGuard[SecureRpcClientT]:
     }
 
     for method_name, spec in methods_spec.items():
-        if not hasattr(obj, method_name):
-            logger.debug(f"SecureRpcClientT: Method {method_name} is missing.")
-            return False
-
-        method = getattr(obj, method_name)
-        if not callable(method):
-            logger.debug(f"SecureRpcClientT: Attribute {method_name} is not callable.")
-            return False
-
-        if spec["is_async"] and not asyncio.iscoroutinefunction(method):
-            logger.debug(f"SecureRpcClientT: Method {method_name} is not async as expected.")
-            return False
-
-        try:
-            sig = inspect.signature(method)
-            if len(sig.parameters) != spec["params"]:
-                logger.debug(
-                    f"SecureRpcClientT: {method_name} signature incorrect. Expected "
-                    f"{spec['params']} params, got {len(sig.parameters)}."
-                )
-                return False
-        except (TypeError, ValueError):
-            logger.debug(f"SecureRpcClientT: Could not inspect {method_name} signature.")
+        if not _validate_method(obj, method_name, spec, "SecureRpcClientT"):
             return False
 
     logger.debug("SecureRpcClientT: All structural and signature checks passed.")

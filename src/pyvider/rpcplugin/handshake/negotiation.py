@@ -38,7 +38,8 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
       TransportError: If no compatible transport can be negotiated or an error
                       occurs during negotiation.
     """
-    logger.debug(f"(🗣️🚊 Transport Negotiation: Starting) => Available transports: {server_transports}")
+    if logger.is_debug_enabled():
+        logger.debug(f"(🗣️🚊 Transport Negotiation: Starting) => Available transports: {server_transports}")
     if not server_transports:
         logger.error("🗣️🚊❌ (Transport Negotiation: Failed) => No transport options provided")
         raise TransportError(
@@ -101,7 +102,8 @@ def negotiate_protocol_version(server_versions: list[int]) -> int:
     Raises:
       ProtocolError: If no mutually supported version is found.
     """
-    logger.debug(f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}")
+    if logger.is_debug_enabled():
+        logger.debug(f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}")
     supported_versions_config = rpcplugin_config.supported_protocol_versions
     for version in sorted(server_versions, reverse=True):
         if version in supported_versions_config:
@@ -334,7 +336,7 @@ async def create_stderr_relay(
                     continue
 
                 text = line.decode("utf-8", errors="replace").rstrip()
-                if text:
+                if text and logger.is_debug_enabled():
                     logger.debug(f"🤝📤📝 Plugin stderr: {text}")
             except Exception as e:
                 logger.error(f"🤝📤❌ Error in stderr relay: {e}")
