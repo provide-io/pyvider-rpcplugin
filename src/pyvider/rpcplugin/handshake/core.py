@@ -71,7 +71,8 @@ def _split_handshake_response(response: str) -> list[str]:
             hint="Ensure the plugin process outputs a valid string for handshake.",
         )
     parts = response.strip().split("|")
-    logger.debug(f"📡🔍 Split handshake response into parts: {parts}")
+    if logger.is_debug_enabled():
+        logger.debug("Split handshake response into parts", parts=parts)
     if not is_valid_handshake_parts(parts):
         logger.error(
             "📡❌ Invalid handshake response format. Expected 6 parts with numeric versions.",
@@ -115,11 +116,14 @@ def _validate_network(network: str, address: str, original: str) -> None:
         )
 
 
+_CERT_CLEANUP_TABLE = str.maketrans("", "", "\n\r")
+
+
 def _prepare_server_cert(raw_part: str) -> str | None:
     if not raw_part:
         return None
-    temp_cert = raw_part.replace("\\n", "").replace("\\r", "")
-    return temp_cert.replace("\n", "").replace("\r", "").strip()
+    cleaned = raw_part.replace("\\n", "").replace("\\r", "")
+    return cleaned.translate(_CERT_CLEANUP_TABLE).strip()
 
 
 def _resolve_expected_core_version() -> int:
@@ -127,9 +131,8 @@ def _resolve_expected_core_version() -> int:
     Resolve the expected core version from configuration, falling back to 1 on misconfiguration.
     """
     expected_value = rpcplugin_config.plugin_core_version
-    logger.debug(
-        f"📡🔍 Retrieved PLUGIN_CORE_VERSION from config: {expected_value} (type: {type(expected_value)})"
-    )
+    if logger.is_debug_enabled():
+        logger.debug("Retrieved PLUGIN_CORE_VERSION from config", value=expected_value)
     if expected_value is None:
         logger.error(
             "CRITICAL: PLUGIN_CORE_VERSION is None from rpcplugin_config. Falling back to schema default 1."
@@ -140,7 +143,8 @@ def _resolve_expected_core_version() -> int:
         return int(expected_value)
     except (TypeError, ValueError) as exc:
         logger.error(
-            f"CRITICAL: Could not convert PLUGIN_CORE_VERSION '{expected_value}' to int. Falling back to default 1.",
+            "Could not convert PLUGIN_CORE_VERSION to int, falling back to default 1",
+            value=expected_value,
             exc_info=exc,
         )
         return 1
@@ -148,7 +152,7 @@ def _resolve_expected_core_version() -> int:
 
 def _ensure_supported_core_version(core_version: int, expected_version: int) -> None:
     if core_version != expected_version:
-        logger.error(f"🤝 Unsupported handshake version: {core_version} (expected: {expected_version})")
+        logger.error("Unsupported handshake version", core_version=core_version, expected=expected_version)
         raise HandshakeError(f"Unsupported handshake version: {core_version} (expected: {expected_version})")
 
 
@@ -157,7 +161,8 @@ def _apply_certificate_padding(server_cert: str | None) -> str | None:
         return None
     padding = len(server_cert) % 4
     if padding:
-        logger.debug("📡🔐 Restoring certificate padding for handshake parsing.")
+        if logger.is_debug_enabled():
+            logger.debug("Restoring certificate padding for handshake parsing")
         server_cert += "=" * (4 - padding)
     return server_cert
 
@@ -200,7 +205,8 @@ def _validate_magic_cookie_impl(
     magic_cookie: str | None | _SentinelType,
 ) -> None:
     """Implementation of magic cookie validation."""
-    logger.debug("Starting magic cookie validation...")
+    if logger.is_debug_enabled():
+        logger.debug("Starting magic cookie validation...")
 
     cookie_key: str | None = (
         rpcplugin_config.plugin_magic_cookie_key
@@ -230,15 +236,21 @@ def _validate_magic_cookie_impl(
                 hint="Ensure PLUGIN_MAGIC_COOKIE_KEY is properly configured.",
             )
         cookie_provided_by_caller = os.environ.get(str(cookie_key))
-        logger.debug(f"Read magic_cookie from env var '{cookie_key}': '{cookie_provided_by_caller}'")
+        if logger.is_debug_enabled():
+            logger.debug("Read magic_cookie from env var", cookie_key=cookie_key)
     else:
         # If magic_cookie param was explicitly passed (even if None), use that.
         cookie_provided_by_caller = magic_cookie
-        logger.debug(f"Using explicitly passed magic_cookie parameter: '{cookie_provided_by_caller}'")
+        if logger.is_debug_enabled():
+            logger.debug("Using explicitly passed magic_cookie parameter")
 
-    logger.debug(f"Final cookie_key for validation: {cookie_key}")
-    logger.debug(f"Expected cookie value (for logic): {expected_value_for_logic}")
-    logger.debug(f"Cookie provided by caller/env: {cookie_provided_by_caller}")
+    if logger.is_debug_enabled():
+        logger.debug(
+            "Cookie validation values resolved",
+            cookie_key=cookie_key,
+            has_expected=expected_value_for_logic is not None,
+            has_provided=cookie_provided_by_caller is not None,
+        )
 
     if cookie_key is None or cookie_key == "":  # This check is for the config of the key itself
         logger.error("Configuration error: magic_cookie_key is not set in config.")
@@ -289,7 +301,8 @@ def _validate_magic_cookie_impl(
             ),
         )
 
-    logger.debug("Magic cookie validated successfully.")
+    if logger.is_debug_enabled():
+        logger.debug("Magic cookie validated successfully.")
 
 
 @resilient(
@@ -348,7 +361,8 @@ async def _build_handshake_response_impl(
     port: int | None = None,
 ) -> str:
     """Implementation of handshake response building."""
-    logger.debug("🤝📝🔄 Building handshake response...")
+    if logger.is_debug_enabled():
+        logger.debug("Building handshake response...")
 
     try:
         if transport_name == "tcp":
@@ -366,10 +380,11 @@ async def _build_handshake_response_impl(
             if hasattr(transport, "_running") and transport._running and transport.endpoint:
                 endpoint = transport.endpoint
             else:
-                logger.debug("🤝📝🔄 Waiting for Unix transport to listen...")
+                if logger.is_debug_enabled():
+                    logger.debug("Waiting for Unix transport to listen...")
                 endpoint = await transport.listen()
         else:
-            logger.error(f"🤝📝❌ Unsupported transport type for handshake response: {transport_name}")
+            logger.error("Unsupported transport type for handshake response", transport=transport_name)
             raise TransportError(
                 message=(f"Unsupported transport type specified for handshake response: '{transport_name}'."),
                 hint="Valid transport types are 'unix' or 'tcp'.",
@@ -383,10 +398,12 @@ async def _build_handshake_response_impl(
             "grpc",
             "",
         ]
-        logger.debug(f"🤝📝🔄 Base response structure: {response_parts}")
+        if logger.is_debug_enabled():
+            logger.debug("Base response structure built", parts_count=len(response_parts))
 
         if server_cert:
-            logger.debug("🤝🔐🔄 Processing server certificate...")
+            if logger.is_debug_enabled():
+                logger.debug("Processing server certificate...")
             cert_lines = server_cert.cert_pem.strip().split("\n")
             if len(cert_lines) < 3:
                 logger.error(
@@ -403,7 +420,7 @@ async def _build_handshake_response_impl(
         return handshake_response
 
     except Exception as e:
-        logger.error(f"🤝📝❌ Handshake response build failed: {e}", error=str(e))
+        logger.error("Handshake response build failed", error=str(e))
         raise HandshakeError(
             message=f"Failed to build handshake response: {e}",
             hint="Review server logs for details on the failure.",
@@ -453,7 +470,11 @@ def _parse_handshake_response_impl(
     span: otel_trace.Span | None = None,  # Optional span for adding attributes
 ) -> tuple[int, int, str, str, str, str | None]:
     """Implementation of handshake response parsing."""
-    logger.debug(f"📡🔍 Starting handshake response parsing for: {response}")
+    if logger.is_debug_enabled():
+        logger.debug(
+            "Starting handshake response parsing",
+            response_len=len(response) if isinstance(response, str) else 0,
+        )
     try:
         parts = _split_handshake_response(response)
         core_version, plugin_version = _parse_versions(parts)
@@ -474,15 +495,19 @@ def _parse_handshake_response_impl(
             span.set_attribute("plugin_version", plugin_version)
             span.set_attribute("has_cert", server_cert is not None)
 
-        logger.debug(
-            f"core_version={core_version}, plugin_version={plugin_version}, "
-            f"network={network}, address={address}, protocol={protocol}, "
-            f"server_cert={'present' if server_cert else 'none'}"
-        )
+        if logger.is_debug_enabled():
+            logger.debug(
+                "Handshake parsed",
+                core_version=core_version,
+                plugin_version=plugin_version,
+                network=network,
+                protocol=protocol,
+                has_cert=server_cert is not None,
+            )
         return core_version, plugin_version, network, address, protocol, server_cert
 
     except Exception as e:
-        logger.error(f"📡❌ Handshake parsing failed: {e}", error=str(e))
+        logger.error("Handshake parsing failed", error=str(e))
         raise HandshakeError(f"Failed to parse handshake response: {e}") from e
 
 

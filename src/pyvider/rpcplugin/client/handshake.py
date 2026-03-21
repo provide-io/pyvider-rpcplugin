@@ -117,7 +117,8 @@ class ClientHandshakeMixin:
 
         # Client certificates were already set up before process launch in _perform_handshake()
         # No need to set them up again here
-        self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
+        if self.logger.is_debug_enabled():
+            self.logger.debug(f"Creating gRPC channel to {self._address} ({self._transport_name})...")
         await self._create_grpc_channel()
         self.logger.info(f"Successfully connected to gRPC endpoint: {self.target_endpoint}")
 
@@ -134,7 +135,8 @@ class ClientHandshakeMixin:
         self._handshake_failed_event.clear()
 
         if attempt_num:
-            self.logger.debug(f"Attempt {attempt_num}: Performing handshake with plugin server...")
+            if self.logger.is_debug_enabled():
+                self.logger.debug(f"Attempt {attempt_num}: Performing handshake with plugin server...")
         else:
             self.logger.debug("Performing handshake with plugin server...")
 
@@ -155,7 +157,8 @@ class ClientHandshakeMixin:
         wait_time_ms = retry_interval_ms + jitter_ms
         wait_time_s = wait_time_ms / 1000.0
 
-        self.logger.debug(f"Waiting {wait_time_ms}ms before retry...")
+        if self.logger.is_debug_enabled():
+            self.logger.debug(f"Waiting {wait_time_ms}ms before retry...")
         await asyncio.sleep(wait_time_s)
 
     async def _connect_and_handshake_with_retry(self: RPCPluginClient) -> None:  # type: ignore[misc]
@@ -169,9 +172,10 @@ class ClientHandshakeMixin:
         """
         retry_enabled_str = str(rpcplugin_config.plugin_client_retry_enabled)
         retry_enabled = str(retry_enabled_str).lower() == "true"
-        self.logger.debug(
-            f"Client retry_enabled evaluated to: {retry_enabled} (from string '{retry_enabled_str}')"
-        )
+        if self.logger.is_debug_enabled():
+            self.logger.debug(
+                f"Client retry_enabled evaluated to: {retry_enabled} (from string '{retry_enabled_str}')"
+            )
 
         if not retry_enabled:
             self.logger.info("Client retries disabled. Attempting connection and handshake once.")
@@ -273,7 +277,10 @@ class ClientHandshakeMixin:
                 }
                 normalized_curve = curve_map.get(curve_name.lower(), curve_name)
 
-                self.logger.debug(f"Generating auto-mTLS client certificate with curve: {normalized_curve}")
+                if self.logger.is_debug_enabled():
+                    self.logger.debug(
+                        f"Generating auto-mTLS client certificate with curve: {normalized_curve}"
+                    )
 
                 cert_obj = Certificate.create_self_signed_client_cert(
                     common_name="pyvider.rpcplugin.autogen.client",
@@ -284,7 +291,8 @@ class ClientHandshakeMixin:
                 )
                 self.client_cert = cert_obj.cert_pem
                 self.client_key_pem = cert_obj.key_pem
-                self.logger.debug(f"Generated auto-mTLS client certificate with {normalized_curve} curve.")
+                if self.logger.is_debug_enabled():
+                    self.logger.debug(f"Generated auto-mTLS client certificate with {normalized_curve} curve.")
             except Exception as e:
                 raise SecurityError(f"Failed to auto-generate client certificate: {e}") from e
 
@@ -331,7 +339,8 @@ class ClientHandshakeMixin:
 
         if line_bytes:
             line = line_bytes.decode("utf-8", errors="replace").strip()
-            self.logger.debug(f"Read line from plugin stdout: '{line}'")
+            if self.logger.is_debug_enabled():
+                self.logger.debug(f"Read line from plugin stdout: '{line}'")
             if self._is_complete_handshake(line):
                 self.logger.debug("Complete handshake response found in line.")
                 return line
@@ -357,13 +366,17 @@ class ClientHandshakeMixin:
         if chunk:
             chunk_str = chunk.decode("utf-8", errors="replace")
             new_buffer = buffer + chunk_str
-            self.logger.debug(f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes")
+            if self.logger.is_debug_enabled():
+                self.logger.debug(
+                    f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes"
+                )
 
             if self._is_complete_handshake(new_buffer):
                 lines = new_buffer.split("\n")
                 for line_in_buf in lines:
                     if self._is_complete_handshake(line_in_buf):
-                        self.logger.debug(f"Found complete handshake in buffer: {line_in_buf}")
+                        if self.logger.is_debug_enabled():
+                            self.logger.debug(f"Found complete handshake in buffer: {line_in_buf}")
                         return line_in_buf
                 return new_buffer
             return new_buffer

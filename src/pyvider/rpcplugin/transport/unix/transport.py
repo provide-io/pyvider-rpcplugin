@@ -93,7 +93,7 @@ class UnixSocketTransport(RPCPluginTransport):
     _connections: set[ClientConnection] = field(init=False, factory=set)
     _running: bool = field(init=False, default=False)
     _closing: bool = field(init=False, default=False)
-    _lock: asyncio.Lock = field(init=False, factory=asyncio.Lock)
+    _lock: asyncio.Lock | None = field(init=False, default=None)
 
     _transport_name: str = "unix"  # Identifier for this transport type
 
@@ -111,8 +111,20 @@ class UnixSocketTransport(RPCPluginTransport):
             # Normalize path if it has a unix: prefix
             self.path = normalize_unix_path(self.path)
 
-        self._server_ready = asyncio.Event()
+        self._server_ready: asyncio.Event | None = None
         self._connections = set()  # Initialize connection set
+
+    def _ensure_lock(self) -> asyncio.Lock:
+        """Lazily create the asyncio.Lock on first use."""
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    def _ensure_server_ready(self) -> asyncio.Event:
+        """Lazily create the asyncio.Event on first use."""
+        if self._server_ready is None:
+            self._server_ready = asyncio.Event()
+        return self._server_ready
 
     async def _check_socket_in_use(self) -> bool:
         """Check if socket is already in use by another process."""
@@ -131,7 +143,8 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             mode = Path(self.path).stat().st_mode
             if not stat.S_ISSOCK(mode):
-                logger.debug(f"(mode: {oct(mode)}). Considering available.")
+                if logger.is_debug_enabled():
+                    logger.debug(f"(mode: {oct(mode)}). Considering available.")
                 return False
         except OSError:
             # Failed to stat path (e.g., permissions, or it disappeared)
@@ -221,12 +234,12 @@ class UnixSocketTransport(RPCPluginTransport):
         self._set_socket_permissions(socket_path)
         self._running = True
         self.endpoint = socket_path
-        self._server_ready.set()
+        self._ensure_server_ready().set()
         return socket_path
 
     async def listen(self) -> str:
         """Start listening on Unix socket with cross-platform compatibility."""
-        async with self._lock:
+        async with self._ensure_lock():
             self._raise_if_running()
             await self._ensure_socket_available()
             socket_path = self._require_socket_path()
@@ -300,7 +313,7 @@ class UnixSocketTransport(RPCPluginTransport):
         conn = ClientConnection(reader=reader, writer=writer, remote_addr=str(peer_info))
 
         try:
-            async with self._lock:
+            async with self._ensure_lock():
                 self._connections.add(conn)
                 logger.debug()
 
@@ -316,7 +329,7 @@ class UnixSocketTransport(RPCPluginTransport):
         except Exception:
             pass  # Empty except block
         finally:
-            async with self._lock:
+            async with self._ensure_lock():
                 if conn in self._connections:
                     self._connections.remove(conn)
             await conn.close()
@@ -364,7 +377,7 @@ class UnixSocketTransport(RPCPluginTransport):
 
     async def _close_connections(self) -> None:
         """Close all active connections."""
-        async with self._lock:
+        async with self._ensure_lock():
             connection_count = len(self._connections)
             if connection_count > 0:
                 close_tasks = [conn.close() for conn in self._connections]

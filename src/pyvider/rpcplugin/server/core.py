@@ -246,7 +246,11 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                 rpcplugin_config.plugin_rate_limit_requests_per_second,
             )
             if capacity > 0 and refill_rate > 0:
-                self._rate_limiter = TokenBucketRateLimiter(capacity=capacity, refill_rate=refill_rate)
+                self._rate_limiter = TokenBucketRateLimiter(
+                    capacity=capacity,
+                    refill_rate=refill_rate,
+                    logger=None,
+                )
 
         if hasattr(self.protocol, "service_name") and isinstance(self.protocol.service_name, str):
             protocol_class_service_name = self.protocol.service_name
@@ -306,7 +310,8 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if timeout is None:
             timeout = rpcplugin_config.plugin_server_ready_timeout
 
-        logger.debug(f"Waiting for server to be ready (timeout: {timeout}s)")
+        if logger.is_debug_enabled():
+            logger.debug(f"Waiting for server to be ready (timeout: {timeout}s)")
 
         try:
             await asyncio.wait_for(self._serving_event.wait(), timeout=timeout)

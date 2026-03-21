@@ -111,16 +111,26 @@ class TCPSocketTransport(RPCPluginTransport):
     _connection_attempts: int = field(init=False, default=0)
     _transport_name: str = "tcp"  # Class attribute identifying the transport type
 
-    def __attrs_post_init__(self) -> None:
-        """Initializes locks and events for managing transport state."""
-        self._lock = asyncio.Lock()  # Lock for synchronizing access to shared resources
-        self._server_ready = asyncio.Event()  # Event to signal when the server is ready
+    _lock: asyncio.Lock | None = field(init=False, default=None)
+    _server_ready: asyncio.Event | None = field(init=False, default=None)
+
+    def _ensure_lock(self) -> asyncio.Lock:
+        """Lazily create the asyncio.Lock on first use."""
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    def _ensure_server_ready(self) -> asyncio.Event:
+        """Lazily create the asyncio.Event on first use."""
+        if self._server_ready is None:
+            self._server_ready = asyncio.Event()
+        return self._server_ready
 
     async def listen(self) -> str:
         """
         endpoint (host:port).
         """
-        async with self._lock:
+        async with self._ensure_lock():
             if self._running:
                 # If gRPC is managing, this might be okay if called multiple times,
                 # but for now, let's assume it means endpoint is set.
@@ -142,7 +152,7 @@ class TCPSocketTransport(RPCPluginTransport):
             # If self.port was non-zero, we use it directly.
             self.endpoint = f"{self.host}:{self.port}"
             self._running = True  # Mark as "endpoint determined"
-            self._server_ready.set()  # Signal readiness (endpoint is known)
+            self._ensure_server_ready().set()  # Signal readiness (endpoint is known)
 
             # self._server remains None as gRPC will handle the actual server lifecycle.
             self._server = None
@@ -276,7 +286,7 @@ class TCPSocketTransport(RPCPluginTransport):
         this transport instance are released.
         """
 
-        async with self._lock:
+        async with self._ensure_lock():
             # Close client connection
             if self._writer:
                 try:
