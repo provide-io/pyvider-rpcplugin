@@ -67,3 +67,6 @@ bin/
 
 # Local act CI config (machine-specific)
 .actrc
+
+# Mutation testing output
+mutants/
