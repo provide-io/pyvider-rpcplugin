@@ -40,7 +40,7 @@ dependencies = [
     "grpcio>=1.76.0",
     "grpcio-health-checking>=1.76.0",
     "protobuf>=5.29.3",
-    "provide-foundation",
+    "provide-foundation>=0.3.21",
 ]
 
 [project.urls]
@@ -125,6 +125,7 @@ norecursedirs = [
     "*.egg-info",
     ".venv",
     "**/*pb2*.py",
+    "tests/memray",
 ]
 addopts = ""
 # Parallel execution: pytest -n <workers> (range: 2-16, recommend: CPU cores or 8, max: 16 to avoid xdist hang)

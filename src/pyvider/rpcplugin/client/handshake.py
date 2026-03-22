@@ -273,9 +273,7 @@ class ClientHandshakeMixin:
                 }
                 normalized_curve = curve_map.get(curve_name.lower(), curve_name)
 
-                self.logger.debug(
-                    f"Generating auto-mTLS client certificate with curve: {normalized_curve}"
-                )
+                self.logger.debug(f"Generating auto-mTLS client certificate with curve: {normalized_curve}")
 
                 cert_obj = Certificate.create_self_signed_client_cert(
                     common_name="pyvider.rpcplugin.autogen.client",
@@ -349,9 +347,11 @@ class ClientHandshakeMixin:
         chunk = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(
                 None,
-                lambda: self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)
-                if self._process and self._process.process and self._process.process.stdout
-                else b"",
+                lambda: (
+                    self._process.process.stdout.read(rpcplugin_config.plugin_chunk_size)
+                    if self._process and self._process.process and self._process.process.stdout
+                    else b""
+                ),
             ),
             timeout=DEFAULT_HANDSHAKE_CHUNK_TIMEOUT,
         )
@@ -359,9 +359,7 @@ class ClientHandshakeMixin:
         if chunk:
             chunk_str = chunk.decode("utf-8", errors="replace")
             new_buffer = buffer + chunk_str
-            self.logger.debug(
-                f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes"
-            )
+            self.logger.debug(f"Read chunk: {len(chunk_str)} bytes, buffer now has {len(new_buffer)} bytes")
 
             if self._is_complete_handshake(new_buffer):
                 lines = new_buffer.split("\n")

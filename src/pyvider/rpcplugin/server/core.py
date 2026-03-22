@@ -246,16 +246,10 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                 rpcplugin_config.plugin_rate_limit_requests_per_second,
             )
             if capacity > 0 and refill_rate > 0:
-                try:
-                    self._rate_limiter = TokenBucketRateLimiter(
-                        capacity=capacity, refill_rate=refill_rate, logger=None,
-                    )
-                except TypeError:
-                    # Older foundation without logger parameter
-                    self._rate_limiter = TokenBucketRateLimiter(
-                        capacity=capacity, refill_rate=refill_rate,
-                    )
-                    self._rate_limiter._logger = None
+                self._rate_limiter = TokenBucketRateLimiter(
+                    capacity=capacity,
+                    refill_rate=refill_rate,
+                )
 
         if hasattr(self.protocol, "service_name") and isinstance(self.protocol.service_name, str):
             protocol_class_service_name = self.protocol.service_name
