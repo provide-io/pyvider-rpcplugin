@@ -1,17 +1,16 @@
 """Memory profiling test for rate limiting interceptor."""
 
 import pytest
-
-from tests.memray.conftest import assert_allocation_within_threshold, run_memray_stress
+from wrknv.memray.runner import run_memray_stress
 
 
 @pytest.mark.memray
-def test_rate_limiter_memory(memray_output_dir, memray_baseline):
+def test_rate_limiter_memory(memray_output_dir, memray_baseline, memray_baselines_path):
     """Profile memory allocations in rate limiter intercept hot path."""
-    bin_path, total_allocs = run_memray_stress("memray_rate_limiter_stress", memray_output_dir)
-
-    assert bin_path.exists(), f"memray binary not created: {bin_path}"
-    assert total_allocs > 0, "No allocations recorded"
-
-    baseline = memray_baseline.get("rate_limiter_total_allocations")
-    assert_allocation_within_threshold(baseline, total_allocs, "rate_limiter")
+    run_memray_stress(
+        script="scripts/memray/memray_rate_limiter_stress.py",
+        baseline_key="rate_limiter_total_allocations",
+        output_dir=memray_output_dir,
+        baselines=memray_baseline,
+        baselines_path=memray_baselines_path,
+    )
