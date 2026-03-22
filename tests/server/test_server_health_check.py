@@ -79,6 +79,7 @@ def health_test_config_override(request):
         setattr(rpcplugin_config, attr_name, value)
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_health_service_enabled_and_serving(
     health_test_config_override, monkeypatch
@@ -144,6 +145,7 @@ async def test_health_service_enabled_and_serving(
             logger.warning(f"Error during test cleanup: {cleanup_error}")
 
 
+@pytest.mark.integration
 @pytest.mark.asyncio
 async def test_health_service_not_serving_when_unhealthy(
     health_test_config_override, monkeypatch

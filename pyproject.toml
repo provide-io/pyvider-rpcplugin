@@ -242,6 +242,16 @@ output = "coverage.xml"  # Output XML for CI/CD tools
 directory = "cover"  # Annotate files with coverage info
 
 ################################################################################
+# Mutation Testing
+################################################################################
+
+[tool.mutmut]
+# Integration tests use gRPC async generator servicers incompatible with
+# mutmut's sync trampolines. Memray tests run subprocess stress scripts.
+# Both are excluded from mutation test runs.
+pytest_add_cli_args = ["-m", "not integration and not memray"]
+
+################################################################################
 # Static Analysis
 ################################################################################
 
