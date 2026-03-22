@@ -80,14 +80,13 @@ class ClientConnection:
         """
         self.bytes_sent += bytes_sent
         self.bytes_received += bytes_received
-        if logger.is_debug_enabled():
-            logger.debug(
-                f"Updated metrics for {self.remote_addr}",
-                extra={
-                    "total_sent": self.bytes_sent,
-                    "total_received": self.bytes_received,
-                },
-            )
+        logger.debug(
+            f"Updated metrics for {self.remote_addr}",
+            extra={
+                "total_sent": self.bytes_sent,
+                "total_received": self.bytes_received,
+            },
+        )
 
     async def _default_send(self, data: bytes) -> None:
         """
@@ -103,8 +102,7 @@ class ClientConnection:
             self.writer.write(data)
             await self.writer.drain()
             self.update_metrics(bytes_sent=len(data))
-            if logger.is_debug_enabled():
-                logger.debug(f"Sent data to {self.remote_addr}", bytes_count=len(data))
+            logger.debug(f"Sent data to {self.remote_addr}", bytes_count=len(data))
         except OSError as e:
             logger.error(f"Error sending data to {self.remote_addr}", error=str(e))
             raise
@@ -127,8 +125,7 @@ class ClientConnection:
             data = await self.reader.read(buffer_size)
             if data:
                 self.update_metrics(bytes_received=len(data))
-                if logger.is_debug_enabled():
-                    logger.debug(f"Received data from {self.remote_addr}", bytes_count=len(data))
+                logger.debug(f"Received data from {self.remote_addr}", bytes_count=len(data))
             return data
         except OSError as e:
             logger.error(f"Error receiving data from {self.remote_addr}", error=str(e))
@@ -186,16 +183,14 @@ class ClientConnection:
         if self._closed:
             return
 
-        if logger.is_debug_enabled():
-            logger.debug(f"Closing connection to {self.remote_addr}")
+        logger.debug(f"Closing connection to {self.remote_addr}")
         self._closed = True
 
         if not self.writer.is_closing():
             try:
                 self.writer.close()
                 await self.writer.wait_closed()
-                if logger.is_debug_enabled():
-                    logger.debug(f"Connection to {self.remote_addr} closed successfully")
+                logger.debug(f"Connection to {self.remote_addr} closed successfully")
             except Exception as e:
                 logger.error(
                     f"Error while closing connection to {self.remote_addr}",

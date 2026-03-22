@@ -145,7 +145,7 @@ class TCPSocketTransport(RPCPluginTransport):
                     temp_sock.bind((self.host, 0))
                     self.port = temp_sock.getsockname()[1]
                     temp_sock.close()
-                    logger.info()
+                    logger.info("Found ephemeral port", port=self.port)
                 except OSError as e:
                     raise TransportError(f"Failed to find an ephemeral port: {e}") from e
 

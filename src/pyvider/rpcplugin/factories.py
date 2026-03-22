@@ -90,8 +90,7 @@ def create_basic_protocol() -> type[RPCPluginProtocol[Any, Any]]:
                 self.service_name = service_name_override
 
         async def get_grpc_descriptors(self) -> tuple[Any, str]:
-            if logger.is_debug_enabled():
-                logger.debug(f"BasicRPCPluginProtocol: get_grpc_descriptors for {self.service_name}")
+            logger.debug(f"BasicRPCPluginProtocol: get_grpc_descriptors for {self.service_name}")
             return (None, self.service_name)
 
         async def add_to_server(self, server: Any, handler: Any) -> None:
@@ -266,10 +265,9 @@ def plugin_server(
         including magic cookie validation and transport negotiation.
         For production use, consider enabling mTLS via configuration.
     """
-    if logger.is_debug_enabled():
-        logger.debug(
-            f"🏭 Creating plugin server: transport={transport}, path={transport_path}, host={host}, port={port}"
-        )
+    logger.debug(
+        f"🏭 Creating plugin server: transport={transport}, path={transport_path}, host={host}, port={port}"
+    )
     transport_instance: RPCPluginTransportType
     if transport == "unix":
         transport_instance = UnixSocketTransport(path=transport_path)
@@ -391,8 +389,7 @@ def plugin_client(
         socket and TCP transports. The handshake protocol ensures
         secure communication via magic cookie validation.
     """
-    if logger.is_debug_enabled():
-        logger.debug(f"🏭 Creating plugin client for command: {command}")
+    logger.debug(f"🏭 Creating plugin client for command: {command}")
     return RPCPluginClient(command=command, config=config or {})
 
 
