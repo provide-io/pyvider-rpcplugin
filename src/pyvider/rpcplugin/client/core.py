@@ -176,8 +176,7 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
             ("broker", self._broker_task),
         ]:
             if task and not task.done():
-                if self.logger.is_debug_enabled():
-                    self.logger.debug(f"🛑 Cancelling {task_name} task...")
+                self.logger.debug(f"🛑 Cancelling {task_name} task...")
                 task.cancel()
                 try:
                     await task

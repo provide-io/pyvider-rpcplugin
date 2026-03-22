@@ -71,9 +71,8 @@ class ClientProcessMixin:
         if self.client_cert:
             env["PLUGIN_CLIENT_CERT"] = self.client_cert
 
-        if self.logger.is_debug_enabled():
-            self.logger.debug(f"Launching plugin process: {self.command}")
-            self.logger.debug(f"Environment includes magic cookie: {rpcplugin_config.plugin_magic_cookie_key}")
+        self.logger.debug(f"Launching plugin process: {self.command}")
+        self.logger.debug(f"Environment includes magic cookie: {rpcplugin_config.plugin_magic_cookie_key}")
 
         try:
             # Create ManagedProcess with stderr_relay=False for custom logging
@@ -90,8 +89,7 @@ class ClientProcessMixin:
             self._process.launch()
 
             if self._process.pid:
-                if self.logger.is_debug_enabled():
-                    self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
+                self.logger.debug(f"Plugin process started with PID: {self._process.pid}")
 
                 # Start custom stderr relay task that logs instead of writing to sys.stderr
                 if self._process.process and self._process.process.stderr:
@@ -130,7 +128,7 @@ class ClientProcessMixin:
                     continue
 
                 text = line.decode("utf-8", errors="replace").rstrip()
-                if text and self.logger.is_debug_enabled():
+                if text:
                     self.logger.debug(f"Plugin stderr: {text}")
         except asyncio.CancelledError:
             self.logger.debug("Stderr relay task cancelled")
@@ -148,10 +146,9 @@ class ClientProcessMixin:
 
     def _get_channel_options(self) -> list[tuple[str, int | bool | str]]:
         """Get standard gRPC channel options."""
-        if self.logger.is_debug_enabled():  # type: ignore[attr-defined]
-            self.logger.debug(  # type: ignore[attr-defined]
-                f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
-            )
+        self.logger.debug(  # type: ignore[attr-defined]
+            f"_get_channel_options called: transport={self._transport_name}, has_server_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
+        )
 
         options: list[tuple[str, int | bool | str]] = [
             ("grpc.keepalive_time_ms", rpcplugin_config.plugin_grpc_keepalive_time_ms),
@@ -167,7 +164,7 @@ class ClientProcessMixin:
         # gRPC which hostname to verify the server certificate against.
         if self._transport_name == "unix" and self._server_cert:  # type: ignore[attr-defined]
             options.append(("grpc.ssl_target_name_override", "localhost"))
-        elif self.logger.is_debug_enabled():  # type: ignore[attr-defined]
+        else:
             self.logger.debug(  # type: ignore[attr-defined]
                 f"SSL override NOT added: transport={self._transport_name}, has_cert={self._server_cert is not None}"  # type: ignore[attr-defined]
             )
@@ -236,8 +233,7 @@ class ClientProcessMixin:
             raise TransportError("Address and transport type must be set before creating gRPC channel")
 
         self._determine_target_endpoint()
-        if self.logger.is_debug_enabled():
-            self.logger.debug(f"Creating gRPC channel to: {self.target_endpoint}")
+        self.logger.debug(f"Creating gRPC channel to: {self.target_endpoint}")
 
         credentials = self._setup_channel_credentials()
         options = self._get_channel_options()
@@ -352,8 +348,7 @@ class ClientProcessMixin:
             return
 
         try:
-            if self.logger.is_debug_enabled():
-                self.logger.debug(f"Opening broker subchannel {sub_id} at address {address}")
+            self.logger.debug(f"Opening broker subchannel {sub_id} at address {address}")
 
             # Create connection info
             conn_info = ConnInfo()
@@ -373,15 +368,14 @@ class ClientProcessMixin:
                 # Check knock acknowledgment
                 if hasattr(response, "knock") and hasattr(response.knock, "ack"):
                     if response.knock.ack:
-                        if self.logger.is_debug_enabled():
-                            self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
+                        self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
                     else:
                         error_msg = (
                             response.knock.error if hasattr(response.knock, "error") else "Unknown error"
                         )
                         self.logger.error(f"Subchannel open failed: {error_msg}")
                         # Don't raise exception, just log error and continue
-                elif self.logger.is_debug_enabled():
+                else:
                     self.logger.debug(f"Broker subchannel {sub_id} opened successfully")
             else:
                 raise ProtocolError(f"Failed to get acknowledgment for broker subchannel {sub_id}")

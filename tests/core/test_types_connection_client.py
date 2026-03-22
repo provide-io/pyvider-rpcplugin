@@ -14,9 +14,8 @@ from pyvider.rpcplugin.types import is_valid_connection, is_valid_secure_rpc_cli
 
 
 def _enable_debug_logging(mocker):
-    """Patch logger.debug and is_debug_enabled so debug calls fire in tests."""
+    """Patch logger.debug so debug calls can be asserted in tests."""
     mock_debug = mocker.patch.object(types_module_logger_ref.logger, "debug")
-    mocker.patch.object(types_module_logger_ref.logger, "is_debug_enabled", return_value=True)
     return mock_debug
 
 

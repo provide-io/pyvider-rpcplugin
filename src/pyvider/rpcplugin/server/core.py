@@ -315,8 +315,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if timeout is None:
             timeout = rpcplugin_config.plugin_server_ready_timeout
 
-        if logger.is_debug_enabled():
-            logger.debug(f"Waiting for server to be ready (timeout: {timeout}s)")
+        logger.debug(f"Waiting for server to be ready (timeout: {timeout}s)")
 
         try:
             await asyncio.wait_for(self._serving_event.wait(), timeout=timeout)

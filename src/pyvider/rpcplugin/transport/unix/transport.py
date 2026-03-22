@@ -143,8 +143,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             mode = Path(self.path).stat().st_mode
             if not stat.S_ISSOCK(mode):
-                if logger.is_debug_enabled():
-                    logger.debug(f"(mode: {oct(mode)}). Considering available.")
+                logger.debug(f"(mode: {oct(mode)}). Considering available.")
                 return False
         except OSError:
             # Failed to stat path (e.g., permissions, or it disappeared)
@@ -160,7 +159,7 @@ class UnixSocketTransport(RPCPluginTransport):
             return True
         except (ConnectionRefusedError, FileNotFoundError):
             # Connection refused or socket file disappeared: it's available
-            logger.debug()
+            logger.debug("Socket not in use (connection refused or not found)", path=self.path)
             return False
         except OSError:
             # Other OSErrors (e.g., timeout, permission issues during connect)
@@ -171,8 +170,8 @@ class UnixSocketTransport(RPCPluginTransport):
             if sock:
                 try:
                     sock.close()
-                except Exception:
-                    logger.warning()
+                except Exception as exc:
+                    logger.warning("Failed to close socket during in-use check", error=str(exc))
 
     def _raise_if_running(self) -> None:
         if self._running:
@@ -202,7 +201,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             path_exists = Path(socket_path).exists()
         except PermissionError:
-            logger.warning()
+            logger.warning("Permission denied checking socket path", path=socket_path)
             path_exists = False
 
         if not path_exists:
@@ -221,9 +220,9 @@ class UnixSocketTransport(RPCPluginTransport):
             os.umask(current_mask)
             desired_permissions = 0o660 & ~current_mask
             Path(socket_path).chmod(desired_permissions)  # nosec B103
-            logger.debug()
-        except Exception:
-            logger.warning()
+            logger.debug("Set socket permissions", path=socket_path, permissions=oct(desired_permissions))
+        except Exception as exc:
+            logger.warning("Failed to set socket permissions", path=socket_path, error=str(exc))
 
     async def _start_server_at_path(self, socket_path: str) -> str:
         try:
@@ -315,7 +314,7 @@ class UnixSocketTransport(RPCPluginTransport):
         try:
             async with self._ensure_lock():
                 self._connections.add(conn)
-                logger.debug()
+                logger.debug("Client connected", remote_addr=str(peer_info))
 
             while self._running and not conn.is_closed:
                 data = await conn.receive_data()

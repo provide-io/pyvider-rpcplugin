@@ -100,11 +100,10 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         """
         self._app_is_healthy_callable = app_is_healthy_callable
         self._service_name = service_name
-        if logger.is_debug_enabled():
-            logger.debug(
-                f"❤️⚕️ HealthServicer initialized for service '{service_name}'. "
-                f"Main app health check: {app_is_healthy_callable()}"
-            )
+        logger.debug(
+            f"❤️⚕️ HealthServicer initialized for service '{service_name}'. "
+            f"Main app health check: {app_is_healthy_callable()}"
+        )
 
     async def Check(  # type: ignore[override]  # pyre-ignore[14]
         self,
@@ -115,16 +114,14 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         Checks the health of the server or a specific service.
         """
         requested_service = request.service
-        if logger.is_debug_enabled():
-            logger.debug(
-                f"❤️⚕️ Health Check requested for service: '{requested_service}'. "
-                f"Monitored service: '{self._service_name}'"
-            )
+        logger.debug(
+            f"❤️⚕️ Health Check requested for service: '{requested_service}'. "
+            f"Monitored service: '{self._service_name}'"
+        )
 
         if not requested_service or requested_service == self._service_name:
             if self._app_is_healthy_callable():
-                if logger.is_debug_enabled():
-                    logger.debug(f"❤️⚕️ Reporting SERVING for '{requested_service or 'overall server'}'")
+                logger.debug(f"❤️⚕️ Reporting SERVING for '{requested_service or 'overall server'}'")
                 return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVING)
             else:
                 logger.warning(
