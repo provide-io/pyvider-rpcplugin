@@ -67,3 +67,9 @@ certs
 kv-data-*
 bin/
 .coverage*
+
+# Local act CI config (machine-specific)
+.actrc
+
+# Mutation testing output
+mutants/
