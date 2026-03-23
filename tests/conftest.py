@@ -24,14 +24,6 @@ try:  # pragma: no cover - best effort shim
 except Exception:
     pass
 
-try:  # pragma: no cover - relax grpc version guard for generated health stubs
-    import grpc
-
-    # Updated to match current grpcio version (1.76.0)
-    # This override may no longer be needed but keeping for compatibility
-    grpc.__version__ = "1.76.0"
-except Exception:
-    pass
 
 # Import provide-testkit fixtures directly
 import pytest
