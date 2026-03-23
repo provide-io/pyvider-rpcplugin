@@ -37,8 +37,8 @@ dependencies = [
     "attrs>=25.4.0",
     "cryptography>=45.0.7",
     "google>=3.0.0",
-    "grpcio>=1.76.0",
-    "grpcio-health-checking>=1.76.0",
+    "grpcio>=1.78.0",
+    "grpcio-health-checking>=1.78.0",
     "protobuf>=5.29.3",
     "provide-foundation>=0.3.21",
 ]
