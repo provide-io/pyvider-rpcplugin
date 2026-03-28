@@ -32,7 +32,6 @@ Understand how provide-foundation, pyvider, flavorpack, and other projects work 
 - **High throughput**: Designed for high-volume, low-latency plugin communication
 
 ### 🔒 **Security-Focused**
-
 - **Built-in mTLS**: Mutual TLS authentication with certificate management utilities
 - **Process isolation**: Plugins run as separate processes for enhanced stability
 - **Transport encryption**: Secure communication over any network when mTLS is enabled
@@ -201,33 +200,33 @@ graph TB
 - :material-rocket-launch: **Getting Started**
 
     ---
-    
+
     Quick installation, setup guide, and your first plugin
-    
+
     [:octicons-arrow-right-24: Get Started](getting-started/index.md)
 
   Quick installation, setup guide, and your first plugin
 
     ---
-    
+
     Comprehensive guide covering concepts, server/client development, and advanced topics
-    
+
     [:octicons-arrow-right-24: User Guide](guide/index.md)
 
 - :material-book-open: **User Guide**
 
     ---
-    
+
     Complete API documentation with examples and code snippets
-    
+
     [:octicons-arrow-right-24: API Reference](reference/index.md)
 
   Comprehensive guide covering concepts, server/client development, and advanced topics
 
     ---
-    
+
     Working examples from simple echo services to production deployments
-    
+
     [:octicons-arrow-right-24: Examples](examples/index.md)
 
 </div>

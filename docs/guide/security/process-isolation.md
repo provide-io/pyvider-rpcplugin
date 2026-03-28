@@ -55,7 +55,6 @@ Configure comprehensive isolation settings including user/group isolation, files
 → **Detailed Sandbox Configuration** - Configure comprehensive isolation settings
 
 ### 2. **Container Integration**
-
 Use Docker and Kubernetes for robust containerized plugin isolation with industry-standard security boundaries.
 
 → **Container Integration** - Use Docker and Kubernetes for robust isolation

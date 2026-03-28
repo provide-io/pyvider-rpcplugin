@@ -11,7 +11,6 @@ This guide is organized into focused sections that build upon each other:
 Understanding the fundamental architecture, transports, protocols, and security model that powers pyvider-rpcplugin.
 
 ### 🖥️ **Server Development**
-
 Learn to build robust plugin servers with service implementation, transport configuration, async patterns, and health monitoring.
 
 ### 📱 **Client Development**
@@ -22,7 +21,7 @@ Master client development including connection management, error handling, retry
 
 Comprehensive security coverage including mTLS configuration, certificate management, magic cookies, and process isolation.
 
-### ⚙️ **Configuration** 
+### ⚙️ **Configuration**
 Production-focused configuration management with environment variables, deployment setups, rate limiting, and logging.
 
 ### 🚀 **Advanced Topics**
@@ -34,51 +33,51 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
 <div class="grid cards" markdown>
 
 -   :material-lightbulb: **Core Concepts**
-    
+
     ---
-    
+
     RPC architecture, transports, protocols, handshake process, and security model
-    
+
     [:octicons-arrow-right-24: Learn Concepts](concepts/index.md)
 
 -   :material-server: **Server Development**
-    
+
     ---
-    
+
     Build robust plugin servers with async patterns and health monitoring
-    
+
     [:octicons-arrow-right-24: Build Servers](server/index.md)
 
 -   :material-laptop: **Client Development**
-    
+
     ---
-    
+
     Create reliable clients with connection management and retry logic
-    
+
     [:octicons-arrow-right-24: Build Clients](client/index.md)
 
 -   :material-shield-check: **Security**
-    
+
     ---
-    
+
     Implement mTLS, manage certificates, and ensure secure communication
-    
+
     [:octicons-arrow-right-24: Secure Plugins](security/index.md)
 
 -   :material-cog: **Configuration**
-    
+
     ---
-    
+
     Production configuration, environment setup, and deployment patterns
-    
+
     [:octicons-arrow-right-24: Configure Apps](config/index.md)
 
 -   :material-rocket: **Advanced Topics**
-    
+
     ---
-    
+
     Custom protocols, performance tuning, middleware, and lifecycle management
-    
+
     [:octicons-arrow-right-24: Advanced Patterns](advanced/lifecycle.md)
 
 </div>
@@ -110,7 +109,6 @@ Pyvider RPC Plugin follows these core principles:
 Complex RPC operations should be simple to implement. The framework handles the complexity so you can focus on your business logic.
 
 ### **🔒 Security by Default**
-
 Security features like mTLS and process isolation are built-in and enabled by default, not bolt-on additions.
 
 ### **⚡ Performance Oriented**

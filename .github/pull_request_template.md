@@ -36,5 +36,4 @@ Fixes #(issue number)
 Add any relevant screenshots here.
 
 ## Additional Notes
-
 Any additional information that reviewers should know.

@@ -35,43 +35,43 @@ By the end of this guide, you'll be able to:
 <div class="grid cards" markdown>
 
 -   :material-download: **Installation & Setup**
-    
+
     ---
-    
+
     **5 minutes** • Install dependencies and verify environment
-    
+
     Foundation configuration and `PLUGIN_*` environment setup
-    
+
     [:octicons-arrow-right-24: Start Here](installation.md)
 
 -   :material-flash: **Quick Start**
-    
+
     ---
-    
+
     **10 minutes** • Working plugin with automatic process management
-    
+
     Demonstrates core patterns with minimal configuration
-    
+
     [:octicons-arrow-right-24: Quick Start](quick-start.md)
 
 -   :material-puzzle: **Complete Plugin Tutorial**
-    
+
     ---
-    
+
     **25 minutes** • Production-focused echo service with all features
-    
+
     Covers protocols, security, logging, and testing patterns
-    
+
     [:octicons-arrow-right-24: Full Tutorial](first-plugin.md)
 
 -   :material-rocket: **Advanced Patterns**
-    
+
     ---
-    
+
     **Explore examples** • Real-world patterns and production deployments
-    
+
     Database plugins, microservice gateways, and security implementations
-    
+
     [:octicons-arrow-right-24: See Examples](examples.md)
 
 </div>
@@ -82,7 +82,7 @@ By the end of this guide, you'll be able to:
 
 **Beginner Path** (Total: ~45 minutes)
 1. **[Installation](installation.md)** (5 min) → Environment setup with Foundation toolchain
-2. **[Quick Start](quick-start.md)** (10 min) → Basic plugin with `PLUGIN_*` configuration 
+2. **[Quick Start](quick-start.md)** (10 min) → Basic plugin with `PLUGIN_*` configuration
 3. **[Simple Custom RPC](simple-custom-rpc.md)** (10 min) → Custom methods without Protocol Buffers
 4. **[Complete Tutorial](first-plugin.md)** (20 min) → Production patterns with Protocol Buffers
 
