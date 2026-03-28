@@ -30,8 +30,5 @@ Paste the full error traceback here
 
 **Environment:**
 
-- OS: [e.g. macOS 14.0]
-- Python version: [e.g. 3.11.5]
-- pyvider-cty version: [e.g. 0.0.113]
-
-**Additional context** Add any other context about the problem here.
+**Additional context**
+Add any other context about the problem here.

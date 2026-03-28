@@ -497,7 +497,7 @@ class TestHealthChecks:
 ```python
 def create_production_health_setup(config: PluginHealthConfig):
     """Create production-focused health check setup."""
-    
+
     health_checker = AdvancedHealthChecker()
     health_checker.resource_thresholds = {
         "cpu_percent": config.resource_cpu_threshold,
@@ -550,9 +550,9 @@ Health checks provide multiple endpoints for different monitoring needs:
 Common health check issues:
 
 1. **Timeout errors**: Reduce checker complexity or increase timeout values
-1. **Resource threshold alerts**: Adjust thresholds via `PLUGIN_RESOURCE_*_THRESHOLD`
-1. **Dependency failures**: Implement proper retry logic and circuit breakers
-1. **File probe issues**: Ensure health file path is writable and monitored
+2. **Resource threshold alerts**: Adjust thresholds via `PLUGIN_RESOURCE_*_THRESHOLD`
+3. **Dependency failures**: Implement proper retry logic and circuit breakers
+4. **File probe issues**: Ensure health file path is writable and monitored
 
 ### Integration with Foundation
 

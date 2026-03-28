@@ -25,7 +25,7 @@ An Echo plugin that:
 
 ## Prerequisites
 
-- Completed [Quick Start](quick-start.md) 
+- Completed [Quick Start](quick-start.md)
 - Python 3.11+ with `pyvider-rpcplugin` installed
 - `grpcio-tools` for Protocol Buffer compilation
 
@@ -301,8 +301,7 @@ Expected output:
    - Language-agnostic schema
    - Generates type-safe Python code
 
-1. **Service Handler**
-
+2. **Service Handler**
    - Implements business logic
    - Inherits from generated servicer class
    - Async methods for performance
