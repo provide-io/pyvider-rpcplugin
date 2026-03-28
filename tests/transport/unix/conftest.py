@@ -12,9 +12,7 @@ transport there. All tests in this directory are Unix-only.
 import sys
 import pytest
 
-
-@pytest.fixture(autouse=True)
-def skip_on_windows() -> None:
-    """Skip every test in this directory on Windows — Unix sockets not supported."""
-    if sys.platform == "win32":
-        pytest.skip("Unix domain sockets are not supported on Windows")
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Unix domain sockets are not supported on Windows",
+)
