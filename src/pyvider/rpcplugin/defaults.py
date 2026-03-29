@@ -8,12 +8,16 @@
 This module centralizes all default values to avoid inline defaults
 throughout the codebase, following project conventions."""
 
+import sys
+import tempfile
+
 DEFAULT_SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 DEFAULT_PLUGIN_PROTOCOL_VERSIONS = [1]
 
-# Transport defaults
-DEFAULT_SERVER_TRANSPORTS = ["unix", "tcp"]
-DEFAULT_CLIENT_TRANSPORTS = ["unix", "tcp"]
+# Transport defaults — Unix sockets are not supported on Windows; default to TCP there.
+_WINDOWS = sys.platform == "win32"
+DEFAULT_SERVER_TRANSPORTS = ["tcp"] if _WINDOWS else ["unix", "tcp"]
+DEFAULT_CLIENT_TRANSPORTS = ["tcp"] if _WINDOWS else ["unix", "tcp"]
 
 # Timing and delay defaults (in seconds)
 DEFAULT_PROCESS_WAIT_TIME = 0.1  # Standard wait for process operations
@@ -53,8 +57,8 @@ DEFAULT_PLUGIN_CHUNK_SIZE = 8192
 # =================================
 # Transport Configuration Defaults
 # =================================
-DEFAULT_PLUGIN_SERVER_TRANSPORTS = ["unix", "tcp"]
-DEFAULT_PLUGIN_CLIENT_TRANSPORTS = ["unix", "tcp"]
+DEFAULT_PLUGIN_SERVER_TRANSPORTS = ["tcp"] if _WINDOWS else ["unix", "tcp"]
+DEFAULT_PLUGIN_CLIENT_TRANSPORTS = ["tcp"] if _WINDOWS else ["unix", "tcp"]
 DEFAULT_SUPPORTED_TRANSPORTS = ["unix", "tcp"]
 
 # =================================
@@ -63,7 +67,7 @@ DEFAULT_SUPPORTED_TRANSPORTS = ["unix", "tcp"]
 DEFAULT_PLUGIN_AUTO_MTLS = True
 DEFAULT_PLUGIN_INSECURE = False
 DEFAULT_PLUGIN_CERT_VALIDITY_DAYS = 365
-DEFAULT_PLUGIN_MTLS_CERT_DIR = "/tmp/plugin-certs"  # nosec B108 - fallback path for development; override in production
+DEFAULT_PLUGIN_MTLS_CERT_DIR = str(tempfile.gettempdir()) + "/plugin-certs"  # nosec B108 - fallback path for development; override in production
 DEFAULT_PLUGIN_CLIENT_CERT_FILE = ""
 DEFAULT_PLUGIN_CLIENT_KEY_FILE = ""
 DEFAULT_PLUGIN_CLIENT_ROOT_CERTS = ""
@@ -105,7 +109,7 @@ DEFAULT_PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S = 30.0
 # =================================
 DEFAULT_PLUGIN_SERVER_HOST = "localhost"
 DEFAULT_PLUGIN_SERVER_PORT = 0
-DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH = "/tmp/plugin.sock"  # nosec B108 - fallback path for development; override in production
+DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH = str(tempfile.gettempdir()) + "/plugin.sock"  # nosec B108 - fallback path for development; override in production
 DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH = ""
 
 # =================================
