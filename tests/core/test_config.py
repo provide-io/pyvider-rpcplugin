@@ -8,6 +8,8 @@
 Tests the modern Foundation-based config system with direct attribute access,
 automatic type conversion, and clean environment variable loading."""
 
+import sys
+
 import pytest
 
 from pyvider.rpcplugin.config import (
