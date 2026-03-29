@@ -57,11 +57,11 @@ class ProcessResponse:
 
 class DataProcessor:
     """Simple data processing service."""
-    
+
     async def process(self, request: ProcessRequest) -> ProcessResponse:
         """Process data based on operation."""
         logger.info(f"Processing: {request.operation} on {len(request.data)} chars")
-        
+
         try:
             if request.operation == "uppercase":
                 result = request.data.upper()
@@ -75,13 +75,13 @@ class DataProcessor:
                     operation_applied=request.operation,
                     success=False
                 )
-            
+
             return ProcessResponse(
                 result=result,
                 operation_applied=request.operation,
                 success=True
             )
-            
+
         except Exception as e:
             logger.error(f"Processing failed: {e}")
             return ProcessResponse(
@@ -101,22 +101,22 @@ from typing import Any
 
 class SimpleProtocol(RPCPluginProtocol):
     """Protocol bridge for simple Python RPC."""
-    
+
     def __init__(self, service_name: str = "DataProcessor"):
         self.service_name = service_name
         self.handler = None
-    
+
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Return service descriptors (not using gRPC yet)."""
         # This would return actual gRPC descriptors in a real implementation
         return None, self.service_name
-    
+
     async def add_to_server(self, server: Any, handler: Any) -> None:
         """Register handler with server."""
         self.handler = handler
         # In a real implementation, this would register with gRPC server
         logger.info(f"Registered {self.service_name} handler")
-    
+
     async def call_method(self, method_name: str, request: Any) -> Any:
         """Route method calls to handler."""
         if hasattr(self.handler, method_name):
@@ -141,25 +141,25 @@ from simple_protocol import SimpleProtocol
 
 async def main():
     """Run the simple RPC server."""
-    
+
     # Configure the plugin environment
     configure(
         magic_cookie="simple-processor",
         auto_mtls=False,  # Start simple, add security later
         handshake_timeout=10.0
     )
-    
+
     # Create protocol and handler
     protocol = SimpleProtocol(service_name="DataProcessor")
     handler = DataProcessor()
-    
+
     # Create and start server
     logger.info("Starting Simple RPC Server")
     server = plugin_server(
         protocol=protocol,
         handler=handler
     )
-    
+
     await server.serve()
 
 if __name__ == "__main__":
@@ -182,33 +182,33 @@ from processor_service import ProcessRequest, ProcessResponse
 
 async def main():
     """Connect to simple RPC server."""
-    
+
     # Configure client
     configure(
         magic_cookie="simple-processor",
         handshake_timeout=10.0
     )
-    
+
     # Define plugin command
     plugin_path = Path(__file__).parent / "simple_server.py"
     plugin_command = [sys.executable, str(plugin_path)]
-    
+
     # Connect to plugin
     async with plugin_client(command=plugin_command) as client:
         logger.info("Connected to Simple RPC Server")
-        
+
         # Make RPC calls using dataclasses
         operations = [
             ProcessRequest(data="Hello World", operation="uppercase"),
             ProcessRequest(data="PYTHON RPC", operation="lowercase"),
             ProcessRequest(data="Reverse Me", operation="reverse")
         ]
-        
+
         for request in operations:
             # In real implementation, this would use gRPC channel
             # For now, we're demonstrating the pattern
             response = await client.protocol.call_method("process", request)
-            
+
             logger.info(f"Request: {request.operation}('{request.data}')")
             logger.info(f"Response: '{response.result}' (success={response.success})")
 

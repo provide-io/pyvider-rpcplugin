@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -202,18 +202,18 @@ async def test_create_stderr_relay_exception_in_reader(mocker):
     # Poll should return None (process running) a few times, then return 0 (process ended)
     mock_process.poll.side_effect = [None, None, None, 0]
     mock_logger_error = mocker.patch("pyvider.rpcplugin.handshake.negotiation.logger.error")
-    
+
     # Mock readline to raise exception on second call
     mock_process.stderr.readline.side_effect = [
         b"line1\n",
         Exception("stderr read error"),
         b"",
     ]
-    
+
     # Create and run the relay task
     relay_task = await create_stderr_relay(mock_process)
     assert relay_task is not None
-    
+
     # Wait for the task to complete (it should exit on exception)
     try:
         await asyncio.wait_for(relay_task, timeout=1.0)

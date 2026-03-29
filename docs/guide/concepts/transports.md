@@ -48,7 +48,7 @@ configure(transports=["unix", "tcp"])  # Both, prefer unix
 ```bash
 # Transport selection
 export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'
-export PLUGIN_TCP_PORT="8080" 
+export PLUGIN_TCP_PORT="8080"
 export PLUGIN_UNIX_SOCKET_PATH="/tmp/my-plugin.sock"
 ```
 
@@ -136,7 +136,7 @@ configure(
 configure(transports=["tcp"], tcp_host="127.0.0.1", log_transport_details=True)
 
 # Production: Maximum performance and security  
-configure(transports=["unix"], unix_socket_path="/var/run/myapp/plugin.sock", 
+configure(transports=["unix"], unix_socket_path="/var/run/myapp/plugin.sock",
          unix_socket_permissions=0o600)
 
 # Graceful fallback
@@ -186,17 +186,17 @@ from abc import ABC, abstractmethod
 
 class RPCPluginTransport(ABC):
     """Base interface for all plugin transports."""
-    
+
     @abstractmethod
     async def start_server(self, host: str, port: int) -> dict:
         """Start server and return connection details."""
         pass
-    
+
     @abstractmethod
     async def connect_client(self, connection_info: dict) -> tuple:
         """Connect client and return reader/writer streams."""
         pass
-    
+
     @abstractmethod
     async def close(self):
         """Clean up transport resources."""

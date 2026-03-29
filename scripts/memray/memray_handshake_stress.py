@@ -12,11 +12,8 @@ os.environ["STRESS_TEST_COOKIE"] = "stress_cookie_value_12345"
 from pyvider.rpcplugin.handshake.core import (
     HandshakeConfig,
     _apply_certificate_padding,
-    _parse_versions,
     _prepare_server_cert,
     _split_handshake_response,
-    _validate_network,
-    is_valid_handshake_parts,
     parse_handshake_response,
     validate_magic_cookie,
 )
@@ -32,10 +29,7 @@ def main() -> None:
     # --- Stress: parse_handshake_response (10K cycles) ---
     # Build representative handshake strings
     cert_body = "MIIBkTCB+wIJAKHBfpHYzpHYMA0GCSqGSIb3DQEBCwUA" * 3
-    handshake_strings = [
-        f"1|1|tcp|127.0.0.1:{8000 + (i % 1000)}|grpc|{cert_body}"
-        for i in range(100)
-    ]
+    handshake_strings = [f"1|1|tcp|127.0.0.1:{8000 + (i % 1000)}|grpc|{cert_body}" for i in range(100)]
     for i in range(10_000):
         parse_handshake_response(handshake_strings[i % 100])
 
@@ -62,10 +56,10 @@ def main() -> None:
 
     # --- Stress: _apply_certificate_padding (10K cycles) ---
     certs_needing_padding = [
-        cert_body[:10],    # needs 2 padding chars
-        cert_body[:11],    # needs 1 padding char
-        cert_body[:12],    # no padding needed
-        cert_body[:13],    # needs 3 padding chars
+        cert_body[:10],  # needs 2 padding chars
+        cert_body[:11],  # needs 1 padding char
+        cert_body[:12],  # no padding needed
+        cert_body[:13],  # needs 3 padding chars
     ]
     for i in range(10_000):
         _apply_certificate_padding(certs_needing_padding[i % 4])

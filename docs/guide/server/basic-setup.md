@@ -24,25 +24,25 @@ class EchoProtocol(RPCPluginProtocol):
 class EchoHandler:
     async def Echo(self, request, context):
         from echo_pb2 import EchoResponse
-        
+
         logger.info("Processing Echo request", extra={
             "message": request.message,
             "peer": context.peer()
         })
-        
+
         response_message = f"Echo: {request.message}"
         logger.debug("Echo response prepared", extra={"response": response_message})
-        
+
         return EchoResponse(message=response_message)
 
 async def main():
     logger.info("Starting Echo plugin server")
-    
+
     server = plugin_server(
         protocol=EchoProtocol(),
         handler=EchoHandler()
     )
-    
+
     try:
         logger.info("Echo server ready to serve requests")
         await server.serve()
@@ -142,48 +142,48 @@ class GracefulServer:
             "protocol": type(protocol).__name__,
             "handler": type(handler).__name__
         })
-    
+
     async def start(self):
         logger.info("Starting graceful server with signal handlers")
         self.setup_signal_handlers()
-        
+
         self.server = plugin_server(
             protocol=self.protocol,
             handler=self.handler
         )
-        
+
         try:
             logger.info("Server ready, beginning to serve requests")
             await self.server.serve()
         except Exception as e:
             logger.error("Server error during operation", extra={"error": str(e)}, exc_info=True)
             raise
-    
+
     async def stop(self):
         logger.info("Initiating graceful server shutdown")
         if self.server:
             logger.debug("Stopping server instance")
             await self.server.stop()
             logger.info("Server stopped successfully")
-        
+
         self.shutdown_event.set()
         logger.info("Shutdown event set")
-    
+
     def setup_signal_handlers(self):
         def signal_handler(signum, frame):
             signal_name = signal.Signals(signum).name
             logger.info("Received shutdown signal", extra={"signal": signal_name})
             asyncio.create_task(self.stop())
-        
+
         signal.signal(signal.SIGTERM, signal_handler)
         signal.signal(signal.SIGINT, signal_handler)
-        
+
         logger.debug("Signal handlers configured for SIGTERM and SIGINT")
 
 async def main():
     logger.info("Initializing graceful server example")
     server = GracefulServer(EchoProtocol(), EchoHandler())
-    
+
     try:
         await server.start()
     except KeyboardInterrupt:
@@ -239,23 +239,23 @@ class ValidatedServer:
     def __init__(self, protocol, handler):
         self.protocol = protocol
         self.handler = handler
-    
+
     def validate_config(self):
         """Validate server configuration."""
         errors = []
-        
+
         # Check required environment variables
         if not os.environ.get("PLUGIN_SERVICE_NAME"):
             errors.append("PLUGIN_SERVICE_NAME required")
-        
+
         # Validate certificates if mTLS enabled
         if os.environ.get("PLUGIN_ENABLE_MTLS") == "true":
             if not os.environ.get("PLUGIN_SERVER_CERT"):
                 errors.append("PLUGIN_SERVER_CERT required for mTLS")
-        
+
         if errors:
             raise ValueError(f"Configuration errors: {'; '.join(errors)}")
-    
+
     async def start(self):
         try:
             self.validate_config()

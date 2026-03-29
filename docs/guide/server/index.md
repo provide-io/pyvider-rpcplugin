@@ -19,11 +19,11 @@ from example_pb2 import CalculationResponse
 
 class CalculatorProtocol(RPCPluginProtocol):
     service_name = "calculator.Calculator"
-    
+
     async def get_grpc_descriptors(self):
         import example_pb2_grpc
         return example_pb2_grpc, "calculator.Calculator"
-    
+
     async def add_to_server(self, server, handler):
         add_CalculatorServicer_to_server(handler, server)
 
@@ -31,7 +31,7 @@ class CalculatorHandler:
     async def Add(self, request, context):
         result = request.a + request.b
         return CalculationResponse(result=result)
-    
+
     async def Subtract(self, request, context):
         result = request.a - request.b
         return CalculationResponse(result=result)
@@ -41,7 +41,7 @@ async def main():
         protocol=CalculatorProtocol(),
         handler=CalculatorHandler()
     )
-    
+
     await server.serve()
 
 if __name__ == "__main__":

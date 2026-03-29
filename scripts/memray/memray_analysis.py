@@ -7,9 +7,9 @@ Provides post-run analysis for memray stress test binaries:
 - Generate ANALYSIS.md report with comparisons
 """
 
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 from typing import Any
 
 
@@ -96,27 +96,29 @@ def generate_analysis_report(output_dir: Path) -> str:
         else:
             report_lines.append(f"| {name} | {size} | {peak} | {allocs} |")
 
-    report_lines.extend([
-        "",
-        "## Hot Paths Profiled",
-        "",
-        "1. **Handshake parsing** (`memray_handshake_stress`): parse_handshake_response, validate_magic_cookie, cert processing",
-        "2. **Transport creation** (`memray_transport_stress`): TCPSocketTransport/UnixSocketTransport instantiation, endpoint validation",
-        "3. **Rate limiter** (`memray_rate_limiter_stress`): RateLimitingInterceptor.intercept_service token bucket checks",
-        "4. **Protocol services** (`memray_protocol_stress`): SubchannelConnection lifecycle, broker dict management",
-        "5. **Config validation** (`memray_config_stress`): validate_protocol_versions_list, validate_transport_list, HandshakeConfig creation",
-        "",
-        "## Next Steps",
-        "",
-        "```bash",
-        "# View flamegraphs in browser",
-        "open memray-output/*_flamegraph.html",
-        "",
-        "# Update baselines after optimization",
-        "we run memray.update-baseline",
-        "```",
-        "",
-    ])
+    report_lines.extend(
+        [
+            "",
+            "## Hot Paths Profiled",
+            "",
+            "1. **Handshake parsing** (`memray_handshake_stress`): parse_handshake_response, validate_magic_cookie, cert processing",
+            "2. **Transport creation** (`memray_transport_stress`): TCPSocketTransport/UnixSocketTransport instantiation, endpoint validation",
+            "3. **Rate limiter** (`memray_rate_limiter_stress`): RateLimitingInterceptor.intercept_service token bucket checks",
+            "4. **Protocol services** (`memray_protocol_stress`): SubchannelConnection lifecycle, broker dict management",
+            "5. **Config validation** (`memray_config_stress`): validate_protocol_versions_list, validate_transport_list, HandshakeConfig creation",
+            "",
+            "## Next Steps",
+            "",
+            "```bash",
+            "# View flamegraphs in browser",
+            "open memray-output/*_flamegraph.html",
+            "",
+            "# Update baselines after optimization",
+            "we run memray.update-baseline",
+            "```",
+            "",
+        ]
+    )
 
     return "\n".join(report_lines)
 

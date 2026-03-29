@@ -13,37 +13,37 @@ jobs:
   security:
     name: 🔍 Security Analysis
     runs-on: ubuntu-24.04
-    
+
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
-      
+
       - name: 🐍 Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: 📦 Install UV
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
-      
+
       - name: 📦 Install dependencies
         run: |
           uv venv
           uv pip install bandit safety pip-audit
-      
+
       - name: 🔒 Run Bandit security scan
         run: |
           source .venv/bin/activate
           bandit -r src/ -f json -o bandit-report.json || true
           bandit -r src/ -ll
-      
+
       - name: 🔍 Check for known vulnerabilities
         run: |
           source .venv/bin/activate
           pip-audit || true
-      
+
       - name: 🔐 Check for hardcoded secrets (PR)
         if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
@@ -68,7 +68,7 @@ jobs:
         continue-on-error: true
         with:
           path: ./
-      
+
       - name: 📤 Upload security reports
         uses: actions/upload-artifact@v4
         if: always()

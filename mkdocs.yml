@@ -92,7 +92,7 @@ nav:
     - Quick Start: getting-started/quick-start.md
     - Your First Plugin: getting-started/first-plugin.md
     - Examples Overview: getting-started/examples.md
-  
+
   - User Guide:
     - guide/index.md
     - Core Concepts:
@@ -101,7 +101,7 @@ nav:
       - Transports: guide/concepts/transports.md
       - Protocols: guide/concepts/protocols.md
       - Security Model: guide/concepts/security.md
-    
+
     - Server Development:
       - guide/server/index.md
       - Basic Server Setup: guide/server/basic-setup.md
@@ -109,13 +109,13 @@ nav:
       - Transport Configuration: guide/server/transports.md
       - Async Patterns: guide/server/async-patterns.md
       - Health Checks: guide/server/health-checks.md
-    
+
     - Client Development:
       - guide/client/index.md
       - Client Development Guide: guide/client/client-guide.md
       - Connection Resilience: guide/client/resilience.md
       - Direct Connections: guide/client/direct-connections.md
-    
+
     - Security:
       - guide/security/index.md
       - mTLS Configuration: guide/security/mtls.md
@@ -123,7 +123,7 @@ nav:
       - Certificate API Reference: guide/security/certificate-reference.md
       - Magic Cookies: guide/security/magic-cookies.md
       - Process Isolation: guide/security/process-isolation.md
-    
+
     - Configuration:
       - guide/config/index.md
       - Configuration Reference: guide/config/configuration-reference.md
@@ -132,7 +132,7 @@ nav:
       - Advanced Configuration: guide/config/advanced.md
       - Environment Variables: guide/config/environment.md
       - Logging Configuration: guide/config/logging.md
-    
+
     - Advanced Topics:
       - Observability & Performance: guide/advanced/observability.md
       - Type System & Custom Protocols: guide/advanced/customization.md
@@ -145,12 +145,12 @@ nav:
   - API Reference:
     - reference/index.md
     - Glossary: reference/glossary.md
-  
+
   - Examples:
     - examples/index.md
     - Quick Start: examples/quick-start.md
     - Echo Service: examples/echo-example.md
-  
+
   - Development:
     - development/index.md
     - Contributing Guide: development/contributing-guide.md

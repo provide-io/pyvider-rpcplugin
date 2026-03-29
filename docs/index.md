@@ -24,7 +24,7 @@ Understand how provide-foundation, pyvider, flavorpack, and other projects work 
 - **Optimized serialization**: Protocol Buffers with streaming support
 - **High throughput**: Designed for high-volume, low-latency plugin communication
 
-### 🔒 **Security-Focused** 
+### 🔒 **Security-Focused**
 - **Built-in mTLS**: Mutual TLS authentication with certificate management utilities
 - **Process isolation**: Plugins run as separate processes for enhanced stability
 - **Transport encryption**: Secure communication over any network when mTLS is enabled
@@ -76,7 +76,7 @@ configure(
 
 class EchoService:
     """Echo service with Foundation logging."""
-    
+
     async def echo(self, message: str) -> str:
         # Foundation logger with structured context
         logger.info("Processing echo request", extra={
@@ -87,11 +87,11 @@ class EchoService:
 
 class EchoProtocol(RPCPluginProtocol):
     """Protocol implementation for echo service."""
-    
+
     async def get_grpc_descriptors(self) -> tuple[object, str]:
         import echo_pb2_grpc
         return echo_pb2_grpc, "echo.EchoService"
-    
+
     async def add_to_server(self, server: object, handler: object) -> None:
         from echo_pb2_grpc import add_EchoServiceServicer_to_server
         add_EchoServiceServicer_to_server(handler, server)
@@ -162,16 +162,16 @@ Pyvider RPC Plugin follows a clean architecture pattern:
 graph TB
     Host[Host Application] --> Client[RPC Client]
     Client --> Transport[Transport Layer]
-    Transport --> Server[RPC Server] 
+    Transport --> Server[RPC Server]
     Server --> Plugin[Plugin Implementation]
-    
+
     Transport --> Unix[Unix Sockets]
     Transport --> TCP[TCP Sockets]
-    
+
     Server --> mTLS[mTLS Security]
     Server --> Health[Health Checks]
     Server --> RateLimit[Rate Limiting]
-    
+
     Plugin --> Service[Your Service Logic]
     Plugin --> Protocol[Protocol Definition]
 ```
@@ -192,33 +192,33 @@ graph TB
 -   :material-rocket-launch: **Getting Started**
 
     ---
-    
+
     Quick installation, setup guide, and your first plugin
-    
+
     [:octicons-arrow-right-24: Get Started](getting-started/index.md)
 
 -   :material-book-open: **User Guide**
 
     ---
-    
+
     Comprehensive guide covering concepts, server/client development, and advanced topics
-    
+
     [:octicons-arrow-right-24: User Guide](guide/index.md)
 
 -   :material-api: **API Reference**
 
     ---
-    
+
     Complete API documentation with examples and code snippets
-    
+
     [:octicons-arrow-right-24: API Reference](reference/index.md)
 
 -   :material-code-braces: **Examples**
 
     ---
-    
+
     Working examples from simple echo services to production deployments
-    
+
     [:octicons-arrow-right-24: Examples](examples/index.md)
 
 </div>

@@ -50,13 +50,13 @@ def test_config():
         'PLUGIN_CLIENT_RETRY_ENABLED': 'false',
         'PLUGIN_RATE_LIMIT_ENABLED': 'false',
     }
-    
+
     for key, value in test_vars.items():
         original_env[key] = os.environ.get(key)
         os.environ[key] = value
-    
+
     yield
-    
+
     # Restore environment
     for key, original_value in original_env.items():
         if original_value is None:
@@ -93,7 +93,7 @@ async def transport_factory(tmp_path: Path):
             transport = TCPSocketTransport(host=host, port=port)
         else:
             raise ValueError(f"Unknown transport type: {transport_type}")
-        
+
         created_transports.append(transport)
         return transport
 
@@ -121,7 +121,7 @@ async def test_unix_socket_lifecycle(transport_factory):
     transport = await transport_factory("unix")
     endpoint = await transport.listen()
     assert endpoint.endswith(".sock")
-    
+
     # Test connection
     client = await transport_factory("unix")
     await client.connect(endpoint)
@@ -132,7 +132,7 @@ async def test_unix_socket_permissions(transport_factory):
     """Test Unix socket file permissions."""
     transport = await transport_factory("unix")
     await transport.listen()
-    
+
     import os, stat
     stat_result = os.stat(transport.endpoint)
     mode = stat_result.st_mode
@@ -146,7 +146,7 @@ async def test_tcp_transport_lifecycle(transport_factory, unused_tcp_port):
     transport = await transport_factory("tcp", port=unused_tcp_port)
     endpoint = await transport.listen()
     assert endpoint == f"127.0.0.1:{unused_tcp_port}"
-    
+
     client = await transport_factory("tcp")
     await client.connect(endpoint)
     assert client.endpoint == endpoint
@@ -156,7 +156,7 @@ async def test_tcp_auto_port_assignment(transport_factory):
     """Test automatic port assignment."""
     transport = await transport_factory("tcp", port=0)
     endpoint = await transport.listen()
-    
+
     host, port_str = endpoint.split(":")
     assert host == "127.0.0.1"
     assert int(port_str) > 0
@@ -177,13 +177,13 @@ class MockProtocol(RPCPluginProtocol):
         super().__init__()
         self.service_name = service_name
         self.add_to_server_called = False
-    
+
     async def get_grpc_descriptors(self):
         return None, self.service_name
-    
+
     async def add_to_server(self, server: Any, handler: Any):
         self.add_to_server_called = True
-    
+
     def get_method_type(self, method_name: str) -> str:
         return "unary_unary"
 
@@ -191,7 +191,7 @@ class MockHandler:
     """Mock handler for testing."""
     def __init__(self):
         self.method_calls = []
-    
+
     async def test_method(self, request, context):
         self.method_calls.append(("test_method", request))
         return {"result": "test_response"}
@@ -212,13 +212,13 @@ from pyvider.rpcplugin.factories import plugin_server
 async def test_server_creation_and_config(mock_protocol, mock_handler, transport_factory):
     """Test server creation and configuration."""
     transport = await transport_factory("unix")
-    
+
     server = RPCPluginServer(
         protocol=mock_protocol,
         handler=mock_handler,
         transport=transport
     )
-    
+
     assert server.protocol == mock_protocol
     assert server.handler == mock_handler
     assert server.transport == transport
@@ -237,7 +237,7 @@ async def test_server_factory_with_config(mock_protocol, mock_handler):
             "PLUGIN_RATE_LIMIT_ENABLED": True,
         }
     )
-    
+
     assert server.protocol == mock_protocol
     assert server.config["PLUGIN_RATE_LIMIT_ENABLED"] == True
 
@@ -245,22 +245,22 @@ async def test_server_factory_with_config(mock_protocol, mock_handler):
 async def test_server_lifecycle(mock_protocol, mock_handler, transport_factory):
     """Test server startup, readiness, and shutdown."""
     import asyncio
-    
+
     transport = await transport_factory("unix")
     server = RPCPluginServer(mock_protocol, mock_handler, transport)
-    
+
     # Start server
     server_task = asyncio.create_task(server.serve())
-    
+
     try:
         await server.wait_for_server_ready(timeout=5.0)
         assert server._running
         assert transport.endpoint is not None
-        
+
         # Test graceful shutdown
         await server.stop()
         await asyncio.wait_for(server_task, timeout=5.0)
-        
+
     except Exception:
         server_task.cancel()
         try:
@@ -285,13 +285,13 @@ def mock_client():
         command=["echo", "test"],
         config={"PLUGIN_LOG_LEVEL": "WARNING"}
     )
-    
+
     # Mock async methods to avoid real process creation
     client.start = AsyncMock()
     client.shutdown_plugin = AsyncMock()
     client.close = AsyncMock()
     client.grpc_channel = AsyncMock()
-    
+
     return client
 
 @pytest.mark.asyncio
@@ -300,10 +300,10 @@ async def test_mock_client_lifecycle(mock_client):
     await mock_client.start()
     assert mock_client.start.called
     assert mock_client.grpc_channel is not None
-    
+
     await mock_client.shutdown_plugin()
     await mock_client.close()
-    
+
     assert mock_client.shutdown_plugin.called
     assert mock_client.close.called
 
@@ -319,7 +319,7 @@ async def test_client_configuration(test_config):
             }
         }
     )
-    
+
     assert client.config["env"]["PLUGIN_LOG_LEVEL"] == "DEBUG"
     assert client.config["env"]["TEST_VAR"] == "test_value"
 
@@ -331,15 +331,15 @@ async def test_client_server_integration_pattern(mock_protocol, mock_handler):
     # 2. Start client subprocess
     # 3. Perform gRPC calls
     # 4. Verify responses and clean shutdown
-    
+
     server = plugin_server(
         protocol=mock_protocol,
         handler=mock_handler,
         transport="unix"
     )
-    
+
     client = plugin_client(command=["echo", "mock_plugin"])
-    
+
     assert server is not None
     assert client is not None
     # Complex integration tests require proper handshake implementation
@@ -357,22 +357,22 @@ def test_exception_hierarchy_and_attributes():
     """Test exception inheritance and attribute handling."""
     # Test hierarchy - all inherit from RPCPluginError
     config_error = ConfigError("test")
-    transport_error = TransportError("Connection failed", 
-                                   hint="Check network", 
+    transport_error = TransportError("Connection failed",
+                                   hint="Check network",
                                    code="TRANSPORT_001")
     handshake_error = HandshakeError("test")
     protocol_error = ProtocolError("test")
     security_error = SecurityError("test")
-    
-    for error in [config_error, transport_error, handshake_error, 
+
+    for error in [config_error, transport_error, handshake_error,
                   protocol_error, security_error]:
         assert isinstance(error, RPCPluginError)
-    
+
     # Test attributes
     assert transport_error.message == "Connection failed"
     assert transport_error.hint == "Check network"
     assert transport_error.code == "TRANSPORT_001"
-    
+
     # Test string representation contains key information
     error_str = str(transport_error)
     assert "TransportError" in error_str
@@ -381,7 +381,7 @@ def test_exception_hierarchy_and_attributes():
 def test_exception_chaining():
     """Test exception chaining with 'from' clause."""
     original_error = OSError("Network unreachable")
-    
+
     try:
         raise TransportError("Failed to connect") from original_error
     except TransportError as e:
@@ -392,10 +392,10 @@ async def test_transport_error_conditions(transport_factory):
     """Test transport error simulation."""
     # Test connection to non-existent socket
     transport = await transport_factory("unix")
-    
+
     with pytest.raises(TransportError) as exc_info:
         await transport.connect("/tmp/nonexistent.sock")
-    
+
     assert "does not exist" in exc_info.value.message.lower()
 
 @pytest.mark.asyncio
@@ -404,9 +404,9 @@ async def test_port_conflict_error(transport_factory):
     transport1 = await transport_factory("tcp", port=0)
     endpoint = await transport1.listen()
     port = int(endpoint.split(":")[1])
-    
+
     transport2 = await transport_factory("tcp", port=port)
-    
+
     with pytest.raises(TransportError):
         await transport2.listen()
 ```
@@ -426,20 +426,20 @@ async def test_concurrent_connections(transport_factory):
     """Test multiple concurrent connections."""
     server_transport = await transport_factory("unix")
     endpoint = await server_transport.listen()
-    
+
     # Create multiple client connections
     num_clients = 10
     client_tasks = []
-    
+
     for i in range(num_clients):
         client_transport = await transport_factory("unix")
         task = asyncio.create_task(client_transport.connect(endpoint))
         client_tasks.append(task)
-    
+
     start_time = time.time()
     await asyncio.gather(*client_tasks)
     duration = time.time() - start_time
-    
+
     assert duration < 5.0  # All connections within 5 seconds
     print(f"Connected {num_clients} clients in {duration:.2f}s")
 
@@ -447,23 +447,23 @@ async def test_concurrent_connections(transport_factory):
 async def test_server_startup_performance(mock_protocol, mock_handler, transport_factory):
     """Test server performance metrics."""
     server = plugin_server(protocol=mock_protocol, handler=mock_handler, transport="unix")
-    
+
     start_time = time.time()
     server_task = asyncio.create_task(server.serve())
     await server.wait_for_server_ready(timeout=10.0)
     startup_time = time.time() - start_time
-    
+
     try:
         assert startup_time < 2.0  # Start within 2 seconds
-        
+
         # Test shutdown time
         shutdown_start = time.time()
         await server.stop()
         await asyncio.wait_for(server_task, timeout=5.0)
         shutdown_time = time.time() - shutdown_start
-        
+
         assert shutdown_time < 1.0  # Shutdown within 1 second
-        
+
     except Exception:
         await server.stop()
         server_task.cancel()
@@ -477,20 +477,20 @@ def test_memory_usage_pattern():
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
     except ImportError:
         pytest.skip("psutil not available for memory testing")
-    
+
     # Create and destroy many transports
     transports = []
     for _ in range(100):
         transport = UnixSocketTransport()
         transports.append(transport)
-    
+
     peak_memory = process.memory_info().rss / 1024 / 1024  # MB
-    
+
     # Clean up
     transports.clear()
     gc.collect()
     final_memory = process.memory_info().rss / 1024 / 1024  # MB
-    
+
     memory_growth = final_memory - initial_memory
     assert memory_growth < 10.0  # Less than 10MB growth
 ```
@@ -518,9 +518,9 @@ def test_certificates():
         validity_days=90,
         alt_names=["localhost", "127.0.0.1"]
     )
-    
+
     client_cert = Certificate(generate_keypair=True, key_type="ecdsa")
-    
+
     return {
         "ca": ca_cert,
         "server": server_cert,
@@ -530,12 +530,12 @@ def test_certificates():
 def test_certificate_generation(test_certificates):
     """Test certificate generation and validation."""
     certs = test_certificates
-    
+
     # Verify all certificates generated
     for cert_type in ["ca", "server", "client"]:
         assert certs[cert_type].cert is not None
         assert certs[cert_type].key is not None
-    
+
     # Verify certificate format
     assert "-----BEGIN CERTIFICATE-----" in certs["server"].cert
     assert "-----BEGIN PRIVATE KEY-----" in certs["server"].key
@@ -544,7 +544,7 @@ def test_certificate_generation(test_certificates):
 async def test_mtls_configuration(test_certificates, mock_protocol, mock_handler):
     """Test mTLS configuration."""
     certs = test_certificates
-    
+
     server = plugin_server(
         protocol=mock_protocol,
         handler=mock_handler,
@@ -557,7 +557,7 @@ async def test_mtls_configuration(test_certificates, mock_protocol, mock_handler
             "PLUGIN_CLIENT_ROOT_CERTS": certs["ca"].cert,
         }
     )
-    
+
     assert server.config["PLUGIN_AUTO_MTLS"] == False
     assert certs["server"].cert in server.config["PLUGIN_SERVER_CERT"]
 
@@ -569,7 +569,7 @@ def test_magic_cookie_validation():
         'TEST_COOKIE': 'valid-cookie-123'
     }):
         from pyvider.rpcplugin.config import rpcplugin_config
-        
+
         assert rpcplugin_config.plugin_magic_cookie_key == 'TEST_COOKIE'
         assert rpcplugin_config.plugin_magic_cookie_value == 'valid-cookie-123'
 ```
@@ -582,12 +582,12 @@ def test_magic_cookie_validation():
 # ✅ Good: Organize tests by component with descriptive names
 class TestUnixSocketTransport:
     """Test suite for Unix socket transport."""
-    
+
     @pytest.mark.asyncio
     async def test_basic_lifecycle(self, transport_factory):
         """Test Unix socket creation and cleanup."""
         pass
-    
+
     @pytest.mark.asyncio
     async def test_permission_handling(self, transport_factory):
         """Test file permission validation."""
@@ -612,7 +612,7 @@ async def managed_server(mock_protocol, mock_handler):
     """Server fixture with guaranteed cleanup."""
     server = plugin_server(protocol=mock_protocol, handler=mock_handler)
     server_task = None
-    
+
     try:
         server_task = asyncio.create_task(server.serve())
         await server.wait_for_server_ready(timeout=5.0)
@@ -626,7 +626,7 @@ async def managed_server(mock_protocol, mock_handler):
 def test_endpoint_format():
     transport = TCPSocketTransport(host="127.0.0.1", port=8080)
     endpoint = await transport.listen()
-    
+
     assert endpoint == "127.0.0.1:8080", f"Expected format, got: {endpoint}"
     host, port = endpoint.split(":")
     assert host == "127.0.0.1" and int(port) == 8080
@@ -635,7 +635,7 @@ def test_endpoint_format():
 def test_config_error_handling():
     with pytest.raises(ConfigError) as exc_info:
         raise ConfigError("Invalid value", hint="Use valid option")
-    
+
     error = exc_info.value
     assert "Invalid value" in error.message
     assert error.hint == "Use valid option"

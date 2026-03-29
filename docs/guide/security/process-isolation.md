@@ -22,27 +22,27 @@ from pyvider.rpcplugin.isolation import ProcessIsolator, SandboxConfig
 
 async def isolated_plugin_example():
     """Run plugin in isolated environment."""
-    
+
     # Basic isolation configuration
     isolator = ProcessIsolator(
         sandbox_config=SandboxConfig(
             memory_limit="128M",
-            cpu_limit="0.5", 
+            cpu_limit="0.5",
             enable_network_isolation=True,
             execution_timeout=300
         )
     )
-    
+
     # Launch isolated plugin
     async with isolator.create_isolated_process([
         "python", "untrusted_plugin.py"
     ]) as process:
-        
+
         server = plugin_server(
             services=[ProxyService(process)],
             enable_isolation_monitoring=True
         )
-        
+
         await server.serve()
 ```
 
@@ -53,7 +53,7 @@ Configure comprehensive isolation settings including user/group isolation, files
 
 → **Detailed Sandbox Configuration** - Configure comprehensive isolation settings
 
-### 2. **Container Integration** 
+### 2. **Container Integration**
 Use Docker and Kubernetes for robust containerized plugin isolation with industry-standard security boundaries.
 
 → **Container Integration** - Use Docker and Kubernetes for robust isolation
@@ -80,7 +80,7 @@ config = SandboxConfig(
 ```python
 # Strict isolation for production
 config = SandboxConfig(
-    memory_limit="128M", 
+    memory_limit="128M",
     cpu_limit="0.5",
     enable_network_isolation=True,
     allowed_hosts=["api.example.com"],  # Whitelist specific hosts
@@ -95,7 +95,7 @@ config = SandboxConfig(
 # Maximum security isolation
 config = SandboxConfig(
     memory_limit="64M",
-    cpu_limit="0.2", 
+    cpu_limit="0.2",
     enable_network_isolation=True,
     allowed_hosts=[],                   # No network access
     chroot_directory="/var/sandbox",    # Chroot jail
@@ -114,15 +114,15 @@ async def safe_plugin_execution():
     try:
         async with isolator.create_isolated_process(cmd) as process:
             await server.serve()
-            
+
     except ResourceLimitError as e:
         logger.error(f"Plugin exceeded resource limits: {e}")
         # Handle resource violations
-        
+
     except IsolationError as e:
         logger.error(f"Isolation failed: {e}")
         # Handle isolation setup failures
-        
+
     except TimeoutError:
         logger.error("Plugin execution timed out")
         # Handle timeout scenarios

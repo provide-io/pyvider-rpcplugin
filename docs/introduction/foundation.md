@@ -154,22 +154,22 @@ class MyPlugin:
     def __init__(self):
         # Foundation logging
         logger.info("Plugin initializing")
-        
+
         # Foundation configuration (via Pyvider's extension)
         self.timeout = rpcplugin_config.plugin_handshake_timeout
-        
+
     async def serve(self):
         # Pyvider RPC server
         server = plugin_server(
             protocol=self.protocol,
             handler=self.handler
         )
-        
+
         # Foundation logging
         logger.info("Server started", extra={
             "timeout": self.timeout
         })
-        
+
         await server.serve()
 ```
 
