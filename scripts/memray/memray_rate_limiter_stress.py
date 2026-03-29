@@ -15,7 +15,7 @@ from pyvider.rpcplugin.server.core import RateLimitingInterceptor
 class _MockHandlerCallDetails:
     """Minimal mock for grpc.HandlerCallDetails."""
 
-    __slots__ = ("method", "invocation_metadata")
+    __slots__ = ("invocation_metadata", "method")
 
     def __init__(self, method: str = "/test.Service/Method") -> None:
         self.method = method
@@ -24,7 +24,6 @@ class _MockHandlerCallDetails:
 
 class _MockRpcMethodHandler:
     """Minimal mock for grpc.RpcMethodHandler."""
-    pass
 
 
 async def _mock_continuation(handler_call_details: Any) -> Any:
@@ -39,11 +38,14 @@ async def main() -> None:
     # Suppress per-request debug logging inside is_allowed().
     try:
         limiter = TokenBucketRateLimiter(
-            capacity=1_000_000, refill_rate=1_000_000.0, logger=None,
+            capacity=1_000_000,
+            refill_rate=1_000_000.0,
+            logger=None,
         )
     except TypeError:
         limiter = TokenBucketRateLimiter(
-            capacity=1_000_000, refill_rate=1_000_000.0,
+            capacity=1_000_000,
+            refill_rate=1_000_000.0,
         )
         limiter._logger = None
     interceptor = RateLimitingInterceptor(limiter)
@@ -54,14 +56,11 @@ async def main() -> None:
         await interceptor.intercept_service(_mock_continuation, details)
 
     # --- Stress: intercept_service (50K cycles) ---
-    for i in range(50_000):
+    for _i in range(50_000):
         await interceptor.intercept_service(_mock_continuation, details)
 
     # --- Stress: varying method names (10K cycles) ---
-    method_details = [
-        _MockHandlerCallDetails(f"/test.Service/Method{i % 20}")
-        for i in range(20)
-    ]
+    method_details = [_MockHandlerCallDetails(f"/test.Service/Method{i % 20}") for i in range(20)]
     for i in range(10_000):
         await interceptor.intercept_service(_mock_continuation, method_details[i % 20])
 

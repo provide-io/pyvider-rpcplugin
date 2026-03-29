@@ -25,7 +25,7 @@ An Echo plugin that:
 
 ## Prerequisites
 
-- Completed [Quick Start](quick-start.md) 
+- Completed [Quick Start](quick-start.md)
 - Python 3.11+ with `pyvider-rpcplugin` installed
 - `grpcio-tools` for Protocol Buffer compilation
 
@@ -92,18 +92,18 @@ from provide.foundation import logger
 
 class EchoHandler(EchoServiceServicer):
     """Handler implementing the Echo service business logic."""
-    
+
     async def Echo(
-        self, 
-        request: EchoRequest, 
+        self,
+        request: EchoRequest,
         context: grpc.aio.ServicerContext
     ) -> EchoResponse:
         """Handle Echo RPC calls."""
         logger.info(f"📨 Received Echo request: '{request.message}'")
-        
+
         # Your business logic here
         reply_message = f"Plugin echoed: {request.message}"
-        
+
         logger.info(f"📤 Sending Echo response: '{reply_message}'")
         return EchoResponse(reply=reply_message)
 ```
@@ -121,18 +121,18 @@ from provide.foundation import logger
 
 class EchoProtocol(RPCPluginProtocol):
     """Protocol bridge for Echo service."""
-    
+
     async def get_grpc_descriptors(self) -> tuple[Any, str]:
         """Return gRPC module and service name."""
         return echo_pb2_grpc, "echo.EchoService"
-    
+
     def get_method_type(self, method_name: str) -> str:
         """Return the RPC method type."""
         if "Echo" in method_name:
             return "unary_unary"
         logger.warning(f"Unknown method {method_name}, defaulting to unary_unary")
         return "unary_unary"
-    
+
     async def add_to_server(self, server: Any, handler: Any) -> None:
         """Register handler with the gRPC server."""
         echo_pb2_grpc.add_EchoServiceServicer_to_server(handler, server)
@@ -159,14 +159,14 @@ from echo_protocol import EchoProtocol
 
 async def main():
     logger.info("🚀 Starting Echo plugin server...")
-    
+
     # Create handler and protocol
     handler = EchoHandler()
     protocol = EchoProtocol()
-    
+
     # Create plugin server
     server = plugin_server(protocol=protocol, handler=handler)
-    
+
     try:
         logger.info("🔌 Echo plugin ready to serve...")
         await server.serve()  # Handshake + serve requests
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     cookie_key = rpcplugin_config.plugin_magic_cookie_key
     cookie_value = rpcplugin_config.plugin_magic_cookie_value
     os.environ[cookie_key] = cookie_value
-    
+
     asyncio.run(main())
 ```
 
@@ -299,7 +299,7 @@ Expected output:
    - Language-agnostic schema
    - Generates type-safe Python code
 
-2. **Service Handler** 
+2. **Service Handler**
    - Implements business logic
    - Inherits from generated servicer class
    - Async methods for performance
@@ -326,16 +326,16 @@ sequenceDiagram
     participant Host as Host Application
     participant Plugin as Plugin Server
     participant Handler as Echo Handler
-    
+
     Host->>Plugin: Launch executable
     Plugin->>Host: Handshake (connection details)
     Host->>Plugin: Establish gRPC connection
-    
+
     Host->>Plugin: Echo RPC call
     Plugin->>Handler: Route to Echo method
     Handler->>Plugin: Return EchoResponse
     Plugin->>Host: Send response
-    
+
     Host->>Plugin: Shutdown signal
     Plugin->>Host: Graceful shutdown
 ```

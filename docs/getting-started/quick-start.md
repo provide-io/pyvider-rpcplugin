@@ -61,12 +61,12 @@ class DummyHandler:
 
 async def main():
     logger.info("🚀 Starting plugin server...")
-    
+
     # Create protocol and server
     protocol = plugin_protocol()  # Uses basic protocol
     handler = DummyHandler()
     server = plugin_server(protocol=protocol, handler=handler)
-    
+
     try:
         logger.info("Plugin server ready to serve...")
         await server.serve()  # This prints handshake and starts serving

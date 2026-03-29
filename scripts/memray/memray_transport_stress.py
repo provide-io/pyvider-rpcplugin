@@ -17,9 +17,7 @@ def main() -> None:
         is_valid_tcp_endpoint("127.0.0.1:8080")
 
     # --- Stress: is_valid_tcp_endpoint validation (20K cycles) ---
-    endpoints = [
-        f"127.0.0.1:{8000 + i}" for i in range(100)
-    ] + [
+    endpoints = [f"127.0.0.1:{8000 + i}" for i in range(100)] + [
         "invalid",
         ":8080",
         "localhost:abc",

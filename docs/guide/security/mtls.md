@@ -327,7 +327,7 @@ try:
     ) as client:
         await client.health.check()
         logger.info("✅ mTLS connection successful")
-        
+
 except Exception as e:
     logger.error(f"❌ mTLS connection failed: {e}")
     # Check certificate paths, permissions, validity
@@ -350,12 +350,12 @@ except Exception as e:
 server = plugin_server(
     protocol=my_protocol,
     handler=my_handler,
-    
+
     # Strong TLS configuration
     tls_certificate=server_cert,
     tls_ca_certificate=ca_cert,
     require_client_certificate=True,
-    
+
     # Additional security
     allowed_client_cns=["plugin-client-*"],  # Restrict client CNs
     cipher_suites=["ECDHE-RSA-AES256-GCM-SHA384"],  # Strong ciphers
@@ -454,11 +454,11 @@ server = plugin_server(
 server = plugin_server(
     protocol=my_protocol,
     handler=my_handler,
-    
+
     # Internal mTLS for backend security
     auto_mtls=True,
     bind_address="0.0.0.0:8080",  # Internal port
-    
+
     # Trust load balancer headers
     trust_forwarded_headers=True,
     allowed_forwarded_ips=["10.0.0.0/8"]

@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -74,8 +74,8 @@ async def test_server_shuts_down_on_file_creation(temp_shutdown_file, temp_unix_
     mocker.patch.object(server, '_setup_server', side_effect=mock_setup_server_side_effect)
 
     mocker.patch.object(server, '_register_signal_handlers')
-    
-    
+
+
     mocker.patch('asyncio.sleep', new_callable=AsyncMock, return_value=None)
     mocker.patch.object(server, '_watch_shutdown_file', new_callable=AsyncMock)
     mocker.patch('sys.stdout.buffer.write')

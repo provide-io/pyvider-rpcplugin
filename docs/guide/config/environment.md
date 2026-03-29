@@ -64,7 +64,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Default**: `None` (auto-generated for development)
 - **Description**: Server TLS certificate (PEM format or file path)
 - **Format**: Direct PEM string or `file:///path/to/cert.pem`
-- **Example**: 
+- **Example**:
   ```bash
   export PLUGIN_SERVER_CERT=file:///etc/ssl/certs/server.pem
   # or direct PEM:

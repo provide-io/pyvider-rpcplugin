@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -60,7 +60,7 @@ def auto_clean_rpc_config_env():
     # Clean environment before test
     clear_plugin_env_vars_for_test()
     # Foundation config doesn't need singleton management
-    
+
     yield  # Test runs here
 
     # Restore environment after test
@@ -73,7 +73,7 @@ def test_default_value_fallbacks():
     config = force_reinit_config_for_test()
 
     logger.info("--- Testing Default Value Fallbacks ---")
-    
+
     # Test magic cookie value default (from field default)
     expected_cookie = "test_cookie_value"  # From field definition
     actual_cookie = config.plugin_magic_cookie_value
@@ -147,16 +147,16 @@ def test_invalid_log_level_enum(monkeypatch):
 def test_foundation_field_validation_integration():
     """Test that Foundation's field validation is working properly."""
     logger.info("Testing Foundation field validation integration...")
-    
+
     # Test that creating a config instance with no env vars uses defaults
     config = force_reinit_config_for_test()
-    
+
     # Verify required fields have their defaults
     assert config.plugin_magic_cookie_value == "test_cookie_value"
     assert config.plugin_handshake_timeout == 10.0
     assert config.plugin_auto_mtls == True
     assert config.plugin_log_level == "INFO"
-    
+
     logger.info("Foundation field validation integration: OK")
 
 # 🐍🔌📞🔚

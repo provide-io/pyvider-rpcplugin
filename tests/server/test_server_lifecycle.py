@@ -1,4 +1,4 @@
-# 
+#
 # SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
@@ -30,7 +30,7 @@ def test_attrs_post_init_handshake_config_error(mocker):
 
     # Mock a configuration attribute access to raise ConfigError during Foundation pattern usage
     mocker.patch.object(
-        type(rpcplugin_config), 
+        type(rpcplugin_config),
         "plugin_magic_cookie_key",
         new_callable=lambda: property(lambda self: (_ for _ in ()).throw(ConfigError("Failed to initialize handshake configuration")))
     )

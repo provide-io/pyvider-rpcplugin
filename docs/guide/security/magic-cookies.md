@@ -22,17 +22,17 @@ from pyvider.rpcplugin.security import MagicCookie
 
 async def magic_cookie_example():
     """Basic magic cookie authentication."""
-    
+
     # Generate secure magic cookie
     cookie = MagicCookie.generate()
-    
+
     # Server with authentication
     server = plugin_server(
         services=[MyService()],
         magic_cookie=cookie.value,
         require_magic_cookie=True
     )
-    
+
     # Client with matching cookie
     async with plugin_client(
         command=["python", "plugin.py"],
@@ -56,7 +56,7 @@ cookie = MagicCookie.generate()
 # Custom length
 cookie = MagicCookie.generate(length=64)  # 512 bits
 
-# From environment 
+# From environment
 cookie = MagicCookie.from_env("PLUGIN_MAGIC_COOKIE")
 ```
 
@@ -117,7 +117,7 @@ server = plugin_server(
 # Each plugin gets unique cookie
 plugin_cookies = {
     "data-processor": MagicCookie.generate(),
-    "file-handler": MagicCookie.generate(), 
+    "file-handler": MagicCookie.generate(),
     "notification-service": MagicCookie.generate()
 }
 
@@ -151,7 +151,7 @@ plugins:
     magic_cookie: "${PLUGIN_DATA_MAGIC_COOKIE}"
     require_cookie: true
     timeout: 300
-    
+
   file_handler:
     magic_cookie: "${PLUGIN_FILE_MAGIC_COOKIE}"  
     require_cookie: true
@@ -179,15 +179,15 @@ async def secure_plugin_connection():
     try:
         async with plugin_client(magic_cookie=cookie.value) as client:
             return await client.service.protected_method()
-            
+
     except AuthenticationError as e:
         logger.error(f"Authentication failed: {e}")
         # Handle invalid/missing cookie
-        
+
     except MagicCookieError as e:
         logger.error(f"Cookie error: {e}")
         # Handle malformed cookie
-        
+
     except TimeoutError:
         logger.error("Cookie validation timed out")
         # Handle timeout scenarios

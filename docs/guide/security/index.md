@@ -121,20 +121,20 @@ from provide.foundation.crypto import Certificate
 
 async def development_secure_server():
     """Secure server setup for development."""
-    
+
     # Generate temporary certificates for development
     server_cert = Certificate(
         common_name="localhost",
         generate_keypair=True,
         key_type="ecdsa"
     )
-    
+
     client_cert = Certificate(
         common_name="client",
         generate_keypair=True,
         key_type="ecdsa"
     )
-    
+
     # Configure mTLS with generated certificates
     os.environ.update({
         "PLUGIN_AUTO_MTLS": "true",
@@ -144,10 +144,10 @@ async def development_secure_server():
         "PLUGIN_CLIENT_KEY": client_cert.key,
         "PLUGIN_MAGIC_COOKIE_VALUE": "dev-secure-cookie-123"
     })
-    
+
     server = plugin_server(protocol=my_protocol, handler=my_handler)
     logger.info("🔒 Development server configured with mTLS")
-    
+
     await server.serve()
 
 if __name__ == "__main__":
@@ -165,7 +165,7 @@ from pyvider.rpcplugin import plugin_server
 
 def configure_production_security():
     """Configure production-grade security."""
-    
+
     # Use proper certificate files
     os.environ.update({
         "PLUGIN_AUTO_MTLS": "true",
@@ -174,11 +174,11 @@ def configure_production_security():
         "PLUGIN_CLIENT_ROOT_CERTS": "file:///etc/ssl/certs/ca-bundle.pem",
         "PLUGIN_SERVER_ROOT_CERTS": "file:///etc/ssl/certs/ca-bundle.pem"
     })
-    
+
     # Generate cryptographically secure magic cookie
     magic_cookie = secrets.token_hex(32)  # 256-bit security
     os.environ["PLUGIN_MAGIC_COOKIE_VALUE"] = magic_cookie
-    
+
     # Additional security settings
     os.environ.update({
         "PLUGIN_RATE_LIMIT_ENABLED": "true",
@@ -188,10 +188,10 @@ def configure_production_security():
 
 async def main():
     configure_production_security()
-    
+
     server = plugin_server(protocol=my_protocol, handler=my_handler)
     logger.info("🏭 Production server configured with enterprise security")
-    
+
     await server.serve()
 
 if __name__ == "__main__":
@@ -210,26 +210,26 @@ from pathlib import Path
 
 def secure_certificate_setup():
     """Ensure proper certificate file permissions."""
-    
+
     # Certificate file paths
     cert_file = Path("/etc/ssl/certs/plugin-server.pem")
     key_file = Path("/etc/ssl/private/plugin-server.key")
     ca_file = Path("/etc/ssl/certs/ca-bundle.pem")
-    
+
     # Set proper permissions
     if cert_file.exists():
         cert_file.chmod(0o644)  # Read for owner, group, others
         logger.info(f"✅ Certificate permissions set: {cert_file}")
-    
+
     if key_file.exists():
         key_file.chmod(0o600)  # Read/write for owner only
         os.chown(key_file, os.getuid(), os.getgid())
         logger.info(f"🔒 Private key secured: {key_file}")
-    
+
     if ca_file.exists():
         ca_file.chmod(0o644)  # Read for owner, group, others
         logger.info(f"🏆 CA bundle configured: {ca_file}")
-    
+
     return {
         "server_cert": f"file://{cert_file}",
         "server_key": f"file://{key_file}",
@@ -240,7 +240,7 @@ def secure_certificate_setup():
 cert_config = secure_certificate_setup()
 os.environ.update({
     "PLUGIN_SERVER_CERT": cert_config["server_cert"],
-    "PLUGIN_SERVER_KEY": cert_config["server_key"], 
+    "PLUGIN_SERVER_KEY": cert_config["server_key"],
     "PLUGIN_CLIENT_ROOT_CERTS": cert_config["ca_bundle"]
 })
 ```
@@ -254,30 +254,30 @@ import hashlib
 
 def generate_secure_magic_cookie():
     """Generate cryptographically secure magic cookie."""
-    
+
     # Generate 256-bit random value
     random_bytes = secrets.token_bytes(32)
-    
+
     # Create hex representation
     magic_cookie = random_bytes.hex()
-    
+
     # Optional: Add additional entropy
     additional_entropy = f"{os.getpid()}-{secrets.randbits(64)}"
     combined = f"{magic_cookie}-{additional_entropy}"
-    
+
     # Hash for consistent length and additional security
     final_cookie = hashlib.sha256(combined.encode()).hexdigest()
-    
+
     logger.info(f"🍪 Generated secure magic cookie (length: {len(final_cookie)})")
     return final_cookie
 
 def configure_magic_cookie_security():
     """Configure magic cookie with security best practices."""
-    
+
     # Check if cookie is already set (e.g., from secrets manager)
     cookie_key = "PLUGIN_MAGIC_COOKIE_VALUE"
     existing_cookie = os.environ.get(cookie_key)
-    
+
     if existing_cookie:
         logger.info("🍪 Using existing magic cookie from environment")
         # Validate cookie strength
@@ -288,7 +288,7 @@ def configure_magic_cookie_security():
         magic_cookie = generate_secure_magic_cookie()
         os.environ[cookie_key] = magic_cookie
         logger.info("🍪 Generated new secure magic cookie")
-    
+
     # Ensure cookie key is set
     cookie_key_var = "PLUGIN_MAGIC_COOKIE_KEY"
     if not os.environ.get(cookie_key_var):
@@ -308,39 +308,39 @@ import grp
 
 def configure_process_security():
     """Configure process-level security measures."""
-    
+
     # Set resource limits
     try:
         # Limit memory usage (1GB)
         resource.setrlimit(
-            resource.RLIMIT_AS, 
+            resource.RLIMIT_AS,
             (1024 * 1024 * 1024, 1024 * 1024 * 1024)
         )
-        
+
         # Limit file descriptors (prevent descriptor exhaustion)
         resource.setrlimit(resource.RLIMIT_NOFILE, (1024, 1024))
-        
+
         # Limit CPU time (prevent runaway processes)
         resource.setrlimit(resource.RLIMIT_CPU, (300, 300))  # 5 minutes
-        
+
         logger.info("🛡️ Process resource limits configured")
-        
+
     except Exception as e:
         logger.warning(f"⚠️ Could not set resource limits: {e}")
-    
+
     # Drop privileges if running as root (Linux/Unix)
     if os.name == 'posix' and os.getuid() == 0:
         try:
             # Create or use existing unprivileged user
             nobody_user = pwd.getpwnam('nobody')
             nobody_group = grp.getgrnam('nobody')
-            
+
             # Switch to unprivileged user
             os.setgid(nobody_group.gr_gid)
             os.setuid(nobody_user.pw_uid)
-            
+
             logger.info("👤 Dropped root privileges to 'nobody' user")
-            
+
         except Exception as e:
             logger.error(f"❌ Could not drop privileges: {e}")
             raise
@@ -358,7 +358,7 @@ from provide.foundation import logger
 
 def log_security_event(event_type, details, severity="INFO"):
     """Log security-related events for monitoring."""
-    
+
     security_context = {
         "event_type": event_type,
         "timestamp": time.time(),
@@ -366,7 +366,7 @@ def log_security_event(event_type, details, severity="INFO"):
         "user_id": os.getuid() if hasattr(os, 'getuid') else None,
         **details
     }
-    
+
     if severity == "CRITICAL":
         logger.critical(f"🚨 SECURITY: {event_type}", extra=security_context)
     elif severity == "WARNING":
@@ -402,7 +402,7 @@ from datetime import datetime, timedelta
 
 async def security_health_check():
     """Perform comprehensive security health check."""
-    
+
     health_status = {
         "mtls_enabled": False,
         "certificates_valid": False,
@@ -410,14 +410,14 @@ async def security_health_check():
         "process_secured": False,
         "issues": []
     }
-    
+
     # Check mTLS configuration
     mtls_enabled = os.getenv("PLUGIN_AUTO_MTLS", "").lower() == "true"
     health_status["mtls_enabled"] = mtls_enabled
-    
+
     if not mtls_enabled:
         health_status["issues"].append("mTLS is not enabled")
-    
+
     # Check certificate validity
     cert_path = os.getenv("PLUGIN_SERVER_CERT")
     if cert_path and cert_path.startswith("file://"):
@@ -427,25 +427,25 @@ async def security_health_check():
                 # Load and validate certificate
                 with open(cert_file, 'rb') as f:
                     cert_data = f.read()
-                
+
                 # Parse certificate (simplified check)
                 if b"-----BEGIN CERTIFICATE-----" in cert_data:
                     health_status["certificates_valid"] = True
                 else:
                     health_status["issues"].append("Invalid certificate format")
-                    
+
             except Exception as e:
                 health_status["issues"].append(f"Certificate validation error: {e}")
         else:
             health_status["issues"].append("Certificate file not found")
-    
+
     # Check magic cookie
     cookie_value = os.getenv("PLUGIN_MAGIC_COOKIE_VALUE")
     if cookie_value and len(cookie_value) >= 32:
         health_status["magic_cookie_configured"] = True
     else:
         health_status["issues"].append("Magic cookie not configured or too weak")
-    
+
     # Check process security
     try:
         current_limits = resource.getrlimit(resource.RLIMIT_AS)
@@ -455,7 +455,7 @@ async def security_health_check():
             health_status["issues"].append("No memory limits configured")
     except:
         health_status["issues"].append("Could not check process limits")
-    
+
     # Log security health status
     if health_status["issues"]:
         log_security_event("security_health_check", {
@@ -467,7 +467,7 @@ async def security_health_check():
             "status": "HEALTHY",
             "all_checks_passed": True
         })
-    
+
     return health_status
 
 # Run security health check
