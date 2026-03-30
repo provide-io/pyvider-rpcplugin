@@ -332,7 +332,7 @@ async def test_transport_error_scenarios_consolidated(
         else:  # tcp
             with pytest.raises(
                 TransportError,
-                match="timed out|timeout|Network is unreachable|Connection refused",
+                match="timed out|timeout|Network is unreachable|Connection refused|cannot be reached|WinError",
             ):
                 await connect_transport.connect("240.0.0.1:12345")
     finally:

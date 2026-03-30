@@ -8,6 +8,8 @@
 Tests the modern Foundation-based config system with direct attribute access,
 automatic type conversion, and clean environment variable loading."""
 
+import sys
+
 import pytest
 
 from pyvider.rpcplugin.config import RPCPluginConfig, configure, rpcplugin_config
@@ -45,7 +47,8 @@ class TestFoundationConfigLoading:
 
         # Test list attributes
         assert config.plugin_protocol_versions == [1]
-        assert config.plugin_server_transports == ["unix", "tcp"]
+        expected_transports = ["unix", "tcp"] if sys.platform != "win32" else ["tcp"]
+        assert config.plugin_server_transports == expected_transports
 
     def test_environment_variable_loading(self, monkeypatch) -> None:
         """Test Foundation automatically loads from environment variables."""
