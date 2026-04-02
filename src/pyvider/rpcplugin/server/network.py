@@ -214,7 +214,17 @@ class ServerNetworkMixin:
         endpoint = transport.endpoint
         if not endpoint:
             raise TransportError("Transport endpoint not available after listen.")
-        bind_address = f"unix:{endpoint}" if isinstance(transport, UnixSocketTransport) else endpoint
+
+        if isinstance(transport, UnixSocketTransport):
+            # listen() creates an asyncio server that validates the path and
+            # binds the socket.  Close it so gRPC can take ownership of the
+            # socket path — gRPC needs exclusive access to bind.
+            await transport._close_server()
+            await transport._remove_socket_file(endpoint)
+            bind_address = f"unix:{endpoint}"
+        else:
+            bind_address = endpoint
+
         return endpoint, bind_address
 
     def _determine_requested_tcp_port(self) -> int:
@@ -261,6 +271,9 @@ class ServerNetworkMixin:
             logger.info(f"🔒 Server starting in secure mode on {bind_address} (port_num: {port_num})")
         else:
             port_num = server.add_insecure_port(bind_address)
+
+        if port_num == 0 and not isinstance(transport, TCPSocketTransport):
+            raise TransportError(f"gRPC failed to bind to {bind_address}")
 
         if isinstance(transport, TCPSocketTransport):
             self._apply_tcp_port_configuration(transport, port_num)
