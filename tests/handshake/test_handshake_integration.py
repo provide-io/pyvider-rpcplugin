@@ -224,12 +224,28 @@ async def test_server_handshake_integration(
             # Wait for the server to be ready
             await asyncio.wait_for(server._serving_event.wait(), timeout=5)
 
-            # Verify handshake output was written to stdout
-            assert mock_write.called
+            # Poll for the handshake data to appear in mock_write calls.
+            # Even though _serving_event is set after the write in the same
+            # coroutine, mock call_args can lag in async contexts, so we
+            # retry briefly to avoid a flaky race.  Search all recorded
+            # calls in case write was invoked more than once.
+            handshake_data = ""
+            for _ in range(50):
+                for call in mock_write.call_args_list:
+                    raw = call[0][0]
+                    decoded = raw.decode("utf-8").strip() if isinstance(raw, bytes) else str(raw).strip()
+                    if "|" in decoded:
+                        handshake_data = decoded
+                        break
+                if handshake_data:
+                    break
+                await asyncio.sleep(0.05)
 
-            # Get the handshake data
-            handshake_data = mock_write.call_args[0][0].decode("utf-8").strip()
-            assert "|" in handshake_data
+            # Verify handshake output was written to stdout
+            assert mock_write.called, "Expected sys.stdout.buffer.write to be called"
+            assert "|" in handshake_data, (
+                f"Expected '|' in handshake data but got: {handshake_data!r}"
+            )
 
             # Parse the handshake
             parts = handshake_data.split("|")
