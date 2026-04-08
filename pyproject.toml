@@ -46,8 +46,8 @@ dependencies = [
 [project.urls]
 Homepage = "https://foundry.provide.io/pyvider-rpcplugin/"
 Documentation = "https://foundry.provide.io/pyvider-rpcplugin/"
-Repository = "https://foundry.provide.io/pyvider-rpcplugin/repo"
-Issues = "https://foundry.provide.io/pyvider-rpcplugin/issues"
+Repository = "https://github.com/provide-io/pyvider-rpcplugin"
+Issues = "https://github.com/provide-io/pyvider-rpcplugin/issues"
 
 [project.optional-dependencies]
 test = [
