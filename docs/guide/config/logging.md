@@ -40,56 +40,62 @@ export PLUGIN_SHOW_EMOJI_MATRIX=true
 export PLUGIN_SHOW_EMOJI_MATRIX=false
 ```
 
----
+______________________________________________________________________
 
 ## Log Levels
 
 ### Quick Reference
 
-| Level | Use Case | Overhead | Example |
-|-------|----------|----------|---------|
-| **DEBUG** | Local development, troubleshooting | ~50μs/req | `🔌 Creating Unix socket transport path="/tmp/plugin.sock"` |
-| **INFO** | Production monitoring | ~20μs/req | `🚀 Plugin server started endpoint="unix:/tmp/plugin.sock"` |
-| **WARNING** | Important events | ~10μs/req | `⚠️ Self-signed certificate detected - not for production` |
-| **ERROR** | Service operation errors | ~5μs/req | `❌ Connection failed endpoint="tcp:server:8080"` |
-| **CRITICAL** | System-threatening | Minimal | `💥 Server shutdown due to critical error` |
+| Level        | Use Case                           | Overhead  | Example                                                     |
+| ------------ | ---------------------------------- | --------- | ----------------------------------------------------------- |
+| **DEBUG**    | Local development, troubleshooting | ~50μs/req | `🔌 Creating Unix socket transport path="/tmp/plugin.sock"` |
+| **INFO**     | Production monitoring              | ~20μs/req | `🚀 Plugin server started endpoint="unix:/tmp/plugin.sock"` |
+| **WARNING**  | Important events                   | ~10μs/req | `⚠️ Self-signed certificate detected - not for production`  |
+| **ERROR**    | Service operation errors           | ~5μs/req  | `❌ Connection failed endpoint="tcp:server:8080"`           |
+| **CRITICAL** | System-threatening                 | Minimal   | `💥 Server shutdown due to critical error`                  |
 
 ### Detailed Usage
 
 === "DEBUG"
 
-    Most verbose logging including internal operations.
+````
+Most verbose logging including internal operations.
 
-    ```python
-    2024-01-15 10:30:45.123 DEBUG [pyvider.rpcplugin.server] 🏗️ Server initialization transport=unix
-    2024-01-15 10:30:45.125 DEBUG [pyvider.rpcplugin.handshake] 🤝 Handshake initiated protocol_version=1
-    ```
+```python
+2024-01-15 10:30:45.123 DEBUG [pyvider.rpcplugin.server] 🏗️ Server initialization transport=unix
+2024-01-15 10:30:45.125 DEBUG [pyvider.rpcplugin.handshake] 🤝 Handshake initiated protocol_version=1
+```
 
-    **Use for:** Local development, connection debugging, TLS troubleshooting
+**Use for:** Local development, connection debugging, TLS troubleshooting
+````
 
 === "INFO"
 
-    Standard operational logging.
+````
+Standard operational logging.
 
-    ```python
-    2024-01-15 10:30:45.200 INFO [pyvider.rpcplugin.server] 🚀 Plugin server started endpoint="unix:/tmp/plugin.sock"
-    2024-01-15 10:30:45.205 INFO [pyvider.rpcplugin.client] 🔗 Client connected handshake_time=0.005s
-    ```
+```python
+2024-01-15 10:30:45.200 INFO [pyvider.rpcplugin.server] 🚀 Plugin server started endpoint="unix:/tmp/plugin.sock"
+2024-01-15 10:30:45.205 INFO [pyvider.rpcplugin.client] 🔗 Client connected handshake_time=0.005s
+```
 
-    **Use for:** Production monitoring, service health tracking, performance metrics
+**Use for:** Production monitoring, service health tracking, performance metrics
+````
 
 === "WARNING/ERROR"
 
-    Important events and errors.
+````
+Important events and errors.
 
-    ```python
-    2024-01-15 10:30:45.300 WARNING [pyvider.rpcplugin.ratelimit] 🚦 Rate limit threshold reached
-    2024-01-15 10:30:45.400 ERROR [pyvider.rpcplugin.transport] ❌ Connection failed error="Connection refused"
-    ```
+```python
+2024-01-15 10:30:45.300 WARNING [pyvider.rpcplugin.ratelimit] 🚦 Rate limit threshold reached
+2024-01-15 10:30:45.400 ERROR [pyvider.rpcplugin.transport] ❌ Connection failed error="Connection refused"
+```
 
-    **Use for:** Production with established monitoring, alert-driven systems
+**Use for:** Production with established monitoring, alert-driven systems
+````
 
----
+______________________________________________________________________
 
 ## Structured Logging Format
 
@@ -124,7 +130,7 @@ With emoji enhancement enabled:
   └─ duration: 5.2ms
 ```
 
----
+______________________________________________________________________
 
 ## Context and Correlation
 
@@ -169,7 +175,7 @@ logger.info("Processing user request", extra={
 })
 ```
 
----
+______________________________________________________________________
 
 ## Log Aggregation Integration
 
@@ -185,80 +191,88 @@ export PLUGIN_SHOW_EMOJI_MATRIX=false
 
 === "ELK Stack"
 
-    **Logstash configuration:**
+````
+**Logstash configuration:**
 
-    ```ruby
-    input {
-      file {
-        path => "/var/log/plugin/*.log"
-        codec => "json"
-      }
-    }
+```ruby
+input {
+  file {
+    path => "/var/log/plugin/*.log"
+    codec => "json"
+  }
+}
 
-    filter {
-      if [logger] =~ /pyvider\.rpcplugin/ {
-        mutate { add_tag => ["pyvider-plugin"] }
-      }
-    }
+filter {
+  if [logger] =~ /pyvider\.rpcplugin/ {
+    mutate { add_tag => ["pyvider-plugin"] }
+  }
+}
 
-    output {
-      elasticsearch {
-        hosts => ["localhost:9200"]
-        index => "pyvider-plugin-%{+YYYY.MM.dd}"
-      }
-    }
-    ```
+output {
+  elasticsearch {
+    hosts => ["localhost:9200"]
+    index => "pyvider-plugin-%{+YYYY.MM.dd}"
+  }
+}
+```
+````
 
 === "Splunk"
 
-    **props.conf:**
+````
+**props.conf:**
 
-    ```ini
-    [pyvider_plugin]
-    KV_MODE = json
-    DATETIME_CONFIG = CURRENT
-    SHOULD_LINEMERGE = false
-    ```
+```ini
+[pyvider_plugin]
+KV_MODE = json
+DATETIME_CONFIG = CURRENT
+SHOULD_LINEMERGE = false
+```
+````
 
 === "Datadog"
 
-    **Agent configuration:**
+````
+**Agent configuration:**
 
-    ```yaml
-    logs:
-      - type: file
-        path: /var/log/plugin/*.log
-        service: pyvider-plugin
-        source: python
-        tags:
-          - env:production
-          - component:rpc-plugin
-    ```
+```yaml
+logs:
+  - type: file
+    path: /var/log/plugin/*.log
+    service: pyvider-plugin
+    source: python
+    tags:
+      - env:production
+      - component:rpc-plugin
+```
+````
 
 === "Fluentd"
 
-    **Configuration:**
+````
+**Configuration:**
 
-    ```ruby
-    <source>
-      @type tail
-      format json
-      path /var/log/plugin/*.log
-      tag pyvider.plugin
-    </source>
+```ruby
+<source>
+  @type tail
+  format json
+  path /var/log/plugin/*.log
+  tag pyvider.plugin
+</source>
 
-    <match pyvider.plugin>
-      @type forward
-      <server>
-        host aggregator.example.com
-        port 24224
-      </server>
-    </match>
-    ```
+<match pyvider.plugin>
+  @type forward
+  <server>
+    host aggregator.example.com
+    port 24224
+  </server>
+</match>
+```
+````
 
 **Common patterns:** All platforms support JSON format logs. Use structured logging (emoji disabled) for best compatibility.
 
----
+______________________________________________________________________
 
 ## Performance and Security Logging
 
@@ -305,7 +319,7 @@ Security events are logged with appropriate context:
 }
 ```
 
----
+______________________________________________________________________
 
 ## Development and Debugging
 
@@ -349,7 +363,7 @@ logger.info("Request started", extra={"trace_id": trace_id})
 logger.info("Request completed", extra={"trace_id": trace_id})
 ```
 
----
+______________________________________________________________________
 
 ## Log Rotation and Management
 
@@ -370,7 +384,7 @@ Pyvider RPC Plugin logs to stderr by default. Use system-level log rotation:
 
 For file-based logging, redirect stderr or use Python's logging handlers.
 
----
+______________________________________________________________________
 
 ## Monitoring and Alerting
 
@@ -379,9 +393,9 @@ For file-based logging, redirect stderr or use Python's logging handlers.
 Monitor these patterns for issues:
 
 1. **Connection Failures**: `level="ERROR" AND message CONTAINS "Connection failed"`
-2. **Rate Limiting**: `level="WARNING" AND message CONTAINS "Rate limit"`
-3. **Security Events**: `logger="pyvider.rpcplugin.security" AND level IN ["WARNING", "ERROR"]`
-4. **Performance Degradation**: `duration_ms > 1000`
+1. **Rate Limiting**: `level="WARNING" AND message CONTAINS "Rate limit"`
+1. **Security Events**: `logger="pyvider.rpcplugin.security" AND level IN ["WARNING", "ERROR"]`
+1. **Performance Degradation**: `duration_ms > 1000`
 
 ### Alert Example (Prometheus)
 
@@ -395,33 +409,33 @@ Monitor these patterns for issues:
     summary: "High error rate in Pyvider Plugin"
 ```
 
----
+______________________________________________________________________
 
 ## Best Practices
 
 ### Production
 
 1. **Use INFO level** - DEBUG only for troubleshooting
-2. **Disable emoji enhancement** - Set `PLUGIN_SHOW_EMOJI_MATRIX="false"`
-3. **Use JSON format** - For log aggregation systems
-4. **Implement log rotation** - Prevent disk space issues
-5. **Never log sensitive data** - No passwords, tokens, or PII
+1. **Disable emoji enhancement** - Set `PLUGIN_SHOW_EMOJI_MATRIX="false"`
+1. **Use JSON format** - For log aggregation systems
+1. **Implement log rotation** - Prevent disk space issues
+1. **Never log sensitive data** - No passwords, tokens, or PII
 
 ### Development
 
 1. **Enable emoji enhancement** - Set `PLUGIN_SHOW_EMOJI_MATRIX="true"`
-2. **Use DEBUG level** - Set `PLUGIN_LOG_LEVEL="DEBUG"`
-3. **Console output** - Human-readable format
-4. **Request tracing** - Enable correlation IDs
+1. **Use DEBUG level** - Set `PLUGIN_LOG_LEVEL="DEBUG"`
+1. **Console output** - Human-readable format
+1. **Request tracing** - Enable correlation IDs
 
 ### Security
 
 1. **Log access control** - Restrict log file access
-2. **Data sanitization** - Ensure no sensitive data in logs
-3. **Audit trails** - Maintain security event logs
-4. **Retention policies** - Define appropriate retention periods
+1. **Data sanitization** - Ensure no sensitive data in logs
+1. **Audit trails** - Maintain security event logs
+1. **Retention policies** - Define appropriate retention periods
 
----
+______________________________________________________________________
 
 ## Troubleshooting
 
@@ -458,7 +472,7 @@ async def my_handler(request, context):
         return result
 ```
 
----
+______________________________________________________________________
 
 ## Related Topics
 

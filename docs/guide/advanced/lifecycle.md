@@ -294,54 +294,58 @@ async def cleanup(self):
 
 === "Full Lifecycle"
 
-    ```python
-    async def main():
-        """Complete plugin lifecycle."""
-        manager = PluginLifecycleManager(Path("config.json"))
+````
+```python
+async def main():
+    """Complete plugin lifecycle."""
+    manager = PluginLifecycleManager(Path("config.json"))
 
-        try:
-            await manager.configure()
-            await manager.initialize()
+    try:
+        await manager.configure()
+        await manager.initialize()
 
-            services = [EchoService(), FileService()]
-            await manager.register_services(services)
+        services = [EchoService(), FileService()]
+        await manager.register_services(services)
 
-            await manager.start()
-            await manager.run()
+        await manager.start()
+        await manager.run()
 
-        except Exception as e:
-            logger.error(f"❌ Fatal error: {e}")
-            raise
-        finally:
-            await manager.cleanup()
+    except Exception as e:
+        logger.error(f"❌ Fatal error: {e}")
+        raise
+    finally:
+        await manager.cleanup()
 
-    if __name__ == "__main__":
-        asyncio.run(main())
-    ```
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+````
 
 === "Context Manager"
 
-    ```python
-    # Context manager interface
-    async def __aenter__(self):
-        await self.configure()
-        await self.initialize()
-        return self
+````
+```python
+# Context manager interface
+async def __aenter__(self):
+    await self.configure()
+    await self.initialize()
+    return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.cleanup()
+async def __aexit__(self, exc_type, exc_val, exc_tb):
+    await self.cleanup()
 
-    # Usage
-    async def main():
-        config_path = Path("config.json")
+# Usage
+async def main():
+    config_path = Path("config.json")
 
-        async with PluginLifecycleManager(config_path) as manager:
-            services = [EchoService(), FileService()]
-            await manager.register_services(services)
+    async with PluginLifecycleManager(config_path) as manager:
+        services = [EchoService(), FileService()]
+        await manager.register_services(services)
 
-            await manager.start()
-            await manager.run()
-    ```
+        await manager.start()
+        await manager.run()
+```
+````
 
 ## Lifecycle Hooks
 
@@ -462,13 +466,13 @@ class ObservableLifecycleManager(PluginLifecycleManager):
 ## Best Practices
 
 1. **Validate configuration early** - catch errors before resource allocation
-2. **Initialize resources in order** - ensure dependencies are available
-3. **Handle signals gracefully** - respond to SIGTERM and SIGINT
-4. **Wait for active requests** - don't forcefully terminate connections
-5. **Clean up systematically** - release resources in reverse order
-6. **Monitor lifecycle phases** - track startup/shutdown times
-7. **Use context managers** - ensure cleanup happens automatically
-8. **Log lifecycle events** - aid debugging and monitoring
+1. **Initialize resources in order** - ensure dependencies are available
+1. **Handle signals gracefully** - respond to SIGTERM and SIGINT
+1. **Wait for active requests** - don't forcefully terminate connections
+1. **Clean up systematically** - release resources in reverse order
+1. **Monitor lifecycle phases** - track startup/shutdown times
+1. **Use context managers** - ensure cleanup happens automatically
+1. **Log lifecycle events** - aid debugging and monitoring
 
 ## Related Topics
 

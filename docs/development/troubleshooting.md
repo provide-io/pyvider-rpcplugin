@@ -9,12 +9,14 @@ This guide helps you diagnose and resolve common issues when developing with the
 #### Problem: "Connection refused" errors
 
 **Symptoms:**
+
 ```
 ConnectionRefusedError: [Errno 111] Connection refused
 grpc._channel._InactiveRpcError: status = StatusCode.UNAVAILABLE
 ```
 
 **Diagnosis:**
+
 ```python
 import asyncio
 import socket
@@ -47,45 +49,54 @@ async def diagnose_connection(host: str, port: int):
 
 === "Server Not Running"
 
-    ```bash
-    # Check if server process is running
-    ps aux | grep python
-    netstat -tlnp | grep :50051
-    ```
+````
+```bash
+# Check if server process is running
+ps aux | grep python
+netstat -tlnp | grep :50051
+```
+````
 
 === "Wrong Host/Port"
 
-    ```python
-    # Verify server configuration
-    config = ServerConfig.from_env()
-    print(f"Server should be on {config.transport.host}:{config.transport.port}")
-    ```
+````
+```python
+# Verify server configuration
+config = ServerConfig.from_env()
+print(f"Server should be on {config.transport.host}:{config.transport.port}")
+```
+````
 
 === "Firewall Blocking"
 
-    ```bash
-    # Check firewall rules (Linux)
-    sudo iptables -L -n
+````
+```bash
+# Check firewall rules (Linux)
+sudo iptables -L -n
 
-    # Check firewall rules (macOS)
-    sudo pfctl -sr
-    ```
+# Check firewall rules (macOS)
+sudo pfctl -sr
+```
+````
 
 === "Network Binding"
 
-    ```python
-    # Server binding to all interfaces
-    config = ServerConfig(
-        transport=TransportConfig(
-            host="0.0.0.0",  # Bind to all interfaces
-            port=50051
-        )
+````
+```python
+# Server binding to all interfaces
+config = ServerConfig(
+    transport=TransportConfig(
+        host="0.0.0.0",  # Bind to all interfaces
+        port=50051
     )
-    ```
+)
+```
+````
 
 #### Problem: "Address already in use"
 
 **Symptoms:**
+
 ```
 OSError: [Errno 98] Address already in use
 ```
@@ -106,12 +117,14 @@ config = ServerConfig(transport=TransportConfig(port=50052))
 #### Problem: SSL certificate verification failures
 
 **Symptoms:**
+
 ```
 ssl.SSLCertVerificationError: certificate verify failed
 grpc._channel._InactiveRpcError: SSL handshake failed
 ```
 
 **Diagnosis:**
+
 ```python
 import ssl
 import asyncio
@@ -141,38 +154,45 @@ async def diagnose_ssl(host: str, port: int, cert_file: str | None = None):
 
 === "Invalid Certificate Paths"
 
-    ```python
-    from pathlib import Path
+````
+```python
+from pathlib import Path
 
-    cert_file = Path("certs/server.pem")
-    if not cert_file.exists():
-        print(f"❌ Certificate file not found: {cert_file}")
-    ```
+cert_file = Path("certs/server.pem")
+if not cert_file.exists():
+    print(f"❌ Certificate file not found: {cert_file}")
+```
+````
 
 === "Self-Signed Certificates"
 
-    ```python
-    # Disable SSL verification (development only!)
-    import ssl
+````
+```python
+# Disable SSL verification (development only!)
+import ssl
 
-    context = ssl.create_default_context()
-    context.check_hostname = False
-    context.verify_mode = ssl.CERT_NONE
-    ```
+context = ssl.create_default_context()
+context.check_hostname = False
+context.verify_mode = ssl.CERT_NONE
+```
+````
 
 === "Generate Test Certificates"
 
-    ```bash
-    # Generate self-signed certificate for testing
-    openssl req -x509 -newkey rsa:4096 \
-      -keyout key.pem -out cert.pem -days 365 -nodes
-    ```
+````
+```bash
+# Generate self-signed certificate for testing
+openssl req -x509 -newkey rsa:4096 \
+  -keyout key.pem -out cert.pem -days 365 -nodes
+```
+````
 
 ### 3. Performance Issues
 
 #### Problem: Slow RPC calls
 
 **Diagnosis:**
+
 ```python
 import time
 import statistics
@@ -226,38 +246,45 @@ class PerformanceDiagnostics:
 
 === "Connection Pooling"
 
-    ```python
-    from pyvider.client import ConnectionPool
+````
+```python
+from pyvider.client import ConnectionPool
 
-    # Use connection pooling to reduce overhead
-    pool = ConnectionPool(max_size=10)
-    client = RPCPluginClient(connection_pool=pool)
-    ```
+# Use connection pooling to reduce overhead
+pool = ConnectionPool(max_size=10)
+client = RPCPluginClient(connection_pool=pool)
+```
+````
 
 === "Request Batching"
 
-    ```python
-    # Batch multiple requests
-    async def batch_requests(client, requests):
-        tasks = []
-        for request in requests:
-            tasks.append(client.call("method", request))
+````
+```python
+# Batch multiple requests
+async def batch_requests(client, requests):
+    tasks = []
+    for request in requests:
+        tasks.append(client.call("method", request))
 
-        return await asyncio.gather(*tasks)
-    ```
+    return await asyncio.gather(*tasks)
+```
+````
 
 === "Streaming for Large Data"
 
-    ```python
-    # Use streaming for large responses
-    async def stream_large_data(client):
-        async for chunk in client.stream_call("get_large_data", request):
-            process_chunk(chunk)
-    ```
+````
+```python
+# Use streaming for large responses
+async def stream_large_data(client):
+    async for chunk in client.stream_call("get_large_data", request):
+        process_chunk(chunk)
+```
+````
 
 #### Problem: Memory leaks
 
 **Diagnosis:**
+
 ```python
 import psutil
 import gc
@@ -286,39 +313,45 @@ class MemoryMonitor:
 
 === "Proper Resource Cleanup"
 
-    ```python
-    # Always use context managers
-    async with RPCPluginClient() as client:
-        result = await client.call("method", request)
+````
+```python
+# Always use context managers
+async with RPCPluginClient() as client:
+    result = await client.call("method", request)
 
-    # Or explicit cleanup
-    client = RPCPluginClient()
-    try:
-        await client.connect()
-        result = await client.call("method", request)
-    finally:
-        await client.close()
-    ```
+# Or explicit cleanup
+client = RPCPluginClient()
+try:
+    await client.connect()
+    result = await client.call("method", request)
+finally:
+    await client.close()
+```
+````
 
 === "Connection Pooling"
 
-    ```python
-    # Reuse connections instead of creating new ones
-    pool = ConnectionPool(max_size=10)
-    # Use pool for multiple requests
-    ```
+````
+```python
+# Reuse connections instead of creating new ones
+pool = ConnectionPool(max_size=10)
+# Use pool for multiple requests
+```
+````
 
 ### 4. Serialization Issues
 
 #### Problem: Protobuf serialization errors
 
 **Symptoms:**
+
 ```
 google.protobuf.message.DecodeError: Error parsing message
 TypeError: Couldn't build proto file into descriptor pool
 ```
 
 **Diagnosis:**
+
 ```python
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.message import Message
@@ -349,49 +382,57 @@ def diagnose_protobuf_issue(message: Message):
 
 === "Version Mismatches"
 
-    ```bash
-    # Check protobuf versions
-    uv run python -c "import importlib.metadata as m; print(m.version('protobuf'))"
+````
+```bash
+# Check protobuf versions
+uv run python -c "import importlib.metadata as m; print(m.version('protobuf'))"
 
-    # Regenerate protobuf files
-    python -m grpc_tools.protoc --python_out=. --grpc_python_out=. *.proto
-    ```
+# Regenerate protobuf files
+python -m grpc_tools.protoc --python_out=. --grpc_python_out=. *.proto
+```
+````
 
 === "Message Validation"
 
-    ```python
-    def validate_message(message):
-        """Validate protobuf message."""
-        try:
-            message.SerializeToString()
-            return True
-        except Exception as e:
-            print(f"Message validation failed: {e}")
-            return False
-    ```
+````
+```python
+def validate_message(message):
+    """Validate protobuf message."""
+    try:
+        message.SerializeToString()
+        return True
+    except Exception as e:
+        print(f"Message validation failed: {e}")
+        return False
+```
+````
 
 === "Field Type Mismatches"
 
-    ```python
-    # Ensure correct field types
-    request = MyRequest(
-        id=int(user_id),              # Ensure integer
-        name=str(name),                # Ensure string
-        timestamp=int(time.time()),    # Ensure integer timestamp
-    )
-    ```
+````
+```python
+# Ensure correct field types
+request = MyRequest(
+    id=int(user_id),              # Ensure integer
+    name=str(name),                # Ensure string
+    timestamp=int(time.time()),    # Ensure integer timestamp
+)
+```
+````
 
 ### 5. Authentication Issues
 
 #### Problem: JWT token validation failures
 
 **Symptoms:**
+
 ```
 jwt.InvalidTokenError: Invalid token
 grpc.RpcError: UNAUTHENTICATED: Invalid token
 ```
 
 **Diagnosis:**
+
 ```python
 import jwt
 import time
@@ -433,22 +474,26 @@ def diagnose_jwt_token(token: str, secret: str, algorithm: str = 'HS256'):
 
 === "Token Expiration"
 
-    ```python
-    # Generate token with longer expiration
-    payload = {
-        'user_id': 123,
-        'exp': int(time.time()) + 7200  # 2 hours
-    }
-    ```
+````
+```python
+# Generate token with longer expiration
+payload = {
+    'user_id': 123,
+    'exp': int(time.time()) + 7200  # 2 hours
+}
+```
+````
 
 === "Secret Key Mismatches"
 
-    ```python
-    # Ensure consistent secret across client and server
-    SECRET_KEY = os.getenv('PLUGIN_JWT_SECRET')
-    if not SECRET_KEY:
-        raise ValueError("PLUGIN_JWT_SECRET environment variable not set")
-    ```
+````
+```python
+# Ensure consistent secret across client and server
+SECRET_KEY = os.getenv('PLUGIN_JWT_SECRET')
+if not SECRET_KEY:
+    raise ValueError("PLUGIN_JWT_SECRET environment variable not set")
+```
+````
 
 ## Debugging Tools
 
@@ -599,10 +644,10 @@ if __name__ == "__main__":
 ## Best Practices
 
 1. **Start with the Basics** - Check network connectivity, configuration, and resource availability first
-2. **Enable Logging** - Use debug logging to understand what's happening
-3. **Isolate the Problem** - Create minimal reproduction cases
-4. **Check Documentation** - Review relevant guides and API documentation
-5. **Search Issues** - Look for similar reported issues
-6. **Provide Context** - Include diagnostic information when reporting issues
+1. **Enable Logging** - Use debug logging to understand what's happening
+1. **Isolate the Problem** - Create minimal reproduction cases
+1. **Check Documentation** - Review relevant guides and API documentation
+1. **Search Issues** - Look for similar reported issues
+1. **Provide Context** - Include diagnostic information when reporting issues
 
 Remember: systematic diagnosis is key to effective troubleshooting. Always check the most likely causes first before investigating less common issues.

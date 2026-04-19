@@ -2,22 +2,24 @@
 
 Create a complete Echo plugin with custom RPC methods. This tutorial builds on the [Quick Start](quick-start.md) to show you how to implement a real service with Protocol Buffers and gRPC.
 
-!!! tip "Tutorial Code vs Production Code"
-    This tutorial shows **simplified examples for teaching** purposes.
+!!! tip "Tutorial Code vs Production Code" This tutorial shows **simplified examples for teaching** purposes.
 
-    **For complete, production-focused implementation**, see:
+```
+**For complete, production-focused implementation**, see:
 
-    - `examples/echo_server.py` - Full Echo server with comprehensive error handling
-    - `examples/echo_client.py` - Full Echo client with production patterns
-    - `examples/proto/echo.proto` - Complete Protocol Buffer definition
+- `examples/echo_server.py` - Full Echo server with comprehensive error handling
+- `examples/echo_client.py` - Full Echo client with production patterns
+- `examples/proto/echo.proto` - Complete Protocol Buffer definition
 
-    Run with: `python examples/echo_client.py`
+Run with: `python examples/echo_client.py`
 
-    → [Example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+→ [Example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+```
 
 ## What You'll Build
 
 An Echo plugin that:
+
 - Accepts text messages from the host application
 - Returns modified echo responses
 - Uses Protocol Buffers for type-safe communication
@@ -75,6 +77,7 @@ python -m grpc_tools.protoc \
 ```
 
 This generates three files:
+
 - `echo_pb2.py` - Message classes (`EchoRequest`, `EchoResponse`)
 - `echo_pb2_grpc.py` - Service classes and registration functions
 - `echo_pb2.pyi` - Type hints for better IDE support
@@ -295,26 +298,31 @@ Expected output:
 ### Key Components
 
 1. **Protocol Buffers** (`.proto` file)
+
    - Defines service interface and message types
    - Language-agnostic schema
    - Generates type-safe Python code
 
-2. **Service Handler**
+1. **Service Handler**
+
    - Implements business logic
    - Inherits from generated servicer class
    - Async methods for performance
 
-3. **Protocol Bridge**
+1. **Protocol Bridge**
+
    - Connects your service to Pyvider RPC Plugin
    - Provides service metadata to the framework
    - Handles registration with gRPC server
 
-4. **Plugin Server**
+1. **Plugin Server**
+
    - Main executable launched by host
    - Manages handshake and connection lifecycle
    - Serves RPC requests
 
-5. **Host Application**
+1. **Host Application**
+
    - Launches and manages plugin process
    - Creates gRPC client stubs
    - Makes RPC calls to plugin
@@ -349,7 +357,7 @@ Now that you understand the plugin architecture:
 For focused, executable examples (15-30 lines each):
 
 - **[Basic Server](../examples/quick-start.md)** - Minimal factory-based server
-- **[Health Checks](../examples/quick-start.md)** - Health monitoring integration  
+- **[Health Checks](../examples/quick-start.md)** - Health monitoring integration
 - **[Rate Limiting](../examples/quick-start.md)** - Request throttling patterns
 - **[Custom Protocol](../examples/quick-start.md)** - Like the Echo example above
 
@@ -376,6 +384,7 @@ For focused, executable examples (15-30 lines each):
 ## Common Issues
 
 ### Import Errors
+
 ```bash
 # Make sure generated files are in Python path
 export PYTHONPATH="${PYTHONPATH}:$(pwd)"
@@ -387,6 +396,7 @@ touch echo_service/__init__.py
 ```
 
 ### Protocol Compilation Issues
+
 ```bash
 # Install/upgrade protobuf compiler
 uv add --group dev grpcio-tools
@@ -396,6 +406,7 @@ python -m grpc_tools.protoc --version
 ```
 
 ### Connection Timeouts
+
 ```bash
 # Check if plugin starts successfully
 python echo_plugin.py

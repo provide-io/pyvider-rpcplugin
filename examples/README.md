@@ -6,12 +6,12 @@ This directory contains a comprehensive collection of executable examples demons
 
 To run the quick start example:
 
-1.  **Navigate to the project root directory** (if not already there).
-2.  **Run the client script**:
-    ```bash
-    python examples/quick_start_client.py
-    ```
-    This script will launch the `dummy_server.py` plugin and demonstrate a basic connection.
+1. **Navigate to the project root directory** (if not already there).
+1. **Run the client script**:
+   ```bash
+   python examples/quick_start_client.py
+   ```
+   This script will launch the `dummy_server.py` plugin and demonstrate a basic connection.
 
 Each example script automatically configures the Python path to find the `pyvider` modules from the project's `src` directory via `example_utils.py`.
 
@@ -19,50 +19,50 @@ Each example script automatically configures the Python path to find the `pyvide
 
 ### Getting Started Examples
 
-| File                         | Description                                                    |
-| :--------------------------- | :------------------------------------------------------------- |
-| **`quick_start_client.py`**  | 🚀 Basic client launching `dummy_server.py`                    |
-| **`dummy_server.py`**        | Minimal plugin server used by other examples                   |
+| File                        | Description                                  |
+| :-------------------------- | :------------------------------------------- |
+| **`quick_start_client.py`** | 🚀 Basic client launching `dummy_server.py`  |
+| **`dummy_server.py`**       | Minimal plugin server used by other examples |
 
 ### Core Concepts
 
-| File                            | Description                                                 |
-| :------------------------------ | :---------------------------------------------------------- |
-| **`server_setup_concepts.py`**  | ⚙️ Server configuration patterns and concepts                |
-| **`client_setup_concepts.py`**  | 🔗 Client implementation concepts and patterns              |
-| **`transport_options_demo.py`** | 🚚 Demonstrates Unix socket vs TCP transport classes        |
+| File                            | Description                                          |
+| :------------------------------ | :--------------------------------------------------- |
+| **`server_setup_concepts.py`**  | ⚙️ Server configuration patterns and concepts        |
+| **`client_setup_concepts.py`**  | 🔗 Client implementation concepts and patterns       |
+| **`transport_options_demo.py`** | 🚚 Demonstrates Unix socket vs TCP transport classes |
 
 ### Complete Service Examples
 
-| File                      | Description                                                    |
-| :------------------------ | :------------------------------------------------------------- |
-| **`echo_server.py`**      | 📢 Echo service: Server implementation                         |
-| **`echo_client.py`**      | 💻 Echo service: Client launching `echo_server.py`             |
-| **`e2e_greeter_server.py`** | 🌐 End-to-end Greeter service: Server implementation         |
-| **`e2e_greeter_client.py`** | 🌐 End-to-end Greeter service: Client launching server       |
+| File                        | Description                                            |
+| :-------------------------- | :----------------------------------------------------- |
+| **`echo_server.py`**        | 📢 Echo service: Server implementation                 |
+| **`echo_client.py`**        | 💻 Echo service: Client launching `echo_server.py`     |
+| **`e2e_greeter_server.py`** | 🌐 End-to-end Greeter service: Server implementation   |
+| **`e2e_greeter_client.py`** | 🌐 End-to-end Greeter service: Client launching server |
 
 ### Security Examples
 
-| File                           | Description                                              |
-| :----------------------------- | :------------------------------------------------------- |
-| **`security_mtls_example.py`** | 🔒 mTLS certificate setup & security patterns            |
+| File                           | Description                                   |
+| :----------------------------- | :-------------------------------------------- |
+| **`security_mtls_example.py`** | 🔒 mTLS certificate setup & security patterns |
 
 ### Advanced Topics
 
-| File                                  | Description                                                      |
-| :------------------------------------ | :--------------------------------------------------------------- |
-| **`async_patterns_demo.py`**          | ⚡ Advanced asyncio patterns relevant to RPC development          |
-| **`error_handling_demo.py`**          | ⚠️ Robust error management patterns and exception handling        |
-| **`custom_protocols_demo.py`**        | 🔧 Conceptual custom protocol definitions & middleware ideas     |
-| **`performance_tuning_concepts.py`**  | 📈 Performance benchmarking & optimization concepts              |
-| **`telemetry_demo.py`**               | 📊 Telemetry and observability integration                       |
+| File                                 | Description                                                  |
+| :----------------------------------- | :----------------------------------------------------------- |
+| **`async_patterns_demo.py`**         | ⚡ Advanced asyncio patterns relevant to RPC development     |
+| **`error_handling_demo.py`**         | ⚠️ Robust error management patterns and exception handling   |
+| **`custom_protocols_demo.py`**       | 🔧 Conceptual custom protocol definitions & middleware ideas |
+| **`performance_tuning_concepts.py`** | 📈 Performance benchmarking & optimization concepts          |
+| **`telemetry_demo.py`**              | 📊 Telemetry and observability integration                   |
 
 ### Production & Deployment
 
-| File                                   | Description                                                   |
-| :------------------------------------- | :------------------------------------------------------------ |
-| **`production_config_discussion.py`**  | 🏭 Discussion of production deployment patterns               |
-| **`direct_client_connection.py`**      | 🔌 Client connecting directly to an already running server    |
+| File                                  | Description                                                |
+| :------------------------------------ | :--------------------------------------------------------- |
+| **`production_config_discussion.py`** | 🏭 Discussion of production deployment patterns            |
+| **`direct_client_connection.py`**     | 🔌 Client connecting directly to an already running server |
 
 ## 🎯 Featured Examples
 
@@ -71,10 +71,12 @@ Each example script automatically configures the Python path to find the `pyvide
 A fundamental client-server example demonstrating basic RPC communication using a custom `Echo` service defined in `examples/proto/echo.proto`.
 
 **Running the Echo Service:**
+
 ```bash
 # From the project root directory:
 python examples/echo_client.py
 ```
+
 The client will launch `echo_server.py`, connect to it, send a message, and print the reply.
 
 ### End-to-End Greeter Service
@@ -82,10 +84,12 @@ The client will launch `echo_server.py`, connect to it, send a message, and prin
 A client-server example demonstrating a true RPC call with a custom protobuf service defined in `examples/proto/e2e_greeting.proto`.
 
 **Running the E2E Greeter Service:**
+
 ```bash
 # From the project root directory:
 python examples/e2e_greeter_client.py
 ```
+
 The client will launch `e2e_greeter_server.py`, connect, make an RPC call, print the reply, and then both will shut down.
 
 ## 🏃‍♂️ Running Examples
@@ -98,13 +102,14 @@ The client will launch `e2e_greeter_server.py`, connect, make an RPC call, print
 
 ### Environment Setup
 
-The examples are designed to be run from the root of the `pyvider-rpcplugin` repository.
-Each example script (e.g., `quick_start_client.py`) typically includes:
+The examples are designed to be run from the root of the `pyvider-rpcplugin` repository. Each example script (e.g., `quick_start_client.py`) typically includes:
+
 ```python
 # For scripts inside examples/ directory
 import example_utils
 example_utils.configure_for_example()
 ```
+
 This utility function automatically adjusts `sys.path` to ensure that the `pyvider.rpcplugin` library from the `src/` directory and `example_utils` itself are correctly imported.
 
 ### Running Individual Examples
@@ -148,25 +153,25 @@ python examples/production_config_discussion.py
 ### For Beginners
 
 1. Start with **Getting Started** - run `quick_start_client.py`
-2. Explore server concepts with `server_setup_concepts.py`
-3. Understand client concepts with `client_setup_concepts.py`
-4. Run the **Echo Service** (`echo_client.py`) to see a full client/server RPC interaction
+1. Explore server concepts with `server_setup_concepts.py`
+1. Understand client concepts with `client_setup_concepts.py`
+1. Run the **Echo Service** (`echo_client.py`) to see a full client/server RPC interaction
 
 ### For Intermediate Users
 
 1. Study transport options with `transport_options_demo.py`
-2. Explore async patterns with `async_patterns_demo.py`
-3. Review error handling with `error_handling_demo.py`
-4. Run the **E2E Greeter Service** (`e2e_greeter_client.py`)
+1. Explore async patterns with `async_patterns_demo.py`
+1. Review error handling with `error_handling_demo.py`
+1. Run the **E2E Greeter Service** (`e2e_greeter_client.py`)
 
 ### For Advanced Users
 
 1. Master mTLS with `security_mtls_example.py`
-2. Understand production configurations with `production_config_discussion.py`
-3. Analyze custom protocol concepts with `custom_protocols_demo.py`
-4. Review performance concepts with `performance_tuning_concepts.py`
-5. Study observability with `telemetry_demo.py`
-6. Understand direct client connections (for testing/debugging) with `direct_client_connection.py`
+1. Understand production configurations with `production_config_discussion.py`
+1. Analyze custom protocol concepts with `custom_protocols_demo.py`
+1. Review performance concepts with `performance_tuning_concepts.py`
+1. Study observability with `telemetry_demo.py`
+1. Understand direct client connections (for testing/debugging) with `direct_client_connection.py`
 
 ## 🔧 Troubleshooting
 
@@ -175,12 +180,14 @@ python examples/production_config_discussion.py
 #### Import Errors
 
 If you encounter import errors like `ModuleNotFoundError: No module named 'pyvider'` or `No module named 'example_utils'`:
+
 - Ensure you are running the example script from the project's root directory (e.g., `python examples/quick_start_client.py`)
 - The `example_utils.configure_for_example()` call at the beginning of most scripts is designed to set up `sys.path` correctly
 
 #### Connection Timeouts
 
 If examples time out:
+
 - Check that no other processes are using the same ports/socket paths
 - Verify firewall settings aren't blocking local connections
 - Check logs for specific error messages
@@ -198,12 +205,12 @@ If examples time out:
 When adding new examples:
 
 1. Use descriptive names that clearly indicate the example's purpose
-2. Include comprehensive docstrings and comments
-3. Add appropriate logging with `from provide.foundation import logger`
-4. Update this README with the new example in the appropriate category
-5. Ensure examples are self-contained and runnable where possible, or provide clear instructions if they depend on other components
-6. Follow the established patterns for path resolution and `example_utils`
+1. Include comprehensive docstrings and comments
+1. Add appropriate logging with `from provide.foundation import logger`
+1. Update this README with the new example in the appropriate category
+1. Ensure examples are self-contained and runnable where possible, or provide clear instructions if they depend on other components
+1. Follow the established patterns for path resolution and `example_utils`
 
----
+______________________________________________________________________
 
 **Happy coding with pyvider-rpcplugin!** 🐍🚀

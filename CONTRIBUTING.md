@@ -12,12 +12,14 @@ Thank you for your interest in contributing to pyvider-rpcplugin! This document 
 ### Development Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/provide-io/pyvider-rpcplugin.git
    cd pyvider-rpcplugin
    ```
 
-2. Set up the development environment:
+1. Set up the development environment:
+
    ```bash
    uv sync
    ```
@@ -194,19 +196,19 @@ async def start_server(
 When adding new features or changing APIs:
 
 1. Update relevant docstrings
-2. Update `README.md` if adding user-facing features
-3. Update documentation in `docs/` directory
-4. Update `CHANGELOG.md` under `[Unreleased]`
+1. Update `README.md` if adding user-facing features
+1. Update documentation in `docs/` directory
+1. Update `CHANGELOG.md` under `[Unreleased]`
 
 ## Development Guidelines
 
 ### Architecture Principles
 
 1. **Async-First Design**: Use async/await throughout
-2. **Transport Abstraction**: All communication through `RPCPluginTransport`
-3. **Type Safety**: Comprehensive type annotations required
-4. **Security by Default**: mTLS and handshake validation
-5. **Factory Pattern**: Use factory functions for common setups
+1. **Transport Abstraction**: All communication through `RPCPluginTransport`
+1. **Type Safety**: Comprehensive type annotations required
+1. **Security by Default**: mTLS and handshake validation
+1. **Factory Pattern**: Use factory functions for common setups
 
 ### Logging
 
@@ -215,6 +217,7 @@ When adding new features or changing APIs:
 - Include structured context in log messages
 
 Example:
+
 ```python
 from provide.foundation import logger
 
@@ -233,25 +236,29 @@ logger.debug("Connection established", transport=transport_type, peer=peer_addr)
 ### Pull Request Process
 
 1. Create a feature branch from `main`:
+
    ```bash
    git checkout -b feature/your-feature-name main
    ```
 
-2. Make your changes and commit with clear messages:
+1. Make your changes and commit with clear messages:
+
    ```bash
    git commit -m "Add feature: description of what was added"
    ```
 
-3. Ensure all tests pass and code quality checks pass:
+1. Ensure all tests pass and code quality checks pass:
+
    ```bash
    uv run pytest -n auto
    uv run ruff check src tests
    uv run mypy src/
    ```
 
-4. Push your branch and create a pull request
+1. Push your branch and create a pull request
 
-5. Ensure your PR:
+1. Ensure your PR:
+
    - Has a clear title and description
    - References any related issues
    - Includes tests for new functionality
@@ -266,6 +273,7 @@ logger.debug("Connection established", transport=transport_type, peer=peer_addr)
 - Reference issues and pull requests when relevant
 
 Examples:
+
 - `Add Unix domain socket transport support`
 - `Fix handshake timeout handling`
 - `Update documentation for client configuration`

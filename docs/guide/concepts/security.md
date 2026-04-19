@@ -233,6 +233,7 @@ if __name__ == "__main__":
 ### Certificate Management
 
 **Certificate Storage:**
+
 ```python
 # Secure certificate storage
 import os
@@ -246,15 +247,16 @@ cert_dir.mkdir(mode=0o700, exist_ok=True)
 cert_file.chmod(0o600)  # Owner read/write only
 ```
 
-**Certificate Rotation:**
-Implement certificate renewal workflow before expiration (typically 30-90 days). This involves:
+**Certificate Rotation:** Implement certificate renewal workflow before expiration (typically 30-90 days). This involves:
+
 1. Generating new certificates using external tools (OpenSSL, cert-manager, etc.)
-2. Updating certificate files on disk
-3. Restarting plugin services to pick up new certificates
+1. Updating certificate files on disk
+1. Restarting plugin services to pick up new certificates
 
 ### Runtime Security
 
 **Principle of Least Privilege:**
+
 ```python
 import subprocess
 
@@ -269,6 +271,7 @@ plugin_process = subprocess.Popen(
 ```
 
 **Resource Limits:**
+
 ```python
 import resource
 
@@ -287,6 +290,7 @@ def limit_plugin_resources():
 ### Network Security
 
 **Transport Security:**
+
 ```python
 # Always use encrypted transports in production
 configure(
@@ -297,6 +301,7 @@ configure(
 ```
 
 **Firewall Configuration:**
+
 ```bash
 # Block plugin ports from external access
 sudo ufw deny 8000:9000/tcp
@@ -348,6 +353,7 @@ async def security_health_check(client):
 ### Certificate Problems
 
 **Invalid Certificate:**
+
 ```bash
 # Check certificate validity
 openssl x509 -in server.crt -text -noout
@@ -357,6 +363,7 @@ openssl verify -CAfile ca.crt server.crt
 ```
 
 **Permission Issues:**
+
 ```bash
 # Fix certificate permissions
 chmod 600 *.key  # Private keys
@@ -367,12 +374,14 @@ chown plugin-user:plugin-group cert-dir/
 ### mTLS Handshake Failures
 
 **Common causes:**
+
 - Certificate expiration
 - Mismatched CA certificates
 - Incorrect Subject Alternative Names
 - Clock synchronization issues
 
 **Debugging:**
+
 ```python
 # Enable debug logging
 configure(log_level="DEBUG")
@@ -396,15 +405,18 @@ logger.info("Certificate debugging would use external tools or libraries")
 ## Implementation Resources
 
 ### Complete Security Implementation
+
 - **[Security Implementation Guide](../security/index.md)** - Step-by-step security setup with practical examples, certificate management, and production patterns
 - **[mTLS Configuration Guide](../security/mtls.md)** - Detailed mutual TLS setup and certificate management
 - **[Certificate Management Guide](../security/certificates.md)** - Complete certificate lifecycle management
 
 ### Configuration Integration
+
 - **[Configuration Guide](../config/index.md)** - Environment-driven security configuration with validation patterns
 - **[Production Configuration](../config/advanced.md)** - Production-focused security configuration examples
 
 ### Configuration Documentation
+
 - **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ## Related Concepts

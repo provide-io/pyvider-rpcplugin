@@ -4,57 +4,60 @@
 
 This page provides an overview of the configuration system and links to detailed documentation for each configuration area.
 
-!!! warning "Security-First Design: mTLS Enabled by Default"
-    **`PLUGIN_AUTO_MTLS` defaults to `True`** for security-first design. This means mutual TLS (mTLS) is **automatically enabled** for all connections unless explicitly disabled.
+!!! warning "Security-First Design: mTLS Enabled by Default" **`PLUGIN_AUTO_MTLS` defaults to `True`** for security-first design. This means mutual TLS (mTLS) is **automatically enabled** for all connections unless explicitly disabled.
 
-    **For local development/testing:**
-    ```python
-    from pyvider.rpcplugin import configure
-    configure(auto_mtls=False)  # Disable mTLS for local testing
-    ```
+````
+**For local development/testing:**
+```python
+from pyvider.rpcplugin import configure
+configure(auto_mtls=False)  # Disable mTLS for local testing
+```
 
-    **For production:** Keep the default `auto_mtls=True` and provide proper certificates via:
-    - `PLUGIN_SERVER_CERT` and `PLUGIN_SERVER_KEY` (server-side)
-    - `PLUGIN_CLIENT_CERT` and `PLUGIN_CLIENT_KEY` (client-side)
+**For production:** Keep the default `auto_mtls=True` and provide proper certificates via:
+- `PLUGIN_SERVER_CERT` and `PLUGIN_SERVER_KEY` (server-side)
+- `PLUGIN_CLIENT_CERT` and `PLUGIN_CLIENT_KEY` (client-side)
 
-    See [Security Configuration](configuration-guide.md) for complete mTLS setup instructions.
+See [Security Configuration](configuration-guide.md) for complete mTLS setup instructions.
+````
 
-!!! info "Source of Truth"
-    All default values are defined in `src/pyvider/rpcplugin/defaults.py`. If you notice any discrepancies between this documentation and the actual defaults, the code is authoritative. You can verify defaults programmatically:
+!!! info "Source of Truth" All default values are defined in `src/pyvider/rpcplugin/defaults.py`. If you notice any discrepancies between this documentation and the actual defaults, the code is authoritative. You can verify defaults programmatically:
 
-    ```python
-    from pyvider.rpcplugin import defaults
-    print(f"Server host: {defaults.DEFAULT_PLUGIN_SERVER_HOST}")
-    print(f"Auto mTLS: {defaults.DEFAULT_PLUGIN_AUTO_MTLS}")  # True (security by default)
-    ```
+````
+```python
+from pyvider.rpcplugin import defaults
+print(f"Server host: {defaults.DEFAULT_PLUGIN_SERVER_HOST}")
+print(f"Auto mTLS: {defaults.DEFAULT_PLUGIN_AUTO_MTLS}")  # True (security by default)
+```
+````
 
-!!! note "Optional Configuration Fields"
-    Fields with `None` as the default value are **optional**. When set to `None`, the framework uses sensible fallback behavior:
+!!! note "Optional Configuration Fields" Fields with `None` as the default value are **optional**. When set to `None`, the framework uses sensible fallback behavior:
 
-    - **Certificate fields** (`plugin_client_cert`, `plugin_server_cert`, etc.): Auto-generate self-signed certificates when mTLS is enabled
-    - **String fields with empty defaults** (`""`): Feature is disabled or uses system defaults
-    - **Numeric fields**: Always have non-None defaults with documented values
+```
+- **Certificate fields** (`plugin_client_cert`, `plugin_server_cert`, etc.): Auto-generate self-signed certificates when mTLS is enabled
+- **String fields with empty defaults** (`""`): Feature is disabled or uses system defaults
+- **Numeric fields**: Always have non-None defaults with documented values
 
-    You only need to set these fields when you want to override the default behavior (e.g., providing production certificates).
+You only need to set these fields when you want to override the default behavior (e.g., providing production certificates).
+```
 
 ## Configuration Areas
 
 The configuration documentation is organized into focused areas. Choose the section relevant to your needs:
 
-| Configuration Area | Topics Covered | When to Use |
-|-------------------|----------------|-------------|
-| **[Client Configuration](configuration-guide.md)** | Retry logic, backoff, transport preferences, connection timeouts | Setting up plugin clients, tuning connection reliability |
-| **[Server Configuration](configuration-guide.md)** | Network binding, health checks, rate limiting, shutdown behavior | Configuring plugin servers, production deployment |
-| **[Security Configuration](configuration-guide.md)** | mTLS, certificates, authentication, insecure mode | Setting up secure communication, certificate management |
-| **[Advanced Configuration](advanced.md)** | gRPC tuning, timeouts, buffers, protocol versions, logging | Performance optimization, debugging, custom setups |
+| Configuration Area                                   | Topics Covered                                                   | When to Use                                              |
+| ---------------------------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| **[Client Configuration](configuration-guide.md)**   | Retry logic, backoff, transport preferences, connection timeouts | Setting up plugin clients, tuning connection reliability |
+| **[Server Configuration](configuration-guide.md)**   | Network binding, health checks, rate limiting, shutdown behavior | Configuring plugin servers, production deployment        |
+| **[Security Configuration](configuration-guide.md)** | mTLS, certificates, authentication, insecure mode                | Setting up secure communication, certificate management  |
+| **[Advanced Configuration](advanced.md)**            | gRPC tuning, timeouts, buffers, protocol versions, logging       | Performance optimization, debugging, custom setups       |
 
 ## Configuration System Overview
 
 The configuration system is based on the `RPCPluginConfig` class which extends Foundation's `RuntimeConfig`. All settings can be configured through:
 
 1. **Environment Variables** - Primary configuration method (recommended)
-2. **Programmatic API** - Direct attribute setting or `configure()` function
-3. **Configuration Files** - Via Foundation's config file support
+1. **Programmatic API** - Direct attribute setting or `configure()` function
+1. **Configuration Files** - Via Foundation's config file support
 
 ## Quick Configuration Examples
 
@@ -90,16 +93,17 @@ rpcplugin_config.plugin_rate_limit_enabled = True
 
 ### Using the configure() Function
 
-!!! info "Understanding configure() Parameters"
-    The `configure()` function has **5 explicit parameters** with type hints and IDE autocomplete:
+!!! info "Understanding configure() Parameters" The `configure()` function has **5 explicit parameters** with type hints and IDE autocomplete:
 
-    - `magic_cookie: str | None`
-    - `protocol_version: int | None`
-    - `transports: list[str] | None`
-    - `auto_mtls: bool | None`
-    - `handshake_timeout: float | None`
+```
+- `magic_cookie: str | None`
+- `protocol_version: int | None`
+- `transports: list[str] | None`
+- `auto_mtls: bool | None`
+- `handshake_timeout: float | None`
 
-    All other settings can be passed via `**kwargs`, which are automatically prefixed with `plugin_` and set on the config object.
+All other settings can be passed via `**kwargs`, which are automatically prefixed with `plugin_` and set on the config object.
+```
 
 ```python
 from pyvider.rpcplugin import configure
@@ -210,6 +214,7 @@ port = rpcplugin_config.plugin_server_port
 ```
 
 **When to use:**
+
 - Single plugin instance per process (most common)
 - Configuration from environment variables
 - Working with factory functions (`plugin_server()`, `plugin_client()`)
@@ -229,6 +234,7 @@ assert custom_config.plugin_server_port == int(os.getenv("PLUGIN_SERVER_PORT", "
 ```
 
 **When to use:**
+
 - Need isolated config that still respects environment
 - Testing scenarios requiring clean config state
 - Custom plugin initialization flows
@@ -251,12 +257,12 @@ manual_config.plugin_auto_mtls = True
 ```
 
 **When to use:**
+
 - Multi-instance configurations (see below)
 - Complete programmatic control needed
 - Testing with controlled config state
 
-!!! warning "Empty Instances Don't Load Environment"
-    `RPCPluginConfig()` creates an instance with **default values only**. It does NOT load `PLUGIN_*` environment variables. Use `RPCPluginConfig.from_env()` if you need environment variable support.
+!!! warning "Empty Instances Don't Load Environment" `RPCPluginConfig()` creates an instance with **default values only**. It does NOT load `PLUGIN_*` environment variables. Use `RPCPluginConfig.from_env()` if you need environment variable support.
 
 ## Multi-Instance Configuration
 
@@ -388,9 +394,9 @@ configure(**PROFILES[ENV])
 ### Configuration Not Loading
 
 1. **Check environment variable names** (case-sensitive, must start with `PLUGIN_`)
-2. **Verify type conversion** (e.g., `"true"` for booleans, not `"True"`)
-3. **Check for typos** in variable names
-4. **Enable debug logging** to see what configuration is loaded
+1. **Verify type conversion** (e.g., `"true"` for booleans, not `"True"`)
+1. **Check for typos** in variable names
+1. **Enable debug logging** to see what configuration is loaded
 
 ```python
 configure(log_level="DEBUG")
@@ -400,30 +406,33 @@ configure(log_level="DEBUG")
 ### Invalid Configuration Values
 
 1. **Review validation rules** in `src/pyvider/rpcplugin/config/validators.py`
-2. **Check type requirements** (int, float, str, bool, list)
-3. **Verify value ranges** (e.g., ports 0-65535, positive timeouts)
+1. **Check type requirements** (int, float, str, bool, list)
+1. **Verify value ranges** (e.g., ports 0-65535, positive timeouts)
 
 ### Multi-Instance Conflicts
 
 1. **Use unique configuration names** when registering
-2. **Avoid modifying global `rpcplugin_config`** when using multiple instances
-3. **Consider configuration manager** for complex multi-instance setups
+1. **Avoid modifying global `rpcplugin_config`** when using multiple instances
+1. **Consider configuration manager** for complex multi-instance setups
 
 ## Next Steps
 
 Now that you understand configuration:
 
 1. **Review** your specific configuration area:
+
    - [Client Configuration](configuration-guide.md) for client setup
    - [Server Configuration](configuration-guide.md) for server setup
    - [Security Configuration](configuration-guide.md) for mTLS
    - [Advanced Configuration](advanced.md) for tuning
 
-2. **Check** configuration examples in:
+1. **Check** configuration examples in:
+
    - [Production Guide](advanced.md) for deployment patterns
    - [Security Guide](../security/index.md) for security setup
 
-3. **Explore** the complete API:
+1. **Explore** the complete API:
+
    - [API Reference](../../reference/index.md) for configuration classes
 
 ## Related Topics
@@ -432,6 +441,6 @@ Now that you understand configuration:
 - **[Production Configuration](advanced.md)** - Production deployment patterns
 - **[Configuration API Reference](../../reference/index.md)** - Complete API docs
 
----
+______________________________________________________________________
 
 **Navigation:** [← Config Index](index.md) | [Client Config →](configuration-guide.md)

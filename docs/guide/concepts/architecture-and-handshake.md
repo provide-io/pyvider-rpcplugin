@@ -221,10 +221,10 @@ class MyServiceServicer:
 The handshake establishes secure, authenticated connections before any RPC operations. It follows a multi-phase negotiation:
 
 1. **Transport Establishment** - Set up underlying communication channel
-2. **Magic Cookie Exchange** - Authenticate both parties
-3. **Protocol Negotiation** - Agree on communication protocols
-4. **Service Discovery** - Exchange available services and methods
-5. **Ready State** - Begin normal RPC operations
+1. **Magic Cookie Exchange** - Authenticate both parties
+1. **Protocol Negotiation** - Agree on communication protocols
+1. **Service Discovery** - Exchange available services and methods
+1. **Ready State** - Begin normal RPC operations
 
 ```
 ┌─────────────────┐                    ┌─────────────────┐
@@ -340,163 +340,167 @@ class FeatureNegotiator:
 
 === "Unix Socket Handshake"
 
-    ```python
-    import asyncio
-    import json
-    from pathlib import Path
+````
+```python
+import asyncio
+import json
+from pathlib import Path
 
-    class UnixSocketHandshake:
-        def __init__(self, socket_path: Path, magic_cookie: str):
-            self.socket_path = socket_path
-            self.magic_cookie = magic_cookie
+class UnixSocketHandshake:
+    def __init__(self, socket_path: Path, magic_cookie: str):
+        self.socket_path = socket_path
+        self.magic_cookie = magic_cookie
 
-        async def server_handshake(self, reader: asyncio.StreamReader,
-                                  writer: asyncio.StreamWriter) -> dict:
-            """Perform server-side handshake over Unix socket."""
-            try:
-                # 1. Receive client hello
-                hello_data = await reader.readuntil(b'\n')
-                client_hello = json.loads(hello_data.decode().strip())
+    async def server_handshake(self, reader: asyncio.StreamReader,
+                              writer: asyncio.StreamWriter) -> dict:
+        """Perform server-side handshake over Unix socket."""
+        try:
+            # 1. Receive client hello
+            hello_data = await reader.readuntil(b'\n')
+            client_hello = json.loads(hello_data.decode().strip())
 
-                # 2. Validate magic cookie
-                if client_hello.get("magic_cookie") != self.magic_cookie:
-                    raise HandshakeError("Invalid magic cookie")
-
-                # 3. Negotiate protocol
-                client_version = client_hello.get("protocol_version", "1.0")
-                if client_version not in ["1.0", "1.1"]:
-                    raise HandshakeError(f"Unsupported protocol version: {client_version}")
-
-                # 4. Send server hello
-                server_hello = {
-                    "magic_cookie": self.magic_cookie,
-                    "protocol_version": client_version,
-                    "features": {"streaming": True, "compression": "gzip"},
-                    "services": ["example.DataProcessor"]
-                }
-
-                hello_json = json.dumps(server_hello) + '\n'
-                writer.write(hello_json.encode())
-                await writer.drain()
-
-                return server_hello
-
-            except Exception as e:
-                writer.close()
-                await writer.wait_closed()
-                raise HandshakeError(f"Handshake failed: {e}")
-
-        async def client_handshake(self) -> dict:
-            """Perform client-side handshake over Unix socket."""
-            reader, writer = await asyncio.open_unix_connection(self.socket_path)
-
-            try:
-                # 1. Send client hello
-                client_hello = {
-                    "magic_cookie": self.magic_cookie,
-                    "protocol_version": "1.1",
-                    "features": {"streaming": True}
-                }
-
-                hello_json = json.dumps(client_hello) + '\n'
-                writer.write(hello_json.encode())
-                await writer.drain()
-
-                # 2. Receive server hello
-                hello_data = await reader.readuntil(b'\n')
-                server_hello = json.loads(hello_data.decode().strip())
-
-                # 3. Validate server cookie
-                if server_hello.get("magic_cookie") != self.magic_cookie:
-                    raise HandshakeError("Invalid server magic cookie")
-
-                return server_hello
-
-            except Exception as e:
-                writer.close()
-                await writer.wait_closed()
-                raise HandshakeError(f"Client handshake failed: {e}")
-    ```
-
-=== "TCP Handshake with mTLS"
-
-    ```python
-    import ssl
-    from provide.foundation.crypto import Certificate
-
-    class TcpMtlsHandshake:
-        def __init__(self, server_cert: Certificate, client_cert: Certificate,
-                     magic_cookie: str):
-            self.server_cert = server_cert
-            self.client_cert = client_cert
-            self.magic_cookie = magic_cookie
-
-        def create_ssl_context(self, is_server: bool) -> ssl.SSLContext:
-            """Create SSL context for mTLS."""
-            if is_server:
-                context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-                context.load_cert_chain(
-                    certfile=self.server_cert.cert_path,
-                    keyfile=self.server_cert.key_path
-                )
-                context.verify_mode = ssl.CERT_REQUIRED
-                context.load_verify_locations(cafile=self.client_cert.cert_path)
-            else:
-                context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-                context.load_cert_chain(
-                    certfile=self.client_cert.cert_path,
-                    keyfile=self.client_cert.key_path
-                )
-                context.check_hostname = False
-                context.load_verify_locations(cafile=self.server_cert.cert_path)
-
-            return context
-
-        async def server_handshake_mtls(self, host: str, port: int) -> dict:
-            """Perform server handshake with mTLS."""
-            ssl_context = self.create_ssl_context(is_server=True)
-
-            server = await asyncio.start_server(
-                self.handle_client_connection,
-                host, port,
-                ssl=ssl_context
-            )
-
-            return {"ssl_context": ssl_context, "server": server}
-
-        async def handle_client_connection(self, reader: asyncio.StreamReader,
-                                         writer: asyncio.StreamWriter):
-            """Handle individual client connection after mTLS."""
-            # mTLS validation already completed by SSL context
-            peer_cert = writer.get_extra_info('peercert')
-
-            if not peer_cert:
-                raise HandshakeError("Client certificate required")
-
-            # Continue with magic cookie handshake
-            await self.complete_handshake(reader, writer)
-
-        async def complete_handshake(self, reader: asyncio.StreamReader,
-                                    writer: asyncio.StreamWriter):
-            """Complete handshake after mTLS validation."""
-            # Magic cookie exchange over encrypted channel
-            client_data = await reader.readuntil(b'\n')
-            client_hello = json.loads(client_data.decode().strip())
-
+            # 2. Validate magic cookie
             if client_hello.get("magic_cookie") != self.magic_cookie:
-                raise HandshakeError("Invalid magic cookie after mTLS")
+                raise HandshakeError("Invalid magic cookie")
 
-            # Send server response
+            # 3. Negotiate protocol
+            client_version = client_hello.get("protocol_version", "1.0")
+            if client_version not in ["1.0", "1.1"]:
+                raise HandshakeError(f"Unsupported protocol version: {client_version}")
+
+            # 4. Send server hello
             server_hello = {
                 "magic_cookie": self.magic_cookie,
-                "tls_verified": True,
-                "protocol_version": "1.1"
+                "protocol_version": client_version,
+                "features": {"streaming": True, "compression": "gzip"},
+                "services": ["example.DataProcessor"]
             }
 
             hello_json = json.dumps(server_hello) + '\n'
             writer.write(hello_json.encode())
             await writer.drain()
-    ```
+
+            return server_hello
+
+        except Exception as e:
+            writer.close()
+            await writer.wait_closed()
+            raise HandshakeError(f"Handshake failed: {e}")
+
+    async def client_handshake(self) -> dict:
+        """Perform client-side handshake over Unix socket."""
+        reader, writer = await asyncio.open_unix_connection(self.socket_path)
+
+        try:
+            # 1. Send client hello
+            client_hello = {
+                "magic_cookie": self.magic_cookie,
+                "protocol_version": "1.1",
+                "features": {"streaming": True}
+            }
+
+            hello_json = json.dumps(client_hello) + '\n'
+            writer.write(hello_json.encode())
+            await writer.drain()
+
+            # 2. Receive server hello
+            hello_data = await reader.readuntil(b'\n')
+            server_hello = json.loads(hello_data.decode().strip())
+
+            # 3. Validate server cookie
+            if server_hello.get("magic_cookie") != self.magic_cookie:
+                raise HandshakeError("Invalid server magic cookie")
+
+            return server_hello
+
+        except Exception as e:
+            writer.close()
+            await writer.wait_closed()
+            raise HandshakeError(f"Client handshake failed: {e}")
+```
+````
+
+=== "TCP Handshake with mTLS"
+
+````
+```python
+import ssl
+from provide.foundation.crypto import Certificate
+
+class TcpMtlsHandshake:
+    def __init__(self, server_cert: Certificate, client_cert: Certificate,
+                 magic_cookie: str):
+        self.server_cert = server_cert
+        self.client_cert = client_cert
+        self.magic_cookie = magic_cookie
+
+    def create_ssl_context(self, is_server: bool) -> ssl.SSLContext:
+        """Create SSL context for mTLS."""
+        if is_server:
+            context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            context.load_cert_chain(
+                certfile=self.server_cert.cert_path,
+                keyfile=self.server_cert.key_path
+            )
+            context.verify_mode = ssl.CERT_REQUIRED
+            context.load_verify_locations(cafile=self.client_cert.cert_path)
+        else:
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            context.load_cert_chain(
+                certfile=self.client_cert.cert_path,
+                keyfile=self.client_cert.key_path
+            )
+            context.check_hostname = False
+            context.load_verify_locations(cafile=self.server_cert.cert_path)
+
+        return context
+
+    async def server_handshake_mtls(self, host: str, port: int) -> dict:
+        """Perform server handshake with mTLS."""
+        ssl_context = self.create_ssl_context(is_server=True)
+
+        server = await asyncio.start_server(
+            self.handle_client_connection,
+            host, port,
+            ssl=ssl_context
+        )
+
+        return {"ssl_context": ssl_context, "server": server}
+
+    async def handle_client_connection(self, reader: asyncio.StreamReader,
+                                     writer: asyncio.StreamWriter):
+        """Handle individual client connection after mTLS."""
+        # mTLS validation already completed by SSL context
+        peer_cert = writer.get_extra_info('peercert')
+
+        if not peer_cert:
+            raise HandshakeError("Client certificate required")
+
+        # Continue with magic cookie handshake
+        await self.complete_handshake(reader, writer)
+
+    async def complete_handshake(self, reader: asyncio.StreamReader,
+                                writer: asyncio.StreamWriter):
+        """Complete handshake after mTLS validation."""
+        # Magic cookie exchange over encrypted channel
+        client_data = await reader.readuntil(b'\n')
+        client_hello = json.loads(client_data.decode().strip())
+
+        if client_hello.get("magic_cookie") != self.magic_cookie:
+            raise HandshakeError("Invalid magic cookie after mTLS")
+
+        # Send server response
+        server_hello = {
+            "magic_cookie": self.magic_cookie,
+            "tls_verified": True,
+            "protocol_version": "1.1"
+        }
+
+        hello_json = json.dumps(server_hello) + '\n'
+        writer.write(hello_json.encode())
+        await writer.drain()
+```
+````
 
 ## Service Discovery
 

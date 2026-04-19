@@ -5,22 +5,20 @@ Pyvider RPC Plugin supports multiple transport layers for communication between 
 ## Transport Types
 
 ### Unix Domain Sockets (UDS)
+
 *Recommended for local communication*
 
 Unix Domain Sockets provide the highest performance for Inter-Process Communication (IPC) on the same machine.
 
-**Advantages:** Maximum performance, lower latency, file system permissions, resource efficient
-**Limitations:** Same host only, path length limits, not available on Windows
-**Best For:** High-performance local plugins, security-sensitive applications, production systems
+**Advantages:** Maximum performance, lower latency, file system permissions, resource efficient **Limitations:** Same host only, path length limits, not available on Windows **Best For:** High-performance local plugins, security-sensitive applications, production systems
 
 ### TCP Sockets
+
 *Universal compatibility*
 
 TCP sockets enable network communication, allowing plugins to run on different machines.
 
-**Advantages:** Network communication, universal platform support, standard protocol
-**Limitations:** Higher overhead, port management complexity, additional security considerations
-**Best For:** Distributed architectures, Windows environments, cross-machine communication
+**Advantages:** Network communication, universal platform support, standard protocol **Limitations:** Higher overhead, port management complexity, additional security considerations **Best For:** Distributed architectures, Windows environments, cross-machine communication
 
 ## Transport Selection
 
@@ -71,6 +69,7 @@ server = plugin_server(protocol=my_protocol, handler=my_handler, transport=unix_
 ```
 
 **Key Features:**
+
 - Automatic cleanup and collision detection
 - Configurable permissions and binding
 - Graceful error handling and fallbacks
@@ -78,22 +77,24 @@ server = plugin_server(protocol=my_protocol, handler=my_handler, transport=unix_
 ## Platform Considerations
 
 **Linux & macOS:** Full support for both Unix and TCP transports
+
 ```python
 configure(transports=["unix", "tcp"])  # Unix preferred, TCP fallback
 ```
 
 **Windows:** TCP transport only (Unix sockets are not supported)
+
 ```python
 configure(transports=["tcp"])  # TCP only
 ```
 
 ## Performance Characteristics
 
-| Transport | Throughput | Latency | CPU Usage |
-|-----------|------------|---------|-----------|
-| Unix Socket | **~45,000 msg/sec** | **~0.02ms** | Low |
-| TCP (localhost) | ~35,000 msg/sec | ~0.03ms | Medium |
-| TCP (network) | Varies by network | Varies by network | Medium |
+| Transport       | Throughput          | Latency           | CPU Usage |
+| --------------- | ------------------- | ----------------- | --------- |
+| Unix Socket     | **~45,000 msg/sec** | **~0.02ms**       | Low       |
+| TCP (localhost) | ~35,000 msg/sec     | ~0.03ms           | Medium    |
+| TCP (network)   | Varies by network   | Varies by network | Medium    |
 
 ### Optimization
 
@@ -108,11 +109,13 @@ configure(tcp_nodelay=True, tcp_buffer_size=65536, tcp_host="127.0.0.1")
 ## Security Considerations
 
 ### Unix Socket Security
+
 - File permissions and secure paths
 - Automatic cleanup on shutdown
 - Process credential validation
 
-### TCP Socket Security  
+### TCP Socket Security
+
 - Localhost binding (127.0.0.1)
 - Non-privileged ports (>1024)
 - mTLS for authentication
@@ -159,14 +162,15 @@ except TransportError as e:
 ## Troubleshooting
 
 ### Unix Socket Issues
-**Permission Denied:** Check file permissions with `ls -la`, fix with `chmod 600`
-**Address in Use:** Find processes with `lsof /path/to/socket.sock`, remove stale files
 
-### TCP Issues  
-**Port in Use:** Check with `netstat -tulpn | grep :port` or `lsof -i :port`, use `tcp_port=0` for auto-assignment
-**Connection Refused:** Verify server is listening, check firewall settings
+**Permission Denied:** Check file permissions with `ls -la`, fix with `chmod 600` **Address in Use:** Find processes with `lsof /path/to/socket.sock`, remove stale files
+
+### TCP Issues
+
+**Port in Use:** Check with `netstat -tulpn | grep :port` or `lsof -i :port`, use `tcp_port=0` for auto-assignment **Connection Refused:** Verify server is listening, check firewall settings
 
 ### Common Solutions
+
 ```python
 # Enable detailed logging
 configure(log_transport_details=True, log_level="DEBUG")
@@ -206,8 +210,9 @@ class RPCPluginTransport(ABC):
 ### Dynamic Selection
 
 The transport manager automatically scores and selects optimal transports based on:
+
 - **Security requirements** (Unix > mTLS > TCP)
-- **Network needs** (TCP required for remote communication)  
+- **Network needs** (TCP required for remote communication)
 - **Performance priority** (Unix fastest, mTLS has overhead)
 
 Available transports are scored and the highest-scoring option is selected automatically.
@@ -215,11 +220,13 @@ Available transports are scored and the highest-scoring option is selected autom
 ## Advanced Features
 
 ### Enhanced Security
+
 - **Process validation** for Unix sockets using peer credentials
-- **mTLS support** for TCP with certificate validation  
+- **mTLS support** for TCP with certificate validation
 - **Connection pooling** for high-throughput scenarios
 
 ### Performance Optimization
+
 ```python
 # High-performance configurations
 configure(
@@ -230,19 +237,23 @@ configure(
 ```
 
 ### Monitoring
+
 Built-in metrics track connection counts, latency, throughput, and error rates for transport performance analysis.
 
 ## Implementation Resources
 
 ### Server Transport Configuration
+
 - **[Server Transport Configuration](../server/transports.md)** - Advanced transport configuration for production servers, including performance optimization, mTLS setup, and monitoring
 - **[Server Basic Setup](../server/basic-setup.md)** - How to configure transports in server implementations
 
 ### Configuration Integration
+
 - **[Configuration Guide](../config/index.md)** - Environment-driven transport configuration with examples for different deployment scenarios
 - **[Production Configuration](../config/advanced.md)** - Production transport configuration patterns
 
 ### Documentation
+
 - **[Configuration Reference](../config/configuration-reference.md)** - Transport configuration options
 - **[API Reference](../../reference/index.md)** - Auto-generated API documentation
 

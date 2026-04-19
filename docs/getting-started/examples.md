@@ -5,6 +5,7 @@ This section provides a comprehensive overview of all available examples in the 
 ## Quick Start Examples
 
 ### Echo Service
+
 The simplest example demonstrating basic server-client communication:
 
 ```bash
@@ -17,16 +18,19 @@ python echo_client.py
 ```
 
 **What it demonstrates:**
+
 - Basic server setup with protocol implementation
 - Client connection and RPC calls
 - Error handling and graceful shutdown
 
 **Files:**
+
 - `echo_server.py` - Server implementation
 - `echo_client.py` - Client implementation
 - `proto/echo.proto` - Protocol definition
 
 ### End-to-End Greeter
+
 A complete greeter service showing production patterns:
 
 ```bash
@@ -38,6 +42,7 @@ python examples/e2e_greeter_client.py
 ```
 
 **What it demonstrates:**
+
 - Custom protocol implementation
 - Service handler with business logic
 - Health checking and status monitoring
@@ -46,6 +51,7 @@ python examples/e2e_greeter_client.py
 ## Development Examples
 
 ### Quick Start Server
+
 Minimal server for rapid prototyping:
 
 ```python
@@ -61,10 +67,12 @@ async def main():
 ```
 
 **Files:**
+
 - `dummy_server.py`
 - `quick_start_client.py`
 
 ### Transport Configuration
+
 Examples showing different transport options:
 
 ```python
@@ -88,11 +96,13 @@ server = plugin_server(
 ```
 
 **File:**
+
 - `transport_options_demo.py`
 
 ## Advanced Examples
 
 ### Security and mTLS
+
 Comprehensive security setup with mutual TLS:
 
 ```python
@@ -128,15 +138,18 @@ server = plugin_server(protocol=protocol, handler=handler)
 ```
 
 **What it demonstrates:**
+
 - Certificate generation and management
 - mTLS configuration and validation
 - Secure client-server communication
 - Certificate rotation patterns
 
 **File:**
+
 - `security_mtls_example.py`
 
 ### Custom Protocols
+
 Building custom protocol implementations:
 
 ```python
@@ -150,17 +163,20 @@ class CustomProtocol(RPCPluginProtocol):
 ```
 
 **What it demonstrates:**
+
 - Protocol interface implementation
 - gRPC service integration
 - Service handler patterns
 - Method type configuration
 
 **File:**
+
 - `custom_protocols_demo.py`
 
 ## Configuration Examples
 
 ### Production Configuration
+
 Production-focused configuration patterns:
 
 ```python
@@ -177,15 +193,18 @@ def production_config():
 ```
 
 **What it demonstrates:**
+
 - Environment-specific configurations
 - Security best practices
 - Performance tuning options
 - Monitoring and observability setup
 
 **File:**
+
 - `production_config_discussion.py`
 
 ### Performance Tuning
+
 Performance optimization examples:
 
 ```python
@@ -201,17 +220,20 @@ configure(
 ```
 
 **What it demonstrates:**
+
 - gRPC performance tuning
 - Concurrency configuration
 - Resource optimization
 - Benchmarking patterns
 
 **File:**
+
 - `performance_tuning_concepts.py`
 
 ## Error Handling Examples
 
 ### Comprehensive Error Handling
+
 Production-grade error handling patterns:
 
 ```python
@@ -248,11 +270,13 @@ except RPCPluginError as e:
 ```
 
 **File:**
+
 - `error_handling_demo.py`
 
 ## Async Pattern Examples
 
 ### Advanced Async Patterns
+
 Modern async/await patterns for plugin development:
 
 ```python
@@ -288,6 +312,7 @@ async def concurrent_requests():
 ```
 
 **File:**
+
 - `async_patterns_demo.py`
 
 ## Running All Examples
@@ -332,22 +357,22 @@ examples/
 
 ## Example Categories
 
-| Category | Examples | Focus |
-|----------|----------|-------|
-| **Basic** | dummy_server, echo_server, echo_client | Getting started, basic patterns |
-| **Transport** | transport_options_demo, direct_client_connection | Unix sockets, TCP, direct connections |
-| **Security** | security_mtls_example | mTLS, certificates, authentication |
-| **Advanced** | async_patterns_demo, custom_protocols_demo, performance_tuning_concepts | Async patterns, custom protocols, performance |
-| **Configuration** | production_config_discussion | Production setup, environment variables |
-| **Error Handling** | error_handling_demo | Exception handling, recovery patterns |
-| **End-to-End** | e2e_greeter_server, e2e_greeter_client | Complete application examples |
+| Category           | Examples                                                                | Focus                                         |
+| ------------------ | ----------------------------------------------------------------------- | --------------------------------------------- |
+| **Basic**          | dummy_server, echo_server, echo_client                                  | Getting started, basic patterns               |
+| **Transport**      | transport_options_demo, direct_client_connection                        | Unix sockets, TCP, direct connections         |
+| **Security**       | security_mtls_example                                                   | mTLS, certificates, authentication            |
+| **Advanced**       | async_patterns_demo, custom_protocols_demo, performance_tuning_concepts | Async patterns, custom protocols, performance |
+| **Configuration**  | production_config_discussion                                            | Production setup, environment variables       |
+| **Error Handling** | error_handling_demo                                                     | Exception handling, recovery patterns         |
+| **End-to-End**     | e2e_greeter_server, e2e_greeter_client                                  | Complete application examples                 |
 
 ## Next Steps
 
 1. **Start with Basic Examples**: Begin with the Echo service for fundamental concepts
-2. **Explore Security**: Review mTLS examples for production readiness
-3. **Custom Development**: Use protocol and async examples for advanced features
-4. **Production Setup**: Follow configuration examples for deployment
+1. **Explore Security**: Review mTLS examples for production readiness
+1. **Custom Development**: Use protocol and async examples for advanced features
+1. **Production Setup**: Follow configuration examples for deployment
 
 ## Additional Resources
 
