@@ -205,13 +205,16 @@ module = [
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+# Proto-generated bindings lack .pyi stubs; protobuf populates class attrs
+# dynamically at module-load time, so mypy cannot see ConnInfo / StdioData /
+# Empty etc. statically. follow_imports='skip' makes them Any at import sites.
 module = [
-    "pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc",
-    "pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc",
-    "pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc",
+    "pyvider.rpcplugin.protocol.*",
     "pyvider.rpcplugin.health_servicer",
 ]
+follow_imports = "skip"
 ignore_errors = true
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # telemetry.py has type: ignore for OTEL fallback that only runs when OTEL is missing
