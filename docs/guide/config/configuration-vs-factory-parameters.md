@@ -4,17 +4,16 @@
 
 This guide clarifies the important distinction between **configuration options** and **factory function parameters** in pyvider-rpcplugin.
 
-!!! warning "Common Confusion"
-    A common mistake is trying to pass factory function parameters to `configure()` or set them as environment variables. This guide explains the difference and shows the correct usage.
+!!! warning "Common Confusion" A common mistake is trying to pass factory function parameters to `configure()` or set them as environment variables. This guide explains the difference and shows the correct usage.
 
 ## Quick Reference
 
-| Aspect | Configuration Options | Factory Parameters |
-|--------|----------------------|-------------------|
-| **Purpose** | Global settings that affect framework behavior | Per-instance settings for specific servers/clients |
-| **Scope** | Process-wide (all plugin instances) | Single plugin instance |
-| **How to Set** | `configure()`, `rpcplugin_config`, environment vars | Direct function arguments |
-| **Examples** | `auto_mtls`, `log_level`, `rate_limit_enabled` | `port`, `host`, `transport`, `command` |
+| Aspect         | Configuration Options                               | Factory Parameters                                 |
+| -------------- | --------------------------------------------------- | -------------------------------------------------- |
+| **Purpose**    | Global settings that affect framework behavior      | Per-instance settings for specific servers/clients |
+| **Scope**      | Process-wide (all plugin instances)                 | Single plugin instance                             |
+| **How to Set** | `configure()`, `rpcplugin_config`, environment vars | Direct function arguments                          |
+| **Examples**   | `auto_mtls`, `log_level`, `rate_limit_enabled`      | `port`, `host`, `transport`, `command`             |
 
 ## Configuration Options
 
@@ -235,12 +234,14 @@ server = plugin_server(
 ## When to Use What
 
 ### Use Configuration Options When:
+
 - Setting process-wide behavior (log level, timeouts)
 - Configuring security settings (mTLS, certificates)
 - Enabling/disabling features (rate limiting, health checks)
 - Setting defaults that apply to all instances
 
 ### Use Factory Parameters When:
+
 - Creating a specific server or client instance
 - Setting network binding (host, port for TCP)
 - Specifying transport details (socket path)
@@ -304,18 +305,19 @@ server = plugin_server(
 ```
 
 This is useful for:
+
 - Running multiple plugin instances with different configs
 - Testing with specific configurations
 - Per-service rate limits or timeouts
 
 ## Summary
 
-| What | How to Set | Example |
-|------|-----------|---------|
-| **Global config option** | `configure()`, `rpcplugin_config`, or env var | `configure(auto_mtls=True)` or `PLUGIN_AUTO_MTLS=true` |
-| **Server instance setting** | `plugin_server()` parameter | `plugin_server(..., port=8080)` |
-| **Client instance setting** | `plugin_client()` parameter | `plugin_client(command=[...])` |
-| **Instance config override** | `config` dict parameter | `plugin_server(..., config={"PLUGIN_...": value})` |
+| What                         | How to Set                                    | Example                                                |
+| ---------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| **Global config option**     | `configure()`, `rpcplugin_config`, or env var | `configure(auto_mtls=True)` or `PLUGIN_AUTO_MTLS=true` |
+| **Server instance setting**  | `plugin_server()` parameter                   | `plugin_server(..., port=8080)`                        |
+| **Client instance setting**  | `plugin_client()` parameter                   | `plugin_client(command=[...])`                         |
+| **Instance config override** | `config` dict parameter                       | `plugin_server(..., config={"PLUGIN_...": value})`     |
 
 ## See Also
 

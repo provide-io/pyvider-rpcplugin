@@ -9,7 +9,7 @@ Process isolation creates secure, controlled environments where plugins run with
 ### Key Benefits
 
 - **Security Boundaries**: Plugins cannot access host system resources
-- **Resource Limits**: Control CPU, memory, and disk usage  
+- **Resource Limits**: Control CPU, memory, and disk usage
 - **Network Isolation**: Restrict network access to specific hosts/ports
 - **Filesystem Protection**: Limit file system access with chroot jails
 - **Process Monitoring**: Track and limit plugin resource usage
@@ -49,16 +49,19 @@ async def isolated_plugin_example():
 ## Isolation Methods
 
 ### 1. **Sandbox Configuration**
+
 Configure comprehensive isolation settings including user/group isolation, filesystem restrictions, network limits, and resource quotas.
 
 → **Detailed Sandbox Configuration** - Configure comprehensive isolation settings
 
 ### 2. **Container Integration**
+
 Use Docker and Kubernetes for robust containerized plugin isolation with industry-standard security boundaries.
 
 → **Container Integration** - Use Docker and Kubernetes for robust isolation
 
 ### 3. **Resource Monitoring**
+
 Monitor and enforce resource limits with real-time tracking of CPU, memory, disk, and network usage.
 
 → **Process Monitoring** - Monitor and enforce resource limits
@@ -66,6 +69,7 @@ Monitor and enforce resource limits with real-time tracking of CPU, memory, disk
 ## Common Patterns
 
 ### Development Environment
+
 ```python
 # Lenient isolation for development
 config = SandboxConfig(
@@ -76,7 +80,8 @@ config = SandboxConfig(
 )
 ```
 
-### Production Environment  
+### Production Environment
+
 ```python
 # Strict isolation for production
 config = SandboxConfig(
@@ -91,6 +96,7 @@ config = SandboxConfig(
 ```
 
 ### High-Security Environment
+
 ```python
 # Maximum security isolation
 config = SandboxConfig(
@@ -131,11 +137,11 @@ async def safe_plugin_execution():
 ## Best Practices
 
 1. **Start Restrictive**: Begin with tight limits and relax based on monitoring
-2. **Monitor Resources**: Track CPU, memory, and network usage patterns
-3. **Use Containers**: Leverage Docker/Kubernetes for robust isolation
-4. **Test Isolation**: Verify isolation works with malicious test plugins
-5. **Log Everything**: Monitor all isolation events for security analysis
-6. **Regular Audits**: Review and update isolation policies regularly
+1. **Monitor Resources**: Track CPU, memory, and network usage patterns
+1. **Use Containers**: Leverage Docker/Kubernetes for robust isolation
+1. **Test Isolation**: Verify isolation works with malicious test plugins
+1. **Log Everything**: Monitor all isolation events for security analysis
+1. **Regular Audits**: Review and update isolation policies regularly
 
 ## Security Considerations
 

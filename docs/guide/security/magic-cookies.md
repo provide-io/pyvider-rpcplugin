@@ -9,7 +9,7 @@ Magic cookies are secure random tokens that authenticate plugin connections. The
 ### Key Benefits
 
 - **Lightweight Security**: No PKI infrastructure required
-- **Fast Authentication**: Minimal overhead compared to certificates  
+- **Fast Authentication**: Minimal overhead compared to certificates
 - **Process Isolation**: Each plugin gets unique authentication tokens
 - **Automatic Generation**: Cryptographically secure random generation
 - **Environment Integration**: Seamless integration with configuration management
@@ -45,6 +45,7 @@ async def magic_cookie_example():
 ## Core Concepts
 
 ### 1. **Cookie Generation**
+
 Magic cookies are generated using cryptographically secure random number generators with sufficient entropy to prevent prediction or brute force attacks.
 
 ```python
@@ -61,6 +62,7 @@ cookie = MagicCookie.from_env("PLUGIN_MAGIC_COOKIE")
 ```
 
 ### 2. **Server Authentication**
+
 Servers validate magic cookies on every connection attempt, rejecting unauthorized clients immediately.
 
 ```python
@@ -72,7 +74,8 @@ server = plugin_server(
 )
 ```
 
-### 3. **Client Authentication**  
+### 3. **Client Authentication**
+
 Clients must provide the correct magic cookie to establish connections.
 
 ```python
@@ -88,6 +91,7 @@ async with plugin_client(
 ## Authentication Patterns
 
 ### Development Environment
+
 ```python
 # Fixed cookie for development
 cookie = MagicCookie.from_string("dev-magic-cookie-12345")
@@ -100,6 +104,7 @@ server = plugin_server(
 ```
 
 ### Production Environment
+
 ```python
 # Generated cookie with strict validation
 cookie = MagicCookie.generate(length=64)
@@ -113,6 +118,7 @@ server = plugin_server(
 ```
 
 ### Multi-Plugin Environment
+
 ```python
 # Each plugin gets unique cookie
 plugin_cookies = {
@@ -133,6 +139,7 @@ for plugin_name, cookie in plugin_cookies.items():
 ## Configuration Management
 
 ### Environment Variables
+
 ```bash
 # Single plugin
 export PLUGIN_MAGIC_COOKIE="$(python -c 'from pyvider.rpcplugin.security import MagicCookie; print(MagicCookie.generate().value)')"
@@ -144,6 +151,7 @@ export PLUGIN_NOTIFY_MAGIC_COOKIE="<generated-cookie-3>"
 ```
 
 ### Configuration Files
+
 ```yaml
 # config.yaml
 plugins:
@@ -159,6 +167,7 @@ plugins:
 ```
 
 ### Programmatic Configuration
+
 ```python
 from provide.foundation import config
 
@@ -196,6 +205,7 @@ async def secure_plugin_connection():
 ## Security Considerations
 
 ### Cookie Security
+
 - **Generate Fresh**: Use new cookies for each session
 - **Sufficient Entropy**: Minimum 256 bits of randomness
 - **Secure Storage**: Protect cookies like passwords
@@ -203,6 +213,7 @@ async def secure_plugin_connection():
 - **No Logging**: Never log cookie values
 
 ### Transport Security
+
 - **Local Only**: Magic cookies designed for local IPC
 - **Process Isolation**: Each plugin process gets unique cookies
 - **Memory Protection**: Clear cookies from memory after use
@@ -211,17 +222,18 @@ async def secure_plugin_connection():
 ## Best Practices
 
 1. **Rotate Regularly**: Generate new cookies periodically
-2. **Validate Format**: Check cookie format and entropy
-3. **Monitor Usage**: Log authentication attempts and failures
-4. **Timeout Appropriately**: Balance security with usability
-5. **Combine with mTLS**: Use both for network communication
-6. **Test Authentication**: Verify authentication works correctly
+1. **Validate Format**: Check cookie format and entropy
+1. **Monitor Usage**: Log authentication attempts and failures
+1. **Timeout Appropriately**: Balance security with usability
+1. **Combine with mTLS**: Use both for network communication
+1. **Test Authentication**: Verify authentication works correctly
 
 ## Troubleshooting
 
 ### Common Issues
 
 #### Authentication Failures
+
 ```python
 # Check cookie format
 if not cookie.is_valid_format():
@@ -233,6 +245,7 @@ if server_cookie.value != client_cookie.value:
 ```
 
 #### Environment Problems
+
 ```bash
 # Verify cookie is set
 echo $PLUGIN_MAGIC_COOKIE
@@ -244,6 +257,7 @@ python -c "import os; print(len(os.environ.get('PLUGIN_MAGIC_COOKIE', '')))"
 ## Integration Examples
 
 ### With Foundation Config
+
 ```python
 from provide.foundation import config
 from pyvider.rpcplugin.security import MagicCookie
@@ -257,6 +271,7 @@ cookie = MagicCookie.from_config(
 ```
 
 ### With Process Isolation
+
 ```python
 # Combine with process isolation
 isolator = ProcessIsolator(

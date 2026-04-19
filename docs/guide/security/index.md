@@ -6,7 +6,7 @@ Security is a fundamental aspect of the Pyvider RPC Plugin system. This section 
 
 The Pyvider RPC Plugin security model provides multiple layers of protection:
 
-- **mTLS Encryption** - Mutual TLS for encrypted communication  
+- **mTLS Encryption** - Mutual TLS for encrypted communication
 - **Certificate Management** - Automatic certificate generation and validation
 - **Magic Cookie Authentication** - Shared secret validation between client and server
 - **Process Isolation** - Subprocess isolation and resource limits
@@ -59,21 +59,25 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 ### Security Components
 
 1. **Transport Layer Security (TLS)**
+
    - Encrypts all communication between client and server
    - Mutual authentication via certificates
    - Protection against eavesdropping and tampering
 
-2. **Magic Cookie Authentication**
+1. **Magic Cookie Authentication**
+
    - Shared secret validation during handshake
    - Prevents unauthorized plugin connections
    - Environment variable-based secret management
 
-3. **Process Isolation**
+1. **Process Isolation**
+
    - Plugin runs in separate subprocess
    - Resource limits and sandboxing
    - Controlled communication channel
 
-4. **Certificate Management**
+1. **Certificate Management**
+
    - Automatic certificate generation for development
    - Production certificate integration
    - Certificate rotation and validation
@@ -81,28 +85,36 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 ## Security Sections
 
 ### 🔐 [mTLS Configuration](mtls.md)
+
 Configure mutual TLS for encrypted communication:
+
 - Certificate setup and management
 - Automatic vs manual mTLS configuration
 - TLS cipher suite configuration
 - Certificate validation and rotation
 
 ### 🏆 [Certificate Management](certificates.md)
+
 Manage X.509 certificates for production security:
+
 - Certificate generation and signing
-- Root CA configuration and trust chains  
+- Root CA configuration and trust chains
 - Certificate storage and file permissions
 - Automated certificate renewal
 
 ### 🍪 [Magic Cookies](magic-cookies.md)
+
 Implement shared secret authentication:
+
 - Magic cookie generation and management
 - Environment variable configuration
 - Security considerations and best practices
 - Integration with secret management systems
 
 ### 🏰 [Process Isolation](process-isolation.md)
+
 Secure plugin process execution:
+
 - Subprocess sandboxing and limits
 - Resource constraints and monitoring
 - Security contexts and permissions
@@ -477,21 +489,25 @@ health = await security_health_check()
 ## Configuration Integration
 
 ### Security Configuration Resources
+
 - **[Security Configuration Guide](../config/index.md)** - Environment-driven security configuration with comprehensive examples
 - **[Production Configuration](../config/advanced.md)** - Production-grade security configuration patterns
 - **[Configuration Reference](../config/configuration-reference.md)** - Complete security configuration options
 
 ### Conceptual Foundation
+
 - **[Security Model Concepts](../concepts/security.md)** - Understand the security architecture and how different layers work together
 - **[Transport Security](../concepts/transports.md)** - How transport selection impacts security
 
 ## Examples and Learning Path
 
 ### Hands-On Examples
+
 - **[Echo Service Examples](../../examples/echo-example.md)** - Security implementation in working service examples
 - **[Basic Server Example](../../examples/quick-start.md)** - Simple server setup with security considerations
 
 ### Working Examples
+
 - **`security_mtls_example.py`** - Complete mTLS implementation (see `examples/` directory)
 - **Production configuration examples** in each security section
 - **Certificate generation and management** demonstrated in mTLS examples
@@ -499,7 +515,7 @@ health = await security_health_check()
 ## Next Steps
 
 1. **[Configure mTLS](mtls.md)** - Set up mutual TLS encryption
-2. **[Manage Certificates](certificates.md)** - Handle X.509 certificates
-3. **[Implement Magic Cookies](magic-cookies.md)** - Add authentication layer
-4. **[Secure Processes](process-isolation.md)** - Isolate and secure plugin execution
-5. **Monitor Security** - Implement security event logging and health checks
+1. **[Manage Certificates](certificates.md)** - Handle X.509 certificates
+1. **[Implement Magic Cookies](magic-cookies.md)** - Add authentication layer
+1. **[Secure Processes](process-isolation.md)** - Isolate and secure plugin execution
+1. **Monitor Security** - Implement security event logging and health checks

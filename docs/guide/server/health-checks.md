@@ -550,9 +550,9 @@ Health checks provide multiple endpoints for different monitoring needs:
 Common health check issues:
 
 1. **Timeout errors**: Reduce checker complexity or increase timeout values
-2. **Resource threshold alerts**: Adjust thresholds via `PLUGIN_RESOURCE_*_THRESHOLD`
-3. **Dependency failures**: Implement proper retry logic and circuit breakers
-4. **File probe issues**: Ensure health file path is writable and monitored
+1. **Resource threshold alerts**: Adjust thresholds via `PLUGIN_RESOURCE_*_THRESHOLD`
+1. **Dependency failures**: Implement proper retry logic and circuit breakers
+1. **File probe issues**: Ensure health file path is writable and monitored
 
 ### Integration with Foundation
 
@@ -574,6 +574,6 @@ health_service = HealthCheckServicer()
 With comprehensive health checks implemented:
 
 - **[Security](../security/index.md)** - Secure your health endpoints
-- **[Configuration](../config/index.md)** - Configure health check parameters  
+- **[Configuration](../config/index.md)** - Configure health check parameters
 - **[Production Deployment](../config/advanced.md)** - Deploy with monitoring integration
 - **[Client Development](../client/index.md)** - Implement client-side health checking

@@ -46,9 +46,9 @@ rpcplugin_config.plugin_rate_limit_burst_capacity = 200
 The rate limiter uses a token bucket algorithm:
 
 1. **Token Generation**: Tokens are added to the bucket at a fixed rate (requests per second)
-2. **Request Handling**: Each request consumes one token from the bucket
-3. **Burst Capacity**: The bucket can hold a maximum number of tokens (burst capacity)
-4. **Request Rejection**: When the bucket is empty, requests are rejected
+1. **Request Handling**: Each request consumes one token from the bucket
+1. **Burst Capacity**: The bucket can hold a maximum number of tokens (burst capacity)
+1. **Request Rejection**: When the bucket is empty, requests are rejected
 
 ### Server Integration
 
@@ -262,6 +262,7 @@ PLUGIN_RATE_LIMIT_BURST_CAPACITY=2000
 ### 2. Monitor and Adjust
 
 Regularly review rate limiting metrics and adjust limits based on:
+
 - Server resource utilization
 - Client retry patterns
 - Business requirements
@@ -310,14 +311,17 @@ class PerClientRateLimiter(grpc.aio.ServerInterceptor):
 ### Common Issues
 
 1. **Rate limits too restrictive**
+
    - Symptom: Clients frequently receive RESOURCE_EXHAUSTED errors
    - Solution: Increase `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` or `PLUGIN_RATE_LIMIT_BURST_CAPACITY`
 
-2. **Server still overloaded despite rate limiting**
+1. **Server still overloaded despite rate limiting**
+
    - Symptom: High server resource usage even with rate limiting enabled
    - Solution: Reduce rate limits or investigate expensive operations
 
-3. **Rate limiting not working**
+1. **Rate limiting not working**
+
    - Symptom: No rate limit errors even under high load
    - Solution: Verify `PLUGIN_RATE_LIMIT_ENABLED=true` and check interceptor registration
 

@@ -389,97 +389,103 @@ class VersionedProtocol(RPCPluginProtocol):
 
 === "Server Streaming"
 
-    ```protobuf
-    service StreamingService {
-        // Server streaming: single request, multiple responses
-        rpc DownloadFile(DownloadRequest) returns (stream FileChunk);
-    }
-    ```
+````
+```protobuf
+service StreamingService {
+    // Server streaming: single request, multiple responses
+    rpc DownloadFile(DownloadRequest) returns (stream FileChunk);
+}
+```
 
-    ```python
-    class StreamingHandler(streaming_pb2_grpc.StreamingServiceServicer):
-        """Handler with streaming implementations."""
+```python
+class StreamingHandler(streaming_pb2_grpc.StreamingServiceServicer):
+    """Handler with streaming implementations."""
 
-        async def DownloadFile(self, request, context):
-            """Server streaming - send file in chunks."""
-            file_path = request.file_path
+    async def DownloadFile(self, request, context):
+        """Server streaming - send file in chunks."""
+        file_path = request.file_path
 
-            try:
-                with open(file_path, 'rb') as f:
-                    chunk_num = 0
-                    while True:
-                        chunk = f.read(8192)  # 8KB chunks
-                        if not chunk:
-                            break
+        try:
+            with open(file_path, 'rb') as f:
+                chunk_num = 0
+                while True:
+                    chunk = f.read(8192)  # 8KB chunks
+                    if not chunk:
+                        break
 
-                        yield streaming_pb2.FileChunk(
-                            data=chunk,
-                            sequence=chunk_num,
-                            is_last=(len(chunk) < 8192)
-                        )
-                        chunk_num += 1
+                    yield streaming_pb2.FileChunk(
+                        data=chunk,
+                        sequence=chunk_num,
+                        is_last=(len(chunk) < 8192)
+                    )
+                    chunk_num += 1
 
-            except FileNotFoundError:
-                context.set_code(grpc.StatusCode.NOT_FOUND)
-                context.set_details(f"File not found: {file_path}")
-    ```
+        except FileNotFoundError:
+            context.set_code(grpc.StatusCode.NOT_FOUND)
+            context.set_details(f"File not found: {file_path}")
+```
+````
 
 === "Client Streaming"
 
-    ```protobuf
-    service StreamingService {
-        // Client streaming: multiple requests, single response
-        rpc UploadFile(stream FileChunk) returns (UploadResponse);
-    }
-    ```
+````
+```protobuf
+service StreamingService {
+    // Client streaming: multiple requests, single response
+    rpc UploadFile(stream FileChunk) returns (UploadResponse);
+}
+```
 
-    ```python
-    class StreamingHandler(streaming_pb2_grpc.StreamingServiceServicer):
-        async def UploadFile(self, request_iterator, context):
-            """Client streaming - receive file in chunks."""
-            file_data = b""
-            total_chunks = 0
+```python
+class StreamingHandler(streaming_pb2_grpc.StreamingServiceServicer):
+    async def UploadFile(self, request_iterator, context):
+        """Client streaming - receive file in chunks."""
+        file_data = b""
+        total_chunks = 0
 
-            async for chunk in request_iterator:
-                file_data += chunk.data
-                total_chunks += 1
+        async for chunk in request_iterator:
+            file_data += chunk.data
+            total_chunks += 1
 
-            # Save file
-            file_path = f"/tmp/upload_{int(time.time())}.bin"
-            with open(file_path, 'wb') as f:
-                f.write(file_data)
+        # Save file
+        file_path = f"/tmp/upload_{int(time.time())}.bin"
+        with open(file_path, 'wb') as f:
+            f.write(file_data)
 
-            return streaming_pb2.UploadResponse(
-                file_path=file_path,
-                total_bytes=len(file_data),
-                total_chunks=total_chunks
-            )
-    ```
+        return streaming_pb2.UploadResponse(
+            file_path=file_path,
+            total_bytes=len(file_data),
+            total_chunks=total_chunks
+        )
+```
+````
 
 === "Bidirectional Streaming"
 
-    ```protobuf
-    service StreamingService {
-        // Bidirectional streaming: multiple requests and responses
-        rpc Chat(stream ChatMessage) returns (stream ChatMessage);
-    }
-    ```
+````
+```protobuf
+service StreamingService {
+    // Bidirectional streaming: multiple requests and responses
+    rpc Chat(stream ChatMessage) returns (stream ChatMessage);
+}
+```
 
-    ```python
-    class StreamingHandler(streaming_pb2_grpc.StreamingServiceServicer):
-        async def Chat(self, request_iterator, context):
-            """Bidirectional streaming - interactive chat."""
-            async for message in request_iterator:
-                # Process incoming message
-                response_text = await self.process_chat_message(message.text)
+```python
+class StreamingHandler(streaming_pb2_grpc.StreamingServiceServicer):
+    async def Chat(self, request_iterator, context):
+        """Bidirectional streaming - interactive chat."""
+        async for message in request_iterator:
+            # Process incoming message
+            response_text = await self.process_chat_message(message.text)
 
-                # Send response
-                yield streaming_pb2.ChatMessage(
-                    user="assistant",
-                    text=response_text,
-                    timestamp=int(time.time())
-                )
-    ```
+            # Send response
+            yield streaming_pb2.ChatMessage(
+                user="assistant",
+                text=response_text,
+                timestamp=int(time.time())
+            )
+```
+````
 
 ## Protocol Development Workflow
 

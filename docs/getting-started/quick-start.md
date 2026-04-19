@@ -17,22 +17,24 @@ Before diving in, let's understand the key components:
 - **🤝 Handshake**: Secure connection establishment with magic cookie authentication
 - **🏗️ Foundation**: Companion library providing logging, configuration, cryptography, and utilities
 
-!!! info "Built on Foundation"
-    Pyvider RPC Plugin is built on **Foundation** (`provide.foundation`), which provides infrastructure for logging, configuration, cryptography, and utilities. This means you get enterprise-grade patterns out of the box.
+!!! info "Built on Foundation" Pyvider RPC Plugin is built on **Foundation** (`provide.foundation`), which provides infrastructure for logging, configuration, cryptography, and utilities. This means you get enterprise-grade patterns out of the box.
 
-    **→ [Understanding Foundation](../introduction/foundation.md)** - Learn how Foundation and Pyvider work together
+```
+**→ [Understanding Foundation](../introduction/foundation.md)** - Learn how Foundation and Pyvider work together
+```
 
-!!! tip "Tutorial Code vs Production Code"
-    The examples below are **simplified for teaching** to focus on core concepts.
+!!! tip "Tutorial Code vs Production Code" The examples below are **simplified for teaching** to focus on core concepts.
 
-    **For production-focused, runnable code**, see:
+```
+**For production-focused, runnable code**, see:
 
-    - `examples/dummy_server.py` - Full-featured version of `my_plugin.py`
-    - `examples/quick_start_client.py` - Full-featured version of `host_app.py`
+- `examples/dummy_server.py` - Full-featured version of `my_plugin.py`
+- `examples/quick_start_client.py` - Full-featured version of `host_app.py`
 
-    Run with: `python examples/quick_start_client.py`
+Run with: `python examples/quick_start_client.py`
 
-    → [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+→ [Complete example file mapping](../examples/index.md#tutorial-example-actual-file-mapping)
+```
 
 ## Your First Plugin
 
@@ -80,8 +82,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-!!! note "About Imports"
-    Notice the `from provide.foundation import logger` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
+!!! note "About Imports" Notice the `from provide.foundation import logger` import. Foundation is the companion library that provides structured logging, configuration, cryptography, and utilities for plugin development.
 
 ### 2. Create the Host Application
 
@@ -164,31 +165,33 @@ You should see output like:
 
 🎉 **Congratulations!** You've successfully created and run your first plugin system!
 
-!!! note "Actual Runnable Examples"
-    The simplified examples above (`my_plugin.py`, `host_app.py`) are for teaching. **For working code you can run**, see:
+!!! note "Actual Runnable Examples" The simplified examples above (`my_plugin.py`, `host_app.py`) are for teaching. **For working code you can run**, see:
 
-    - **`examples/dummy_server.py`** - Production-focused version of `my_plugin.py`
-    - **`examples/quick_start_client.py`** - Production-focused version of `host_app.py`
+````
+- **`examples/dummy_server.py`** - Production-focused version of `my_plugin.py`
+- **`examples/quick_start_client.py`** - Production-focused version of `host_app.py`
 
-    Run them with:
-    ```bash
-    python examples/quick_start_client.py
-    ```
+Run them with:
+```bash
+python examples/quick_start_client.py
+```
 
-    See [Example File Mapping](../examples/index.md#tutorial-example-actual-file-mapping) for more details.
+See [Example File Mapping](../examples/index.md#tutorial-example-actual-file-mapping) for more details.
+````
 
 ## What Just Happened?
 
 1. **Foundation Bootstrap**: Foundation's logging and configuration systems initialized
-2. **Plugin Launch**: The host application spawned `my_plugin.py` as a subprocess
-3. **Handshake**: Plugin server printed connection details to stdout using Foundation logging
-4. **Connection**: Host application parsed handshake and established gRPC channel
-5. **Communication**: Both processes are now connected via RPC (ready for method calls)
-6. **Cleanup**: Host gracefully shut down the connection and plugin process
+1. **Plugin Launch**: The host application spawned `my_plugin.py` as a subprocess
+1. **Handshake**: Plugin server printed connection details to stdout using Foundation logging
+1. **Connection**: Host application parsed handshake and established gRPC channel
+1. **Communication**: Both processes are now connected via RPC (ready for method calls)
+1. **Cleanup**: Host gracefully shut down the connection and plugin process
 
 ### The Role of Foundation
 
 Foundation handles infrastructure concerns automatically:
+
 - **Logging**: Structured output with `logger.info()`
 - **Configuration**: Environment variable management
 - **Error Handling**: Standardized exception types
@@ -200,6 +203,7 @@ Foundation handles infrastructure concerns automatically:
 ### 🤝 The Handshake Process
 
 The handshake is automatic and includes:
+
 - **Magic Cookie**: Shared secret for authentication
 - **Protocol Version**: Ensures compatibility
 - **Transport Method**: Unix sockets (Linux/macOS) or TCP (Windows)
@@ -207,34 +211,35 @@ The handshake is automatic and includes:
 
 ### 🔒 Security Defaults
 
-!!! warning "mTLS is Enabled by Default"
-    Pyvider RPC Plugin follows a **security-first design**: `PLUGIN_AUTO_MTLS` defaults to `True`, which means mutual TLS (mTLS) is **automatically enabled** for all connections.
+!!! warning "mTLS is Enabled by Default" Pyvider RPC Plugin follows a **security-first design**: `PLUGIN_AUTO_MTLS` defaults to `True`, which means mutual TLS (mTLS) is **automatically enabled** for all connections.
 
-    **For local development/testing**, mTLS may fail if certificates aren't configured. You have two options:
+````
+**For local development/testing**, mTLS may fail if certificates aren't configured. You have two options:
 
-    **Option 1 - Disable mTLS for Development (Quick):**
-    ```python
-    from pyvider.rpcplugin import configure
+**Option 1 - Disable mTLS for Development (Quick):**
+```python
+from pyvider.rpcplugin import configure
 
-    configure(auto_mtls=False)  # Disable mTLS for local testing
-    ```
+configure(auto_mtls=False)  # Disable mTLS for local testing
+```
 
-    **Option 2 - Use mTLS with Auto-Generated Certificates (Recommended):**
-    ```python
-    # mTLS works automatically with self-signed certificates
-    # No configuration needed - certificates auto-generated
-    # This is the default behavior and most secure
-    ```
+**Option 2 - Use mTLS with Auto-Generated Certificates (Recommended):**
+```python
+# mTLS works automatically with self-signed certificates
+# No configuration needed - certificates auto-generated
+# This is the default behavior and most secure
+```
 
-    **For production**, keep `auto_mtls=True` (the default) and optionally provide your own certificates:
-    ```python
-    import os
-    os.environ["PLUGIN_SERVER_CERT"] = "file:///path/to/server.crt"
-    os.environ["PLUGIN_SERVER_KEY"] = "file:///path/to/server.key"
-    # mTLS enabled with your production certificates
-    ```
+**For production**, keep `auto_mtls=True` (the default) and optionally provide your own certificates:
+```python
+import os
+os.environ["PLUGIN_SERVER_CERT"] = "file:///path/to/server.crt"
+os.environ["PLUGIN_SERVER_KEY"] = "file:///path/to/server.key"
+# mTLS enabled with your production certificates
+```
 
-    📖 **Learn more:** [Security Guide](../guide/security/index.md) | [mTLS Configuration](../guide/security/mtls.md)
+📖 **Learn more:** [Security Guide](../guide/security/index.md) | [mTLS Configuration](../guide/security/mtls.md)
+````
 
 ### 🔧 Configuration
 
@@ -254,16 +259,16 @@ logger.info(f"mTLS enabled: {rpcplugin_config.plugin_auto_mtls}")
 Now that you have the basics working:
 
 1. **[Build a Real Service](first-plugin.md)** - Create an Echo plugin with custom RPC methods
-2. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
-3. **[Security Setup](../guide/concepts/security.md)** - Configure mTLS with production certificates
-4. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
+1. **[Learn Core Concepts](../guide/concepts/index.md)** - Understand the architecture in depth
+1. **[Security Setup](../guide/concepts/security.md)** - Configure mTLS with production certificates
+1. **[Advanced Patterns](../guide/index.md)** - Explore async patterns, error handling, and more
 
 ### 📝 Short Examples
 
 For focused, executable examples (15-30 lines each):
 
 - **[Basic Client](../examples/quick-start.md)** - Minimal client connection
-- **[Basic Server](../examples/quick-start.md)** - Simple plugin server  
+- **[Basic Server](../examples/quick-start.md)** - Simple plugin server
 - **[Health Checks](../examples/quick-start.md)** - Server with health monitoring
 - **[Rate Limiting](../examples/quick-start.md)** - Request throttling with token bucket
 - **[TCP Transport](../examples/quick-start.md)** - Network transport configuration
@@ -272,6 +277,7 @@ For focused, executable examples (15-30 lines each):
 ## Common Issues
 
 ### Plugin Won't Start
+
 ```bash
 # Check if plugin file exists and is executable
 ls -la my_plugin.py
@@ -279,12 +285,14 @@ chmod +x my_plugin.py
 ```
 
 ### Connection Timeout
+
 ```bash
 # Check for port conflicts or firewall issues
 # Plugin logs will show transport details
 ```
 
 ### Import Errors
+
 ```bash
 # Ensure pyvider-rpcplugin is installed
 uv add pyvider-rpcplugin

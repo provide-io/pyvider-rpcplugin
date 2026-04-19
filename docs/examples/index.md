@@ -4,10 +4,10 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 
 ## Quick Reference
 
-| Example | Description | Complexity | Lines |
-|---------|-------------|------------|-------|
-| [Quick Start](quick-start.md) | Focused code samples for specific features | 🟢 Beginner | ~20-30 each |
-| [Echo Service](echo-example.md) | Complete RPC service from basic to production | 🟢-🟡 Beginner to Advanced | ~570 |
+| Example                         | Description                                   | Complexity                 | Lines       |
+| ------------------------------- | --------------------------------------------- | -------------------------- | ----------- |
+| [Quick Start](quick-start.md)   | Focused code samples for specific features    | 🟢 Beginner                | ~20-30 each |
+| [Echo Service](echo-example.md) | Complete RPC service from basic to production | 🟢-🟡 Beginner to Advanced | ~570        |
 
 ## Getting Started
 
@@ -16,12 +16,14 @@ Practical examples and code snippets demonstrating common Pyvider RPC Plugin pat
 Start here to learn the fundamentals:
 
 1. **[Quick Start Examples](quick-start.md)** - Six focused examples covering:
+
    - Basic client and server setup
    - Health checks and rate limiting
    - TCP transport configuration
    - Custom protocol implementation
 
-2. **[Echo Service Example](echo-example.md)** - Complete service demonstrating:
+1. **[Echo Service Example](echo-example.md)** - Complete service demonstrating:
+
    - Unary RPC patterns
    - Streaming (server, client, bidirectional)
    - Error handling and retry logic
@@ -31,37 +33,43 @@ Start here to learn the fundamentals:
 
 === "Beginner Track"
 
-    **Goal**: Understand core plugin lifecycle and basic patterns
+```
+**Goal**: Understand core plugin lifecycle and basic patterns
 
-    1. **[Quick Start: Basic Server](quick-start.md#basic-server)** - Minimal server (15 lines)
-    2. **[Quick Start: Basic Client](quick-start.md#basic-client)** - Minimal client (20 lines)
-    3. **[Echo Service: Basic Setup](echo-example.md#basic-setup)** - Complete RPC service
-    4. **[Quick Start: Health Checks](quick-start.md#health-checks)** - Production monitoring
-    5. **[Quick Start: Rate Limiting](quick-start.md#rate-limiting)** - Service protection
+1. **[Quick Start: Basic Server](quick-start.md#basic-server)** - Minimal server (15 lines)
+2. **[Quick Start: Basic Client](quick-start.md#basic-client)** - Minimal client (20 lines)
+3. **[Echo Service: Basic Setup](echo-example.md#basic-setup)** - Complete RPC service
+4. **[Quick Start: Health Checks](quick-start.md#health-checks)** - Production monitoring
+5. **[Quick Start: Rate Limiting](quick-start.md#rate-limiting)** - Service protection
 
-    **Next**: Explore streaming patterns in the Echo Service example
+**Next**: Explore streaming patterns in the Echo Service example
+```
 
 === "Intermediate Track"
 
-    **Goal**: Master streaming, transports, and custom protocols
+```
+**Goal**: Master streaming, transports, and custom protocols
 
-    1. **[Echo Service: Streaming Patterns](echo-example.md#streaming-patterns)** - Server/client/bidirectional streaming
-    2. **[Quick Start: TCP Transport](quick-start.md#tcp-transport)** - Cross-platform communication
-    3. **[Quick Start: Custom Protocol](quick-start.md#custom-protocol)** - Integrate your gRPC services
-    4. **[Echo Service: Error Handling](echo-example.md#error-handling)** - Robust error management
+1. **[Echo Service: Streaming Patterns](echo-example.md#streaming-patterns)** - Server/client/bidirectional streaming
+2. **[Quick Start: TCP Transport](quick-start.md#tcp-transport)** - Cross-platform communication
+3. **[Quick Start: Custom Protocol](quick-start.md#custom-protocol)** - Integrate your gRPC services
+4. **[Echo Service: Error Handling](echo-example.md#error-handling)** - Robust error management
 
-    **Next**: Study production deployment in the Configuration Guide
+**Next**: Study production deployment in the Configuration Guide
+```
 
 === "Advanced Track"
 
-    **Goal**: Build production-focused, observable, secure services
+```
+**Goal**: Build production-focused, observable, secure services
 
-    1. **[Echo Service: Production Features](echo-example.md#production-features)** - Health, rate limiting, metrics, mTLS
-    2. **[Echo Service: Testing](echo-example.md#testing)** - Unit and integration test patterns
-    3. **[Advanced Topics Guide](../guide/advanced/)** - Observability, performance tuning
-    4. **[Security Guide](../guide/security/)** - Comprehensive mTLS setup
+1. **[Echo Service: Production Features](echo-example.md#production-features)** - Health, rate limiting, metrics, mTLS
+2. **[Echo Service: Testing](echo-example.md#testing)** - Unit and integration test patterns
+3. **[Advanced Topics Guide](../guide/advanced/)** - Observability, performance tuning
+4. **[Security Guide](../guide/security/)** - Comprehensive mTLS setup
 
-    **Next**: Implement custom middleware and observability
+**Next**: Implement custom middleware and observability
+```
 
 ## Example Structure
 
@@ -131,6 +139,7 @@ python examples/echo_client.py
 ```
 
 Expected output:
+
 ```
 2025-01-15 10:30:45.123 [info     ] Client will use server script: .../examples/echo_server.py
 2025-01-15 10:30:45.200 [info     ] Starting Echo Plugin Server...
@@ -143,21 +152,22 @@ Expected output:
 
 ### Documentation vs. Actual Code
 
-!!! tip "Simplified Examples vs. Runnable Files"
-    Documentation examples are **simplified for teaching**. Actual files in `examples/` include:
+!!! tip "Simplified Examples vs. Runnable Files" Documentation examples are **simplified for teaching**. Actual files in `examples/` include:
 
-    - `example_utils.configure_for_example()` for environment setup
-    - Comprehensive error handling and logging
-    - Production-focused patterns and best practices
+```
+- `example_utils.configure_for_example()` for environment setup
+- Comprehensive error handling and logging
+- Production-focused patterns and best practices
 
-    Here's the mapping:
+Here's the mapping:
 
-    | Documentation | Actual File | Notes |
-    |--------------|-------------|-------|
-    | Basic plugin | `dummy_server.py` | Minimal server with BasicRPCPluginProtocol |
-    | Basic client | `quick_start_client.py` | Client that launches `dummy_server.py` |
-    | Echo server | `echo_server.py` ✓ | Matches documentation (production patterns) |
-    | Echo client | `echo_client.py` ✓ | Matches documentation (class-based) |
+| Documentation | Actual File | Notes |
+|--------------|-------------|-------|
+| Basic plugin | `dummy_server.py` | Minimal server with BasicRPCPluginProtocol |
+| Basic client | `quick_start_client.py` | Client that launches `dummy_server.py` |
+| Echo server | `echo_server.py` ✓ | Matches documentation (production patterns) |
+| Echo client | `echo_client.py` ✓ | Matches documentation (class-based) |
+```
 
 ### Available Files
 
@@ -185,19 +195,25 @@ See the [repository](https://github.com/provide-io/pyvider-rpcplugin/tree/main/e
 ## Common Issues
 
 ### Import Errors
+
 If you get "ModuleNotFoundError":
+
 - Ensure you're running from the project root directory
 - Run `uv sync` to install dependencies
 - The `example_utils.configure_for_example()` call should handle path setup
 
 ### Connection Issues
+
 If client can't connect to server:
+
 - Check server logs for errors (logs go to stderr)
 - Verify no other process is using the socket/port
 - Try increasing timeout: `await asyncio.wait_for(client.start(), timeout=30.0)`
 
 ### Transport Issues
+
 If Unix sockets or TCP transport fails:
+
 - **Unix sockets**: Not available on Windows - use TCP instead
 - **TCP**: Check firewall allows the port
 - **Port conflicts**: Try different port or use `port=0` for automatic assignment
@@ -230,9 +246,9 @@ If Unix sockets or TCP transport fails:
 We welcome contributions! Please:
 
 1. Follow the established structure and naming conventions
-2. Include comprehensive documentation and comments
-3. Add appropriate error handling and logging
-4. Test examples on multiple platforms (Linux, macOS, Windows where applicable)
-5. Submit a pull request with your example
+1. Include comprehensive documentation and comments
+1. Add appropriate error handling and logging
+1. Test examples on multiple platforms (Linux, macOS, Windows where applicable)
+1. Submit a pull request with your example
 
 See the [Contributing Guide](../development/contributing-guide.md) for details.

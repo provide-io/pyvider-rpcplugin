@@ -18,12 +18,12 @@ The plugin architecture separates concerns between the **Host Application** (you
 
 ### Core Classes
 
-| Class | Role | Description |
-|-------|------|-------------|
-| `RPCPluginClient` | Host Application | Manages plugin lifecycle and RPC communication |
-| `RPCPluginServer` | Plugin Process | Serves RPC requests from the host |
-| `RPCPluginProtocol` | Both | Defines the RPC interface and service methods |
-| `Handler/Servicer` | Plugin Process | Implements the actual business logic |
+| Class               | Role             | Description                                    |
+| ------------------- | ---------------- | ---------------------------------------------- |
+| `RPCPluginClient`   | Host Application | Manages plugin lifecycle and RPC communication |
+| `RPCPluginServer`   | Plugin Process   | Serves RPC requests from the host              |
+| `RPCPluginProtocol` | Both             | Defines the RPC interface and service methods  |
+| `Handler/Servicer`  | Plugin Process   | Implements the actual business logic           |
 
 ## Essential Concepts
 
@@ -32,8 +32,8 @@ The plugin architecture separates concerns between the **Host Application** (you
 The plugin system implements a robust RPC architecture built on gRPC with a secure handshake protocol:
 
 1. **gRPC Foundation** - Protocol Buffers for efficient serialization, HTTP/2 for multiplexed communication
-2. **Handshake Process** - Multi-phase negotiation including magic cookie authentication, protocol negotiation, and service discovery
-3. **Foundation Integration** - Seamless integration with provide.foundation for logging, configuration, and cryptography
+1. **Handshake Process** - Multi-phase negotiation including magic cookie authentication, protocol negotiation, and service discovery
+1. **Foundation Integration** - Seamless integration with provide.foundation for logging, configuration, and cryptography
 
 **Learn more:** [RPC Architecture & Handshake](architecture-and-handshake.md)
 
@@ -98,9 +98,9 @@ mtls_enabled = rpcplugin_config.plugin_auto_mtls
 Configuration sources (in priority order):
 
 1. **Environment variables** (highest priority)
-2. **Configuration files** (YAML, JSON, TOML)
-3. **Programmatic settings**
-4. **Default values** (lowest priority)
+1. **Configuration files** (YAML, JSON, TOML)
+1. **Programmatic settings**
+1. **Default values** (lowest priority)
 
 ## Error Handling
 
@@ -138,37 +138,37 @@ Dive deeper into specific concepts:
 
 <div class="grid cards" markdown>
 
--   :material-sitemap: **RPC Architecture & Handshake**
+- :material-sitemap: **RPC Architecture & Handshake**
 
-    ---
+  ______________________________________________________________________
 
-    Complete RPC architecture with secure handshake protocol
+  Complete RPC architecture with secure handshake protocol
 
-    [:octicons-arrow-right-24: Learn Architecture](architecture-and-handshake.md)
+  [:octicons-arrow-right-24: Learn Architecture](architecture-and-handshake.md)
 
--   :material-swap-horizontal: **Transports**
+- :material-swap-horizontal: **Transports**
 
-    ---
+  ______________________________________________________________________
 
-    Understanding Unix sockets vs TCP and when to use each
+  Understanding Unix sockets vs TCP and when to use each
 
-    [:octicons-arrow-right-24: Explore Transports](transports.md)
+  [:octicons-arrow-right-24: Explore Transports](transports.md)
 
--   :material-api: **Protocols**
+- :material-api: **Protocols**
 
-    ---
+  ______________________________________________________________________
 
-    How to define and implement RPC protocols with gRPC
+  How to define and implement RPC protocols with gRPC
 
-    [:octicons-arrow-right-24: Define Protocols](protocols.md)
+  [:octicons-arrow-right-24: Define Protocols](protocols.md)
 
--   :material-shield-check: **Security Model**
+- :material-shield-check: **Security Model**
 
-    ---
+  ______________________________________________________________________
 
-    Comprehensive security including mTLS, magic cookies, and isolation
+  Comprehensive security including mTLS, magic cookies, and isolation
 
-    [:octicons-arrow-right-24: Secure Plugins](security.md)
+  [:octicons-arrow-right-24: Secure Plugins](security.md)
 
 </div>
 

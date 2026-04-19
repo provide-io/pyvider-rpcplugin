@@ -7,6 +7,7 @@ Comprehensive monitoring, tracing, metrics, and performance optimization for pro
 Effective observability combines distributed tracing, metrics collection, and performance optimization to provide complete visibility into plugin behavior and performance characteristics. This guide covers OpenTelemetry integration, profiling, benchmarking, and optimization strategies.
 
 **Key capabilities:**
+
 - Distributed tracing across service boundaries
 - Custom metrics for RPC operations
 - CPU, memory, and network optimization
@@ -17,61 +18,67 @@ Effective observability combines distributed tracing, metrics collection, and pe
 
 === "Tracing"
 
-    ```python
-    from pyvider.rpcplugin.telemetry import get_rpc_tracer
-    from opentelemetry import trace
+````
+```python
+from pyvider.rpcplugin.telemetry import get_rpc_tracer
+from opentelemetry import trace
 
-    tracer = get_rpc_tracer()
+tracer = get_rpc_tracer()
 
-    class TracedHandler:
-        async def process_request(self, request, context):
-            with tracer.start_as_current_span(
-                "process_request",
-                kind=trace.SpanKind.SERVER
-            ) as span:
-                span.set_attribute("request.id", request.id)
-                result = await self._do_work(request)
-                return result
-    ```
+class TracedHandler:
+    async def process_request(self, request, context):
+        with tracer.start_as_current_span(
+            "process_request",
+            kind=trace.SpanKind.SERVER
+        ) as span:
+            span.set_attribute("request.id", request.id)
+            result = await self._do_work(request)
+            return result
+```
+````
 
 === "Metrics"
 
-    ```python
-    from opentelemetry import metrics
+````
+```python
+from opentelemetry import metrics
 
-    meter = metrics.get_meter("pyvider.rpcplugin")
+meter = metrics.get_meter("pyvider.rpcplugin")
 
-    request_counter = meter.create_counter(
-        "rpc.requests.total",
-        description="Total RPC requests"
-    )
+request_counter = meter.create_counter(
+    "rpc.requests.total",
+    description="Total RPC requests"
+)
 
-    request_duration = meter.create_histogram(
-        "rpc.request.duration",
-        description="Request duration in ms",
-        unit="ms"
-    )
-    ```
+request_duration = meter.create_histogram(
+    "rpc.request.duration",
+    description="Request duration in ms",
+    unit="ms"
+)
+```
+````
 
 === "Performance"
 
-    ```python
-    from pyvider.rpcplugin import plugin_server
-    from pyvider.rpcplugin.performance import PerformanceConfig
+````
+```python
+from pyvider.rpcplugin import plugin_server
+from pyvider.rpcplugin.performance import PerformanceConfig
 
-    perf_config = PerformanceConfig(
-        max_connections=1000,
-        connection_timeout=5.0,
-        buffer_size=64 * 1024,
-        worker_threads=4,
-        enable_compression=True
-    )
+perf_config = PerformanceConfig(
+    max_connections=1000,
+    connection_timeout=5.0,
+    buffer_size=64 * 1024,
+    worker_threads=4,
+    enable_compression=True
+)
 
-    server = plugin_server(
-        services=[OptimizedService()],
-        performance_config=perf_config
-    )
-    ```
+server = plugin_server(
+    services=[OptimizedService()],
+    performance_config=perf_config
+)
+```
+````
 
 ## Distributed Tracing
 
@@ -243,48 +250,54 @@ class CorrelatedLoggingHandler:
 
 === "Jaeger"
 
-    ```python
-    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+````
+```python
+from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    jaeger_exporter = JaegerExporter(
-        agent_host_name="localhost",
-        agent_port=6831,
-    )
+jaeger_exporter = JaegerExporter(
+    agent_host_name="localhost",
+    agent_port=6831,
+)
 
-    trace.set_tracer_provider(TracerProvider())
-    trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(jaeger_exporter)
-    )
-    ```
+trace.set_tracer_provider(TracerProvider())
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(jaeger_exporter)
+)
+```
+````
 
 === "OTLP"
 
-    ```python
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+````
+```python
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
-    trace_exporter = OTLPSpanExporter(
-        endpoint="localhost:4317",
-        headers=(("api-key", "your-api-key"),)
-    )
+trace_exporter = OTLPSpanExporter(
+    endpoint="localhost:4317",
+    headers=(("api-key", "your-api-key"),)
+)
 
-    trace.get_tracer_provider().add_span_processor(
-        BatchSpanProcessor(trace_exporter)
-    )
-    ```
+trace.get_tracer_provider().add_span_processor(
+    BatchSpanProcessor(trace_exporter)
+)
+```
+````
 
 === "Prometheus"
 
-    ```python
-    from opentelemetry.exporter.prometheus import PrometheusMetricReader
-    from opentelemetry.sdk.metrics import MeterProvider
+````
+```python
+from opentelemetry.exporter.prometheus import PrometheusMetricReader
+from opentelemetry.sdk.metrics import MeterProvider
 
-    prometheus_reader = PrometheusMetricReader()
-    metrics.set_meter_provider(
-        MeterProvider(metric_readers=[prometheus_reader])
-    )
-    ```
+prometheus_reader = PrometheusMetricReader()
+metrics.set_meter_provider(
+    MeterProvider(metric_readers=[prometheus_reader])
+)
+```
+````
 
 ## CPU Optimization
 
@@ -478,57 +491,63 @@ async def benchmark_plugin_performance():
 
 === "Horizontal"
 
-    ```python
-    from pyvider.rpcplugin.scaling import LoadBalancer
+````
+```python
+from pyvider.rpcplugin.scaling import LoadBalancer
 
-    load_balancer = LoadBalancer(
-        backend_servers=[
-            "plugin-server-1:50051",
-            "plugin-server-2:50051",
-            "plugin-server-3:50051"
-        ],
-        health_check_interval=5.0,
-        load_balancing_algorithm="least_connections"
-    )
-    ```
+load_balancer = LoadBalancer(
+    backend_servers=[
+        "plugin-server-1:50051",
+        "plugin-server-2:50051",
+        "plugin-server-3:50051"
+    ],
+    health_check_interval=5.0,
+    load_balancing_algorithm="least_connections"
+)
+```
+````
 
 === "Vertical"
 
-    ```python
-    from pyvider.rpcplugin.scaling import ResourceOptimizer
+````
+```python
+from pyvider.rpcplugin.scaling import ResourceOptimizer
 
-    resource_optimizer = ResourceOptimizer(
-        cpu_cores="auto",
-        memory_limit="80%",
-        disk_cache_size="20%",
-        network_buffers="adaptive"
-    )
+resource_optimizer = ResourceOptimizer(
+    cpu_cores="auto",
+    memory_limit="80%",
+    disk_cache_size="20%",
+    network_buffers="adaptive"
+)
 
-    resource_optimizer.apply_optimizations()
+resource_optimizer.apply_optimizations()
 
-    server = plugin_server(
-        services=[ScalableService()],
-        resource_optimizer=resource_optimizer,
-        enable_auto_scaling=True
-    )
-    ```
+server = plugin_server(
+    services=[ScalableService()],
+    resource_optimizer=resource_optimizer,
+    enable_auto_scaling=True
+)
+```
+````
 
 === "Auto-Scaling"
 
-    ```python
-    from pyvider.rpcplugin.scaling import AutoScaler
+````
+```python
+from pyvider.rpcplugin.scaling import AutoScaler
 
-    auto_scaler = AutoScaler(
-        min_instances=2,
-        max_instances=20,
-        target_cpu_utilization=70,
-        target_memory_utilization=80,
-        scale_up_threshold=2,
-        scale_down_threshold=10
-    )
+auto_scaler = AutoScaler(
+    min_instances=2,
+    max_instances=20,
+    target_cpu_utilization=70,
+    target_memory_utilization=80,
+    scale_up_threshold=2,
+    scale_down_threshold=10
+)
 
-    await auto_scaler.start_monitoring()
-    ```
+await auto_scaler.start_monitoring()
+```
+````
 
 ## Monitoring and Alerting
 
@@ -585,19 +604,19 @@ async def performance_health_monitor():
 ### Observability
 
 1. **Use semantic conventions** for span attributes
-2. **Avoid high cardinality** in metric labels
-3. **Sample appropriately** - balance observability with performance
-4. **Add context to errors** - include trace IDs in error messages
-5. **Correlate logs with traces** - use structured logging with trace context
+1. **Avoid high cardinality** in metric labels
+1. **Sample appropriately** - balance observability with performance
+1. **Add context to errors** - include trace IDs in error messages
+1. **Correlate logs with traces** - use structured logging with trace context
 
 ### Performance
 
 1. **Profile before optimizing** - measure to identify bottlenecks
-2. **Optimize hot paths** - focus on frequently executed code
-3. **Use connection pooling** - reuse connections to reduce overhead
-4. **Control concurrency** - limit concurrent operations
-5. **Monitor continuously** - track metrics in production
-6. **Test under load** - validate with realistic workloads
+1. **Optimize hot paths** - focus on frequently executed code
+1. **Use connection pooling** - reuse connections to reduce overhead
+1. **Control concurrency** - limit concurrent operations
+1. **Monitor continuously** - track metrics in production
+1. **Test under load** - validate with realistic workloads
 
 ## Troubleshooting
 

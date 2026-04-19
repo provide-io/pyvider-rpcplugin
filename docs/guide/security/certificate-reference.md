@@ -406,10 +406,10 @@ def load_certificate_safely(
 ### Key Points
 
 1. **`Certificate.from_pem()` expects PEM content strings**, not file paths or URIs
-2. **Always read file content first** using `Path().read_text()`
-3. **Use `cert_pem` and `key_pem` parameters** for the PEM content strings
-4. **Validate certificates** after loading with `is_valid` property
-5. **Use Foundation's logger** for certificate operations
+1. **Always read file content first** using `Path().read_text()`
+1. **Use `cert_pem` and `key_pem` parameters** for the PEM content strings
+1. **Validate certificates** after loading with `is_valid` property
+1. **Use Foundation's logger** for certificate operations
 
 ### Related Documentation
 

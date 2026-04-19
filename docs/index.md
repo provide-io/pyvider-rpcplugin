@@ -4,7 +4,7 @@ Build high-performance, type-safe plugin systems with Foundation integration, se
 
 **Part of the [provide.foundation](https://foundation.provide.io) ecosystem** - seamlessly integrates with Foundation's configuration, logging, and development toolchain for consistent, unified application architecture.
 
----
+______________________________________________________________________
 
 ## Part of the provide.io Ecosystem
 
@@ -14,29 +14,33 @@ This project is part of a larger ecosystem of tools for Python and Terraform dev
 
 Understand how provide-foundation, pyvider, flavorpack, and other projects work together.
 
----
+______________________________________________________________________
 
 ## ✨ Key Features
 
 ### ⚡ **Performance-First**
+
 - **Async-native**: Full `asyncio` integration for maximum concurrency
-- **Efficient transports**: Unix domain sockets for local IPC and TCP for network communication  
+- **Efficient transports**: Unix domain sockets for local IPC and TCP for network communication
 - **Optimized serialization**: Protocol Buffers with streaming support
 - **High throughput**: Designed for high-volume, low-latency plugin communication
 
 ### 🔒 **Security-Focused**
+
 - **Built-in mTLS**: Mutual TLS authentication with certificate management utilities
 - **Process isolation**: Plugins run as separate processes for enhanced stability
 - **Transport encryption**: Secure communication over any network when mTLS is enabled
 - **Magic cookie validation**: Handshake verification for trusted connections
 
 ### 🛠️ **Developer Experience**
+
 - **Modern Python**: Python 3.11+ with native type annotations (`dict`, `list`, union operators)
 - **Foundation ecosystem**: Unified configuration, logging, and toolchain with other Foundation projects
 - **Factory functions**: `plugin_server()` and `plugin_client()` for rapid development
 - **Rich error handling**: Detailed exceptions with contextual information and guidance
 
 ### 🏗️ **Production-focused**
+
 - **Foundation configuration**: `PLUGIN_*` environment variables with validation and type safety
 - **Structured logging**: Foundation's logging system with context preservation and filtering
 - **Health checks**: gRPC Health Checking Protocol with custom status reporting
@@ -46,10 +50,7 @@ Understand how provide-foundation, pyvider, flavorpack, and other projects work 
 
 ### Installation
 
-=== "uv"
-    ```bash
-    uv add pyvider-rpcplugin
-    ```
+=== "uv" `bash     uv add pyvider-rpcplugin     `
 
 ### Your First Plugin
 
@@ -179,7 +180,7 @@ graph TB
 ### Core Components
 
 - **🚀 Server**: High-performance async gRPC server with security and monitoring
-- **📱 Client**: Type-safe client with connection management and retry logic  
+- **📱 Client**: Type-safe client with connection management and retry logic
 - **🌐 Transports**: Unix domain sockets and TCP with automatic transport negotiation
 - **📋 Protocols**: gRPC-based protocols with Protocol Buffer serialization
 - **🔐 Security**: mTLS encryption, certificate management, and process isolation
@@ -189,61 +190,65 @@ graph TB
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch: **Getting Started**
+- :material-rocket-launch: **Getting Started**
 
-    ---
+  ______________________________________________________________________
 
-    Quick installation, setup guide, and your first plugin
+  Quick installation, setup guide, and your first plugin
 
-    [:octicons-arrow-right-24: Get Started](getting-started/index.md)
+  [:octicons-arrow-right-24: Get Started](getting-started/index.md)
 
--   :material-book-open: **User Guide**
+- :material-book-open: **User Guide**
 
-    ---
+  ______________________________________________________________________
 
-    Comprehensive guide covering concepts, server/client development, and advanced topics
+  Comprehensive guide covering concepts, server/client development, and advanced topics
 
-    [:octicons-arrow-right-24: User Guide](guide/index.md)
+  [:octicons-arrow-right-24: User Guide](guide/index.md)
 
--   :material-api: **API Reference**
+- :material-api: **API Reference**
 
-    ---
+  ______________________________________________________________________
 
-    Complete API documentation with examples and code snippets
+  Complete API documentation with examples and code snippets
 
-    [:octicons-arrow-right-24: API Reference](reference/index.md)
+  [:octicons-arrow-right-24: API Reference](reference/index.md)
 
--   :material-code-braces: **Examples**
+- :material-code-braces: **Examples**
 
-    ---
+  ______________________________________________________________________
 
-    Working examples from simple echo services to production deployments
+  Working examples from simple echo services to production deployments
 
-    [:octicons-arrow-right-24: Examples](examples/index.md)
+  [:octicons-arrow-right-24: Examples](examples/index.md)
 
 </div>
 
 ## 🌟 Why Choose Pyvider RPC Plugin?
 
 ### **Foundation Ecosystem Integration**
+
 - 🏗️ **Unified architecture** with Foundation's configuration, logging, and development patterns
 - ⚙️ **Consistent toolchain** across all provide.io projects and services
 - 📊 **Structured observability** with Foundation's logging and metrics integration
 - 🔄 **Seamless interoperability** with other Foundation-based applications
 
 ### **vs. Native gRPC**
+
 - 🚀 **Plugin-first design** with automatic process management and handshaking
 - 🔐 **Security by default** with mTLS, certificate management, and magic cookie validation
 - ⚙️ **Foundation configuration** with `PLUGIN_*` environment variables and validation
 - 🛠️ **Factory functions** eliminate boilerplate while maintaining flexibility
 
 ### **vs. HashiCorp go-plugin**
+
 - 🐍 **Native Python** with modern async/await and Python 3.11+ features
 - 📈 **Superior performance** with optimized Protocol Buffers and transport negotiation
 - 🎯 **Full type safety** with comprehensive annotations and validation
 - 🔗 **Foundation ecosystem** provides consistent patterns across microservices
 
-### **vs. Custom RPC Solutions**  
+### **vs. Custom RPC Solutions**
+
 - ⚡ **Accelerated development** with battle-tested infrastructure and patterns
 - 🛡️ **Production-focused security** with mTLS, process isolation, and rate limiting
 - 📚 **Comprehensive tooling** for configuration, logging, health checks, and testing

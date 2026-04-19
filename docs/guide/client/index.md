@@ -27,6 +27,7 @@ if __name__ == "__main__":
 ### [Client Development Guide](client-guide.md)
 
 **Core Topics:**
+
 - Quick start and basic setup
 - Client architecture and lifecycle
 - Configuration patterns (client vs plugin)
@@ -39,6 +40,7 @@ if __name__ == "__main__":
 ### [Connection Resilience](resilience.md)
 
 **Core Topics:**
+
 - Exception handling and error hierarchy
 - Retry strategies (exponential backoff, jitter, circuit breaker)
 - Connection management and health monitoring
@@ -51,6 +53,7 @@ if __name__ == "__main__":
 ### [Direct Connections](direct-connections.md)
 
 **Core Topics:**
+
 - Connecting to existing servers (TCP, Unix sockets)
 - Environment-based configuration
 - Load balancing across multiple servers
@@ -64,39 +67,45 @@ if __name__ == "__main__":
 
 === "Beginner"
 
-    **Goal:** Build your first working plugin client
+```
+**Goal:** Build your first working plugin client
 
-    1. [Client Guide: Quick Start](client-guide.md#quick-start)
-    2. [Client Guide: Client Patterns](client-guide.md#client-patterns)
-    3. [Client Guide: Configuration](client-guide.md#configuration)
-    4. [Examples: Quick Start](../../examples/quick-start.md)
-    5. [Examples: Echo Service](../../examples/echo-example.md)
+1. [Client Guide: Quick Start](client-guide.md#quick-start)
+2. [Client Guide: Client Patterns](client-guide.md#client-patterns)
+3. [Client Guide: Configuration](client-guide.md#configuration)
+4. [Examples: Quick Start](../../examples/quick-start.md)
+5. [Examples: Echo Service](../../examples/echo-example.md)
 
-    **Next:** Add error handling and retry logic
+**Next:** Add error handling and retry logic
+```
 
 === "Intermediate"
 
-    **Goal:** Build resilient, production-focused clients
+```
+**Goal:** Build resilient, production-focused clients
 
-    1. [Resilience: Exception Handling](resilience.md#exception-handling)
-    2. [Resilience: Retry Strategies](resilience.md#retry-strategies)
-    3. [Resilience: Connection Management](resilience.md#connection-management)
-    4. [Client Guide: Advanced Patterns](client-guide.md#advanced-patterns)
-    5. [Configuration Guide](../config/)
+1. [Resilience: Exception Handling](resilience.md#exception-handling)
+2. [Resilience: Retry Strategies](resilience.md#retry-strategies)
+3. [Resilience: Connection Management](resilience.md#connection-management)
+4. [Client Guide: Advanced Patterns](client-guide.md#advanced-patterns)
+5. [Configuration Guide](../config/)
 
-    **Next:** Implement advanced patterns for microservices
+**Next:** Implement advanced patterns for microservices
+```
 
 === "Advanced"
 
-    **Goal:** Master distributed systems and microservices patterns
+```
+**Goal:** Master distributed systems and microservices patterns
 
-    1. [Direct Connections](direct-connections.md)
-    2. [Resilience: Circuit Breaker](resilience.md#retry-strategies)
-    3. [Resilience: Connection Pooling](resilience.md#connection-management)
-    4. [Security: mTLS](../security/mtls.md)
-    5. [Advanced Topics](../advanced/)
+1. [Direct Connections](direct-connections.md)
+2. [Resilience: Circuit Breaker](resilience.md#retry-strategies)
+3. [Resilience: Connection Pooling](resilience.md#connection-management)
+4. [Security: mTLS](../security/mtls.md)
+5. [Advanced Topics](../advanced/)
 
-    **Next:** Implement service mesh integration
+**Next:** Implement service mesh integration
+```
 
 ## Common Patterns
 
@@ -186,6 +195,6 @@ See [Connection Resilience](resilience.md#connection-management) for complete im
 ## Next Steps
 
 1. **Read [Client Development Guide](client-guide.md)** - Understand fundamentals
-2. **Study [Connection Resilience](resilience.md)** - Add fault tolerance
-3. **Explore [Examples](../../examples/)** - See complete implementations
-4. **Review [Security Guide](../security/)** - Secure your clients
+1. **Study [Connection Resilience](resilience.md)** - Add fault tolerance
+1. **Explore [Examples](../../examples/)** - See complete implementations
+1. **Review [Security Guide](../security/)** - Secure your clients

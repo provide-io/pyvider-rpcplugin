@@ -51,6 +51,7 @@ async def certificate_basics():
 ## Core Components
 
 ### 1. **Certificate Generation**
+
 Foundation provides utilities for creating CA certificates, server certificates, and client certificates with proper extensions and constraints.
 
 ```python
@@ -77,6 +78,7 @@ ca_cert = Certificate.create_ca(
 ```
 
 ### 2. **Certificate Validation**
+
 Comprehensive validation including expiration and signature verification.
 
 ```python
@@ -112,6 +114,7 @@ except Exception as e:
 ```
 
 ### 3. **Certificate Rotation**
+
 Automated certificate renewal with configurable rotation policies and zero-downtime updates.
 
 ```python
@@ -170,6 +173,7 @@ new_cert = await rotate_certificate_if_needed(
 ## Certificate Types
 
 ### Development Certificates
+
 ```python
 from provide.foundation.crypto import Certificate
 
@@ -183,6 +187,7 @@ dev_cert = Certificate.create_self_signed_server_cert(
 ```
 
 ### Production CA Setup
+
 ```python
 from provide.foundation.crypto import Certificate
 
@@ -201,6 +206,7 @@ root_ca = Certificate.create_ca(
 ```
 
 ### Server Certificates
+
 ```python
 from provide.foundation.crypto import Certificate
 
@@ -220,6 +226,7 @@ server_cert = Certificate.create_self_signed_server_cert(
 ```
 
 ### Client Certificates
+
 ```python
 from provide.foundation.crypto import Certificate
 
@@ -236,6 +243,7 @@ client_cert = Certificate.create_self_signed_client_cert(
 ## Integration with RPC
 
 ### Server Configuration
+
 ```python
 from pathlib import Path
 from pyvider.rpcplugin import plugin_server
@@ -262,6 +270,7 @@ server = plugin_server(
 ```
 
 ### Client Configuration
+
 ```python
 from pathlib import Path
 from pyvider.rpcplugin import plugin_client
@@ -290,6 +299,7 @@ async with plugin_client(
 ## Configuration Management
 
 ### Environment Variables
+
 ```bash
 # Certificate paths
 export PLUGIN_TLS_CERT_PATH="/etc/ssl/plugin/server.pem"
@@ -302,6 +312,7 @@ export PLUGIN_CERT_ROTATION_DAYS="30"
 ```
 
 ### Foundation Configuration
+
 ```python
 from pathlib import Path
 from provide.foundation.config import RuntimeConfig
@@ -332,6 +343,7 @@ else:
 ## Monitoring and Health
 
 ### Certificate Health Checks
+
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
@@ -369,6 +381,7 @@ health_status = await check_certificate_health([
 ```
 
 ### Expiration Monitoring
+
 ```python
 import asyncio
 from pathlib import Path
@@ -399,17 +412,18 @@ async def monitor_certificate_expiry():
 ## Security Best Practices
 
 1. **Use Strong Algorithms**: ECDSA P-384 or RSA 4096+ for production
-2. **Short Validity Periods**: 90 days maximum for server certificates  
-3. **Proper Key Usage**: Set appropriate key usage extensions
-4. **Certificate Pinning**: Pin CA certificates in production
-5. **Regular Rotation**: Automate certificate renewal processes
-6. **Secure Storage**: Protect private keys with proper file permissions
-7. **Revocation Support**: Implement CRL or OCSP checking
-8. **Monitor Expiration**: Alert on upcoming certificate expiry
+1. **Short Validity Periods**: 90 days maximum for server certificates
+1. **Proper Key Usage**: Set appropriate key usage extensions
+1. **Certificate Pinning**: Pin CA certificates in production
+1. **Regular Rotation**: Automate certificate renewal processes
+1. **Secure Storage**: Protect private keys with proper file permissions
+1. **Revocation Support**: Implement CRL or OCSP checking
+1. **Monitor Expiration**: Alert on upcoming certificate expiry
 
 ## Common Patterns
 
 ### Development Setup
+
 ```python
 from provide.foundation.crypto import Certificate
 
@@ -429,6 +443,7 @@ dev_server_cert = Certificate.create_self_signed_server_cert(
 ```
 
 ### Production Deployment
+
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
@@ -470,6 +485,7 @@ server_cert, ca_cert = load_production_certificates("/etc/ssl/plugin")
 ```
 
 ### Disaster Recovery
+
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
@@ -518,6 +534,7 @@ backup_path = backup_certificates("/etc/ssl/plugin", "/backups/certs")
 ### Common Issues
 
 #### Certificate Validation Errors
+
 ```python
 from pathlib import Path
 from provide.foundation.crypto import Certificate
@@ -546,6 +563,7 @@ except Exception as e:
 ```
 
 #### Expiration Problems
+
 ```bash
 # Check certificate expiration
 openssl x509 -in server.pem -noout -dates

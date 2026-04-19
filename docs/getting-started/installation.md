@@ -6,14 +6,15 @@ Get started with Pyvider RPC Plugin by installing it in your Python environment.
 
 ## Prerequisites
 
---8<-- ".provide/foundry/docs/_partials/python-requirements.md"
+--8\<-- ".provide/foundry/docs/\_partials/python-requirements.md"
 
 **Additional Requirements:**
+
 - **protoc** (Protocol Buffer compiler) - automatically handled by dependencies
 
---8<-- ".provide/foundry/docs/_partials/uv-installation.md"
+--8\<-- ".provide/foundry/docs/\_partials/uv-installation.md"
 
---8<-- ".provide/foundry/docs/_partials/python-version-setup.md"
+--8\<-- ".provide/foundry/docs/\_partials/python-version-setup.md"
 
 ## Installation Methods
 
@@ -22,6 +23,7 @@ Get started with Pyvider RPC Plugin by installing it in your Python environment.
 If you're using pyvider-rpcplugin in your project, add it to your dependencies:
 
 **Using uv (Recommended):**
+
 ```bash
 # Add to your project
 uv add pyvider-rpcplugin
@@ -31,6 +33,7 @@ uv sync
 ```
 
 **In your `pyproject.toml`:**
+
 ```toml
 [project]
 dependencies = [
@@ -56,9 +59,9 @@ uv sync --all-groups
 
 This creates a `.venv/` virtual environment with all dependencies installed.
 
---8<-- ".provide/foundry/docs/_partials/virtual-env-setup.md"
+--8\<-- ".provide/foundry/docs/\_partials/virtual-env-setup.md"
 
---8<-- ".provide/foundry/docs/_partials/platform-specific-macos.md"
+--8\<-- ".provide/foundry/docs/\_partials/platform-specific-macos.md"
 
 ## Platform Support
 
@@ -70,23 +73,23 @@ Pyvider RPC Plugin supports:
 
 ### Transport Availability
 
-| Transport | Linux | macOS | Windows |
-|-----------|-------|-------|---------|
-| Unix Sockets | ✅ | ✅ | ❌ |
-| TCP Sockets | ✅ | ✅ | ✅ |
+| Transport    | Linux | macOS | Windows |
+| ------------ | ----- | ----- | ------- |
+| Unix Sockets | ✅    | ✅    | ❌      |
+| TCP Sockets  | ✅    | ✅    | ✅      |
 
-!!! note "Windows Support"
-    On Windows, only TCP transport is available. Unix sockets are not supported.
+!!! note "Windows Support" On Windows, only TCP transport is available. Unix sockets are not supported.
 
 ## Verifying Installation
 
 ### Basic Verification
 
---8<-- ".provide/foundry/docs/_partials/verification-commands.md"
+--8\<-- ".provide/foundry/docs/\_partials/verification-commands.md"
 
 ### RPC Plugin Verification
 
 **1. Test Core Imports:**
+
 ```python
 import pyvider.rpcplugin
 
@@ -104,6 +107,7 @@ print("Foundation integration verified!")
 ```
 
 **2. Test Plugin Server Creation:**
+
 ```python
 # test_installation.py
 import asyncio
@@ -143,11 +147,13 @@ if __name__ == "__main__":
 ```
 
 Run the test:
+
 ```bash
 python test_installation.py
 ```
 
 Expected output:
+
 ```
 2024-01-15 10:30:45.123 [info     ] Testing Pyvider RPC Plugin installation...
 2024-01-15 10:30:45.124 [info     ] Server creation successful
@@ -156,6 +162,7 @@ Expected output:
 ```
 
 **3. Run Integration Tests:**
+
 ```bash
 # Run core plugin tests
 uv run pytest tests/test_factories.py -v
@@ -169,7 +176,7 @@ uv run pytest tests/architecture-and-handshake.md -v
 
 ## Development Workflow
 
---8<-- ".provide/foundry/docs/_partials/testing-setup.md"
+--8\<-- ".provide/foundry/docs/\_partials/testing-setup.md"
 
 **Additional Testing Options:**
 
@@ -184,19 +191,17 @@ uv run pytest -m "not long_running"
 uv run pytest tests/client/ -v
 ```
 
-!!! important "Foundation Reset Required"
-    When testing pyvider-rpcplugin, **always use `reset_foundation_setup_for_testing()`** from `provide-testkit`:
-    ```python
-    import pytest
-    from provide.testkit import reset_foundation_setup_for_testing
+!!! important "Foundation Reset Required" When testing pyvider-rpcplugin, **always use `reset_foundation_setup_for_testing()`** from `provide-testkit`: \`\`\`python import pytest from provide.testkit import reset_foundation_setup_for_testing
 
-    @pytest.fixture(autouse=True)
-    def reset_foundation():
-        """Reset Foundation state before each test."""
-        reset_foundation_setup_for_testing()
-    ```
+````
+@pytest.fixture(autouse=True)
+def reset_foundation():
+    """Reset Foundation state before each test."""
+    reset_foundation_setup_for_testing()
+```
+````
 
---8<-- ".provide/foundry/docs/_partials/code-quality-setup.md"
+--8\<-- ".provide/foundry/docs/\_partials/code-quality-setup.md"
 
 **Additional Type Checking:**
 
@@ -230,16 +235,16 @@ Pyvider RPC Plugin automatically installs these key dependencies:
 
 ### Core Dependencies
 
-| Dependency | Purpose |
-|------------|---------|
-| **provide-foundation** | Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting |
-| **grpcio** | gRPC runtime for Python |
-| **grpcio-health-checking** | gRPC health checking implementation |
-| **protobuf** | Protocol Buffers runtime and serialization |
-| **attrs** | Modern Python data classes with excellent typing support |
-| **cryptography** | Cryptographic primitives and utilities |
-| **structlog** | Structured logging library |
-| **google** | Google API core libraries |
+| Dependency                 | Purpose                                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **provide-foundation**     | Foundation library providing structured logging, type-safe configuration, cryptography utilities, and rate limiting |
+| **grpcio**                 | gRPC runtime for Python                                                                                             |
+| **grpcio-health-checking** | gRPC health checking implementation                                                                                 |
+| **protobuf**               | Protocol Buffers runtime and serialization                                                                          |
+| **attrs**                  | Modern Python data classes with excellent typing support                                                            |
+| **cryptography**           | Cryptographic primitives and utilities                                                                              |
+| **structlog**              | Structured logging library                                                                                          |
+| **google**                 | Google API core libraries                                                                                           |
 
 ### Foundation Integration
 
@@ -255,12 +260,11 @@ from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin import plugin_server, plugin_client
 ```
 
-!!! tip "Understanding the Architecture"
-    **Foundation** provides infrastructure (config, logging, crypto, utilities)
-    **Pyvider RPC Plugin** provides RPC communication (gRPC, transports, protocols)
-    **Your Plugin** provides business logic
+!!! tip "Understanding the Architecture" **Foundation** provides infrastructure (config, logging, crypto, utilities) **Pyvider RPC Plugin** provides RPC communication (gRPC, transports, protocols) **Your Plugin** provides business logic
 
-    **→ [Complete Foundation Overview](../introduction/foundation.md)** for detailed architecture and practical examples
+```
+**→ [Complete Foundation Overview](../introduction/foundation.md)** for detailed architecture and practical examples
+```
 
 ### Optional Dependencies
 
@@ -276,12 +280,14 @@ uv sync --all-groups
 ```
 
 Test dependencies include:
+
 - **grpcio-tools** - Protocol Buffer compiler and gRPC tools
 - **grpc-stubs** - Type stubs for gRPC
 - **types-grpcio** - Type hints for grpcio
 - **types-protobuf** - Type hints for protobuf
 
 Development dependencies (installed via `uv sync --all-groups`) include:
+
 - All test dependencies above
 - **provide-testkit** - Testing utilities, type checking, profiling, and build tools
 
@@ -294,7 +300,7 @@ uv sync --group docs
 
 ## Troubleshooting
 
---8<-- ".provide/foundry/docs/_partials/troubleshooting-common.md"
+--8\<-- ".provide/foundry/docs/\_partials/troubleshooting-common.md"
 
 ### RPC Plugin-Specific Issues
 
@@ -313,18 +319,19 @@ uv sync
 If you get protoc-related errors:
 
 **On Ubuntu/Debian:**
+
 ```bash
 sudo apt update
 sudo apt install protobuf-compiler
 ```
 
 **On macOS:**
+
 ```bash
 brew install protobuf
 ```
 
-**On Windows:**
-Download from [Protocol Buffers releases](https://github.com/protocolbuffers/protobuf/releases)
+**On Windows:** Download from [Protocol Buffers releases](https://github.com/protocolbuffers/protobuf/releases)
 
 #### Version Conflicts
 
@@ -339,6 +346,7 @@ uv add pyvider-rpcplugin
 #### Foundation Setup Issues
 
 If tests fail with Foundation-related errors:
+
 ```python
 # Always use reset in test fixtures
 from provide.testkit import reset_foundation_setup_for_testing
@@ -351,6 +359,7 @@ def reset_foundation():
 #### gRPC Connection Issues
 
 If you encounter connection problems:
+
 ```bash
 # Check transport availability
 python -c "
@@ -367,16 +376,16 @@ print('TCP sockets available: True')
 If you encounter issues:
 
 1. **Check the logs** - Foundation provides detailed error messages
-2. **Verify Python version** - Ensure you're using Python 3.11+
-3. **Check [Troubleshooting Guide](../development/troubleshooting.md)** - Common issues and solutions
-5. **Report issues** - [GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)
+1. **Verify Python version** - Ensure you're using Python 3.11+
+1. **Check [Troubleshooting Guide](../development/troubleshooting.md)** - Common issues and solutions
+1. **Report issues** - [GitHub Issues](https://github.com/provide-io/pyvider-rpcplugin/issues)
 
 ## Next Steps
 
 ### Get Started Quickly
 
 1. **[Quick Start](quick-start.md)** - Run your first plugin in 5 minutes
-2. **[First Plugin](first-plugin.md)** - Build a complete echo service with all RPC patterns
+1. **[First Plugin](first-plugin.md)** - Build a complete echo service with all RPC patterns
 
 ### Explore Examples
 

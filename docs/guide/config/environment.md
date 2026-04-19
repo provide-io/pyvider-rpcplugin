@@ -5,6 +5,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Core Protocol Settings
 
 ### PLUGIN_CORE_VERSION
+
 - **Type**: `int`
 - **Default**: `1`
 - **Description**: Plugin protocol version for client-server negotiation
@@ -12,6 +13,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_CORE_VERSION=1`
 
 ### PLUGIN_PROTOCOL_VERSIONS
+
 - **Type**: `list[int]`
 - **Default**: `[1]`
 - **Description**: List of protocol versions supported by this plugin
@@ -21,6 +23,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Transport Configuration
 
 ### PLUGIN_SERVER_TRANSPORTS
+
 - **Type**: `list[str]`
 - **Default**: `["unix", "tcp"]`
 - **Description**: Transport types the server supports and announces
@@ -28,6 +31,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_SERVER_TRANSPORTS='["unix", "tcp"]'`
 
 ### PLUGIN_CLIENT_TRANSPORTS
+
 - **Type**: `list[str]`
 - **Default**: `["unix", "tcp"]`
 - **Description**: Transport types the client prefers (in priority order)
@@ -37,6 +41,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Security and Authentication
 
 ### PLUGIN_AUTO_MTLS
+
 - **Type**: `bool`
 - **Default**: `true`
 - **Description**: Enable automatic mutual TLS encryption
@@ -44,6 +49,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_AUTO_MTLS=true`
 
 ### PLUGIN_MAGIC_COOKIE_KEY
+
 - **Type**: `str`
 - **Default**: `"PLUGIN_MAGIC_COOKIE"`
 - **Description**: Environment variable name containing the magic cookie
@@ -51,6 +57,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_MAGIC_COOKIE_KEY=MY_PLUGIN_SECRET`
 
 ### PLUGIN_MAGIC_COOKIE_VALUE
+
 - **Type**: `str`
 - **Default**: `"test_cookie_value"`
 - **Description**: The actual magic cookie secret for authentication
@@ -60,6 +67,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## TLS Certificate Configuration
 
 ### PLUGIN_SERVER_CERT
+
 - **Type**: `str`
 - **Default**: `None` (auto-generated for development)
 - **Description**: Server TLS certificate (PEM format or file path)
@@ -72,6 +80,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
   ```
 
 ### PLUGIN_SERVER_KEY
+
 - **Type**: `str`
 - **Default**: `None` (auto-generated for development)
 - **Description**: Server TLS private key (PEM format or file path)
@@ -80,6 +89,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_SERVER_KEY=file:///etc/ssl/private/server.key`
 
 ### PLUGIN_CLIENT_CERT
+
 - **Type**: `str`
 - **Default**: `None` (auto-generated for development)
 - **Description**: Client TLS certificate for mutual TLS
@@ -87,13 +97,15 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_CLIENT_CERT=file:///etc/ssl/certs/client.pem`
 
 ### PLUGIN_CLIENT_KEY
+
 - **Type**: `str`
-- **Default**: `None` (auto-generated for development)  
+- **Default**: `None` (auto-generated for development)
 - **Description**: Client TLS private key for mutual TLS
 - **Format**: Same as server key
 - **Example**: `export PLUGIN_CLIENT_KEY=file:///etc/ssl/private/client.key`
 
 ### PLUGIN_SERVER_ROOT_CERTS
+
 - **Type**: `str`
 - **Default**: `None` (use system CA bundle)
 - **Description**: CA certificates for client to verify server certificate
@@ -101,6 +113,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_SERVER_ROOT_CERTS=file:///etc/ssl/certs/ca-bundle.pem`
 
 ### PLUGIN_CLIENT_ROOT_CERTS
+
 - **Type**: `str`
 - **Default**: `None` (use system CA bundle)
 - **Description**: CA certificates for server to verify client certificate
@@ -110,6 +123,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Timeout and Connection Settings
 
 ### PLUGIN_HANDSHAKE_TIMEOUT
+
 - **Type**: `float`
 - **Default**: `10.0`
 - **Description**: Timeout in seconds for handshake completion
@@ -117,6 +131,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_HANDSHAKE_TIMEOUT=30.0`
 
 ### PLUGIN_CONNECTION_TIMEOUT
+
 - **Type**: `float`
 - **Default**: `30.0`
 - **Description**: Timeout in seconds for connection establishment
@@ -126,12 +141,14 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Client Retry Configuration
 
 ### PLUGIN_CLIENT_RETRY_ENABLED
+
 - **Type**: `bool`
 - **Default**: `true`
 - **Description**: Enable automatic client retry on connection failures
 - **Example**: `export PLUGIN_CLIENT_RETRY_ENABLED=true`
 
 ### PLUGIN_CLIENT_MAX_RETRIES
+
 - **Type**: `int`
 - **Default**: `3`
 - **Description**: Maximum number of retry attempts
@@ -139,6 +156,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_CLIENT_MAX_RETRIES=5`
 
 ### PLUGIN_CLIENT_INITIAL_BACKOFF_MS
+
 - **Type**: `int`
 - **Default**: `500`
 - **Description**: Initial delay in milliseconds before first retry
@@ -146,6 +164,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_CLIENT_INITIAL_BACKOFF_MS=1000`
 
 ### PLUGIN_CLIENT_MAX_BACKOFF_MS
+
 - **Type**: `int`
 - **Default**: `5000`
 - **Description**: Maximum delay in milliseconds between retries
@@ -153,6 +172,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_CLIENT_MAX_BACKOFF_MS=10000`
 
 ### PLUGIN_CLIENT_RETRY_JITTER_MS
+
 - **Type**: `int`
 - **Default**: `100`
 - **Description**: Maximum random jitter in milliseconds to add to backoff
@@ -161,6 +181,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_CLIENT_RETRY_JITTER_MS=250`
 
 ### PLUGIN_CLIENT_RETRY_TOTAL_TIMEOUT_S
+
 - **Type**: `int`
 - **Default**: `60`
 - **Description**: Total time in seconds to spend retrying before giving up
@@ -170,6 +191,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Server Features
 
 ### PLUGIN_HEALTH_SERVICE_ENABLED
+
 - **Type**: `bool`
 - **Default**: `true`
 - **Description**: Enable standard gRPC health checking service
@@ -177,6 +199,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_HEALTH_SERVICE_ENABLED=true`
 
 ### PLUGIN_RATE_LIMIT_ENABLED
+
 - **Type**: `bool`
 - **Default**: `false`
 - **Description**: Enable server-side request rate limiting
@@ -184,6 +207,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_RATE_LIMIT_ENABLED=true`
 
 ### PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND
+
 - **Type**: `float`
 - **Default**: `100.0`
 - **Description**: Average requests per second allowed by rate limiter
@@ -191,6 +215,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND=50.0`
 
 ### PLUGIN_RATE_LIMIT_BURST_CAPACITY
+
 - **Type**: `float`
 - **Default**: `200.0`
 - **Description**: Maximum requests allowed in short burst (token bucket size)
@@ -199,6 +224,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_RATE_LIMIT_BURST_CAPACITY=100.0`
 
 ### PLUGIN_SHUTDOWN_FILE_PATH
+
 - **Type**: `str`
 - **Default**: `None` (disabled)
 - **Description**: File path to monitor for graceful shutdown trigger
@@ -208,6 +234,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ## Logging and Development
 
 ### PLUGIN_LOG_LEVEL
+
 - **Type**: `str`
 - **Default**: `"INFO"`
 - **Description**: Logging level for structured output
@@ -215,6 +242,7 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 - **Example**: `export PLUGIN_LOG_LEVEL=DEBUG`
 
 ### PLUGIN_SHOW_EMOJI_MATRIX
+
 - **Type**: `bool`
 - **Default**: `true`
 - **Description**: Enable emoji enhancements in log messages
@@ -276,24 +304,31 @@ PLUGIN_SHUTDOWN_FILE_PATH=/tmp/shutdown
 ## Type Conversion Rules
 
 ### Boolean Values
+
 The following string values are converted to `True` (case-insensitive):
+
 - `"true"`, `"yes"`, `"on"`, `"1"`, `"enabled"`
 
 All other values are converted to `False`.
 
 ### List Values
+
 Comma-separated strings are split into lists:
+
 - `"unix,tcp"` → `["unix", "tcp"]`
 - `"1,2,3"` → `[1, 2, 3]` (for integer lists)
 - Whitespace around commas is automatically stripped
 
 ### Numeric Values
+
 - **Integers**: Standard Python `int()` conversion
 - **Floats**: Standard Python `float()` conversion
 - Invalid numeric strings raise `ConfigError`
 
 ### File Path Values
+
 Values starting with `file://` are treated as file paths and the content is loaded:
+
 - `"file:///path/to/cert.pem"` loads the file content
 - Direct PEM strings are used as-is
 - Missing files raise `ConfigError`
@@ -316,8 +351,9 @@ except ConfigError as e:
 ```
 
 Common validation errors:
+
 - Invalid boolean values: `"maybe"` → `ConfigError`
-- Invalid numeric values: `"not-a-number"` → `ConfigError`  
+- Invalid numeric values: `"not-a-number"` → `ConfigError`
 - Missing certificate files: `"file:///missing/cert.pem"` → `ConfigError`
 - Invalid transport types: `"invalid-transport"` → `ConfigError`
 
