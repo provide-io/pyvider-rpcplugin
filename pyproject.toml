@@ -68,7 +68,6 @@ dev = [
     "mkdocs-autorefs>=1.4.3",
     "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]",
     "pyvider-rpcplugin[test]",
-    "wrknv>=0.3.21",
 ]
 docs = [
     "mkdocs-gen-files>=0.5.0",
@@ -279,7 +278,6 @@ exclude_dirs = [".venv", "tests", "workenv"]
 
 [tool.security]
 # Paths to exclude from secret scanning (TruffleHog, GitGuardian, Gitleaks)
-# Run: we security generate (via wrknv) to regenerate tool configs
 description = "Test fixtures and example credentials - intentionally committed"
 allowed_paths = [
     # Test certificates and keys for mTLS testing
