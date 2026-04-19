@@ -25,10 +25,10 @@ from pyvider.rpcplugin.exception import (
     ProtocolError,
     TransportError,
 )
-from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo
+from pyvider.rpcplugin.protocol.grpc_broker_pb2 import ConnInfo  # type: ignore[attr-defined]
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
-from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData
+from pyvider.rpcplugin.protocol.grpc_stdio_pb2 import StdioData  # type: ignore[attr-defined]
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 
