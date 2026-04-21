@@ -6,7 +6,7 @@
 """Tests for basic handshake execution functionality."""
 
 import asyncio
-import subprocess
+import subprocess  # nosec
 from typing import Any
 
 from provide.testkit.mocking import AsyncMock, MagicMock, patch

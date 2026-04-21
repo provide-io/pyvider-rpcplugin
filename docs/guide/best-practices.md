@@ -416,7 +416,7 @@ response = await stub.CallMethod(request)
 
 ### Document Your Protocol
 
-````python
+```python
 class MyProtocol(RPCPluginProtocol):
     """
     Protocol for My Plugin service.
@@ -433,7 +433,7 @@ class MyProtocol(RPCPluginProtocol):
         ```
     """
     service_name: str = "my.Service"
-````
+```
 
 ### Document Configuration Requirements
 

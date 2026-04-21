@@ -95,37 +95,36 @@ config.plugin_rate_limit_burst_capacity = 200.0
 
 The `configure()` function uses simplified parameter names that map to the underlying configuration attributes:
 
-| `configure()` Parameter | Maps to Configuration Attribute                         | Environment Variable                                    |
-| ----------------------- | ------------------------------------------------------- | ------------------------------------------------------- |
-| `magic_cookie`          | `plugin_magic_cookie_value`                             | `PLUGIN_MAGIC_COOKIE_VALUE`                             |
-| `protocol_version`      | `plugin_core_version` & `plugin_protocol_versions`      | `PLUGIN_CORE_VERSION` & `PLUGIN_PROTOCOL_VERSIONS`      |
-| `transports`            | `plugin_server_transports` & `plugin_client_transports` | `PLUGIN_SERVER_TRANSPORTS` & `PLUGIN_CLIENT_TRANSPORTS` |
-| `auto_mtls`             | `plugin_auto_mtls`                                      | `PLUGIN_AUTO_MTLS`                                      |
-| `handshake_timeout`     | `plugin_handshake_timeout`                              | `PLUGIN_HANDSHAKE_TIMEOUT`                              |
-| `**kwargs`              | `plugin_{key}` (auto-prefixed)                          | `PLUGIN_{KEY}`                                          |
+| `configure()` Parameter | Maps to Configuration Attribute | Environment Variable |
+|------------------------|--------------------------------|---------------------|
+| `magic_cookie` | `plugin_magic_cookie_value` | `PLUGIN_MAGIC_COOKIE_VALUE` |
+| `protocol_version` | `plugin_core_version` & `plugin_protocol_versions` | `PLUGIN_CORE_VERSION` & `PLUGIN_PROTOCOL_VERSIONS` |
+| `transports` | `plugin_server_transports` & `plugin_client_transports` | `PLUGIN_SERVER_TRANSPORTS` & `PLUGIN_CLIENT_TRANSPORTS` |
+| `auto_mtls` | `plugin_auto_mtls` | `PLUGIN_AUTO_MTLS` |
+| `handshake_timeout` | `plugin_handshake_timeout` | `PLUGIN_HANDSHAKE_TIMEOUT` |
+| `**kwargs` | `plugin_{key}` (auto-prefixed) | `PLUGIN_{KEY}` |
 
-!!! info "Protocol Version Dual Assignment" Setting `protocol_version` via `configure()` updates **two configuration fields**:
+!!! info "Protocol Version Dual Assignment"
+    Setting `protocol_version` via `configure()` updates **two configuration fields**:
 
-````
-- `plugin_core_version` - The plugin's primary protocol version
-- `plugin_protocol_versions` - List of supported versions (set to `[protocol_version]`)
+    - `plugin_core_version` - The plugin's primary protocol version
+    - `plugin_protocol_versions` - List of supported versions (set to `[protocol_version]`)
 
-This ensures backward compatibility while establishing a primary version. For example:
+    This ensures backward compatibility while establishing a primary version. For example:
 
-```python
-configure(protocol_version=3)
-# Results in:
-# rpcplugin_config.plugin_core_version = 3
-# rpcplugin_config.plugin_protocol_versions = [3]
-```
+    ```python
+    configure(protocol_version=3)
+    # Results in:
+    # rpcplugin_config.plugin_core_version = 3
+    # rpcplugin_config.plugin_protocol_versions = [3]
+    ```
 
-To support multiple protocol versions, set `plugin_protocol_versions` directly:
+    To support multiple protocol versions, set `plugin_protocol_versions` directly:
 
-```python
-rpcplugin_config.plugin_protocol_versions = [1, 2, 3]  # Support versions 1-3
-rpcplugin_config.plugin_core_version = 3  # Primary version is 3
-```
-````
+    ```python
+    rpcplugin_config.plugin_protocol_versions = [1, 2, 3]  # Support versions 1-3
+    rpcplugin_config.plugin_core_version = 3  # Primary version is 3
+    ```
 
 ### Configuration Validation
 
@@ -150,24 +149,20 @@ For a complete list of all configuration options with defaults, types, and descr
 Here are the most frequently configured options:
 
 **Core Settings:**
-
 - `PLUGIN_CORE_VERSION` - Protocol version (default: `1`)
 - `PLUGIN_SERVER_TRANSPORTS` - Server transport types (default: `["unix", "tcp"]`)
 - `PLUGIN_MAGIC_COOKIE_VALUE` - Authentication secret (default: `"test_cookie_value"`)
 
 **Timeouts:**
-
 - `PLUGIN_HANDSHAKE_TIMEOUT` - Handshake timeout in seconds (default: `10.0`)
 - `PLUGIN_CONNECTION_TIMEOUT` - Connection timeout in seconds (default: `30.0`)
 
 **Security:**
-
 - `PLUGIN_AUTO_MTLS` - Enable automatic mTLS (default: `true`)
 - `PLUGIN_SERVER_CERT` - Server TLS certificate path
 - `PLUGIN_SERVER_KEY` - Server TLS private key path
 
 **Performance:**
-
 - `PLUGIN_RATE_LIMIT_ENABLED` - Enable rate limiting (default: `false`)
 - `PLUGIN_RATE_LIMIT_REQUESTS_PER_SECOND` - Request rate limit (default: `100.0`)
 - `PLUGIN_HEALTH_SERVICE_ENABLED` - Enable health checks (default: `true`)
@@ -225,23 +220,23 @@ export PLUGIN_SHUTDOWN_FILE_PATH="/tmp/shutdown"  # Graceful shutdown
 ### Security First
 
 1. **Always enable mTLS in production**: Set `PLUGIN_AUTO_MTLS=true`
-1. **Use strong magic cookies**: Generate cryptographically secure random strings
-1. **Secure certificate management**: Use proper file permissions (600) for private keys
-1. **Rotate secrets regularly**: Update magic cookies and certificates on a schedule
+2. **Use strong magic cookies**: Generate cryptographically secure random strings
+3. **Secure certificate management**: Use proper file permissions (600) for private keys
+4. **Rotate secrets regularly**: Update magic cookies and certificates on a schedule
 
 ### Performance Optimization
 
 1. **Choose appropriate transports**: Unix sockets for local, TCP for network
-1. **Tune timeouts**: Balance responsiveness vs. reliability based on your environment
-1. **Enable rate limiting**: Protect against abuse with `PLUGIN_RATE_LIMIT_ENABLED=true`
-1. **Monitor health checks**: Use `PLUGIN_HEALTH_SERVICE_ENABLED=true` for observability
+2. **Tune timeouts**: Balance responsiveness vs. reliability based on your environment
+3. **Enable rate limiting**: Protect against abuse with `PLUGIN_RATE_LIMIT_ENABLED=true`
+4. **Monitor health checks**: Use `PLUGIN_HEALTH_SERVICE_ENABLED=true` for observability
 
 ### Development Workflow
 
 1. **Use different configs per environment**: Separate dev, staging, production settings
-1. **Enable debug logging**: Set `PLUGIN_LOG_LEVEL=DEBUG` during development
-1. **Use environment files**: Store configuration in `.env` files (excluded from git)
-1. **Validate early**: Test configuration changes in isolated environments first
+2. **Enable debug logging**: Set `PLUGIN_LOG_LEVEL=DEBUG` during development
+3. **Use environment files**: Store configuration in `.env` files (excluded from git)
+4. **Validate early**: Test configuration changes in isolated environments first
 
 ## Advanced Configuration
 

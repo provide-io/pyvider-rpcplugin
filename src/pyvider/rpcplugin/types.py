@@ -254,9 +254,8 @@ class ConnectionT(TypeProtocol):
 
 
 def _log_method_validation_failure(protocol_label: str, method_name: str, reason: str) -> None:
-    """Log a method validation failure at debug level if debug is enabled."""
-    if logger.is_debug_enabled():
-        logger.debug(f"{protocol_label}: {reason} {method_name}.")
+    """Log a method validation failure at debug level."""
+    logger.debug(f"{protocol_label}: {reason} {method_name}.")
 
 
 def _validate_method(obj: Any, method_name: str, spec: dict[str, Any], protocol_label: str) -> bool:
@@ -278,11 +277,10 @@ def _validate_method(obj: Any, method_name: str, spec: dict[str, Any], protocol_
         sig = inspect.signature(method)
         if len(sig.parameters) != spec["params"]:
             param_str = "param" if spec["params"] == 1 else "params"
-            if logger.is_debug_enabled():
-                logger.debug(
-                    f"{protocol_label}: {method_name} signature incorrect. Expected "
-                    f"{spec['params']} {param_str}, got {len(sig.parameters)}."
-                )
+            logger.debug(
+                f"{protocol_label}: {method_name} signature incorrect. Expected "
+                f"{spec['params']} {param_str}, got {len(sig.parameters)}."
+            )
             return False
     except (TypeError, ValueError):
         _log_method_validation_failure(protocol_label, method_name, "Could not inspect signature:")

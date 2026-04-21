@@ -6,7 +6,7 @@
 """Tests for raw handshake reading functionality."""
 
 import asyncio
-import subprocess
+import subprocess  # nosec
 
 from provide.testkit.mocking import AsyncMock, MagicMock
 import pytest

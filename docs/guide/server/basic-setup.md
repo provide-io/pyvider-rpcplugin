@@ -197,7 +197,6 @@ async def main():
 ## Development vs Production
 
 ### Development Setup
-
 ```python
 from pyvider.rpcplugin import configure
 
@@ -213,7 +212,6 @@ def setup_development():
 ```
 
 ### Production Setup
-
 ```python
 from pyvider.rpcplugin import configure
 

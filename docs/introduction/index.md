@@ -54,9 +54,9 @@ After understanding the architecture:
 The Foundation + Pyvider approach provides several key benefits:
 
 1. **Reduced Complexity** - Don't reimplement infrastructure patterns
-1. **Ecosystem Consistency** - Unified patterns across all provide.io projects
-1. **Battle-Tested** - Foundation's components are production-proven
-1. **Focus on Business Logic** - Spend time on your service, not infrastructure
+2. **Ecosystem Consistency** - Unified patterns across all provide.io projects
+3. **Battle-Tested** - Foundation's components are production-proven
+4. **Focus on Business Logic** - Spend time on your service, not infrastructure
 
 ## Next Steps
 
@@ -64,6 +64,6 @@ The Foundation + Pyvider approach provides several key benefits:
 - **Ready to code?** Jump to [Getting Started](../getting-started/index.md) for installation and tutorials
 - **Building production services?** See the [User Guide](../guide/index.md) for comprehensive patterns
 
-______________________________________________________________________
+---
 
 **Navigation:** [Home](../index.md) | [Next: Foundation](foundation.md)

@@ -2,7 +2,8 @@
 
 This intermediate tutorial bridges the gap between the [Quick Start](quick-start.md) and the full [Protocol Buffers Plugin](first-plugin.md). Learn how to create custom RPC methods using plain Python before diving into protobuf complexity.
 
-!!! info "Conceptual Tutorial" This is a **conceptual tutorial** designed to teach the principles of RPC plugin development. The example files referenced (`processor_service.py`, `simple_protocol.py`, `simple_server.py`, `simple_client.py`) are **not included in the examples/ directory**.
+!!! info "Conceptual Tutorial"
+    This is a **conceptual tutorial** designed to teach the principles of RPC plugin development. The example files referenced (`processor_service.py`, `simple_protocol.py`, `simple_server.py`, `simple_client.py`) are **not included in the examples/ directory**.
 
     **You can:**
     - Create these files yourself as a learning exercise
@@ -220,21 +221,20 @@ if __name__ == "__main__":
 This simple example demonstrates the core concepts without Protocol Buffer complexity:
 
 1. **Service Definition**: Your business logic in `DataProcessor`
-1. **Message Types**: Using dataclasses instead of protobuf messages
-1. **Protocol Bridge**: `SimpleProtocol` connects your service to the RPC framework
-1. **Type Safety**: Python type hints provide IDE support and clarity
+2. **Message Types**: Using dataclasses instead of protobuf messages
+3. **Protocol Bridge**: `SimpleProtocol` connects your service to the RPC framework
+4. **Type Safety**: Python type hints provide IDE support and clarity
 
 ## Next Steps: Adding Protocol Buffers
 
 When you're ready for production-grade RPC with cross-language support:
 
 1. **Define `.proto` file**: Replace dataclasses with protobuf definitions
-1. **Generate Python code**: Use `grpc_tools.protoc` to generate message classes
-1. **Implement gRPC servicer**: Replace simple handler with gRPC servicer
-1. **Use gRPC channel**: Replace simple calls with proper gRPC stubs
+2. **Generate Python code**: Use `grpc_tools.protoc` to generate message classes
+3. **Implement gRPC servicer**: Replace simple handler with gRPC servicer
+4. **Use gRPC channel**: Replace simple calls with proper gRPC stubs
 
 The structure remains the same - Protocol Buffers just add:
-
 - Binary serialization for efficiency
 - Cross-language compatibility
 - Strict schema validation
@@ -249,6 +249,6 @@ The structure remains the same - Protocol Buffers just add:
 
 **Ready for Protocol Buffers?** Continue to [Build Your First Plugin](first-plugin.md)
 
-______________________________________________________________________
+---
 
 **Navigation:** [Previous: Quick Start](quick-start.md) | [Next: First Plugin](first-plugin.md)

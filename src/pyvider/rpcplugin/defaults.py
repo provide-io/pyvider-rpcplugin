@@ -14,7 +14,7 @@ import tempfile
 DEFAULT_SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
 DEFAULT_PLUGIN_PROTOCOL_VERSIONS = [1]
 
-# Transport defaults — Unix sockets are not supported on Windows; default to TCP there.
+# Transport defaults — Unix sockets on Linux and macOS; TCP-only on Windows.
 _WINDOWS = sys.platform == "win32"
 DEFAULT_SERVER_TRANSPORTS = ["tcp"] if _WINDOWS else ["unix", "tcp"]
 DEFAULT_CLIENT_TRANSPORTS = ["tcp"] if _WINDOWS else ["unix", "tcp"]

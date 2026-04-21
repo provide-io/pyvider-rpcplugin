@@ -255,7 +255,10 @@ from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin import plugin_server, plugin_client
 ```
 
-!!! tip "Understanding the Architecture" **Foundation** provides infrastructure (config, logging, crypto, utilities) **Pyvider RPC Plugin** provides RPC communication (gRPC, transports, protocols) **Your Plugin** provides business logic
+!!! tip "Understanding the Architecture"
+    **Foundation** provides infrastructure (config, logging, crypto, utilities)
+    **Pyvider RPC Plugin** provides RPC communication (gRPC, transports, protocols)
+    **Your Plugin** provides business logic
 
     **→ [Complete Foundation Overview](../introduction/foundation.md)** for detailed architecture and practical examples
 
@@ -273,14 +276,12 @@ uv sync --all-groups
 ```
 
 Test dependencies include:
-
 - **grpcio-tools** - Protocol Buffer compiler and gRPC tools
 - **grpc-stubs** - Type stubs for gRPC
 - **types-grpcio** - Type hints for grpcio
 - **types-protobuf** - Type hints for protobuf
 
 Development dependencies (installed via `uv sync --all-groups`) include:
-
 - All test dependencies above
 - **provide-testkit** - Testing utilities, type checking, profiling, and build tools
 
@@ -312,19 +313,18 @@ uv sync
 If you get protoc-related errors:
 
 **On Ubuntu/Debian:**
-
 ```bash
 sudo apt update
 sudo apt install protobuf-compiler
 ```
 
 **On macOS:**
-
 ```bash
 brew install protobuf
 ```
 
-**On Windows:** Download from [Protocol Buffers releases](https://github.com/protocolbuffers/protobuf/releases)
+**On Windows:**
+Download from [Protocol Buffers releases](https://github.com/protocolbuffers/protobuf/releases)
 
 #### Version Conflicts
 

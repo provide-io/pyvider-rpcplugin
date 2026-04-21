@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 """Memray stress test for configuration validation and object creation."""
 
 import os

@@ -2,7 +2,8 @@
 
 **Path:** [Home](../index.md) → [Introduction](index.md) → Foundation
 
-!!! info "Canonical Foundation Reference" This page is the **canonical reference** for understanding Foundation's role in Pyvider RPC Plugin. Other documentation pages link here for detailed Foundation information.
+!!! info "Canonical Foundation Reference"
+    This page is the **canonical reference** for understanding Foundation's role in Pyvider RPC Plugin. Other documentation pages link here for detailed Foundation information.
 
 ## What is Foundation?
 
@@ -32,14 +33,14 @@ Instead of reimplementing common infrastructure needs, Pyvider RPC Plugin levera
 
 ### Core Infrastructure Components
 
-| Component          | Foundation Provides                        | Pyvider RPC Plugin Uses It For   |
-| ------------------ | ------------------------------------------ | -------------------------------- |
-| **Configuration**  | `RuntimeConfig` base class with validation | Plugin configuration management  |
-| **Logging**        | Structured logging with context            | All plugin logging and debugging |
-| **Cryptography**   | X.509 certificates, TLS operations         | mTLS implementation              |
-| **Rate Limiting**  | Token bucket algorithm                     | Server request throttling        |
-| **Error Handling** | Base exception hierarchy                   | Consistent error patterns        |
-| **Utilities**      | Common patterns and helpers                | Various infrastructure needs     |
+| Component | Foundation Provides | Pyvider RPC Plugin Uses It For |
+|-----------|-------------------|--------------------------------|
+| **Configuration** | `RuntimeConfig` base class with validation | Plugin configuration management |
+| **Logging** | Structured logging with context | All plugin logging and debugging |
+| **Cryptography** | X.509 certificates, TLS operations | mTLS implementation |
+| **Rate Limiting** | Token bucket algorithm | Server request throttling |
+| **Error Handling** | Base exception hierarchy | Consistent error patterns |
+| **Utilities** | Common patterns and helpers | Various infrastructure needs |
 
 ### What Pyvider RPC Plugin Adds
 
@@ -177,14 +178,12 @@ class MyPlugin:
 ### Configuration System
 
 Foundation's `RuntimeConfig` provides:
-
 - Type-safe configuration access
 - Environment variable loading
 - Validation and defaults
 - Async configuration updates
 
 Pyvider extends this with `RPCPluginConfig`:
-
 ```python
 # Example of how Pyvider extends Foundation's RuntimeConfig
 class RPCPluginConfig(RuntimeConfig):
@@ -197,14 +196,12 @@ class RPCPluginConfig(RuntimeConfig):
 ### Logging System
 
 Foundation's logger provides:
-
 - Structured logging with context
 - Log level management
 - Performance metrics
 - Error tracking
 
 Used throughout Pyvider:
-
 ```python
 logger.info("Handshake completed", extra={
     "client_id": client_id,
@@ -215,14 +212,12 @@ logger.info("Handshake completed", extra={
 ### Cryptography Module
 
 Foundation's crypto provides:
-
 - Certificate generation
 - Certificate validation
 - Key management
 - TLS operations
 
 Powers Pyvider's mTLS:
-
 ```python
 from provide.foundation.crypto import Certificate
 
@@ -258,10 +253,10 @@ cert = Certificate.create_self_signed_server_cert(
 While Pyvider RPC Plugin handles most Foundation integration automatically, you might use Foundation directly for:
 
 1. **Custom Configuration**: Extend `RuntimeConfig` for your plugin's config
-1. **Advanced Logging**: Add custom log handlers or formatters
-1. **Certificate Generation**: Create certificates programmatically
-1. **Custom Rate Limiting**: Implement per-user or per-endpoint limits
-1. **Utilities**: Use Foundation's utility functions for common patterns
+2. **Advanced Logging**: Add custom log handlers or formatters
+3. **Certificate Generation**: Create certificates programmatically
+4. **Custom Rate Limiting**: Implement per-user or per-endpoint limits
+5. **Utilities**: Use Foundation's utility functions for common patterns
 
 ## Summary
 
@@ -270,7 +265,6 @@ While Pyvider RPC Plugin handles most Foundation integration automatically, you 
 - **Your Plugin** provides the business logic
 
 This separation of concerns means:
-
 - You focus on your business logic
 - Pyvider handles RPC communication
 - Foundation handles infrastructure

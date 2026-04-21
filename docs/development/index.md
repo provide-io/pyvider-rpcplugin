@@ -122,9 +122,9 @@ The project follows these core principles:
 For development-specific questions:
 
 1. **Check Documentation** - Review architecture and contributing docs
-1. **Search Issues** - Look for similar issues or discussions
-1. **Ask in Discussions** - Post in GitHub Discussions
-1. **Create Issue** - For bugs or feature requests
+2. **Search Issues** - Look for similar issues or discussions
+3. **Ask in Discussions** - Post in GitHub Discussions
+4. **Create Issue** - For bugs or feature requests
 
 ## Next Steps
 

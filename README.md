@@ -1,4 +1,4 @@
-# 🐍🔌 `pyvider.rpcplugin`
+# 🔌📞 Pyvider RPC Plugin
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
@@ -16,12 +16,16 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 
 </div>
 
-## Key Features
-- gRPC-based plugin framework with strong typing.
-- Async-first APIs with secure mTLS support.
-- Designed to integrate with provide.foundation utilities.
+## ✨ Key Features
+
+- 🔌 **gRPC Framework** - High-performance plugin framework with strong typing
+- ⚡ **Async-First** - Native async APIs with secure mTLS support
+- 🧱 **Foundation Integration** - Seamless integration with provide.foundation utilities
 
 ## Quick Start
+
+> **Note**: pyvider-rpcplugin is in pre-release (v0.x.x). APIs and features may change before 1.0 release.
+
 1. Install: `uv add pyvider-rpcplugin`
 2. Follow the [Quick Start guide](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/quick-start.md).
 3. Build your first plugin via [docs/getting-started/first-plugin.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/docs/getting-started/first-plugin.md).
@@ -40,9 +44,10 @@ Modern gRPC-based plugin architecture with async support, mTLS security, and com
 uv sync
 
 # Run common tasks
-uv run pytest             # Run tests
-uv run ruff check .       # Check code
-uv run ruff format .      # Format code
+we run test       # Run tests
+we run lint       # Check code
+we run format     # Format code
+we tasks          # See all available commands
 ```
 
 See [CLAUDE.md](https://github.com/provide-io/pyvider-rpcplugin/blob/main/CLAUDE.md) for detailed development instructions and architecture information.
@@ -67,11 +72,11 @@ Complete documentation with tutorials, examples, API reference, and deployment g
 
 `pyvider.rpcplugin` is a Python framework designed to simplify the creation of robust, secure, and high-performance RPC-based plugin systems. It leverages gRPC for efficient communication and integrates with Foundation for:
 
-- **Async Operations**: Native `asyncio` integration.
-- **Secure Communication**: mTLS with Foundation's certificate management utilities.
-- **Flexible Transports**: Unix Domain Sockets (for local IPC) and TCP sockets (for network IPC).
-- **Standardized Handshake**: Secure plugin authentication using magic cookies and protocol/transport negotiation.
-- **Developer-Friendly Features**: Type safety, factory functions for common patterns, and Foundation's structured logging.
+-   **Async Operations**: Native `asyncio` integration.
+-   **Secure Communication**: mTLS with Foundation's certificate management utilities.
+-   **Flexible Transports**: Unix Domain Sockets (for local IPC) and TCP sockets (for network IPC).
+-   **Standardized Handshake**: Secure plugin authentication using magic cookies and protocol/transport negotiation.
+-   **Developer-Friendly Features**: Type safety, factory functions for common patterns, and Foundation's structured logging.
 
 ## Quick Installation
 

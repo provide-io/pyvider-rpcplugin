@@ -77,7 +77,6 @@ class RPCPluginTransport(ABC):
 The framework supports multiple transport mechanisms:
 
 **Unix Socket Transport** - For local communication with high performance:
-
 ```python
 # src/pyvider/rpcplugin/transport/unix/transport.py
 class UnixSocketTransport(RPCPluginTransport):
@@ -97,7 +96,6 @@ class UnixSocketTransport(RPCPluginTransport):
 ```
 
 **TCP Transport** - For network communication with optional TLS:
-
 ```python
 # src/pyvider/rpcplugin/transport/tcp.py
 class TCPSocketTransport(RPCPluginTransport):
@@ -626,20 +624,20 @@ sequenceDiagram
 ### Security Features
 
 1. **Magic Cookie Authentication**: Shared secret for process validation
-1. **mTLS Support**: Mutual TLS with certificate management
-1. **Process Isolation**: Plugins run in separate processes
-1. **Certificate Generation**: Automatic certificate generation when needed
-1. **Secure Defaults**: Security features enabled by default
+2. **mTLS Support**: Mutual TLS with certificate management
+3. **Process Isolation**: Plugins run in separate processes
+4. **Certificate Generation**: Automatic certificate generation when needed
+5. **Secure Defaults**: Security features enabled by default
 
 ## Foundation Framework Integration
 
 The package is built on the Foundation framework, leveraging:
 
 1. **Configuration System**: Type-safe configuration with `RuntimeConfig`
-1. **Structured Logging**: Consistent logging across components
-1. **Process Management**: `ManagedProcess` for subprocess lifecycle
-1. **Cryptography**: X.509 certificate handling
-1. **Rate Limiting**: `TokenBucketRateLimiter` implementation
-1. **Exception Hierarchy**: Extends `FoundationError` for consistency
+2. **Structured Logging**: Consistent logging across components
+3. **Process Management**: `ManagedProcess` for subprocess lifecycle
+4. **Cryptography**: X.509 certificate handling
+5. **Rate Limiting**: `TokenBucketRateLimiter` implementation
+6. **Exception Hierarchy**: Extends `FoundationError` for consistency
 
 This architecture provides a robust, scalable foundation for building RPC services with comprehensive security, performance, and reliability features. The modular design allows for easy extension and customization while maintaining clean separation of concerns.

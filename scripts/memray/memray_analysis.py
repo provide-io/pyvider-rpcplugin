@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 """Memray analysis utilities for pyvider-rpcplugin.
 
 Provides post-run analysis for memray stress test binaries:
@@ -11,7 +8,7 @@ Provides post-run analysis for memray stress test binaries:
 """
 
 from pathlib import Path
-import subprocess
+import subprocess  # nosec
 import sys
 from typing import Any
 

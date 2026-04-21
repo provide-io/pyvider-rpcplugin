@@ -6,7 +6,7 @@ Security is a fundamental aspect of the Pyvider RPC Plugin system. This section 
 
 The Pyvider RPC Plugin security model provides multiple layers of protection:
 
-- **mTLS Encryption** - Mutual TLS for encrypted communication
+- **mTLS Encryption** - Mutual TLS for encrypted communication  
 - **Certificate Management** - Automatic certificate generation and validation
 - **Magic Cookie Authentication** - Shared secret validation between client and server
 - **Process Isolation** - Subprocess isolation and resource limits
@@ -59,25 +59,21 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 ### Security Components
 
 1. **Transport Layer Security (TLS)**
-
    - Encrypts all communication between client and server
    - Mutual authentication via certificates
    - Protection against eavesdropping and tampering
 
-1. **Magic Cookie Authentication**
-
+2. **Magic Cookie Authentication**
    - Shared secret validation during handshake
    - Prevents unauthorized plugin connections
    - Environment variable-based secret management
 
-1. **Process Isolation**
-
+3. **Process Isolation**
    - Plugin runs in separate subprocess
    - Resource limits and sandboxing
    - Controlled communication channel
 
-1. **Certificate Management**
-
+4. **Certificate Management**
    - Automatic certificate generation for development
    - Production certificate integration
    - Certificate rotation and validation
@@ -86,7 +82,6 @@ server = plugin_server(protocol=my_protocol, handler=my_handler)
 
 ### 🔐 [mTLS Configuration](mtls.md)
 Configure mutual TLS for encrypted communication:
-
 - Certificate setup and management
 - Automatic vs manual mTLS configuration
 - TLS cipher suite configuration
@@ -94,15 +89,13 @@ Configure mutual TLS for encrypted communication:
 
 ### 🏆 [Certificate Management](certificates.md)
 Manage X.509 certificates for production security:
-
 - Certificate generation and signing
-- Root CA configuration and trust chains
+- Root CA configuration and trust chains  
 - Certificate storage and file permissions
 - Automated certificate renewal
 
 ### 🍪 [Magic Cookies](magic-cookies.md)
 Implement shared secret authentication:
-
 - Magic cookie generation and management
 - Environment variable configuration
 - Security considerations and best practices
@@ -110,7 +103,6 @@ Implement shared secret authentication:
 
 ### 🏰 [Process Isolation](process-isolation.md)
 Secure plugin process execution:
-
 - Subprocess sandboxing and limits
 - Resource constraints and monitoring
 - Security contexts and permissions
@@ -500,7 +492,6 @@ health = await security_health_check()
 - **[Basic Server Example](../../examples/quick-start.md)** - Simple server setup with security considerations
 
 ### Working Examples
-
 - **`security_mtls_example.py`** - Complete mTLS implementation (see `examples/` directory)
 - **Production configuration examples** in each security section
 - **Certificate generation and management** demonstrated in mTLS examples

@@ -3,10 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TODO: Add module docstring."""
 
 import pytest_asyncio
-import subprocess
+import subprocess  # nosec
 import sys
 from provide.testkit.mocking import AsyncMock, MagicMock, patch
 

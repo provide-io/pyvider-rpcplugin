@@ -7,7 +7,6 @@ Configure mutual TLS (mTLS) authentication for secure plugin communication using
 mTLS (mutual TLS) ensures both client and server authenticate each other using X.509 certificates. Foundation handles certificate management, validation, and rotation.
 
 **Benefits:**
-
 - **Mutual Authentication** - Both sides verify each other's identity
 - **Encrypted Communication** - All data encrypted in transit using TLS
 - **Certificate-Based Identity** - Cryptographic identity verification
@@ -339,10 +338,10 @@ except Exception as e:
 ### Certificate Security
 
 1. **Strong Key Lengths**: Use RSA 4096+ or ECDSA P-384
-1. **Short Validity Periods**: 90 days maximum for server certificates
-1. **Proper Key Usage**: Set appropriate key usage extensions
-1. **Secure Storage**: Protect private keys with 600 permissions
-1. **Regular Rotation**: Automate certificate renewal
+2. **Short Validity Periods**: 90 days maximum for server certificates
+3. **Proper Key Usage**: Set appropriate key usage extensions
+4. **Secure Storage**: Protect private keys with 600 permissions
+5. **Regular Rotation**: Automate certificate renewal
 
 ### Network Security
 
@@ -471,7 +470,6 @@ server = plugin_server(
 ### Common Issues
 
 **Certificate Not Found:**
-
 ```bash
 # Check certificate paths and permissions
 ls -la /etc/ssl/certs/server.pem
@@ -479,7 +477,6 @@ openssl x509 -in /etc/ssl/certs/server.pem -text -noout
 ```
 
 **Certificate Expired:**
-
 ```bash
 # Check expiration
 openssl x509 -in server.pem -noout -dates
@@ -489,7 +486,6 @@ openssl verify -CAfile ca.pem server.pem
 ```
 
 **Connection Refused:**
-
 ```python
 # Enable detailed TLS logging
 import logging

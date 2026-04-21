@@ -24,7 +24,7 @@ authors = [
 maintainers = [
     { name = "provide.io", email = "code@provide.io" },
 ]
-keywords = ["pyvider", "rpc", "grpc", "plugin", "terraform", "provider"]
+keywords = ["pyvider>=0.4.0", "rpc", "grpc", "plugin", "terraform", "provider"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -43,7 +43,7 @@ dependencies = [
     "grpcio>=1.78.0",
     "grpcio-health-checking>=1.78.0",
     "protobuf>=5.29.3",
-    "provide-foundation>=0.3.29",
+    "provide-foundation>=0.4.0",
 ]
 
 [project.urls]
@@ -66,12 +66,12 @@ all = [
 [dependency-groups]
 dev = [
     "mkdocs-autorefs>=1.4.3",
-    "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]",
+    "provide-testkit[standard,typecheck,advanced-testing,build,profiling,utils]>=0.4.0",
     "pyvider-rpcplugin[test]",
 ]
 docs = [
     "mkdocs-gen-files>=0.5.0",
-    "provide-testkit[docs]",
+    "provide-testkit[docs]>=0.4.0",
 ]
 
 ################################################################################
@@ -117,7 +117,7 @@ filterwarnings = [
     "ignore:.* KqueueSelector constructor:pytest.PytestCollectionWarning",
     # Python 3.13 asyncio cleanup ordering issue - not a bug in our code
     "ignore:Exception ignored in.*_SelectorTransport.__del__:pytest.PytestUnraisableExceptionWarning",
-    # provide-testkit is auto-discovered and loaded before conftest imports - not an issue
+    # provide-testkit>=0.4.0 is auto-discovered and loaded before conftest imports - not an issue
     "ignore:Module already imported so cannot be rewritten; provide:pytest.PytestAssertRewriteWarning",
 ]
 
@@ -172,11 +172,11 @@ combine-as-imports = true
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204", "B017", "C901", "E402", "PLR0124", "PLR1714", "S102", "S105", "S106", "S110", "S307", "S311", "S324", "S602", "SIM105", "SIM108", "SIM117"]
 "examples/**" = ["ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204", "S311"]
-"src/pyvider/rpcplugin/handshake/core.py" = ["C901"]
-"src/pyvider/rpcplugin/handshake/negotiation.py" = ["C901"]
-"src/pyvider/rpcplugin/protocol/service.py" = ["C901"]
-"src/pyvider/rpcplugin/server/network.py" = ["C901"]
-"src/pyvider/rpcplugin/transport/unix/transport.py" = ["C901"]
+"src/pyvider>=0.4.0/rpcplugin/handshake/core.py" = ["C901"]
+"src/pyvider>=0.4.0/rpcplugin/handshake/negotiation.py" = ["C901"]
+"src/pyvider>=0.4.0/rpcplugin/protocol/service.py" = ["C901"]
+"src/pyvider>=0.4.0/rpcplugin/server/network.py" = ["C901"]
+"src/pyvider>=0.4.0/rpcplugin/transport/unix/transport.py" = ["C901"]
 
 [tool.ruff.format]
 quote-style = "double"

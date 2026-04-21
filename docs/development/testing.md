@@ -5,7 +5,6 @@ Comprehensive testing guidance for Pyvider RPC Plugin applications, covering uni
 ## Overview
 
 The Pyvider RPC Plugin system provides:
-
 - **pytest Framework**: Modern async Python testing
 - **Configuration Isolation**: Automatic config reset between tests
 - **Transport Testing**: Specialized fixtures for Unix/TCP testing
