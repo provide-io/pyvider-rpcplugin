@@ -5,7 +5,7 @@
 
 """Tests for handshake retry logic and complex scenarios."""
 
-import subprocess
+import subprocess  # nosec
 
 from provide.testkit.mocking import AsyncMock
 import pytest

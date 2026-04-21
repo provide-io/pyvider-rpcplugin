@@ -19,13 +19,11 @@ By the end of this guide, you'll be able to:
 ## Prerequisites
 
 **Technical Requirements:**
-
 - **Python 3.11+** with native type annotations (`dict`, `list`, union operators)
 - **Basic async/await** knowledge (we'll show the patterns)
 - **Foundation familiarity** (optional - we'll explain integration points)
 
 **Experience Levels:**
-
 - **Beginner**: New to RPC or plugin systems → Start with **Installation** then **Quick Start**
 - **Experienced**: Familiar with gRPC or microservices → Jump to **First Plugin** for complete examples
 - **Foundation User**: Already using provide.foundation → See **Foundation Integration** patterns throughout
@@ -99,7 +97,6 @@ By the end of this guide, you'll be able to:
 ## Support & Troubleshooting
 
 **Quick Help:**
-
 - **Common Issues**: Configuration problems, environment setup, import errors
 - **Foundation Integration**: Logging not working, configuration not loading
 - **Performance**: Transport selection, connection issues, timeout problems

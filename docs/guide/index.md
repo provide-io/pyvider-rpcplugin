@@ -7,25 +7,21 @@ The Pyvider RPC Plugin User Guide provides comprehensive documentation for build
 This guide is organized into focused sections that build upon each other:
 
 ### 🎯 **Core Concepts**
-
 Understanding the fundamental architecture, transports, protocols, and security model that powers pyvider-rpcplugin.
 
 ### 🖥️ **Server Development**
 Learn to build robust plugin servers with service implementation, transport configuration, async patterns, and health monitoring.
 
 ### 📱 **Client Development**
-
 Master client development including connection management, error handling, retry logic, and direct connections.
 
 ### 🔐 **Security**
-
 Comprehensive security coverage including mTLS configuration, certificate management, magic cookies, and process isolation.
 
 ### ⚙️ **Configuration**
 Production-focused configuration management with environment variables, deployment setups, rate limiting, and logging.
 
 ### 🚀 **Advanced Topics**
-
 Advanced patterns including custom protocols, performance tuning, middleware development, and plugin lifecycle management.
 
 ## Navigation
@@ -85,7 +81,6 @@ Advanced patterns including custom protocols, performance tuning, middleware dev
 ## Learning Approach
 
 ### **For Beginners**
-
 If you're new to RPC development, start with:
 1. [Core Concepts](concepts/index.md) - Understand the foundation
 2. [Server Development](server/index.md) - Build your first server  
@@ -93,7 +88,6 @@ If you're new to RPC development, start with:
 4. [Security](security/index.md) - Add production-grade security
 
 ### **For Experienced Developers**
-
 If you have RPC experience, you might want to:
 1. Skim [Core Concepts](concepts/index.md) for pyvider-specific patterns
 2. Jump to [Advanced Topics](advanced/lifecycle.md) for sophisticated use cases
@@ -105,18 +99,15 @@ If you have RPC experience, you might want to:
 Pyvider RPC Plugin follows these core principles:
 
 ### **🎯 Simplicity First**
-
 Complex RPC operations should be simple to implement. The framework handles the complexity so you can focus on your business logic.
 
 ### **🔒 Security by Default**
 Security features like mTLS and process isolation are built-in and enabled by default, not bolt-on additions.
 
 ### **⚡ Performance Oriented**
-
 Async-first design with efficient transports and serialization for high-throughput, low-latency communication.
 
 ### **🛠️ Developer Experience**
-
 Comprehensive type safety, clear error messages, and extensive documentation make development productive and enjoyable.
 
 ### **🏗️ Production-focused**

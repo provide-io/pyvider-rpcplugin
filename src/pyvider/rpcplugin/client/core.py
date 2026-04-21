@@ -25,9 +25,7 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_CLEANUP_WAIT_TIME,
 )
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
-from pyvider.rpcplugin.protocol.grpc_controller_pb2 import (  # type: ignore[attr-defined]
-    Empty as ControllerEmpty,
-)
+from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
 from pyvider.rpcplugin.protocol.grpc_controller_pb2_grpc import GRPCControllerStub
 from pyvider.rpcplugin.protocol.grpc_stdio_pb2_grpc import GRPCStdioStub
 from pyvider.rpcplugin.transport.types import TransportType

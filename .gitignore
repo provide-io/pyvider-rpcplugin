@@ -57,6 +57,9 @@ bf-*
 # Provide tooling
 .provide/
 
+# Memray profiling output
+memray-output/
+
 # Project specific
 .note
 vendor

@@ -111,10 +111,20 @@ class TCPSocketTransport(RPCPluginTransport):
     _connection_attempts: int = field(init=False, default=0)
     _transport_name: str = "tcp"  # Class attribute identifying the transport type
 
-    def __attrs_post_init__(self) -> None:
-        """Initializes locks and events for managing transport state."""
-        self._lock = asyncio.Lock()  # Lock for synchronizing access to shared resources
-        self._server_ready = asyncio.Event()  # Event to signal when the server is ready
+    _lock: asyncio.Lock | None = field(init=False, default=None)
+    _server_ready: asyncio.Event | None = field(init=False, default=None)
+
+    def _ensure_lock(self) -> asyncio.Lock:
+        """Lazily create the asyncio.Lock on first use."""
+        if self._lock is None:
+            self._lock = asyncio.Lock()
+        return self._lock
+
+    def _ensure_server_ready(self) -> asyncio.Event:
+        """Lazily create the asyncio.Event on first use."""
+        if self._server_ready is None:
+            self._server_ready = asyncio.Event()
+        return self._server_ready
 
     async def listen(self) -> str:
         """
@@ -135,7 +145,7 @@ class TCPSocketTransport(RPCPluginTransport):
                     temp_sock.bind((self.host, 0))
                     self.port = temp_sock.getsockname()[1]
                     temp_sock.close()
-                    logger.info()
+                    logger.info("Found ephemeral port", port=self.port)
                 except OSError as e:
                     raise TransportError(f"Failed to find an ephemeral port: {e}") from e
 

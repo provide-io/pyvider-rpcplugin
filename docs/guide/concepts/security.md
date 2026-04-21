@@ -233,7 +233,6 @@ if __name__ == "__main__":
 ### Certificate Management
 
 **Certificate Storage:**
-
 ```python
 # Secure certificate storage
 import os
@@ -256,7 +255,6 @@ Implement certificate renewal workflow before expiration (typically 30-90 days).
 ### Runtime Security
 
 **Principle of Least Privilege:**
-
 ```python
 import subprocess
 
@@ -271,7 +269,6 @@ plugin_process = subprocess.Popen(
 ```
 
 **Resource Limits:**
-
 ```python
 import resource
 
@@ -290,7 +287,6 @@ def limit_plugin_resources():
 ### Network Security
 
 **Transport Security:**
-
 ```python
 # Always use encrypted transports in production
 configure(
@@ -301,7 +297,6 @@ configure(
 ```
 
 **Firewall Configuration:**
-
 ```bash
 # Block plugin ports from external access
 sudo ufw deny 8000:9000/tcp
@@ -353,7 +348,6 @@ async def security_health_check(client):
 ### Certificate Problems
 
 **Invalid Certificate:**
-
 ```bash
 # Check certificate validity
 openssl x509 -in server.crt -text -noout
@@ -363,7 +357,6 @@ openssl verify -CAfile ca.crt server.crt
 ```
 
 **Permission Issues:**
-
 ```bash
 # Fix certificate permissions
 chmod 600 *.key  # Private keys
@@ -374,14 +367,12 @@ chown plugin-user:plugin-group cert-dir/
 ### mTLS Handshake Failures
 
 **Common causes:**
-
 - Certificate expiration
 - Mismatched CA certificates
 - Incorrect Subject Alternative Names
 - Clock synchronization issues
 
 **Debugging:**
-
 ```python
 # Enable debug logging
 configure(log_level="DEBUG")

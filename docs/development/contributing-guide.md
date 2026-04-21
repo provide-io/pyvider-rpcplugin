@@ -242,7 +242,7 @@ class RPCTimeoutError(RPCPluginError):
 
 We use **Google-style docstrings**:
 
-````python
+```python
 async def create_connection(
     host: str,
     port: int,
@@ -289,7 +289,7 @@ async def create_connection(
         raise ValueError(f"Invalid port: {port}")
 
     # Implementation here...
-````
+```
 
 #### Code Comments
 
@@ -453,7 +453,7 @@ class TestConnectionManager:
         - name: Install dependencies
           run: |
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv add --editable ".[dev,test]"
+            uv pip install -e ".[dev,test]"
 
         - name: Run tests
           run: pytest --cov=pyvider.rpcplugin --cov-report=xml
@@ -582,239 +582,6 @@ repos:
       - id: bandit
         args: [-r, src/]
 ```
-````
-
-## CI/CD Pipeline
-
-### GitHub Actions Workflows
-
-=== "Main CI Pipeline"
-
-````
-**Location:** `.github/workflows/ci.yml`
-
-```yaml
-name: CI
-
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
-
-jobs:
-  test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11", "3.12"]
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install dependencies
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
-        uv pip install -e ".[dev,test]"
-
-    - name: Run tests
-      run: pytest --cov=pyvider.rpcplugin --cov-report=xml
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v4
-      with:
-        file: ./coverage.xml
-```
-````
-
-=== "Release Workflow"
-
-````
-**Location:** `.github/workflows/release.yml`
-
-```yaml
-name: Release
-
-on:
-  push:
-    tags: ['v*']
-
-jobs:
-  build-and-publish:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Python
-      uses: actions/setup-python@v5
-
-    - name: Build distribution
-      run: python -m build
-
-    - name: Publish to PyPI
-      env:
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: twine upload dist/*
-```
-````
-
-### Code Quality Configuration
-
-=== "Linting (Ruff)"
-
-````
-**pyproject.toml:**
-
-```toml
-[tool.ruff]
-target-version = "py311"
-line-length = 88
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "B",   # flake8-bugbear
-    "C4",  # flake8-comprehensions
-    "UP",  # pyupgrade
-]
-ignore = ["E501"]
-exclude = ["*_pb2.py", "*_pb2_grpc.py"]
-```
-````
-
-=== "Type Checking (Mypy)"
-
-````
-**pyproject.toml:**
-
-```toml
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-no_implicit_optional = true
-check_untyped_defs = true
-show_error_codes = true
-exclude = ["*_pb2.py", "*_pb2_grpc.py"]
-```
-````
-
-=== "Testing (Pytest)"
-
-````
-**pyproject.toml:**
-
-```toml
-[tool.pytest.ini_options]
-minversion = "7.0"
-testpaths = ["tests"]
-asyncio_mode = "auto"
-markers = [
-    "slow: marks tests as slow",
-    "integration: marks integration tests",
-    "benchmark: marks performance tests"
-]
-addopts = """
-    -ra
-    --strict-markers
-    --cov=pyvider.rpcplugin
-    --cov-branch
-    --cov-report=term-missing
-"""
-```
-````
-
-### Pre-commit Hooks
-
-**.pre-commit-config.yaml:**
-
-```yaml
-repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
-    hooks:
-      - id: mypy
-        additional_dependencies: [types-all]
-        exclude: "_pb2(_grpc)?\\.py$"
-
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.7
-    hooks:
-      - id: bandit
-        args: [-r, src/]
-```
-
-### Release Management
-
-=== "Semantic Versioning"
-
-````
-**Version Bumping Script:**
-
-```bash
-#!/bin/bash
-# scripts/bump-version.sh
-
-set -e
-
-BUMP_TYPE=${1:-patch}  # major, minor, patch
-CURRENT=$(python -c "import pyvider.rpcplugin; print(pyvider.rpcplugin.__version__)")
-
-case $BUMP_TYPE in
-    major) NEW=$(echo $CURRENT | awk -F. '{printf "%d.0.0", $1+1}') ;;
-    minor) NEW=$(echo $CURRENT | awk -F. '{printf "%d.%d.0", $1, $2+1}') ;;
-    patch) NEW=$(echo $CURRENT | awk -F. '{printf "%d.%d.%d", $1, $2, $3+1}') ;;
-esac
-
-echo "Bumping version: $CURRENT → $NEW"
-sed -i "s/__version__ = \"$CURRENT\"/__version__ = \"$NEW\"/" src/pyvider/rpcplugin/__init__.py
-git add -A
-git commit -m "Release v$NEW"
-git tag -a "v$NEW" -m "Release version $NEW"
-```
-````
-
-=== "Release Notes Template"
-
-````
-```markdown
-## [VERSION] - DATE
-
-### 🎯 Highlights
-- Major feature or improvement
-- Performance enhancement
-- Security update
-
-### ✨ Added
-- New feature description
-
-### 🔄 Changed
-- Updated behavior
-
-### 🐛 Fixed
-- Bug fix description
-
-### ⚠️ Breaking Changes
-- Breaking change description
-- Migration guide
-```
-````
 
 ### Release Management
 
@@ -940,10 +707,10 @@ Describe any breaking changes and migration path.
 ### Review Process
 
 1. **Automated Checks** - CI runs tests, linting, and type checking
-1. **Code Review** - Maintainers review for code quality and design
-1. **Testing** - Changes are tested in various environments
-1. **Documentation** - Documentation is reviewed for accuracy
-1. **Approval** - Required approvals from maintainers
+2. **Code Review** - Maintainers review for code quality and design
+3. **Testing** - Changes are tested in various environments
+4. **Documentation** - Documentation is reviewed for accuracy
+5. **Approval** - Required approvals from maintainers
 
 ## Issue Reporting
 
@@ -971,10 +738,7 @@ A clear description of what you expected to happen.
 
 **Logs**
 ```
-
 Include relevant log output here
-
-```
 ```
 ```
 

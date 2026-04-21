@@ -98,9 +98,9 @@ mtls_enabled = rpcplugin_config.plugin_auto_mtls
 Configuration sources (in priority order):
 
 1. **Environment variables** (highest priority)
-1. **Configuration files** (YAML, JSON, TOML)
-1. **Programmatic settings**
-1. **Default values** (lowest priority)
+2. **Configuration files** (YAML, JSON, TOML)
+3. **Programmatic settings**
+4. **Default values** (lowest priority)
 
 ## Error Handling
 

@@ -52,7 +52,6 @@ if __name__ == "__main__":
 
 ### 📝 [Basic Server Setup](basic-setup.md)
 Learn the fundamentals of creating and configuring plugin servers:
-
 - Server initialization and configuration
 - Environment setup and validation
 - Basic error handling patterns
@@ -60,7 +59,6 @@ Learn the fundamentals of creating and configuring plugin servers:
 
 ### ⚙️ [Service Implementation](services.md)
 Implement robust gRPC service handlers:
-
 - Service method patterns (unary, streaming)
 - Error handling and status codes
 - Input validation and sanitization
@@ -68,7 +66,6 @@ Implement robust gRPC service handlers:
 
 ### 🌐 [Transport Configuration](transports.md)
 Configure transport layers for optimal performance:
-
 - Unix socket vs TCP selection
 - mTLS configuration and certificates
 - Performance optimization
@@ -76,7 +73,6 @@ Configure transport layers for optimal performance:
 
 ### 🔄 [Async Patterns](async-patterns.md)
 Master asynchronous programming patterns:
-
 - Concurrent request handling
 - Background task management
 - Resource pooling
@@ -84,7 +80,6 @@ Master asynchronous programming patterns:
 
 ### 🏥 [Health Checks](health-checks.md)
 Implement comprehensive health monitoring:
-
 - gRPC health check protocol
 - Custom health indicators
 - Resource monitoring

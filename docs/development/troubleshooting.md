@@ -9,14 +9,12 @@ This guide helps you diagnose and resolve common issues when developing with the
 #### Problem: "Connection refused" errors
 
 **Symptoms:**
-
 ```
 ConnectionRefusedError: [Errno 111] Connection refused
 grpc._channel._InactiveRpcError: status = StatusCode.UNAVAILABLE
 ```
 
 **Diagnosis:**
-
 ```python
 import asyncio
 import socket
@@ -88,7 +86,6 @@ async def diagnose_connection(host: str, port: int):
 #### Problem: "Address already in use"
 
 **Symptoms:**
-
 ```
 OSError: [Errno 98] Address already in use
 ```
@@ -109,14 +106,12 @@ config = ServerConfig(transport=TransportConfig(port=50052))
 #### Problem: SSL certificate verification failures
 
 **Symptoms:**
-
 ```
 ssl.SSLCertVerificationError: certificate verify failed
 grpc._channel._InactiveRpcError: SSL handshake failed
 ```
 
 **Diagnosis:**
-
 ```python
 import ssl
 import asyncio
@@ -178,7 +173,6 @@ async def diagnose_ssl(host: str, port: int, cert_file: str | None = None):
 #### Problem: Slow RPC calls
 
 **Diagnosis:**
-
 ```python
 import time
 import statistics
@@ -264,7 +258,6 @@ class PerformanceDiagnostics:
 #### Problem: Memory leaks
 
 **Diagnosis:**
-
 ```python
 import psutil
 import gc
@@ -320,14 +313,12 @@ class MemoryMonitor:
 #### Problem: Protobuf serialization errors
 
 **Symptoms:**
-
 ```
 google.protobuf.message.DecodeError: Error parsing message
 TypeError: Couldn't build proto file into descriptor pool
 ```
 
 **Diagnosis:**
-
 ```python
 from google.protobuf.json_format import MessageToJson
 from google.protobuf.message import Message
@@ -395,14 +386,12 @@ def diagnose_protobuf_issue(message: Message):
 #### Problem: JWT token validation failures
 
 **Symptoms:**
-
 ```
 jwt.InvalidTokenError: Invalid token
 grpc.RpcError: UNAUTHENTICATED: Invalid token
 ```
 
 **Diagnosis:**
-
 ```python
 import jwt
 import time

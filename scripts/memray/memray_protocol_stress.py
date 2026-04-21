@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-# SPDX-FileCopyrightText: Copyright (c) 2026 provide.io llc. All rights reserved.
-# SPDX-License-Identifier: Apache-2.0
-
 """Memray stress test for protocol service object creation and management."""
 
 import os
@@ -50,7 +47,7 @@ def main() -> None:
     # --- Stress: ConnInfo-like dict creation (10K cycles) ---
     # Simulates the allocation pattern of protobuf message creation
     for i in range(10_000):
-        {
+        _conn_info = {
             "service_id": i,
             "network": "tcp",
             "address": f"127.0.0.1:{9000 + (i % 1000)}",
