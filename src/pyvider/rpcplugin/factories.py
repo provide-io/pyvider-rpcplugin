@@ -194,6 +194,7 @@ def plugin_protocol(
 
 
 def plugin_server(
+    *,
     protocol: BaseProtocolTDefinition,
     handler: HandlerT,
     transport: str = "unix",
