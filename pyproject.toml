@@ -161,6 +161,7 @@ ignore = [
     "PLR0911",  # too-many-return-statements (refactor later)
     "PLR0912",  # too-many-branches (refactor later)
     "PLR0913",  # too-many-arguments (common in config classes)
+    "PLR0917",  # too-many-positional-arguments (same rationale as PLR0913)
     "PLR0915",  # too-many-statements (refactor later)
     "PLR2004",  # magic-value-comparison (too noisy)
 ]
