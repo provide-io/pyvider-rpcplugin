@@ -324,7 +324,7 @@ class ClientHandshakeMixin:
             await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
             return None
 
-        line_bytes = await asyncio.wait_for(
+        line_bytes: bytes = await asyncio.wait_for(
             asyncio.get_event_loop().run_in_executor(None, self._process.process.stdout.readline),
             timeout=inner_timeout_s,
         )

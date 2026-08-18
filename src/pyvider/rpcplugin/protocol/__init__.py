@@ -40,8 +40,6 @@ __all__ = [
     "GRPCStdioServicer",
     "RPCPluginProtocol",
     "add_GRPCBrokerServicer_to_server",
-    "add_GRPCBrokerServicer_to_server",
-    "add_GRPCControllerServicer_to_server",
     "add_GRPCControllerServicer_to_server",
     "add_GRPCStdioServicer_to_server",
     "register_protocol_service",

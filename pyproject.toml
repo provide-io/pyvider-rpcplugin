@@ -140,7 +140,8 @@ addopts = ""
 line-length = 111
 indent-width = 4
 target-version = "py311"
-exclude = ["tests/*", "**/*pb2*.py"]
+# ruff format touches Python code blocks embedded in Markdown; docs prose is not the formatter's to restyle.
+exclude = ["tests/*", "**/*pb2*.py", "**/*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "ANN", "B", "BLE", "C90", "PIE", "PLR", "S", "SIM", "PTH", "RUF"]
@@ -160,6 +161,7 @@ ignore = [
     "PLR0911",  # too-many-return-statements (refactor later)
     "PLR0912",  # too-many-branches (refactor later)
     "PLR0913",  # too-many-arguments (common in config classes)
+    "PLR0917",  # too-many-positional-arguments (same rationale as PLR0913)
     "PLR0915",  # too-many-statements (refactor later)
     "PLR2004",  # magic-value-comparison (too noisy)
 ]
@@ -300,5 +302,14 @@ allowed_paths = [
     "tests/rpcplugin-tests.txt",
     "tests/bfiles-*.txt",
 ]
+
+# Local development resolves sibling suite packages from source, so a change in
+# one repo is exercised by its consumers immediately rather than at release. uv
+# does not propagate a dependency's sources into published metadata, so this is
+# invisible to consumers of the built wheel. CI passes --no-sources to verify the
+# published story instead.
+[tool.uv.sources]
+provide-foundation = { path = "../provide-foundation", editable = true }
+provide-testkit = { path = "../provide-testkit", editable = true }
 
 # 🐍🏗️📋

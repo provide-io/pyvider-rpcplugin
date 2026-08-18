@@ -169,9 +169,9 @@ def _apply_certificate_padding(server_cert: str | None) -> str | None:
     log_errors=True,
 )
 def validate_magic_cookie(
-    magic_cookie_key: str | None | _SentinelType = _SENTINEL_INSTANCE,
-    magic_cookie_value: str | None | _SentinelType = _SENTINEL_INSTANCE,
-    magic_cookie: str | None | _SentinelType = _SENTINEL_INSTANCE,
+    magic_cookie_key: str | _SentinelType | None = _SENTINEL_INSTANCE,
+    magic_cookie_value: str | _SentinelType | None = _SENTINEL_INSTANCE,
+    magic_cookie: str | _SentinelType | None = _SENTINEL_INSTANCE,
 ) -> None:
     """
     Validates the magic cookie.
@@ -197,9 +197,9 @@ def validate_magic_cookie(
 
 
 def _validate_magic_cookie_impl(
-    magic_cookie_key: str | None | _SentinelType,
-    magic_cookie_value: str | None | _SentinelType,
-    magic_cookie: str | None | _SentinelType,
+    magic_cookie_key: str | _SentinelType | None,
+    magic_cookie_value: str | _SentinelType | None,
+    magic_cookie: str | _SentinelType | None,
 ) -> None:
     """Implementation of magic cookie validation."""
     logger.debug("Starting magic cookie validation...")

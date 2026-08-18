@@ -47,6 +47,7 @@ def print_result(script_name: str, success: bool, stdout: str, stderr: str, exit
 
 async def run_script(
     script_path: Path,
+    *,
     timeout: int = 20,  # Reduced from 30s to better reflect 5s internal
     # example timeouts
     args: list[str] | None = None,

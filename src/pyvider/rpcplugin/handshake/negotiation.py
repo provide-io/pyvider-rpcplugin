@@ -137,7 +137,8 @@ def _collect_process_stderr(process: subprocess.Popen[bytes]) -> str:
     if not process.stderr:
         return ""
     try:
-        value = process.stderr.read().decode("utf-8", errors="replace")
+        raw: bytes = process.stderr.read()
+        value = raw.decode("utf-8", errors="replace")
     except Exception as exc:
         value = f"Error reading stderr: {exc}"
     return value
@@ -165,7 +166,7 @@ def _process_has_exited(process: subprocess.Popen[bytes], buffer: str) -> None:
 async def _try_read_line(process: subprocess.Popen[bytes]) -> str | None:
     if not process.stdout:
         return None
-    line_bytes = await asyncio.wait_for(
+    line_bytes: bytes = await asyncio.wait_for(
         asyncio.get_running_loop().run_in_executor(None, process.stdout.readline),
         timeout=2.0,
     )
@@ -177,7 +178,7 @@ async def _try_read_line(process: subprocess.Popen[bytes]) -> str | None:
 async def _try_read_chunk(process: subprocess.Popen[bytes], *, chunk_size: int) -> str | None:
     if not process.stdout:
         return None
-    chunk = await asyncio.wait_for(
+    chunk: bytes = await asyncio.wait_for(
         asyncio.get_running_loop().run_in_executor(
             None,
             lambda: process.stdout.read(chunk_size),  # type: ignore[union-attr]
