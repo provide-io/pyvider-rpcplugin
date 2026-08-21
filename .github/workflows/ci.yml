@@ -17,6 +17,10 @@ jobs:
     with:
       python-version: '3.11'
       platform-preset: standard  # ubuntu-24.04, ubuntu-24.04-arm, macos-15, macos-15-intel
+      # Windows amd64. `include-windows-arm` is deliberately unset: grpcio and
+      # cryptography publish no win_arm64 wheels, so that runner cannot install
+      # the suite at all (grpc/grpc#39064).
+      include-windows: true
       coverage-threshold: 80
       run-security: true
       run-secret-scan: true
