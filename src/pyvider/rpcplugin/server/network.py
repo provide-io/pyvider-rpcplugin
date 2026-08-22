@@ -38,6 +38,10 @@ from pyvider.rpcplugin.transport.types import (
     RPCPluginTransport as RPCPluginTransportType,
 )
 
+#: Matches Terraform's `grpcMaxMessageSize`, so the two ends agree on what
+#: they will carry rather than the server capping first.
+GRPC_MAX_MESSAGE_SIZE = 256 * 1024 * 1024
+
 # Module logger
 logger = get_logger(__name__)
 
@@ -187,7 +191,18 @@ class ServerNetworkMixin:
         interceptors_list: list[grpc.aio.ServerInterceptor] = (  # type: ignore[type-arg]
             [RateLimitingInterceptor(self._rate_limiter)] if self._rate_limiter else []
         )
-        self._server = cast(Any, GRPCServer(interceptors=interceptors_list))
+        # gRPC defaults both message limits to 4 MB. Terraform allows 256 MB
+        # (`grpcMaxMessageSize` in internal/plugin6) and will send more than
+        # 4 MB: a resource whose configuration carries a large attribute, or a
+        # state-store write chunk, which it sizes from the 8 MB default it
+        # proposes during negotiation. Leaving the default in place makes the
+        # server reject those before a handler ever sees them --
+        # "Received message larger than max (6291555 vs. 4194304)".
+        options = [
+            ("grpc.max_receive_message_length", GRPC_MAX_MESSAGE_SIZE),
+            ("grpc.max_send_message_length", GRPC_MAX_MESSAGE_SIZE),
+        ]
+        self._server = cast(Any, GRPCServer(interceptors=interceptors_list, options=options))
 
         proto_instance = self.protocol
         await proto_instance.add_to_server(handler=self.handler, server=self._server)
