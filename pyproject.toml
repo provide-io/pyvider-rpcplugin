@@ -24,7 +24,7 @@ authors = [
 maintainers = [
     { name = "provide.io", email = "code@provide.io" },
 ]
-keywords = ["pyvider>=0.4.0", "rpc", "grpc", "plugin", "terraform", "provider"]
+keywords = ["pyvider", "rpc", "grpc", "plugin", "terraform", "provider"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -174,11 +174,6 @@ combine-as-imports = true
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204", "B017", "C901", "E402", "PLR0124", "PLR1714", "S102", "S105", "S106", "S110", "S307", "S311", "S324", "S602", "SIM105", "SIM108", "SIM117"]
 "examples/**" = ["ANN001", "ANN002", "ANN003", "ANN201", "ANN202", "ANN204", "S311"]
-"src/pyvider>=0.4.0/rpcplugin/handshake/core.py" = ["C901"]
-"src/pyvider>=0.4.0/rpcplugin/handshake/negotiation.py" = ["C901"]
-"src/pyvider>=0.4.0/rpcplugin/protocol/service.py" = ["C901"]
-"src/pyvider>=0.4.0/rpcplugin/server/network.py" = ["C901"]
-"src/pyvider>=0.4.0/rpcplugin/transport/unix/transport.py" = ["C901"]
 
 [tool.ruff.format]
 quote-style = "double"
