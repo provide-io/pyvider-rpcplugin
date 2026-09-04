@@ -18,36 +18,45 @@ from pyvider.rpcplugin.transport.base import RPCPluginTransport # Added import
 # Test for Protocol Version Negotiation
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_valid() -> None:
-    """Test successful protocol version negotiation."""
-    SUPPORTED_PROTOCOL_VERSIONS = [1, 2, 3, 4, 5, 6, 7]
-    server_versions: list[int] = [1, 2, 3, 4, 5, 6, 7]  # Server supports these versions
-    negotiated_version = negotiate_protocol_version(server_versions)
-    assert negotiated_version in SUPPORTED_PROTOCOL_VERSIONS
-    assert negotiated_version == max(
-        v for v in server_versions if v in SUPPORTED_PROTOCOL_VERSIONS
-    )
+    """The newest version both ends can speak wins."""
+    host_offered: list[int] = [1, 2, 3, 4, 5, 6, 7]
+    negotiated_version = negotiate_protocol_version(host_offered, server_versions=[5, 6])
+    assert negotiated_version == 6
+
+
+@pytest.mark.asyncio
+async def test_negotiate_protocol_version_defaults_to_configured_versions() -> None:
+    """With no served set given, the SUPPORTED_PROTOCOL_VERSIONS config applies."""
+    negotiated_version = negotiate_protocol_version([1, 2, 3, 4, 5, 6, 7])
+    assert negotiated_version == 7
 
 
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_no_common_version() -> None:
-    """Test protocol version negotiation when no common version exists."""
-    server_versions = [99, 100]  # Versions not supported by the client
+    """A host offering only versions this plugin does not serve is an error."""
     with pytest.raises(
         ProtocolError,
         match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*",
     ):
-        negotiate_protocol_version(server_versions)
+        negotiate_protocol_version([99, 100], server_versions=[6])
 
 
 @pytest.mark.asyncio
-async def test_negotiate_protocol_version_empty_list() -> None:
-    """Test protocol version negotiation when the server provides no versions."""
-    server_versions = []  # Server provides no versions
-    with pytest.raises(
-        ProtocolError,
-        match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*",
-    ):
-        negotiate_protocol_version(server_versions)
+async def test_negotiate_protocol_version_empty_host_list_serves_oldest() -> None:
+    """A host that offered no list gets the oldest version the plugin serves.
+
+    go-plugin/server.go:216-222 returns the lowest registered version as the
+    fallback, deliberately, "to serve the oldest version of our plugins to a
+    legacy client that did not send a PLUGIN_PROTOCOL_VERSIONS list".
+    """
+    assert negotiate_protocol_version([], server_versions=[5, 6]) == 5
+
+
+@pytest.mark.asyncio
+async def test_negotiate_protocol_version_no_served_versions() -> None:
+    """A plugin that serves nothing cannot negotiate at all."""
+    with pytest.raises(ProtocolError, match=r"declares no protocol versions"):
+        negotiate_protocol_version([6], server_versions=[])
 
 
 @pytest.mark.asyncio

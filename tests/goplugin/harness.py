@@ -51,27 +51,49 @@ class PluginProcess:
             self._lines.put(line.rstrip("\n"))
         self._lines.put(None)
 
-    def read_handshake(self, timeout: float = 30.0) -> str:
-        """Return the first non-empty stdout line, as go-plugin's host would."""
+    def _next_line(self, timeout: float) -> str | None:
+        """The next non-empty stdout line, or None if the pipe ends first."""
         deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None
             try:
-                line = self._lines.get(timeout=deadline - time.monotonic())
+                line = self._lines.get(timeout=remaining)
             except queue.Empty:
-                break
+                return None
             if line is None:
-                raise AssertionError(f"plugin exited before handshake; stderr:\n{self.stderr()}")
+                return None
             if line.strip():
                 return line.strip()
-        raise AssertionError(f"no handshake within {timeout}s; stderr:\n{self.stderr()}")
+
+    def read_handshake(self, timeout: float = 30.0) -> str:
+        """Return the first non-empty stdout line, as go-plugin's host would."""
+        line = self._next_line(timeout)
+        if line is None:
+            raise AssertionError(f"no handshake within {timeout}s; stderr:\n{self.wait_and_read_stderr()}")
+        return line
+
+    def saw_no_handshake(self, timeout: float = 30.0) -> str:
+        """Assert the plugin never handshook, returning everything it logged."""
+        line = self._next_line(timeout)
+        if line is not None:
+            raise AssertionError(f"expected no handshake, got: {line}")
+        return self.wait_and_read_stderr()
+
+    def wait_and_read_stderr(self, timeout: float = 15.0) -> str:
+        """Let the plugin finish, then drain its whole stderr."""
+        with contextlib.suppress(Exception):
+            self.proc.wait(timeout=timeout)
+        return self.stderr()
 
     def stderr(self) -> str:
         if self.proc.stderr is None:
             return ""
-        # The process is dead or wedged by the time anyone asks; a blocking read
-        # is safe only after termination, so drain what is buffered.
+        # A blocking read only terminates once the writer is gone, so it is the
+        # right call after the plugin has exited and the wrong one before.
         with contextlib.suppress(Exception):
-            os.set_blocking(self.proc.stderr.fileno(), False)
+            os.set_blocking(self.proc.stderr.fileno(), self.proc.poll() is not None)
             return self.proc.stderr.read() or ""
         return ""
 

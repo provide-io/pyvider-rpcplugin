@@ -190,6 +190,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
     _health_servicer: HealthServicer | None = field(init=False, default=None)
     _interrupt_count: int = field(init=False, default=0)
+    _served_protocol_versions: list[int] = field(init=False, factory=list)
     _main_service_name: str = field(default="pyvider.default.plugin.Service", init=False)
 
     def _get_instance_override(self, key: str, default_value: Any) -> Any:

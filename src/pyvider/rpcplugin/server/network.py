@@ -10,7 +10,9 @@ transport setup, TLS/mTLS credentials, handshake negotiation, and
 server configuration."""
 
 import asyncio
+import os
 from pathlib import Path
+import re
 import sys
 from typing import Any, cast
 
@@ -42,6 +44,10 @@ from pyvider.rpcplugin.transport.types import (
 #: they will carry rather than the server capping first.
 GRPC_MAX_MESSAGE_SIZE = 256 * 1024 * 1024
 
+#: `tfplugin6.Provider` names protocol version 6, the way terraform-plugin-go
+#: pairs its registered service with `ProtocolVersion: 6`.
+_SERVICE_PROTOCOL_VERSION_RE = re.compile(r"^tfplugin(\d+)\.")
+
 # Module logger
 logger = get_logger(__name__)
 
@@ -67,6 +73,7 @@ class ServerNetworkMixin:
     _shutdown_event: asyncio.Event
     _rate_limiter: Any | None  # TokenBucketRateLimiter
     _health_servicer: Any | None  # HealthServicer
+    _served_protocol_versions: list[int]
 
     # Forward declarations for methods from main class
     def _get_instance_override(self, key: str, default_value: Any) -> Any: ...
@@ -371,6 +378,79 @@ class ServerNetworkMixin:
         except Exception as e:
             raise TransportError(f"gRPC server failed to start: {e}") from e
 
+    def _host_protocol_versions(self) -> list[int]:
+        """The versions the host offered -- empty when it offered none.
+
+        go-plugin reads `PLUGIN_PROTOCOL_VERSIONS` straight from the
+        environment (go-plugin/server.go:152-162), so an unset variable means
+        the host said nothing at all. That is not the same as it asking for
+        version 1, which is what this library's configuration default would
+        otherwise make it look like.
+        """
+        declared = (isinstance(self.config, dict) and self.config.get("PLUGIN_PROTOCOL_VERSIONS")) or (
+            os.environ.get("PLUGIN_PROTOCOL_VERSIONS")
+        )
+        if not declared:
+            return []
+        return [int(version) for version in self._handshake_config.protocol_versions]
+
+    def _configured_served_versions(self) -> list[int] | None:
+        """An explicitly configured served set, which outranks any declaration."""
+        if isinstance(self.config, dict) and self.config.get("SUPPORTED_PROTOCOL_VERSIONS"):
+            return [int(v) for v in self.config["SUPPORTED_PROTOCOL_VERSIONS"]]
+        if os.environ.get("SUPPORTED_PROTOCOL_VERSIONS"):
+            return [int(v) for v in rpcplugin_config.supported_protocol_versions]
+        return None
+
+    async def _protocol_version_from_service(self) -> int | None:
+        """The version embedded in the service name the plugin registers.
+
+        terraform-plugin-go's tf6server registers `tfplugin6.Provider` and
+        declares the matching `ProtocolVersion: 6` in its handshake config
+        (terraform-plugin-go/tfprotov6/tf6server/server.go:46, :273-274), so
+        the name is the plugin's own statement of what it serves.
+        """
+        try:
+            _, service_name = await self.protocol.get_grpc_descriptors()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug(f"Could not read gRPC descriptors to infer protocol version: {exc}")
+            return None
+        match = _SERVICE_PROTOCOL_VERSION_RE.match(str(service_name or ""))
+        return int(match.group(1)) if match else None
+
+    async def _resolve_served_protocol_versions(self) -> list[int]:
+        """The protocol versions this plugin actually implements.
+
+        go-plugin takes them from `opts.VersionedPlugins`, the plugin sets the
+        server registered (go-plugin/server.go:170-186) -- never from a static
+        range. The Python equivalent is the protocol object: an explicit
+        `supported_protocol_versions`, else a `protocol_version`, else the
+        version named by the service it registers.
+        """
+        configured = self._configured_served_versions()
+        if configured:
+            return configured
+
+        declared = getattr(self.protocol, "supported_protocol_versions", None)
+        if declared:
+            return sorted({int(version) for version in declared})
+
+        single = getattr(self.protocol, "protocol_version", None)
+        if single is not None:
+            return [int(single)]
+
+        derived = await self._protocol_version_from_service()
+        if derived is not None:
+            return [derived]
+
+        fallback = [int(v) for v in rpcplugin_config.supported_protocol_versions]
+        logger.warning(
+            "This plugin does not declare which protocol versions it serves, so the "
+            f"SUPPORTED_PROTOCOL_VERSIONS default {fallback} is being offered. Set "
+            "'supported_protocol_versions' on the protocol object to advertise the truth."
+        )
+        return fallback
+
     async def _negotiate_handshake(self) -> None:
         """
         Perform handshake protocol negotiation with the client.
@@ -386,7 +466,11 @@ class ServerNetworkMixin:
             magic_cookie_key=self._handshake_config.magic_cookie_key,
             magic_cookie_value=self._handshake_config.magic_cookie_value,
         )
-        self._protocol_version = negotiate_protocol_version(self._handshake_config.protocol_versions)
+        self._served_protocol_versions = await self._resolve_served_protocol_versions()
+        self._protocol_version = negotiate_protocol_version(
+            self._host_protocol_versions(),
+            server_versions=self._served_protocol_versions,
+        )
         if not self._transport:
             negotiated_transport_typed: RPCPluginTransportType
             (
