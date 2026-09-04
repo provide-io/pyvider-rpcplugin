@@ -44,6 +44,7 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_PLUGIN_GRPC_MAX_SEND_MESSAGE_SIZE,
     DEFAULT_PLUGIN_HANDSHAKE_TIMEOUT,
     DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED,
+    DEFAULT_PLUGIN_IGNORE_SIGINT,
     DEFAULT_PLUGIN_INSECURE,
     DEFAULT_PLUGIN_LOG_LEVEL,
     DEFAULT_PLUGIN_MAGIC_COOKIE_KEY,
@@ -441,6 +442,12 @@ class RPCPluginConfig(RuntimeConfig):
     plugin_shutdown_file_path: str = env_field(
         default=DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH,
         env_var="PLUGIN_SHUTDOWN_FILE_PATH",
+    )
+
+    plugin_ignore_sigint: bool = env_field(
+        default=DEFAULT_PLUGIN_IGNORE_SIGINT,
+        parser=lambda x: str(x).lower() in ("true", "1", "yes", "on"),
+        env_var="PLUGIN_IGNORE_SIGINT",
     )
 
     # =====================================================

@@ -189,6 +189,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     _shutdown_watcher_task: asyncio.Task[None] | None = field(init=False, default=None)
     _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
     _health_servicer: HealthServicer | None = field(init=False, default=None)
+    _interrupt_count: int = field(init=False, default=0)
     _main_service_name: str = field(default="pyvider.default.plugin.Service", init=False)
 
     def _get_instance_override(self, key: str, default_value: Any) -> Any:
@@ -359,13 +360,40 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             except OSError as e:
                 raise TransportError(f"Server readiness check failed: {e}") from e
 
+    def _interrupt_received(self) -> None:
+        """Log and ignore SIGINT, the way go-plugin does.
+
+        A plugin is not put in its own process group -- go-plugin's runner sets
+        no `Setpgid` (go-plugin/internal/cmdrunner/cmd_runner.go:72-82) -- so a
+        terminal Ctrl-C reaches the whole foreground group, plugin included.
+        Acting on it would tear the plugin down underneath the host mid-request;
+        the host is the one that must sequence the shutdown.
+        """
+        self._interrupt_count += 1
+        logger.info(
+            "plugin received interrupt signal, ignoring",
+            count=self._interrupt_count,
+        )
+
     def _register_signal_handlers(self) -> None:
-        """Register signal handlers for graceful shutdown."""
-        if sys.platform != "win32":
-            loop = asyncio.get_event_loop()
-            for sig in [signal.SIGINT, signal.SIGTERM]:
-                with contextlib.suppress(RuntimeError):
-                    loop.add_signal_handler(sig, self._shutdown_requested)
+        """Register signal handlers for graceful shutdown.
+
+        SIGTERM means "shut down"; SIGINT is swallowed, matching the goroutine
+        at go-plugin/server.go:459-473 that drains `os.Interrupt` forever. Set
+        `PLUGIN_IGNORE_SIGINT=false` for the equivalent of go-plugin's test
+        mode, where that goroutine is not started at all (go-plugin/server.go:458).
+        """
+        if sys.platform == "win32":
+            return
+
+        loop = asyncio.get_event_loop()
+        ignore_sigint = self._get_instance_override(
+            "PLUGIN_IGNORE_SIGINT", rpcplugin_config.plugin_ignore_sigint
+        )
+        sigint_handler = self._interrupt_received if ignore_sigint else self._shutdown_requested
+        for sig, handler in ((signal.SIGTERM, self._shutdown_requested), (signal.SIGINT, sigint_handler)):
+            with contextlib.suppress(RuntimeError):
+                loop.add_signal_handler(sig, handler)
 
     def _shutdown_requested(self, *args: Any) -> None:
         """Handle shutdown request from signal or file watcher."""

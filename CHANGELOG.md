@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- **A Ctrl-C no longer kills the plugin out from under its host.** SIGINT and SIGTERM were both wired to the graceful-shutdown handler. go-plugin deliberately eats SIGINT (`server.go:459-473`), and it has to: the plugin is not put in its own process group (`internal/cmdrunner/cmd_runner.go:72-82` sets no `Setpgid`), so a terminal Ctrl-C during `terraform apply` reaches the whole foreground group, host and plugin alike. Terraform expects to catch that interrupt itself and then drive an orderly `StopProvider` and graceful wait. Acting on it killed the provider first, so in-flight applies died with `Unavailable` and resources already created remotely never reached state. SIGTERM still shuts the server down, and `PLUGIN_IGNORE_SIGINT=false` restores the old behaviour for interactive or in-process use.
+
 ## [0.4.2] - 2026-08-22
 
 ### Fixed
