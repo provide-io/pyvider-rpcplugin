@@ -43,6 +43,11 @@ from .network import ServerNetworkMixin
 logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
 
+#: Process exit codes, matching go-plugin: a startup fault is 1
+#: (go-plugin/server.go:232-266), a served-then-stopped plugin is 0.
+EXIT_OK = 0
+EXIT_STARTUP_FAILURE = 1
+
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
 _HandlerT = TypeVar("_HandlerT")
 _TransportT = TypeVar("_TransportT", bound=RPCPluginTransportType)
@@ -174,7 +179,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     handler: HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
     transport: TransportT | None = field(default=None)
-    _exit_on_stop: bool = field(default=True, init=False)
+    _exit_on_stop: bool = field(default=True, init=False)  # resolved in __attrs_post_init__
     _transport: TransportT | None = field(init=False, default=None)
     _server: ServerT | None = field(init=False, default=None)
     _handshake_config: HandshakeConfig = field(init=False)
@@ -227,6 +232,15 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                 message=f"Failed to initialize handshake configuration: {e}",
                 hint="Check rpcplugin_config settings and instance config overrides.",
             ) from e
+
+        # Whether serving ending should end the process. A plugin launched by a
+        # host owns its process and must report a startup fault as a non-zero
+        # exit code; a server embedded in another program -- or in this suite --
+        # must not call sys.exit out from under its caller. go-plugin draws the
+        # same line with opts.Test (go-plugin/server.go:232-238).
+        self._exit_on_stop = bool(
+            self._get_instance_override("PLUGIN_EXIT_ON_STOP", not os.environ.get("PYTEST_CURRENT_TEST"))
+        )
 
         if self.transport is not None:
             self._transport = self.transport
@@ -411,16 +425,29 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         the complete server lifecycle including transport setup, handshake,
         gRPC server initialization, and serving until shutdown.
 
+        When this server owns its process -- the normal case for a plugin
+        launched by a host -- serving ending also ends the process, with a
+        non-zero code if the server never came up.
+
         Raises:
             TransportError: If transport setup fails
             ProtocolError: If handshake or protocol setup fails
         """
-        if _tracer:
-            with _tracer.start_as_current_span("rpc.server.serve") as span:
-                span.set_attribute("component", "server")
+        try:
+            if _tracer:
+                with _tracer.start_as_current_span("rpc.server.serve") as span:
+                    span.set_attribute("component", "server")
+                    await self._serve_impl()
+            else:
                 await self._serve_impl()
-        else:
-            await self._serve_impl()
+        except Exception:
+            # Ending the process is serve()'s decision, not stop()'s: stop()
+            # runs in a `finally` where a sys.exit would replace the in-flight
+            # exception with SystemExit(0) and hand the host a silent success.
+            self._exit_process(EXIT_STARTUP_FAILURE)
+            raise
+
+        self._exit_process(EXIT_OK)
 
     async def _serve_impl(self) -> None:
         """Implementation of server serve logic."""
@@ -493,10 +520,22 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if not self._serving_future.done():
             self._serving_future.set_result(None)
 
-        # Exit if configured to do so (only in non-test environments)
-        if self._exit_on_stop and not os.environ.get("PYTEST_CURRENT_TEST"):
-            logger.info("⚡ Exiting process...")
-            sys.exit(0)
+    def _exit_process(self, code: int) -> None:
+        """End the process, the way a plugin's own main() does.
+
+        go-plugin's Serve() records an exit code and lets a deferred os.Exit
+        run it (go-plugin/server.go:232-266): 1 for a startup fault such as a
+        missing or mismatched magic cookie, a normal return otherwise. A plugin
+        that exits 0 without ever handshaking leaves Terraform reporting
+        "plugin exited before we could connect" and nothing about the cause.
+
+        A server embedded in a larger program does not own the process, so this
+        is a no-op there; see PLUGIN_EXIT_ON_STOP.
+        """
+        if not self._exit_on_stop:
+            return
+        logger.info(f"⚡ Exiting process with code {code}...")
+        sys.exit(code)
 
 
 # 🐍🔌📞🔚

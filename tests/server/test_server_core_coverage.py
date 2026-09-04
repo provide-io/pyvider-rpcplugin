@@ -20,6 +20,7 @@ from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import ConfigError, TransportError
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol
 from pyvider.rpcplugin.server import RPCPluginServer
+from pyvider.rpcplugin.server.core import EXIT_OK, EXIT_STARTUP_FAILURE
 from pyvider.rpcplugin.transport import TCPSocketTransport, UnixSocketTransport
 from pyvider.rpcplugin.types import HandlerT, ServerT
 
@@ -301,27 +302,87 @@ async def test_stop_with_shutdown_watcher_task(mocker):
 
 
 @pytest.mark.asyncio
-async def test_stop_without_pytest_env(mocker):
-    """Test stop() exit behavior without PYTEST_CURRENT_TEST."""
-    protocol = DummyProtocol()
-    handler = DummyHandler()
-    server = RPCPluginServer(protocol=protocol, handler=handler)
+async def test_stop_does_not_end_the_process(mocker):
+    """stop() stops the server; ending the process is serve()'s decision.
 
-    # Remove PYTEST_CURRENT_TEST from environment
-    original_value = os.environ.get("PYTEST_CURRENT_TEST")
-    if "PYTEST_CURRENT_TEST" in os.environ:
-        del os.environ["PYTEST_CURRENT_TEST"]
+    A sys.exit inside stop() ran from a `finally` block, so on the error path
+    SystemExit(0) replaced the in-flight startup exception and every startup
+    failure exited 0.
+    """
+    server = RPCPluginServer(
+        protocol=DummyProtocol(),
+        handler=DummyHandler(),
+        config={"PLUGIN_EXIT_ON_STOP": True},
+    )
 
-    try:
-        # Mock sys.exit to prevent actual exit
-        with patch("sys.exit") as mock_exit:
-            await server.stop()
-            # Should try to call sys.exit(0)
-            mock_exit.assert_called_once_with(0)
-    finally:
-        # Restore environment
-        if original_value is not None:
-            os.environ["PYTEST_CURRENT_TEST"] = original_value
+    with patch("sys.exit") as mock_exit:
+        await server.stop()
+
+    mock_exit.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_serve_exits_nonzero_when_startup_fails(mocker):
+    """go-plugin exits 1 on a startup fault (go-plugin/server.go:232-266)."""
+    server = RPCPluginServer(
+        protocol=DummyProtocol(),
+        handler=DummyHandler(),
+        config={"PLUGIN_EXIT_ON_STOP": True},
+    )
+    mocker.patch.object(server, "_register_signal_handlers")
+    mocker.patch.object(
+        server,
+        "_negotiate_handshake",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError("no magic cookie"),
+    )
+
+    with patch("sys.exit") as mock_exit, pytest.raises(RuntimeError, match="no magic cookie"):
+        await server.serve()
+
+    mock_exit.assert_called_once_with(EXIT_STARTUP_FAILURE)
+
+
+@pytest.mark.asyncio
+async def test_serve_exits_zero_after_a_clean_shutdown(mocker):
+    """A plugin that served and then stopped is still a success."""
+    server = RPCPluginServer(
+        protocol=DummyProtocol(),
+        handler=DummyHandler(),
+        config={"PLUGIN_EXIT_ON_STOP": True},
+    )
+    mocker.patch.object(server, "_register_signal_handlers")
+    mocker.patch.object(server, "_negotiate_handshake", new_callable=AsyncMock)
+    mocker.patch.object(server, "_setup_server", new_callable=AsyncMock)
+    mocker.patch.object(server, "_build_and_send_handshake_response", new_callable=AsyncMock)
+    server._serving_future.set_result(None)
+
+    with patch("sys.exit") as mock_exit:
+        await server.serve()
+
+    mock_exit.assert_called_once_with(EXIT_OK)
+
+
+@pytest.mark.asyncio
+async def test_an_embedded_server_never_exits_the_process(mocker):
+    """PLUGIN_EXIT_ON_STOP=False keeps sys.exit away from the caller's process."""
+    server = RPCPluginServer(
+        protocol=DummyProtocol(),
+        handler=DummyHandler(),
+        config={"PLUGIN_EXIT_ON_STOP": False},
+    )
+    mocker.patch.object(server, "_register_signal_handlers")
+    mocker.patch.object(
+        server,
+        "_negotiate_handshake",
+        new_callable=AsyncMock,
+        side_effect=RuntimeError("no magic cookie"),
+    )
+
+    with patch("sys.exit") as mock_exit, pytest.raises(RuntimeError, match="no magic cookie"):
+        await server.serve()
+
+    mock_exit.assert_not_called()
 
 
 @pytest.fixture
