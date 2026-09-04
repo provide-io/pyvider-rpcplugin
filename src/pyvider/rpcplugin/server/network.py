@@ -10,6 +10,7 @@ transport setup, TLS/mTLS credentials, handshake negotiation, and
 server configuration."""
 
 import asyncio
+import contextlib
 import os
 from pathlib import Path
 import re
@@ -270,6 +271,12 @@ class ServerNetworkMixin:
         concrete_server = cast(grpc.aio.Server, self._server)
         register_protocol_service(server=concrete_server, shutdown_event=self._shutdown_event)
         if self._health_servicer:
+            # The protocol names its service in get_grpc_descriptors(); a
+            # `service_name` class attribute is optional and often absent, so
+            # read the name the plugin actually registers.
+            with contextlib.suppress(Exception):
+                _, registered_service = await proto_instance.get_grpc_descriptors()
+                self._health_servicer.add_service_name(str(registered_service or ""))
             health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, concrete_server)
         return concrete_server
 

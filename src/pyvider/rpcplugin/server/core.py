@@ -29,7 +29,7 @@ from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.exception import ConfigError, TransportError
 from pyvider.rpcplugin.handshake import HandshakeConfig
-from pyvider.rpcplugin.health_servicer import HealthServicer
+from pyvider.rpcplugin.health_servicer import GO_PLUGIN_HEALTH_SERVICE_NAME, HealthServicer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.transport.types import (
@@ -275,9 +275,14 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if self._get_instance_override(
             "PLUGIN_HEALTH_SERVICE_ENABLED", rpcplugin_config.plugin_health_service_enabled
         ):
+            # go-plugin's Ping() checks the service named exactly "plugin"
+            # (go-plugin/grpc_client.go:127-134); anything else is NOT_FOUND
+            # and reads to the host as a dead plugin. The plugin's own service
+            # name keeps answering alongside it.
             self._health_servicer = HealthServicer(
                 app_is_healthy_callable=self._is_main_app_healthy,
-                service_name=self._main_service_name,
+                service_name=GO_PLUGIN_HEALTH_SERVICE_NAME,
+                additional_service_names=(self._main_service_name,),
             )
 
     def _is_main_app_healthy(self) -> bool:
