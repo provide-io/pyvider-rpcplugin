@@ -101,12 +101,9 @@ async def test_load_client_root_certificates_file_scheme(mocker):
 
     try:
         file_url = f"file://{cert_file_path}"
-        root_certs, require_auth = server._load_client_root_certificates(
-            auto_mtls=True, client_root_certs_conf=file_url
-        )
+        root_certs = server._load_client_root_certificates(file_url)
 
         assert root_certs is not None
-        assert require_auth is True
         assert b"-----BEGIN CERTIFICATE-----" in root_certs
     finally:
         Path(cert_file_path).unlink()
@@ -123,7 +120,7 @@ async def test_load_client_root_certificates_file_read_failure(mocker):
     file_url = "file:///nonexistent/path/cert.pem"
 
     with pytest.raises(SecurityError, match="Failed to load client root CAs"):
-        server._load_client_root_certificates(auto_mtls=True, client_root_certs_conf=file_url)
+        server._load_client_root_certificates(file_url)
 
 
 @pytest.mark.asyncio

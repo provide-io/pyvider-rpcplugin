@@ -27,9 +27,10 @@ from provide.foundation.logger import get_logger
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_PLUGIN_GRPC_GRACE_PERIOD
 from pyvider.rpcplugin.exception import ConfigError, TransportError
 from pyvider.rpcplugin.handshake import HandshakeConfig
-from pyvider.rpcplugin.health_servicer import HealthServicer
+from pyvider.rpcplugin.health_servicer import GO_PLUGIN_HEALTH_SERVICE_NAME, HealthServicer
 from pyvider.rpcplugin.protocol.base import RPCPluginProtocol as BaseRpcAbcProtocol
 from pyvider.rpcplugin.telemetry import get_rpc_tracer
 from pyvider.rpcplugin.transport.types import (
@@ -42,6 +43,11 @@ from .network import ServerNetworkMixin
 # Module logger and tracer
 logger = get_logger(__name__)
 _tracer = get_rpc_tracer()
+
+#: Process exit codes, matching go-plugin: a startup fault is 1
+#: (go-plugin/server.go:232-266), a served-then-stopped plugin is 0.
+EXIT_OK = 0
+EXIT_STARTUP_FAILURE = 1
 
 _ServerT = TypeVar("_ServerT", bound=grpc.aio.Server)
 _HandlerT = TypeVar("_HandlerT")
@@ -174,7 +180,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     handler: HandlerT = field()
     config: dict[str, Any] | None = field(default=None)
     transport: TransportT | None = field(default=None)
-    _exit_on_stop: bool = field(default=True, init=False)
+    _exit_on_stop: bool = field(default=True, init=False)  # resolved in __attrs_post_init__
     _transport: TransportT | None = field(init=False, default=None)
     _server: ServerT | None = field(init=False, default=None)
     _handshake_config: HandshakeConfig = field(init=False)
@@ -189,6 +195,8 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
     _shutdown_watcher_task: asyncio.Task[None] | None = field(init=False, default=None)
     _rate_limiter: TokenBucketRateLimiter | None = field(init=False, default=None)
     _health_servicer: HealthServicer | None = field(init=False, default=None)
+    _interrupt_count: int = field(init=False, default=0)
+    _served_protocol_versions: list[int] = field(init=False, factory=list)
     _main_service_name: str = field(default="pyvider.default.plugin.Service", init=False)
 
     def _get_instance_override(self, key: str, default_value: Any) -> Any:
@@ -226,6 +234,15 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
                 hint="Check rpcplugin_config settings and instance config overrides.",
             ) from e
 
+        # Whether serving ending should end the process. A plugin launched by a
+        # host owns its process and must report a startup fault as a non-zero
+        # exit code; a server embedded in another program -- or in this suite --
+        # must not call sys.exit out from under its caller. go-plugin draws the
+        # same line with opts.Test (go-plugin/server.go:232-238).
+        self._exit_on_stop = bool(
+            self._get_instance_override("PLUGIN_EXIT_ON_STOP", not os.environ.get("PYTEST_CURRENT_TEST"))
+        )
+
         if self.transport is not None:
             self._transport = self.transport
 
@@ -259,9 +276,14 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if self._get_instance_override(
             "PLUGIN_HEALTH_SERVICE_ENABLED", rpcplugin_config.plugin_health_service_enabled
         ):
+            # go-plugin's Ping() checks the service named exactly "plugin"
+            # (go-plugin/grpc_client.go:127-134); anything else is NOT_FOUND
+            # and reads to the host as a dead plugin. The plugin's own service
+            # name keeps answering alongside it.
             self._health_servicer = HealthServicer(
                 app_is_healthy_callable=self._is_main_app_healthy,
-                service_name=self._main_service_name,
+                service_name=GO_PLUGIN_HEALTH_SERVICE_NAME,
+                additional_service_names=(self._main_service_name,),
             )
 
     def _is_main_app_healthy(self) -> bool:
@@ -359,13 +381,40 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
             except OSError as e:
                 raise TransportError(f"Server readiness check failed: {e}") from e
 
+    def _interrupt_received(self) -> None:
+        """Log and ignore SIGINT, the way go-plugin does.
+
+        A plugin is not put in its own process group -- go-plugin's runner sets
+        no `Setpgid` (go-plugin/internal/cmdrunner/cmd_runner.go:72-82) -- so a
+        terminal Ctrl-C reaches the whole foreground group, plugin included.
+        Acting on it would tear the plugin down underneath the host mid-request;
+        the host is the one that must sequence the shutdown.
+        """
+        self._interrupt_count += 1
+        logger.info(
+            "plugin received interrupt signal, ignoring",
+            count=self._interrupt_count,
+        )
+
     def _register_signal_handlers(self) -> None:
-        """Register signal handlers for graceful shutdown."""
-        if sys.platform != "win32":
-            loop = asyncio.get_event_loop()
-            for sig in [signal.SIGINT, signal.SIGTERM]:
-                with contextlib.suppress(RuntimeError):
-                    loop.add_signal_handler(sig, self._shutdown_requested)
+        """Register signal handlers for graceful shutdown.
+
+        SIGTERM means "shut down"; SIGINT is swallowed, matching the goroutine
+        at go-plugin/server.go:459-473 that drains `os.Interrupt` forever. Set
+        `PLUGIN_IGNORE_SIGINT=false` for the equivalent of go-plugin's test
+        mode, where that goroutine is not started at all (go-plugin/server.go:458).
+        """
+        if sys.platform == "win32":
+            return
+
+        loop = asyncio.get_event_loop()
+        ignore_sigint = self._get_instance_override(
+            "PLUGIN_IGNORE_SIGINT", rpcplugin_config.plugin_ignore_sigint
+        )
+        sigint_handler = self._interrupt_received if ignore_sigint else self._shutdown_requested
+        for sig, handler in ((signal.SIGTERM, self._shutdown_requested), (signal.SIGINT, sigint_handler)):
+            with contextlib.suppress(RuntimeError):
+                loop.add_signal_handler(sig, handler)
 
     def _shutdown_requested(self, *args: Any) -> None:
         """Handle shutdown request from signal or file watcher."""
@@ -382,16 +431,29 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         the complete server lifecycle including transport setup, handshake,
         gRPC server initialization, and serving until shutdown.
 
+        When this server owns its process -- the normal case for a plugin
+        launched by a host -- serving ending also ends the process, with a
+        non-zero code if the server never came up.
+
         Raises:
             TransportError: If transport setup fails
             ProtocolError: If handshake or protocol setup fails
         """
-        if _tracer:
-            with _tracer.start_as_current_span("rpc.server.serve") as span:
-                span.set_attribute("component", "server")
+        try:
+            if _tracer:
+                with _tracer.start_as_current_span("rpc.server.serve") as span:
+                    span.set_attribute("component", "server")
+                    await self._serve_impl()
+            else:
                 await self._serve_impl()
-        else:
-            await self._serve_impl()
+        except Exception:
+            # Ending the process is serve()'s decision, not stop()'s: stop()
+            # runs in a `finally` where a sys.exit would replace the in-flight
+            # exception with SystemExit(0) and hand the host a silent success.
+            self._exit_process(EXIT_STARTUP_FAILURE)
+            raise
+
+        self._exit_process(EXIT_OK)
 
     async def _serve_impl(self) -> None:
         """Implementation of server serve logic."""
@@ -450,7 +512,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if self._server is not None:
             logger.debug("Stopping gRPC server...")
             server_to_stop = cast(grpc.aio.Server, self._server)
-            await server_to_stop.stop(grace=0.5)
+            await server_to_stop.stop(grace=self._graceful_shutdown_timeout())
             self._server = None
 
         # Clean up transport
@@ -464,10 +526,42 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if not self._serving_future.done():
             self._serving_future.set_result(None)
 
-        # Exit if configured to do so (only in non-test environments)
-        if self._exit_on_stop and not os.environ.get("PYTEST_CURRENT_TEST"):
-            logger.info("⚡ Exiting process...")
-            sys.exit(0)
+    def _graceful_shutdown_timeout(self) -> float:
+        """How long in-flight RPCs get to finish before the server goes away.
+
+        Callers pass PLUGIN_TIMEOUT_GRACEFUL_SHUTDOWN; the library's own
+        setting is PLUGIN_GRPC_GRACE_PERIOD. Either beats the hardcoded half a
+        second that used to cut a slow response off mid-flight.
+        """
+        configured = self._get_instance_override(
+            "PLUGIN_TIMEOUT_GRACEFUL_SHUTDOWN",
+            self._get_instance_override("PLUGIN_GRPC_GRACE_PERIOD", rpcplugin_config.plugin_grpc_grace_period),
+        )
+        try:
+            return float(configured)
+        except (TypeError, ValueError):
+            logger.warning(
+                f"Could not parse a graceful shutdown timeout from {configured!r}; "
+                f"using {DEFAULT_PLUGIN_GRPC_GRACE_PERIOD}s."
+            )
+            return float(DEFAULT_PLUGIN_GRPC_GRACE_PERIOD)
+
+    def _exit_process(self, code: int) -> None:
+        """End the process, the way a plugin's own main() does.
+
+        go-plugin's Serve() records an exit code and lets a deferred os.Exit
+        run it (go-plugin/server.go:232-266): 1 for a startup fault such as a
+        missing or mismatched magic cookie, a normal return otherwise. A plugin
+        that exits 0 without ever handshaking leaves Terraform reporting
+        "plugin exited before we could connect" and nothing about the cause.
+
+        A server embedded in a larger program does not own the process, so this
+        is a no-op there; see PLUGIN_EXIT_ON_STOP.
+        """
+        if not self._exit_on_stop:
+            return
+        logger.info(f"⚡ Exiting process with code {code}...")
+        sys.exit(code)
 
 
 # 🐍🔌📞🔚

@@ -112,6 +112,11 @@ DEFAULT_PLUGIN_SERVER_PORT = 0
 DEFAULT_PLUGIN_SERVER_UNIX_SOCKET_PATH = str(tempfile.gettempdir()) + "/plugin.sock"  # nosec B108 - fallback path for development; override in production
 DEFAULT_PLUGIN_SHUTDOWN_FILE_PATH = ""
 
+# go-plugin eats SIGINT so the host, not the terminal, sequences the shutdown
+# (go-plugin/server.go:459-473).  Set False for the equivalent of go-plugin's
+# test mode (`opts.Test != nil`), where SIGINT must still stop the process.
+DEFAULT_PLUGIN_IGNORE_SIGINT = True
+
 # =================================
 # Feature Configuration Defaults
 # =================================

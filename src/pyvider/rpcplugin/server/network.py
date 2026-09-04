@@ -10,7 +10,10 @@ transport setup, TLS/mTLS credentials, handshake negotiation, and
 server configuration."""
 
 import asyncio
+import contextlib
+import os
 from pathlib import Path
+import re
 import sys
 from typing import Any, cast
 
@@ -42,6 +45,10 @@ from pyvider.rpcplugin.transport.types import (
 #: they will carry rather than the server capping first.
 GRPC_MAX_MESSAGE_SIZE = 256 * 1024 * 1024
 
+#: `tfplugin6.Provider` names protocol version 6, the way terraform-plugin-go
+#: pairs its registered service with `ProtocolVersion: 6`.
+_SERVICE_PROTOCOL_VERSION_RE = re.compile(r"^tfplugin(\d+)\.")
+
 # Module logger
 logger = get_logger(__name__)
 
@@ -67,13 +74,21 @@ class ServerNetworkMixin:
     _shutdown_event: asyncio.Event
     _rate_limiter: Any | None  # TokenBucketRateLimiter
     _health_servicer: Any | None  # HealthServicer
+    _served_protocol_versions: list[int]
 
     # Forward declarations for methods from main class
     def _get_instance_override(self, key: str, default_value: Any) -> Any: ...
 
     def _read_client_cert(self) -> str | None:
-        """Read client certificate configuration if available."""
+        """The host's own certificate, sent only when it wants mTLS.
+
+        go-plugin's host writes its PEM into PLUGIN_CLIENT_CERT
+        (go-plugin/client.go:684) and the plugin keys its entire TLS decision
+        off that single value (go-plugin/server.go:304-306).
+        """
         result = self._get_instance_override("PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert)
+        if isinstance(result, str) and not result.strip():
+            return None
         return cast(str | None, result)
 
     def _should_skip_credentials(
@@ -81,10 +96,33 @@ class ServerNetworkMixin:
         auto_mtls: bool,
         server_cert_conf: str | None,
         server_key_conf: str | None,
+        client_cert: str | None,
     ) -> bool:
-        if auto_mtls or (server_cert_conf and server_key_conf):
+        """Decide between TLS and plaintext, the way go-plugin does.
+
+        go-plugin builds a TLS config only when the host sent a client
+        certificate (go-plugin/server.go:304-306); otherwise it serves
+        plaintext and emits an empty sixth handshake field. Advertising a
+        certificate the host never asked for is not merely noisy: a host with
+        `TLSConfig == nil` -- the `TF_DISABLE_PLUGIN_TLS` path the SDK test
+        harnesses use -- sees a sixth field over 50 characters, calls
+        `loadServerCert`, and nil-pointer panics on `TLSConfig.RootCAs`
+        (go-plugin/client.go:920-926 and :950-968).
+        """
+        if server_cert_conf and server_key_conf:
             return False
-        logger.info("auto_mtls is false and no server cert/key provided. Operating insecurely.")
+        if client_cert:
+            if auto_mtls:
+                return False
+            logger.warning(
+                "Host sent PLUGIN_CLIENT_CERT but PLUGIN_AUTO_MTLS is disabled. "
+                "Serving plaintext; the host will refuse to connect if it expects TLS."
+            )
+            return True
+        logger.info(
+            "No PLUGIN_CLIENT_CERT from the host and no PLUGIN_SERVER_CERT/KEY configured. "
+            "Serving plaintext with an empty handshake certificate field."
+        )
         return True
 
     def _load_server_certificate(
@@ -123,34 +161,67 @@ class ServerNetworkMixin:
 
     def _load_client_root_certificates(
         self,
-        auto_mtls: bool,
         client_root_certs_conf: str | None,
-    ) -> tuple[bytes | None, bool]:
-        if not auto_mtls:
-            return None, False
-
+    ) -> bytes | None:
+        """Read an explicitly configured client CA bundle: inline PEM or file://."""
         if not client_root_certs_conf:
-            logger.info(
-                "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. "
-                "Client certs will not be required/verified."
-            )
-            return None, False
+            return None
 
         try:
             if client_root_certs_conf.startswith("file://"):
                 with Path(client_root_certs_conf.removeprefix("file://")).open("rb") as file_handle:
-                    return file_handle.read(), True
-            return client_root_certs_conf.encode("utf-8"), True
+                    return file_handle.read()
+            return client_root_certs_conf.encode("utf-8")
         except Exception as exc:
             raise SecurityError(f"Failed to load client root CAs: {exc}") from exc
+
+    def _client_ca_bundle(self, client_cert: str | None) -> tuple[bytes | None, bool]:
+        """The client CA to verify against, and whether verification is possible.
+
+        Under automatic mTLS go-plugin makes the host's own certificate the
+        entire `ClientCAs` pool (go-plugin/server.go:308-311 and :331), and a Go
+        plugin does require and verify it. This server cannot. go-plugin's host
+        generates an ECDSA **P-521** client certificate (go-plugin/mtls.go:21),
+        and BoringSSL -- the TLS stack behind `grpc.ssl_server_credentials` --
+        does not offer `ecdsa_secp521r1_sha512` among the signature schemes of
+        its CertificateRequest. Go's `SupportsCertificate` then finds no usable
+        chain, sends an empty Certificate message, and the connection dies as
+        `PEER_DID_NOT_RETURN_A_CERTIFICATE`. Requiring client auth on this path
+        makes a provider unreachable from stock Terraform, which enables
+        AutoMTLS unless TF_DISABLE_PLUGIN_TLS is set
+        (terraform/internal/command/meta_providers.go:35).
+
+        So the host's certificate is accepted but not verified, and only an
+        explicitly configured PLUGIN_CLIENT_ROOT_CERTS turns verification on --
+        for deployments that issue plugin client certificates themselves, on a
+        curve gRPC will accept. `tests/goplugin/test_goplugin_real_host.py`
+        drives a real go-plugin host and fails if this is tightened again.
+        """
+        explicit = self._load_client_root_certificates(
+            self._get_instance_override("PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs)
+        )
+        if explicit is not None:
+            return explicit, True
+        # Passing the host's certificate as `root_certificates` while
+        # `require_client_auth` is False has no effect at all: gRPC sends no
+        # CertificateRequest, so nothing is ever verified against it. Say that
+        # plainly rather than carry a bundle that is never consulted.
+        return None, False
 
     def _generate_server_credentials(self) -> grpc.ServerCredentials | None:
         """
         Generate gRPC server credentials based on configuration.
 
-        This method handles both manual certificate configuration and
-        automatic mTLS certificate generation. It supports client certificate
-        validation when configured.
+        TLS is served when the host asked for it by sending PLUGIN_CLIENT_CERT,
+        or when an operator configured PLUGIN_SERVER_CERT/KEY by hand; anything
+        else is plaintext. When TLS is on and a client CA is known, the client
+        certificate is required and verified -- go-plugin sets
+        `ClientAuth: RequireAndVerifyClientCert` (go-plugin/server.go:329-336),
+        which is the whole point of calling it mutual TLS.
+
+        PLUGIN_AUTO_MTLS no longer decides *whether* to serve TLS; it decides
+        whether to answer the host's certificate with a generated one. Setting
+        it false declines automatic mTLS and serves plaintext.
 
         Returns:
             gRPC server credentials for secure connections, or None for insecure mode
@@ -163,26 +234,35 @@ class ServerNetworkMixin:
         )
         server_key_conf = self._get_instance_override("PLUGIN_SERVER_KEY", rpcplugin_config.plugin_server_key)
         auto_mtls = self._get_instance_override("PLUGIN_AUTO_MTLS", rpcplugin_config.plugin_auto_mtls)
-        client_root_certs_conf = self._get_instance_override(
-            "PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs
-        )
+        client_cert = self._read_client_cert()
 
-        if self._should_skip_credentials(auto_mtls, server_cert_conf, server_key_conf):
+        if self._should_skip_credentials(auto_mtls, server_cert_conf, server_key_conf, client_cert):
             return None
 
-        self._server_cert_obj = self._load_server_certificate(server_cert_conf, server_key_conf, auto_mtls)
-        valid_cert = self._validate_server_certificate_obj(self._server_cert_obj)
-        key_bytes = valid_cert.key_pem.encode("utf-8")
-        cert_bytes = valid_cert.cert_pem.encode("utf-8")
-        client_ca_pem_bytes, require_auth = self._load_client_root_certificates(
-            auto_mtls,
-            client_root_certs_conf,
+        # TLS is warranted at this point, so a missing manual pair means
+        # generate one -- the same response go-plugin makes to a client cert.
+        self._server_cert_obj = self._load_server_certificate(
+            server_cert_conf, server_key_conf, auto_mtls=True
         )
+        valid_cert = self._validate_server_certificate_obj(self._server_cert_obj)
+        client_ca_pem_bytes, verify_client = self._client_ca_bundle(client_cert)
+        if not verify_client:
+            logger.warning(
+                "Serving TLS without client verification. gRPC cannot verify go-plugin's "
+                "automatic-mTLS certificate -- it is ECDSA P-521, a curve BoringSSL will "
+                "not accept for client authentication -- so any process that can reach "
+                "this endpoint can drive the plugin. The Unix socket is created 0640, "
+                "which limits that to the same user; a TCP endpoint has no such limit. "
+                "Set PLUGIN_CLIENT_ROOT_CERTS to require and verify a client certificate "
+                "you issue yourself."
+            )
 
         return grpc.ssl_server_credentials(
-            private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
+            private_key_certificate_chain_pairs=[
+                (valid_cert.key_pem.encode("utf-8"), valid_cert.cert_pem.encode("utf-8"))
+            ],
             root_certificates=client_ca_pem_bytes,
-            require_client_auth=require_auth,
+            require_client_auth=verify_client,
         )
 
     async def _initialize_server_with_services(self) -> grpc.aio.Server:
@@ -213,6 +293,12 @@ class ServerNetworkMixin:
         concrete_server = cast(grpc.aio.Server, self._server)
         register_protocol_service(server=concrete_server, shutdown_event=self._shutdown_event)
         if self._health_servicer:
+            # The protocol names its service in get_grpc_descriptors(); a
+            # `service_name` class attribute is optional and often absent, so
+            # read the name the plugin actually registers.
+            with contextlib.suppress(Exception):
+                _, registered_service = await proto_instance.get_grpc_descriptors()
+                self._health_servicer.add_service_name(str(registered_service or ""))
             health_pb2_grpc.add_HealthServicer_to_server(self._health_servicer, concrete_server)
         return concrete_server
 
@@ -321,6 +407,79 @@ class ServerNetworkMixin:
         except Exception as e:
             raise TransportError(f"gRPC server failed to start: {e}") from e
 
+    def _host_protocol_versions(self) -> list[int]:
+        """The versions the host offered -- empty when it offered none.
+
+        go-plugin reads `PLUGIN_PROTOCOL_VERSIONS` straight from the
+        environment (go-plugin/server.go:152-162), so an unset variable means
+        the host said nothing at all. That is not the same as it asking for
+        version 1, which is what this library's configuration default would
+        otherwise make it look like.
+        """
+        declared = (isinstance(self.config, dict) and self.config.get("PLUGIN_PROTOCOL_VERSIONS")) or (
+            os.environ.get("PLUGIN_PROTOCOL_VERSIONS")
+        )
+        if not declared:
+            return []
+        return [int(version) for version in self._handshake_config.protocol_versions]
+
+    def _configured_served_versions(self) -> list[int] | None:
+        """An explicitly configured served set, which outranks any declaration."""
+        if isinstance(self.config, dict) and self.config.get("SUPPORTED_PROTOCOL_VERSIONS"):
+            return [int(v) for v in self.config["SUPPORTED_PROTOCOL_VERSIONS"]]
+        if os.environ.get("SUPPORTED_PROTOCOL_VERSIONS"):
+            return [int(v) for v in rpcplugin_config.supported_protocol_versions]
+        return None
+
+    async def _protocol_version_from_service(self) -> int | None:
+        """The version embedded in the service name the plugin registers.
+
+        terraform-plugin-go's tf6server registers `tfplugin6.Provider` and
+        declares the matching `ProtocolVersion: 6` in its handshake config
+        (terraform-plugin-go/tfprotov6/tf6server/server.go:46, :273-274), so
+        the name is the plugin's own statement of what it serves.
+        """
+        try:
+            _, service_name = await self.protocol.get_grpc_descriptors()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.debug(f"Could not read gRPC descriptors to infer protocol version: {exc}")
+            return None
+        match = _SERVICE_PROTOCOL_VERSION_RE.match(str(service_name or ""))
+        return int(match.group(1)) if match else None
+
+    async def _resolve_served_protocol_versions(self) -> list[int]:
+        """The protocol versions this plugin actually implements.
+
+        go-plugin takes them from `opts.VersionedPlugins`, the plugin sets the
+        server registered (go-plugin/server.go:170-186) -- never from a static
+        range. The Python equivalent is the protocol object: an explicit
+        `supported_protocol_versions`, else a `protocol_version`, else the
+        version named by the service it registers.
+        """
+        configured = self._configured_served_versions()
+        if configured:
+            return configured
+
+        declared = getattr(self.protocol, "supported_protocol_versions", None)
+        if declared:
+            return sorted({int(version) for version in declared})
+
+        single = getattr(self.protocol, "protocol_version", None)
+        if single is not None:
+            return [int(single)]
+
+        derived = await self._protocol_version_from_service()
+        if derived is not None:
+            return [derived]
+
+        fallback = [int(v) for v in rpcplugin_config.supported_protocol_versions]
+        logger.warning(
+            "This plugin does not declare which protocol versions it serves, so the "
+            f"SUPPORTED_PROTOCOL_VERSIONS default {fallback} is being offered. Set "
+            "'supported_protocol_versions' on the protocol object to advertise the truth."
+        )
+        return fallback
+
     async def _negotiate_handshake(self) -> None:
         """
         Perform handshake protocol negotiation with the client.
@@ -336,7 +495,11 @@ class ServerNetworkMixin:
             magic_cookie_key=self._handshake_config.magic_cookie_key,
             magic_cookie_value=self._handshake_config.magic_cookie_value,
         )
-        self._protocol_version = negotiate_protocol_version(self._handshake_config.protocol_versions)
+        self._served_protocol_versions = await self._resolve_served_protocol_versions()
+        self._protocol_version = negotiate_protocol_version(
+            self._host_protocol_versions(),
+            server_versions=self._served_protocol_versions,
+        )
         if not self._transport:
             negotiated_transport_typed: RPCPluginTransportType
             (

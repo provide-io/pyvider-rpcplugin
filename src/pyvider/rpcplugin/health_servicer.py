@@ -9,13 +9,19 @@ This module provides a `HealthServicer` class that implements the standard
 gRPC Health Checking Protocol, allowing clients to query the health status
 of the plugin server or specific services within it."""
 
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Iterable
 
 import grpc
 from grpc_health.v1 import health_pb2, health_pb2_grpc
 from provide.foundation.logger import get_logger
 
 logger = get_logger(__name__)
+
+#: The health service name a go-plugin host checks. `Ping()` asks for exactly
+#: this and nothing else (go-plugin/grpc_client.go:127-134), and go-plugin's
+#: own server marks it SERVING (go-plugin/grpc_server.go:26, :78-83). Anything
+#: else answers NOT_FOUND, which a host reads as a dead plugin.
+GO_PLUGIN_HEALTH_SERVICE_NAME = "plugin"
 
 
 class HealthServicer(health_pb2_grpc.HealthServicer):
@@ -62,7 +68,12 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         implemented. Clients should use periodic Check calls instead.
     """
 
-    def __init__(self, app_is_healthy_callable: Callable[[], bool], service_name: str = "") -> None:
+    def __init__(
+        self,
+        app_is_healthy_callable: Callable[[], bool],
+        service_name: str = "",
+        additional_service_names: Iterable[str] = (),
+    ) -> None:
         """
         Initialize the health servicer with health check logic.
 
@@ -75,6 +86,11 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
                          An empty string (default) indicates overall server health.
                          Use fully qualified service names for clarity
                          (e.g., "myapp.v1.DataService").
+            additional_service_names: Further names that answer SERVING. A
+                         plugin server registers both go-plugin's
+                         `GO_PLUGIN_HEALTH_SERVICE_NAME` and the service its
+                         protocol actually exposes, so a host checking either
+                         one gets an answer.
 
         Example:
             ```python
@@ -100,6 +116,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         """
         self._app_is_healthy_callable = app_is_healthy_callable
         self._service_name = service_name
+        self._service_names: set[str] = {name for name in (service_name, *additional_service_names) if name}
         logger.debug(
             f"❤️⚕️ HealthServicer initialized for service '{service_name}'. "
             f"Main app health check: {app_is_healthy_callable()}"
@@ -119,7 +136,7 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
             f"Monitored service: '{self._service_name}'"
         )
 
-        if not requested_service or requested_service == self._service_name:
+        if not requested_service or requested_service in self._service_names:
             if self._app_is_healthy_callable():
                 logger.debug(f"❤️⚕️ Reporting SERVING for '{requested_service or 'overall server'}'")
                 return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVING)
@@ -132,12 +149,17 @@ class HealthServicer(health_pb2_grpc.HealthServicer):
         else:
             logger.info(
                 f"❤️⚕️ Service '{requested_service}' not found by this health checker. "
-                f"Monitored: '{self._service_name}'."
+                f"Monitored: {sorted(self._service_names)}."
             )
             await context.abort(grpc.StatusCode.NOT_FOUND, f"Service '{requested_service}' not found.")
             # This line is technically unreachable due to abort, but linters/type
             # checkers might expect a return.
             return health_pb2.HealthCheckResponse(status=health_pb2.HealthCheckResponse.SERVICE_UNKNOWN)
+
+    def add_service_name(self, service_name: str) -> None:
+        """Also answer SERVING for `service_name`."""
+        if service_name:
+            self._service_names.add(service_name)
 
     async def Watch(  # type: ignore[override]  # pyre-ignore[14]
         self,
