@@ -55,13 +55,18 @@ def _make_dummy_cert(common_name: str = "CN"):
 HOST_CLIENT_CERT = "-----BEGIN CERTIFICATE-----\nhost\n-----END CERTIFICATE-----"
 
 
-def test_generate_server_credentials_auto_mtls_requires_the_host_cert(
+def test_generate_server_credentials_auto_mtls_does_not_require_a_client_cert(
     monkeypatch, mock_server_protocol, mock_server_handler, mocker
 ):
-    """The host's PLUGIN_CLIENT_CERT becomes the client CA, and is required.
+    """The host's certificate turns TLS on, and nothing more.
 
-    go-plugin/server.go:329-336 sets ClientAuth: RequireAndVerifyClientCert
-    with ClientCAs holding exactly that certificate.
+    go-plugin/server.go:329-336 sets ClientAuth: RequireAndVerifyClientCert with
+    ClientCAs holding exactly that certificate, and a Go plugin honours it. gRPC
+    cannot: the host's certificate is ECDSA P-521 (go-plugin/mtls.go:21) and
+    BoringSSL omits ecdsa_secp521r1_sha512 from its CertificateRequest, so the
+    host is asked for a certificate it cannot present and the connection is
+    dropped. Passing the bundle while require_client_auth is False would be
+    inert -- no CertificateRequest is sent -- so neither is passed.
     """
     monkeypatch.setattr(rpcplugin_config, "plugin_server_cert", None)
     monkeypatch.setattr(rpcplugin_config, "plugin_server_key", None)
@@ -82,8 +87,10 @@ def test_generate_server_credentials_auto_mtls_requires_the_host_cert(
 
     ssl_mock.assert_called_once()
     _, kwargs = ssl_mock.call_args
-    assert kwargs["root_certificates"] == HOST_CLIENT_CERT.encode()
-    assert kwargs["require_client_auth"] is True
+    assert kwargs["require_client_auth"] is False, (
+        "requiring client auth here makes the plugin unreachable from stock Terraform"
+    )
+    assert kwargs["root_certificates"] is None
     assert result == ssl_mock.return_value
 
 

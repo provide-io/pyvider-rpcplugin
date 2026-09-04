@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""TLS is keyed on PLUGIN_CLIENT_CERT, and when on it is mutual.
+"""TLS is keyed on PLUGIN_CLIENT_CERT; client auth needs PLUGIN_CLIENT_ROOT_CERTS.
 
 `go-plugin/server.go:304-338` builds a TLS config *only* when the host sent
 `PLUGIN_CLIENT_CERT`, and when it does it sets `ClientAuth:
@@ -13,6 +13,16 @@ field, which is what `go-plugin/client.go:920-926` keys off: a sixth field
 longer than 50 characters makes the host call `loadServerCert`, which
 dereferences `c.config.TLSConfig.RootCAs` (`client.go:950-968`) -- nil for a
 host that disabled TLS.
+
+The reverse direction is where a Go plugin and this one part company. go-plugin
+requires and verifies the host's certificate; this server cannot, because that
+certificate is ECDSA P-521 (`go-plugin/mtls.go:21`) and BoringSSL does not
+offer `ecdsa_secp521r1_sha512` in its CertificateRequest -- Go then presents
+nothing and the connection dies as `PEER_DID_NOT_RETURN_A_CERTIFICATE`. So the
+automatic path is encrypted but does not authenticate the host, and client
+verification is available only via an explicitly configured
+PLUGIN_CLIENT_ROOT_CERTS. `test_goplugin_real_host.py` holds that line with an
+actual go-plugin host.
 """
 
 from __future__ import annotations
@@ -88,8 +98,14 @@ def test_no_client_cert_means_plaintext_and_an_empty_cert_field() -> None:
         assert _check(f"unix:{parts[3]}", None) == "SERVING"
 
 
-def test_client_cert_turns_on_tls_and_is_required() -> None:
-    """With PLUGIN_CLIENT_CERT the plugin serves TLS and verifies the client."""
+def test_client_cert_turns_on_tls_but_does_not_require_one_back() -> None:
+    """PLUGIN_CLIENT_CERT turns TLS on; it cannot turn client auth on.
+
+    Requiring a client certificate here asks go-plugin's host for a P-521
+    certificate gRPC will not let it present, so the host connects and is then
+    dropped. The anonymous client below stands in for that host: it must be
+    served, or a real Terraform cannot reach the plugin at all.
+    """
     client_pem, client_key = _client_identity()
     env = harness.host_env(PLUGIN_CLIENT_CERT=client_pem)
 
@@ -110,27 +126,45 @@ def test_client_cert_turns_on_tls_and_is_required() -> None:
         assert _check(target, presented) == "SERVING"
 
         anonymous = grpc.ssl_channel_credentials(root_certificates=root)
-        assert _check(target, anonymous) != "SERVING", "server accepted a client with no certificate"
+        assert _check(target, anonymous) == "SERVING", (
+            "client auth was required on the automatic-mTLS path; go-plugin's host "
+            "cannot satisfy that and every provider becomes unreachable"
+        )
 
 
-def test_a_client_cert_from_elsewhere_is_rejected() -> None:
-    """Only the host's own certificate is a trusted client identity.
+def test_explicit_client_root_certs_do_require_and_verify_a_client() -> None:
+    """The one path where client verification works: a CA you configured.
 
-    go-plugin makes exactly that certificate the whole `ClientCAs` pool
-    (`server.go:308-311`, `server.go:331`).
+    PLUGIN_CLIENT_ROOT_CERTS is an operator's own bundle, on a curve gRPC will
+    accept, so `require_client_auth` can be honoured here. An anonymous client
+    and one signed by a different CA must both be refused.
     """
     client_pem, client_key = _client_identity()
     other_pem, other_key = _client_identity()
-    env = harness.host_env(PLUGIN_CLIENT_CERT=client_pem)
+    env = harness.host_env(
+        PLUGIN_CLIENT_CERT=client_pem,
+        PLUGIN_CLIENT_ROOT_CERTS=client_pem,
+    )
 
     with harness.spawn(env=env) as plugin:
         handshake = plugin.read_handshake()
         parts = handshake.split("|")
+        target = f"unix:{parts[3]}"
         root = _server_cert_pem(handshake)
+
+        presented = grpc.ssl_channel_credentials(
+            root_certificates=root,
+            private_key=client_key.encode(),
+            certificate_chain=client_pem.encode(),
+        )
+        assert _check(target, presented) == "SERVING"
+
+        anonymous = grpc.ssl_channel_credentials(root_certificates=root)
+        assert _check(target, anonymous) != "SERVING", "accepted a client with no certificate"
 
         impostor = grpc.ssl_channel_credentials(
             root_certificates=root,
             private_key=other_key.encode(),
             certificate_chain=other_pem.encode(),
         )
-        assert _check(f"unix:{parts[3]}", impostor) != "SERVING"
+        assert _check(target, impostor) != "SERVING", "accepted a certificate from another CA"

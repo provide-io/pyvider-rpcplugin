@@ -44,9 +44,16 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
   `PLUGIN_SERVER_CERT`/`PLUGIN_SERVER_KEY` are configured by hand -- never
   otherwise, since a host that did not ask for TLS cannot parse a certificate
   in the handshake. With a host certificate in hand and this setting on, the
-  server generates its own certificate, requires the host's, and verifies it
-  against that certificate alone. Setting it `false` declines automatic mTLS:
-  the server serves plaintext even when the host offers a certificate.
+  server generates its own certificate and advertises it, so the connection is
+  encrypted and the host verifies *this* server. The reverse direction is not
+  available: go-plugin's host certificate is ECDSA P-521
+  (`go-plugin/mtls.go:21`), and BoringSSL -- the TLS stack behind gRPC -- does
+  not offer `ecdsa_secp521r1_sha512` for client authentication, so requiring it
+  would make the plugin unreachable rather than more secure. To require and
+  verify a client certificate, issue one yourself on a curve gRPC accepts and
+  set `PLUGIN_CLIENT_ROOT_CERTS`. Setting `PLUGIN_AUTO_MTLS` to `false` declines
+  automatic mTLS: the server serves plaintext even when the host offers a
+  certificate.
 - **Valid Values**: `"true"`, `"false"`, `"yes"`, `"no"`, `"1"`, `"0"`
 - **Example**: `export PLUGIN_AUTO_MTLS=true`
 

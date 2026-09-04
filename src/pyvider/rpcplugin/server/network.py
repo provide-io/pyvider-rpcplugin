@@ -175,20 +175,38 @@ class ServerNetworkMixin:
         except Exception as exc:
             raise SecurityError(f"Failed to load client root CAs: {exc}") from exc
 
-    def _client_ca_bundle(self, client_cert: str | None) -> bytes | None:
-        """The certificates a connecting client may present.
+    def _client_ca_bundle(self, client_cert: str | None) -> tuple[bytes | None, bool]:
+        """The client CA to verify against, and whether verification is possible.
 
         Under automatic mTLS go-plugin makes the host's own certificate the
-        entire `ClientCAs` pool (go-plugin/server.go:308-311 and :331). An
-        explicitly configured PLUGIN_CLIENT_ROOT_CERTS wins over it, for
-        deployments that issue plugin client certificates from their own CA.
+        entire `ClientCAs` pool (go-plugin/server.go:308-311 and :331), and a Go
+        plugin does require and verify it. This server cannot. go-plugin's host
+        generates an ECDSA **P-521** client certificate (go-plugin/mtls.go:21),
+        and BoringSSL -- the TLS stack behind `grpc.ssl_server_credentials` --
+        does not offer `ecdsa_secp521r1_sha512` among the signature schemes of
+        its CertificateRequest. Go's `SupportsCertificate` then finds no usable
+        chain, sends an empty Certificate message, and the connection dies as
+        `PEER_DID_NOT_RETURN_A_CERTIFICATE`. Requiring client auth on this path
+        makes a provider unreachable from stock Terraform, which enables
+        AutoMTLS unless TF_DISABLE_PLUGIN_TLS is set
+        (terraform/internal/command/meta_providers.go:35).
+
+        So the host's certificate is accepted but not verified, and only an
+        explicitly configured PLUGIN_CLIENT_ROOT_CERTS turns verification on --
+        for deployments that issue plugin client certificates themselves, on a
+        curve gRPC will accept. `tests/goplugin/test_goplugin_real_host.py`
+        drives a real go-plugin host and fails if this is tightened again.
         """
         explicit = self._load_client_root_certificates(
             self._get_instance_override("PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs)
         )
         if explicit is not None:
-            return explicit
-        return client_cert.encode("utf-8") if client_cert else None
+            return explicit, True
+        # Passing the host's certificate as `root_certificates` while
+        # `require_client_auth` is False has no effect at all: gRPC sends no
+        # CertificateRequest, so nothing is ever verified against it. Say that
+        # plainly rather than carry a bundle that is never consulted.
+        return None, False
 
     def _generate_server_credentials(self) -> grpc.ServerCredentials | None:
         """
@@ -227,12 +245,16 @@ class ServerNetworkMixin:
             server_cert_conf, server_key_conf, auto_mtls=True
         )
         valid_cert = self._validate_server_certificate_obj(self._server_cert_obj)
-        client_ca_pem_bytes = self._client_ca_bundle(client_cert)
-        if client_ca_pem_bytes is None:
+        client_ca_pem_bytes, verify_client = self._client_ca_bundle(client_cert)
+        if not verify_client:
             logger.warning(
-                "Serving TLS without client verification: no PLUGIN_CLIENT_CERT and no "
-                "PLUGIN_CLIENT_ROOT_CERTS, so any process that can reach the endpoint "
-                "can drive this plugin."
+                "Serving TLS without client verification. gRPC cannot verify go-plugin's "
+                "automatic-mTLS certificate -- it is ECDSA P-521, a curve BoringSSL will "
+                "not accept for client authentication -- so any process that can reach "
+                "this endpoint can drive the plugin. The Unix socket is created 0640, "
+                "which limits that to the same user; a TCP endpoint has no such limit. "
+                "Set PLUGIN_CLIENT_ROOT_CERTS to require and verify a client certificate "
+                "you issue yourself."
             )
 
         return grpc.ssl_server_credentials(
@@ -240,7 +262,7 @@ class ServerNetworkMixin:
                 (valid_cert.key_pem.encode("utf-8"), valid_cert.cert_pem.encode("utf-8"))
             ],
             root_certificates=client_ca_pem_bytes,
-            require_client_auth=client_ca_pem_bytes is not None,
+            require_client_auth=verify_client,
         )
 
     async def _initialize_server_with_services(self) -> grpc.aio.Server:
