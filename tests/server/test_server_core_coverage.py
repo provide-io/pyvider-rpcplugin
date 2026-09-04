@@ -322,6 +322,37 @@ async def test_stop_does_not_end_the_process(mocker):
 
 
 @pytest.mark.asyncio
+async def test_stop_uses_the_configured_graceful_shutdown_timeout(mocker):
+    """PLUGIN_TIMEOUT_GRACEFUL_SHUTDOWN was accepted from callers and dropped."""
+    server = RPCPluginServer(
+        protocol=DummyProtocol(),
+        handler=DummyHandler(),
+        config={"PLUGIN_TIMEOUT_GRACEFUL_SHUTDOWN": 7},
+    )
+    grpc_server = AsyncMock()
+    server._server = grpc_server
+
+    await server.stop()
+
+    grpc_server.stop.assert_awaited_once_with(grace=7.0)
+
+
+@pytest.mark.asyncio
+async def test_stop_falls_back_to_the_configured_grace_period(mocker):
+    """With nothing passed, the library's own PLUGIN_GRPC_GRACE_PERIOD applies."""
+    monkey = mocker.patch.object(rpcplugin_config, "plugin_grpc_grace_period", 3.5)
+    assert monkey is not None or True
+
+    server = RPCPluginServer(protocol=DummyProtocol(), handler=DummyHandler())
+    grpc_server = AsyncMock()
+    server._server = grpc_server
+
+    await server.stop()
+
+    grpc_server.stop.assert_awaited_once_with(grace=3.5)
+
+
+@pytest.mark.asyncio
 async def test_serve_exits_nonzero_when_startup_fails(mocker):
     """go-plugin exits 1 on a startup fault (go-plugin/server.go:232-266)."""
     server = RPCPluginServer(

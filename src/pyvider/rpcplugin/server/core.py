@@ -27,6 +27,7 @@ from provide.foundation.logger import get_logger
 from provide.foundation.utils.rate_limiting import TokenBucketRateLimiter
 
 from pyvider.rpcplugin.config import rpcplugin_config
+from pyvider.rpcplugin.defaults import DEFAULT_PLUGIN_GRPC_GRACE_PERIOD
 from pyvider.rpcplugin.exception import ConfigError, TransportError
 from pyvider.rpcplugin.handshake import HandshakeConfig
 from pyvider.rpcplugin.health_servicer import GO_PLUGIN_HEALTH_SERVICE_NAME, HealthServicer
@@ -511,7 +512,7 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         if self._server is not None:
             logger.debug("Stopping gRPC server...")
             server_to_stop = cast(grpc.aio.Server, self._server)
-            await server_to_stop.stop(grace=0.5)
+            await server_to_stop.stop(grace=self._graceful_shutdown_timeout())
             self._server = None
 
         # Clean up transport
@@ -524,6 +525,26 @@ class RPCPluginServer(Generic[ServerT, HandlerT, TransportT], ServerNetworkMixin
         # Complete the serving future if not already done
         if not self._serving_future.done():
             self._serving_future.set_result(None)
+
+    def _graceful_shutdown_timeout(self) -> float:
+        """How long in-flight RPCs get to finish before the server goes away.
+
+        Callers pass PLUGIN_TIMEOUT_GRACEFUL_SHUTDOWN; the library's own
+        setting is PLUGIN_GRPC_GRACE_PERIOD. Either beats the hardcoded half a
+        second that used to cut a slow response off mid-flight.
+        """
+        configured = self._get_instance_override(
+            "PLUGIN_TIMEOUT_GRACEFUL_SHUTDOWN",
+            self._get_instance_override("PLUGIN_GRPC_GRACE_PERIOD", rpcplugin_config.plugin_grpc_grace_period),
+        )
+        try:
+            return float(configured)
+        except (TypeError, ValueError):
+            logger.warning(
+                f"Could not parse a graceful shutdown timeout from {configured!r}; "
+                f"using {DEFAULT_PLUGIN_GRPC_GRACE_PERIOD}s."
+            )
+            return float(DEFAULT_PLUGIN_GRPC_GRACE_PERIOD)
 
     def _exit_process(self, code: int) -> None:
         """End the process, the way a plugin's own main() does.
