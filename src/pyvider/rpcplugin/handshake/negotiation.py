@@ -88,40 +88,72 @@ async def negotiate_transport(server_transports: list[str]) -> tuple[str, Transp
         ) from e
 
 
-def negotiate_protocol_version(server_versions: list[int]) -> int:
+def negotiate_protocol_version(
+    client_versions: list[int],
+    server_versions: list[int] | None = None,
+) -> int:
     """
-    🤝🔄 Selects the highest mutually supported protocol version.
+    🤝🔄 Selects the newest version both ends can speak.
 
-    Compares the server-provided versions against the client's supported versions
-    from the configuration.
+    go-plugin intersects the host's `PLUGIN_PROTOCOL_VERSIONS` list with the
+    versions the plugin actually registered, newest first
+    (go-plugin/server.go:186-212). A host that offered no list is served the
+    oldest version the plugin implements (go-plugin/server.go:216-222), which
+    is how hosts predating that variable are still served.
+
+    When nothing matches, the oldest served version is advertised anyway and
+    the handshake continues. go-plugin says why at server.go:145-147: "In the
+    event that there is no suitable version, the last version in the config is
+    returned leaving the client to report the incompatibility." That produces
+    the better error. The host knows both version sets and tells the user;
+    a plugin that exited here would leave Terraform reporting only "plugin
+    exited before we could connect", with the real cause visible solely to
+    someone who thought to set TF_LOG.
+
+    Args:
+      client_versions: The versions the host offered; empty if it offered none.
+      server_versions: The versions this plugin serves. Defaults to the
+        `SUPPORTED_PROTOCOL_VERSIONS` configuration.
 
     Returns:
-      The highest mutually supported protocol version.
+      The version to advertise in the handshake.
 
     Raises:
-      ProtocolError: If no mutually supported version is found.
+      ProtocolError: If this plugin serves no versions at all, which is a
+        misconfiguration rather than a negotiation outcome.
     """
-    logger.debug(f"🤝🔄 Negotiating protocol version. Server supports: {server_versions}")
-    supported_versions_config = rpcplugin_config.supported_protocol_versions
-    for version in sorted(server_versions, reverse=True):
-        if version in supported_versions_config:
+    served = (
+        list(server_versions)
+        if server_versions is not None
+        else list(rpcplugin_config.supported_protocol_versions)
+    )
+    logger.debug(
+        f"🤝🔄 Negotiating protocol version. Host offered: {client_versions}, plugin serves: {served}"
+    )
+
+    if not served:
+        raise ProtocolError(
+            message="This plugin declares no protocol versions, so nothing can be negotiated.",
+            hint=(
+                "Declare 'supported_protocol_versions' on the protocol object, or set "
+                "'SUPPORTED_PROTOCOL_VERSIONS'."
+            ),
+        )
+
+    if not client_versions:
+        return min(served)
+
+    for version in sorted(client_versions, reverse=True):
+        if version in served:
             return version
 
-    logger.error(
-        "🤝❌ Protocol negotiation failed: No compatible version found. "
-        f"Server supports: {server_versions}, Client supports: "
-        f"{supported_versions_config}"
+    fallback = min(served)
+    logger.warning(
+        f"🤝⚠️ No mutually supported protocol version. Plugin serves: {served}, "
+        f"host offered: {client_versions}. Advertising {fallback} and letting the "
+        "host report the incompatibility."
     )
-    raise ProtocolError(
-        message=(
-            "No mutually supported protocol version. Server supports: "
-            f"{server_versions}, Client supports: {supported_versions_config}"
-        ),
-        hint=(
-            "Ensure client and server configurations for 'PLUGIN_PROTOCOL_VERSIONS' "
-            "and 'SUPPORTED_PROTOCOL_VERSIONS' have at least one common version."
-        ),
-    )
+    return fallback
 
 
 def _buffer_has_complete_handshake(buffer: str) -> str | None:

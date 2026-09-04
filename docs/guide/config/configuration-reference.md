@@ -5,7 +5,7 @@
 This page provides an overview of the configuration system and links to detailed documentation for each configuration area.
 
 !!! warning "Security-First Design: mTLS Enabled by Default"
-    **`PLUGIN_AUTO_MTLS` defaults to `True`** for security-first design. This means mutual TLS (mTLS) is **automatically enabled** for all connections unless explicitly disabled.
+    **`PLUGIN_AUTO_MTLS` defaults to `True`** for security-first design. A server answers a host's `PLUGIN_CLIENT_CERT` by generating its own certificate and then **requiring and verifying** the host's on every connection. A host that sends no certificate gets a plaintext server and an empty certificate field in the handshake, which is what such a host expects; setting `PLUGIN_AUTO_MTLS=False` declines automatic mTLS entirely.
 
     **For local development/testing:**
     ```python
