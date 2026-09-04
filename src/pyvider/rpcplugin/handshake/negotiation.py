@@ -101,6 +101,15 @@ def negotiate_protocol_version(
     oldest version the plugin implements (go-plugin/server.go:216-222), which
     is how hosts predating that variable are still served.
 
+    When nothing matches, the oldest served version is advertised anyway and
+    the handshake continues. go-plugin says why at server.go:145-147: "In the
+    event that there is no suitable version, the last version in the config is
+    returned leaving the client to report the incompatibility." That produces
+    the better error. The host knows both version sets and tells the user;
+    a plugin that exited here would leave Terraform reporting only "plugin
+    exited before we could connect", with the real cause visible solely to
+    someone who thought to set TF_LOG.
+
     Args:
       client_versions: The versions the host offered; empty if it offered none.
       server_versions: The versions this plugin serves. Defaults to the
@@ -110,8 +119,8 @@ def negotiate_protocol_version(
       The version to advertise in the handshake.
 
     Raises:
-      ProtocolError: If the host offered versions and this plugin serves none
-        of them, or if this plugin serves no versions at all.
+      ProtocolError: If this plugin serves no versions at all, which is a
+        misconfiguration rather than a negotiation outcome.
     """
     served = (
         list(server_versions)
@@ -138,19 +147,13 @@ def negotiate_protocol_version(
         if version in served:
             return version
 
-    logger.error(
-        "🤝❌ Protocol negotiation failed: No compatible version found. "
-        f"Plugin serves: {served}, host offered: {client_versions}"
+    fallback = min(served)
+    logger.warning(
+        f"🤝⚠️ No mutually supported protocol version. Plugin serves: {served}, "
+        f"host offered: {client_versions}. Advertising {fallback} and letting the "
+        "host report the incompatibility."
     )
-    raise ProtocolError(
-        message=(
-            f"No mutually supported protocol version. Plugin serves: {served}, host offered: {client_versions}"
-        ),
-        hint=(
-            "The host's 'PLUGIN_PROTOCOL_VERSIONS' and the versions this plugin "
-            "registers must have at least one version in common."
-        ),
-    )
+    return fallback
 
 
 def _buffer_has_complete_handshake(buffer: str) -> str | None:

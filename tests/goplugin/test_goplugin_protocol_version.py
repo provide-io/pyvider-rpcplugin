@@ -15,6 +15,7 @@ plugin set it can talk to), so a plugin serving `tfplugin6.Provider` must say
 
 from __future__ import annotations
 
+import signal
 import sys
 
 import pytest
@@ -44,11 +45,23 @@ def test_newest_mutually_supported_version_wins() -> None:
         assert _version(plugin.read_handshake()) == 6
 
 
-def test_a_version_the_plugin_does_not_serve_is_never_advertised() -> None:
-    """A host asking only for 5 must not be told 5 by a tfplugin6 provider."""
+def test_no_overlap_advertises_the_lowest_served_version() -> None:
+    """A host asking only for 5 is told 6, not 5, and rejects it itself.
+
+    `go-plugin/server.go:145-147` is explicit: "In the event that there is no
+    suitable version, the last version in the config is returned leaving the
+    client to report the incompatibility", and `:216-222` returns the lowest
+    registered version to do it. That is the better error: the host names both
+    version sets to the user, where a plugin that exited during the handshake
+    would surface only "plugin exited before we could connect".
+    """
     env = harness.host_env(PLUGIN_PROTOCOL_VERSIONS="5")
     with harness.spawn(env=env, args=["--service-name", "tfplugin6.Provider"]) as plugin:
-        stderr = plugin.saw_no_handshake(timeout=20.0)
+        handshake = plugin.read_handshake()
+        assert _version(handshake) == 6, handshake
+
+        plugin.signal(signal.SIGTERM)
+        stderr = plugin.wait_and_read_stderr()
 
     assert "No mutually supported protocol version" in stderr, stderr
     assert "[5]" in stderr and "[6]" in stderr, stderr

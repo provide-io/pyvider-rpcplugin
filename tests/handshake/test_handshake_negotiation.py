@@ -33,12 +33,13 @@ async def test_negotiate_protocol_version_defaults_to_configured_versions() -> N
 
 @pytest.mark.asyncio
 async def test_negotiate_protocol_version_no_common_version() -> None:
-    """A host offering only versions this plugin does not serve is an error."""
-    with pytest.raises(
-        ProtocolError,
-        match=r"\[ProtocolError\] No mutually supported protocol version.*Hint:.*",
-    ):
-        negotiate_protocol_version([99, 100], server_versions=[6])
+    """No overlap serves the lowest version, leaving the host to object.
+
+    go-plugin/server.go:145-147 says so in as many words -- "the last version
+    in the config is returned leaving the client to report the
+    incompatibility" -- and :216-222 does it.
+    """
+    assert negotiate_protocol_version([99, 100], server_versions=[6, 7]) == 6
 
 
 @pytest.mark.asyncio

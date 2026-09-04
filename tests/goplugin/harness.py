@@ -42,14 +42,26 @@ class PluginProcess:
     def __init__(self, proc: subprocess.Popen[str]) -> None:
         self.proc = proc
         self._lines: queue.Queue[str | None] = queue.Queue()
-        self._reader = threading.Thread(target=self._pump, daemon=True)
+        self._stderr_chunks: list[str] = []
+        self._reader = threading.Thread(target=self._pump_stdout, daemon=True)
         self._reader.start()
+        # stderr has to be drained continuously, not read at the end: these
+        # plugins log a full rich traceback on a startup fault, which is more
+        # than a pipe buffer holds, and a child blocked writing to a full pipe
+        # never reaches its own sys.exit.
+        self._stderr_reader = threading.Thread(target=self._pump_stderr, daemon=True)
+        self._stderr_reader.start()
 
-    def _pump(self) -> None:
+    def _pump_stdout(self) -> None:
         assert self.proc.stdout is not None
         for line in self.proc.stdout:
             self._lines.put(line.rstrip("\n"))
         self._lines.put(None)
+
+    def _pump_stderr(self) -> None:
+        assert self.proc.stderr is not None
+        for line in self.proc.stderr:
+            self._stderr_chunks.append(line)
 
     def _next_line(self, timeout: float) -> str | None:
         """The next non-empty stdout line, or None if the pipe ends first."""
@@ -82,20 +94,15 @@ class PluginProcess:
         return self.wait_and_read_stderr()
 
     def wait_and_read_stderr(self, timeout: float = 15.0) -> str:
-        """Let the plugin finish, then drain its whole stderr."""
+        """Let the plugin finish, then return everything it logged."""
         with contextlib.suppress(Exception):
             self.proc.wait(timeout=timeout)
+        self._stderr_reader.join(timeout=5.0)
         return self.stderr()
 
     def stderr(self) -> str:
-        if self.proc.stderr is None:
-            return ""
-        # A blocking read only terminates once the writer is gone, so it is the
-        # right call after the plugin has exited and the wrong one before.
-        with contextlib.suppress(Exception):
-            os.set_blocking(self.proc.stderr.fileno(), self.proc.poll() is not None)
-            return self.proc.stderr.read() or ""
-        return ""
+        """Whatever the plugin has written to stderr so far."""
+        return "".join(self._stderr_chunks)
 
     def is_running(self) -> bool:
         return self.proc.poll() is None

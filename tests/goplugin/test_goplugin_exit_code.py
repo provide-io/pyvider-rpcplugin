@@ -34,29 +34,30 @@ def test_missing_magic_cookie_exits_nonzero() -> None:
     with harness.spawn(env=env) as plugin:
         stderr = plugin.saw_no_handshake(timeout=20.0)
 
-        assert plugin.proc.returncode == 1, f"startup failure exited {plugin.proc.returncode}; stderr:\n{stderr}"
+        assert plugin.proc.returncode == 1, (
+            f"startup failure exited {plugin.proc.returncode}; stderr:\n{stderr}"
+        )
         assert "Magic cookie not provided" in stderr, stderr
 
 
 def test_wrong_magic_cookie_exits_nonzero() -> None:
-    """A cookie that does not match is the same class of failure."""
+    """A cookie that does not match is the same class of failure.
+
+    A protocol-version mismatch is deliberately not one of these: go-plugin
+    advertises its oldest served version and lets the host object
+    (`server.go:145-147`), so the plugin comes up and handshakes normally.
+    The general "any startup exception exits 1" contract is covered by
+    tests/server/test_server_core_coverage.py.
+    """
     env = harness.host_env(**{harness.MAGIC_COOKIE_KEY: "not-the-cookie"})
 
     with harness.spawn(env=env) as plugin:
         stderr = plugin.saw_no_handshake(timeout=20.0)
 
-        assert plugin.proc.returncode == 1, f"startup failure exited {plugin.proc.returncode}; stderr:\n{stderr}"
+        assert plugin.proc.returncode == 1, (
+            f"startup failure exited {plugin.proc.returncode}; stderr:\n{stderr}"
+        )
         assert "Magic cookie mismatch" in stderr, stderr
-
-
-def test_unsatisfiable_protocol_version_exits_nonzero() -> None:
-    """Any startup fault, not just the cookie, has to be visible in the code."""
-    env = harness.host_env(PLUGIN_PROTOCOL_VERSIONS="5")
-
-    with harness.spawn(env=env, args=["--service-name", "tfplugin6.Provider"]) as plugin:
-        stderr = plugin.saw_no_handshake(timeout=20.0)
-
-        assert plugin.proc.returncode == 1, f"startup failure exited {plugin.proc.returncode}; stderr:\n{stderr}"
 
 
 def test_a_served_plugin_shut_down_cleanly_exits_zero() -> None:
