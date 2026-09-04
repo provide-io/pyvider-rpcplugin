@@ -72,8 +72,15 @@ class ServerNetworkMixin:
     def _get_instance_override(self, key: str, default_value: Any) -> Any: ...
 
     def _read_client_cert(self) -> str | None:
-        """Read client certificate configuration if available."""
+        """The host's own certificate, sent only when it wants mTLS.
+
+        go-plugin's host writes its PEM into PLUGIN_CLIENT_CERT
+        (go-plugin/client.go:684) and the plugin keys its entire TLS decision
+        off that single value (go-plugin/server.go:304-306).
+        """
         result = self._get_instance_override("PLUGIN_CLIENT_CERT", rpcplugin_config.plugin_client_cert)
+        if isinstance(result, str) and not result.strip():
+            return None
         return cast(str | None, result)
 
     def _should_skip_credentials(
@@ -81,10 +88,33 @@ class ServerNetworkMixin:
         auto_mtls: bool,
         server_cert_conf: str | None,
         server_key_conf: str | None,
+        client_cert: str | None,
     ) -> bool:
-        if auto_mtls or (server_cert_conf and server_key_conf):
+        """Decide between TLS and plaintext, the way go-plugin does.
+
+        go-plugin builds a TLS config only when the host sent a client
+        certificate (go-plugin/server.go:304-306); otherwise it serves
+        plaintext and emits an empty sixth handshake field. Advertising a
+        certificate the host never asked for is not merely noisy: a host with
+        `TLSConfig == nil` -- the `TF_DISABLE_PLUGIN_TLS` path the SDK test
+        harnesses use -- sees a sixth field over 50 characters, calls
+        `loadServerCert`, and nil-pointer panics on `TLSConfig.RootCAs`
+        (go-plugin/client.go:920-926 and :950-968).
+        """
+        if server_cert_conf and server_key_conf:
             return False
-        logger.info("auto_mtls is false and no server cert/key provided. Operating insecurely.")
+        if client_cert:
+            if auto_mtls:
+                return False
+            logger.warning(
+                "Host sent PLUGIN_CLIENT_CERT but PLUGIN_AUTO_MTLS is disabled. "
+                "Serving plaintext; the host will refuse to connect if it expects TLS."
+            )
+            return True
+        logger.info(
+            "No PLUGIN_CLIENT_CERT from the host and no PLUGIN_SERVER_CERT/KEY configured. "
+            "Serving plaintext with an empty handshake certificate field."
+        )
         return True
 
     def _load_server_certificate(
@@ -123,34 +153,49 @@ class ServerNetworkMixin:
 
     def _load_client_root_certificates(
         self,
-        auto_mtls: bool,
         client_root_certs_conf: str | None,
-    ) -> tuple[bytes | None, bool]:
-        if not auto_mtls:
-            return None, False
-
+    ) -> bytes | None:
+        """Read an explicitly configured client CA bundle: inline PEM or file://."""
         if not client_root_certs_conf:
-            logger.info(
-                "auto_mtls is True, but PLUGIN_CLIENT_ROOT_CERTS not provided. "
-                "Client certs will not be required/verified."
-            )
-            return None, False
+            return None
 
         try:
             if client_root_certs_conf.startswith("file://"):
                 with Path(client_root_certs_conf.removeprefix("file://")).open("rb") as file_handle:
-                    return file_handle.read(), True
-            return client_root_certs_conf.encode("utf-8"), True
+                    return file_handle.read()
+            return client_root_certs_conf.encode("utf-8")
         except Exception as exc:
             raise SecurityError(f"Failed to load client root CAs: {exc}") from exc
+
+    def _client_ca_bundle(self, client_cert: str | None) -> bytes | None:
+        """The certificates a connecting client may present.
+
+        Under automatic mTLS go-plugin makes the host's own certificate the
+        entire `ClientCAs` pool (go-plugin/server.go:308-311 and :331). An
+        explicitly configured PLUGIN_CLIENT_ROOT_CERTS wins over it, for
+        deployments that issue plugin client certificates from their own CA.
+        """
+        explicit = self._load_client_root_certificates(
+            self._get_instance_override("PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs)
+        )
+        if explicit is not None:
+            return explicit
+        return client_cert.encode("utf-8") if client_cert else None
 
     def _generate_server_credentials(self) -> grpc.ServerCredentials | None:
         """
         Generate gRPC server credentials based on configuration.
 
-        This method handles both manual certificate configuration and
-        automatic mTLS certificate generation. It supports client certificate
-        validation when configured.
+        TLS is served when the host asked for it by sending PLUGIN_CLIENT_CERT,
+        or when an operator configured PLUGIN_SERVER_CERT/KEY by hand; anything
+        else is plaintext. When TLS is on and a client CA is known, the client
+        certificate is required and verified -- go-plugin sets
+        `ClientAuth: RequireAndVerifyClientCert` (go-plugin/server.go:329-336),
+        which is the whole point of calling it mutual TLS.
+
+        PLUGIN_AUTO_MTLS no longer decides *whether* to serve TLS; it decides
+        whether to answer the host's certificate with a generated one. Setting
+        it false declines automatic mTLS and serves plaintext.
 
         Returns:
             gRPC server credentials for secure connections, or None for insecure mode
@@ -163,26 +208,31 @@ class ServerNetworkMixin:
         )
         server_key_conf = self._get_instance_override("PLUGIN_SERVER_KEY", rpcplugin_config.plugin_server_key)
         auto_mtls = self._get_instance_override("PLUGIN_AUTO_MTLS", rpcplugin_config.plugin_auto_mtls)
-        client_root_certs_conf = self._get_instance_override(
-            "PLUGIN_CLIENT_ROOT_CERTS", rpcplugin_config.plugin_client_root_certs
-        )
+        client_cert = self._read_client_cert()
 
-        if self._should_skip_credentials(auto_mtls, server_cert_conf, server_key_conf):
+        if self._should_skip_credentials(auto_mtls, server_cert_conf, server_key_conf, client_cert):
             return None
 
-        self._server_cert_obj = self._load_server_certificate(server_cert_conf, server_key_conf, auto_mtls)
-        valid_cert = self._validate_server_certificate_obj(self._server_cert_obj)
-        key_bytes = valid_cert.key_pem.encode("utf-8")
-        cert_bytes = valid_cert.cert_pem.encode("utf-8")
-        client_ca_pem_bytes, require_auth = self._load_client_root_certificates(
-            auto_mtls,
-            client_root_certs_conf,
+        # TLS is warranted at this point, so a missing manual pair means
+        # generate one -- the same response go-plugin makes to a client cert.
+        self._server_cert_obj = self._load_server_certificate(
+            server_cert_conf, server_key_conf, auto_mtls=True
         )
+        valid_cert = self._validate_server_certificate_obj(self._server_cert_obj)
+        client_ca_pem_bytes = self._client_ca_bundle(client_cert)
+        if client_ca_pem_bytes is None:
+            logger.warning(
+                "Serving TLS without client verification: no PLUGIN_CLIENT_CERT and no "
+                "PLUGIN_CLIENT_ROOT_CERTS, so any process that can reach the endpoint "
+                "can drive this plugin."
+            )
 
         return grpc.ssl_server_credentials(
-            private_key_certificate_chain_pairs=[(key_bytes, cert_bytes)],
+            private_key_certificate_chain_pairs=[
+                (valid_cert.key_pem.encode("utf-8"), valid_cert.cert_pem.encode("utf-8"))
+            ],
             root_certificates=client_ca_pem_bytes,
-            require_client_auth=require_auth,
+            require_client_auth=client_ca_pem_bytes is not None,
         )
 
     async def _initialize_server_with_services(self) -> grpc.aio.Server:

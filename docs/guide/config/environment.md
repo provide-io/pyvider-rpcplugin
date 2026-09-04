@@ -39,9 +39,27 @@ Complete reference for all environment variables supported by Pyvider RPC Plugin
 ### PLUGIN_AUTO_MTLS
 - **Type**: `bool`
 - **Default**: `true`
-- **Description**: Enable automatic mutual TLS encryption
+- **Description**: Whether a server answers a host's automatic-mTLS request. A
+  plugin server serves TLS when the host sends `PLUGIN_CLIENT_CERT`, or when
+  `PLUGIN_SERVER_CERT`/`PLUGIN_SERVER_KEY` are configured by hand -- never
+  otherwise, since a host that did not ask for TLS cannot parse a certificate
+  in the handshake. With a host certificate in hand and this setting on, the
+  server generates its own certificate, requires the host's, and verifies it
+  against that certificate alone. Setting it `false` declines automatic mTLS:
+  the server serves plaintext even when the host offers a certificate.
 - **Valid Values**: `"true"`, `"false"`, `"yes"`, `"no"`, `"1"`, `"0"`
 - **Example**: `export PLUGIN_AUTO_MTLS=true`
+
+### PLUGIN_IGNORE_SIGINT
+- **Type**: `bool`
+- **Default**: `true`
+- **Description**: Whether a plugin server ignores SIGINT. A plugin is not put
+  in its own process group, so a terminal Ctrl-C reaches the plugin as well as
+  its host; the host is the one that must sequence the shutdown. Set it
+  `false` for interactive or in-process servers that should stop on Ctrl-C.
+  SIGTERM shuts the server down either way.
+- **Valid Values**: `"true"`, `"false"`, `"yes"`, `"no"`, `"1"`, `"0"`
+- **Example**: `export PLUGIN_IGNORE_SIGINT=false`
 
 ### PLUGIN_MAGIC_COOKIE_KEY
 - **Type**: `str`
