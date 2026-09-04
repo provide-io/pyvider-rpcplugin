@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-04
+
+### Breaking
+
+Three of the fixes below change behaviour a deployment may be relying on. Each
+is described in full under Fixed.
+
+- **TLS is served only when the host asks for it.** A host that sends no
+  `PLUGIN_CLIENT_CERT` now gets a plaintext server and an empty sixth handshake
+  field, where it previously got a certificate it never requested.
+  `PLUGIN_AUTO_MTLS` no longer decides *whether* to serve TLS -- it decides
+  whether a host's certificate is answered with one. Set `PLUGIN_SERVER_CERT`
+  and `PLUGIN_SERVER_KEY` if you need TLS without a host certificate. Terraform
+  and every other go-plugin host are unaffected, because they always send one.
+- **A served plugin ignores SIGINT.** It can be stopped with SIGTERM, SIGQUIT
+  or SIGKILL. `PLUGIN_IGNORE_SIGINT=false` restores the old behaviour for
+  interactive or in-process servers.
+- **A startup failure exits 1 rather than 0.** Supervisors that read exit 0 as
+  success will start seeing failures they were previously blind to.
+
 ### Fixed
 
 - **A Ctrl-C no longer kills the plugin out from under its host.** SIGINT and SIGTERM were both wired to the graceful-shutdown handler. go-plugin deliberately eats SIGINT (`server.go:459-473`), and it has to: the plugin is not put in its own process group (`internal/cmdrunner/cmd_runner.go:72-82` sets no `Setpgid`), so a terminal Ctrl-C during `terraform apply` reaches the whole foreground group, host and plugin alike. Terraform expects to catch that interrupt itself and then drive an orderly `StopProvider` and graceful wait. Acting on it killed the provider first, so in-flight applies died with `Unavailable` and resources already created remotely never reached state. SIGTERM still shuts the server down, and `PLUGIN_IGNORE_SIGINT=false` restores the old behaviour for interactive or in-process use.
