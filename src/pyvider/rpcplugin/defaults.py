@@ -127,4 +127,15 @@ DEFAULT_PLUGIN_HEALTH_SERVICE_ENABLED = True
 DEFAULT_PLUGIN_UI_ENABLED = False
 DEFAULT_PLUGIN_SHOW_EMOJI_MATRIX = False
 
+# =================================
+# Plugin stderr capture
+# =================================
+# How many stderr lines the client keeps from a plugin, to quote back when a
+# handshake fails. Bounded because a plugin that never completes a handshake
+# may be one that is writing endlessly.
+DEFAULT_STDERR_TAIL_LINES = 100
+# How much of that tail goes into a HandshakeError hint. The hint points at the
+# logs; it is not a copy of them.
+DEFAULT_STDERR_HINT_CHARS = 200
+
 # 🐍🔌📞🔚

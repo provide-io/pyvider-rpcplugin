@@ -23,6 +23,7 @@ from pyvider.rpcplugin.defaults import (
     DEFAULT_HANDSHAKE_CHUNK_TIMEOUT,
     DEFAULT_HANDSHAKE_INNER_TIMEOUT,
     DEFAULT_PROCESS_WAIT_TIME,
+    DEFAULT_STDERR_HINT_CHARS,
 )
 from pyvider.rpcplugin.exception import (
     HandshakeError,
@@ -289,14 +290,22 @@ class ClientHandshakeMixin:
                 raise SecurityError(f"Failed to auto-generate client certificate: {e}") from e
 
     def _get_stderr_output(self: RPCPluginClient) -> str:  # type: ignore[misc]
-        """Get stderr output from process with error handling."""
-        stderr_output = ""
-        if self._process and self._process.process and self._process.process.stderr:
-            try:
-                stderr_output = self._process.process.stderr.read().decode("utf-8", errors="replace")
-            except Exception as e:
-                stderr_output = f"Error reading stderr: {e}"
-        return (stderr_output[:200] + "...") if len(stderr_output) > 200 else stderr_output
+        """Quote the plugin's recent stderr, as seen by the relay task.
+
+        Reads the tail the relay keeps, never the pipe.
+        `_relay_stderr_background` owns stderr for the life of the process, and a
+        second reader on that pipe splits the output between them.
+
+        Reading the pipe here would also deadlock. One caller is the
+        handshake-timeout path, reached only once the loop above it has
+        established the plugin is still running -- so the plugin holds the write
+        end open, a read to EOF never returns, and this runs inside the event
+        loop, where a blocked thread stops every timer and cancellation with it.
+        """
+        stderr_output = "\n".join(self._stderr_tail)
+        if len(stderr_output) > DEFAULT_STDERR_HINT_CHARS:
+            return stderr_output[:DEFAULT_STDERR_HINT_CHARS] + "..."
+        return stderr_output
 
     def _check_process_exit(self: RPCPluginClient) -> None:  # type: ignore[misc]
         """Check if process exited and raise HandshakeError if so."""

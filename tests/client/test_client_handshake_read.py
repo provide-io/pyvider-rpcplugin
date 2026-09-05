@@ -114,7 +114,9 @@ async def test_read_raw_handshake_line_outer_timeout_with_stderr(
     mock_process.is_running.return_value = True  # Process is running
     mock_process.process.stdout.readline.return_value = b""
     mock_process.process.stdout.read.return_value = b""
-    mock_process.process.stderr.read.return_value = b"stderr messages on timeout"
+    # The relay task owns stderr, so the timeout hint takes its text from the
+    # tail the relay keeps rather than from the pipe.
+    client_instance._stderr_tail.append("stderr messages on timeout")
     mock_loop_instance = MagicMock()
     mock_loop_instance.time.side_effect = [i * 1.0 for i in range(12)]
 

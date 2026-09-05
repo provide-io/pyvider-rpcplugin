@@ -130,6 +130,10 @@ class ClientProcessMixin:
                 text = line.decode("utf-8", errors="replace").rstrip()
                 if text:
                     self.logger.debug(f"Plugin stderr: {text}")
+                    # Keep it as well as log it: a failed handshake quotes this
+                    # tail. This task owns the pipe, so it is the only place the
+                    # output can be captured from.
+                    self._stderr_tail.append(text)
         except asyncio.CancelledError:
             self.logger.debug("Stderr relay task cancelled")
         except Exception as e:
