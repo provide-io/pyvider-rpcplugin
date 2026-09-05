@@ -11,6 +11,7 @@ initialization, and core lifecycle methods like start, close, and shutdown."""
 from __future__ import annotations
 
 import asyncio
+from collections import deque
 from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
@@ -23,6 +24,7 @@ from pyvider.rpcplugin.client.process import ClientProcessMixin
 from pyvider.rpcplugin.config import rpcplugin_config
 from pyvider.rpcplugin.defaults import (
     DEFAULT_CLEANUP_WAIT_TIME,
+    DEFAULT_STDERR_TAIL_LINES,
 )
 from pyvider.rpcplugin.protocol.grpc_broker_pb2_grpc import GRPCBrokerStub
 from pyvider.rpcplugin.protocol.grpc_controller_pb2 import Empty as ControllerEmpty
@@ -109,6 +111,10 @@ class RPCPluginClient(ClientHandshakeMixin, ClientProcessMixin):
     # Tasks for asynchronous streaming (e.g., reading stdio or broker streams)
     _stdio_task: asyncio.Task[None] | None = field(init=False, default=None)  # type: ignore[assignment]
     _broker_task: asyncio.Task[None] | None = field(init=False, default=None)
+
+    # Recent plugin stderr, filled by the relay task. A failed handshake quotes
+    # this rather than reading the pipe the relay owns.
+    _stderr_tail: deque[str] = field(factory=lambda: deque(maxlen=DEFAULT_STDERR_TAIL_LINES), init=False)
 
     # Events for handshake status
     _handshake_complete_event: asyncio.Event = field(factory=asyncio.Event, init=False)

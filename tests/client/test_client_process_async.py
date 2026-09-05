@@ -48,7 +48,11 @@ async def test_relay_stderr_background_reads_lines(basic_client: RPCPluginClient
 
 
 @pytest.mark.asyncio
-async def test_get_stderr_output_error(basic_client: RPCPluginClient) -> None:
+async def test_get_stderr_output_survives_a_broken_pipe(basic_client: RPCPluginClient) -> None:
+    """A pipe that raises on read cannot affect the report, which never reads it.
+
+    The relay owns stderr; see tests/client/test_stderr_tail.py.
+    """
     # Create underlying Popen mock
     popen_mock = MagicMock(spec=subprocess.Popen)
     popen_mock.stderr = MagicMock()
@@ -59,7 +63,9 @@ async def test_get_stderr_output_error(basic_client: RPCPluginClient) -> None:
     managed_process.process = popen_mock
 
     basic_client._process = managed_process
-    assert "Error reading stderr" in basic_client._get_stderr_output()
+    basic_client._stderr_tail.append("plugin said something")
+
+    assert basic_client._get_stderr_output() == "plugin said something"
 
 
 @pytest.mark.asyncio
