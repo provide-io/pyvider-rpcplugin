@@ -28,10 +28,14 @@ jobs:
         with:
           enable-cache: true
 
-      - name: 📦 Install dependencies
+      # Bandit reads source rather than installed packages, so it needs an
+      # environment of its own and not the project's. `safety` and `pip-audit`
+      # used to be installed here too; the audit below no longer wants them in
+      # anything it can see.
+      - name: 📦 Install Bandit
         run: |
           uv venv
-          uv pip install bandit safety pip-audit
+          uv pip install bandit
 
       - name: 🔒 Run Bandit security scan
         run: |
@@ -39,10 +43,14 @@ jobs:
           bandit -r src/ -f json -o bandit-report.json || true
           bandit -r src/ -ll
 
-      - name: 🔍 Check for known vulnerabilities
-        run: |
-          source .venv/bin/activate
-          pip-audit || true
+      # Audits the resolved lock with pip-audit run from `uvx`. What ran here
+      # before was `pip-audit || true` inside the virtualenv above -- which the
+      # step above builds empty and fills with scanners, so it audited the
+      # scanners and nothing else, and could not have failed if it had found
+      # something. Both halves are fixed: the lock is the subject, and the exit
+      # status is the gate.
+      - name: 🔍 Audit the locked dependencies
+        run: scripts/audit_dependencies.sh
 
       - name: 🔐 Check for hardcoded secrets (PR)
         if: github.event_name == 'pull_request'
