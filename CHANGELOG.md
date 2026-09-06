@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-09-06
+
+### Fixed
+
+- **The handshake-timeout report no longer hangs the client.** `_get_stderr_output()` called `process.stderr.read()` on a `subprocess.Popen` pipe -- no size argument, so a read to EOF. One of its two callers, `_check_process_exit`, runs only once the child has exited: the write end is closed, EOF arrives, the read returns. The other is the handshake-timeout path (`handshake.py:427`), reached only after the loop above it has established the child is still *running*. There the child holds the write end open, so EOF never arrives -- and because Popen pipes are blocking and this runs inside the event loop, the loop stops with it: no timer fires, no cancellation is delivered. The path whose job is to explain a silent plugin was the path that hung, for as long as the plugin stayed up. terraform-provider-pyvider's pytest configuration records the symptom from the other side: a 22-minute stall at ~0% CPU with the main thread blocked in a synchronous read-to-EOF, waiting on a provider that never connected. It was also a second reader on a pipe `_relay_stderr_background` already owns for the life of the process, so the two split the plugin's output and neither saw all of it. The report is now taken from the bounded tail the relay keeps: nothing reads the pipe twice, nothing blocks, and the result no longer depends on the platform's pipe semantics. Both limits live in `defaults.py`.
+
 ## [0.5.0] - 2026-09-04
 
 ### Breaking
