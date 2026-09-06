@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-09-06
+
+### Fixed
+
+- **A plugin slower than the inner handshake timeout is no longer unheard.** `_try_readline_strategy` ran `readline` in an executor under `asyncio.wait_for`. An executor call cannot be cancelled: on timeout the future was abandoned while the thread stayed blocked in the read, still owning the pipe. The line that read eventually returned was discarded, so a plugin that took longer than `DEFAULT_HANDSHAKE_INNER_TIMEOUT` (2s) to print its handshake had it consumed and thrown away -- and every later read waited for bytes that had already been taken, until the outer timeout gave up.
+
+  `_try_chunk_strategy` compounded it by starting a second reader on the same descriptor while the first was still outstanding. Two readers on one pipe means whichever loses the race silently destroys what it took.
+
+  The pending read is now kept and awaited again rather than abandoned, and a chunk read is only attempted when nothing is outstanding.
+
+  This is a race, not a platform limit, and it stayed invisible wherever the plugin printed inside two seconds -- which is every Linux and macOS launch. A cold Windows launch pays process spawn, interpreter start, imports and TLS certificate generation before it can print, lands past the two seconds, and failed every time: `Timed out waiting for handshake response from plugin after 10.0 seconds`, four attempts, against a provider that was up and serving in about one second.
+
 ## [0.5.1] - 2026-09-06
 
 ### Fixed

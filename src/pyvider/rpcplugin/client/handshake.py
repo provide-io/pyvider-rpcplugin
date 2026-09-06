@@ -79,6 +79,11 @@ class ClientHandshakeMixin:
         It's designed to be mixed into RPCPluginClient.
     """
 
+    #: A readline handed to an executor and not yet finished. It is held rather
+    #: than abandoned on timeout, because the thread behind it keeps the pipe
+    #: and would otherwise consume the handshake line into a discarded result.
+    _stdout_readline_future: asyncio.Future[bytes] | None = None
+
     async def _complete_handshake_setup(self: RPCPluginClient, attempt_num: int | None = None) -> None:  # type: ignore[misc]
         """
         Complete the handshake setup after successful negotiation.
@@ -333,10 +338,25 @@ class ClientHandshakeMixin:
             await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
             return None
 
-        line_bytes: bytes = await asyncio.wait_for(
-            asyncio.get_event_loop().run_in_executor(None, self._process.process.stdout.readline),
-            timeout=inner_timeout_s,
-        )
+        # A readline handed to an executor cannot be cancelled: the thread stays
+        # blocked in the read. asyncio.wait_for would abandon the future and
+        # leave that thread holding the pipe, so the line it eventually returns
+        # is discarded -- a plugin slower than inner_timeout_s has its handshake
+        # consumed and thrown away, and every later read waits for bytes that
+        # were already taken. Keep the future instead and await it again.
+        held: asyncio.Future[bytes] | None = getattr(self, "_stdout_readline_future", None)
+        if held is None or held.done():
+            held = asyncio.get_event_loop().run_in_executor(None, self._process.process.stdout.readline)
+            self._stdout_readline_future = held
+
+        done, _ = await asyncio.wait({held}, timeout=inner_timeout_s)
+        if not done:
+            # The read is still outstanding and still owns the pipe. The caller
+            # decides what to do with the time; it must not start a second one.
+            raise TimeoutError("no handshake line yet")
+
+        self._stdout_readline_future = None
+        line_bytes: bytes = held.result()
 
         if line_bytes:
             line = line_bytes.decode("utf-8", errors="replace").strip()
@@ -422,14 +442,20 @@ class ClientHandshakeMixin:
                         return buffer
 
             except TimeoutError:
-                self.logger.debug("Timeout reading line, trying chunk read strategy...")
-                try:
-                    result = await self._try_chunk_strategy(buffer)
-                    if result and self._is_complete_handshake(result):
-                        return result
-                    buffer = result or buffer
-                except TimeoutError:
-                    self.logger.debug("Timeout reading chunk, retrying...")
+                # Only when nothing is outstanding: a chunk read while a readline
+                # still owns the pipe is a second reader racing it for the same
+                # bytes, and whichever loses discards what it took.
+                if getattr(self, "_stdout_readline_future", None) is not None:
+                    self.logger.debug("Handshake line not ready; the read is still outstanding.")
+                else:
+                    self.logger.debug("Timeout reading line, trying chunk read strategy...")
+                    try:
+                        result = await self._try_chunk_strategy(buffer)
+                        if result and self._is_complete_handshake(result):
+                            return result
+                        buffer = result or buffer
+                    except TimeoutError:
+                        self.logger.debug("Timeout reading chunk, retrying...")
 
             await asyncio.sleep(DEFAULT_PROCESS_WAIT_TIME)
 
