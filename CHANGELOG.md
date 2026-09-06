@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.5.3] - 2026-09-06
+
+### Fixed
+
+- **A TLS connection over TCP verifies the server certificate instead of failing to.** The plugin server's auto-generated certificate carries `DNS:localhost` and no IP SAN. A unix socket presents no hostname to verify against, so the client overrode the TLS target name to `localhost`; a TCP endpoint is dialled by literal address -- `127.0.0.1:<port>`, straight off the handshake line -- which matches a DNS SAN no better, and the override was skipped there on the reasoning that TCP has a hostname.
+
+  gRPC therefore never finished its TLS handshake. The channel stayed not-ready for its full 10s deadline, three retries consumed the client's 30s budget, and the result surfaced as `HandshakeError: Total timeout of 30000.0ms exceeded after 1 attempts` -- describing a handshake that had already succeeded on the first attempt, which is why the failure was read as a handshake problem for as long as it was.
+
+  Only Windows sees it: `DEFAULT_CLIENT_TRANSPORTS` is TCP-only there, while every other platform prefers a unix socket, so the TCP-with-TLS path had no coverage on any platform that runs green.
+
+  This is not a relaxation. `root_certificates` is the server's own certificate, read from the handshake line, so that one certificate is the only thing that can validate the connection and the name check cannot admit anything the pin does not already admit. It is also what go-plugin's own host does -- `go-plugin/client.go:690` sets `ServerName: "localhost"` unconditionally, against certificates its `mtls.go:39` issues with `DNSNames: []string{"localhost"}` and no IP SAN.
+
+  Covered by a test that stands up a real gRPC server with such a certificate on 127.0.0.1 and asserts the channel cannot become ready without the override and can with it, so the regression is caught on every platform rather than only on Windows.
+
 ## [0.5.2] - 2026-09-06
 
 ### Fixed
