@@ -162,11 +162,17 @@ class ClientProcessMixin:
             ("grpc.http2.min_ping_interval_without_data_ms", 300000),
         ]
 
-        # CRITICAL: For Unix sockets with TLS, override SSL target name for cert verification
-        # Unix socket addresses (unix:/path/to/socket) don't have hostnames, but TLS
-        # certificates are issued for hostnames (e.g., "localhost"). We need to tell
-        # gRPC which hostname to verify the server certificate against.
-        if self._transport_name == "unix" and self._server_cert:  # type: ignore[attr-defined]
+        # The server's certificate is issued for the hostname "localhost", and
+        # neither transport presents gRPC with that name to verify against: a
+        # unix socket address carries no hostname at all, and a TCP endpoint is
+        # dialled by literal address, which matches no DNS SAN. Both need the
+        # name gRPC verifies to be stated explicitly.
+        #
+        # This is not a relaxation. `root_certificates` is the server's own
+        # certificate, read from the handshake line, so that single certificate
+        # is the only one that can validate the connection -- the name check
+        # cannot admit anything the pin does not already admit.
+        if self._server_cert:  # type: ignore[attr-defined]
             options.append(("grpc.ssl_target_name_override", "localhost"))
         else:
             self.logger.debug(  # type: ignore[attr-defined]
