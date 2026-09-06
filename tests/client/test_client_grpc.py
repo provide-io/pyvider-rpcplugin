@@ -280,7 +280,15 @@ def test_get_channel_options_unix_without_tls(client_instance) -> None:
 
 
 def test_get_channel_options_tcp_with_tls(client_instance) -> None:
-    """Test _get_channel_options() for TCP with TLS does NOT include SSL override."""
+    """TCP with TLS needs the SSL override too.
+
+    This asserted the opposite, on the reasoning that only a unix socket lacks
+    a hostname to verify. A TCP endpoint is dialled by literal address, which
+    matches no DNS SAN either, so the server's localhost certificate could not
+    be verified and the channel never became ready. See
+    tests/client/test_tls_over_tcp_target_name.py, which drives a real TLS
+    handshake rather than inspecting this dict.
+    """
     client_instance._transport_name = "tcp"
     client_instance._server_cert = "FAKE_CERT_DATA"
 
@@ -289,9 +297,7 @@ def test_get_channel_options_tcp_with_tls(client_instance) -> None:
     # Verify standard options are present
     assert ("grpc.keepalive_time_ms", 30000) in options
 
-    # Verify SSL target name override is NOT added (TCP doesn't need it)
-    ssl_override_present = any(opt[0] == "grpc.ssl_target_name_override" for opt in options)
-    assert not ssl_override_present, "SSL target name override should not be present for TCP"
+    assert ("grpc.ssl_target_name_override", "localhost") in options
 
 
 def test_get_channel_options_tcp_without_tls(client_instance) -> None:
