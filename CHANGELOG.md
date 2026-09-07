@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+## [0.5.4] - 2026-09-07
+
+### Fixed
+
+- **The auto-generated server certificate vouches for the address it is served on.** It carried `DNS:localhost` and nothing else, while the handshake line advertises the address the transport bound to -- `127.0.0.1:<port>` by default. A TLS client dialling an address verifies it against `iPAddress` entries, finds none, and never completes the handshake: the channel stays not-ready and the failure surfaces as a handshake timeout for a handshake that had already succeeded.
+
+  0.5.3 addressed this from the client side by overriding the name gRPC verifies, which is what go-plugin's own host does unconditionally (`go-plugin/client.go:690`). That stays, because a server built before this change still issues a localhost-only certificate. This makes the certificate correct on its own terms, so a client that does not override now connects -- covered by a test that stands up a real gRPC server on 127.0.0.1 and reaches ready with no override in the channel options.
+
+  Loopback is always covered because that is what the TCP transport binds by default, and a configured host is added so a server told to bind elsewhere presents a certificate for the address its clients will dial. Requires `provide-foundation>=0.4.6`, which emits an IP subject alternative name for an address; below that floor these names become DNS entries spelled like addresses, which no client matches when dialling one.
+
+### Changed
+
+- **A release blocks until PyPI serves the new version.** Upload returning 200 is not the version being resolvable: PyPI serves the simple index through a CDN, and for a minute or several a resolver asking for the new version is told it does not exist. A release that ended at upload reported success into that window, so downstream floor bumps and packaging builds failed on a package that was genuinely published.
+
+- **The publish action is pinned at the current `release/v1` head.** The previous pin dated from 2025-09-04 and had drifted a year behind the branch it names -- quietly opting out of the dependency bumps upstream ships on it, for the action that holds the publishing identity.
+
 ## [0.5.3] - 2026-09-06
 
 ### Fixed
