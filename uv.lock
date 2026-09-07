@@ -2535,7 +2535,7 @@ wheels = [
 
 [[package]]
 name = "provide-foundation"
-version = "0.4.3"
+version = "0.4.6"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -2543,9 +2543,9 @@ dependencies = [
     { name = "tomli-w" },
     { name = "tzdata", marker = "sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/32/71/28beb60f9968d6c079c2d469ab6db5833fd5a3f00b70618d3f70a7bd7d72/provide_foundation-0.4.3.tar.gz", hash = "sha256:bb534fceaa2676f6d8ad1cb40a705c58c16e5ab6a5ce077144ddd992688697da", size = 421093, upload-time = "2026-08-27T07:22:14.027Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/05/11d6d99c9347a94f02f04baccd78fd0fb901810d7cf5507e90b7bcfb14f8/provide_foundation-0.4.6.tar.gz", hash = "sha256:ce56bf056dc0e6e195e60ad4957654555efcb83d922dca35b5985f14236328dd", size = 423363, upload-time = "2026-09-07T03:50:58.382Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/be/bb/3634bef841f8cd8b43b9081fdb342b535a0b30e827f08b4061d083cd577c/provide_foundation-0.4.3-py3-none-any.whl", hash = "sha256:1ecf21251a1b219affb1feb2606f1302af571c684bc92d0c59db5f1017b45261", size = 618335, upload-time = "2026-08-27T07:22:11.902Z" },
+    { url = "https://files.pythonhosted.org/packages/f1/0c/e75e6983407a7d33626006416167f414154d5f4f6653583a5ac7cd97e250/provide_foundation-0.4.6-py3-none-any.whl", hash = "sha256:86605ed1cc16799122ec925289e1cd62e98b3e820739d8591ef5a1b4d7ccbc26", size = 620210, upload-time = "2026-09-07T03:50:56.754Z" },
 ]
 
 [[package]]
@@ -3044,7 +3044,7 @@ requires-dist = [
     { name = "grpcio-health-checking", specifier = ">=1.78.0" },
     { name = "grpcio-tools", marker = "extra == 'test'", specifier = ">=1.73.0" },
     { name = "protobuf", specifier = ">=5.29.3" },
-    { name = "provide-foundation", specifier = ">=0.4.0" },
+    { name = "provide-foundation", specifier = ">=0.4.6" },
     { name = "pyvider-rpcplugin", extras = ["test"], marker = "extra == 'all'" },
     { name = "types-grpcio", marker = "extra == 'test'", specifier = ">=1.0.0.20250603" },
     { name = "types-protobuf", marker = "extra == 'test'", specifier = ">=6.30.2.20250516" },
