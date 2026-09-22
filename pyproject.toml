@@ -188,6 +188,7 @@ line-ending = "auto"
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
+explicit_package_bases = true
 strict = true
 pretty = true
 show_error_codes = true

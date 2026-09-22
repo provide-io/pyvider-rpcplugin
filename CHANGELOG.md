@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-09-22
+
+### Fixed
+
+- **The shared `pyvider` root files have one owner.** `pyvider-rpcplugin` 0.5.4
+  RECORD-owned both `pyvider/__init__.py` and `pyvider/py.typed`;
+  `pyvider-cty` 0.6.1 RECORD-owned `pyvider/__init__.py` and its own
+  `pyvider/cty/py.typed`. Those shared root claims overlapped `Pyvider`'s
+  ownership. Even identical file contents would not make that safe:
+  uninstalling any one distribution deletes paths still needed by the others.
+  Version 0.5.5 is instead an implicit PEP 420 namespace contributor. It does
+  not own either shared root file; only `Pyvider` 0.8.0 owns them. Together
+  with `pyvider-cty` 0.6.2, fresh installs in either order and later rpcplugin
+  uninstalls preserve `pyvider.__version__` and the root typing marker.
+
+  There is one unavoidable migration edge. Directly upgrading from
+  `pyvider-rpcplugin` 0.5.4 first uninstalls 0.5.4, whose RECORD removes the
+  legacy shared root files; 0.5.5 deliberately does not recreate files it does
+  not own. Upgrade with `Pyvider` 0.8.0, which floors rpcplugin at 0.5.5 and
+  cty at 0.6.2 and restores its root files, or reinstall `Pyvider` after
+  directly upgrading rpcplugin. Installing an older rpcplugin or cty afterward
+  remains unsafe because those releases still claim the shared paths.
+
 ## [0.5.4] - 2026-09-07
 
 ### Fixed
