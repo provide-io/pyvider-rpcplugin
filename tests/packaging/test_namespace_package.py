@@ -8,6 +8,8 @@ from __future__ import annotations
 import base64
 import csv
 from dataclasses import dataclass
+from email.parser import BytesParser
+from email.policy import default as default_email_policy
 import hashlib
 import json
 import os
@@ -15,6 +17,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import sysconfig
 import tarfile
 from typing import cast
 import urllib.error
@@ -83,6 +86,14 @@ def _run(command: list[str], *, cwd: Path | None = None) -> subprocess.Completed
 
 
 def _published_rpcplugin_054(destination: Path) -> Path:
+    """Materialize the pinned 0.5.4 wheel and verify its exact bytes.
+
+    Set ``PYVIDER_RPCPLUGIN_054_WHEEL`` to make this fixture perform no network
+    access. Without that preseed, it downloads the immutable
+    files.pythonhosted.org URL below and still rejects any payload whose size
+    or SHA-256 differs. This contract covers this published-wheel fixture, not
+    unrelated build setup elsewhere in the test module.
+    """
     wheel = destination / PUBLISHED_RPCPLUGIN_054_FILENAME
     cached = os.environ.get(PUBLISHED_RPCPLUGIN_054_CACHE_ENV)
     if cached:
@@ -241,6 +252,11 @@ def _environment(destination: Path, *, seed: bool = False) -> tuple[Path, Path]:
             text=True,
         ).strip()
     )
+    # Reuse the dependency set already synchronized for this test run without
+    # processing its nested .pth files (which could mask the candidate under
+    # test). This also gives the editable build its pinned setuptools backend.
+    dependency_purelib = Path(sysconfig.get_path("purelib")).resolve()
+    (purelib / "_pyvider_test_dependencies.pth").write_text(f"{dependency_purelib}\n")
     return python, purelib
 
 
@@ -261,6 +277,7 @@ def _install(
         "--no-deps",
     ]
     if editable:
+        command.append("--no-build-isolation")
         command.append("--editable")
     if reinstall:
         command.append("--reinstall")
@@ -287,11 +304,8 @@ def _assert_rpcplugin_uninstalled(python: Path, purelib: Path, cwd: Path) -> Non
             "-I",
             "-c",
             (
-                "import importlib.machinery; "
-                "root = importlib.machinery.PathFinder.find_spec('pyvider'); "
-                "assert root is not None; "
-                "assert importlib.machinery.PathFinder.find_spec("
-                "'pyvider.rpcplugin', root.submodule_search_locations) is None"
+                "import importlib.util; "
+                "assert importlib.util.find_spec('pyvider.rpcplugin') is None"
             ),
         ],
         cwd=cwd,
@@ -306,21 +320,11 @@ def _installed_versions(python: Path, cwd: Path) -> dict[str, str]:
             "-I",
             "-c",
             (
-                "import importlib.machinery, importlib.metadata, importlib.util, "
-                "json, pathlib, pkgutil, sys, types; "
-                "root = importlib.machinery.PathFinder.find_spec('pyvider'); "
-                "assert root is not None; "
-                "namespace = types.ModuleType('pyvider'); "
-                "namespace.__path__ = pkgutil.extend_path("
-                "list(root.submodule_search_locations), 'pyvider'); "
-                "namespace.__spec__ = root; "
-                "sys.modules['pyvider'] = namespace; "
-                "rpcplugin = importlib.util.find_spec('pyvider.rpcplugin'); "
-                "assert rpcplugin is not None; "
-                "print(json.dumps({'owner': importlib.metadata.version('pyvider'), "
-                "'root_file': str(pathlib.Path(root.origin).resolve()), "
-                "'rpcplugin': importlib.metadata.version('pyvider-rpcplugin'), "
-                "'rpcplugin_file': str(pathlib.Path(rpcplugin.origin).resolve())}))"
+                "import json, pathlib, pyvider, pyvider.rpcplugin; "
+                "print(json.dumps({'owner': pyvider.__version__, "
+                "'root_file': str(pathlib.Path(pyvider.__file__).resolve()), "
+                "'rpcplugin': pyvider.rpcplugin.__version__, "
+                "'rpcplugin_file': str(pathlib.Path(pyvider.rpcplugin.__file__).resolve())}))"
             ),
         ],
         cwd=cwd,
@@ -334,6 +338,24 @@ def test_source_tree_does_not_own_shared_root_files() -> None:
     attributes_path = REPOSITORY / ".gitattributes"
     attributes = attributes_path.read_text() if attributes_path.exists() else ""
     assert "src/pyvider/__init__.py" not in attributes
+
+
+def test_published_fixture_accepts_a_verified_preseed_without_network(
+    published_rpcplugin_054: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv(PUBLISHED_RPCPLUGIN_054_CACHE_ENV, str(published_rpcplugin_054))
+
+    def unexpected_network_request(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("the preseeded fixture must not access the network")
+
+    monkeypatch.setattr(urllib.request, "urlopen", unexpected_network_request)
+
+    materialized = _published_rpcplugin_054(tmp_path)
+    payload = materialized.read_bytes()
+    assert len(payload) == PUBLISHED_RPCPLUGIN_054_SIZE
+    assert hashlib.sha256(payload).hexdigest() == PUBLISHED_RPCPLUGIN_054_SHA256
 
 
 def test_release_notes_name_the_coordinated_compatibility_floor() -> None:
@@ -387,10 +409,10 @@ def test_wheels_report_the_release_version(built_artifacts: BuiltArtifacts) -> N
     for wheel in (built_artifacts.direct_wheel, built_artifacts.sdist_wheel):
         with ZipFile(wheel) as archive:
             metadata_name = next(name for name in archive.namelist() if name.endswith(".dist-info/METADATA"))
-            metadata = archive.read(metadata_name).decode()
+            metadata = BytesParser(policy=default_email_policy).parsebytes(archive.read(metadata_name))
 
         assert wheel.name.startswith(f"pyvider_rpcplugin-{RELEASE_VERSION}-")
-        assert f"Version: {RELEASE_VERSION}\n" in metadata
+        assert metadata["Version"] == RELEASE_VERSION
 
 
 def test_source_tree_imports_rpcplugin_through_implicit_namespace(tmp_path: Path) -> None:
@@ -456,7 +478,7 @@ def test_fresh_coinstall_is_order_independent(
     assert Path(imported["rpcplugin_file"]).is_relative_to(purelib / "pyvider" / "rpcplugin")
 
 
-def test_editable_coinstall_preserves_owner_and_resolves_rpcplugin(tmp_path: Path) -> None:
+def test_editable_coinstall_preserves_owner_and_imports_rpcplugin(tmp_path: Path) -> None:
     owner = _synthetic_owner(tmp_path)
     python, purelib = _environment(tmp_path)
     _install(python, owner)
@@ -491,12 +513,7 @@ def test_uninstall_preserves_the_canonical_owner_root_files(
     assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
     assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
     result = _run(
-        [
-            str(python),
-            "-I",
-            "-c",
-            "import importlib.metadata; print(importlib.metadata.version('pyvider'))",
-        ],
+        [str(python), "-I", "-c", "import pyvider; print(pyvider.__version__)"],
         cwd=tmp_path,
     )
     assert result.stdout.strip() == "0.8.0"
@@ -554,12 +571,7 @@ def test_supported_upgrade_from_published_rpcplugin_054_repairs_owner_then_unins
         assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
         assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
         result = _run(
-            [
-                str(python),
-                "-I",
-                "-c",
-                "import importlib.metadata; print(importlib.metadata.version('pyvider'))",
-            ],
+            [str(python), "-I", "-c", "import pyvider; print(pyvider.__version__)"],
             cwd=case,
         )
         assert result.stdout.strip() == "0.8.0"
