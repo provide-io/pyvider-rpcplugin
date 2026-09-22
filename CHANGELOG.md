@@ -6,20 +6,23 @@
 
 ### Fixed
 
-- **The shared `pyvider` package initializer is stable across installation
-  order and upgrades.** `pyvider-rpcplugin` 0.5.4, `pyvider-cty` 0.6.1, and
-  `Pyvider` shipped different bytes for `pyvider/__init__.py`, so whichever
-  wheel was installed last silently decided whether root-package attributes
-  such as `pyvider.__version__` existed. Version 0.5.5 standardizes on the
-  byte-identical canonical initializer used by the coordinated releases:
-  `pyvider-rpcplugin` 0.5.5, `pyvider-cty` 0.6.2, and `Pyvider` 0.8.0. When all
-  three distributions are co-installed, users must use those corrected
-  versions together. The older `pyvider-rpcplugin` 0.5.4 and `pyvider-cty`
-  0.6.1 copies remain unsafe if installed afterward: a corrected package
-  cannot neutralize an older wheel that later replaces the shared file. With
-  the coordinated versions, fresh co-installs produce the same file in either
-  order, and upgrading rpcplugin restores the canonical copy after removing
-  0.5.4.
+- **The shared `pyvider` root files have one owner.** `pyvider-rpcplugin` 0.5.4
+  and `pyvider-cty` 0.6.1 both RECORD-owned `pyvider/__init__.py` and
+  `pyvider/py.typed` alongside `Pyvider`. Even identical file contents would
+  not make that safe: uninstalling any one distribution deletes paths still
+  needed by the others. Version 0.5.5 is instead an implicit PEP 420 namespace
+  contributor and does not own either shared root file; only `Pyvider` 0.8.0
+  owns them. Together with `pyvider-cty` 0.6.2, fresh installs in either order
+  and later rpcplugin uninstalls preserve `pyvider.__version__` and the root
+  typing marker.
+
+  There is one unavoidable migration edge. Directly upgrading from
+  `pyvider-rpcplugin` 0.5.4 first uninstalls 0.5.4, whose RECORD removes the
+  legacy shared root files; 0.5.5 deliberately does not recreate files it does
+  not own. Upgrade with `Pyvider` 0.8.0, which floors rpcplugin at 0.5.5 and
+  cty at 0.6.2 and restores its root files, or reinstall `Pyvider` after
+  directly upgrading rpcplugin. Installing an older rpcplugin or cty afterward
+  remains unsafe because those releases still claim the shared paths.
 
 ## [0.5.4] - 2026-09-07
 
