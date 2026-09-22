@@ -273,6 +273,24 @@ def _uninstall(python: Path, *, installer: str) -> None:
     raise AssertionError(f"unknown installer: {installer}")
 
 
+def _assert_rpcplugin_uninstalled(python: Path, purelib: Path, cwd: Path) -> None:
+    assert not list(purelib.glob("pyvider_rpcplugin-*.dist-info"))
+    assert not (purelib / "pyvider" / "rpcplugin").exists()
+    result = _run(
+        [
+            str(python),
+            "-I",
+            "-c",
+            (
+                "import importlib.util; "
+                "assert importlib.util.find_spec('pyvider.rpcplugin') is None"
+            ),
+        ],
+        cwd=cwd,
+    )
+    assert result.stdout == ""
+
+
 def _installed_versions(python: Path, cwd: Path) -> dict[str, str]:
     result = _run(
         [
@@ -442,6 +460,7 @@ def test_uninstall_preserves_the_canonical_owner_root_files(
 
     _uninstall(python, installer=installer)
 
+    _assert_rpcplugin_uninstalled(python, purelib, tmp_path)
     assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
     assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
     result = _run(
@@ -499,6 +518,7 @@ def test_supported_upgrade_from_published_rpcplugin_054_repairs_owner_then_unins
         assert imported["rpcplugin"] == RELEASE_VERSION
 
         _uninstall(python, installer="uv")
+        _assert_rpcplugin_uninstalled(python, purelib, case)
         assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
         assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
         result = _run(
