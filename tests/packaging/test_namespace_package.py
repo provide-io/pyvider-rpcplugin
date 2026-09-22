@@ -320,14 +320,23 @@ def test_source_tree_does_not_own_shared_root_files() -> None:
 
 def test_release_notes_name_the_coordinated_compatibility_floor() -> None:
     release_notes = (REPOSITORY / "CHANGELOG.md").read_text().split("## [0.5.4]", maxsplit=1)[0]
+    normalized_notes = " ".join(release_notes.split())
 
     assert "## [0.5.5] - 2026-09-22" in release_notes
     assert "`pyvider-cty` 0.6.2" in release_notes
     assert "`Pyvider` 0.8.0" in release_notes
     assert "`pyvider-rpcplugin` 0.5.4" in release_notes
-    assert "does not own" in release_notes
+    assert "does not own" in normalized_notes
     assert "reinstall" in release_notes
     assert "byte-identical" not in release_notes
+    assert (
+        "`pyvider-rpcplugin` 0.5.4 RECORD-owned both `pyvider/__init__.py` and "
+        "`pyvider/py.typed`"
+    ) in normalized_notes
+    assert (
+        "`pyvider-cty` 0.6.1 RECORD-owned `pyvider/__init__.py` and its own "
+        "`pyvider/cty/py.typed`"
+    ) in normalized_notes
 
 
 def test_built_artifacts_do_not_own_shared_root_files(built_artifacts: BuiltArtifacts) -> None:
