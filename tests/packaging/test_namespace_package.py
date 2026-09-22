@@ -248,13 +248,18 @@ def _install(
     python: Path,
     package: Path,
     *,
-    dependencies: bool = False,
     editable: bool = False,
     reinstall: bool = False,
 ) -> None:
-    command = ["uv", "pip", "install", "--offline", "--python", str(python)]
-    if not dependencies:
-        command.append("--no-deps")
+    command = [
+        "uv",
+        "pip",
+        "install",
+        "--offline",
+        "--python",
+        str(python),
+        "--no-deps",
+    ]
     if editable:
         command.append("--editable")
     if reinstall:
@@ -282,8 +287,11 @@ def _assert_rpcplugin_uninstalled(python: Path, purelib: Path, cwd: Path) -> Non
             "-I",
             "-c",
             (
-                "import importlib.util; "
-                "assert importlib.util.find_spec('pyvider.rpcplugin') is None"
+                "import importlib.machinery; "
+                "root = importlib.machinery.PathFinder.find_spec('pyvider'); "
+                "assert root is not None; "
+                "assert importlib.machinery.PathFinder.find_spec("
+                "'pyvider.rpcplugin', root.submodule_search_locations) is None"
             ),
         ],
         cwd=cwd,
@@ -298,11 +306,21 @@ def _installed_versions(python: Path, cwd: Path) -> dict[str, str]:
             "-I",
             "-c",
             (
-                "import json, pathlib, pyvider, pyvider.rpcplugin; "
-                "print(json.dumps({'owner': pyvider.__version__, "
-                "'root_file': str(pathlib.Path(pyvider.__file__).resolve()), "
-                "'rpcplugin': pyvider.rpcplugin.__version__, "
-                "'rpcplugin_file': str(pathlib.Path(pyvider.rpcplugin.__file__).resolve())}))"
+                "import importlib.machinery, importlib.metadata, importlib.util, "
+                "json, pathlib, pkgutil, sys, types; "
+                "root = importlib.machinery.PathFinder.find_spec('pyvider'); "
+                "assert root is not None; "
+                "namespace = types.ModuleType('pyvider'); "
+                "namespace.__path__ = pkgutil.extend_path("
+                "list(root.submodule_search_locations), 'pyvider'); "
+                "namespace.__spec__ = root; "
+                "sys.modules['pyvider'] = namespace; "
+                "rpcplugin = importlib.util.find_spec('pyvider.rpcplugin'); "
+                "assert rpcplugin is not None; "
+                "print(json.dumps({'owner': importlib.metadata.version('pyvider'), "
+                "'root_file': str(pathlib.Path(root.origin).resolve()), "
+                "'rpcplugin': importlib.metadata.version('pyvider-rpcplugin'), "
+                "'rpcplugin_file': str(pathlib.Path(rpcplugin.origin).resolve())}))"
             ),
         ],
         cwd=cwd,
@@ -416,11 +434,11 @@ def test_fresh_coinstall_is_order_independent(
     python, purelib = _environment(tmp_path)
 
     if order == "rpcplugin-first":
-        _install(python, candidate, dependencies=True)
+        _install(python, candidate)
         _install(python, owner)
     else:
         _install(python, owner)
-        _install(python, candidate, dependencies=True)
+        _install(python, candidate)
 
     assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
     assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
@@ -438,11 +456,11 @@ def test_fresh_coinstall_is_order_independent(
     assert Path(imported["rpcplugin_file"]).is_relative_to(purelib / "pyvider" / "rpcplugin")
 
 
-def test_editable_coinstall_preserves_owner_and_imports_rpcplugin(tmp_path: Path) -> None:
+def test_editable_coinstall_preserves_owner_and_resolves_rpcplugin(tmp_path: Path) -> None:
     owner = _synthetic_owner(tmp_path)
     python, purelib = _environment(tmp_path)
     _install(python, owner)
-    _install(python, REPOSITORY, dependencies=True, editable=True)
+    _install(python, REPOSITORY, editable=True)
 
     assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
     assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
@@ -461,7 +479,7 @@ def test_uninstall_preserves_the_canonical_owner_root_files(
     owner = _synthetic_owner(tmp_path)
     python, purelib = _environment(tmp_path, seed=installer == "pip")
     _install(python, owner)
-    _install(python, built_artifacts.direct_wheel, dependencies=True)
+    _install(python, built_artifacts.direct_wheel)
 
     assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
     assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
@@ -473,7 +491,12 @@ def test_uninstall_preserves_the_canonical_owner_root_files(
     assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
     assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
     result = _run(
-        [str(python), "-I", "-c", "import pyvider; print(pyvider.__version__)"],
+        [
+            str(python),
+            "-I",
+            "-c",
+            "import importlib.metadata; print(importlib.metadata.version('pyvider'))",
+        ],
         cwd=tmp_path,
     )
     assert result.stdout.strip() == "0.8.0"
@@ -498,14 +521,14 @@ def test_supported_upgrade_from_published_rpcplugin_054_repairs_owner_then_unins
 
         # This reproduces a healthy pre-upgrade state: 0.5.4 owns the shared
         # path in RECORD, then Pyvider 0.8.0 supplies the canonical bytes.
-        _install(python, published_rpcplugin_054, dependencies=True)
+        _install(python, published_rpcplugin_054)
         _install(python, owner)
         assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
         assert _installed_versions(python, case)["owner"] == "0.8.0"
 
         # uv removes every path owned by 0.5.4 before installing implicit
         # namespace contributor 0.5.5, so the legacy shared root is absent.
-        _install(python, candidate, dependencies=True)
+        _install(python, candidate)
 
         assert not list(purelib.glob("pyvider_rpcplugin-0.5.4.dist-info"))
         assert not (purelib / ROOT_INITIALIZER).exists()
@@ -531,7 +554,12 @@ def test_supported_upgrade_from_published_rpcplugin_054_repairs_owner_then_unins
         assert (purelib / ROOT_INITIALIZER).read_bytes() == CANONICAL_INITIALIZER
         assert (purelib / ROOT_TYPING_MARKER).read_bytes() == b""
         result = _run(
-            [str(python), "-I", "-c", "import pyvider; print(pyvider.__version__)"],
+            [
+                str(python),
+                "-I",
+                "-c",
+                "import importlib.metadata; print(importlib.metadata.version('pyvider'))",
+            ],
             cwd=case,
         )
         assert result.stdout.strip() == "0.8.0"
