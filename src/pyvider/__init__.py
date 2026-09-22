@@ -1,13 +1,17 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) provide.io llc. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 provide.io llc. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 
-"""Pyvider namespace package.
 
-This is a namespace package that provides the base for pyvider subpackages,
-including pyvider-rpcplugin and other pyvider-based tools."""
+from provide.foundation.utils.versioning import get_version
 
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
-# 🐍🔌📞🔚
+__version__ = get_version("pyvider", caller_file=__file__)
+
+__all__ = [
+    "__version__",
+]
+
+# 🐍🏗️🔚

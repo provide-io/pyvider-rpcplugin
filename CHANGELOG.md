@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+## [0.5.5] - 2026-09-22
+
+### Fixed
+
+- **The shared `pyvider` package initializer is stable across installation
+  order and upgrades.** `pyvider-rpcplugin` 0.5.4, `pyvider-cty` 0.6.1, and
+  `Pyvider` shipped different bytes for `pyvider/__init__.py`, so whichever
+  wheel was installed last silently decided whether root-package attributes
+  such as `pyvider.__version__` existed. Version 0.5.5 standardizes on the
+  byte-identical canonical initializer used by the coordinated releases:
+  `pyvider-rpcplugin` 0.5.5, `pyvider-cty` 0.6.2, and `Pyvider` 0.8.0. When all
+  three distributions are co-installed, users must use those corrected
+  versions together. The older `pyvider-rpcplugin` 0.5.4 and `pyvider-cty`
+  0.6.1 copies remain unsafe if installed afterward: a corrected package
+  cannot neutralize an older wheel that later replaces the shared file. With
+  the coordinated versions, fresh co-installs produce the same file in either
+  order, and upgrading rpcplugin restores the canonical copy after removing
+  0.5.4.
+
 ## [0.5.4] - 2026-09-07
 
 ### Fixed
